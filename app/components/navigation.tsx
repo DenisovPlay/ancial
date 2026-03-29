@@ -152,7 +152,7 @@ export default function Navigation() {
 
   return (
     <>
-        <nav className="hidden md:flex flex-col p-1 absolute gap-1 top-3 left-3 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 z-50">
+        <nav className="hidden md:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 z-50">
             <NavItem href="/" icon="IC-home" />
             <NavItem href="/feed" icon="IC-feed" />
             {isAuthenticated && user && (

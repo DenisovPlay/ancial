@@ -34,7 +34,9 @@ export default function RootLayout({
         <NotificationProvider>
           <AuthProvider>
             <Navigation />
-            {children}
+            <div className="flex-1 flex flex-col pb-20 md:pb-0 md:pl-24">
+              {children}
+            </div>
           </AuthProvider>
         </NotificationProvider>
       </body>
