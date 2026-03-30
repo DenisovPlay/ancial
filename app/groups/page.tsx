@@ -184,7 +184,7 @@ function GroupsContent() {
         </button>
       </div>
 
-      <div className="overflow-hidden border border-transparent lg:border-zinc-600/30 lg:bg-zinc-900 lg:rounded-3xl lg:shadow text-content-700 w-full max-w-3xl duration-300">
+      <div className="overflow-hidden border border-transparent lg:border-zinc-600/30 lg:bg-zinc-900 lg:rounded-3xl lg:shadow w-full max-w-3xl duration-300">
         {isLoading ? (
           <div className="w-full flex items-center justify-center py-12">
             <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 4 A 1.50015 1.50015 0 1 0 24 7 C 30.255882 7 35.765936 10.406785 38.703125 15.455078 A 1.5005776 1.5005776 0 1 0 41.296875 13.945312 C 37.834064 7.9936061 31.344118 4 24 4 z"></path></svg>
@@ -223,7 +223,7 @@ function GroupsContent() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={lang?.new_group || 'Новое сообщество'}>
-        <form onSubmit={handleCreateGroup} className="text-content-700 flex flex-col gap-3">
+        <form onSubmit={handleCreateGroup} className="flex flex-col gap-3">
           <input 
             value={grTitle} 
             onChange={(e) => setGrTitle(e.target.value)} 

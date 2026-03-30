@@ -51,3 +51,10 @@ body:has(.no-mobile-nav-padding) #main-content {
     padding-left: 0 !important;
   }
 }
+
+.hideTextBlock {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 8;
+  overflow: hidden;
+}

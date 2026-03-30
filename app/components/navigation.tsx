@@ -5,6 +5,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
+
 const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, icon?: string, imgSrc?: string, onClick?: () => void, isActive?: boolean }) => {
   const pathname = usePathname();
   const active = isActive !== undefined ? isActive : (href && pathname === href);
@@ -38,7 +42,35 @@ const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, ico
   );
 };
 
-const Dropdown = ({ icon, imgSrc, position = 'right', align = 'start', direction = 'col', activePaths = [], children }: { icon?: string; imgSrc?: string; position?: 'left' | 'right' | 'top' | 'bottom'; align?: 'start' | 'end' | 'center'; direction?: 'row' | 'col'; activePaths?: string[]; children: React.ReactNode }) => {
+type DropdownProps = {
+  activePaths?: string[];
+  align?: 'start' | 'end' | 'center';
+  children: React.ReactNode;
+  direction?: 'row' | 'col';
+  icon?: string;
+  imgSrc?: string;
+  menuClassName?: string;
+  position?: 'left' | 'right' | 'top' | 'bottom';
+  triggerAriaLabel?: string;
+  triggerClassName?: string;
+  triggerIcon?: string;
+  triggerSize?: 'default' | 'sm';
+};
+
+export const Dropdown = ({
+  icon,
+  imgSrc,
+  position = 'right',
+  align = 'start',
+  direction = 'col',
+  activePaths = [],
+  children,
+  triggerSize = 'default',
+  triggerIcon,
+  triggerAriaLabel = 'Open menu',
+  triggerClassName,
+  menuClassName,
+}: DropdownProps) => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -86,17 +118,43 @@ const Dropdown = ({ icon, imgSrc, position = 'right', align = 'start', direction
   };
 
   const isActive = activePaths.some(path => pathname === path || pathname?.startsWith(path + '/'));
+  const isCompactTrigger = triggerSize === 'sm';
+  const compactTriggerIcon = triggerIcon ?? icon ?? 'IC-more';
 
   return (
-    <div className={`relative ${imgSrc ? `w-auto h-auto` : `w-14 h-14`}`} ref={dropdownRef}>
-      <NavItem 
-        icon={icon} 
-        imgSrc={imgSrc}
-        onClick={() => setIsOpen(!isOpen)} 
-        isActive={isActive}
-      />
+    <div className={cn('relative', !isCompactTrigger && (imgSrc ? 'w-auto h-auto' : 'w-14 h-14'))} ref={dropdownRef}>
+      {isCompactTrigger ? (
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label={triggerAriaLabel}
+          className={cn(
+            'flex justify-center items-center cursor-pointer rounded-3xl w-8 h-8 bg-zinc-800/0 hover:bg-zinc-700/80 duration-300 active:scale-95 text-zinc-400',
+            triggerClassName,
+          )}
+        >
+          <svg className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+            <use href={`/icons.svg#${compactTriggerIcon}`}></use>
+          </svg>
+        </button>
+      ) : (
+        <NavItem 
+          icon={icon} 
+          imgSrc={imgSrc}
+          onClick={() => setIsOpen(!isOpen)} 
+          isActive={isActive}
+        />
+      )}
       <div 
-        className={`absolute ${getPositionClasses()} ${getOriginClass()} p-1 ${direction === 'col' ? 'w-48 flex-col rounded-3xl' : 'w-max flex-row items-center rounded-full'} bg-zinc-900/50 backdrop-blur-lg backdrop-saturate-200 border border-zinc-600/30 shadow-xl flex gap-1 z-50 transition-all duration-200 ease-out
+        className={`${cn(
+          'absolute',
+          getPositionClasses(),
+          getOriginClass(),
+          'p-1',
+          direction === 'col' ? 'w-48 flex-col rounded-3xl' : 'w-max flex-row items-center rounded-full',
+          'bg-zinc-900/50 backdrop-blur-lg backdrop-saturate-200 border border-zinc-600/30 shadow-xl flex gap-1 z-50 transition-all duration-200 ease-out',
+          menuClassName,
+        )}
           ${isOpen ? 'opacity-100 scale-100 visible pointer-events-auto' : 'opacity-0 scale-95 invisible pointer-events-none'}
         `}
       >
@@ -117,31 +175,55 @@ const Dropdown = ({ icon, imgSrc, position = 'right', align = 'start', direction
   );
 };
 
-const DropdownItem = ({ href, icon, onClick, children }: { href?: string; icon: string; onClick?: () => void; children: React.ReactNode }) => {
+type DropdownItemProps = {
+  children: React.ReactNode;
+  className?: string;
+  href?: string;
+  icon?: string;
+  iconClassName?: string;
+  iconNode?: React.ReactNode;
+  onClick?: () => void;
+};
+
+export const DropdownItem = ({
+  href,
+  icon,
+  onClick,
+  children,
+  className,
+  iconClassName,
+  iconNode,
+}: DropdownItemProps) => {
   const pathname = usePathname();
   const isActive = href ? pathname === href : false;
   
-  const className = `w-full text-left font-medium hover:shadow cursor-pointer rounded-3xl duration-150 p-2 text-content-600 flex items-center gap-2 border hover:border-zinc-600/30 cursor-pointer ${isActive ? 'bg-zinc-700/80  border-zinc-600/30' : 'bg-zinc-700/0 hover:bg-zinc-700/95  border-transparent'}`;
+  const itemClassName = cn(
+    'w-full text-left font-medium hover:shadow cursor-pointer rounded-3xl duration-150 p-2 text-white flex items-center gap-2 border hover:border-zinc-600/30',
+    isActive ? 'bg-zinc-700/80 border-zinc-600/30' : 'bg-zinc-700/0 hover:bg-zinc-700/95 border-transparent',
+    className,
+  );
 
   const content = (
     <>
-      <svg className="inline w-6 h-6 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <use href={`/icons.svg#${icon}`}></use>
-      </svg>
+      {iconNode ?? (
+        <svg className={cn('inline w-6 h-6 fill-white', iconClassName)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+          <use href={`/icons.svg#${icon}`}></use>
+        </svg>
+      )}
       {children}
     </>
   );
 
   if (href) {
     return (
-      <Link href={href} className={className} onClick={onClick}>
+      <Link href={href} className={itemClassName} onClick={onClick}>
         {content}
       </Link>
     );
   }
 
   return (
-    <button onClick={onClick} className={className}>
+    <button type="button" onClick={onClick} className={itemClassName}>
       {content}
     </button>
   );

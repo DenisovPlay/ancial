@@ -93,6 +93,7 @@
         <Image src="/img/branding/next.svg" alt="Next" width={256} height={64} className="invert"/>
         <Image src="/img/branding/php.svg" alt="PHP" width={150} height={64} className="invert"/>
         <Image src="/img/branding/vercel.svg" alt="Vercel" width={64} height={64} className=""/>
+        <Image src="/img/branding/tailwindcss.svg" alt="Tailwind CSS" width={64} height={64} className=""/>
         <Image src="/img/branding/vk-cloud.svg" alt="VK Cloud" width={256} height={64} className=""/>
         <Image src="/img/branding/cloud-ru.svg" alt="Cloud.ru" width={264} height={64} className=""/>
         <Image src="/img/branding/mysql.svg" alt="MySQL" width={150} height={64} className="-mt-8"/>
@@ -119,6 +120,9 @@
           <span className="text-xl font-bold text-white mt-3">2025</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300">В 2025 запустили в разработку новый отдельный Pulse (Музыка) и Zeni (Финтех). А ещё - <span className="text-purple-500">Ancial Lite</span> - более мощную и более лёгкую версию Ancial на новой кодовой базе, освежили логотип, взяли более яркие и броские цвета. Вместо <span className="text-purple-500">"Ctrl C + Ctrl V"</span> и <span className="text-purple-500">"Ancial Group"</span> решили назвать себя проще - <span className="text-purple-500">ZeniFlow</span>, в честь не вышедшего финтех сервиса <span className="text-purple-500">Zeni</span>.</span>
           
+          <span className="text-xl font-bold text-white mt-3">2026</span>
+          <span className="w-full max-w-3xl text-lg text-zinc-300">Начали новую эпоху - опубликовались на Product Radar и начали делать React-версию клиента.</span>
+
           <span className="text-xl font-bold text-white mt-3">Сейчас</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300">Ну вроде как мы живы, если вы это читаете ;)<br/>Главное помните, что Ancial - <b className="text-white">больше, чем социальная сеть</b>!</span>
           
