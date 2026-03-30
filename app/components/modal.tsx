@@ -9,11 +9,14 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   swipeable?: boolean;
+  width?: 'sm' | 'md' | 'lg';
 }
 
-export default function Modal({ isOpen, onClose, title, children, swipeable = true }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, swipeable = true, width = 'sm' }: ModalProps) {
   const [offsetY, setOffsetY] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [render, setRender] = useState(isOpen);
+  const [visible, setVisible] = useState(isOpen);
   const startY = useRef<number | null>(null);
 
   // Для корректной работы с порталами в Next.js
@@ -21,16 +24,24 @@ export default function Modal({ isOpen, onClose, title, children, swipeable = tr
     setMounted(true);
   }, []);
 
-  // Блокировка прокрутки фона при открытом окне
+  // Блокировка прокрутки фона при открытом окне и управление анимацией
   useEffect(() => {
     if (isOpen) {
+      setRender(true);
       document.body.style.overflow = 'hidden';
+      // Небольшая задержка перед применением классов видимости для срабатывания transition
+      const timer = setTimeout(() => setVisible(true), 10);
+      return () => clearTimeout(timer);
     } else {
+      setVisible(false);
       document.body.style.overflow = '';
+      // Ждем окончания анимации (300ms) перед тем как убрать компонент из DOM
+      const timer = setTimeout(() => {
+        setRender(false);
+        setOffsetY(0);
+      }, 300);
+      return () => clearTimeout(timer);
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
 
   // Закрытие по Escape
@@ -44,7 +55,7 @@ export default function Modal({ isOpen, onClose, title, children, swipeable = tr
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!mounted || !isOpen) return null;
+  if (!mounted || !render) return null;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!swipeable) return;
@@ -75,16 +86,22 @@ export default function Modal({ isOpen, onClose, title, children, swipeable = tr
     startY.current = null;
   };
 
+ const widthClasses = {
+    sm: 'w-full sm:w-[500px]',
+    md: 'w-full sm:w-[700px]',
+    lg: 'w-full sm:w-[900px]',
+  };
+
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-zinc-950/80 backdrop-blur-sm transition-opacity"
+      className={`fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-zinc-950/80 backdrop-blur-sm transition-opacity duration-300 ease-out ${visible ? 'opacity-100' : 'opacity-0'}`}
       onClick={onClose}
     >
       <div 
-        className="w-full sm:w-[500px] max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col"
+        className={`${widthClasses[width]} max-h-[90vh] bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col transition-all ease-out duration-300 ${visible ? 'translate-y-0 sm:scale-100 opacity-100' : 'translate-y-full sm:translate-y-8 sm:scale-95 opacity-0'}`}
         style={{ 
-          transform: `translateY(${offsetY > 0 ? offsetY : 0}px)`,
-          transition: offsetY === 0 ? 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)' : 'none' 
+          transform: offsetY > 0 ? `translateY(${offsetY}px)` : undefined,
+          transition: offsetY === 0 ? 'all 0.3s cubic-bezier(0.32, 0.72, 0, 1)' : 'none' 
         }}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={handleTouchStart}
@@ -99,11 +116,11 @@ export default function Modal({ isOpen, onClose, title, children, swipeable = tr
         )}
         
         {/* Шапка модального окна */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800/50">
+        <div className="flex items-center justify-between p-3 border-b border-zinc-800/50">
           <h2 className="text-xl font-bold text-white">{title}</h2>
           <button 
             onClick={onClose}
-            className="p-2 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-700 transition-colors"
+            className="cursor-pointer hidden lg:flex p-1.5 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-700 transition-colors"
           >
             <svg className="w-5 h-5 fill-zinc-300" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -112,7 +129,7 @@ export default function Modal({ isOpen, onClose, title, children, swipeable = tr
         </div>
 
         {/* Контент с запретом на всплытие событий касания чтобы можно было скроллить контент без закрытия (полезно при длинном тексте) */}
-        <div className="p-4 sm:p-5 overflow-y-auto" onTouchStart={(e) => e.stopPropagation()}>
+        <div className="p-3 overflow-y-auto" onTouchStart={(e) => e.stopPropagation()}>
           {children}
         </div>
       </div>

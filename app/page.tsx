@@ -2,64 +2,22 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex flex-col items-center justify-center w-full h-screen no-mobile-nav-padding no-pc-nav-padding">
+      <video id="videobackground" autoPlay muted loop preload="none" playsInline className="z-[-1] hidden lg:flex absolute inset-0 w-full h-full object-cover opacity-50" src="/img/backgrounds/ygX.mp4" ></video>
+      <img alt="Background" id="imagebackground" className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 lg:hidden" src="/img/backgrounds/bg.webp"></img>
+      <div className="bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-3xl w-full max-w-screen-md p-3 flex items-center gap-3 shadow -mb-10">
+        <div className="flex flex-col w-full">
+            <span className="text-lg lg:text-2xl font-bold">Привет, Product Radar!</span>
+            <span className="text-sm lg:text-base text-zinc-300">Мы вас ждали, но "ремонт" ещё продолжается.</span>
+            <span className="text-xs lg:text-sm text-zinc-400">Тут есть Лента, Чаты, Звонки, Музыка, Игры и Кошелёк, а ещё - множество недоработок)</span>
+            <div className="flex items-center justify-end gap-3 mt-1.5">
+                <a href="https://t.me/ancialru" target="_blank" className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-400 hover:bg-blue-500 duration-300 active:scale-95 shadow border border-zinc-600/30">
+                    <img className="w-3.5 h-3.5" src="/img/socials/tg.png"/>
+                </a>
+                <a href="" target="_blank" className="hidden w-fit text-center px-1 py-0.5 bg-purple-500 hover:bg-purple-600 duration-300 cursor-pointer rounded-3xl border border-zinc-600/30 active:scale-95">Оценить</a>
+            </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }

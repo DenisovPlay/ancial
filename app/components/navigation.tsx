@@ -96,7 +96,7 @@ const Dropdown = ({ icon, imgSrc, position = 'right', align = 'start', direction
         isActive={isActive}
       />
       <div 
-        className={`absolute ${getPositionClasses()} ${getOriginClass()} p-1 ${direction === 'col' ? 'w-48 flex-col rounded-3xl' : 'w-max flex-row items-center rounded-full'} bg-zinc-900/90 backdrop-blur-lg border border-zinc-600/30 shadow-xl flex gap-1 z-50 transition-all duration-200 ease-out
+        className={`absolute ${getPositionClasses()} ${getOriginClass()} p-1 ${direction === 'col' ? 'w-48 flex-col rounded-3xl' : 'w-max flex-row items-center rounded-full'} bg-zinc-900/50 backdrop-blur-lg backdrop-saturate-200 border border-zinc-600/30 shadow-xl flex gap-1 z-50 transition-all duration-200 ease-out
           ${isOpen ? 'opacity-100 scale-100 visible pointer-events-auto' : 'opacity-0 scale-95 invisible pointer-events-none'}
         `}
       >
@@ -152,7 +152,8 @@ export default function Navigation() {
 
   return (
     <>
-        <nav className="hidden md:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 z-50">
+        <nav className="hidden md:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
+            <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
             <NavItem href="/" icon="IC-home" />
             <NavItem href="/feed" icon="IC-feed" />
             {isAuthenticated && user && (
@@ -216,7 +217,7 @@ export default function Navigation() {
         </nav>
 
 
-        <nav className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1">
+        <nav className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[50]">
             <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30">
                 <NavItem href="/feed" icon="IC-feed" />
                 {!isAuthenticated && (
@@ -233,7 +234,8 @@ export default function Navigation() {
                 )}
             </div>
             <div className='flex-grow'></div>
-            <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30">
+            <div className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30">
+                <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
                 {!isAuthenticated && (
                     <NavItem href="/login" icon="IC-login" />
                 )}
