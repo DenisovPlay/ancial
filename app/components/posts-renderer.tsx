@@ -596,14 +596,14 @@ function PostCardInner({
             {images.length >= 2 && (
               <div className="-mx-3 mb-3">
                 <div className="relative">
-                  <div className="absolute top-3 right-3 z-20 rounded-full border border-zinc-700/60 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
+                  <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-700/60 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
                     <span className="flex items-center gap-1.5">
                       <SvgIcon className="w-4 h-4 fill-white" id="IC-photos" />
                       <span>{images.length}</span>
                     </span>
                   </div>
 
-                  <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth scroll-pl-3 scroll-pr-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden before:block before:w-3 before:shrink-0 before:content-[''] after:block /after:w-3 after:shrink-0 after:content-['']">
                     {images.map((image, index) => (
                       <div
                         key={`${post.id}-image-${index}`}
