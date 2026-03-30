@@ -121,7 +121,7 @@ const DropdownItem = ({ href, icon, onClick, children }: { href?: string; icon: 
   const pathname = usePathname();
   const isActive = href ? pathname === href : false;
   
-  const className = `w-full text-left font-bold hover:shadow cursor-pointer rounded-3xl duration-150 p-2 text-content-600 flex items-center gap-2 border hover:border-zinc-600/30 cursor-pointer ${isActive ? 'bg-zinc-700/80  border-zinc-600/30' : 'bg-zinc-700/0 hover:bg-zinc-700/95  border-transparent'}`;
+  const className = `w-full text-left font-medium hover:shadow cursor-pointer rounded-3xl duration-150 p-2 text-content-600 flex items-center gap-2 border hover:border-zinc-600/30 cursor-pointer ${isActive ? 'bg-zinc-700/80  border-zinc-600/30' : 'bg-zinc-700/0 hover:bg-zinc-700/95  border-transparent'}`;
 
   const content = (
     <>
@@ -218,7 +218,7 @@ export default function Navigation() {
 
 
         <nav className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[50]">
-            <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30">
+            <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1">
                 <NavItem href="/feed" icon="IC-feed" />
                 {!isAuthenticated && (
                     <NavItem href="/pulse" icon="IC-music" />
@@ -234,7 +234,7 @@ export default function Navigation() {
                 )}
             </div>
             <div className='flex-grow'></div>
-            <div className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30">
+            <div className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30 gap-1">
                 <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
                 {!isAuthenticated && (
                     <NavItem href="/login" icon="IC-login" />

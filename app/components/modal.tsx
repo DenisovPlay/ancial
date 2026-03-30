@@ -130,7 +130,7 @@ export default function Modal({ isOpen, onClose, title, children, swipeable = tr
             </div>
         </div>
         {/* Контент с запретом на всплытие событий касания чтобы можно было скроллить контент без закрытия (полезно при длинном тексте) */}
-        <div className="p-3 overflow-y-auto pt-[72px]" onTouchStart={(e) => e.stopPropagation()}>
+        <div className="p-3 overflow-y-auto pt-[84px] lg:pt-[72px]" onTouchStart={(e) => e.stopPropagation()}>
           {children}
         </div>
       </div>

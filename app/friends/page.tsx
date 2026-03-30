@@ -213,7 +213,7 @@ function FriendsContent() {
             placeholder={lang?.friends_search || 'Поиск друзей...'} 
             autoComplete="off" 
           />
-          <button type="submit" className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700">
+          <button type="submit" className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700/50 border border-transparent hover:border-zinc-600/30">
             <svg className="inline w-8 h-8 fill-white" viewBox="0 0 48 48">
               <path d="M 20.5 6 C 12.509634 6 6 12.50964 6 20.5 C 6 28.49036 12.509634 35 20.5 35 C 23.956359 35 27.133709 33.779044 29.628906 31.75 L 39.439453 41.560547 A 1.50015 1.50015 0 1 0 41.560547 39.439453 L 31.75 29.628906 C 33.779044 27.133709 35 23.956357 35 20.5 C 35 12.50964 28.490366 6 20.5 6 z M 20.5 9 C 26.869047 9 32 14.130957 32 20.5 C 32 23.602612 30.776198 26.405717 28.791016 28.470703 A 1.50015 1.50015 0 0 0 28.470703 28.791016 C 26.405717 30.776199 23.602614 32 20.5 32 C 14.130953 32 9 26.869043 9 20.5 C 9 14.130957 14.130953 9 20.5 9 z" />
             </svg>
@@ -225,10 +225,9 @@ function FriendsContent() {
         <ul className="flex flex-col">
           {friends.length === 0 && !isLoading ? (
             <div className="w-full flex flex-col gap-0.5 justify-center items-center py-10 duration-300">
-              <img src="/includes/img/anlite/nothingfound.webp" className="w-48 lg:w-56" alt="Nothing found" />
-              <span className="text-base text-zinc-100 w-full text-center font-black">
-                {lang?.notification_empty}
-              </span>
+              <img src="/img/status/nothingfound.webp" className="w-48 lg:w-56" alt="Nothing found" />
+              <span className="text-base text-zinc-100 w-full text-center font-black">{lang?.nofriends}</span>
+              <span className="text-sm text-zinc-300 w-full text-center font-medium">{lang?.nosfriendsdesc}</span>
             </div>
           ) : (
             friends.map((friend, i) => (
@@ -269,7 +268,7 @@ function FriendsContent() {
                     {friend.isPending && friend.isIncoming && (
                       <div 
                         onClick={() => handleAction('add.php', 'frid', friend.friendId || friend.relation_id || '')}
-                        className="flex items-center px-1.5 hover:bg-zinc-700/50 duration-300 rounded-2xl cursor-pointer"
+                        className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
                           <path d="M 23.976562 4.9785156 A 1.50015 1.50015 0 0 0 22.5 6.5 L 22.5 22.5 L 6.5 22.5 A 1.50015 1.50015 0 1 0 6.5 25.5 L 22.5 25.5 L 22.5 41.5 A 1.50015 1.50015 0 1 0 25.5 41.5 L 25.5 25.5 L 41.5 25.5 A 1.50015 1.50015 0 1 0 41.5 22.5 L 25.5 22.5 L 25.5 6.5 A 1.50015 1.50015 0 0 0 23.976562 4.9785156 z" />
@@ -280,7 +279,7 @@ function FriendsContent() {
                     {friend.isPending && (
                       <div 
                         onClick={() => handleAction('delete.php', 'frid', friend.friendId || friend.relation_id || '')}
-                        className="flex items-center px-1.5 hover:bg-zinc-700/50 duration-300 rounded-2xl cursor-pointer"
+                        className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
                           <path d="M 39.486328 6.9785156 A 1.50015 1.50015 0 0 0 38.439453 7.4394531 L 24 21.878906 L 9.5605469 7.4394531 A 1.50015 1.50015 0 0 0 8.484375 6.984375 A 1.50015 1.50015 0 0 0 7.4394531 9.5605469 L 21.878906 24 L 7.4394531 38.439453 A 1.50015 1.50015 0 1 0 9.5605469 40.560547 L 24 26.121094 L 38.439453 40.560547 A 1.50015 1.50015 0 1 0 40.560547 38.439453 L 26.121094 24 L 40.560547 9.5605469 A 1.50015 1.50015 0 0 0 39.486328 6.9785156 z" />
@@ -291,7 +290,7 @@ function FriendsContent() {
                     {!friend.isPending && !searchQuery ? (
                       <div 
                         onClick={() => handleCreateDialog(friend.id)}
-                        className="flex items-center px-1.5 hover:bg-zinc-700/50 duration-300 rounded-2xl cursor-pointer"
+                        className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
                           <path d="M 10.5 7 C 6.9280619 7 4 9.9280619 4 13.5 L 4 30.5 C 4 34.071938 6.9280619 37 10.5 37 L 12 37 L 12 42.5 C 12 44.46599 14.427297 45.67893 16 44.5 L 26 37 L 37.5 37 C 41.071938 37 44 34.071938 44 30.5 L 44 13.5 C 44 9.9280619 41.071938 7 37.5 7 L 10.5 7 z M 10.5 10 L 37.5 10 C 39.450062 10 41 11.549938 41 13.5 L 41 30.5 C 41 32.450062 39.450062 34 37.5 34 L 25.5 34 A 1.50015 1.50015 0 0 0 24.599609 34.300781 L 15 41.5 L 15 35.5 A 1.50015 1.50015 0 0 0 13.5 34 L 10.5 34 C 8.5499381 34 7 32.450062 7 30.5 L 7 13.5 C 7 11.549938 8.5499381 10 10.5 10 z M 17 20 C 15.895 20 15 20.895 15 22 C 15 23.105 15.895 24 17 24 C 18.105 24 19 23.105 19 22 C 19 20.895 18.105 20 17 20 z M 24 20 C 22.895 20 22 20.895 22 22 C 22 23.105 22.895 24 24 24 C 25.105 24 26 23.105 26 22 C 26 20.895 25.105 20 24 20 z M 31 20 C 29.895 20 29 20.895 29 22 C 29 23.105 29.895 24 31 24 C 32.105 24 33 23.105 33 22 C 33 20.895 32.105 20 31 20 z" />
