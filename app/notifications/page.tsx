@@ -25,7 +25,15 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
     try {
-      setIsLoading(true);
+      // Сначала пытаемся достать из кеша
+      const cached = localStorage.getItem('notifications_cache');
+      if (cached) {
+        setNotifications(JSON.parse(cached));
+        setIsLoading(false); // Отключаем лоадер сразу, так как есть кеш
+      } else {
+        setIsLoading(true);
+      }
+
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       if (token) params.append('token', token);
@@ -35,7 +43,9 @@ export default function NotificationsPage() {
       const data = await res.json();
       
       if (data.status === 'success') {
-        setNotifications(data.notifications || []);
+        const notifs = data.notifications || [];
+        setNotifications(notifs);
+        localStorage.setItem('notifications_cache', JSON.stringify(notifs));
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -64,6 +74,7 @@ export default function NotificationsPage() {
         body: params.toString()
       });
       setNotifications([]);
+      localStorage.setItem('notifications_cache', JSON.stringify([]));
     } catch (error) {
       console.error('Error clearing notifications:', error);
     }

@@ -3,6 +3,7 @@
   import { useAuth } from '../context/AuthContext';
   import { useRouter } from 'next/navigation';
   import Link from 'next/link';
+  import Image from 'next/image';
 
   export default function Home() {
     const router = useRouter();
@@ -85,7 +86,16 @@
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">FancyBox v3</b> - модальные окна</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-blue-400">ImgBB</b> - хостинг картинок</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">Yandex</b>, <b className="text-blue-400">Telegram</b> - авторизация/верификация</span>
-          
+      </div>
+
+      <span className="w-full max-w-3xl text-xl font-bold px-3 lg:px-0 -my-3">Технологии</span>
+      <div className="max-w-3xl flex items-center gap-6 w-full flex-nowrap overflow-x-auto viewport py-3 px-3 lg:px-0">
+        <Image src="/img/branding/next.svg" alt="Next" width={256} height={64} className="invert"/>
+        <Image src="/img/branding/php.svg" alt="PHP" width={150} height={64} className="invert"/>
+        <Image src="/img/branding/vercel.svg" alt="Vercel" width={64} height={64} className=""/>
+        <Image src="/img/branding/vk-cloud.svg" alt="VK Cloud" width={256} height={64} className=""/>
+        <Image src="/img/branding/cloud-ru.svg" alt="Cloud.ru" width={264} height={64} className=""/>
+        <Image src="/img/branding/mysql.svg" alt="MySQL" width={150} height={64} className="-mt-8"/>
       </div>
 
       <span className="w-full max-w-3xl text-3xl font-extralight px-3 lg:px-0" x-text="lang?.history"></span>

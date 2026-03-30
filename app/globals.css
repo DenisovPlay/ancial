@@ -32,12 +32,13 @@ body {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
 .animate-page-enter {
-  animation: page-enter 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  /* Важно: не используем forwards, чтобы после завершения анимации все CSS свойства сбрасывались */
+  animation: page-enter 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* Утилита для скрытия нижнего паддинга навигации на определенных страницах */

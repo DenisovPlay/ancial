@@ -2,9 +2,9 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center w-full h-screen no-mobile-nav-padding no-pc-nav-padding">
+    <div className="flex flex-col items-center justify-center w-full h-screen no-mobile-nav-padding p-3">
       <video id="videobackground" autoPlay muted loop preload="none" playsInline className="z-[-1] hidden lg:flex absolute inset-0 w-full h-full object-cover opacity-50" src="/img/backgrounds/ygX.mp4" ></video>
-      <img alt="Background" id="imagebackground" className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 lg:hidden" src="/img/backgrounds/bg.webp"></img>
+      <Image src="/img/backgrounds/bg.webp" fill alt="Background" className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 lg:hidden" />
       <div className="bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-3xl w-full max-w-screen-md p-3 flex items-center gap-3 shadow -mb-10">
         <div className="flex flex-col w-full">
             <span className="text-lg lg:text-2xl font-bold">Привет, Product Radar!</span>

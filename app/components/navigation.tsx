@@ -11,7 +11,7 @@ const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, ico
   
   const className = `w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 active:scale-95 ${
     active
-      ? "bg-zinc-700/90 border-zinc-500"
+      ? "bg-zinc-700/90 border-zinc-600/30"
       : "hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30"
   }`;
 
