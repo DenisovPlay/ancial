@@ -14,7 +14,6 @@ import {
   StickersIcon,
   PollIcon,
   SvgIcon,
-  buildApiUrl,
   cn,
   decodeHtmlEntities,
   makeId,
@@ -172,7 +171,7 @@ export default function CreatePostContent() {
 
     const loadAuthors = async () => {
       try {
-        const response = await fetch(buildApiUrl('/api/posts/available_authors.php'), {
+        const response = await fetch(`/api/posts/available_authors.php`, {
           cache: 'no-store',
           credentials: 'include',
           signal: controller.signal,
@@ -330,7 +329,7 @@ export default function CreatePostContent() {
         photosurls: uploadedImages,
       });
 
-      const response = await fetch(buildApiUrl(`/api/posts/create.php?${searchParams.toString()}`), {
+      const response = await fetch(`/api/posts/create.php?${searchParams.toString()}`, {
         body: body.toString(),
         cache: 'no-store',
         credentials: 'include',

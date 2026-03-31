@@ -56,10 +56,6 @@ function trimTrailingSlash(value: string) {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
-function getApiBaseUrl() {
-  return trimTrailingSlash(process.env.NEXT_PUBLIC_API_URL || 'https://ancial.ru');
-}
-
 type ProfilePageProps = {
   params: Promise<{
     login: string;
@@ -71,7 +67,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 
   try {
     const response = await fetch(
-      `${getApiBaseUrl()}/api/user/get_user_page.php?login=${encodeURIComponent(login)}`,
+      `/api/user/get_user_page.php?login=${encodeURIComponent(login)}`,
       {
         cache: 'no-store',
         credentials: 'include',

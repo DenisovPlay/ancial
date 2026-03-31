@@ -48,10 +48,6 @@ function trimTrailingSlash(value: string) {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
-function getApiBaseUrl() {
-  return trimTrailingSlash(process.env.NEXT_PUBLIC_API_URL || 'https://ancial.ru');
-}
-
 type GroupPageProps = {
   params: Promise<{
     link: string;
@@ -63,7 +59,7 @@ export async function generateMetadata({ params }: GroupPageProps): Promise<Meta
 
   try {
     const response = await fetch(
-      `${getApiBaseUrl()}/api/group/get_group_page.php?link=${encodeURIComponent(link)}`,
+      `/api/group/get_group_page.php?link=${encodeURIComponent(link)}`,
       {
         cache: 'no-store',
         credentials: 'include',

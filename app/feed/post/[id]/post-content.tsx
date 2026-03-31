@@ -52,13 +52,8 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(nextValue) ? nextValue : 0;
 }
 
-function buildApiUrl(path: string) {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-  return `${apiBase}${path}`;
-}
-
 async function apiJson<T>(path: string, init?: RequestInit) {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetch(path, {
     cache: 'no-store',
     credentials: 'include',
     ...init,
@@ -72,7 +67,7 @@ async function apiJson<T>(path: string, init?: RequestInit) {
 }
 
 async function apiText(path: string, init?: RequestInit) {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetch(path, {
     cache: 'no-store',
     credentials: 'include',
     ...init,

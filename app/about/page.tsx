@@ -4,10 +4,15 @@
   import { useRouter } from 'next/navigation';
   import Link from 'next/link';
   import Image from 'next/image';
+  import { useDragScroll } from '../hooks/useDragScroll';
 
   export default function Home() {
     const router = useRouter();
     const { user, isAuthenticated, lang, updateLang } = useAuth() as any;
+
+    const navScrollRef = useDragScroll({ speed: 2 });
+    const iconsScrollRef = useDragScroll({ speed: 2 });
+    const techScrollRef = useDragScroll({ speed: 2 });
 
     return (
   <div className="flex flex-col jusitify-center items-center gap-3 py-3">
@@ -22,7 +27,7 @@
           </div>
       </div>
       
-      <div className="flex gap-3 flex-nowrap overflow-x-auto viewport px-3 lg:px-0 w-full max-w-3xl sticky top-0 py-3 -my-3 bg-gradient-to-b from-black via-black/90 to-transparent dragscroll z-40">
+      <div ref={navScrollRef} className="drag-scroll overflow-x-auto viewport px-3 lg:px-0 w-full max-w-3xl sticky top-0 py-3 -my-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40 flex flex-nowrap">
           
           <Link href="/about/legal/" className="text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full">
               {lang?.documents}
@@ -38,7 +43,7 @@
       
       <div className="flex flex-col w-full max-w-3xl">
           <span className="w-full max-w-3xl text-lg text-zinc-300 px-3 lg:px-0">Ancial by ZeniFlow - это уникальный проект, объединяющий в себе множество полезных сервисов.</span>
-          <div className="flex items-center gap-3 w-full flex-nowrap overflow-x-auto viewport py-3 px-3 lg:px-0">
+          <div className="flex items-center gap-3 w-full flex-nowrap overflow-x-auto drag-scroll viewport py-3 px-3 lg:px-0" ref={iconsScrollRef}>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-indigo-500 flex items-center justify-center shrink-0">
                   <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-feed`}></use></svg>
               </div>
@@ -89,7 +94,7 @@
       </div>
 
       <span className="w-full max-w-3xl text-xl font-bold px-3 lg:px-0 -my-3">Технологии</span>
-      <div className="max-w-3xl flex items-center gap-6 w-full flex-nowrap overflow-x-auto viewport py-3 px-3 lg:px-0">
+      <div className="max-w-3xl flex items-center gap-6 w-full flex-nowrap overflow-x-auto drag-scroll viewport py-3 px-3 lg:px-0" ref={techScrollRef}>
         <Image src="/img/branding/next.svg" alt="Next" width={256} height={64} className="invert"/>
         <Image src="/img/branding/php.svg" alt="PHP" width={150} height={64} className="invert"/>
         <Image src="/img/branding/vercel.svg" alt="Vercel" width={64} height={64} className=""/>

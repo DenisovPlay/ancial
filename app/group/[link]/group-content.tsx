@@ -12,8 +12,8 @@ import PostsRenderer, {
 } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useDragScroll } from '../../hooks/useDragScroll';
 import {
-  buildApiUrl,
   cn,
   SvgIcon,
   uploadImageToImgbb,
@@ -160,7 +160,7 @@ function sanitizeGroupLink(value: string) {
 }
 
 async function apiJson<T>(path: string, init?: RequestInit) {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetch(path, {
     cache: 'no-store',
     credentials: 'include',
     ...init,
@@ -174,7 +174,7 @@ async function apiJson<T>(path: string, init?: RequestInit) {
 }
 
 async function apiText(path: string, init?: RequestInit) {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetch(path, {
     cache: 'no-store',
     credentials: 'include',
     ...init,
@@ -293,8 +293,8 @@ function UserMiniCard({
     >
       <div
         className={cn(
-          'w-16 h-16 rounded-full shadow duration-300 border-2 border-transparent group-hover:border-purple-500 bg-cover bg-center',
-          isOnline && 'ring-2 ring-lime-500 ring-offset-2 ring-offset-zinc-900',
+          'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
+          isOnline && 'border-lime-500', !isOnline && 'border-transparent',
         )}
         style={{ backgroundImage: `url('${image}')` }}
       />
@@ -338,6 +338,8 @@ function PeopleSection({
   onOpen: () => void;
   title: string;
 }) {
+  const scrollRef = useDragScroll({ speed: 2 });
+
   return (
     <div
       className={cn(
@@ -354,8 +356,8 @@ function PeopleSection({
           {title} {'->'}
         </span>
       </button>
-      <div className="w-full px-3 mb-3 overflow-x-auto flex md:rounded-2xl">
-        <div className="flex flex-row flex-nowrap gap-3 justify-center items-center">{children}</div>
+      <div ref={scrollRef} className="drag-scroll overflow-x-auto viewport w-full px-3 mb-3 flex flex-nowrap md:rounded-2xl">
+        <div className="flex flex-row flex-nowrap gap-3 justify-center items-center flex-shrink-0">{children}</div>
       </div>
     </div>
   );
@@ -390,8 +392,8 @@ function RelationGridModal({
               <div className="flex items-center justify-center overflow-hidden rounded-full max-w-16">
                 <div
                   className={cn(
-                    'rounded-full w-16 h-16 shadow shrink-0 bg-center bg-cover',
-                    flag(user.online) && 'ring-2 ring-lime-500 ring-offset-2 ring-offset-zinc-900',
+                    'rounded-full w-16 h-16 shadow shrink-0 bg-center bg-cover border-2',
+                    flag(user.online) && 'border-lime-500', !flag(user.online) && 'border-transparent',
                   )}
                   style={{
                     backgroundImage: `url('${user.img || 'https://ancial.ru/includes/img/new_user.png'}')`,
@@ -556,6 +558,9 @@ export default function GroupProfileContent({ link }: { link: string }) {
     name: '',
     slnk: '',
   });
+
+  const subscribersScrollRef = useDragScroll({ speed: 2 });
+  const officialGroupsScrollRef = useDragScroll({ speed: 2 });
 
   const groupCacheKey = useMemo(
     () => getGroupProfileCacheKey(link, user?.id, isAuthenticated),
@@ -1343,7 +1348,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         params.append('token', token);
       }
 
-      const response = await fetch(buildApiUrl(`/api/group/updateinfo.php?${params.toString()}`), {
+      const response = await fetch(`/api/group/updateinfo.php?${params.toString()}`, {
         credentials: 'include',
       });
 
@@ -1403,7 +1408,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         params.append('token', token);
       }
 
-      const response = await fetch(buildApiUrl('/api/group/updateinfo.php'), {
+      const response = await fetch('/api/group/updateinfo.php', {
         body: params.toString(),
         credentials: 'include',
         headers: {
@@ -1502,7 +1507,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
             <div className="relative group flex">
               {isAuthenticated && flag(groupData.is_creator) ? (
                 <ProfileMediaButton
-                  className="absolute top-3 right-3 h-8 w-8 z-[20]"
+                  className="absolute top-3 right-3 h-8 w-8 opacity-0 group-hover:opacity-100 duration-300 z-[20]"
                   onClick={() => setIsCoverModalOpen(true)}
                 />
               ) : null}
@@ -1522,7 +1527,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                 <div className="group relative shrink-0">
                   {flag(groupData.is_creator) ? (
                     <ProfileMediaButton
-                      className="absolute -top-3 -right-3 w-8 h-8"
+                      className="absolute -top-3 -right-3 w-8 h-8 opacity-0 group-hover:opacity-100 duration-300 z-[20]"
                       onClick={() => setIsPhotoModalOpen(true)}
                     />
                   ) : null}
@@ -1666,8 +1671,8 @@ export default function GroupProfileContent({ link }: { link: string }) {
                       {strings.officialgroups}
                     </span>
                   </div>
-                  <div className="w-full px-3 mb-3 overflow-x-auto flex md:rounded-2xl">
-                    <div className="flex flex-row flex-nowrap gap-3 justify-center items-center">
+                  <div ref={officialGroupsScrollRef} className="drag-scroll overflow-x-auto viewport w-full px-3 mb-3 flex flex-nowrap md:rounded-2xl">
+                    <div className="flex flex-row flex-nowrap gap-3 justify-center items-center flex-shrink-0">
                       {(groupData.official_groups || []).map((officialGroup) => (
                         <GroupMiniCard
                           key={String(officialGroup.id)}

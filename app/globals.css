@@ -58,3 +58,56 @@ body:has(.no-mobile-nav-padding) #main-content {
   -webkit-line-clamp: 8;
   overflow: hidden;
 }
+
+/* Drag-to-scroll для десктопа */
+.drag-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drag-scroll.dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+
+/* Viewport ограничивает видимую область и скрывает скроллбары */
+.drag-scroll.viewport {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.drag-scroll.viewport::-webkit-scrollbar {
+  display: none;
+}
+
+/* Скрытие скроллбара для всех drag-scroll */
+.drag-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.drag-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Отключаем drag-scroll на мобильных */
+@media (max-width: 768px) {
+  .drag-scroll {
+    cursor: default;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .drag-scroll.dragging {
+    cursor: default;
+  }
+
+  .drag-scroll.dragging * {
+    pointer-events: auto;
+  }
+}

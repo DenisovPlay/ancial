@@ -33,9 +33,8 @@ export default function LoginPage() {
       params.append('login', login);
       params.append('password', password);
 
-      const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/auth/login.php`, {
+      const res = await fetch(`/api/auth/login.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

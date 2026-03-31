@@ -11,14 +11,13 @@ export default function SettingsPage() {
   const selectLanguage = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedLang = e.target.value;
     try {
-      const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
       const token = localStorage.getItem('token');
       
       const searchParams = new URLSearchParams();
       searchParams.append('lang', selectedLang);
       if (token) searchParams.append('token', token);
 
-      const url = `${NEXT_PUBLIC_API_URL}/api/user/change_lang.php?${searchParams.toString()}`;
+      const url = `/api/user/change_lang.php?${searchParams.toString()}`;
 
       const res = await fetch(url);
       

@@ -17,10 +17,6 @@ function trimTrailingSlash(value: string) {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
-function getApiBaseUrl() {
-  return trimTrailingSlash(process.env.NEXT_PUBLIC_API_URL || 'https://ancial.ru');
-}
-
 function htmlToText(value: string | null | undefined) {
   return (value ?? '')
     .replace(/<br\s*\/?>/gi, ' ')
@@ -44,7 +40,7 @@ export async function generateMetadata({ params }: SinglePostPageProps): Promise
   const { id } = await params;
 
   try {
-    const response = await fetch(`${getApiBaseUrl()}/api/posts/get_post.php?id=${id}`, {
+    const response = await fetch(`/api/posts/get_post.php?id=${id}`, {
       cache: 'no-store',
       credentials: 'include',
     });

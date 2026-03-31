@@ -64,10 +64,9 @@ function GroupsContent() {
       }
 
       setErrorMsg('');
-      const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
       const token = localStorage.getItem('token');
       
-      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/user/groups.php?q=${encodeURIComponent(searchQuery)}${token ? `&token=${token}` : ''}`);
+      const res = await fetch(`/api/user/groups.php?q=${encodeURIComponent(searchQuery)}${token ? `&token=${token}` : ''}`);
       const data = await res.json();
 
       if (data.success || Array.isArray(data.groups)) {
@@ -114,8 +113,7 @@ function GroupsContent() {
         params.append('token', token);
       }
 
-      const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/group/create.php`, {
+      const res = await fetch(`/api/group/create.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'

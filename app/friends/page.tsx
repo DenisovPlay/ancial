@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
+import { useDragScroll } from '../hooks/useDragScroll';
 
 interface Friend {
   id: string;
@@ -94,8 +95,7 @@ function FriendsContent() {
       if (token) params.append('token', token);
       if (searchQuery) params.append('q', searchQuery);
 
-      const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/user/friends.php?${params.toString()}`);
+      const res = await fetch(`/api/user/friends.php?${params.toString()}`);
       const data = await res.json();
       
       if (data.success) {
@@ -131,10 +131,9 @@ function FriendsContent() {
   const handleCreateDialog = async (userId: string) => {
     try {
       const token = localStorage.getItem('token') || '';
-      const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
       const params = new URLSearchParams({ token, withu: userId });
       
-      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/messages/createdialog.php`, {
+      const res = await fetch(`/api/messages/createdialog.php`, {
         method: "POST",
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString()
@@ -155,9 +154,8 @@ function FriendsContent() {
   const handleAction = async (endpoint: string, paramName: string, id: string) => {
     try {
       const token = localStorage.getItem('token') || '';
-      const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
       
-      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/friends/${endpoint}?${paramName}=${id}&token=${token}`);
+      const res = await fetch(`/api/friends/${endpoint}?${paramName}=${id}&token=${token}`);
       const text = await res.text();
       
       // Временно alert, заменить на нормальные тосты
@@ -245,7 +243,7 @@ function FriendsContent() {
                     <img 
                       src={friend.img || '/includes/img/anlite/default_avatar.png'} 
                       loading="lazy"
-                      className={`shadow w-16 h-16 rounded-full object-cover shrink-0 ${onlineUsers[friend.id] || friend.isOnline ? 'ring ring-lime-500 ring-offset-2 ring-offset-black' : ''}`}
+                      className={`shadow w-16 h-16 rounded-full object-cover shrink-0 border ${onlineUsers[friend.id] || friend.isOnline ? 'border-lime-500' : 'border-transparent'}`}
                       alt={`${friend.fname} ${friend.lname}`} 
                     />
                   </div>

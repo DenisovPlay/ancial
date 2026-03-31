@@ -14,7 +14,6 @@ import {
   StickersIcon,
   PollIcon,
   SvgIcon,
-  buildApiUrl,
   cn,
   decodeHtmlEntities,
   decodeHtmlToTextareaValue,
@@ -227,7 +226,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       setError(null);
 
       try {
-        const response = await fetch(buildApiUrl(`/api/posts/get_post.php?id=${encodeURIComponent(postId)}`), {
+        const response = await fetch(`/api/posts/get_post.php?id=${encodeURIComponent(postId)}`, {
           cache: 'no-store',
           credentials: 'include',
           signal: controller.signal,
@@ -394,7 +393,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         title,
       });
 
-      const response = await fetch(buildApiUrl('/api/posts/edit.php'), {
+      const response = await fetch('/api/posts/edit.php', {
         body: body.toString(),
         cache: 'no-store',
         credentials: 'include',
@@ -465,7 +464,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       <div className="w-full max-w-3xl">
         <button
           type="button"
-          onClick={() => router.push('/feed')}
+          onClick={() => router.back()}
           className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"
         >
           <SvgIcon className="w-8 h-8 fill-white inline" id="IC-chevron-left" />

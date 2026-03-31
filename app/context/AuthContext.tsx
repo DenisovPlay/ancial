@@ -16,6 +16,9 @@ export interface User {
   active?: string;
   status?: string;
   verify?: string;
+  country?: string;
+  city?: string;
+  address?: string;
 }
 
 interface AuthContextType {
@@ -38,8 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateLang = async () => {
     try {
-      const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/info/lang.php`);
+      const res = await fetch(`/api/info/lang.php`);
       const data = await res.json();
       setLang(data);
     } catch (error) {
@@ -49,11 +51,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkAuth = async () => {
     setIsLoading(true);
-    const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
     try {
       // 1. Проверяем текущую сессию на сервере
-      const checkRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/auth/check.php`);
+      const checkRes = await fetch(`/api/auth/check.php`);
       let checkData;
       try {
         checkData = await checkRes.json();
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           params.append('do_login', 'True');
           params.append('token', token);
 
-          const loginRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/auth/login.php`, {
+          const loginRes = await fetch(`/api/auth/login.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: params.toString()
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.log('[Auth] Авторизован через токен. Обновляем данные.');
             
             // Если вошли по токену (сессия установлена) - получаем подробные данные
-            const infoRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/user/info.php?token=${token}`);
+            const infoRes = await fetch(`/api/user/info.php?token=${token}`);
             const infoData = await infoRes.json();
 
             if (infoData.status === 'success') {
@@ -125,15 +125,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const logout = async () => {
-    const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-    
     // Удаляем токен из локального хранилища
     localStorage.removeItem('token');
     
     try {
       // ОБЯЗАТЕЛЬНО убиваем сессию на сервере (PHP cookie), 
       // иначе check.php будет продолжать возвращать auth: true
-      await fetch(`${NEXT_PUBLIC_API_URL}/api/auth/logout.php`);
+      await fetch(`/api/auth/logout.php`);
     } catch (e) {
       console.error('Ошибка при логауте на сервере', e);
     }

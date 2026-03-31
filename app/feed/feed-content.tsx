@@ -12,6 +12,7 @@ import PostsRenderer, {
 } from '../components/posts-renderer';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { useDragScroll } from '../hooks/useDragScroll';
 import FeedPostSkeleton from './feed-post-skeleton';
 
 type Id = string | number;
@@ -67,11 +68,6 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(nextValue) ? nextValue : 0;
 }
 
-function buildApiUrl(path: string) {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-  return `${apiBase}${path}`;
-}
-
 function getFeedCacheKey(
   topic: string | null,
   userId: string | null | undefined,
@@ -114,7 +110,7 @@ function writeFeedCache(key: string, value: FeedCacheEntry) {
 }
 
 async function apiJson<T>(path: string, init?: RequestInit) {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetch(path, {
     cache: 'no-store',
     credentials: 'include',
     ...init,
@@ -128,7 +124,7 @@ async function apiJson<T>(path: string, init?: RequestInit) {
 }
 
 async function apiText(path: string, init?: RequestInit) {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetch(path, {
     cache: 'no-store',
     credentials: 'include',
     ...init,
@@ -355,7 +351,7 @@ export default function FeedContent() {
   const { showNote } = useNotification();
 
   const topic = searchParams.get('topic');
-  const topicButtonsRef = useRef<HTMLDivElement | null>(null);
+  const topicButtonsRef = useDragScroll({ speed: 2 });
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const loadPostsRef = useRef<
@@ -1178,9 +1174,9 @@ export default function FeedContent() {
         <div
           id="topic-buttons"
           ref={topicButtonsRef}
-          className="overflow-auto p-3 md:px-0 flex viewport dragscroll rounded-b-xl duration-300 w-full"
+          className="drag-scroll overflow-x-auto p-3 md:px-0 flex flex-nowrap viewport rounded-b-xl duration-300 w-full"
         >
-          <div className="flex flex-row flex-nowrap gap-3">
+          <div className="flex flex-row flex-nowrap gap-3 flex-shrink-0">
             {isAuthenticated && (
               <div
                 onClick={() => router.push('/feed/create')}
