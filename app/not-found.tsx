@@ -35,7 +35,7 @@ export default function NotFound() {
   }, [router]);
 
   return (
-    <div className="flex min-h-[80vh] w-full flex-col items-center justify-center">
+    <div className="flex min-h-[100vh] w-full flex-col items-center justify-center">
       <span className="error-code">404</span>
       <span className="text-3xl font-bold text-white">{lang?.pagenotfound}</span>
       <span className="text-xl text-zinc-300">{lang?.pagenotfoundredir}</span>
