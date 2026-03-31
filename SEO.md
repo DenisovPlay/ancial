@@ -224,6 +224,34 @@ robots: {
 - [Rich Results Test](https://search.google.com/test/rich-results)
 - [Open Graph Debugger](https://developers.facebook.com/tools/debug/)
 
+## PWA (Progressive Web App)
+
+Проект поддерживает установку как PWA. Манифест находится в `app/manifest.ts`.
+
+### Проверка PWA
+
+1. Откройте Chrome DevTools → **Application** → **Manifest**
+2. Проверьте, что все поля заполнены
+3. Проверьте иконки в разделе **Manifest** → **Icons**
+4. Протестируйте установку (иконка установки в адресной строке)
+
+### Необходимые файлы
+
+Для корректной работы PWA добавьте в `/public/includes/img/`:
+
+- `icon-192.png` (192×192px)
+- `icon-512.png` (512×512px)
+- `401anlogo.png` (401×401px)
+- `screenshots/1.png`, `screenshots/2.png`, `screenshots/3.png`
+
+### Обновление manifest
+
+Отредактируйте `app/manifest.ts` для изменения:
+- Названия приложения
+- Цветов темы
+- Иконок и скриншотов
+- Других параметров PWA
+
 ## Обновление OG-изображений
 
 Замените файл `/public/img/og/og-image.jpg` на актуальное изображение (1200×630px).
