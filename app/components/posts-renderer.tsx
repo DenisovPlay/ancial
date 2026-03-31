@@ -588,7 +588,7 @@ function PostCardInner({
                   image={images[0]}
                   blur={flag(images[0].blur)}
                   onClick={() => handleOpenImage(0)}
-                  className="h-64 md:h-96 w-full rounded-3xl"
+                  className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0"
                 />
               </div>
             )}
@@ -613,7 +613,7 @@ function PostCardInner({
                           image={image}
                           blur={flag(image.blur)}
                           onClick={() => handleOpenImage(index)}
-                          className="h-64 md:h-96 w-full rounded-3xl"
+                          className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0"
                         />
                       </div>
                     ))}
@@ -721,7 +721,7 @@ function PostCardInner({
       </div>
 
       {showAd && (
-        <div className="w-full overflow-hidden max-h-64 lg:max-h-64 rounded-3xl">
+        <div className="hidden w-full overflow-hidden max-h-64 lg:max-h-64 rounded-3xl">
           <YandexRtb blockId="R-A-3636730-10" className="w-full rounded-3xl min-h-24" />
         </div>
       )}

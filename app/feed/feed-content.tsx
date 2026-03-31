@@ -12,6 +12,7 @@ import PostsRenderer, {
 } from '../components/posts-renderer';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import FeedPostSkeleton from './feed-post-skeleton';
 
 type Id = string | number;
 
@@ -47,6 +48,12 @@ interface TopicConfig {
   value: string;
 }
 
+interface FeedCacheEntry {
+  currentLastId: Id;
+  hasMorePages: boolean;
+  posts: PostData[];
+}
+
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
@@ -63,6 +70,47 @@ function toNumber(value: number | string | null | undefined) {
 function buildApiUrl(path: string) {
   const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
   return `${apiBase}${path}`;
+}
+
+function getFeedCacheKey(
+  topic: string | null,
+  userId: string | null | undefined,
+  isAuthenticated: boolean,
+) {
+  const scope = topic === null ? '__my__' : topic;
+  const viewer = isAuthenticated ? `user-${userId ?? 'auth'}` : 'guest';
+  return `feed_cache:${viewer}:${scope}`;
+}
+
+function readFeedCache(key: string): FeedCacheEntry | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const cached = window.localStorage.getItem(key);
+    if (!cached) return null;
+
+    const parsed = JSON.parse(cached) as Partial<FeedCacheEntry>;
+    if (!Array.isArray(parsed.posts)) return null;
+
+    return {
+      currentLastId: parsed.currentLastId ?? 0,
+      hasMorePages: typeof parsed.hasMorePages === 'boolean' ? parsed.hasMorePages : true,
+      posts: parsed.posts,
+    };
+  } catch (error) {
+    console.error('Failed to read feed cache', error);
+    return null;
+  }
+}
+
+function writeFeedCache(key: string, value: FeedCacheEntry) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error('Failed to write feed cache', error);
+  }
 }
 
 async function apiJson<T>(path: string, init?: RequestInit) {
@@ -116,23 +164,6 @@ function VerifyIcon() {
     >
       <path d="M 19.117188 5.0097656 C 17.966069 5.0248122 16.843416 5.649605 16.279297 6.7402344 L 14.910156 9.3867188 C 14.870216 9.4640098 14.795234 9.5079874 14.707031 9.5039062 L 11.730469 9.3671875 L 11.728516 9.3671875 C 9.8600154 9.2815038 8.2783586 10.861716 8.3652344 12.730469 L 8.5039062 15.707031 C 8.5080763 15.797231 8.4651861 15.871559 8.3867188 15.912109 L 5.7402344 17.279297 A 1.50015 1.50015 0 0 0 5.7382812 17.279297 C 4.0775961 18.139227 3.4980775 20.29937 4.5078125 21.875 L 6.1152344 24.382812 C 6.1632214 24.457712 6.1632214 24.544244 6.1152344 24.619141 L 4.5078125 27.126953 C 3.4985264 28.701883 4.0763699 30.863047 5.7382812 31.722656 A 1.50015 1.50015 0 0 0 5.7402344 31.722656 L 8.3867188 33.089844 C 8.4640098 33.129784 8.5079873 33.206719 8.5039062 33.294922 L 8.3652344 36.271484 C 8.2783274 38.140905 9.8610476 39.721672 11.730469 39.634766 L 14.707031 39.498047 C 14.797231 39.493847 14.869606 39.536767 14.910156 39.615234 L 16.279297 42.261719 A 1.50015 1.50015 0 0 0 16.279297 42.263672 C 17.139227 43.924354 19.297416 44.501922 20.873047 43.492188 L 23.382812 41.884766 C 23.457712 41.836776 23.542291 41.836776 23.617188 41.884766 L 26.126953 43.492188 C 27.701883 44.501474 29.861094 43.92363 30.720703 42.261719 L 32.089844 39.615234 C 32.129784 39.537944 32.204766 39.493966 32.292969 39.498047 L 35.271484 39.634766 C 37.140031 39.720446 38.721641 38.140237 38.634766 36.271484 L 38.496094 33.294922 C 38.491894 33.204722 38.534814 33.130394 38.613281 33.089844 L 41.259766 31.722656 A 1.50015 1.50015 0 0 0 41.261719 31.722656 C 42.922401 30.862726 43.501922 28.702584 42.492188 27.126953 L 40.884766 24.619141 C 40.836776 24.544241 40.836776 24.457709 40.884766 24.382812 L 42.492188 21.875 C 43.501474 20.30007 42.92363 18.138906 41.261719 17.279297 A 1.50015 1.50015 0 0 0 41.259766 17.279297 L 38.613281 15.912109 C 38.535991 15.872169 38.492013 15.795234 38.496094 15.707031 L 38.634766 12.730469 C 38.721636 10.861716 37.140031 9.2815038 35.271484 9.3671875 L 35.269531 9.3671875 L 32.292969 9.5039062 C 32.202769 9.5080763 32.130394 9.4651861 32.089844 9.3867188 L 30.720703 6.7402344 C 29.860773 5.0795523 27.702584 4.5000306 26.126953 5.5097656 L 23.617188 7.1171875 C 23.542288 7.1651745 23.45771 7.1651745 23.382812 7.1171875 L 20.873047 5.5097656 C 20.479314 5.2574441 20.048746 5.1027764 19.611328 5.0410156 C 19.447297 5.0178554 19.281633 5.0076161 19.117188 5.0097656 z M 19.076172 7.9941406 C 19.128876 7.9803047 19.189371 7.9937992 19.253906 8.0351562 L 21.763672 9.6425781 C 22.818775 10.318591 24.181225 10.318591 25.236328 9.6425781 L 27.746094 8.0351562 C 27.874463 7.9528913 27.986571 7.9838236 28.056641 8.1191406 L 29.423828 10.765625 C 29.999525 11.878386 31.180326 12.559763 32.431641 12.501953 L 35.410156 12.363281 C 35.562735 12.356181 35.643812 12.439221 35.636719 12.591797 L 35.5 15.568359 C 35.44208 16.820157 36.121619 18.000114 37.236328 18.576172 L 39.882812 19.945312 C 40.016877 20.015773 40.049034 20.127542 39.966797 20.255859 L 38.357422 22.763672 A 1.50015 1.50015 0 0 0 38.357422 22.765625 C 37.681409 23.820728 37.681409 25.181225 38.357422 26.236328 A 1.50015 1.50015 0 0 0 38.357422 26.238281 L 39.966797 28.746094 C 40.048587 28.873715 40.016122 28.98648 39.882812 29.056641 L 37.236328 30.425781 C 36.122795 31.001231 35.442167 32.181791 35.5 33.433594 L 35.636719 36.410156 C 35.643819 36.562735 35.562739 36.645765 35.410156 36.638672 L 32.431641 36.5 C 31.179843 36.44208 29.999886 37.123572 29.423828 38.238281 L 28.056641 40.884766 C 27.986251 41.020854 27.875164 41.049512 27.746094 40.966797 L 25.236328 39.359375 C 24.181225 38.683362 22.818775 38.683362 21.763672 39.359375 L 19.253906 40.966797 C 19.125537 41.049057 19.013429 41.018122 18.943359 40.882812 L 17.576172 38.238281 C 17.000722 37.124749 15.820162 36.442167 14.568359 36.5 L 11.589844 36.638672 C 11.437265 36.645772 11.356188 36.562732 11.363281 36.410156 L 11.5 33.433594 C 11.55792 32.181796 10.878381 31.001839 9.7636719 30.425781 L 7.1171875 29.056641 C 6.9831238 28.98618 6.9509714 28.874411 7.0332031 28.746094 L 8.6425781 26.238281 A 1.50015 1.50015 0 0 0 8.6425781 26.236328 C 9.3185911 25.181225 9.3185911 23.820728 8.6425781 22.765625 A 1.50015 1.50015 0 0 0 8.6425781 22.763672 L 7.0332031 20.255859 C 6.9514181 20.128238 6.9838705 20.015473 7.1171875 19.945312 L 9.7636719 18.576172 C 10.877205 18.000816 11.557833 16.820162 11.5 15.568359 L 11.363281 12.591797 C 11.356181 12.439218 11.437261 12.356188 11.589844 12.363281 L 14.568359 12.501953 C 15.819669 12.559853 16.999868 11.879561 17.576172 10.765625 L 17.576172 10.763672 L 18.943359 8.1171875 C 18.978554 8.0491432 19.023468 8.0079766 19.076172 7.9941406 z M 31.28125 17.988281 A 1.50015 1.50015 0 0 0 30.34375 18.289062 C 27.039034 20.710403 24.034498 23.748337 21.240234 27.203125 C 19.921503 25.633951 18.557285 24.247502 17.060547 23.251953 A 1.50015 1.50015 0 1 0 15.398438 25.748047 C 16.957756 26.785221 18.498201 28.340758 20.025391 30.394531 A 1.50015 1.50015 0 0 0 22.425781 30.404297 C 25.375009 26.507068 28.605658 23.283807 32.117188 20.710938 A 1.50015 1.50015 0 0 0 31.28125 17.988281 z"></path>
     </svg>
-  );
-}
-
-function FeedPostSkeleton() {
-  return (
-    <div className="loading-skeleton border border-zinc-600/30 p-3 duration-300 rounded-3xl bg-zinc-900 flex flex-col w-full shadow gap-1.5">
-      <div className="flex items-center gap-1.5">
-        <div className="w-10 h-10 rounded-2xl shadow animate-pulse bg-zinc-700"></div>
-        <div className="flex flex-col gap-1">
-          <span className="bg-zinc-700 animate-pulse rounded-md h-5 w-16"></span>
-          <span className="bg-zinc-700 animate-pulse rounded-md h-4 w-12"></span>
-        </div>
-      </div>
-      <div className="bg-zinc-700 animate-pulse h-8 w-32 rounded-md"></div>
-      <div className="bg-zinc-700 animate-pulse h-6 w-64 rounded-md"></div>
-      <div className="animate-pulse bg-zinc-700 h-5 w-56 rounded-md"></div>
-    </div>
   );
 }
 
@@ -327,7 +358,15 @@ export default function FeedContent() {
   const topicButtonsRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const loadPostsRef = useRef<(lastId: Id, append?: boolean) => Promise<void>>(async () => {});
+  const loadPostsRef = useRef<
+    (
+      lastId: Id,
+      append?: boolean,
+      options?: {
+        preserveExisting?: boolean;
+      },
+    ) => Promise<void>
+  >(async () => {});
   const requestCounterRef = useRef(0);
   const currentLastIdRef = useRef<Id>(0);
   const hasMorePagesRef = useRef(true);
@@ -664,25 +703,36 @@ export default function FeedContent() {
     }
   };
 
-  const loadPosts = async (lastId: Id, append = false) => {
+  const loadPosts = async (
+    lastId: Id,
+    append = false,
+    options?: {
+      preserveExisting?: boolean;
+    },
+  ) => {
     abortRef.current?.abort();
 
     const controller = new AbortController();
     abortRef.current = controller;
 
     const requestedTopic = topic;
+    const cacheKey = getFeedCacheKey(requestedTopic, user?.id, isAuthenticated);
     const nextRequestId = ++requestCounterRef.current;
 
     setErrorMessage('');
     if (append) {
       setIsLoadingMore(true);
     } else {
-      setIsInitialLoading(true);
-      setPosts([]);
-      setHasMorePages(true);
-      setCurrentLastId(0);
-      currentLastIdRef.current = 0;
-      hasMorePagesRef.current = true;
+      const preserveExisting = options?.preserveExisting ?? false;
+
+      setIsInitialLoading(!preserveExisting);
+      if (!preserveExisting) {
+        setPosts([]);
+        setHasMorePages(true);
+        setCurrentLastId(0);
+        currentLastIdRef.current = 0;
+        hasMorePagesRef.current = true;
+      }
     }
 
     try {
@@ -700,16 +750,30 @@ export default function FeedContent() {
       const nextPosts = Array.isArray(response.posts) ? response.posts : [];
 
       if (nextPosts.length > 0) {
-        setPosts((currentPosts) => (append ? [...currentPosts, ...nextPosts] : nextPosts));
-        setCurrentLastId(response.last_id ?? lastId);
-        currentLastIdRef.current = response.last_id ?? lastId;
+        const nextLastId = response.last_id ?? lastId;
 
         const nextHasMorePages = Boolean(response.has_more);
+        setPosts((currentPosts) => {
+          const resolvedPosts = append ? [...currentPosts, ...nextPosts] : nextPosts;
+          writeFeedCache(cacheKey, {
+            currentLastId: nextLastId,
+            hasMorePages: nextHasMorePages,
+            posts: resolvedPosts,
+          });
+          return resolvedPosts;
+        });
+        setCurrentLastId(nextLastId);
+        currentLastIdRef.current = nextLastId;
         setHasMorePages(nextHasMorePages);
         hasMorePagesRef.current = nextHasMorePages;
       } else {
         if (!append) {
           setPosts([]);
+          writeFeedCache(cacheKey, {
+            currentLastId: 0,
+            hasMorePages: false,
+            posts: [],
+          });
         }
 
         setHasMorePages(false);
@@ -749,8 +813,24 @@ export default function FeedContent() {
     }
 
     window.scrollTo({ top: 0, behavior: 'auto' });
+
+    const cacheKey = getFeedCacheKey(topic, user?.id, isAuthenticated);
+    const cached = readFeedCache(cacheKey);
+
+    if (cached) {
+      setErrorMessage('');
+      setPosts(cached.posts);
+      setCurrentLastId(cached.currentLastId);
+      setHasMorePages(cached.hasMorePages);
+      currentLastIdRef.current = cached.currentLastId;
+      hasMorePagesRef.current = cached.hasMorePages;
+      setIsInitialLoading(false);
+      void loadPostsRef.current(0, false, { preserveExisting: true });
+      return;
+    }
+
     void loadPostsRef.current(0);
-  }, [authLoading, isAuthenticated, router, topic]);
+  }, [authLoading, isAuthenticated, router, topic, user?.id]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -797,6 +877,7 @@ export default function FeedContent() {
 
       showNote({
         content: response,
+        html: true,
         type: 'success',
         time: 5,
       });
@@ -912,6 +993,7 @@ export default function FeedContent() {
 
       showNote({
         content: response,
+        html: true,
         type: 'success',
         time: 5,
       });
@@ -946,6 +1028,7 @@ export default function FeedContent() {
 
       showNote({
         content: response,
+        html: true,
         type: 'success',
         time: 5,
       });
@@ -972,6 +1055,7 @@ export default function FeedContent() {
 
       showNote({
         content: response,
+        html: true,
         type: 'success',
         time: 5,
       });
@@ -1268,17 +1352,9 @@ export default function FeedContent() {
         </div>
 
         {isLoadingMore && (
-          <div id="load-more-indicator" className="text-center py-6 w-full max-w-3xl px-3 md:px-0">
-            <div className="loading-skeleton bg-zinc-900 text-zinc-100 rounded-2xl p-3 duration-300 flex flex-col w-full shadow gap-1.5">
-              <div className="flex items-center gap-1.5">
-                <div className="w-10 h-10 rounded-2xl shadow animate-pulse bg-zinc-700"></div>
-                <div className="flex flex-col gap-1">
-                  <span className="bg-zinc-700 animate-pulse rounded-md h-5 w-16"></span>
-                  <span className="bg-zinc-700 animate-pulse rounded-md h-4 w-12"></span>
-                </div>
-              </div>
-              <div className="bg-zinc-700 animate-pulse h-8 w-32 rounded-md"></div>
-            </div>
+          <div id="load-more-indicator" className="text-center py-6 pt-0 w-full max-w-3xl px-3 md:px-0 flex flex-col gap-3">
+            <FeedPostSkeleton/>
+            <FeedPostSkeleton/>
           </div>
         )}
 

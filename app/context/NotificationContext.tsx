@@ -6,7 +6,8 @@ type NoteType = 'success' | 'error' | 'info';
 
 interface Note {
   id: number;
-  content: string;
+  content: React.ReactNode;
+  html?: boolean;
   type: NoteType;
   time?: number; // в секундах
 }
@@ -20,9 +21,9 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
   const [notes, setNotes] = useState<Note[]>([]);
 
-  const showNote = useCallback(({ content, type = 'info', time = 5 }: Omit<Note, 'id'>) => {
+  const showNote = useCallback(({ content, html = false, type = 'info', time = 5 }: Omit<Note, 'id'>) => {
     const id = Date.now() + Math.random();
-    setNotes((prev) => [...prev, { id, content, type, time }]);
+    setNotes((prev) => [...prev, { id, content, html, type, time }]);
 
     if (time > 0) {
       setTimeout(() => {
@@ -39,7 +40,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     <NotificationContext.Provider value={{ showNote }}>
       {children}
       {/* Контейнер уведомлений (выводятся сверху справа) */}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-4 right-4 z-[10010] flex flex-col gap-2 pointer-events-none">
         {notes.map((note) => (
           <div
             key={note.id}
@@ -49,7 +50,16 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
               'bg-zinc-800/80 border-zinc-600/50 text-zinc-100'
             }`}
           >
-            <span className="font-medium text-sm sm:text-base leading-tight">{note.content}</span>
+            {note.html && typeof note.content === 'string' ? (
+              <span
+                className="font-medium text-sm sm:text-base leading-tight break-words [&_a]:underline [&_a]:underline-offset-2"
+                dangerouslySetInnerHTML={{ __html: note.content }}
+              />
+            ) : (
+              <span className="font-medium text-sm sm:text-base leading-tight break-words">
+                {note.content}
+              </span>
+            )}
             <button onClick={() => removeNote(note.id)} className="ml-3 cursor-pointer p-1 opacity-60 hover:opacity-100 transition-opacity">
               <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/></svg>
             </button>

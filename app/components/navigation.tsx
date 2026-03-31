@@ -20,7 +20,10 @@ const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, ico
   }`;
 
   const innerContent = imgSrc ? (
-    <img src={imgSrc} alt="Avatar" className="w-14 h-14 rounded-full object-cover" />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={imgSrc} alt="Avatar" className="w-14 h-14 rounded-full object-cover" />
+    </>
   ) : icon ? (
     <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
       <use href={`/icons.svg#${icon}`}></use>
@@ -54,7 +57,9 @@ type DropdownProps = {
   triggerAriaLabel?: string;
   triggerClassName?: string;
   triggerIcon?: string;
+  triggerNode?: React.ReactNode;
   triggerSize?: 'default' | 'sm';
+  width?: 'default' | 'auto';
 };
 
 export const Dropdown = ({
@@ -69,7 +74,9 @@ export const Dropdown = ({
   triggerIcon,
   triggerAriaLabel = 'Open menu',
   triggerClassName,
+  triggerNode,
   menuClassName,
+  width = 'default',
 }: DropdownProps) => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -120,6 +127,12 @@ export const Dropdown = ({
   const isActive = activePaths.some(path => pathname === path || pathname?.startsWith(path + '/'));
   const isCompactTrigger = triggerSize === 'sm';
   const compactTriggerIcon = triggerIcon ?? icon ?? 'IC-more';
+  const widthClasses =
+    direction === 'row'
+      ? 'w-max items-center'
+      : width === 'auto'
+        ? 'w-auto min-w-max items-start'
+        : 'w-48';
 
   return (
     <div className={cn('relative', !isCompactTrigger && (imgSrc ? 'w-auto h-auto' : 'w-14 h-14'))} ref={dropdownRef}>
@@ -133,9 +146,11 @@ export const Dropdown = ({
             triggerClassName,
           )}
         >
-          <svg className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <use href={`/icons.svg#${compactTriggerIcon}`}></use>
-          </svg>
+          {triggerNode ?? (
+            <svg className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+              <use href={`/icons.svg#${compactTriggerIcon}`}></use>
+            </svg>
+          )}
         </button>
       ) : (
         <NavItem 
@@ -151,7 +166,8 @@ export const Dropdown = ({
           getPositionClasses(),
           getOriginClass(),
           'p-1',
-          direction === 'col' ? 'w-48 flex-col rounded-3xl' : 'w-max flex-row items-center rounded-full',
+          direction === 'col' ? 'flex-col rounded-3xl' : 'flex-row rounded-full',
+          widthClasses,
           'bg-zinc-900/50 backdrop-blur-lg backdrop-saturate-200 border border-zinc-600/30 shadow-xl flex gap-1 z-50 transition-all duration-200 ease-out',
           menuClassName,
         )}
@@ -263,8 +279,8 @@ export default function Navigation() {
             )}
 
             {isAuthenticated && user && (
-                <Dropdown imgSrc={user.img} position="right" activePaths={[`/${user.username}`, '/settings']}>
-                    <DropdownItem href={`/${user.username}`} icon="IC-user">
+                <Dropdown imgSrc={user.img} position="right" activePaths={[`/@${user.username}`, '/settings']}>
+                    <DropdownItem href={`/@${user.username}`} icon="IC-user">
                         {lang?.myaccount}
                     </DropdownItem>
                     <DropdownItem href="/notifications" icon="IC-notification">
@@ -325,8 +341,8 @@ export default function Navigation() {
                     <NavItem href="/signup" icon="IC-signup" />
                 )}
                 {isAuthenticated && user && (
-                    <Dropdown imgSrc={user.img} position="top" align="end" activePaths={[`/${user.username}`, '/settings']}>
-                        <DropdownItem href={`/${user.username}`} icon="IC-user">
+                    <Dropdown imgSrc={user.img} position="top" align="end" activePaths={[`/@${user.username}`, '/settings']}>
+                        <DropdownItem href={`/@${user.username}`} icon="IC-user">
                             {lang?.myaccount}
                         </DropdownItem>
                         <DropdownItem href="/notifications" icon="IC-notification">
