@@ -360,6 +360,7 @@ export default function Navigation() {
                     <NavItem href="/pulse" icon="IC-music" />
                     <NavItem href="/wallet" icon="IC-wallet" />
                     <NavItem href="/games" icon="IC-games" />
+                    <NavItem href="/" icon="IC-search" />
                 </Dropdown>
             </div>
         </nav>
