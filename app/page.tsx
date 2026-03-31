@@ -11,7 +11,7 @@ export const metadata: Metadata = createPageMetadata({
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center w-full h-screen no-mobile-nav-padding p-3">
+    <div className="flex flex-col items-center justify-center w-full h-screen no-mobile-nav-padding p-3 md:p-0 duration-300">
       <video
         id="videobackground"
         autoPlay
@@ -19,14 +19,14 @@ export default function Home() {
         loop
         preload="none"
         playsInline
-        className="z-[-1] hidden lg:flex absolute inset-0 w-full h-full object-cover opacity-50"
+        className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-0 lg:opacity-50 duration-300"
         src="/img/backgrounds/ygX.mp4"
       />
       <Image
         src="/img/backgrounds/bg.webp"
         fill
         alt="Background"
-        className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 lg:hidden"
+        className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 lg:opacity-0 duration-300"
       />
       <div className="bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-3xl w-full max-w-screen-md p-3 flex items-center gap-3 shadow -mb-10">
         <div className="flex flex-col w-full">
