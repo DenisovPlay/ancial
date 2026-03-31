@@ -1831,16 +1831,16 @@ export default function GroupProfileContent({ link }: { link: string }) {
         title={strings.postcomments}
         width="lg"
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 relative">
           {isAuthenticated ? (
             <form
               onSubmit={(event) => {
                 event.preventDefault();
                 void handleCreateComment();
               }}
-              className="form-control flex-1 text-zinc-100 rounded-full shadow"
+              className="form-control flex-1 text-zinc-100 rounded-full shadow sticky top-0 z-[90]"
             >
-              <div className="relative flex bg-zinc-800 rounded-full w-full p-1 h-12">
+              <div className="relative border border-zinc-600/30 flex bg-zinc-900/50 backdrop-blur-sm backdrop-saturate-200 rounded-full w-full p-1 h-12">
                 <input
                   placeholder={strings.writecomment}
                   type="text"
