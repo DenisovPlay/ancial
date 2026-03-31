@@ -79,7 +79,7 @@
       <span className="w-full max-w-3xl text-3xl font-extralight px-3 lg:px-0" x-text="lang?.technical_specs"></span>
       <div className="w-full max-w-3xl flex flex-col px-3 lg:px-0">
           <span className="text-xl font-bold text-zinc-100">Внутреннее ПО</span>
-          <span className="w-full max-w-3xl text-lg text-zinc-300">ZeniUI v2.0.1</span>
+          <span className="w-full max-w-3xl text-lg text-zinc-300">ZeniUI v2.0.4</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300">LiteAPI v1.2.4</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300">GG-Connect v3.1</span>
           <span className="text-xl font-bold text-zinc-100 mt-1.5">Стороннее ПО</span>
@@ -88,7 +88,7 @@
               <span className="text-sm lg:text-base w-full">Используя Ancial, вы автоматически соглашаетесь с правилами и политиками сторонних сервисов, интегрированных в Ancial.</span>
           </div>
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-green-400">Icons8</b> - все иконки на сайте</span>
-          <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-orange-400">CloudFlare</b> - защита от DDOS-атак</span>
+          <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-orange-400">GCore</b> - защита от DDOS-атак</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">FancyBox v3</b> - модальные окна</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-blue-400">ImgBB</b> - хостинг картинок</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">Yandex</b>, <b className="text-blue-400">Telegram</b> - авторизация/верификация</span>
@@ -97,8 +97,8 @@
       <span className="w-full max-w-3xl text-xl font-bold px-3 lg:px-0 z-[10]">Технологии</span>
       <div ref={containerRef} className="relative w-full max-w-3xl py-3 px-0 z-[9] -my-6 overflow-hidden">
         {/* Градиентные края */}
-        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-zinc-950 to-transparent z-10 pointer-events-none"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-zinc-950 to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none"></div>
 
         {/* Контент с анимацией */}
         <div ref={contentRef} className="flex items-center gap-6 whitespace-nowrap px-3 lg:px-0">
