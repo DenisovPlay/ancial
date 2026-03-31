@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import UserProfileContent from './profile-content';
+import { SITE_CONFIG } from '../../seo';
 
 interface UserFriendButton {
   action?: string | null;
@@ -91,7 +92,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
     const title = `${profile.fname || ''} ${profile.lname || ''} (@${profile.login || login})`.trim();
     const description = `${profile.login || login} и другие уже общаются в Ancial!`;
     const image = profile.img || undefined;
-    const canonicalUrl = `https://ancial.ru/@${encodeURIComponent(profile.login || login)}`;
+    const canonicalUrl = `${SITE_CONFIG.url}/@${encodeURIComponent(profile.login || login)}`;
 
     return {
       alternates: {
@@ -103,6 +104,8 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
         images: image ? [image] : undefined,
         title,
         url: canonicalUrl,
+        type: 'profile',
+        siteName: SITE_CONFIG.title,
       },
       title,
       twitter: {
@@ -110,6 +113,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
         description,
         images: image ? [image] : undefined,
         title,
+        creator: SITE_CONFIG.twitter,
       },
     };
   } catch {

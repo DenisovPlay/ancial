@@ -3,11 +3,14 @@ import { Suspense } from 'react';
 
 import FeedContent from './feed-content';
 import FeedPostSkeleton from './feed-post-skeleton';
+import { createPageMetadata } from '../seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: 'Лента',
-  description: 'Заметки прекрасных людей.',
-};
+  description: 'Лента новостей — читайте свежие публикации, следите за обновлениями друзей и сообществ.',
+  keywords: ['лента', 'новости', 'публикации', 'посты'],
+  canonical: '/feed',
+});
 
 function FeedFallback() {
   return (

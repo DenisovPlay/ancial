@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import GroupProfileContent from './group-content';
+import { SITE_CONFIG } from '../../seo';
 
 interface UserPreview {
   fname?: string | null;
@@ -83,7 +84,7 @@ export async function generateMetadata({ params }: GroupPageProps): Promise<Meta
     const title = `${group.name || ''} ($${group.slnk || link})`.trim();
     const description = `${group.name || link} и другие уже кучкуются вместе в Ancial!`;
     const image = group.img || undefined;
-    const canonicalUrl = `https://ancial.ru/$${encodeURIComponent(group.slnk || link)}`;
+    const canonicalUrl = `${SITE_CONFIG.url}/$${encodeURIComponent(group.slnk || link)}`;
 
     return {
       alternates: {
@@ -95,6 +96,7 @@ export async function generateMetadata({ params }: GroupPageProps): Promise<Meta
         images: image ? [image] : undefined,
         title,
         url: canonicalUrl,
+        siteName: SITE_CONFIG.title,
       },
       title,
       twitter: {
@@ -102,6 +104,7 @@ export async function generateMetadata({ params }: GroupPageProps): Promise<Meta
         description,
         images: image ? [image] : undefined,
         title,
+        creator: SITE_CONFIG.twitter,
       },
     };
   } catch {

@@ -4,6 +4,7 @@ import "./globals.css";
 import Navigation from './components/navigation';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { DEFAULT_SEO, SITE_CONFIG } from './seo';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ancial - Социальная сеть",
-  description: "Ancial Social Network",
+  ...DEFAULT_SEO,
+  title: {
+    default: SITE_CONFIG.title,
+    template: `%s | ${SITE_CONFIG.title}`,
+  },
+  openGraph: {
+    ...DEFAULT_SEO.openGraph,
+    title: {
+      default: SITE_CONFIG.title,
+      template: `%s | ${SITE_CONFIG.title}`,
+    },
+  },
 };
 
 export default function RootLayout({
@@ -27,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ru"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-zinc-950 text-white">

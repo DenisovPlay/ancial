@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import SinglePostContent from './post-content';
 import type { PostData } from '../../../components/posts-renderer';
+import { SITE_CONFIG } from '../../../seo';
 
 interface SinglePostResponse {
   data?: PostData;
@@ -66,7 +67,7 @@ export async function generateMetadata({ params }: SinglePostPageProps): Promise
       ? `Запись от ${authorName}: ${truncate(plainContent, 50)} Смотрите другие посты в ленте!`
       : `Запись от ${authorName}. Смотрите другие посты в ленте!`;
     const firstImage = post.images?.[0]?.url;
-    const canonicalUrl = `https://ancial.ru/feed/post/${id}`;
+    const canonicalUrl = `${SITE_CONFIG.url}/feed/post/${id}`;
 
     return {
       alternates: {
@@ -79,13 +80,14 @@ export async function generateMetadata({ params }: SinglePostPageProps): Promise
         title,
         type: 'article',
         url: canonicalUrl,
+        siteName: SITE_CONFIG.title,
       },
-      title,
       twitter: {
         card: firstImage ? 'summary_large_image' : 'summary',
         description,
         images: firstImage ? [firstImage] : undefined,
         title,
+        creator: SITE_CONFIG.twitter,
       },
     };
   } catch {
