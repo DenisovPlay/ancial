@@ -5,6 +5,7 @@
   import Link from 'next/link';
   import Image from 'next/image';
   import { useDragScroll } from '../hooks/useDragScroll';
+  import { useScrollPingPong } from '../hooks/useScrollPingPong';
 
   export default function Home() {
     const router = useRouter();
@@ -12,12 +13,12 @@
 
     const navScrollRef = useDragScroll({ speed: 2 });
     const iconsScrollRef = useDragScroll({ speed: 2 });
-    const techScrollRef = useDragScroll({ speed: 2 });
+    const { containerRef, contentRef } = useScrollPingPong({ duration: 15 });
 
     return (
   <div className="flex flex-col jusitify-center items-center gap-3 py-3">
       <div className="w-full max-w-3xl flex items-center">
-          <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-chevron-left`}></use></svg>{lang?.about + ` Ancial`}</span>
+          <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Ancial`}</span>
       </div>
 
       <div className="px-3 lg:px-0 w-full max-w-3xl">
@@ -93,15 +94,22 @@
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">Yandex</b>, <b className="text-blue-400">Telegram</b> - авторизация/верификация</span>
       </div>
 
-      <span className="w-full max-w-3xl text-xl font-bold px-3 lg:px-0 -my-3">Технологии</span>
-      <div className="max-w-3xl flex items-center gap-6 w-full flex-nowrap overflow-x-auto drag-scroll viewport py-3 px-3 lg:px-0" ref={techScrollRef}>
-        <Image src="/img/branding/next.svg" alt="Next" width={256} height={64} className="invert"/>
-        <Image src="/img/branding/php.svg" alt="PHP" width={150} height={64} className="invert"/>
-        <Image src="/img/branding/vercel.svg" alt="Vercel" width={64} height={64} className=""/>
-        <Image src="/img/branding/tailwindcss.svg" alt="Tailwind CSS" width={64} height={64} className=""/>
-        <Image src="/img/branding/vk-cloud.svg" alt="VK Cloud" width={256} height={64} className=""/>
-        <Image src="/img/branding/cloud-ru.svg" alt="Cloud.ru" width={264} height={64} className=""/>
-        <Image src="/img/branding/mysql.svg" alt="MySQL" width={150} height={64} className="-mt-8"/>
+      <span className="w-full max-w-3xl text-xl font-bold px-3 lg:px-0 z-[10]">Технологии</span>
+      <div ref={containerRef} className="relative w-full max-w-3xl py-3 px-0 z-[9] -my-6 overflow-hidden">
+        {/* Градиентные края */}
+        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-zinc-950 to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-zinc-950 to-transparent z-10 pointer-events-none"></div>
+
+        {/* Контент с анимацией */}
+        <div ref={contentRef} className="flex items-center gap-6 whitespace-nowrap px-3 lg:px-0">
+          <Image src="/img/branding/next.svg" alt="Next" width={256} height={64} className="invert flex-shrink-0"/>
+          <Image src="/img/branding/php.svg" alt="PHP" width={150} height={64} className="invert flex-shrink-0"/>
+          <Image src="/img/branding/vercel.svg" alt="Vercel" width={64} height={64} className="flex-shrink-0"/>
+          <Image src="/img/branding/tailwindcss.svg" alt="Tailwind CSS" width={64} height={64} className="flex-shrink-0"/>
+          <Image src="/img/branding/vk-cloud.svg" alt="VK Cloud" width={256} height={64} className="flex-shrink-0"/>
+          <Image src="/img/branding/cloud-ru.svg" alt="Cloud.ru" width={264} height={64} className="flex-shrink-0"/>
+          <Image src="/img/branding/mysql.svg" alt="MySQL" width={150} height={64} className="-mt-8 flex-shrink-0"/>
+        </div>
       </div>
 
       <span className="w-full max-w-3xl text-3xl font-extralight px-3 lg:px-0" x-text="lang?.history"></span>

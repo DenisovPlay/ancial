@@ -30,7 +30,7 @@ export default function Home() {
       />
       <div className="bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-3xl w-full max-w-screen-md p-3 flex items-center gap-3 shadow -mb-10">
         <div className="flex flex-col w-full">
-          <span className="text-lg lg:text-2xl font-bold">Привет. Ты попал в DEV версию Ancial на React</span>
+          <span className="text-lg lg:text-2xl font-bold">Привет. Ты попал в DEV версию Ancial на React.</span>
           <span className="text-sm lg:text-base text-zinc-300">
             Здесь отсутствует множество функций, дизайн может быть сломан, а производительность будет ужасной. Но ты можешь помочь нам найти баги и недоработки, чтобы сделать Ancial лучше!
           </span>

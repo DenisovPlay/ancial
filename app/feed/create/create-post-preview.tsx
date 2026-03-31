@@ -51,14 +51,14 @@ function PreviewAvatar({
   if (authorImage) {
     return (
       <div
-        className="w-10 h-10 rounded-2xl shadow bg-cover bg-center cursor-pointer"
+        className="w-10 h-10 rounded-full shadow bg-cover bg-center cursor-pointer"
         style={{ backgroundImage: `url(${authorImage})` }}
       />
     );
   }
 
   return (
-    <div className="w-10 h-10 rounded-2xl shadow bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-200">
+    <div className="w-10 h-10 rounded-full shadow bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-200">
       {authorName.trim().charAt(0).toUpperCase() || 'A'}
     </div>
   );
@@ -143,7 +143,7 @@ export default function CreatePostPreview({
   return (
     <div
       id="postdiv-preview"
-      className="p-3 rounded-2xl bg-zinc-900 flex flex-col w-full shadow text-zinc-100 border border-zinc-600/30"
+      className="p-3 rounded-3xl bg-zinc-900 flex flex-col w-full shadow text-zinc-100 border border-zinc-600/30"
     >
       <div className="text-sm lg:text-base text-zinc-400 font-medium flex items-center gap-1.5">
         <PreviewAvatar authorImage={authorImage} authorName={safeAuthorName} />

@@ -36,7 +36,7 @@ export function SettingsItem({
           className="w-6 h-6 fill-zinc-500 mr-1.5 group-hover:fill-zinc-600 duration-300"
           viewBox="0 0 48 48"
         >
-          <path d="M 18.484375 2.984375 A 1.50015 1.50015 0 0 0 17.439453 5.5605469 L 35.878906 24 L 17.439453 42.439453 A 1.50015 1.50015 0 1 0 19.560547 44.560547 L 39.060547 25.060547 A 1.50015 1.50015 0 0 0 39.060547 22.939453 L 19.560547 3.4394531 A 1.50015 1.50015 0 0 0 18.484375 2.984375 z" />
+          <use href={`/icons.svg#IC-chevron-right`}></use>
         </svg>
       ) : null}
     </div>

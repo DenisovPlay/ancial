@@ -61,7 +61,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
               </span>
             )}
             <button onClick={() => removeNote(note.id)} className="ml-3 cursor-pointer p-1 opacity-60 hover:opacity-100 transition-opacity">
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59 7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12 5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/></svg>
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                <use href={`/icons.svg#IC-times`}></use>
+              </svg>
             </button>
           </div>
         ))}
