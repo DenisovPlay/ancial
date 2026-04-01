@@ -186,7 +186,7 @@ export default function Modal({
               </div>
               )}
               
-              <div className="flex items-center justify-between px-3 pb-3 sm:pt-3  border-b border-zinc-800/50 w-full">
+              <div className="flex items-center justify-between px-3 pb-3 sm:pt-3 border-b border-zinc-800/50 w-full">
                   <h2 className="text-xl font-bold text-white">{title}</h2>
                   <button 
                       onClick={onClose}
@@ -202,7 +202,7 @@ export default function Modal({
         <div
           className={cn(
             'overflow-y-auto',
-            showHeader ? 'p-3 pt-[84px] lg:pt-[72px]' : 'p-0',
+            showHeader ? 'p-3 pt-[72px]' : 'p-0',
             bodyClassName,
           )}
           onTouchStart={(e) => e.stopPropagation()}

@@ -1444,8 +1444,7 @@ export default function FeedContent() {
         isOpen={isCommentsModalOpen}
         onClose={() => setIsCommentsModalOpen(false)}
         title={strings.postcomments}
-        width="md"
-        bodyClassName="p-0 pt-[84px] lg:pt-[72px]"
+        width="lg"
       >
         <div className="flex flex-col text-zinc-100">
           {isAuthenticated && (
