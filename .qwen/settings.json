@@ -5,7 +5,8 @@
       "Bash(mv *)",
       "Bash(rm *)",
       "Bash(curl *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(npx *)"
     ]
   },
   "$version": 3

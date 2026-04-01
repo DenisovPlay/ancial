@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import Modal from './modal';
 import { Dropdown, DropdownItem } from './navigation';
+import { SvgIcon } from '../feed/editor-shared';
 import YandexRtb from './yandex-rtb';
 import Link from 'next/link';
 
@@ -99,42 +100,6 @@ const DEFAULT_LANG: PostCardLang = {
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
-}
-
-function SvgIcon({
-  className,
-  id,
-  viewBox = '0 0 48 48',
-}: {
-  className?: string;
-  id: string;
-  viewBox?: string;
-}) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox={viewBox}>
-      <use href={`/icons.svg#${id}`}></use>
-    </svg>
-  );
-}
-
-function VerifyIcon() {
-  return (
-    <svg
-      className="w-5 h-5 inline fill-blue-500"
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 48 48"
-    >
-      <use href={`/icons.svg#IC-verify`}></use>
-    </svg>
-  );
-}
-
-function DonateIcon() {
-  return (
-    <svg className="h-7 w-7 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <use href={`/icons.svg#IC-donate`}></use>
-    </svg>
-  );
 }
 
 function flag(value: boolean | number | string | null | undefined) {
@@ -498,7 +463,9 @@ function PostCardInner({
               className="cursor-pointer text-zinc-200 hover:text-zinc-100 active:scale-95 duration-300 font-medium w-fit flex items-center gap-1.5 text-left"
             >
               <span>{post.author.name}</span>
-              {flag(post.author.verify) && <VerifyIcon />}
+              {flag(post.author.verify) && (
+                <SvgIcon className="w-5 h-5 inline fill-blue-500" id="IC-verify" viewBox="0 0 48 48" />
+              )}
             </Link>
             <span className="text-zinc-400 text-xs lg:text-sm">{post.time_elapsed}</span>
           </div>
@@ -510,7 +477,7 @@ function PostCardInner({
                 onClick={handleDonate}
                 className="cursor-pointer border border-zinc-600/30 flex items-center justify-center gap-3 px-2 py-1 duration-300 active:scale-95 bg-zinc-700 hover:bg-zinc-800 rounded-full shadow"
               >
-                <DonateIcon />
+                <SvgIcon className="h-7 w-7 fill-white" id="IC-donate" viewBox="0 0 48 48" />
               </button>
             )}
           </div>
