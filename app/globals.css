@@ -111,3 +111,10 @@ body:has(.no-mobile-nav-padding) #main-content {
     pointer-events: auto;
   }
 }
+
+button{
+  outline: none !important;
+}
+button:focus{
+  outline: none !important;
+}

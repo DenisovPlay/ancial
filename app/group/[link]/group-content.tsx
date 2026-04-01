@@ -291,13 +291,11 @@ function UserMiniCard({
       onClick={onClick}
       className="flex flex-col gap-0.5 cursor-pointer duration-500 group overflow-hidden justify-center items-center w-full active:scale-95"
     >
-      <div
-        className={cn(
-          'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
-          isOnline && 'border-lime-500', !isOnline && 'border-transparent',
-        )}
-        style={{ backgroundImage: `url('${image}')` }}
-      />
+      <Image alt="User Profile" width={64} height={64} src={image} className={cn(
+        'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
+        isOnline && 'border-lime-500',
+        !isOnline && 'border-transparent'
+      )} />
       <span className="text-zinc-300 w-16 text-center text-sm truncate">{label}</span>
     </button>
   );
@@ -318,10 +316,7 @@ function GroupMiniCard({
       onClick={onClick}
       className="flex flex-col gap-0.5 cursor-pointer duration-300 group overflow-hidden justify-center items-center w-full active:scale-95"
     >
-      <div
-        className="w-16 h-16 rounded-full shadow duration-300 border-2 border-zinc-800 group-hover:border-purple-500 bg-cover bg-center"
-        style={{ backgroundImage: `url('${image}')` }}
-      />
+      <Image alt="Group" width={64} height={64} src={image} className="w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center" />
       <span className="text-zinc-300 w-16 text-center text-sm truncate">{label}</span>
     </button>
   );
@@ -390,15 +385,10 @@ function RelationGridModal({
               className="cursor-pointer flex flex-col items-center justify-center"
             >
               <div className="flex items-center justify-center overflow-hidden rounded-full max-w-16">
-                <div
-                  className={cn(
+                <Image alt="User Profile" width={64} height={64} src={user.img || 'https://ancial.ru/includes/img/new_user.png'} className={cn(
                     'rounded-full w-16 h-16 shadow shrink-0 bg-center bg-cover border-2',
                     flag(user.online) && 'border-lime-500', !flag(user.online) && 'border-transparent',
-                  )}
-                  style={{
-                    backgroundImage: `url('${user.img || 'https://ancial.ru/includes/img/new_user.png'}')`,
-                  }}
-                />
+                  )}/>
               </div>
               <p className="text-center truncate overflow-hidden w-20">{user.fname || ''}</p>
             </button>
@@ -1758,7 +1748,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
           className="flex flex-col gap-3"
         >
           <div
-            className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-400 shadow rounded-3xl flex items-center w-full gap-3"
+            className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-400 shadow rounded-3xl w-full"
             dangerouslySetInnerHTML={{ __html: strings.editgroupwarn }}
           />
 

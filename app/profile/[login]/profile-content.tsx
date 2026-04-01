@@ -334,14 +334,11 @@ function UserMiniCard({
       onClick={onClick}
       className="flex flex-col gap-0.5 cursor-pointer duration-500 group overflow-hidden justify-center items-center w-full active:scale-95"
     >
-      <div
-        className={cn(
+      <Image alt="User Profile" width={64} height={64} src={image} className={cn(
           'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
           isOnline && 'border-lime-500',
           !isOnline && 'border-transparent'
-        )}
-        style={{ backgroundImage: `url('${image}')` }}
-      />
+        )} />
       <span className="text-zinc-300 w-16 text-center text-sm truncate">{label}</span>
     </button>
   );
@@ -362,10 +359,7 @@ function GroupMiniCard({
       onClick={onClick}
       className="flex flex-col gap-0.5 cursor-pointer duration-300 group overflow-hidden justify-center items-center w-full active:scale-95"
     >
-      <div
-        className="w-16 h-16 rounded-full shadow duration-300 border-2 border-transparent group-hover:border-purple-500 bg-cover bg-center"
-        style={{ backgroundImage: `url('${image}')` }}
-      />
+      <Image alt="Group" width={64} height={64} src={image} className="w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center" />
       <span className="text-zinc-300 w-16 text-center text-sm truncate">{label}</span>
     </button>
   );
@@ -443,10 +437,7 @@ function RelationGridModal({
                   className="cursor-pointer flex flex-col items-center justify-center"
                 >
                   <div className="flex items-center justify-center overflow-hidden rounded-full max-w-16">
-                    <div
-                      className="rounded-full w-16 h-16 shadow shrink-0 bg-center bg-cover"
-                      style={{ backgroundImage: `url('${image}')` }}
-                    />
+                    <Image alt="Group" width={64} height={64} src={image} className="w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center"/>
                   </div>
                   <p className="text-center truncate overflow-hidden w-20">{group.name || ''}</p>
                 </button>
@@ -463,14 +454,11 @@ function RelationGridModal({
                 className="cursor-pointer flex flex-col items-center justify-center"
               >
                 <div className="flex items-center justify-center overflow-hidden rounded-full max-w-16">
-                  <div
-                    className={cn(
-                      'rounded-full w-16 h-16 shadow shrink-0 bg-center bg-cover border-2',
-                      flag(user.online) && 'border-lime-500',
-                      !flag(user.online) && 'border-transparent',
-                    )}
-                    style={{ backgroundImage: `url('${image}')` }}
-                  />
+                  <Image alt="User Profile" width={64} height={64} src={image} className={cn(
+                    'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
+                    flag(user.online) && 'border-lime-500',
+                    !flag(user.online) && 'border-transparent',
+                  )} />
                 </div>
                 <p className="text-center truncate overflow-hidden w-20">{user.fname || ''}</p>
               </button>

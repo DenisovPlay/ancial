@@ -2,6 +2,22 @@ import type { NextConfig } from "next";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://ancial.ru';
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'i.ibb.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ancial.ru',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.betterttv.net',
+      },
+    ],
+  },
   async rewrites() {
     return [
       { // Proxy for group links
