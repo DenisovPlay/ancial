@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import GroupProfileContent from './group-content';
 import { SITE_CONFIG } from '../../seo';
+import { getRequestUrl } from '../../server-origin';
 
 interface UserPreview {
   fname?: string | null;
@@ -45,10 +46,6 @@ interface GroupPageResponse {
 const FALLBACK_TITLE = 'Группа не найдена';
 const FALLBACK_DESCRIPTION = 'Такой группы не существует или она удалена.';
 
-function trimTrailingSlash(value: string) {
-  return value.endsWith('/') ? value.slice(0, -1) : value;
-}
-
 type GroupPageProps = {
   params: Promise<{
     link: string;
@@ -60,11 +57,8 @@ export async function generateMetadata({ params }: GroupPageProps): Promise<Meta
 
   try {
     const response = await fetch(
-      `/api/group/get_group_page.php?link=${encodeURIComponent(link)}`,
-      {
-        cache: 'no-store',
-        credentials: 'include',
-      },
+      await getRequestUrl(`/api/group/get_group_page.php?link=${encodeURIComponent(link)}`),
+      { cache: 'no-store' },
     );
 
     if (!response.ok) {

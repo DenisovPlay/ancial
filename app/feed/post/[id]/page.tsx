@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import SinglePostContent from './post-content';
 import type { PostData } from '../../../components/posts-renderer';
 import { SITE_CONFIG } from '../../../seo';
+import { getRequestUrl } from '../../../server-origin';
 
 interface SinglePostResponse {
   data?: PostData;
@@ -13,10 +14,6 @@ interface SinglePostResponse {
 const FALLBACK_TITLE = 'Неизвестная запись';
 const FALLBACK_DESCRIPTION =
   'Мы не знаем кто и что, но у нас есть и другие посты! Смотрите их в ленте.';
-
-function trimTrailingSlash(value: string) {
-  return value.endsWith('/') ? value.slice(0, -1) : value;
-}
 
 function htmlToText(value: string | null | undefined) {
   return (value ?? '')
@@ -41,9 +38,8 @@ export async function generateMetadata({ params }: SinglePostPageProps): Promise
   const { id } = await params;
 
   try {
-    const response = await fetch(`/api/posts/get_post.php?id=${id}`, {
+    const response = await fetch(await getRequestUrl(`/api/posts/get_post.php?id=${id}`), {
       cache: 'no-store',
-      credentials: 'include',
     });
 
     if (!response.ok) {

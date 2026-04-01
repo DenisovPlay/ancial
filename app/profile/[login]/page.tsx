@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import UserProfileContent from './profile-content';
 import { SITE_CONFIG } from '../../seo';
+import { getRequestUrl } from '../../server-origin';
 
 interface UserFriendButton {
   action?: string | null;
@@ -53,10 +54,6 @@ interface UserPageResponse {
 const FALLBACK_TITLE = 'Пользователь не найден';
 const FALLBACK_DESCRIPTION = 'Такого пользователя не существует или он удалён.';
 
-function trimTrailingSlash(value: string) {
-  return value.endsWith('/') ? value.slice(0, -1) : value;
-}
-
 type ProfilePageProps = {
   params: Promise<{
     login: string;
@@ -68,11 +65,8 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 
   try {
     const response = await fetch(
-      `/api/user/get_user_page.php?login=${encodeURIComponent(login)}`,
-      {
-        cache: 'no-store',
-        credentials: 'include',
-      },
+      await getRequestUrl(`/api/user/get_user_page.php?login=${encodeURIComponent(login)}`),
+      { cache: 'no-store' },
     );
 
     if (!response.ok) {
