@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Dropdown } from '../../components/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLangStrings } from '../../lib/lang';
 import CreatePostPreview from './create-post-preview';
 import {
   type DraftImage,
@@ -42,82 +43,7 @@ export default function CreatePostContent() {
   const [selectedTopic, setSelectedTopic] = useState('');
   const [title, setTitle] = useState('');
 
-  const strings = useMemo(() => {
-    const fallback = {
-      choisetopic: 'Выберите тему',
-      films: 'Фильмы',
-      food: 'Еда',
-      frommyname: 'От моего имени',
-      games: 'Игры',
-      humor: 'Юмор',
-      investment: 'Инвестиции',
-      it: 'IT',
-      loading: 'Загрузка...',
-      max3photos: 'Можно загрузить не больше 3 фотографий',
-      music: 'Музыка',
-      newpost: 'Новый пост',
-      nowTyping: 'Печатается сейчас!',
-      photo: 'Фото',
-      photosPlaceholder: 'Здесь появятся все загруженные фотографии.',
-      placeholderAuthor: 'Автор',
-      placeholderContent: 'Текст поста',
-      placeholderTag: 'Тема',
-      placeholderTitle: 'Заголовок',
-      poll: 'Опрос',
-      post: 'Пост',
-      postcontent: 'Содержимое поста',
-      preview: 'Предпросмотр',
-      publicpost: 'Опубликовать',
-      science: 'Наука',
-      somethingwrong: 'Что-то пошло не так',
-      sport: 'Спорт',
-      tourism: 'Туризм',
-      title: 'Заголовок',
-      uploadedcompl: 'Фотография загружена',
-      uploading: 'Загружается...',
-      video: 'Видео',
-      waituntillphotouploaded: 'Подождите, пока фотография загрузится',
-      news: 'Новости',
-    };
-
-    return {
-      choisetopic: lang?.choisetopic || fallback.choisetopic,
-      films: lang?.films || fallback.films,
-      food: lang?.food || fallback.food,
-      frommyname: lang?.frommyname || fallback.frommyname,
-      games: lang?.games || fallback.games,
-      humor: lang?.humor || fallback.humor,
-      investment: lang?.investment || fallback.investment,
-      it: lang?.it || fallback.it,
-      loading: lang?.['loading...'] || fallback.loading,
-      max3photos: lang?.max3photos || fallback.max3photos,
-      music: lang?.music || fallback.music,
-      newpost: lang?.newpost || fallback.newpost,
-      news: lang?.news || fallback.news,
-      nowTyping: fallback.nowTyping,
-      photo: lang?.photo || fallback.photo,
-      photosPlaceholder: fallback.photosPlaceholder,
-      placeholderAuthor: fallback.placeholderAuthor,
-      placeholderContent: fallback.placeholderContent,
-      placeholderTag: fallback.placeholderTag,
-      placeholderTitle: fallback.placeholderTitle,
-      poll: lang?.poll || fallback.poll,
-      post: lang?.post || fallback.post,
-      postcontent: lang?.postcontent || fallback.postcontent,
-      preview: lang?.preview || fallback.preview,
-      publicpost: lang?.publicpost || fallback.publicpost,
-      science: lang?.science || fallback.science,
-      somethingwrong: lang?.somethingwrong || fallback.somethingwrong,
-      sport: lang?.sport || fallback.sport,
-      title: lang?.title || fallback.title,
-      tourism: lang?.tourism || fallback.tourism,
-      uploadedcompl: lang?.uploadedcompl || fallback.uploadedcompl,
-      uploading: fallback.uploading,
-      video: lang?.video || fallback.video,
-      waituntillphotouploaded:
-        lang?.waituntillphotouploaded || fallback.waituntillphotouploaded,
-    };
-  }, [lang]);
+  const strings = useLangStrings(lang);
 
   const topicOptions = useMemo(
     () => [

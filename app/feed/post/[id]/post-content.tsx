@@ -9,6 +9,7 @@ import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { PostCard, type PostCardLang, type PostData } from '../../../components/posts-renderer';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { useLangStrings } from '../../../lib/lang';
 import { SvgIcon } from '../../editor-shared';
 import FeedPostSkeleton from '../../feed-post-skeleton';
 
@@ -220,73 +221,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const strings = useMemo(() => {
-    const fallback = {
-      bookmarkadded: 'Добавлено в закладки',
-      bookmarked: 'В закладках',
-      bookmarkremoved: 'Удалено из закладок',
-      candidimage: 'Откровенное изображение',
-      copylink: 'Скопировать ссылку',
-      delete: 'Удалить',
-      deletepost: 'Удалить пост',
-      emptycomments: 'Комментариев пока нет',
-      emptycommentsdesc: 'Будьте первым, кто что-то напишет.',
-      langname: 'en',
-      less: 'Скрыть',
-      linkcopied: 'Ссылка скопирована',
-      logintoreact: 'Войдите, чтобы взаимодействовать с публикациями',
-      more: 'Подробнее',
-      no: 'Нет',
-      post: 'Пост',
-      postcomments: 'Комментарии',
-      postnotfound: 'Запись не найдена',
-      prohibitedgood: 'Запрещённый товар',
-      propertyrights: 'Нарушение интеллектуальных прав',
-      reallywantdeletepost: 'Вы действительно хотите удалить пост?',
-      report: 'Пожаловаться',
-      scam: 'Обман',
-      share: 'Поделиться',
-      somethingwrong: 'Что-то пошло не так',
-      spam: 'Спам',
-      tbookmark: 'В закладки',
-      violence: 'Насилие и вражда',
-      writecomment: 'Напишите комментарий',
-      yes: 'Да',
-    };
-
-    return {
-      bookmarkadded: lang?.bookmarkadded || fallback.bookmarkadded,
-      bookmarked: lang?.bookmarked || fallback.bookmarked,
-      bookmarkremoved: lang?.bookmarkremoved || fallback.bookmarkremoved,
-      candidimage: lang?.candidimage || fallback.candidimage,
-      copylink: lang?.copylink || fallback.copylink,
-      delete: lang?.delete || fallback.delete,
-      deletepost: lang?.deletepost || fallback.deletepost,
-      emptycomments: lang?.emptycomments || fallback.emptycomments,
-      emptycommentsdesc: lang?.emptycommentsdesc || fallback.emptycommentsdesc,
-      langname: lang?.langname || fallback.langname,
-      less: lang?.less || fallback.less,
-      linkcopied: lang?.linkcopied || fallback.linkcopied,
-      logintoreact: lang?.logintoreact || fallback.logintoreact,
-      more: lang?.more || fallback.more,
-      no: lang?.no || fallback.no,
-      post: lang?.post || fallback.post,
-      postcomments: lang?.postcomments || fallback.postcomments,
-      postnotfound: lang?.postnotfound || fallback.postnotfound,
-      prohibitedgood: lang?.prohibitedgood || fallback.prohibitedgood,
-      propertyrights: lang?.propertyrights || fallback.propertyrights,
-      reallywantdeletepost: lang?.reallywantdeletepost || fallback.reallywantdeletepost,
-      report: lang?.report || fallback.report,
-      scam: lang?.scam || fallback.scam,
-      share: lang?.share || fallback.share,
-      somethingwrong: lang?.somethingwrong || fallback.somethingwrong,
-      spam: lang?.spam || fallback.spam,
-      tbookmark: lang?.tobookmarks || fallback.tbookmark,
-      violence: lang?.violence || fallback.violence,
-      writecomment: lang?.writecomment || fallback.writecomment,
-      yes: lang?.yes || fallback.yes,
-    };
-  }, [lang]);
+  const strings = useLangStrings(lang);
 
   const postCardLang: Partial<PostCardLang> = {
     adultContentWarning:

@@ -7,6 +7,7 @@ import { Dropdown } from '../../components/navigation';
 import type { PostAuthor, PostData, PostImage } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLangStrings } from '../../lib/lang';
 import {
   type DraftImage,
   MAX_IMAGES,
@@ -84,90 +85,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
   const [selectedTopic, setSelectedTopic] = useState('');
   const [title, setTitle] = useState('');
 
-  const strings = useMemo(() => {
-    const fallback = {
-      choisetopic: 'Выберите тему',
-      edit: 'Редактировать',
-      errorDescription: 'Попробуйте обновить страницу чуть позже.',
-      films: 'Фильмы',
-      food: 'Еда',
-      games: 'Игры',
-      humor: 'Юмор',
-      investment: 'Инвестиции',
-      it: 'IT',
-      loading: 'Загрузка...',
-      max3photos: 'Можно загрузить не больше 3 фотографий',
-      music: 'Музыка',
-      news: 'Новости',
-      nopost: 'Запись не найдена',
-      nopostdesc: 'Возможно, она была удалена или ссылка неверна.',
-      notyourpost: 'Не ваша запись!',
-      notyourpostdesc: 'Чужие записи нельзя изменять.',
-      nowTyping: 'Печатается сейчас!',
-      photo: 'Фото',
-      placeholderAuthor: 'Автор',
-      placeholderContent: 'Текст поста',
-      placeholderTag: 'Тема',
-      placeholderTitle: 'Заголовок',
-      poll: 'Опрос',
-      post: 'Пост',
-      postcontent: 'Содержимое поста',
-      preview: 'Предпросмотр',
-      save: 'Сохранить',
-      saved: 'Изменения сохранены',
-      science: 'Наука',
-      somethingwrong: 'Что-то пошло не так',
-      sport: 'Спорт',
-      title: 'Заголовок',
-      tourism: 'Туризм',
-      uploadedcompl: 'Фотография загружена',
-      uploading: 'Загружается...',
-      video: 'Видео',
-      waituntillphotouploaded: 'Подождите, пока фотография загрузится',
-    };
-
-    return {
-      choisetopic: lang?.choisetopic || fallback.choisetopic,
-      edit: lang?.edit || fallback.edit,
-      errorDescription: fallback.errorDescription,
-      films: lang?.films || fallback.films,
-      food: lang?.food || fallback.food,
-      games: lang?.games || fallback.games,
-      humor: lang?.humor || fallback.humor,
-      investment: lang?.investment || fallback.investment,
-      it: lang?.it || fallback.it,
-      loading: lang?.['loading...'] || fallback.loading,
-      max3photos: lang?.max3photos || fallback.max3photos,
-      music: lang?.music || fallback.music,
-      news: lang?.news || fallback.news,
-      nopost: fallback.nopost,
-      nopostdesc: fallback.nopostdesc,
-      notyourpost: fallback.notyourpost,
-      notyourpostdesc: fallback.notyourpostdesc,
-      nowTyping: fallback.nowTyping,
-      photo: lang?.photo || fallback.photo,
-      placeholderAuthor: fallback.placeholderAuthor,
-      placeholderContent: fallback.placeholderContent,
-      placeholderTag: fallback.placeholderTag,
-      placeholderTitle: fallback.placeholderTitle,
-      poll: lang?.poll || fallback.poll,
-      post: lang?.post || fallback.post,
-      postcontent: lang?.postcontent || fallback.postcontent,
-      preview: lang?.preview || fallback.preview,
-      save: lang?.save || fallback.save,
-      saved: lang?.saved || fallback.saved,
-      science: lang?.science || fallback.science,
-      somethingwrong: lang?.somethingwrong || fallback.somethingwrong,
-      sport: lang?.sport || fallback.sport,
-      title: lang?.title || fallback.title,
-      tourism: lang?.tourism || fallback.tourism,
-      uploadedcompl: lang?.uploadedcompl || fallback.uploadedcompl,
-      uploading: fallback.uploading,
-      video: lang?.video || fallback.video,
-      waituntillphotouploaded:
-        lang?.waituntillphotouploaded || fallback.waituntillphotouploaded,
-    };
-  }, [lang]);
+  const strings = useLangStrings(lang);
 
   const topicOptions = useMemo(
     () => [

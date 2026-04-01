@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getLangFromCache, saveLangToCache } from '../lib/lang';
 
 // Типизация пользователя на основе данных обоих методов (check.php и info.php)
 export interface User {
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const res = await fetch(`/api/info/lang.php`);
       const data = await res.json();
       setLang(data);
+      saveLangToCache(data);
     } catch (error) {
       console.error('Ошибка при загрузке языка:', error);
     }
@@ -121,6 +123,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Проверяем авторизацию при первой загрузке приложения
   useEffect(() => {
     checkAuth();
+    // Сначала пробуем загрузить из кэша
+    const cachedLang = getLangFromCache();
+    if (cachedLang) {
+      setLang(cachedLang);
+    }
+    // Затем обновляем в фоне
     updateLang();
   }, []);
 

@@ -14,6 +14,7 @@ import PostsRenderer, {
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useDragScroll } from '../hooks/useDragScroll';
+import { useLangStrings } from '../lib/lang';
 import { cn, SvgIcon } from './editor-shared';
 import FeedPostSkeleton from './feed-post-skeleton';
 
@@ -271,109 +272,7 @@ export default function FeedContent() {
     };
   }, []);
 
-  const strings = useMemo(() => {
-    const fallback = {
-      all: 'Все',
-      bookmarkadded: 'Добавлено в закладки',
-      bookmarked: 'В закладках',
-      bookmarkremoved: 'Удалено из закладок',
-      bookmarks: 'Закладки',
-      candidimage: 'Откровенное изображение',
-      copylink: 'Скопировать ссылку',
-      delete: 'Удалить',
-      deletepost: 'Удалить пост',
-      emptycomments: 'Комментариев пока нет',
-      emptycommentsdesc: 'Будьте первым, кто что-то напишет.',
-      feed: 'Лента',
-      films: 'Фильмы',
-      food: 'Еда',
-      games: 'Игры',
-      humor: 'Юмор',
-      investment: 'Инвестиции',
-      it: 'IT',
-      langname: 'en',
-      less: 'Скрыть',
-      linkcopied: 'Ссылка скопирована',
-      logintoreact: 'Войдите, чтобы взаимодействовать с публикациями',
-      more: 'Подробнее',
-      music: 'Музыка',
-      my: 'Моё',
-      nomoreposts: 'Больше постов нет',
-      noposts: 'Постов пока нет',
-      nopostsdesc: 'Попробуйте выбрать другой топик или зайдите позже.',
-      no: 'Нет',
-      photo: 'Фото',
-      post: 'Пост',
-      postcomments: 'Комментарии',
-      prohibitedgood: 'Запрещённый товар',
-      propertyrights: 'Нарушение интеллектуальных прав',
-      reallywantdeletepost: 'Вы действительно хотите удалить пост?',
-      report: 'Пожаловаться',
-      scam: 'Обман',
-      science: 'Наука',
-      share: 'Поделиться',
-      somethingwrong: 'Что-то пошло не так',
-      spam: 'Спам',
-      sport: 'Спорт',
-      tbookmark: 'В закладки',
-      tourism: 'Туризм',
-      violence: 'Насилие и вражда',
-      writecomment: 'Напишите комментарий',
-      yes: 'Да',
-      news: 'Новости',
-    };
-
-    return {
-      all: lang?.all || fallback.all,
-      bookmarkadded: lang?.bookmarkadded || fallback.bookmarkadded,
-      bookmarked: lang?.bookmarked || fallback.bookmarked,
-      bookmarkremoved: lang?.bookmarkremoved || fallback.bookmarkremoved,
-      bookmarks: lang?.bookmarks || fallback.bookmarks,
-      candidimage: lang?.candidimage || fallback.candidimage,
-      copylink: lang?.copylink || fallback.copylink,
-      delete: lang?.delete || fallback.delete,
-      deletepost: lang?.deletepost || fallback.deletepost,
-      emptycomments: lang?.emptycomments || fallback.emptycomments,
-      emptycommentsdesc: lang?.emptycommentsdesc || fallback.emptycommentsdesc,
-      feed: lang?.feed || fallback.feed,
-      films: lang?.films || fallback.films,
-      food: lang?.food || fallback.food,
-      games: lang?.games || fallback.games,
-      humor: lang?.humor || fallback.humor,
-      investment: lang?.investment || fallback.investment,
-      it: lang?.it || fallback.it,
-      langname: lang?.langname || fallback.langname,
-      less: lang?.less || fallback.less,
-      linkcopied: lang?.linkcopied || fallback.linkcopied,
-      logintoreact: lang?.logintoreact || fallback.logintoreact,
-      more: lang?.more || fallback.more,
-      music: lang?.music || fallback.music,
-      my: lang?.my || fallback.my,
-      news: lang?.news || fallback.news,
-      no: lang?.no || fallback.no,
-      nomoreposts: lang?.nomoreposts || fallback.nomoreposts,
-      noposts: lang?.noposts || fallback.noposts,
-      nopostsdesc: lang?.nopostsdesc || fallback.nopostsdesc,
-      photo: lang?.photo || fallback.photo,
-      post: lang?.post || fallback.post,
-      postcomments: lang?.postcomments || fallback.postcomments,
-      prohibitedgood: lang?.prohibitedgood || fallback.prohibitedgood,
-      propertyrights: lang?.propertyrights || fallback.propertyrights,
-      reallywantdeletepost: lang?.reallywantdeletepost || fallback.reallywantdeletepost,
-      report: lang?.report || fallback.report,
-      scam: lang?.scam || fallback.scam,
-      science: lang?.science || fallback.science,
-      share: lang?.share || fallback.share,
-      somethingwrong: lang?.somethingwrong || fallback.somethingwrong,
-      spam: lang?.spam || fallback.spam,
-      sport: lang?.sport || fallback.sport,
-      tbookmark: lang?.tobookmarks || fallback.tbookmark,
-      tourism: lang?.tourism || fallback.tourism,
-      violence: lang?.violence || fallback.violence,
-      writecomment: lang?.writecomment || fallback.writecomment,
-      yes: lang?.yes || fallback.yes,
-    };
-  }, [lang]);
+  const strings = useLangStrings(lang);
 
   const postCardLang: Partial<PostCardLang> = {
     adultContentWarning:

@@ -20,12 +20,12 @@ import {
   UserMiniCard,
 } from '../../components/profile-ui';
 import PostsRenderer, {
-  type PostCardLang,
   type PostData,
 } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDragScroll } from '../../hooks/useDragScroll';
+import { useLangStrings } from '../../lib/lang';
 import {
   cn,
   SvgIcon,
@@ -223,124 +223,7 @@ export default function UserProfileContent({ login }: { login: string }) {
     [isAuthenticated, login, user?.id],
   );
 
-  const strings = useMemo(() => {
-    const fallback = {
-      accept: 'Принять',
-      add: 'Добавить',
-      blockedaccdesc: 'Аккаунт заблокирован',
-      bookmarkadded: 'Добавлено в закладки',
-      bookmarked: 'В закладках',
-      bookmarkremoved: 'Удалено из закладок',
-      candidimage: 'Откровенное изображение',
-      cancel: 'Отменить',
-      copylink: 'Скопировать ссылку',
-      delete: 'Удалить',
-      deletepost: 'Удалить пост',
-      dialogblocked: 'Диалог заблокирован',
-      dialogcreated: 'Диалог создан',
-      emptycomments: 'Комментариев пока нет',
-      emptycommentsdesc: 'Будьте первым, кто что-то напишет.',
-      errorhappend: 'Произошла ошибка =(',
-      friends: 'Друзья',
-      groups: 'Сообщества',
-      home: 'Home',
-      langname: 'en',
-      less: 'Скрыть',
-      linkcopied: 'Ссылка скопирована',
-      loading: 'Загрузка...',
-      logintoreact: 'Войдите, чтобы взаимодействовать с публикациями',
-      more: 'Подробнее',
-      no: 'Нет',
-      noposts: 'Постов пока нет',
-      nopostsdesc: 'У этого пользователя пока нет публикаций.',
-      pagenotfound: 'Пользователь не найден',
-      postcomments: 'Комментарии',
-      prohibitedgood: 'Запрещённый товар',
-      propertyrights: 'Нарушение интеллектуальных прав',
-      reallywantdeletepost: 'Вы действительно хотите удалить пост?',
-      report: 'Пожаловаться',
-      scam: 'Обман',
-      share: 'Поделиться',
-      somethingwrong: 'Что-то пошло не так',
-      spam: 'Спам',
-      subscribers: 'Подписчики',
-      successProfileUpdate: 'Это успех! Все готово, проверяйте!',
-      tbookmark: 'В закладки',
-      updateprofilecover: 'Обновить обложку профиля',
-      updateprofilepicture: 'Обновить фото профиля',
-      uploadphoto: 'Выберите изображение',
-      violence: 'Насилие и вражда',
-      writecomment: 'Напишите комментарий',
-      writetouser: 'Написать',
-      yes: 'Да',
-    };
-
-    return {
-      accept: lang?.accept || fallback.accept,
-      blockedaccdesc: lang?.blockedaccdesc || fallback.blockedaccdesc,
-      bookmarkadded: lang?.bookmarkadded || fallback.bookmarkadded,
-      bookmarked: lang?.bookmarked || fallback.bookmarked,
-      bookmarkremoved: lang?.bookmarkremoved || fallback.bookmarkremoved,
-      candidimage: lang?.candidimage || fallback.candidimage,
-      cancel: lang?.cancel || fallback.cancel,
-      copylink: lang?.copylink || fallback.copylink,
-      delete: lang?.delete || fallback.delete,
-      deletepost: lang?.deletepost || fallback.deletepost,
-      dialogblocked: lang?.dialogblocked || fallback.dialogblocked,
-      dialogcreated: lang?.dialogcreated || fallback.dialogcreated,
-      edit: lang?.edit || 'Редактировать',
-      emptycomments: lang?.emptycomments || fallback.emptycomments,
-      emptycommentsdesc: lang?.emptycommentsdesc || fallback.emptycommentsdesc,
-      errorhappend: lang?.errorhappend || fallback.errorhappend,
-      friends: lang?.friends || fallback.friends,
-      groups: lang?.groups || fallback.groups,
-      home: lang?.Home || lang?.home || fallback.home,
-      langname: lang?.langname || fallback.langname,
-      less: lang?.less || fallback.less,
-      linkcopied: lang?.linkcopied || fallback.linkcopied,
-      loading: lang?.['loading...'] || fallback.loading,
-      logintoreact: lang?.logintoreact || fallback.logintoreact,
-      more: lang?.more || fallback.more,
-      no: lang?.no || fallback.no,
-      noposts: lang?.noposts || fallback.noposts,
-      nopostsdesc: lang?.nopostsdesc || fallback.nopostsdesc,
-      pagenotfound: lang?.pagenotfound || fallback.pagenotfound,
-      postcomments: lang?.postcomments || fallback.postcomments,
-      prohibitedgood: lang?.prohibitedgood || fallback.prohibitedgood,
-      propertyrights: lang?.propertyrights || fallback.propertyrights,
-      reallywantdeletepost: lang?.reallywantdeletepost || fallback.reallywantdeletepost,
-      report: lang?.report || fallback.report,
-      scam: lang?.scam || fallback.scam,
-      share: lang?.share || fallback.share,
-      somethingwrong: lang?.somethingwrong || fallback.somethingwrong,
-      spam: lang?.spam || fallback.spam,
-      subscribers: lang?.subscribers || fallback.subscribers,
-      successProfileUpdate: fallback.successProfileUpdate,
-      tobookmarks: lang?.tobookmarks || fallback.tbookmark,
-      updateprofilecover: lang?.updateprofilecover || fallback.updateprofilecover,
-      updateprofilepicture: lang?.updateprofilepicture || fallback.updateprofilepicture,
-      uploadphoto: lang?.photo || fallback.uploadphoto,
-      violence: lang?.violence || fallback.violence,
-      writecomment: lang?.writecomment || fallback.writecomment,
-      writetouser: lang?.writetouser || fallback.writetouser,
-      yes: lang?.yes || fallback.yes,
-      add: lang?.add || fallback.add,
-    };
-  }, [lang]);
-
-  const postCardLang: Partial<PostCardLang> = {
-    adultContentWarning:
-      lang?.adult_content_warning || 'Изображение может содержать контент 18+',
-    bookmarked: strings.bookmarked,
-    delete: strings.delete,
-    edit: strings.edit,
-    less: strings.less,
-    more: strings.more,
-    report: strings.report,
-    share: strings.share,
-    tobookmarks: strings.tobookmarks,
-    translate: lang?.translate || 'Перевести',
-  };
+  const strings = useLangStrings(lang);
 
   const hasFriends = Boolean(userData?.friends?.length);
   const hasSubscribers = Boolean(userData?.subscribers?.length);
@@ -1238,7 +1121,18 @@ export default function UserProfileContent({ login }: { login: string }) {
                 ) : posts.length > 0 ? (
                   <PostsRenderer
                     currentUserId={user?.id ?? null}
-                    lang={postCardLang}
+                    lang={{
+                      adultContentWarning: strings.adult_content_warning,
+                      bookmarked: strings.bookmarked,
+                      delete: strings.delete,
+                      edit: strings.edit,
+                      less: strings.less,
+                      more: strings.more,
+                      report: strings.report,
+                      share: strings.share,
+                      tobookmarks: strings.tobookmarks,
+                      translate: strings.translate,
+                    }}
                     onBookmark={handleBookmark}
                     onComment={openCommentsModal}
                     onDelete={(post) => {

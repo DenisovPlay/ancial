@@ -21,6 +21,7 @@ import PostsRenderer, {
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDragScroll } from '../../hooks/useDragScroll';
+import { useLangStrings } from '../../lib/lang';
 import {
   cn,
   SvgIcon,
@@ -297,122 +298,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
     [isAuthenticated, link, user?.id],
   );
 
-  const strings = useMemo(() => {
-    const fallback = {
-      adultContentWarning: 'Изображение может содержать контент 18+',
-      apply: 'Применить',
-      blockedgroupdesc: 'Сообщество заблокировано',
-      bookmarked: 'В закладках',
-      bookmarkadded: 'Добавлено в закладки',
-      bookmarkremoved: 'Удалено из закладок',
-      candidimage: 'Откровенное изображение',
-      copylink: 'Скопировать ссылку',
-      delete: 'Удалить',
-      deletepost: 'Удалить пост',
-      edit: 'Редактировать',
-      editgroup: 'Редактировать сообщество',
-      editgroupwarn: 'Будьте внимательны при изменении ссылки сообщества.',
-      emptycomments: 'Комментариев пока нет',
-      emptycommentsdesc: 'Будьте первым, кто что-то напишет.',
-      errorhappend: 'Произошла ошибка =(',
-      follow: 'Подписаться',
-      groupdesc: 'Описание сообщества',
-      groupname: 'Название сообщества',
-      groupnotfound: 'Сообщество не найдено',
-      home: 'Home',
-      langname: 'en',
-      less: 'Скрыть',
-      linkcopied: 'Ссылка скопирована',
-      linktogroup: 'Ссылка на сообщество',
-      loading: 'Загрузка...',
-      logintoreact: 'Войдите, чтобы взаимодействовать с публикациями',
-      more: 'Подробнее',
-      no: 'Нет',
-      nomoreposts: 'Больше постов нет',
-      noposts: 'Постов нет',
-      nopostsdesc: 'Пока что здесь пусто...',
-      nosubscribersgr: 'Пока здесь нет подписчиков',
-      officialgroups: 'Официальные сообщества',
-      postcomments: 'Комментарии',
-      prohibitedgood: 'Запрещённый товар',
-      propertyrights: 'Нарушение интеллектуальных прав',
-      reallywantdeletepost: 'Вы действительно хотите удалить пост?',
-      report: 'Пожаловаться',
-      scam: 'Обман',
-      share: 'Поделиться',
-      somethingwrong: 'Что-то пошло не так',
-      spam: 'Спам',
-      subscribers: 'Подписчики',
-      successGroupUpdate: 'Это успех! Все готово, проверяйте!',
-      tobookmarks: 'В закладки',
-      translate: 'Перевести',
-      unfollow: 'Отписаться',
-      updateprofilecover: 'Обновить обложку профиля',
-      updateprofilepicture: 'Обновить фото профиля',
-      violence: 'Насилие и вражда',
-      writecomment: 'Напишите комментарий',
-      yes: 'Да',
-    };
-
-    return {
-      adultContentWarning: lang?.adult_content_warning || fallback.adultContentWarning,
-      apply: lang?.apply || fallback.apply,
-      blockedgroupdesc: lang?.blockedgroupdesc || fallback.blockedgroupdesc,
-      bookmarked: lang?.bookmarked || fallback.bookmarked,
-      bookmarkadded: lang?.bookmarkadded || fallback.bookmarkadded,
-      bookmarkremoved: lang?.bookmarkremoved || fallback.bookmarkremoved,
-      candidimage: lang?.candidimage || fallback.candidimage,
-      copylink: lang?.copylink || fallback.copylink,
-      delete: lang?.delete || fallback.delete,
-      deletepost: lang?.deletepost || fallback.deletepost,
-      edit: lang?.edit || fallback.edit,
-      editgroup: lang?.editgroup || fallback.editgroup,
-      editgroupwarn: lang?.editgroupWARN || fallback.editgroupwarn,
-      emptycomments: lang?.emptycomments || fallback.emptycomments,
-      emptycommentsdesc: lang?.emptycommentsdesc || fallback.emptycommentsdesc,
-      errorhappend: lang?.errorhappend || fallback.errorhappend,
-      follow: lang?.follow || fallback.follow,
-      groupdesc: lang?.groupdesc || fallback.groupdesc,
-      groupname: lang?.groupname || fallback.groupname,
-      groupnotfound: lang?.groupnotfound || fallback.groupnotfound,
-      home: lang?.Home || lang?.home || fallback.home,
-      langname: lang?.langname || fallback.langname,
-      less: lang?.less || fallback.less,
-      linkcopied: lang?.linkcopied || fallback.linkcopied,
-      linktogroup: lang?.linktogroup || fallback.linktogroup,
-      loading: lang?.['loading...'] || fallback.loading,
-      logintoreact: lang?.logintoreact || fallback.logintoreact,
-      more: lang?.more || fallback.more,
-      no: lang?.no || fallback.no,
-      nomoreposts: lang?.nomoreposts || fallback.nomoreposts,
-      noposts: lang?.noposts || fallback.noposts,
-      nopostsdesc: lang?.nopostsdesc || fallback.nopostsdesc,
-      nosubscribersgr: lang?.nosubscribersgr || fallback.nosubscribersgr,
-      officialgroups: lang?.officialgroups || fallback.officialgroups,
-      postcomments: lang?.postcomments || fallback.postcomments,
-      prohibitedgood: lang?.prohibitedgood || fallback.prohibitedgood,
-      propertyrights: lang?.propertyrights || fallback.propertyrights,
-      reallywantdeletepost: lang?.reallywantdeletepost || fallback.reallywantdeletepost,
-      report: lang?.report || fallback.report,
-      scam: lang?.scam || fallback.scam,
-      share: lang?.share || fallback.share,
-      somethingwrong: lang?.somethingwrong || fallback.somethingwrong,
-      spam: lang?.spam || fallback.spam,
-      subscribers: lang?.subscribers || fallback.subscribers,
-      successGroupUpdate: fallback.successGroupUpdate,
-      tobookmarks: lang?.tobookmarks || fallback.tobookmarks,
-      translate: lang?.translate || fallback.translate,
-      unfollow: lang?.unfollow || fallback.unfollow,
-      updateprofilecover: lang?.updateprofilecover || fallback.updateprofilecover,
-      updateprofilepicture: lang?.updateprofilepicture || fallback.updateprofilepicture,
-      violence: lang?.violence || fallback.violence,
-      writecomment: lang?.writecomment || fallback.writecomment,
-      yes: lang?.yes || fallback.yes,
-    };
-  }, [lang]);
+  const strings = useLangStrings(lang);
 
   const postCardLang: Partial<PostCardLang> = {
-    adultContentWarning: strings.adultContentWarning,
+    adultContentWarning: strings.adult_content_warning,
     bookmarked: strings.bookmarked,
     delete: strings.delete,
     edit: strings.edit,
@@ -1492,7 +1381,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         >
           <div
             className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-400 shadow rounded-3xl w-full"
-            dangerouslySetInnerHTML={{ __html: strings.editgroupwarn }}
+            dangerouslySetInnerHTML={{ __html: strings.editgroupWARN }}
           />
 
           <div className="form-control">
