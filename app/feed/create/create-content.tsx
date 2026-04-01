@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Dropdown } from '../../components/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { useLangStrings } from '../../lib/lang';
 import CreatePostPreview from './create-post-preview';
 import {
   type DraftImage,
@@ -43,7 +42,80 @@ export default function CreatePostContent() {
   const [selectedTopic, setSelectedTopic] = useState('');
   const [title, setTitle] = useState('');
 
-  const strings = useLangStrings(lang);
+  const strings = useMemo(() => {
+    const fb = {
+      choisetopic: 'Выберите тему',
+      films: 'Фильмы',
+      food: 'Еда',
+      frommyname: 'От моего имени',
+      games: 'Игры',
+      humor: 'Юмор',
+      investment: 'Инвестиции',
+      it: 'IT',
+      loading: 'Загрузка...',
+      max3photos: 'Можно загрузить не больше 3 фотографий',
+      music: 'Музыка',
+      newpost: 'Новый пост',
+      nowTyping: 'Печатается сейчас!',
+      photo: 'Фото',
+      photosPlaceholder: 'Здесь появятся все загруженные фотографии.',
+      placeholderAuthor: 'Автор',
+      placeholderContent: 'Текст поста',
+      placeholderTag: 'Тема',
+      placeholderTitle: 'Заголовок',
+      poll: 'Опрос',
+      post: 'Пост',
+      postcontent: 'Содержимое поста',
+      preview: 'Предпросмотр',
+      publicpost: 'Опубликовать',
+      science: 'Наука',
+      somethingwrong: 'Что-то пошло не так',
+      sport: 'Спорт',
+      tourism: 'Туризм',
+      title: 'Заголовок',
+      uploadedcompl: 'Фотография загружена',
+      uploading: 'Загружается...',
+      video: 'Видео',
+      waituntillphotouploaded: 'Подождите, пока фотография загрузится',
+      news: 'Новости',
+    };
+    return {
+      choisetopic: lang?.choisetopic || fb.choisetopic,
+      films: lang?.films || fb.films,
+      food: lang?.food || fb.food,
+      frommyname: lang?.frommyname || fb.frommyname,
+      games: lang?.games || fb.games,
+      humor: lang?.humor || fb.humor,
+      investment: lang?.investment || fb.investment,
+      it: lang?.it || fb.it,
+      loading: lang?.['loading...'] || fb.loading,
+      max3photos: lang?.max3photos || fb.max3photos,
+      music: lang?.music || fb.music,
+      newpost: lang?.newpost || fb.newpost,
+      news: lang?.news || fb.news,
+      nowTyping: fb.nowTyping,
+      photo: lang?.photo || fb.photo,
+      photosPlaceholder: fb.photosPlaceholder,
+      placeholderAuthor: fb.placeholderAuthor,
+      placeholderContent: fb.placeholderContent,
+      placeholderTag: fb.placeholderTag,
+      placeholderTitle: fb.placeholderTitle,
+      poll: lang?.poll || fb.poll,
+      post: lang?.post || fb.post,
+      postcontent: lang?.postcontent || fb.postcontent,
+      preview: lang?.preview || fb.preview,
+      publicpost: lang?.publicpost || fb.publicpost,
+      science: lang?.science || fb.science,
+      somethingwrong: lang?.somethingwrong || fb.somethingwrong,
+      sport: lang?.sport || fb.sport,
+      title: lang?.title || fb.title,
+      tourism: lang?.tourism || fb.tourism,
+      uploadedcompl: lang?.uploadedcompl || fb.uploadedcompl,
+      uploading: fb.uploading,
+      video: lang?.video || fb.video,
+      waituntillphotouploaded: lang?.waituntillphotouploaded || fb.waituntillphotouploaded,
+    };
+  }, [lang]);
 
   const topicOptions = useMemo(
     () => [

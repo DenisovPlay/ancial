@@ -9,7 +9,6 @@ import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { PostCard, type PostCardLang, type PostData } from '../../../components/posts-renderer';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { useLangStrings } from '../../../lib/lang';
 import { SvgIcon } from '../../editor-shared';
 import FeedPostSkeleton from '../../feed-post-skeleton';
 
@@ -221,7 +220,72 @@ export default function SinglePostContent({ postId }: { postId: string }) {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const strings = useLangStrings(lang);
+  const strings = useMemo(() => {
+    const fb = {
+      bookmarkadded: 'Добавлено в закладки',
+      bookmarked: 'В закладках',
+      bookmarkremoved: 'Удалено из закладок',
+      candidimage: 'Откровенное изображение',
+      copylink: 'Скопировать ссылку',
+      delete: 'Удалить',
+      deletepost: 'Удалить пост',
+      emptycomments: 'Комментариев пока нет',
+      emptycommentsdesc: 'Будьте первым, кто что-то напишет.',
+      langname: 'en',
+      less: 'Скрыть',
+      linkcopied: 'Ссылка скопирована',
+      logintoreact: 'Войдите, чтобы взаимодействовать с публикациями',
+      more: 'Подробнее',
+      no: 'Нет',
+      post: 'Пост',
+      postcomments: 'Комментарии',
+      postnotfound: 'Запись не найдена',
+      prohibitedgood: 'Запрещённый товар',
+      propertyrights: 'Нарушение интеллектуальных прав',
+      reallywantdeletepost: 'Вы действительно хотите удалить пост?',
+      report: 'Пожаловаться',
+      scam: 'Обман',
+      share: 'Поделиться',
+      somethingwrong: 'Что-то пошло не так',
+      spam: 'Спам',
+      tbookmark: 'В закладки',
+      violence: 'Насилие и вражда',
+      writecomment: 'Напишите комментарий',
+      yes: 'Да',
+    };
+    return {
+      bookmarkadded: lang?.bookmarkadded || fb.bookmarkadded,
+      bookmarked: lang?.bookmarked || fb.bookmarked,
+      bookmarkremoved: lang?.bookmarkremoved || fb.bookmarkremoved,
+      candidimage: lang?.candidimage || fb.candidimage,
+      copylink: lang?.copylink || fb.copylink,
+      delete: lang?.delete || fb.delete,
+      deletepost: lang?.deletepost || fb.deletepost,
+      emptycomments: lang?.emptycomments || fb.emptycomments,
+      emptycommentsdesc: lang?.emptycommentsdesc || fb.emptycommentsdesc,
+      langname: lang?.langname || fb.langname,
+      less: lang?.less || fb.less,
+      linkcopied: lang?.linkcopied || fb.linkcopied,
+      logintoreact: lang?.logintoreact || fb.logintoreact,
+      more: lang?.more || fb.more,
+      no: lang?.no || fb.no,
+      post: lang?.post || fb.post,
+      postcomments: lang?.postcomments || fb.postcomments,
+      postnotfound: lang?.postnotfound || fb.postnotfound,
+      prohibitedgood: lang?.prohibitedgood || fb.prohibitedgood,
+      propertyrights: lang?.propertyrights || fb.propertyrights,
+      reallywantdeletepost: lang?.reallywantdeletepost || fb.reallywantdeletepost,
+      report: lang?.report || fb.report,
+      scam: lang?.scam || fb.scam,
+      share: lang?.share || fb.share,
+      somethingwrong: lang?.somethingwrong || fb.somethingwrong,
+      spam: lang?.spam || fb.spam,
+      tbookmark: lang?.tobookmarks || fb.tbookmark,
+      violence: lang?.violence || fb.violence,
+      writecomment: lang?.writecomment || fb.writecomment,
+      yes: lang?.yes || fb.yes,
+    };
+  }, [lang]);
 
   const postCardLang: Partial<PostCardLang> = {
     adultContentWarning:

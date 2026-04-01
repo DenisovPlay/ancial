@@ -7,7 +7,6 @@ import { Dropdown } from '../../components/navigation';
 import type { PostAuthor, PostData, PostImage } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { useLangStrings } from '../../lib/lang';
 import {
   type DraftImage,
   MAX_IMAGES,
@@ -85,7 +84,88 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
   const [selectedTopic, setSelectedTopic] = useState('');
   const [title, setTitle] = useState('');
 
-  const strings = useLangStrings(lang);
+  const strings = useMemo(() => {
+    const fb = {
+      choisetopic: 'Выберите тему',
+      edit: 'Редактировать',
+      errorDescription: 'Попробуйте обновить страницу чуть позже.',
+      films: 'Фильмы',
+      food: 'Еда',
+      games: 'Игры',
+      humor: 'Юмор',
+      investment: 'Инвестиции',
+      it: 'IT',
+      loading: 'Загрузка...',
+      max3photos: 'Можно загрузить не больше 3 фотографий',
+      music: 'Музыка',
+      news: 'Новости',
+      nopost: 'Запись не найдена',
+      nopostdesc: 'Возможно, она была удалена или ссылка неверна.',
+      notyourpost: 'Не ваша запись!',
+      notyourpostdesc: 'Чужие записи нельзя изменять.',
+      nowTyping: 'Печатается сейчас!',
+      photo: 'Фото',
+      placeholderAuthor: 'Автор',
+      placeholderContent: 'Текст поста',
+      placeholderTag: 'Тема',
+      placeholderTitle: 'Заголовок',
+      poll: 'Опрос',
+      post: 'Пост',
+      postcontent: 'Содержимое поста',
+      preview: 'Предпросмотр',
+      save: 'Сохранить',
+      saved: 'Изменения сохранены',
+      science: 'Наука',
+      somethingwrong: 'Что-то пошло не так',
+      sport: 'Спорт',
+      title: 'Заголовок',
+      tourism: 'Туризм',
+      uploadedcompl: 'Фотография загружена',
+      uploading: 'Загружается...',
+      video: 'Видео',
+      waituntillphotouploaded: 'Подождите, пока фотография загрузится',
+    };
+    return {
+      choisetopic: lang?.choisetopic || fb.choisetopic,
+      edit: lang?.edit || fb.edit,
+      errorDescription: fb.errorDescription,
+      films: lang?.films || fb.films,
+      food: lang?.food || fb.food,
+      games: lang?.games || fb.games,
+      humor: lang?.humor || fb.humor,
+      investment: lang?.investment || fb.investment,
+      it: lang?.it || fb.it,
+      loading: lang?.['loading...'] || fb.loading,
+      max3photos: lang?.max3photos || fb.max3photos,
+      music: lang?.music || fb.music,
+      news: lang?.news || fb.news,
+      nopost: fb.nopost,
+      nopostdesc: fb.nopostdesc,
+      notyourpost: fb.notyourpost,
+      notyourpostdesc: fb.notyourpostdesc,
+      nowTyping: fb.nowTyping,
+      photo: lang?.photo || fb.photo,
+      placeholderAuthor: fb.placeholderAuthor,
+      placeholderContent: fb.placeholderContent,
+      placeholderTag: fb.placeholderTag,
+      placeholderTitle: fb.placeholderTitle,
+      poll: lang?.poll || fb.poll,
+      post: lang?.post || fb.post,
+      postcontent: lang?.postcontent || fb.postcontent,
+      preview: lang?.preview || fb.preview,
+      save: lang?.save || fb.save,
+      saved: lang?.saved || fb.saved,
+      science: lang?.science || fb.science,
+      somethingwrong: lang?.somethingwrong || fb.somethingwrong,
+      sport: lang?.sport || fb.sport,
+      title: lang?.title || fb.title,
+      tourism: lang?.tourism || fb.tourism,
+      uploadedcompl: lang?.uploadedcompl || fb.uploadedcompl,
+      uploading: fb.uploading,
+      video: lang?.video || fb.video,
+      waituntillphotouploaded: lang?.waituntillphotouploaded || fb.waituntillphotouploaded,
+    };
+  }, [lang]);
 
   const topicOptions = useMemo(
     () => [

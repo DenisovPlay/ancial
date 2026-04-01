@@ -20,6 +20,16 @@ export interface User {
   country?: string;
   city?: string;
   address?: string;
+  zip?: string;
+  phone?: string;
+  yandex_phone?: string;
+  email?: string;
+  connected_yacc?: string;
+  connected_telegram?: string;
+  searchshow?: string;
+  msgopen?: string;
+  pushsid?: string;
+  pushdevice?: string;
 }
 
 interface AuthContextType {
