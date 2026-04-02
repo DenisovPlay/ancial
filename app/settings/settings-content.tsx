@@ -110,7 +110,7 @@ export default function SettingsPage() {
             <select
               onChange={selectLanguage}
               value={lang?.langname === 'en' ? 'en' : 'ru'}
-              className="bg-zinc-700/70 hover:bg-zinc-700/60 duration-300 p-1 rounded-2xl mr-2 shadow cursor-pointer text-white border-0 focus:ring-0"
+              className="focus:outline-0 focus:ring-0 bg-zinc-700/70 hover:bg-zinc-700/60 duration-300 p-1 rounded-2xl mr-2 shadow cursor-pointer text-white border-0 focus:ring-0"
             >
               <option value="ru">Русский</option>
               <option value="en">English</option>

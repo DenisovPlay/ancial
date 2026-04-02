@@ -116,7 +116,7 @@
 
       <div className="flex flex-col w-full max-w-3xl px-3 lg:px-0">
           <span className="text-xl font-bold text-white">2018</span>
-          <span className="w-full max-w-3xl text-lg text-zinc-300">Наша история началась ещё в далёком 2018 году. Мы придумали себе название <span className="text-purple-500">"Ctrl C + Ctrl V"</span> и целых 2 сервиса: кошелёк (<span className="text-purple-500">GG-Pay</span>) и каталог игр (<span className="text-purple-500">GG-Katalog</span>) с ценами из различных онлайн и оффлайн сервисов.</span>
+          <span className="w-full max-w-3xl text-lg text-zinc-300">Наша история началась ещё в далёком 2018 году. Мы придумали себе название <span className="text-purple-500">"ZeniFlow"</span> и целых 2 сервиса: кошелёк (<span className="text-purple-500">GG-Pay</span>) и каталог игр (<span className="text-purple-500">GG-Katalog</span>) с ценами из различных онлайн и оффлайн сервисов.</span>
           
           <span className="text-xl font-bold text-white mt-3">2019</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300">После этого, в 2019, нас посетила идея создать простую и удобную социальную сеть. С 2019 по 2020 мы сделали кучу прототипов, тестовых версий, множество раз меняли дизайн.</span>
@@ -131,7 +131,7 @@
           <span className="w-full max-w-3xl text-lg text-zinc-300">В 2022-2024 мы меняли интерфейсы, создали сервисы, которые есть сейчас, придумали новый логотип с рукописным "an" и спокойными цветами. Создали подназвание <span className="text-purple-500">"Ancial Group"</span> для тех, кто занимался разработкой именно <span className="text-purple-500">Ancial</span>. Сделали чат с нейросетями (<span className="text-purple-500">Anci</span>) и <span className="text-purple-500">dot-Tell</span> - приватный мессенджер в виде клейких листов. Оба этих сервиса пали жертвой оптимизации расходов, но кто знает, может они вернутся... О, ещё - придумали Ancial Коннект для входа в эти сервисы)</span>
           
           <span className="text-xl font-bold text-white mt-3">2025</span>
-          <span className="w-full max-w-3xl text-lg text-zinc-300">В 2025 запустили в разработку новый отдельный Pulse (Музыка) и Zeni (Финтех). А ещё - <span className="text-purple-500">Ancial Lite</span> - более мощную и более лёгкую версию Ancial на новой кодовой базе, освежили логотип, взяли более яркие и броские цвета. Вместо <span className="text-purple-500">"Ctrl C + Ctrl V"</span> и <span className="text-purple-500">"Ancial Group"</span> решили назвать себя проще - <span className="text-purple-500">ZeniFlow</span>, в честь не вышедшего финтех сервиса <span className="text-purple-500">Zeni</span>.</span>
+          <span className="w-full max-w-3xl text-lg text-zinc-300">В 2025 запустили в разработку новый отдельный Pulse (Музыка) и Zeni (Финтех). А ещё - <span className="text-purple-500">Ancial Lite</span> - более мощную и более лёгкую версию Ancial на новой кодовой базе, освежили логотип, взяли более яркие и броские цвета. Вместо <span className="text-purple-500">"ZeniFlow"</span> и <span className="text-purple-500">"Ancial Group"</span> решили назвать себя проще - <span className="text-purple-500">ZeniFlow</span>, в честь не вышедшего финтех сервиса <span className="text-purple-500">Zeni</span>.</span>
           
           <span className="text-xl font-bold text-white mt-3">2026</span>
           <span className="w-full max-w-3xl text-lg text-zinc-300">Начали новую эпоху - опубликовались на Product Radar и начали делать React-версию клиента.</span>

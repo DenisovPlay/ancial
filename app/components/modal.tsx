@@ -179,15 +179,15 @@ export default function Modal({
         onTouchEnd={handleTouchEnd}
       >
         {showHeader && (
-          <div className="absolute inset-x-0 top-0 flex flex-col items-center border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-lg backdrop-saturate-200 z-[999]">
+          <div className="absolute inset-x-0 top-0 flex flex-col items-center bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent z-[999]">
               {swipeable && (
               <div className="w-full flex justify-center pt-3 sm:hidden cursor-grab active:cursor-grabbing">
                   <div className="w-12 h-1.5 bg-zinc-700 rounded-full" />
               </div>
               )}
               
-              <div className="flex items-center justify-between px-3 pb-3 sm:pt-3 border-b border-zinc-800/50 w-full">
-                  <h2 className="text-xl font-bold text-white">{title}</h2>
+              <div className="flex items-center justify-between px-3 pb-3 sm:pt-3 w-full">
+                  <h2 className="text-xl font-bold text-white backdrop-shadow-lg">{title}</h2>
                   <button 
                       onClick={onClose}
                       className="cursor-pointer hidden sm:flex p-1.5 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-600/30 duration-300 active:scale-95"
@@ -202,7 +202,7 @@ export default function Modal({
         <div
           className={cn(
             'overflow-y-auto',
-            showHeader ? 'p-3 pt-[72px]' : 'p-0',
+            showHeader ? 'p-3 pt-[64px]' : 'p-0',
             bodyClassName,
           )}
           onTouchStart={(e) => e.stopPropagation()}

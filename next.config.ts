@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://ancial.ru';
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['gradualblur'],
   images: {
     remotePatterns: [
       {
