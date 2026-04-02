@@ -146,7 +146,7 @@ export default function AccountSettingsPage() {
             <button 
               onClick={updateInform} 
               disabled={isLoading}
-              className="border border-zinc-600/30 cursor-pointer mt-3 flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow disabled:opacity-50"
+              className="border border-zinc-600/30 cursor-pointer mt-3 flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow disabled:opacity-50"
             >
               {isLoading ? '...' : (lang?.save || 'Сохранить')}
             </button>

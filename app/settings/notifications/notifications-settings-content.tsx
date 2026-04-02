@@ -337,7 +337,7 @@ export default function NotificationsSettingsContent() {
             <button
               onClick={setupNotifications}
               disabled={isDetecting}
-              className="border border-zinc-600/30 cursor-pointer col-span-2 flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow disabled:opacity-50"
+              className="border border-zinc-600/30 cursor-pointer col-span-2 flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow disabled:opacity-50"
             >
               {isDetecting ? (
                 <>
@@ -359,7 +359,7 @@ export default function NotificationsSettingsContent() {
               <button
                 onClick={setupNotifications}
                 disabled={isDetecting}
-                className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-600 hover:bg-purple-700 text-zinc-100 rounded-full w-full shadow disabled:opacity-50"
+                className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow disabled:opacity-50"
               >
                 {isDetecting ? 'Подключение...' : 'Сменить устройство'}
               </button>

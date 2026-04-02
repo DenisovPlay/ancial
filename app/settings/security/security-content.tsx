@@ -448,7 +448,7 @@ export default function SecuritySettingsPage() {
           </div>
 
           <button
-            className="border border-zinc-600/30 cursor-pointer mt-3 flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow disabled:opacity-60"
+            className="border border-zinc-600/30 cursor-pointer mt-3 flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow disabled:opacity-60"
             disabled={isSavingPassword}
             onClick={changePassword}
             type="button"
@@ -486,7 +486,7 @@ export default function SecuritySettingsPage() {
 
             <div className="flex gap-3 mt-3 w-full justify-center">
               <button
-                className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow"
+                className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow"
                 onClick={() => setChangeModalOpen(true)}
                 type="button"
               >
@@ -537,7 +537,7 @@ export default function SecuritySettingsPage() {
               </div>
 
               <button
-                className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow mt-3"
+                className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow mt-3"
                 onClick={() => router.push('/settings/socials')}
                 type="button"
               >
@@ -560,7 +560,7 @@ export default function SecuritySettingsPage() {
                 {lang?.connyandextover || 'Привяжите Яндекс для подтверждения данных'}
               </span>
               <button
-                className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow mt-3"
+                className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow mt-3"
                 onClick={() => router.push('/settings/socials')}
                 type="button"
               >
@@ -590,7 +590,7 @@ export default function SecuritySettingsPage() {
           </div>
 
           <button
-            className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow disabled:opacity-60"
+            className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow disabled:opacity-60"
             disabled={isSavingPrivacy}
             onClick={updateInform}
             type="button"
@@ -643,7 +643,7 @@ export default function SecuritySettingsPage() {
           </form>
           <div className="gap-3 grid grid-cols-2 mt-3">
             <button
-              className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow text-lg disabled:opacity-60"
+              className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow text-lg disabled:opacity-60"
               disabled={isSavingContacts}
               onClick={changePhoneEmail}
               type="button"
