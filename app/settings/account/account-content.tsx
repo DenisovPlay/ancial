@@ -86,7 +86,7 @@ export default function AccountSettingsPage() {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-pink-400/25 lg:from-transparent via-transparent to-transparent">
+    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-pink-400/25 md:from-transparent via-transparent to-transparent">
         <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent" style={{ zIndex: 99 }}>
           <div className="w-full max-w-3xl flex items-center gap-3">
             <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer">

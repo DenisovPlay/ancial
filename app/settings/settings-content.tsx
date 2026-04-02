@@ -44,7 +44,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-blue-400/25 lg:from-transparent via-transparent to-transparent">
+    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-blue-400/25 md:from-transparent via-transparent to-transparent">
       <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40">
         <span className="w-full max-w-3xl text-3xl font-extralight">{lang?.settings || 'Настройки'}</span>
       </div>
