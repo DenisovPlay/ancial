@@ -31,7 +31,7 @@ export default function LegalPage() {
             {lang?.documents || "Документы"}
           </span>
           <div className="flex-grow"></div>
-          <div className="shrink-0 w-fit rounded-3xl bg-zinc-900/95 ring ring-zinc-600/30 duration-300 flex mx-3 mt-3 sm:mt-0 sm:mx-0 gap-0.5">
+          <div className="shrink-0 w-fit rounded-3xl bg-zinc-900/95 ring ring-zinc-600/30 duration-300 flex mx-3 mt-3 sm:mt-0 sm:mx-0 gap-0.5 sm:mr-3 lg:mr-0">
             <button
               id="allbutton"
               onClick={() => setLangFilter("ALL")}
