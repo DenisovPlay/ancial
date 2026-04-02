@@ -31,14 +31,14 @@ export default function LegalPage() {
             {lang?.documents || "Документы"}
           </span>
           <div className="flex-grow"></div>
-          <div className="shrink-0 w-fit rounded-3xl bg-zinc-900/95 border border-zinc-600/30 duration-300 flex divide-zinc-800 divide-x mx-3 mt-3 sm:mt-0 sm:mx-0">
+          <div className="shrink-0 w-fit rounded-3xl bg-zinc-900/95 ring ring-zinc-600/30 duration-300 flex mx-3 mt-3 sm:mt-0 sm:mx-0 gap-0.5">
             <button
               id="allbutton"
               onClick={() => setLangFilter("ALL")}
-              className={`aspect-square p-2 lg:text-lg rounded-3xl duration-300 rounded-r-none flex items-center justify-center active:scale-95 cursor-pointer ${
+              className={`aspect-square h-12 w-12 p-2 lg:text-lg rounded-3xl duration-300 flex items-center justify-center active:scale-95 cursor-pointer ${
                 langFilter === "ALL"
-                  ? "bg-zinc-800 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                  ? "bg-zinc-800 text-white border-r border-zinc-600/30"
+                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
               }`}
             >
               <svg
@@ -54,10 +54,10 @@ export default function LegalPage() {
             <button
               id="rubutton"
               onClick={() => setLangFilter("RU")}
-              className={`p-2 px-4 lg:text-lg duration-300 active:scale-95 cursor-pointer ${
+              className={`p-2 px-4 lg:text-lg rounded-3xl duration-300 active:scale-95 cursor-pointer ${
                 langFilter === "RU"
-                  ? "bg-zinc-800 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                  ? "bg-zinc-800 text-white border-x border-zinc-600/30"
+                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
               }`}
             >
               Русский
@@ -65,10 +65,10 @@ export default function LegalPage() {
             <button
               id="enbutton"
               onClick={() => setLangFilter("EN")}
-              className={`p-2 px-4 lg:text-lg rounded-3xl duration-300 rounded-l-none active:scale-95 cursor-pointer ${
+              className={`p-2 px-4 lg:text-lg rounded-3xl duration-300 active:scale-95 cursor-pointer ${
                 langFilter === "EN"
-                  ? "bg-zinc-800 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                  ? "bg-zinc-800 text-white border-l border-zinc-600/30"
+                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
               }`}
             >
               English
