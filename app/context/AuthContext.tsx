@@ -30,6 +30,9 @@ export interface User {
   msgopen?: string;
   pushsid?: string;
   pushdevice?: string;
+  numberverif?: boolean | string;
+  emailverif?: boolean | string;
+  veriflevel?: number | string;
 }
 
 interface AuthContextType {
@@ -64,15 +67,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const checkAuth = async () => {
     setIsLoading(true);
     try {
+      const readSessionUser = async () => {
+        const checkRes = await fetch(`/api/auth/check.php`, {
+          credentials: 'include',
+        });
+
+        try {
+          return await checkRes.json();
+        } catch {
+          return { auth: false };
+        }
+      };
+
       // 1. Проверяем текущую сессию на сервере
-      const checkRes = await fetch(`/api/auth/check.php`);
-      let checkData;
-      try {
-        checkData = await checkRes.json();
-      } catch (e) {
-         // Обработка случая, если сервер вернул не JSON (например, 500 ошибку)
-         checkData = { auth: false };
-      }
+      let checkData = await readSessionUser();
 
       if (checkData.auth === true && checkData.user) {
         // Пользователь авторизован на сервере
@@ -95,19 +103,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (loginData.status === 'success') {
             console.log('[Auth] Авторизован через токен. Обновляем данные.');
-            
-            // Если вошли по токену (сессия установлена) - получаем подробные данные
-            const infoRes = await fetch(`/api/user/info.php?token=${token}`);
-            const infoData = await infoRes.json();
 
-            if (infoData.status === 'success') {
-              setUser(infoData.response);
+            // После логина по токену повторно читаем серверную сессию,
+            // чтобы получить актуальную схему пользователя из check.php.
+            checkData = await readSessionUser();
+
+            if (checkData.auth === true && checkData.user) {
+              setUser(checkData.user);
               setIsAuthenticated(true);
             } else {
-              // Токен перестал работать
-              setUser(null);
-              setIsAuthenticated(false);
-              localStorage.removeItem('token');
+              // Запасной путь для старых сценариев, если check.php ещё не успел обновиться
+              const infoRes = await fetch(`/api/user/info.php?token=${token}`);
+              const infoData = await infoRes.json();
+
+              if (infoData.status === 'success') {
+                setUser(infoData.response);
+                setIsAuthenticated(true);
+              } else {
+                setUser(null);
+                setIsAuthenticated(false);
+                localStorage.removeItem('token');
+              }
             }
           } else {
             // Ошибка авторизации по токену (например, просрочен)

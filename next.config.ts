@@ -32,6 +32,10 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         destination: `${API_BASE}/api/:path*`,
       },
+      { // Proxy for legacy engine endpoints still used by settings flows
+        source: '/engine/:path*',
+        destination: `${API_BASE}/engine/:path*`,
+      },
       { // Proxy for static assets like images, CSS, etc. that are served from the API server
         source: '/includes/:path*',
         destination: `${API_BASE}/includes/:path*`,
