@@ -88,9 +88,7 @@ function resolveWebSocketUrl() {
   if (explicitUrl) return explicitUrl;
 
   const apiBase = process.env.NEXT_PUBLIC_API_BASE?.trim();
-  const base =
-    apiBase ||
-    (typeof window !== 'undefined' ? window.location.origin : '');
+  const base = apiBase || 'https://ancial.ru';
 
   if (!base) return '';
 

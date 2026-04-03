@@ -774,10 +774,10 @@ function MessageBubble({
         open={menuOpen}
         onOpenChange={setMenuOpen}
         renderTrigger={false}
-        position="bottom"
+        position="top"
         align={isOwn ? 'end' : 'start'}
         width="auto"
-        wrapperClassName="pointer-events-none absolute left-0 right-0 top-0 h-0"
+        wrapperClassName="pointer-events-none absolute left-0 right-0 -top-12 z-30 h-0"
         menuClassName="pointer-events-auto w-fit overflow-hidden rounded-2xl bg-zinc-900/85"
       >
         <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
@@ -2055,7 +2055,7 @@ export default function MessagesContent() {
                   </div>
                 ) : (
                   <>
-                    <div id="dialog-list-container" className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                    <div id="dialog-list-container" className="flex min-h-0 flex-1 flex-col lg:overflow-y-auto">
                       {dialogs.map((dialog) => {
                         const dialogHash = normalizeHash(dialog.hash);
                         const active = dialogHash === routeHash;
@@ -2111,20 +2111,16 @@ export default function MessagesContent() {
                           </button>
                         );
                       })}
+                      <div className="lg:hidden pb-64">
+                        
+                      </div>
                     </div>
-
                     <YandexRtb
                       blockId="R-A-3636730-16"
                       className="hidden w-full max-h-24 items-center justify-center lg:flex"
                     />
                   </>
                 )}
-              </div>
-
-              <div className="lg:hidden">
-                <br />
-                <br />
-                <br />
               </div>
             </div>
           </div>
@@ -2257,7 +2253,7 @@ export default function MessagesContent() {
                   ref={messageScrollRef}
                   id="msg-scroll"
                   onScroll={handleMessagesScroll}
-                  className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-[72px] pt-20 lg:px-3"
+                  className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pt-[calc(100vh-116px)]"
                 >
                   {dialogLoading && !selectedDialog ? (
                     <div className="flex h-full min-h-[50vh] items-center justify-center">
@@ -2268,49 +2264,51 @@ export default function MessagesContent() {
                       <span>{dialogError}</span>
                     </div>
                   ) : (
-                    <div id="msgbox" className="flex flex-col">
-                      {loadingOlder ? (
-                        <div className="mb-3 flex items-center justify-center">
-                          <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-purple-500" />
-                        </div>
-                      ) : null}
+                    <div id="msgbox" className="flex min-h-full flex-col">
+                      <div className="mt-auto pb-[72px]">
+                        {loadingOlder ? (
+                          <div className="mb-3 flex items-center justify-center">
+                            <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-purple-500" />
+                          </div>
+                        ) : null}
 
-                      {timelineItems.map((item) =>
-                        item.kind === 'separator' ? (
-                          <div key={`sep:${item.dayKey}`} className="my-3 flex w-full justify-center">
-                            <span className="rounded-full border border-zinc-600/30 bg-zinc-900/70 px-3 py-1 text-xs text-zinc-200 shadow backdrop-blur-md backdrop-saturate-200">
-                              {item.label}
+                        {timelineItems.map((item) =>
+                          item.kind === 'separator' ? (
+                            <div key={`sep:${item.dayKey}`} className="my-3 flex w-full justify-center">
+                              <span className="rounded-full border border-zinc-600/30 bg-zinc-900/70 px-3 py-1 text-xs text-zinc-200 shadow backdrop-blur-md backdrop-saturate-200">
+                                {item.label}
+                              </span>
+                            </div>
+                          ) : (
+                            <MessageBubble
+                              key={`msg:${getMessageId(item.message)}`}
+                              authUserImage={authUserImage}
+                              currentUserId={currentUserId}
+                              foreignUser={foreignUser}
+                              lang={lang}
+                              message={item.message}
+                              onAddReaction={(messageId, reaction) => {
+                                void sendReaction(messageId, reaction, 'add');
+                              }}
+                              onDeleteMessage={(message) => {
+                                void handleMessageDelete(message);
+                              }}
+                              onDeleteReaction={(messageId, reaction) => {
+                                void sendReaction(messageId, reaction, 'delete');
+                              }}
+                              onEditMessage={handleMessageEditOpen}
+                            />
+                          ),
+                        )}
+
+                        {!dialogLoading && !messages.length ? (
+                          <div className="flex min-h-[50vh] items-center justify-center">
+                            <span className="rounded-full border border-zinc-600/30 bg-zinc-900/70 px-4 py-2 text-sm text-zinc-300 shadow backdrop-blur-md backdrop-saturate-200">
+                              {lang?.write_message || 'Напишите первое сообщение'}
                             </span>
                           </div>
-                        ) : (
-                          <MessageBubble
-                            key={`msg:${getMessageId(item.message)}`}
-                            authUserImage={authUserImage}
-                            currentUserId={currentUserId}
-                            foreignUser={foreignUser}
-                            lang={lang}
-                            message={item.message}
-                            onAddReaction={(messageId, reaction) => {
-                              void sendReaction(messageId, reaction, 'add');
-                            }}
-                            onDeleteMessage={(message) => {
-                              void handleMessageDelete(message);
-                            }}
-                            onDeleteReaction={(messageId, reaction) => {
-                              void sendReaction(messageId, reaction, 'delete');
-                            }}
-                            onEditMessage={handleMessageEditOpen}
-                          />
-                        ),
-                      )}
-
-                      {!dialogLoading && !messages.length ? (
-                        <div className="flex min-h-[50vh] items-center justify-center">
-                          <span className="rounded-full border border-zinc-600/30 bg-zinc-900/70 px-4 py-2 text-sm text-zinc-300 shadow backdrop-blur-md backdrop-saturate-200">
-                            {lang?.write_message || 'Напишите первое сообщение'}
-                          </span>
-                        </div>
-                      ) : null}
+                        ) : null}
+                      </div>
                     </div>
                   )}
                 </div>
