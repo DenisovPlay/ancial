@@ -16,6 +16,7 @@ import YandexRtb from '../components/yandex-rtb';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { globalWS } from '../lib/global-ws';
+import DialogImageViewerModal, { type DialogImageSlide } from './dialog-image-viewer-modal';
 
 type LangMap = Record<string, string> | null;
 
@@ -88,6 +89,12 @@ type DialogMessagesResponse = {
 type MessageReactionEntry = {
   emoji: string;
   userId: string;
+};
+
+type MessageImage = {
+  alt: string;
+  isViewerImage: boolean;
+  src: string;
 };
 
 type MessageTimelineItem =
@@ -245,6 +252,70 @@ function escapeHtml(value: string) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function getHtmlAttribute(tag: string, attributeName: string) {
+  const quotedMatch = tag.match(new RegExp(`${attributeName}\\s*=\\s*(['"])(.*?)\\1`, 'i'));
+  if (quotedMatch?.[2]) {
+    return quotedMatch[2];
+  }
+
+  const unquotedMatch = tag.match(new RegExp(`${attributeName}\\s*=\\s*([^\\s>]+)`, 'i'));
+  return unquotedMatch?.[1] ?? '';
+}
+
+function hasFancyboxAttribute(tag: string) {
+  return /\bdata-fancybox(?:\s*=|\b)/i.test(tag);
+}
+
+function extractMessageImages(value: string | null | undefined) {
+  const images: MessageImage[] = [];
+  const html = String(value ?? '');
+  const imageTags = html.match(/<img\b[^>]*>/gi) ?? [];
+
+  imageTags.forEach((tag) => {
+    const src = decodeHtml(
+      normalizeText(getHtmlAttribute(tag, 'data-src') || getHtmlAttribute(tag, 'src')),
+    );
+    if (!src) return;
+
+    images.push({
+      alt: decodeHtml(normalizeText(getHtmlAttribute(tag, 'alt'))),
+      isViewerImage: hasFancyboxAttribute(tag),
+      src,
+    });
+  });
+
+  return images;
+}
+
+function getMessageBodyHtmlWithoutImages(value: string | null | undefined) {
+  return String(value ?? '').replace(/<img\b[^>]*>/gi, '').trim();
+}
+
+function getDialogImageKey(messageId: number, imageIndex: number) {
+  return `msg:${messageId}:img:${imageIndex}`;
+}
+
+function buildDialogImageSlides(messages: DialogMessage[]) {
+  const slides: DialogImageSlide[] = [];
+
+  sortMessages(messages).forEach((message) => {
+    const messageId = getMessageId(message);
+    if (!messageId) return;
+
+    extractMessageImages(message.message).forEach((image, imageIndex) => {
+      if (!image.isViewerImage) return;
+
+      slides.push({
+        alt: image.alt || null,
+        key: getDialogImageKey(messageId, imageIndex),
+        url: image.src,
+      });
+    });
+  });
+
+  return slides;
 }
 
 function isOnline(lastOnlineTime: number | string | null | undefined) {
@@ -619,7 +690,7 @@ function getDialogPreviewStatusIconName(status: number | string | null | undefin
 }
 
 function isMessageMenuIgnoredTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && Boolean(target.closest('a, button, img[data-fancybox]'));
+  return target instanceof HTMLElement && Boolean(target.closest('a, button, img'));
 }
 
 function MessageBubble({
@@ -632,6 +703,7 @@ function MessageBubble({
   onDeleteMessage,
   onDeleteReaction,
   onEditMessage,
+  onOpenImage,
 }: {
   authUserImage: string;
   currentUserId: number;
@@ -642,12 +714,18 @@ function MessageBubble({
   onDeleteMessage: (message: DialogMessage) => void;
   onDeleteReaction: (messageId: number, reaction: string) => void;
   onEditMessage: (message: DialogMessage) => void;
+  onOpenImage: (imageKey: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const messageId = getMessageId(message);
   const isOwn = toNumber(message.sender_id) === currentUserId;
   const isTextMessage = String(message.type ?? '0') === '0';
+  const messageImages = extractMessageImages(message.message);
+  const messageBodyHtml = messageImages.length
+    ? getMessageBodyHtmlWithoutImages(message.message)
+    : String(message.message ?? '');
+  const hasMessageText = Boolean(stripHtml(messageBodyHtml));
   const reactions = parseReactions(message.reactions);
   const timeLabel = formatMessageTime(message);
   const translator = typeof window !== 'undefined'
@@ -708,10 +786,50 @@ function MessageBubble({
               !isOwn && isTextMessage && 'rounded-bl-lg bg-zinc-900',
             )}
           >
-            <span
-              id={`msg-body-${messageId}`}
-              dangerouslySetInnerHTML={{ __html: String(message.message ?? '') }}
-            />
+            <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
+              {messageImages.length ? (
+                <div
+                  className={cn(
+                    'flex flex-col gap-2',
+                    messageImages.length > 1 && 'sm:grid sm:grid-cols-2',
+                  )}
+                >
+                  {messageImages.map((image, imageIndex) => (
+                    !image.isViewerImage ? (
+                      <div
+                        key={getDialogImageKey(messageId, imageIndex)}
+                        className="overflow-hidden rounded-lg"
+                      >
+                        <img
+                          src={image.src}
+                          alt={image.alt || `Sticker ${imageIndex + 1}`}
+                          className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        key={getDialogImageKey(messageId, imageIndex)}
+                        type="button"
+                        onClick={() => {
+                          onOpenImage(getDialogImageKey(messageId, imageIndex));
+                        }}
+                        className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95"
+                      >
+                        <img
+                          src={image.src}
+                          alt={image.alt || `Message image ${imageIndex + 1}`}
+                          className="max-h-48 max-w-full rounded-lg object-cover shadow lg:max-h-64"
+                        />
+                      </button>
+                    )
+                  ))}
+                </div>
+              ) : null}
+
+              {hasMessageText ? (
+                <span dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
+              ) : null}
+            </div>
 
             <div className="mt-1 flex items-end justify-end gap-1">
               <div className="flex flex-1 flex-wrap items-center gap-1">
@@ -869,6 +987,7 @@ export default function MessagesContent() {
   const [editingValue, setEditingValue] = useState('');
   const [uploadingMessageImage, setUploadingMessageImage] = useState(false);
   const [uploadingDialogBackground, setUploadingDialogBackground] = useState(false);
+  const [activeDialogImageKey, setActiveDialogImageKey] = useState<string | null>(null);
   const [dayLabelTick, setDayLabelTick] = useState(Date.now());
 
   const dialogsInFlightRef = useRef(false);
@@ -886,6 +1005,11 @@ export default function MessagesContent() {
   const currentMessageCacheKeyRef = useRef('');
 
   const timelineItems = buildTimelineItems(messages, lang);
+  const dialogImageSlides = buildDialogImageSlides(messages);
+  const activeDialogImageIndex = activeDialogImageKey
+    ? dialogImageSlides.findIndex((image) => image.key === activeDialogImageKey)
+    : -1;
+  const resolvedActiveDialogImageIndex = activeDialogImageIndex >= 0 ? activeDialogImageIndex : null;
   void dayLabelTick;
 
   const dialogTitle = getDialogTitle(foreignUser);
@@ -915,6 +1039,15 @@ export default function MessagesContent() {
       : dialogOnline
         ? lang?.online || 'В сети'
         : lang?.offline || 'Не в сети';
+
+  useEffect(() => {
+    if (!activeDialogImageKey) return;
+
+    const hasActiveImage = dialogImageSlides.some((image) => image.key === activeDialogImageKey);
+    if (!hasActiveImage) {
+      setActiveDialogImageKey(null);
+    }
+  }, [activeDialogImageKey, dialogImageSlides]);
 
   useEffect(() => {
     const scheduleMidnightRefresh = () => {
@@ -1031,6 +1164,7 @@ export default function MessagesContent() {
     setEditMessageModalOpen(false);
     setEditingMessage(null);
     setEditingValue('');
+    setActiveDialogImageKey(null);
     scrollActionRef.current = null;
   };
 
@@ -2297,6 +2431,7 @@ export default function MessagesContent() {
                                 void sendReaction(messageId, reaction, 'delete');
                               }}
                               onEditMessage={handleMessageEditOpen}
+                              onOpenImage={setActiveDialogImageKey}
                             />
                           ),
                         )}
@@ -2409,6 +2544,35 @@ export default function MessagesContent() {
           </div>
         </div>
       </div>
+
+      <DialogImageViewerModal
+        activeImageIndex={resolvedActiveDialogImageIndex}
+        images={dialogImageSlides}
+        isOpen={resolvedActiveDialogImageIndex !== null}
+        onClose={() => {
+          setActiveDialogImageKey(null);
+        }}
+        onNext={() => {
+          if (resolvedActiveDialogImageIndex === null || dialogImageSlides.length < 2) {
+            return;
+          }
+
+          const nextIndex = (resolvedActiveDialogImageIndex + 1) % dialogImageSlides.length;
+          setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
+        }}
+        onPrev={() => {
+          if (resolvedActiveDialogImageIndex === null || dialogImageSlides.length < 2) {
+            return;
+          }
+
+          const nextIndex =
+            (resolvedActiveDialogImageIndex - 1 + dialogImageSlides.length) % dialogImageSlides.length;
+          setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
+        }}
+        onSelect={(nextIndex) => {
+          setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
+        }}
+      />
 
       <Modal
         isOpen={settingsModalOpen}
