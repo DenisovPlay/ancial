@@ -798,6 +798,7 @@ function MessageBubble({
         {!isOwn && isTextMessage && typeof translator === 'function' ? (
           <DropdownItem
             icon="IC-translate"
+            className="h-8"
             onClick={() => {
               translator(`msg-body-${messageId}`);
             }}
@@ -809,6 +810,7 @@ function MessageBubble({
         {isOwn ? (
           <DropdownItem
             icon="IC-times"
+            className="h-8"
             onClick={() => {
               onDeleteMessage(message);
             }}
@@ -820,6 +822,7 @@ function MessageBubble({
         {isOwn && isTextMessage ? (
           <DropdownItem
             icon="IC-edit"
+            className="h-8"
             onClick={() => {
               onEditMessage(message);
             }}
@@ -2515,7 +2518,7 @@ export default function MessagesContent() {
             value={editingValue}
             onChange={(event) => setEditingValue(event.target.value)}
             placeholder={lang?.enter_new_message || 'Введите новый текст'}
-            className="h-12 w-full rounded-3xl border border-zinc-600/30 bg-zinc-800 px-4 text-zinc-100 placeholder-zinc-500"
+            className="focus:outline-0 focus:ring-0 h-12 w-full rounded-3xl border border-zinc-600/30 bg-zinc-800 px-4 text-zinc-100 placeholder-zinc-500"
           />
           <button
             type="button"
