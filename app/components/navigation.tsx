@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,7 +11,14 @@ function cn(...classes: Array<string | false | null | undefined>) {
 
 const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, icon?: string, imgSrc?: string, onClick?: () => void, isActive?: boolean }) => {
   const pathname = usePathname();
-  const active = isActive !== undefined ? isActive : (href && pathname === href);
+  const active = isActive !== undefined
+    ? isActive
+    : Boolean(
+        href && (
+          pathname === href ||
+          (href !== '/' && pathname?.startsWith(`${href}/`))
+        ),
+      );
   
   const className = `w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 active:scale-95 ${
     active
@@ -49,17 +56,23 @@ type DropdownProps = {
   activePaths?: string[];
   align?: 'start' | 'end' | 'center';
   children: React.ReactNode;
+  closeOnChildClick?: boolean;
   direction?: 'row' | 'col';
   icon?: string;
   imgSrc?: string;
   menuClassName?: string;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   position?: 'left' | 'right' | 'top' | 'bottom';
+  renderTrigger?: boolean;
   triggerAriaLabel?: string;
   triggerClassName?: string;
+  triggerDisabled?: boolean;
   triggerIcon?: string;
   triggerNode?: React.ReactNode;
   triggerSize?: 'default' | 'sm';
   width?: 'default' | 'auto';
+  wrapperClassName?: string;
 };
 
 export const Dropdown = ({
@@ -77,26 +90,43 @@ export const Dropdown = ({
   triggerNode,
   menuClassName,
   width = 'default',
+  closeOnChildClick = true,
+  onOpenChange,
+  open,
+  renderTrigger = true,
+  triggerDisabled = false,
+  wrapperClassName,
 }: DropdownProps) => {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isControlled = typeof open === 'boolean';
+  const isOpen = isControlled ? open : internalOpen;
+
+  const setOpen = useCallback((nextOpen: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(nextOpen);
+    }
+    onOpenChange?.(nextOpen);
+  }, [isControlled, onOpenChange]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        setOpen(false);
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, setOpen]);
 
   // Вычисляем позицию дропдауна относительно кнопки (сверху, снизу, слева, справа)
   // И выравнивание относительно оси (например, если position="top", то align="end" прижмет меню к правому краю кнопки)
@@ -134,15 +164,31 @@ export const Dropdown = ({
         ? 'w-auto min-w-max items-start'
         : 'w-48';
 
+  const handleTriggerClick = () => {
+    if (triggerDisabled) {
+      return;
+    }
+    setOpen(!isOpen);
+  };
+
   return (
-    <div className={cn('relative', !isCompactTrigger && (imgSrc ? 'w-auto h-auto' : 'w-14 h-14'))} ref={dropdownRef}>
-      {isCompactTrigger ? (
+    <div
+      className={cn(
+        'relative',
+        renderTrigger && !isCompactTrigger && (imgSrc ? 'w-auto h-auto' : 'w-14 h-14'),
+        wrapperClassName,
+      )}
+      ref={dropdownRef}
+    >
+      {renderTrigger && isCompactTrigger ? (
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleTriggerClick}
           aria-label={triggerAriaLabel}
+          disabled={triggerDisabled}
           className={cn(
             'flex justify-center items-center cursor-pointer rounded-3xl w-8 h-8 bg-zinc-800/0 hover:bg-zinc-700/80 duration-300 active:scale-95 text-zinc-400',
+            triggerDisabled && 'cursor-not-allowed opacity-50',
             triggerClassName,
           )}
         >
@@ -152,14 +198,15 @@ export const Dropdown = ({
             </svg>
           )}
         </button>
-      ) : (
+      ) : null}
+      {renderTrigger && !isCompactTrigger ? (
         <NavItem 
           icon={icon} 
           imgSrc={imgSrc}
-          onClick={() => setIsOpen(!isOpen)} 
+          onClick={handleTriggerClick} 
           isActive={isActive}
         />
-      )}
+      ) : null}
       <div 
         className={`${cn(
           'absolute',
@@ -180,7 +227,9 @@ export const Dropdown = ({
             return React.cloneElement(child, {
               onClick: () => {
                 if (child.props.onClick) child.props.onClick();
-                setIsOpen(false);
+                if (closeOnChildClick) {
+                  setOpen(false);
+                }
               }
             });
           }
@@ -250,7 +299,7 @@ export default function Navigation() {
 
   return (
     <>
-        <nav className="hidden md:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
+        <nav data-app-nav="desktop" className="hidden md:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
             <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
             <NavItem href="/" icon="IC-home" />
             <NavItem href="/feed" icon="IC-feed" />
@@ -315,7 +364,7 @@ export default function Navigation() {
         </nav>
 
 
-        <nav className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[50]">
+        <nav data-app-nav="mobile" className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[50]">
             <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1">
                 <NavItem href="/feed" icon="IC-feed" />
                 {!isAuthenticated && (

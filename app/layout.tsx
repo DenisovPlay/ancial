@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navigation from './components/navigation';
 import { AuthProvider } from './context/AuthContext';
+import { GlobalWSProvider } from './context/GlobalWSProvider';
 import { NotificationProvider } from './context/NotificationContext';
 import { DEFAULT_SEO, SITE_CONFIG } from './seo';
 
@@ -53,10 +54,12 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-black text-white">
         <NotificationProvider>
           <AuthProvider>
-            <Navigation />
-            <div id="main-content" className="flex-1 flex flex-col pb-20 md:pb-0 md:pl-24 duration-300">
-              {children}
-            </div>
+            <GlobalWSProvider>
+              <Navigation />
+              <div id="main-content" className="flex-1 flex flex-col pb-20 md:pb-0 md:pl-24 duration-300">
+                {children}
+              </div>
+            </GlobalWSProvider>
           </AuthProvider>
         </NotificationProvider>
       </body>

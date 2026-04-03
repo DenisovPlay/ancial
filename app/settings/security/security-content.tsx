@@ -282,7 +282,7 @@ export default function SecuritySettingsPage() {
         params.append('token', token);
       }
 
-      const response = await fetch('/engine/modules/verification/changeemailphone.php', {
+      const response = await fetch('/api/user/changeEmailPhone.php', {
         body: params.toString(),
         credentials: 'include',
         headers: {

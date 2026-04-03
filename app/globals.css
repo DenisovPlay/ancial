@@ -46,6 +46,14 @@ body:has(.no-mobile-nav-padding) #main-content {
   padding-bottom: 0 !important;
 }
 
+html.messages-dialog-open [data-app-nav="mobile"] {
+  display: none !important;
+}
+
+body.messages-dialog-open-body [data-app-nav="mobile"] {
+  display: none !important;
+}
+
 @media (min-width: 768px) {
   body:has(.no-pc-nav-padding) #main-content {
     padding-left: 0 !important;
