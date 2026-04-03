@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { createPageMetadata } from './seo';
 
 export const metadata: Metadata = createPageMetadata({
-  title: 'Главная',
+  title: 'Ancial - Социальная сеть для общения и развлечений',
   description: 'Добро пожаловать в Ancial — социальную сеть с лентой новостей, сообщениями, звонками, музыкой, играми и кошельком.',
   keywords: ['главная', 'лента', 'социальная сеть', 'Ancial'],
   canonical: '/',
