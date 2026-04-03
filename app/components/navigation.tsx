@@ -345,7 +345,7 @@ export default function Navigation() {
             )}
 
             {!isAuthenticated && (
-                <NavItem href="/music" icon="IC-games" />
+                <NavItem href="/games" icon="IC-games" />
             )}
 
             {!isAuthenticated && (

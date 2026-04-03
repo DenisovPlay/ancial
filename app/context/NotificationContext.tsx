@@ -77,6 +77,8 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
   }, [finishRemoval, updateHeight]);
 
   useEffect(() => {
+    const noteLifetime = note.time ?? 0;
+
     measureFrameRef.current = requestAnimationFrame(() => {
       updateHeight();
       visibleFrameRef.current = requestAnimationFrame(() => {
@@ -88,8 +90,8 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
 
     enterFrameRef.current = measureFrameRef.current;
 
-    if ((note.time ?? 0) > 0) {
-      closeTimerRef.current = window.setTimeout(startClosing, note.time * 1000);
+    if (noteLifetime > 0) {
+      closeTimerRef.current = window.setTimeout(startClosing, noteLifetime * 1000);
     }
 
     return () => {
