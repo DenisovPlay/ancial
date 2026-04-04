@@ -3,6 +3,7 @@
 
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -382,6 +383,223 @@ function renderLyricWords(text: string, progress: number, isActive: boolean) {
   });
 }
 
+type PulseMobileLyricEntry = {
+  activeIndex: number;
+  backText: string;
+  key: number;
+  mainText: string;
+  progress: number;
+};
+
+function PulseLyricsMobile({
+  activeIndex,
+  lyric,
+  progress,
+  source,
+}: {
+  activeIndex: number;
+  lyric: ReturnType<typeof splitLyricText> | null;
+  progress: number;
+  source: string;
+}) {
+  const [displayEntry, setDisplayEntry] = useState<PulseMobileLyricEntry | null>(null);
+  const [outgoingEntry, setOutgoingEntry] = useState<PulseMobileLyricEntry | null>(null);
+  const [displayPhase, setDisplayPhase] = useState<'enter' | 'exit' | 'idle'>('idle');
+  const animationFrameRef = useRef<number | null>(null);
+  const displayedEntryRef = useRef<PulseMobileLyricEntry | null>(null);
+  const enterTimerRef = useRef<number | null>(null);
+  const exitTimerRef = useRef<number | null>(null);
+  const latestEntryRef = useRef<PulseMobileLyricEntry | null>(null);
+  const motionKeyRef = useRef(0);
+
+  const mainText = lyric?.mainText || '♪';
+  const backText = lyric?.backText || '';
+
+  useEffect(() => {
+    latestEntryRef.current = activeIndex >= 0
+      ? {
+          activeIndex,
+          backText,
+          key: motionKeyRef.current,
+          mainText,
+          progress,
+        }
+      : null;
+  }, [activeIndex, backText, mainText, progress]);
+
+  useEffect(() => {
+    if (!displayedEntryRef.current || displayedEntryRef.current.activeIndex !== activeIndex) {
+      return;
+    }
+
+    displayedEntryRef.current = {
+      ...displayedEntryRef.current,
+      backText,
+      mainText,
+      progress,
+    };
+  }, [activeIndex, backText, mainText, progress]);
+
+  useEffect(() => {
+    const clearPendingAnimations = () => {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (exitTimerRef.current !== null) {
+        window.clearTimeout(exitTimerRef.current);
+        exitTimerRef.current = null;
+      }
+      if (enterTimerRef.current !== null) {
+        window.clearTimeout(enterTimerRef.current);
+        enterTimerRef.current = null;
+      }
+    };
+
+    const queueStateSync = (callback: () => void) => {
+      clearPendingAnimations();
+      animationFrameRef.current = window.requestAnimationFrame(() => {
+        animationFrameRef.current = null;
+        callback();
+      });
+    };
+
+    const nextEntry = latestEntryRef.current;
+    const previousEntry = displayedEntryRef.current;
+    const lineChanged = !!nextEntry && (
+      !previousEntry
+      || previousEntry.activeIndex !== nextEntry.activeIndex
+      || previousEntry.mainText !== nextEntry.mainText
+      || previousEntry.backText !== nextEntry.backText
+    );
+
+    if (!nextEntry) {
+      displayedEntryRef.current = null;
+      queueStateSync(() => {
+        setDisplayEntry(null);
+        setOutgoingEntry(null);
+        setDisplayPhase('idle');
+      });
+      return clearPendingAnimations;
+    }
+
+    if (!lineChanged) {
+      return clearPendingAnimations;
+    }
+
+    motionKeyRef.current += 1;
+    const enteringEntry: PulseMobileLyricEntry = {
+      ...nextEntry,
+      key: motionKeyRef.current,
+    };
+
+    if (!previousEntry) {
+      displayedEntryRef.current = enteringEntry;
+      queueStateSync(() => {
+        setOutgoingEntry(null);
+        setDisplayEntry(enteringEntry);
+        setDisplayPhase('enter');
+        enterTimerRef.current = window.setTimeout(() => {
+          setDisplayPhase('idle');
+          enterTimerRef.current = null;
+        }, 280);
+      });
+      return clearPendingAnimations;
+    }
+
+    const frozenOutgoingEntry: PulseMobileLyricEntry = {
+      ...previousEntry,
+      progress: previousEntry.progress,
+    };
+
+    queueStateSync(() => {
+      setDisplayEntry(null);
+      setOutgoingEntry(frozenOutgoingEntry);
+      setDisplayPhase('exit');
+
+      exitTimerRef.current = window.setTimeout(() => {
+        displayedEntryRef.current = enteringEntry;
+        setOutgoingEntry(null);
+        setDisplayEntry(enteringEntry);
+        setDisplayPhase('enter');
+        exitTimerRef.current = null;
+
+        enterTimerRef.current = window.setTimeout(() => {
+          setDisplayPhase('idle');
+          enterTimerRef.current = null;
+        }, 280);
+      }, 180);
+    });
+
+    return clearPendingAnimations;
+  }, [activeIndex, backText, mainText]);
+
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (exitTimerRef.current !== null) {
+        window.clearTimeout(exitTimerRef.current);
+      }
+      if (enterTimerRef.current !== null) {
+        window.clearTimeout(enterTimerRef.current);
+      }
+    };
+  }, []);
+
+  const visibleEntry = displayEntry;
+  const visibleProgress = visibleEntry?.activeIndex === activeIndex ? progress : (visibleEntry?.progress ?? 0);
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/70 p-3 backdrop-blur-sm backdrop-saturate-200 lg:hidden">
+      <div className="relative flex h-[110px] w-full items-center justify-center overflow-hidden text-center text-zinc-100 drop-shadow-lg">
+        {outgoingEntry ? (
+          <div
+            key={`mobile-lyric-out-${outgoingEntry.key}-${outgoingEntry.activeIndex}`}
+            className="pulse-mobile-lyric-exit absolute inset-x-0 flex flex-col items-center justify-center px-2"
+          >
+            <span className="block text-2xl font-bold">
+              {renderLyricWords(outgoingEntry.mainText, outgoingEntry.progress, true)}
+            </span>
+            {outgoingEntry.backText ? (
+              <span className="mt-1 block text-sm font-semibold text-white/60">
+                ({outgoingEntry.backText})
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
+        {visibleEntry ? (
+          <div
+            key={`mobile-lyric-in-${visibleEntry.key}-${visibleEntry.activeIndex}`}
+            className={
+              displayPhase === 'enter'
+                ? 'pulse-mobile-lyric-enter absolute inset-x-0 flex flex-col items-center justify-center px-2'
+                : 'absolute inset-x-0 flex flex-col items-center justify-center px-2'
+            }
+          >
+            <span className="block text-2xl font-bold">
+              {renderLyricWords(visibleEntry.mainText, visibleProgress, true)}
+            </span>
+            {visibleEntry.backText ? (
+              <span className="mt-1 block text-sm font-semibold text-white/60">
+                ({visibleEntry.backText})
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      {source ? (
+        <span className="absolute inset-x-0 bottom-0 text-center text-xs text-zinc-500">
+          Источник: {source}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function PulseLyricsDesktop({
   activeIndex,
   lines,
@@ -435,12 +653,11 @@ function PulseLyricsDesktop({
   return (
     <div className="hidden h-full lg:flex lg:pl-12 xl:pl-24 2xl:pl-32">
       <div className="relative h-full max-w-screen-sm">
-        <span className="absolute inset-x-0 bottom-0 z-10 text-center text-xs text-zinc-600">Источник: Pulse</span>
         <div
           ref={containerRef}
           onWheel={handleUserScroll}
           onTouchMove={handleUserScroll}
-          className="viewport flex h-full flex-col gap-3 overflow-auto px-3 py-32 text-center text-3xl font-bold"
+          className="viewport flex h-full flex-col gap-3 overflow-y-auto overflow-x-hidden viewport px-3 py-32 text-center text-3xl font-bold"
         >
           {lines.map((line, lineIndex) => {
             const isActive = lineIndex === activeIndex;
@@ -453,7 +670,7 @@ function PulseLyricsDesktop({
                 type="button"
                 onClick={() => onSeek(line.time)}
                 className={cn(
-                  'block cursor-pointer py-1 text-left text-white/40 duration-300',
+                  'block cursor-pointer py-1 text-center text-white/40 duration-300',
                   isActive && 'pointer-events-none scale-[1.03] text-white',
                   !isActive && 'hover:text-white/70',
                 )}
@@ -488,6 +705,8 @@ export function PulsePlayerProvider({
   const progressLoopRef = useRef<number | null>(null);
   const collectionRequestIdRef = useRef(0);
   const preloadStartedRef = useRef(false);
+  const playbackSessionRef = useRef(0);
+  const listenReportedSessionRef = useRef<number | null>(null);
   const currentSongIdRef = useRef(0);
   const currentCollectionIdRef = useRef('0');
   const currentIsPlaylistRef = useRef(false);
@@ -495,6 +714,7 @@ export function PulsePlayerProvider({
   const indexRef = useRef(0);
   const likedSongIdsRef = useRef<number[] | null>(null);
   const seekingSliderRef = useRef<'desktop' | 'mobile' | null>(null);
+  const volumeSliderRef = useRef<HTMLInputElement | null>(null);
 
   const [isVisible, setIsVisible] = useState(false);
   const [mode, setMode] = useState<PulsePlayerMode>('mini');
@@ -705,7 +925,13 @@ export function PulsePlayerProvider({
       setSeekValue(nextCurrentTime);
     }
 
-    if (!listenCounted && nextCurrentTime >= PLAYER_LISTEN_COUNT_AT_SECONDS && currentSongIdRef.current > 0) {
+    if (
+      !listenCounted &&
+      listenReportedSessionRef.current !== playbackSessionRef.current &&
+      nextCurrentTime >= PLAYER_LISTEN_COUNT_AT_SECONDS &&
+      currentSongIdRef.current > 0
+    ) {
+      listenReportedSessionRef.current = playbackSessionRef.current;
       setListenCounted(true);
       void fetch(`/api/pulse/listened_track.php?id=${currentSongIdRef.current}`, {
         cache: 'no-store',
@@ -784,6 +1010,7 @@ export function PulsePlayerProvider({
     setDuration(0);
     setSeekValue(0);
     setListenCounted(false);
+    listenReportedSessionRef.current = null;
     setMode('mini');
     setLyricsLines([]);
     setLyricsSource('');
@@ -1071,10 +1298,14 @@ export function PulsePlayerProvider({
     }
 
     currentSongIdRef.current = toNumber(track.sid);
-    setListenCounted(false);
-    preloadStartedRef.current = false;
-    setLyricsLines([]);
-    setLyricsSource('');
+    if (retryCount === 0) {
+      playbackSessionRef.current += 1;
+      listenReportedSessionRef.current = null;
+      setListenCounted(false);
+      preloadStartedRef.current = false;
+      setLyricsLines([]);
+      setLyricsSource('');
+    }
     setStatusAudio('Loading');
 
     if (isAuthenticated) {
@@ -1287,7 +1518,7 @@ export function PulsePlayerProvider({
     }
   };
 
-  const changeVolume = (nextVolume: number | string) => {
+  const changeVolume = useCallback((nextVolume: number | string) => {
     const resolvedVolume = clamp(Number.parseFloat(String(nextVolume)), 0, 1);
     setVolume(resolvedVolume);
 
@@ -1298,7 +1529,23 @@ export function PulsePlayerProvider({
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('pulse-volume', String(resolvedVolume));
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const slider = volumeSliderRef.current;
+    if (!slider) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      changeVolume(Number.parseFloat(slider.value) + (event.deltaY < 0 ? 0.025 : -0.025));
+    };
+
+    slider.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      slider.removeEventListener('wheel', handleWheel);
+    };
+  }, [changeVolume]);
 
   const queueTrackNext = async (trackId: number | string) => {
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) {
@@ -1666,6 +1913,8 @@ export function PulsePlayerProvider({
     togglePlay,
   };
 
+  const isFullMode = mode === 'full';
+
   return (
     <PulsePlayerContext.Provider value={contextValue}>
       {children}
@@ -1675,17 +1924,19 @@ export function PulsePlayerProvider({
       {effectivePlayerVisible ? (
         <div
           id="NAVP"
-          className={cn(
-            'fixed inset-x-0 z-[102] flex flex-col px-1.5 transition-all duration-300',
-            mode === 'mini'
-              ? 'bottom-16 pb-2.5 md:bottom-1.5 md:left-24 md:right-1.5 md:pb-1.5'
-              : 'inset-0 px-0 pb-0 md:bottom-1.5 md:left-24 md:right-1.5 md:top-1.5 md:px-1.5 md:pb-1.5',
-          )}
+          className="pointer-events-none fixed inset-0 z-[102]"
         >
-          {mode === 'full' ? (
+          <div
+            className={cn(
+              'absolute inset-0 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+              isFullMode
+                ? 'pointer-events-auto opacity-100 translate-y-0 scale-100'
+                : 'pointer-events-none opacity-0 translate-y-6 scale-[0.985]',
+            )}
+          >
             <div
               id="NAVPfull"
-              className="flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto rounded-none border border-zinc-600/30 bg-zinc-900/80 p-1 shadow backdrop-blur-lg md:h-full md:rounded-3xl md:gap-3"
+              className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto rounded-none border border-zinc-600/30 bg-zinc-900/80 p-1 shadow backdrop-blur-lg md:h-full md:gap-3"
             >
               <div className="absolute top-3 z-[20] flex w-full items-center px-3">
                 <button
@@ -1744,23 +1995,12 @@ export function PulsePlayerProvider({
                         />
 
                         {lyricsLines.length ? (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/70 p-3 backdrop-blur-sm backdrop-saturate-200 lg:hidden">
-                            <div className="w-full text-center text-zinc-100 drop-shadow-lg">
-                              <span className="block text-2xl font-bold">
-                                {renderLyricWords(mobileLyric?.mainText || '♪', activeLyricState.progress, true)}
-                              </span>
-                              {mobileLyric?.backText ? (
-                                <span className="mt-1 block text-sm font-semibold text-white/60">
-                                  ({mobileLyric.backText})
-                                </span>
-                              ) : null}
-                            </div>
-                            {lyricsSource ? (
-                              <span className="absolute inset-x-0 bottom-0 text-center text-xs text-zinc-500">
-                                Источник: {lyricsSource}
-                              </span>
-                            ) : null}
-                          </div>
+                          <PulseLyricsMobile
+                            activeIndex={activeLyricState.activeIndex}
+                            lyric={mobileLyric}
+                            progress={activeLyricState.progress}
+                            source={lyricsSource}
+                          />
                         ) : null}
                       </div>
                     </div>
@@ -1872,10 +2112,19 @@ export function PulsePlayerProvider({
                 ) : null}
               </div>
             </div>
-          ) : (
+          </div>
+
+          <div
+            className={cn(
+              'absolute inset-x-0 bottom-16 flex justify-center px-1.5 pb-2.5 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:bottom-1.5 md:justify-end md:pb-1.5',
+              isFullMode
+                ? 'pointer-events-none opacity-0 translate-y-5 scale-95'
+                : 'pointer-events-auto opacity-100 translate-y-0 scale-100',
+            )}
+          >
             <div
               id="NAVPmini"
-              className="flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300"
+              className="pulse-player-mini-shell flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300 w-full"
             >
               <button
                 type="button"
@@ -1893,7 +2142,7 @@ export function PulsePlayerProvider({
                 <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{playerArtist}</span>
               </div>
 
-              <div className="hidden flex-grow lg:block"></div>
+              <div className="flex-grow"></div>
 
               <div className="hidden flex-grow flex-col items-center justify-center gap-1 lg:flex">
                 <input
@@ -1933,15 +2182,12 @@ export function PulsePlayerProvider({
                 <div className="hidden flex-col items-center justify-center gap-1 pr-1 lg:flex">
                   <span className="text-sm text-zinc-300">{lang?.volume || 'Громкость'}</span>
                   <input
+                    ref={volumeSliderRef}
                     min={0}
                     max={1}
                     step="0.005"
                     type="range"
                     value={volume}
-                    onWheel={(event) => {
-                      event.preventDefault();
-                      changeVolume(volume + (event.deltaY < 0 ? 0.025 : -0.025));
-                    }}
                     onChange={(event) => {
                       changeVolume(event.target.value);
                     }}
@@ -1966,7 +2212,7 @@ export function PulsePlayerProvider({
                 </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       ) : null}
 
