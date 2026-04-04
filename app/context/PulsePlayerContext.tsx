@@ -502,7 +502,7 @@ function PulseLyricsMobile({
         enterTimerRef.current = window.setTimeout(() => {
           setDisplayPhase('idle');
           enterTimerRef.current = null;
-        }, 280);
+        }, 420);
       });
       return clearPendingAnimations;
     }
@@ -527,8 +527,8 @@ function PulseLyricsMobile({
         enterTimerRef.current = window.setTimeout(() => {
           setDisplayPhase('idle');
           enterTimerRef.current = null;
-        }, 280);
-      }, 180);
+        }, 420);
+      }, 320);
     });
 
     return clearPendingAnimations;
@@ -552,8 +552,8 @@ function PulseLyricsMobile({
   const visibleProgress = visibleEntry?.activeIndex === activeIndex ? progress : (visibleEntry?.progress ?? 0);
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/70 p-3 backdrop-blur-sm backdrop-saturate-200 lg:hidden">
-      <div className="relative flex h-[110px] w-full items-center justify-center overflow-hidden text-center text-zinc-100 drop-shadow-lg">
+    <div className="animate-opacity-fade-in absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/70 p-3 backdrop-blur-sm backdrop-saturate-200 lg:hidden">
+      <div className="relative flex h-[180px] w-full items-center justify-center overflow-hidden text-center text-zinc-100 drop-shadow-lg">
         {outgoingEntry ? (
           <div
             key={`mobile-lyric-out-${outgoingEntry.key}-${outgoingEntry.activeIndex}`}
@@ -651,7 +651,7 @@ function PulseLyricsDesktop({
   };
 
   return (
-    <div className="hidden h-full lg:flex lg:pl-12 xl:pl-24 2xl:pl-32">
+    <div className="animate-opacity-fade-in hidden h-full lg:flex lg:pl-12 xl:pl-24 2xl:pl-32">
       <div className="relative h-full max-w-screen-sm">
         <div
           ref={containerRef}
@@ -676,7 +676,7 @@ function PulseLyricsDesktop({
                 )}
                 style={{
                   textShadow: isActive ? '0 0 18px rgba(255,255,255,0.2)' : undefined,
-                  transformOrigin: 'left center',
+                  transformOrigin: 'center',
                 }}
               >
                 {renderLyricWords(line.text, nextProgress, isActive)}
@@ -717,6 +717,7 @@ export function PulsePlayerProvider({
   const volumeSliderRef = useRef<HTMLInputElement | null>(null);
 
   const [isVisible, setIsVisible] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [mode, setMode] = useState<PulsePlayerMode>('mini');
   const [playlist, setPlaylist] = useState<PulseTrack[]>([]);
   const [index, setIndex] = useState(0);
@@ -737,15 +738,23 @@ export function PulsePlayerProvider({
   const [addToPlaylistSongId, setAddToPlaylistSongId] = useState(0);
   const [playlistOptions, setPlaylistOptions] = useState<PulsePlaylistOption[]>([]);
   const [playlistOptionsLoading, setPlaylistOptionsLoading] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
 
+  const touchStartXRef = useRef<number | null>(null);
+  
   const currentTrack = playlist[index] ?? null;
+  const prevTrackObj = playlist[index - 1] ?? null;
+  const nextTrackObj = playlist[index + 1] ?? null;
   const currentSongId = toNumber(currentTrack?.sid);
   const userCountry = normalizeText(user?.country) || 'RU';
   const playerTitle = getTrackDisplayTitle(currentTrack, lang);
   const playerArtist = getTrackArtist(currentTrack, lang);
   const playerArtwork = getTrackArtwork(currentTrack);
+  const prevArtwork = getTrackArtwork(prevTrackObj);
+  const nextArtwork = getTrackArtwork(nextTrackObj);
   const hiddenByMessagesDialog = Boolean(pathname && pathname.startsWith('/messages/'));
-  const effectivePlayerVisible = isVisible && !hiddenByMessagesDialog;
+  const effectivePlayerVisible = isMounted && !hiddenByMessagesDialog;
+  const isPlayerAnimatingIn = isVisible && isMounted;
   const activeLike = currentTrack ? likedSongIds?.includes(toNumber(currentTrack.sid)) === true : false;
   const activeLyricState = getActiveLyricState(lyricsLines, currentTime);
   const activeLyricLine = activeLyricState.activeIndex >= 0 ? lyricsLines[activeLyricState.activeIndex] : null;
@@ -980,12 +989,17 @@ export function PulsePlayerProvider({
 
   const showPlayer = () => {
     const savedVolume = readSavedVolume();
-    setIsVisible(true);
     setVolume(savedVolume);
-
     if (audioRef.current) {
       audioRef.current.volume = savedVolume;
     }
+
+    setIsMounted(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+    });
   };
 
   const closePlayer = () => {
@@ -1014,10 +1028,14 @@ export function PulsePlayerProvider({
     setMode('mini');
     setLyricsLines([]);
     setLyricsSource('');
-    setIsVisible(false);
     setIsPlaying(false);
-    syncWindowState();
-    clearMediaSession();
+    
+    setIsVisible(false);
+    setTimeout(() => {
+      setIsMounted(false);
+      clearMediaSession();
+      syncWindowState();
+    }, 600);
   };
 
   const openAddToPlaylist = (songId: number | string) => {
@@ -1926,17 +1944,41 @@ export function PulsePlayerProvider({
           id="NAVP"
           className="pointer-events-none fixed inset-0 z-[102]"
         >
+          <style>{`
+            @keyframes animate-opacity-fade-in {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes animate-smooth-appear {
+              from { opacity: 0; transform: translateY(8px) scale(0.98); }
+              to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            .animate-opacity-fade-in {
+              animation: animate-opacity-fade-in 0.6s cubic-bezier(0.32,0.72,0,1) forwards;
+            }
+            .animate-smooth-appear {
+              animation: animate-smooth-appear 0.6s cubic-bezier(0.32,0.72,0,1) forwards;
+            }
+          `}</style>
           <div
             className={cn(
-              'absolute inset-0 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-              isFullMode
-                ? 'pointer-events-auto opacity-100 translate-y-0 scale-100'
-                : 'pointer-events-none opacity-0 translate-y-6 scale-[0.985]',
+              'absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] z-[60]',
+              isFullMode && isPlayerAnimatingIn
+                ? 'pointer-events-auto translate-y-0'
+                : 'pointer-events-none translate-y-full',
             )}
+            style={{
+              transitionDelay: '0ms',
+            }}
           >
             <div
               id="NAVPfull"
-              className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto rounded-none border border-zinc-600/30 bg-zinc-900/80 p-1 shadow backdrop-blur-lg md:h-full md:gap-3"
+              className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto overflow-x-hidden rounded-none bg-zinc-900/80 p-1 shadow md:h-full md:gap-3"
+              style={{
+                backdropFilter: 'blur(40px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                overscrollBehavior: 'none'
+              }}
             >
               <div className="absolute top-3 z-[20] flex w-full items-center px-3">
                 <button
@@ -1964,7 +2006,7 @@ export function PulsePlayerProvider({
                   >
                     {normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
                   </button>
-                  <svg className="w-24 shrink-0" viewBox="0 0 821 157" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-24 shrink-0 backdrop-shadow-lg" viewBox="0 0 821 157" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <use href="/icons.svg#IC-pulse-logo"></use>
                   </svg>
                 </div>
@@ -1979,38 +2021,101 @@ export function PulsePlayerProvider({
               </div>
 
               <div className="flex h-full w-full flex-row items-center justify-center px-3">
-                <div className="flex flex-col items-center justify-center lg:items-start">
+                <div className="flex flex-col items-center justify-center lg:items-start shrink-0">
                   <div className="flex flex-col items-center duration-300 lg:items-start">
                     <div className="flex items-center justify-center">
-                      <div className="relative flex h-80 w-80 items-center justify-center overflow-hidden rounded-3xl duration-300 lg:h-96 lg:w-96">
-                        <img
-                          src={playerArtwork}
-                          alt={playerTitle}
-                          className="absolute inset-0 h-full w-full rounded-3xl object-cover blur-xl"
-                        />
-                        <img
-                          src={playerArtwork}
-                          alt={playerTitle}
-                          className="absolute inset-0 h-full w-full rounded-3xl object-cover"
-                        />
+                      <div
+                        className="relative flex h-80 w-80 items-center justify-center shrink-0 lg:h-96 lg:w-96"
+                        onTouchStart={(e) => {
+                          touchStartXRef.current = e.touches[0].clientX;
+                          setSwipeX(0);
+                        }}
+                        onTouchMove={(e) => {
+                          if (touchStartXRef.current !== null) {
+                            const delta = e.touches[0].clientX - touchStartXRef.current;
+                            setSwipeX(delta);
+                          }
+                        }}
+                        onTouchEnd={() => {
+                          if (touchStartXRef.current !== null) {
+                            if (swipeX > 100) {
+                              void prevTrack();
+                            } else if (swipeX < -100) {
+                              void nextTrack();
+                            }
+                            touchStartXRef.current = null;
+                            setSwipeX(0);
+                          }
+                        }}
+                      >
+                        {prevTrackObj ? (
+                          <div
+                            className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl lg:hidden"
+                            style={{
+                              transform: `translateX(calc(-100% - 24px + ${swipeX}px))`,
+                              transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1)' : 'none',
+                            }}
+                          >
+                            <img src={prevArtwork} alt="Previous Track" className="absolute inset-0 h-full w-full rounded-3xl object-cover blur-xl" />
+                            <img src={prevArtwork} alt="Previous Track" className="absolute inset-0 h-full w-full rounded-3xl object-cover" />
+                          </div>
+                        ) : null}
 
-                        {lyricsLines.length ? (
-                          <PulseLyricsMobile
-                            activeIndex={activeLyricState.activeIndex}
-                            lyric={mobileLyric}
-                            progress={activeLyricState.progress}
-                            source={lyricsSource}
+                        <div
+                          className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl"
+                          style={{
+                            transform: `translateX(${swipeX}px)`,
+                            opacity: 1 - Math.abs(swipeX) / 800,
+                            transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1), opacity 0.4s' : 'none',
+                          }}
+                        >
+                          <img
+                            src={playerArtwork}
+                            alt={playerTitle}
+                            className="absolute inset-0 h-full w-full rounded-3xl object-cover blur-xl"
                           />
+                          <img
+                            src={playerArtwork}
+                            alt={playerTitle}
+                            className="absolute inset-0 h-full w-full rounded-3xl object-cover"
+                          />
+
+                          {lyricsLines.length ? (
+                            <PulseLyricsMobile
+                              activeIndex={activeLyricState.activeIndex}
+                              lyric={mobileLyric}
+                              progress={activeLyricState.progress}
+                              source={lyricsSource}
+                            />
+                          ) : null}
+                        </div>
+
+                        {nextTrackObj ? (
+                          <div
+                            className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl lg:hidden"
+                            style={{
+                              transform: `translateX(calc(100% + 24px + ${swipeX}px))`,
+                              transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1)' : 'none',
+                            }}
+                          >
+                            <img src={nextArtwork} alt="Next Track" className="absolute inset-0 h-full w-full rounded-3xl object-cover blur-xl" />
+                            <img src={nextArtwork} alt="Next Track" className="absolute inset-0 h-full w-full rounded-3xl object-cover" />
+                          </div>
                         ) : null}
                       </div>
                     </div>
 
-                    <span className="mt-3 w-80 text-center text-base font-bold text-white duration-300 lg:w-96 lg:text-lg">
-                      {playerTitle}
-                    </span>
-                    <span className="w-80 text-center text-sm text-zinc-300 duration-300 lg:w-96 lg:text-base">
-                      {playerArtist}
-                    </span>
+                    <div
+                      key={`text-${currentTrack}`}
+                      className="animate-smooth-appear mt-3 flex flex-col items-center justify-center gap-0.5"
+                    >
+                      <span className="w-80 text-center text-base font-bold text-white lg:w-96 lg:text-lg">
+                        {playerTitle}
+                      </span>
+                      <span className="w-80 text-center text-sm text-zinc-300 lg:w-96 lg:text-base">
+                        {playerArtist}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="mt-3 flex w-full max-w-sm flex-col items-center justify-center gap-1 duration-300">
@@ -2067,7 +2172,7 @@ export function PulsePlayerProvider({
                         onClick={togglePlay}
                         className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95"
                       >
-                        <PlayerIcon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-14 w-14 fill-white" />
+                        <PlayerIcon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-12 w-12 fill-white" />
                       </button>
 
                       <button type="button" onClick={() => { void nextTrack(); }}>
@@ -2116,10 +2221,10 @@ export function PulsePlayerProvider({
 
           <div
             className={cn(
-              'absolute inset-x-0 bottom-16 flex justify-center px-1.5 pb-2.5 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:bottom-1.5 md:justify-end md:pb-1.5',
-              isFullMode
-                ? 'pointer-events-none opacity-0 translate-y-5 scale-95'
-                : 'pointer-events-auto opacity-100 translate-y-0 scale-100',
+              'absolute inset-x-0 bottom-16 flex justify-center px-1.5 pb-2.5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] md:bottom-1.5 md:justify-end md:pb-1.5 z-[60]',
+              !isFullMode && isPlayerAnimatingIn
+                ? 'pointer-events-auto translate-y-0'
+                : 'pointer-events-none translate-y-[200%]',
             )}
           >
             <div
@@ -2133,7 +2238,7 @@ export function PulsePlayerProvider({
               >
                 <img src={playerArtwork} alt={playerTitle} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90 opacity-0 duration-300 group-hover:opacity-100">
-                  <PlayerIcon name="IC-music" className="h-10 w-10 fill-white" />
+                  <PlayerIcon name="IC-full-mode" className="h-10 w-10 fill-white" />
                 </div>
               </button>
 
