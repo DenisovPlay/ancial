@@ -5,6 +5,7 @@ import Navigation from './components/navigation';
 import { AuthProvider } from './context/AuthContext';
 import { GlobalWSProvider } from './context/GlobalWSProvider';
 import { NotificationProvider } from './context/NotificationContext';
+import { PulsePlayerProvider } from './context/PulsePlayerContext';
 import { DEFAULT_SEO, SITE_CONFIG } from './seo';
 
 const geistSans = Geist({
@@ -55,10 +56,12 @@ export default function RootLayout({
         <NotificationProvider>
           <AuthProvider>
             <GlobalWSProvider>
-              <Navigation />
-              <div id="main-content" className="flex-1 flex flex-col pb-20 md:pb-0 md:pl-24 duration-300">
-                {children}
-              </div>
+              <PulsePlayerProvider>
+                <Navigation />
+                <div id="main-content" className="flex-1 flex flex-col pb-20 md:pb-0 md:pl-24 duration-300">
+                  {children}
+                </div>
+              </PulsePlayerProvider>
             </GlobalWSProvider>
           </AuthProvider>
         </NotificationProvider>

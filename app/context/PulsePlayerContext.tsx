@@ -1,0 +1,2050 @@
+'use client';
+/* eslint-disable @next/next/no-img-element */
+
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+
+import Modal from '../components/modal';
+import { useAuth } from './AuthContext';
+import { useNotification } from './NotificationContext';
+
+type LangMap = Record<string, string> | null;
+
+type PulseArtwork = {
+  sizes?: string | null;
+  src?: string | null;
+  type?: string | null;
+};
+
+type PulseTrack = {
+  album?: string | null;
+  albumid?: number | string | null;
+  artist?: string | null;
+  artwork?: PulseArtwork[] | null;
+  blockedin?: string[] | string | null;
+  explicit?: boolean | number | string | null;
+  sid?: number | string | null;
+  src?: string | null;
+  status?: number | string | null;
+  title?: string | null;
+};
+
+type PulseCollectionKind = 'artist' | 'genlist' | 'playlist' | 'track';
+
+type PulseLyricsLine = {
+  text: string;
+  time: number;
+};
+
+type PulsePlayerMode = 'full' | 'mini';
+
+type PulsePlayerState = {
+  currentSongId: number;
+  isPlaylist: boolean;
+  listenCounted: boolean;
+  listenedCounted: boolean;
+  playlistId: string;
+};
+
+type PulsePlaylistManageItem = {
+  id?: number | string | null;
+  img?: string | null;
+  name?: string | null;
+  songs?: string | null;
+};
+
+type PulsePlaylistOption = {
+  hasSong: boolean;
+  id: string;
+  image: string;
+  name: string;
+};
+
+type PulsePlayerContextValue = {
+  closePlayer: () => void;
+  currentCollectionId: string;
+  currentSongId: number;
+  isOpen: boolean;
+  isPlaying: boolean;
+  mode: PulsePlayerMode;
+  openAddToPlaylist: (songId: number | string) => void;
+  playArtistPlaylist: (artistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
+  playGenlist: (playlistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
+  playNextTrack: (trackId: number | string) => Promise<void>;
+  playPlaylist: (playlistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
+  playTrack: (trackId: number | string) => Promise<void>;
+  setMode: (mode: PulsePlayerMode) => void;
+  togglePlay: () => void;
+};
+
+declare global {
+  interface Window {
+    PlayerClose?: () => void;
+    PlayerMode?: (mode: PulsePlayerMode) => void;
+    PlayerShow?: () => void;
+    PlayerState?: PulsePlayerState;
+    artistPlaylist?: (
+      artistId: number | string,
+      forceReload?: boolean,
+      shuffle?: number,
+      startIndex?: number,
+      expectedSongId?: number | string | null,
+    ) => void;
+    audio?: HTMLAudioElement | null;
+    changevolume?: (volume: number | string) => void;
+    likeplaylist?: (playlistId: number | string) => void;
+    likesong?: (songId: number | string, type?: number, playlistId?: number | string | null) => void;
+    nextplaylisttrack?: () => void;
+    openAddToPlaylist?: (songId: number | string) => void;
+    play?: () => void;
+    playGenlist?: (
+      playlistId: number | string,
+      forceReload?: boolean,
+      shuffle?: number,
+      startIndex?: number,
+      expectedSongId?: number | string | null,
+    ) => void;
+    playNext?: (trackId: number | string) => void;
+    playerLikeSong?: () => void;
+    playtrack?: (trackId: number | string) => void;
+    playtrackfromartist?: (
+      artistId: number | string,
+      trackNumber: number | string,
+      expectedSongId?: number | string | null,
+    ) => void;
+    playtrackfromgenlist?: (
+      playlistId: number | string,
+      trackNumber: number | string,
+      expectedSongId?: number | string | null,
+    ) => void;
+    playtrackfromplaylist?: (
+      playlistId: number | string,
+      trackNumber: number | string,
+      expectedSongId?: number | string | null,
+    ) => void;
+    playlist?: (
+      playlistId: number | string,
+      forceReload?: boolean,
+      shuffle?: number,
+      startIndex?: number,
+      expectedSongId?: number | string | null,
+    ) => void;
+    prevplaylisttrack?: () => void;
+    statusAudio?: string;
+    trackP?: (trackId: number | string) => void;
+    updatePlayerLikeBtn?: (songId: number | string) => void;
+    _pagePlaylistConf?: { id: number | string; type: number } | null;
+    _pulseLikedSongs?: number[] | null;
+  }
+}
+
+const PulsePlayerContext = createContext<PulsePlayerContextValue | undefined>(undefined);
+
+const FALLBACK_TRACK_IMAGE = '/includes/img/pulse/track.png';
+const PRELOAD_PROGRESS_THRESHOLD = 0.5;
+const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
+
+function toNumber(value: number | string | null | undefined) {
+  const nextValue = Number.parseInt(String(value ?? ''), 10);
+  return Number.isFinite(nextValue) ? nextValue : 0;
+}
+
+function normalizeText(value: string | null | undefined) {
+  return String(value ?? '').trim();
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function formatPlaybackTime(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '00:00';
+  }
+
+  const totalSeconds = Math.floor(value);
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
+
+function getTrackDisplayTitle(track: PulseTrack | null, lang: LangMap) {
+  if (!track) return lang?.pulse_loading_dots || 'Загрузка';
+
+  const title = normalizeText(track.title) || (lang?.pulse_unknown_track || 'Неизвестный трек');
+  return String(track.explicit) === '1' || track.explicit === true ? `${title} \u{1F174}` : title;
+}
+
+function getTrackArtist(track: PulseTrack | null, lang: LangMap) {
+  if (!track) return 'Pulse';
+  return normalizeText(track.artist) || (lang?.pulse_unknown_artist || 'Неизвестный исполнитель');
+}
+
+function getTrackArtwork(track: PulseTrack | null) {
+  const artwork = Array.isArray(track?.artwork) ? track?.artwork : [];
+  const nextArtwork = artwork.find((item) => normalizeText(item?.src));
+  return normalizeText(nextArtwork?.src) || FALLBACK_TRACK_IMAGE;
+}
+
+function normalizeTrackSource(trackSource: string | null | undefined) {
+  const nextSource = normalizeText(trackSource);
+  if (!nextSource) return '';
+
+  return nextSource
+    .replace('hb.ru-msk.vkcs.cloud', 'hb.bizmrg.com')
+    .replace('https://anci.hb.bizmrg.com/music/', 'https://pulse.ancial.ru/track/');
+}
+
+function isTrackPlayable(track: PulseTrack | null, userCountry: string) {
+  if (!track) return false;
+  if (String(track.status ?? '0') !== '1') return false;
+
+  const blockedValue = track.blockedin;
+  if (Array.isArray(blockedValue)) {
+    return !blockedValue.includes(userCountry);
+  }
+
+  const blockedCountries = normalizeText(String(blockedValue ?? ''));
+  return blockedCountries ? !blockedCountries.includes(userCountry) : true;
+}
+
+function buildMediaArtwork(track: PulseTrack | null) {
+  const trackImage = getTrackArtwork(track);
+  const artwork = Array.isArray(track?.artwork) ? track.artwork : [];
+  const validArtwork = artwork.filter((item) => normalizeText(item?.src));
+
+  if (validArtwork.length && validArtwork[0]?.sizes) {
+    return validArtwork.map((item) => ({
+      sizes: normalizeText(item.sizes),
+      src: normalizeText(item.src),
+      type: normalizeText(item.type) || 'image/png',
+    }));
+  }
+
+  return [
+    { src: trackImage, sizes: '96x96', type: 'image/png' },
+    { src: trackImage, sizes: '128x128', type: 'image/png' },
+    { src: trackImage, sizes: '192x192', type: 'image/png' },
+    { src: trackImage, sizes: '256x256', type: 'image/png' },
+    { src: trackImage, sizes: '384x384', type: 'image/png' },
+    { src: trackImage, sizes: '512x512', type: 'image/png' },
+  ];
+}
+
+function readSavedVolume() {
+  if (typeof window === 'undefined') return 0.7;
+
+  const savedVolume = Number.parseFloat(window.localStorage.getItem('pulse-volume') || '');
+  if (!Number.isFinite(savedVolume)) return 0.7;
+  return clamp(savedVolume, 0, 1);
+}
+
+function parseLyricsText(value: string) {
+  const lines: PulseLyricsLine[] = [];
+  const rawLines = value.split(/\r\n|\n/);
+  const lyricPattern = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
+
+  rawLines.forEach((line) => {
+    const match = line.match(lyricPattern);
+    if (!match) return;
+
+    const time = Number.parseInt(match[1], 10) * 60 + Number.parseFloat(match[2]);
+    const text = normalizeText(match[3]);
+    if (!text) return;
+
+    lines.push({ text, time });
+  });
+
+  lines.sort((left, right) => left.time - right.time);
+
+  if (lines.length > 0 && lines[0].time > 0.5) {
+    lines.unshift({ text: '♪', time: 0 });
+  }
+
+  return lines;
+}
+
+function getActiveLyricState(lines: PulseLyricsLine[], currentTime: number) {
+  let activeIndex = -1;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (lines[index].time <= currentTime + 0.2) {
+      activeIndex = index;
+      continue;
+    }
+    break;
+  }
+
+  if (activeIndex === -1) {
+    return {
+      activeIndex: -1,
+      progress: 0,
+    };
+  }
+
+  const currentLine = lines[activeIndex];
+  const nextLine = lines[activeIndex + 1];
+  const duration = Math.max(0.1, (nextLine?.time ?? currentLine.time + 4) - currentLine.time - 0.5);
+  const progress = clamp((currentTime - currentLine.time) / duration, 0, 1);
+
+  return {
+    activeIndex,
+    progress,
+  };
+}
+
+function splitLyricText(text: string) {
+  let backText = '';
+  const mainText = text.replace(/\(([^)]*)\)/g, (_, value: string) => {
+    backText += `${value} `;
+    return '';
+  }).trim();
+
+  return {
+    backText: normalizeText(backText),
+    mainText: normalizeText(mainText) || '♪',
+  };
+}
+
+function normalizeSongIds(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => toNumber(item as number | string | null | undefined)).filter(Boolean);
+}
+
+function parsePlaylistSongs(value: string | null | undefined) {
+  return String(value ?? '')
+    .split('|')
+    .map((item) => toNumber(item))
+    .filter(Boolean);
+}
+
+function PlayerIcon({
+  className,
+  name,
+}: {
+  className?: string;
+  name: string;
+}) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+      <use href={`/icons.svg#${name}`}></use>
+    </svg>
+  );
+}
+
+function renderLyricWords(text: string, progress: number, isActive: boolean) {
+  const words = text.split(' ').filter(Boolean);
+  if (!words.length) {
+    return <span>{text}</span>;
+  }
+
+  const currentWordProgress = progress * words.length;
+
+  return words.map((word, wordIndex) => {
+    let fill = 0;
+
+    if (isActive) {
+      if (wordIndex < currentWordProgress - 1) {
+        fill = 100;
+      } else if (wordIndex > currentWordProgress) {
+        fill = 0;
+      } else {
+        fill = clamp((currentWordProgress - wordIndex) * 100, 0, 100);
+      }
+    }
+
+    const style = isActive
+      ? ({
+          backgroundImage: `linear-gradient(90deg, #ffffff ${fill}%, rgba(255,255,255,0.4) ${fill}%)`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          color: 'transparent',
+        } satisfies CSSProperties)
+      : undefined;
+
+    return (
+      <React.Fragment key={`${word}:${wordIndex}`}>
+        <span style={style}>{word}</span>
+        {wordIndex < words.length - 1 ? ' ' : null}
+      </React.Fragment>
+    );
+  });
+}
+
+function PulseLyricsDesktop({
+  activeIndex,
+  lines,
+  onSeek,
+  progress,
+}: {
+  activeIndex: number;
+  lines: PulseLyricsLine[];
+  onSeek: (time: number) => void;
+  progress: number;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const activeLineRef = useRef<HTMLButtonElement | null>(null);
+  const userScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !activeLineRef.current || userScrollingRef.current) return;
+
+    const container = containerRef.current;
+    const activeLine = activeLineRef.current;
+    const targetTop = activeLine.offsetTop - container.clientHeight / 2 + activeLine.clientHeight / 2;
+
+    container.scrollTo({
+      behavior: 'smooth',
+      top: Math.max(0, targetTop),
+    });
+  }, [activeIndex]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current !== null) {
+        window.clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleUserScroll = () => {
+    userScrollingRef.current = true;
+
+    if (scrollTimeoutRef.current !== null) {
+      window.clearTimeout(scrollTimeoutRef.current);
+    }
+
+    scrollTimeoutRef.current = window.setTimeout(() => {
+      userScrollingRef.current = false;
+      scrollTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  return (
+    <div className="hidden h-full lg:flex lg:pl-12 xl:pl-24 2xl:pl-32">
+      <div className="relative h-full max-w-screen-sm">
+        <span className="absolute inset-x-0 bottom-0 z-10 text-center text-xs text-zinc-600">Источник: Pulse</span>
+        <div
+          ref={containerRef}
+          onWheel={handleUserScroll}
+          onTouchMove={handleUserScroll}
+          className="viewport flex h-full flex-col gap-3 overflow-auto px-3 py-32 text-center text-3xl font-bold"
+        >
+          {lines.map((line, lineIndex) => {
+            const isActive = lineIndex === activeIndex;
+            const nextProgress = isActive ? progress : 0;
+
+            return (
+              <button
+                key={`${line.time}:${lineIndex}`}
+                ref={isActive ? activeLineRef : null}
+                type="button"
+                onClick={() => onSeek(line.time)}
+                className={cn(
+                  'block cursor-pointer py-1 text-left text-white/40 duration-300',
+                  isActive && 'pointer-events-none scale-[1.03] text-white',
+                  !isActive && 'hover:text-white/70',
+                )}
+                style={{
+                  textShadow: isActive ? '0 0 18px rgba(255,255,255,0.2)' : undefined,
+                  transformOrigin: 'left center',
+                }}
+              >
+                {renderLyricWords(line.text, nextProgress, isActive)}
+              </button>
+            );
+          })}
+          <div className="h-[45vh] shrink-0"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PulsePlayerProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, lang, user } = useAuth();
+  const { showNote } = useNotification();
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
+  const progressLoopRef = useRef<number | null>(null);
+  const collectionRequestIdRef = useRef(0);
+  const preloadStartedRef = useRef(false);
+  const currentSongIdRef = useRef(0);
+  const currentCollectionIdRef = useRef('0');
+  const currentIsPlaylistRef = useRef(false);
+  const playlistRef = useRef<PulseTrack[]>([]);
+  const indexRef = useRef(0);
+  const likedSongIdsRef = useRef<number[] | null>(null);
+  const seekingSliderRef = useRef<'desktop' | 'mobile' | null>(null);
+
+  const [isVisible, setIsVisible] = useState(false);
+  const [mode, setMode] = useState<PulsePlayerMode>('mini');
+  const [playlist, setPlaylist] = useState<PulseTrack[]>([]);
+  const [index, setIndex] = useState(0);
+  const [isPlaylist, setIsPlaylist] = useState(false);
+  const [playlistId, setPlaylistId] = useState('0');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(() => readSavedVolume());
+  const [likedSongIds, setLikedSongIds] = useState<number[] | null>(null);
+  const [lyricsLines, setLyricsLines] = useState<PulseLyricsLine[]>([]);
+  const [lyricsSource, setLyricsSource] = useState('');
+  const [seekValue, setSeekValue] = useState(0);
+  const [activeSeekSlider, setActiveSeekSlider] = useState<'desktop' | 'mobile' | null>(null);
+  const [listenCounted, setListenCounted] = useState(false);
+  const [statusAudio, setStatusAudio] = useState('');
+  const [isAddToPlaylistOpen, setIsAddToPlaylistOpen] = useState(false);
+  const [addToPlaylistSongId, setAddToPlaylistSongId] = useState(0);
+  const [playlistOptions, setPlaylistOptions] = useState<PulsePlaylistOption[]>([]);
+  const [playlistOptionsLoading, setPlaylistOptionsLoading] = useState(false);
+
+  const currentTrack = playlist[index] ?? null;
+  const currentSongId = toNumber(currentTrack?.sid);
+  const userCountry = normalizeText(user?.country) || 'RU';
+  const playerTitle = getTrackDisplayTitle(currentTrack, lang);
+  const playerArtist = getTrackArtist(currentTrack, lang);
+  const playerArtwork = getTrackArtwork(currentTrack);
+  const hiddenByMessagesDialog = Boolean(pathname && pathname.startsWith('/messages/'));
+  const effectivePlayerVisible = isVisible && !hiddenByMessagesDialog;
+  const activeLike = currentTrack ? likedSongIds?.includes(toNumber(currentTrack.sid)) === true : false;
+  const activeLyricState = getActiveLyricState(lyricsLines, currentTime);
+  const activeLyricLine = activeLyricState.activeIndex >= 0 ? lyricsLines[activeLyricState.activeIndex] : null;
+  const mobileLyric = activeLyricLine ? splitLyricText(activeLyricLine.text) : null;
+  const displayedCurrentTime = activeSeekSlider ? seekValue : currentTime;
+
+  const notify = ({
+    content,
+    time = 3,
+    type = 'info',
+  }: {
+    content: React.ReactNode;
+    time?: number;
+    type?: 'error' | 'info' | 'success';
+  }) => {
+    showNote({
+      content,
+      time,
+      type,
+    });
+  };
+
+  const syncWindowState = () => {
+    if (typeof window === 'undefined') return;
+
+    const nextState: PulsePlayerState = {
+      currentSongId: currentSongIdRef.current,
+      isPlaylist: currentIsPlaylistRef.current,
+      listenCounted,
+      listenedCounted: listenCounted,
+      playlistId: currentCollectionIdRef.current,
+    };
+
+    window.PlayerState = nextState;
+    window._pulseLikedSongs = likedSongIdsRef.current;
+    window.statusAudio = statusAudio;
+    window.dispatchEvent(
+      new CustomEvent('pulse-state-change', {
+        detail: {
+          currentSongId: currentSongIdRef.current,
+          currentTrack,
+          isOpen: isVisible,
+          isPlaying,
+          isPlaylist: currentIsPlaylistRef.current,
+          mode,
+          playlist: playlistRef.current,
+          playlistId: currentCollectionIdRef.current,
+        },
+      }),
+    );
+  };
+
+  const setPlaylistState = (nextPlaylist: PulseTrack[]) => {
+    playlistRef.current = nextPlaylist;
+    setPlaylist(nextPlaylist);
+  };
+
+  const setPlaylistIndex = (nextIndex: number) => {
+    indexRef.current = nextIndex;
+    setIndex(nextIndex);
+  };
+
+  const setPlaylistMode = (nextIsPlaylist: boolean, nextPlaylistId: string) => {
+    currentIsPlaylistRef.current = nextIsPlaylist;
+    currentCollectionIdRef.current = nextPlaylistId;
+    setIsPlaylist(nextIsPlaylist);
+    setPlaylistId(nextPlaylistId);
+  };
+
+  const updateMediaPositionState = () => {
+    const audio = audioRef.current;
+    if (!audio || typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    if (typeof navigator.mediaSession.setPositionState !== 'function') return;
+
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: Number.isFinite(audio.duration) ? audio.duration : 0,
+        playbackRate: audio.playbackRate,
+        position: Number.isFinite(audio.currentTime) ? audio.currentTime : 0,
+      });
+    } catch {
+      // ignore unsupported position state errors
+    }
+  };
+
+  const clearMediaSession = () => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+
+    try {
+      navigator.mediaSession.playbackState = 'none';
+    } catch {}
+
+    try {
+      navigator.mediaSession.metadata = null;
+    } catch {}
+
+    const actions = [
+      'play',
+      'pause',
+      'previoustrack',
+      'nexttrack',
+      'stop',
+      'seekto',
+      'seekbackward',
+      'seekforward',
+    ] as const;
+
+    actions.forEach((action) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, null);
+      } catch {
+        // ignore unsupported action handlers
+      }
+    });
+  };
+
+  const bindMediaSession = () => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+
+    try {
+      navigator.mediaSession.setActionHandler('play', async () => {
+        try {
+          await audioRef.current?.play();
+        } catch {
+          // ignore blocked playback
+        }
+      });
+    } catch {}
+
+    try {
+      navigator.mediaSession.setActionHandler('pause', () => {
+        audioRef.current?.pause();
+      });
+    } catch {}
+
+    try {
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        window.prevplaylisttrack?.();
+      });
+    } catch {}
+
+    try {
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        window.nextplaylisttrack?.();
+      });
+    } catch {}
+
+    try {
+      navigator.mediaSession.setActionHandler('stop', () => {
+        window.PlayerClose?.();
+      });
+    } catch {}
+
+    try {
+      navigator.mediaSession.setActionHandler('seekto', (event) => {
+        if (!audioRef.current) return;
+        if (typeof event.seekTime !== 'number') return;
+
+        audioRef.current.currentTime = event.seekTime;
+        setCurrentTime(event.seekTime);
+        setSeekValue(event.seekTime);
+        updateMediaPositionState();
+      });
+    } catch {}
+  };
+
+  const syncTrackProgress = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const nextCurrentTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+    const nextDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+    setCurrentTime(nextCurrentTime);
+    setDuration(nextDuration);
+
+    if (!seekingSliderRef.current) {
+      setSeekValue(nextCurrentTime);
+    }
+
+    if (!listenCounted && nextCurrentTime >= PLAYER_LISTEN_COUNT_AT_SECONDS && currentSongIdRef.current > 0) {
+      setListenCounted(true);
+      void fetch(`/api/pulse/listened_track.php?id=${currentSongIdRef.current}`, {
+        cache: 'no-store',
+      }).catch(() => {
+        // ignore listen counter errors
+      });
+    }
+
+    if (
+      !preloadStartedRef.current &&
+      nextDuration > 0 &&
+      nextCurrentTime / nextDuration > PRELOAD_PROGRESS_THRESHOLD
+    ) {
+      const nextTrack = playlistRef.current[indexRef.current + 1];
+      if (preloadAudioRef.current && nextTrack && isTrackPlayable(nextTrack, userCountry)) {
+        preloadAudioRef.current.src = normalizeTrackSource(nextTrack.src);
+        preloadStartedRef.current = true;
+      }
+    }
+
+    updateMediaPositionState();
+  };
+
+  const stopProgressLoop = () => {
+    if (progressLoopRef.current !== null) {
+      window.cancelAnimationFrame(progressLoopRef.current);
+      progressLoopRef.current = null;
+    }
+  };
+
+  const startProgressLoop = () => {
+    stopProgressLoop();
+
+    const tick = () => {
+      syncTrackProgress();
+
+      if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
+        progressLoopRef.current = window.requestAnimationFrame(tick);
+      } else {
+        progressLoopRef.current = null;
+      }
+    };
+
+    progressLoopRef.current = window.requestAnimationFrame(tick);
+  };
+
+  const showPlayer = () => {
+    const savedVolume = readSavedVolume();
+    setIsVisible(true);
+    setVolume(savedVolume);
+
+    if (audioRef.current) {
+      audioRef.current.volume = savedVolume;
+    }
+  };
+
+  const closePlayer = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.removeAttribute('src');
+      audio.load();
+    }
+
+    stopProgressLoop();
+    setStatusAudio('');
+    preloadStartedRef.current = false;
+    currentSongIdRef.current = 0;
+    setPlaylistState([]);
+    setPlaylistIndex(0);
+    setPlaylistMode(false, '0');
+    seekingSliderRef.current = null;
+    setActiveSeekSlider(null);
+    setCurrentTime(0);
+    setDuration(0);
+    setSeekValue(0);
+    setListenCounted(false);
+    setMode('mini');
+    setLyricsLines([]);
+    setLyricsSource('');
+    setIsVisible(false);
+    setIsPlaying(false);
+    syncWindowState();
+    clearMediaSession();
+  };
+
+  const openAddToPlaylist = (songId: number | string) => {
+    const resolvedSongId = toNumber(songId);
+    if (!resolvedSongId) return;
+
+    setAddToPlaylistSongId(resolvedSongId);
+    setIsAddToPlaylistOpen(true);
+    setPlaylistOptions([]);
+    setPlaylistOptionsLoading(true);
+
+    void (async () => {
+      try {
+        const response = await fetch('/api/pulse/playlist_manage.php?action=list', {
+          cache: 'no-store',
+        });
+        const result = await response.json() as {
+          data?: PulsePlaylistManageItem[];
+          error?: string | null;
+          success?: boolean;
+        };
+
+        if (!result.success) {
+          notify({
+            content: result.error || (lang?.pulse_error_happened || 'Произошла ошибка =('),
+            type: 'error',
+            time: 5,
+          });
+          setPlaylistOptions([]);
+          return;
+        }
+
+        const nextOptions = Array.isArray(result.data)
+          ? result.data.map((item) => {
+              const playlistId = normalizeText(String(item.id ?? ''));
+              return {
+                hasSong: parsePlaylistSongs(item.songs).includes(resolvedSongId),
+                id: playlistId,
+                image: normalizeText(item.img),
+                name: normalizeText(item.name) || (lang?.pulse_unknown_playlist || 'Без названия'),
+              } satisfies PulsePlaylistOption;
+            }).filter((item) => item.id)
+          : [];
+
+        setPlaylistOptions(nextOptions);
+      } catch {
+        notify({
+          content: lang?.pulse_error_happened || 'Произошла ошибка =(',
+          type: 'error',
+          time: 5,
+        });
+        setPlaylistOptions([]);
+      } finally {
+        setPlaylistOptionsLoading(false);
+      }
+    })();
+  };
+
+  const toggleSongInPlaylist = async (playlistId: string, hasSong: boolean) => {
+    if (!playlistId || !addToPlaylistSongId) return;
+
+    const payload = new URLSearchParams({
+      action: hasSong ? 'remove_song' : 'add_song',
+      id: playlistId,
+      song_id: String(addToPlaylistSongId),
+    });
+
+    try {
+      const response = await fetch('/api/pulse/playlist_manage.php', {
+        body: payload.toString(),
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        },
+        method: 'POST',
+      });
+      const result = await response.json() as {
+        error?: string | null;
+        success?: boolean;
+      };
+
+      if (!result.success) {
+        notify({
+          content: result.error || (lang?.pulse_error_happened || 'Произошла ошибка =('),
+          type: 'error',
+          time: 5,
+        });
+        return;
+      }
+
+      setPlaylistOptions((currentOptions) =>
+        currentOptions.map((item) =>
+          item.id === playlistId
+            ? {
+                ...item,
+                hasSong: !hasSong,
+              }
+            : item,
+        ),
+      );
+
+      notify({
+        content: hasSong
+          ? lang?.pulse_removed_from_playlist || 'Удалено из плейлиста'
+          : lang?.pulse_added_to_playlist || 'Добавлено в плейлист',
+        type: 'success',
+        time: 2,
+      });
+
+      if (window._pagePlaylistConf?.type === 2 && normalizeText(String(window._pagePlaylistConf.id ?? '')) === playlistId) {
+        window.setTimeout(() => {
+          setIsAddToPlaylistOpen(false);
+          router.push(`/pulse/playlist/${playlistId}`);
+        }, 400);
+      }
+    } catch {
+      notify({
+        content: lang?.pulse_error_happened || 'Произошла ошибка =(',
+        type: 'error',
+        time: 5,
+      });
+    }
+  };
+
+  const ensureLikedSongsLoaded = async () => {
+    if (!isAuthenticated) {
+      likedSongIdsRef.current = [];
+      setLikedSongIds([]);
+      return [];
+    }
+
+    if (likedSongIdsRef.current !== null) {
+      return likedSongIdsRef.current;
+    }
+
+    try {
+      const response = await fetch('/api/pulse/getFavorites.php', {
+        cache: 'no-store',
+      });
+      const result = await response.json() as { ids?: unknown };
+      const nextIds = normalizeSongIds(result.ids);
+      likedSongIdsRef.current = nextIds;
+      setLikedSongIds(nextIds);
+      return nextIds;
+    } catch {
+      likedSongIdsRef.current = [];
+      setLikedSongIds([]);
+      return [];
+    }
+  };
+
+  const setLikedSongsState = (nextIds: number[]) => {
+    likedSongIdsRef.current = nextIds;
+    setLikedSongIds(nextIds);
+  };
+
+  const toggleSongLike = async (
+    songId: number | string,
+    options?: {
+      playlistId?: number | string | null;
+      triggerPlaylistRedirect?: boolean;
+    },
+  ) => {
+    const resolvedSongId = toNumber(songId);
+    if (!resolvedSongId) return;
+
+    try {
+      const response = await fetch(`/api/pulse/add_favorite_song.php?id=${resolvedSongId}`, {
+        cache: 'no-store',
+      });
+      const result = normalizeText(await response.text());
+      const currentIds = await ensureLikedSongsLoaded();
+
+      if (result === 'ADDED' || result === 'CREATED_ADDED') {
+        const nextIds = currentIds.includes(resolvedSongId)
+          ? currentIds
+          : [...currentIds, resolvedSongId];
+        setLikedSongsState(nextIds);
+
+        notify({
+          content:
+            result === 'CREATED_ADDED'
+              ? lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан, трек добавлен'
+              : lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!',
+          type: 'success',
+          time: 5,
+        });
+
+        if (options?.triggerPlaylistRedirect && options.playlistId) {
+          router.push(`/pulse/playlist/${options.playlistId}`);
+        }
+      } else if (result === 'REMOVED') {
+        const nextIds = currentIds.filter((id) => id !== resolvedSongId);
+        setLikedSongsState(nextIds);
+
+        notify({
+          content: lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!',
+          type: 'success',
+          time: 5,
+        });
+
+        if (options?.triggerPlaylistRedirect && options.playlistId) {
+          router.push(`/pulse/playlist/${options.playlistId}`);
+        }
+      } else if (result === 'UND_SONG') {
+        notify({
+          content: lang?.pulse_unknown_song || 'Неизвестная песня...',
+          type: 'error',
+          time: 5,
+        });
+      }
+    } catch {
+      notify({
+        content: lang?.pulse_error_happened || 'Произошла ошибка =(',
+        type: 'error',
+        time: 5,
+      });
+    }
+  };
+
+  const likeCurrentSong = async () => {
+    if (!currentSongIdRef.current) return;
+    await toggleSongLike(currentSongIdRef.current);
+  };
+
+  const togglePlaylistLike = async (nextPlaylistId: number | string) => {
+    const resolvedPlaylistId = normalizeText(String(nextPlaylistId));
+    if (!resolvedPlaylistId) return;
+
+    try {
+      const response = await fetch(`/api/pulse/likeplaylist.php?id=${resolvedPlaylistId}`, {
+        cache: 'no-store',
+      });
+      const result = normalizeText(await response.text());
+
+      window.dispatchEvent(
+        new CustomEvent('pulse:playlist-like-changed', {
+          detail: {
+            liked: result === 'like',
+            playlistId: resolvedPlaylistId,
+          },
+        }),
+      );
+    } catch {
+      notify({
+        content: lang?.pulse_error_happened || 'Произошла ошибка =(',
+        type: 'error',
+        time: 5,
+      });
+    }
+  };
+
+  const playLoadedTrack = async (track: PulseTrack | null, retryCount = 0): Promise<void> => {
+    const audio = audioRef.current;
+    if (!audio || !track) return;
+
+    if (!isTrackPlayable(track, userCountry)) {
+      notify({
+        content: lang?.pulse_track_unavailable || 'Трек недоступен или удалён. Переходим к следующему...',
+        type: 'error',
+        time: 5,
+      });
+
+      if (currentIsPlaylistRef.current && indexRef.current < playlistRef.current.length - 1) {
+        window.nextplaylisttrack?.();
+      }
+      return;
+    }
+
+    const trackSource = normalizeTrackSource(track.src);
+    if (!trackSource) {
+      notify({
+        content: lang?.pulse_unknown_song || 'Неизвестная песня...',
+        type: 'error',
+        time: 5,
+      });
+      return;
+    }
+
+    currentSongIdRef.current = toNumber(track.sid);
+    setListenCounted(false);
+    preloadStartedRef.current = false;
+    setLyricsLines([]);
+    setLyricsSource('');
+    setStatusAudio('Loading');
+
+    if (isAuthenticated) {
+      void ensureLikedSongsLoaded();
+    }
+
+    if (audio.src !== trackSource) {
+      audio.src = trackSource;
+      audio.load();
+    }
+
+    showPlayer();
+
+    try {
+      await audio.play();
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        (error.name === 'AbortError' || error.name === 'NotAllowedError')
+      ) {
+        return;
+      }
+
+      if (retryCount < 2 && playlistRef.current[indexRef.current]?.sid === track.sid) {
+        window.setTimeout(() => {
+          void playLoadedTrack(track, retryCount + 1);
+        }, 1500);
+        return;
+      }
+
+      console.error('Pulse player playback error', error);
+    }
+  };
+
+  const fetchTrackCollection = async (kind: PulseCollectionKind, id: number | string) => {
+    const resolvedId = normalizeText(String(id));
+    if (!resolvedId) return [];
+
+    let url = '';
+
+    if (kind === 'playlist') {
+      url = `/api/pulse/getPlaylist.php?pid=${encodeURIComponent(resolvedId)}`;
+    } else if (kind === 'genlist') {
+      url = `/api/pulse/getPlaylist.php?gid=${encodeURIComponent(resolvedId)}`;
+    } else if (kind === 'artist') {
+      url = `/api/pulse/getPlaylist.php?aid=${encodeURIComponent(resolvedId)}`;
+    } else {
+      url = `/api/pulse/getPlaylist.php?tid=${encodeURIComponent(resolvedId)}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        cache: 'no-store',
+      });
+      const result = await response.json() as unknown;
+      return Array.isArray(result) ? result as PulseTrack[] : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const playCollection = async (
+    kind: PulseCollectionKind,
+    id: number | string,
+    forceReload = false,
+    shuffle = 0,
+    startIndex = 0,
+    expectedSongId?: number | string | null,
+  ) => {
+    const resolvedId = normalizeText(String(id));
+    const playId = kind === 'artist' ? `artist_${resolvedId}` : resolvedId;
+    const shouldForceReload = forceReload === true;
+    const expectedTrackId = toNumber(expectedSongId);
+
+    if (
+      kind !== 'track' &&
+      currentIsPlaylistRef.current &&
+      currentCollectionIdRef.current === playId &&
+      playlistRef.current.length > 0
+    ) {
+      if (!shouldForceReload) {
+        if (audioRef.current?.paused) {
+          try {
+            await audioRef.current.play();
+          } catch {
+            // ignore blocked autoplay
+          }
+        } else {
+          audioRef.current?.pause();
+        }
+        return;
+      }
+
+      if (Number(shuffle) === 0 && startIndex >= 0 && startIndex < playlistRef.current.length) {
+        const cachedTrack = playlistRef.current[startIndex];
+        if (!expectedTrackId || toNumber(cachedTrack?.sid) === expectedTrackId) {
+          setPlaylistIndex(startIndex);
+          await playLoadedTrack(cachedTrack);
+          showPlayer();
+          return;
+        }
+      }
+    }
+
+    collectionRequestIdRef.current += 1;
+    const requestId = collectionRequestIdRef.current;
+    const nextTracks = await fetchTrackCollection(kind, resolvedId);
+
+    if (requestId !== collectionRequestIdRef.current || !nextTracks.length) {
+      return;
+    }
+
+    const preparedTracks =
+      kind !== 'track' && Number(shuffle) === 1
+        ? nextTracks.slice().sort(() => 0.5 - Math.random())
+        : nextTracks.slice();
+    const nextIndex = kind === 'track'
+      ? 0
+      : clamp(startIndex, 0, Math.max(preparedTracks.length - 1, 0));
+    const nextTrack = preparedTracks[nextIndex] ?? null;
+
+    setPlaylistState(preparedTracks);
+    setPlaylistIndex(nextIndex);
+    setPlaylistMode(kind !== 'track', kind !== 'track' ? playId : '0');
+    await playLoadedTrack(nextTrack);
+    showPlayer();
+
+    if (kind === 'playlist') {
+      void fetch(`/api/pulse/history_add.php?id=${encodeURIComponent(resolvedId)}&type=2`, {
+        cache: 'no-store',
+      }).catch(() => {
+        // ignore history failures
+      });
+    }
+  };
+
+  const playTrack = async (trackId: number | string) => {
+    await playCollection('track', trackId, true, 0, 0);
+  };
+
+  const playPlaylist = async (
+    nextPlaylistId: number | string,
+    forceReload = false,
+    shuffle = 0,
+    startIndex = 0,
+    expectedSongId?: number | string | null,
+  ) => {
+    await playCollection('playlist', nextPlaylistId, forceReload, shuffle, startIndex, expectedSongId);
+  };
+
+  const playGenlist = async (
+    nextPlaylistId: number | string,
+    forceReload = false,
+    shuffle = 0,
+    startIndex = 0,
+    expectedSongId?: number | string | null,
+  ) => {
+    await playCollection('genlist', nextPlaylistId, forceReload, shuffle, startIndex, expectedSongId);
+  };
+
+  const playArtistPlaylist = async (
+    artistId: number | string,
+    forceReload = false,
+    shuffle = 0,
+    startIndex = 0,
+    expectedSongId?: number | string | null,
+  ) => {
+    await playCollection('artist', artistId, forceReload, shuffle, startIndex, expectedSongId);
+  };
+
+  const prevTrack = async () => {
+    if (!currentIsPlaylistRef.current || !playlistRef.current.length) return;
+
+    const nextIndex = indexRef.current > 0 ? indexRef.current - 1 : 0;
+    setPlaylistIndex(nextIndex);
+    await playLoadedTrack(playlistRef.current[nextIndex] ?? null);
+  };
+
+  const nextTrack = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (!currentIsPlaylistRef.current || !playlistRef.current.length) {
+      audio.currentTime = 0;
+      audio.pause();
+      return;
+    }
+
+    if (indexRef.current < playlistRef.current.length - 1) {
+      const nextIndex = indexRef.current + 1;
+      setPlaylistIndex(nextIndex);
+      await playLoadedTrack(playlistRef.current[nextIndex] ?? null);
+      return;
+    }
+
+    audio.currentTime = 0;
+    audio.pause();
+  };
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (audio.paused) {
+      void audio.play().catch(() => {
+        // ignore blocked autoplay
+      });
+    } else {
+      audio.pause();
+    }
+  };
+
+  const changeVolume = (nextVolume: number | string) => {
+    const resolvedVolume = clamp(Number.parseFloat(String(nextVolume)), 0, 1);
+    setVolume(resolvedVolume);
+
+    if (audioRef.current) {
+      audioRef.current.volume = resolvedVolume;
+    }
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('pulse-volume', String(resolvedVolume));
+    }
+  };
+
+  const queueTrackNext = async (trackId: number | string) => {
+    if (!currentIsPlaylistRef.current || !playlistRef.current.length) {
+      notify({
+        content:
+          lang?.pulse_queue_rule ||
+          'Включите любой трек из плейлиста, чтобы ставить треки в очередь',
+        type: 'info',
+        time: 5,
+      });
+      return;
+    }
+
+    const nextTracks = await fetchTrackCollection('track', trackId);
+    const nextTrack = nextTracks[0];
+
+    if (!nextTrack) return;
+
+    const updatedPlaylist = playlistRef.current.slice();
+    updatedPlaylist.splice(indexRef.current + 1, 0, nextTrack);
+    setPlaylistState(updatedPlaylist);
+
+    notify({
+      content: lang?.pulse_will_play_next || 'Будет играть следующим',
+      type: 'success',
+      time: 5,
+    });
+  };
+
+  const fetchLyricsData = async (track: PulseTrack | null) => {
+    if (!track) {
+      return {
+        lines: [] as PulseLyricsLine[],
+        source: '',
+      };
+    }
+
+    const title = normalizeText(track.title)
+      .replace('(Remix)', '')
+      .replace('(Sped Up Version)', '');
+    const artist = normalizeText(track.artist).split(',')[0];
+
+    if (!title || !artist) {
+      return {
+        lines: [] as PulseLyricsLine[],
+        source: '',
+      };
+    }
+
+    try {
+      const response = await fetch(
+        `https://pulse-lyrics.ancial.ru/UniLyrics.php?a=${encodeURIComponent(artist)}&t=${encodeURIComponent(title)}&d=0&type=alternative`,
+        {
+          cache: 'no-store',
+        },
+      );
+      const result = await response.text();
+      const nextLyrics = parseLyricsText(result);
+
+      if (!nextLyrics.length) {
+        return {
+          lines: [] as PulseLyricsLine[],
+          source: '',
+        };
+      }
+
+      return {
+        lines: nextLyrics,
+        source: 'Pulse',
+      };
+    } catch {
+      return {
+        lines: [] as PulseLyricsLine[],
+        source: '',
+      };
+    }
+  };
+
+  useEffect(() => {
+    playlistRef.current = playlist;
+  }, [playlist]);
+
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+
+  useEffect(() => {
+    currentIsPlaylistRef.current = isPlaylist;
+  }, [isPlaylist]);
+
+  useEffect(() => {
+    currentCollectionIdRef.current = playlistId;
+  }, [playlistId]);
+
+  useEffect(() => {
+    likedSongIdsRef.current = likedSongIds;
+  }, [likedSongIds]);
+
+  useEffect(() => {
+    if (!currentTrack) {
+      currentSongIdRef.current = 0;
+      return;
+    }
+
+    currentSongIdRef.current = toNumber(currentTrack.sid);
+  }, [currentTrack]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+
+    document.body.classList.toggle('pulse-player-visible', effectivePlayerVisible);
+    document.body.classList.toggle('pulse-player-full', effectivePlayerVisible && mode === 'full');
+
+    return () => {
+      document.body.classList.remove('pulse-player-visible');
+      document.body.classList.remove('pulse-player-full');
+    };
+  }, [effectivePlayerVisible, mode]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = clamp(volume, 0, 1);
+  }, [volume]);
+
+  useEffect(() => {
+    preloadAudioRef.current = new Audio();
+    preloadAudioRef.current.preload = 'auto';
+
+    return () => {
+      stopProgressLoop();
+      preloadAudioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+
+    const handleLoadStart = () => {
+      setStatusAudio('Loading');
+    };
+
+    const handleCanPlay = () => {
+      setStatusAudio('Ready');
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      bindMediaSession();
+      if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.playbackState = 'playing';
+        } catch {}
+      }
+      startProgressLoop();
+      syncTrackProgress();
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+      if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.playbackState = 'paused';
+        } catch {}
+      }
+      stopProgressLoop();
+      syncTrackProgress();
+    };
+
+    const handleEnded = () => {
+      stopProgressLoop();
+      void nextTrack();
+    };
+
+    const handleLoadedMetadata = () => {
+      syncTrackProgress();
+    };
+
+    const handleTimeUpdate = () => {
+      syncTrackProgress();
+    };
+
+    audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+
+    return () => {
+      audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('canplay', handleCanPlay);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+    };
+  // We intentionally keep this subscription stable and read live player state from refs/events,
+  // otherwise adding every helper here would re-bind audio listeners on frequent progress updates.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextTrack, userCountry]);
+
+  useEffect(() => {
+    if (!currentTrack) {
+      clearMediaSession();
+      syncWindowState();
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          album: normalizeText(currentTrack.album) || 'Ancial',
+          artist: playerArtist,
+          artwork: buildMediaArtwork(currentTrack),
+          title: playerTitle,
+        });
+      } catch {
+        // ignore MediaMetadata errors
+      }
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const lyricsData = await fetchLyricsData(currentTrack);
+      if (cancelled) return;
+
+      setLyricsLines(lyricsData.lines);
+      setLyricsSource(lyricsData.source);
+    })();
+
+    syncWindowState();
+
+    return () => {
+      cancelled = true;
+    };
+  // syncWindowState is intentionally omitted here so lyric loading only reacts to real track changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack, playerArtist, playerTitle]);
+
+  useEffect(() => {
+    syncWindowState();
+  // syncWindowState closes over live refs/state; depending on it would make this fire every render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack, isPlaying, isVisible, listenCounted, mode, playlistId, statusAudio]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const compatWindow = window;
+
+    compatWindow.audio = audioRef.current;
+    compatWindow.PlayerClose = closePlayer;
+    compatWindow.PlayerMode = (nextMode) => {
+      setMode(nextMode === 'full' ? 'full' : 'mini');
+    };
+    compatWindow.PlayerShow = showPlayer;
+    compatWindow.changevolume = changeVolume;
+    compatWindow.likeplaylist = (nextPlaylistId) => {
+      void togglePlaylistLike(nextPlaylistId);
+    };
+    compatWindow.likesong = (songId, type, nextPlaylistId) => {
+      void toggleSongLike(songId, {
+        playlistId: nextPlaylistId,
+        triggerPlaylistRedirect: Number(type) === 3,
+      });
+    };
+    compatWindow.nextplaylisttrack = () => {
+      void nextTrack();
+    };
+    compatWindow.openAddToPlaylist = openAddToPlaylist;
+    compatWindow.play = togglePlay;
+    compatWindow.playGenlist = (nextPlaylistId, forceReload, shuffle, startIndex, expectedSongId) => {
+      void playGenlist(nextPlaylistId, Boolean(forceReload), Number(shuffle ?? 0), Number(startIndex ?? 0), expectedSongId);
+    };
+    compatWindow.playNext = (trackId) => {
+      void queueTrackNext(trackId);
+    };
+    compatWindow.playerLikeSong = () => {
+      void likeCurrentSong();
+    };
+    compatWindow.playlist = (nextPlaylistId, forceReload, shuffle, startIndex, expectedSongId) => {
+      void playPlaylist(nextPlaylistId, Boolean(forceReload), Number(shuffle ?? 0), Number(startIndex ?? 0), expectedSongId);
+    };
+    compatWindow.playtrack = (trackId) => {
+      void playTrack(trackId);
+    };
+    compatWindow.playtrackfromartist = (artistId, trackNumber, expectedSongId) => {
+      void playArtistPlaylist(artistId, true, 0, Number(trackNumber ?? 1) - 1, expectedSongId);
+    };
+    compatWindow.playtrackfromgenlist = (nextPlaylistId, trackNumber, expectedSongId) => {
+      void playGenlist(nextPlaylistId, true, 0, Number(trackNumber ?? 1) - 1, expectedSongId);
+    };
+    compatWindow.playtrackfromplaylist = (nextPlaylistId, trackNumber, expectedSongId) => {
+      void playPlaylist(nextPlaylistId, true, 0, Number(trackNumber ?? 1) - 1, expectedSongId);
+    };
+    compatWindow.prevplaylisttrack = () => {
+      void prevTrack();
+    };
+    compatWindow.trackP = (trackId) => {
+      void playTrack(trackId);
+    };
+    compatWindow.artistPlaylist = (artistId, forceReload, shuffle, startIndex, expectedSongId) => {
+      void playArtistPlaylist(artistId, Boolean(forceReload), Number(shuffle ?? 0), Number(startIndex ?? 0), expectedSongId);
+    };
+    compatWindow.updatePlayerLikeBtn = (songId) => {
+      void ensureLikedSongsLoaded().then(() => {
+        syncWindowState();
+        if (toNumber(songId) === currentSongIdRef.current) {
+          setLikedSongIds([...(likedSongIdsRef.current ?? [])]);
+        }
+      });
+    };
+
+    return () => {
+      delete compatWindow.PlayerClose;
+      delete compatWindow.PlayerMode;
+      delete compatWindow.PlayerShow;
+      delete compatWindow.PlayerState;
+      delete compatWindow._pulseLikedSongs;
+      delete compatWindow.artistPlaylist;
+      delete compatWindow.audio;
+      delete compatWindow.changevolume;
+      delete compatWindow.likeplaylist;
+      delete compatWindow.likesong;
+      delete compatWindow.nextplaylisttrack;
+      delete compatWindow.openAddToPlaylist;
+      delete compatWindow.play;
+      delete compatWindow.playGenlist;
+      delete compatWindow.playNext;
+      delete compatWindow.playerLikeSong;
+      delete compatWindow.playlist;
+      delete compatWindow.playtrack;
+      delete compatWindow.playtrackfromartist;
+      delete compatWindow.playtrackfromgenlist;
+      delete compatWindow.playtrackfromplaylist;
+      delete compatWindow.prevplaylisttrack;
+      delete compatWindow.statusAudio;
+      delete compatWindow.trackP;
+      delete compatWindow.updatePlayerLikeBtn;
+    };
+  // Global bridge methods are reinstalled only when their public behavior changes, not on every syncWindowState update.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [changeVolume, closePlayer, ensureLikedSongsLoaded, likeCurrentSong, nextTrack, openAddToPlaylist, playArtistPlaylist, playGenlist, playPlaylist, playTrack, prevTrack, queueTrackNext, showPlayer, togglePlay, togglePlaylistLike, toggleSongLike]);
+
+  const contextValue: PulsePlayerContextValue = {
+    closePlayer,
+    currentCollectionId: playlistId,
+    currentSongId,
+    isOpen: isVisible,
+    isPlaying,
+    mode,
+    openAddToPlaylist,
+    playArtistPlaylist,
+    playGenlist,
+    playNextTrack: queueTrackNext,
+    playPlaylist,
+    playTrack,
+    setMode,
+    togglePlay,
+  };
+
+  return (
+    <PulsePlayerContext.Provider value={contextValue}>
+      {children}
+
+      <audio ref={audioRef} id="htmlaudio" className="hidden" />
+
+      {effectivePlayerVisible ? (
+        <div
+          id="NAVP"
+          className={cn(
+            'fixed inset-x-0 z-[102] flex flex-col px-1.5 transition-all duration-300',
+            mode === 'mini'
+              ? 'bottom-16 pb-2.5 md:bottom-1.5 md:left-24 md:right-1.5 md:pb-1.5'
+              : 'inset-0 px-0 pb-0 md:bottom-1.5 md:left-24 md:right-1.5 md:top-1.5 md:px-1.5 md:pb-1.5',
+          )}
+        >
+          {mode === 'full' ? (
+            <div
+              id="NAVPfull"
+              className="flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto rounded-none border border-zinc-600/30 bg-zinc-900/80 p-1 shadow backdrop-blur-lg md:h-full md:rounded-3xl md:gap-3"
+            >
+              <div className="absolute top-3 z-[20] flex w-full items-center px-3">
+                <button
+                  type="button"
+                  onClick={closePlayer}
+                  className="cursor-pointer duration-300 active:scale-95"
+                >
+                  <PlayerIcon name="IC-times" className="h-10 w-10 fill-white" />
+                </button>
+
+                <div className="flex flex-grow flex-col items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const albumId = normalizeText(String(currentTrack?.albumid ?? ''));
+                      if (!albumId) return;
+
+                      router.push(`/pulse/playlist/${albumId}`);
+                      setMode('mini');
+                    }}
+                    className={cn(
+                      'text-center text-sm text-white duration-300 lg:text-base',
+                      normalizeText(String(currentTrack?.albumid ?? '')) && 'cursor-pointer active:scale-95 hover:text-zinc-300',
+                    )}
+                  >
+                    {normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
+                  </button>
+                  <svg className="w-24 shrink-0" viewBox="0 0 821 157" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <use href="/icons.svg#IC-pulse-logo"></use>
+                  </svg>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMode('mini')}
+                  className="cursor-pointer duration-300 hover:fill-zinc-300 active:scale-95"
+                >
+                  <PlayerIcon name="IC-chevron-down" className="h-10 w-10 fill-white" />
+                </button>
+              </div>
+
+              <div className="flex h-full w-full flex-row items-center justify-center px-3">
+                <div className="flex flex-col items-center justify-center lg:items-start">
+                  <div className="flex flex-col items-center duration-300 lg:items-start">
+                    <div className="flex items-center justify-center">
+                      <div className="relative flex h-80 w-80 items-center justify-center overflow-hidden rounded-3xl duration-300 lg:h-96 lg:w-96">
+                        <img
+                          src={playerArtwork}
+                          alt={playerTitle}
+                          className="absolute inset-0 h-full w-full rounded-3xl object-cover blur-xl"
+                        />
+                        <img
+                          src={playerArtwork}
+                          alt={playerTitle}
+                          className="absolute inset-0 h-full w-full rounded-3xl object-cover"
+                        />
+
+                        {lyricsLines.length ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/70 p-3 backdrop-blur-sm backdrop-saturate-200 lg:hidden">
+                            <div className="w-full text-center text-zinc-100 drop-shadow-lg">
+                              <span className="block text-2xl font-bold">
+                                {renderLyricWords(mobileLyric?.mainText || '♪', activeLyricState.progress, true)}
+                              </span>
+                              {mobileLyric?.backText ? (
+                                <span className="mt-1 block text-sm font-semibold text-white/60">
+                                  ({mobileLyric.backText})
+                                </span>
+                              ) : null}
+                            </div>
+                            {lyricsSource ? (
+                              <span className="absolute inset-x-0 bottom-0 text-center text-xs text-zinc-500">
+                                Источник: {lyricsSource}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <span className="mt-3 w-80 text-center text-base font-bold text-white duration-300 lg:w-96 lg:text-lg">
+                      {playerTitle}
+                    </span>
+                    <span className="w-80 text-center text-sm text-zinc-300 duration-300 lg:w-96 lg:text-base">
+                      {playerArtist}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex w-full max-w-sm flex-col items-center justify-center gap-1 duration-300">
+                    <input
+                      min={0}
+                      max={duration || 0}
+                      step="0.01"
+                      type="range"
+                      value={displayedCurrentTime}
+                      onPointerDown={() => {
+                        seekingSliderRef.current = 'mobile';
+                        setActiveSeekSlider('mobile');
+                        setSeekValue(currentTime);
+                      }}
+                      onPointerUp={() => {
+                        if (audioRef.current) {
+                          audioRef.current.currentTime = seekValue;
+                        }
+                        seekingSliderRef.current = null;
+                        setActiveSeekSlider(null);
+                        setCurrentTime(seekValue);
+                        updateMediaPositionState();
+                      }}
+                      onChange={(event) => {
+                        setSeekValue(Number(event.target.value));
+                      }}
+                      className="h-3 w-full appearance-none rounded-full bg-zinc-800 accent-purple-500"
+                    />
+                    <div className="flex w-full text-xs text-zinc-300 duration-300 lg:text-sm">
+                      <div className="flex-grow">{formatPlaybackTime(displayedCurrentTime)}</div>
+                      <div>{formatPlaybackTime(duration)}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex w-full max-w-sm items-center justify-center">
+                    <div className="mt-3 flex items-center gap-3 duration-300 lg:gap-6">
+                      {isAuthenticated ? (
+                        <button
+                          id="player_addtoplaylist"
+                          type="button"
+                          onClick={() => openAddToPlaylist(currentSongId)}
+                          className="mr-6 cursor-pointer duration-300 active:scale-95"
+                        >
+                          <PlayerIcon name="IC-plus" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />
+                        </button>
+                      ) : null}
+
+                      <button type="button" onClick={() => { void prevTrack(); }}>
+                        <PlayerIcon name="IC-moveback" className="h-10 w-10 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={togglePlay}
+                        className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95"
+                      >
+                        <PlayerIcon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-14 w-14 fill-white" />
+                      </button>
+
+                      <button type="button" onClick={() => { void nextTrack(); }}>
+                        <PlayerIcon name="IC-moveforward" className="h-10 w-10 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
+                      </button>
+
+                      {isAuthenticated ? (
+                        <button
+                          id="player_likebutton"
+                          type="button"
+                          onClick={() => {
+                            void likeCurrentSong();
+                          }}
+                          className="ml-6 cursor-pointer duration-300 active:scale-95"
+                        >
+                          <PlayerIcon
+                            name={activeLike ? 'IC-heart-filled' : 'IC-heart'}
+                            className={cn(
+                              'h-9 w-9 duration-300 hover:fill-zinc-300',
+                              activeLike ? 'fill-pink-400' : 'fill-white',
+                            )}
+                          />
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                {lyricsLines.length ? (
+                  <PulseLyricsDesktop
+                    activeIndex={activeLyricState.activeIndex}
+                    lines={lyricsLines}
+                    onSeek={(nextTime) => {
+                      if (!audioRef.current) return;
+                      audioRef.current.currentTime = nextTime;
+                      setCurrentTime(nextTime);
+                      setSeekValue(nextTime);
+                      updateMediaPositionState();
+                    }}
+                    progress={activeLyricState.progress}
+                  />
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <div
+              id="NAVPmini"
+              className="flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300"
+            >
+              <button
+                type="button"
+                onClick={() => setMode('full')}
+                className="group relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-16 lg:w-16"
+              >
+                <img src={playerArtwork} alt={playerTitle} className="h-full w-full object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90 opacity-0 duration-300 group-hover:opacity-100">
+                  <PlayerIcon name="IC-music" className="h-10 w-10 fill-white" />
+                </div>
+              </button>
+
+              <div className="flex w-40 shrink-0 flex-col lg:w-64">
+                <span className="w-full truncate text-sm text-white lg:text-base">{playerTitle}</span>
+                <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{playerArtist}</span>
+              </div>
+
+              <div className="hidden flex-grow lg:block"></div>
+
+              <div className="hidden flex-grow flex-col items-center justify-center gap-1 lg:flex">
+                <input
+                  min={0}
+                  max={duration || 0}
+                  step="0.01"
+                  type="range"
+                  value={activeSeekSlider === 'desktop' ? seekValue : currentTime}
+                  onPointerDown={() => {
+                    seekingSliderRef.current = 'desktop';
+                    setActiveSeekSlider('desktop');
+                    setSeekValue(currentTime);
+                  }}
+                  onPointerUp={() => {
+                    if (audioRef.current) {
+                      audioRef.current.currentTime = seekValue;
+                    }
+                    seekingSliderRef.current = null;
+                    setActiveSeekSlider(null);
+                    setCurrentTime(seekValue);
+                    updateMediaPositionState();
+                  }}
+                  onChange={(event) => {
+                    setSeekValue(Number(event.target.value));
+                  }}
+                  className="h-3 w-full max-w-sm appearance-none rounded-full bg-zinc-800 accent-purple-500"
+                />
+                <div className="flex w-full max-w-sm text-xs text-zinc-300 lg:text-sm">
+                  <div className="flex-grow">{formatPlaybackTime(activeSeekSlider === 'desktop' ? seekValue : currentTime)}</div>
+                  <div>{formatPlaybackTime(duration)}</div>
+                </div>
+              </div>
+
+              <div className="hidden flex-grow lg:block"></div>
+
+              <div className="flex shrink-0 items-center justify-end gap-1.5 lg:w-80 lg:gap-3">
+                <div className="hidden flex-col items-center justify-center gap-1 pr-1 lg:flex">
+                  <span className="text-sm text-zinc-300">{lang?.volume || 'Громкость'}</span>
+                  <input
+                    min={0}
+                    max={1}
+                    step="0.005"
+                    type="range"
+                    value={volume}
+                    onWheel={(event) => {
+                      event.preventDefault();
+                      changeVolume(volume + (event.deltaY < 0 ? 0.025 : -0.025));
+                    }}
+                    onChange={(event) => {
+                      changeVolume(event.target.value);
+                    }}
+                    className="h-3 w-full appearance-none rounded-full bg-zinc-800 accent-purple-500"
+                  />
+                </div>
+
+                <button type="button" onClick={() => { void prevTrack(); }}>
+                  <PlayerIcon name="IC-moveback" className="h-8 w-8 shrink-0 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={togglePlay}
+                  className="flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95"
+                >
+                  <PlayerIcon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-10 w-10 fill-white" />
+                </button>
+
+                <button type="button" onClick={() => { void nextTrack(); }}>
+                  <PlayerIcon name="IC-moveforward" className="h-8 w-8 shrink-0 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      <Modal
+        align="responsive"
+        animation="sheet"
+        bodyClassName="pt-[72px]"
+        isOpen={isAddToPlaylistOpen}
+        onClose={() => {
+          setIsAddToPlaylistOpen(false);
+        }}
+        title={lang?.pulse_add_to_playlist || 'Добавить в плейлист'}
+        width="sm"
+      >
+        <div className="flex flex-col gap-2">
+          {playlistOptionsLoading ? (
+            <div className="py-6 text-center text-sm text-zinc-400">
+              {lang?.loading || 'Загрузка...'}
+            </div>
+          ) : null}
+
+          {!playlistOptionsLoading && !playlistOptions.length ? (
+            <div className="py-6 text-center text-sm text-zinc-500">
+              {lang?.pulse_no_playlists || 'Нет плейлистов. Создайте новый!'}
+            </div>
+          ) : null}
+
+          {!playlistOptionsLoading
+            ? playlistOptions.map((playlistOption) => (
+                <button
+                  key={playlistOption.id}
+                  type="button"
+                  onClick={() => {
+                    void toggleSongInPlaylist(playlistOption.id, playlistOption.hasSong);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left duration-300 hover:bg-zinc-800/60 hover:pr-3 active:scale-95"
+                >
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800">
+                    {playlistOption.image ? (
+                      <img
+                        src={playlistOption.image}
+                        alt={playlistOption.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <PlayerIcon name="IC-music" className="h-7 w-7 fill-zinc-600" />
+                    )}
+                  </div>
+
+                  <span className="flex-grow text-sm font-medium text-zinc-100">
+                    {playlistOption.name}
+                  </span>
+
+                  <span
+                    className={cn(
+                      'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 duration-300',
+                      playlistOption.hasSong
+                        ? 'border-purple-500 bg-purple-500'
+                        : 'border-zinc-600',
+                    )}
+                  >
+                    {playlistOption.hasSong ? (
+                      <PlayerIcon name="IC-check" className="h-3 w-3 fill-white" />
+                    ) : null}
+                  </span>
+                </button>
+              ))
+            : null}
+        </div>
+      </Modal>
+    </PulsePlayerContext.Provider>
+  );
+}
+
+export function usePulsePlayer() {
+  const context = useContext(PulsePlayerContext);
+  if (!context) {
+    throw new Error('usePulsePlayer must be used within PulsePlayerProvider');
+  }
+  return context;
+}

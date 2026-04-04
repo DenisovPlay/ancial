@@ -297,6 +297,38 @@ function getDialogImageKey(messageId: number, imageIndex: number) {
   return `msg:${messageId}:img:${imageIndex}`;
 }
 
+function hasMeaningfulValue(value: unknown) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') {
+    const normalizedValue = normalizeText(value).toLowerCase();
+    return normalizedValue !== '' && normalizedValue !== 'undefined' && normalizedValue !== 'null';
+  }
+  return true;
+}
+
+function mergeDialogUser(
+  currentUser: DialogUser | null | undefined,
+  incomingUser: DialogUser | null | undefined,
+): DialogUser | null {
+  if (!currentUser && !incomingUser) return null;
+  if (!currentUser) return incomingUser ? { ...incomingUser } : null;
+  if (!incomingUser) return { ...currentUser };
+
+  return {
+    ...currentUser,
+    ...incomingUser,
+    fname: hasMeaningfulValue(incomingUser.fname) ? incomingUser.fname : currentUser.fname,
+    id: hasMeaningfulValue(incomingUser.id) ? incomingUser.id : currentUser.id,
+    img: hasMeaningfulValue(incomingUser.img) ? incomingUser.img : currentUser.img,
+    lastonlinetime: hasMeaningfulValue(incomingUser.lastonlinetime)
+      ? incomingUser.lastonlinetime
+      : currentUser.lastonlinetime,
+    lname: hasMeaningfulValue(incomingUser.lname) ? incomingUser.lname : currentUser.lname,
+    username: hasMeaningfulValue(incomingUser.username) ? incomingUser.username : currentUser.username,
+    verify: hasMeaningfulValue(incomingUser.verify) ? incomingUser.verify : currentUser.verify,
+  };
+}
+
 function buildDialogImageSlides(messages: DialogMessage[]) {
   const slides: DialogImageSlide[] = [];
 
@@ -1001,6 +1033,7 @@ export default function MessagesContent() {
   const scrollActionRef = useRef<ScrollAction | null>(null);
   const currentDialogIdRef = useRef(0);
   const currentDialogHashRef = useRef('');
+  const currentForeignUserRef = useRef<DialogUser | null>(null);
   const currentForeignUserIdRef = useRef(0);
   const currentMessageCacheKeyRef = useRef('');
 
@@ -1079,11 +1112,12 @@ export default function MessagesContent() {
   useEffect(() => {
     currentDialogIdRef.current = toNumber(selectedDialog?.id);
     currentDialogHashRef.current = normalizeHash(selectedDialog?.hash);
+    currentForeignUserRef.current = foreignUser;
     currentForeignUserIdRef.current = toNumber(foreignUser?.id);
     currentMessageCacheKeyRef.current = currentDialogIdRef.current
       ? getMessageCacheKey(currentUserId, currentDialogIdRef.current)
       : '';
-  }, [currentUserId, foreignUser?.id, selectedDialog?.hash, selectedDialog?.id]);
+  }, [currentUserId, foreignUser, selectedDialog?.hash, selectedDialog?.id]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -1149,6 +1183,7 @@ export default function MessagesContent() {
     teardownWs();
     setSelectedDialog(null);
     setForeignUser(null);
+    currentForeignUserRef.current = null;
     setDialogPresenceOnline(null);
     setBlockedDialog(false);
     setDialogLoading(false);
@@ -1253,7 +1288,11 @@ export default function MessagesContent() {
       scrollActionRef.current = { type: 'bottom' };
       setMessages(cachedMessages);
       if (cached?.foreignUser) {
-        setForeignUser(cached.foreignUser);
+        setForeignUser((currentForeignUser) => {
+          const nextForeignUser = mergeDialogUser(currentForeignUser, cached.foreignUser);
+          currentForeignUserRef.current = nextForeignUser;
+          return nextForeignUser;
+        });
       }
     } else {
       scrollActionRef.current = { type: 'bottom' };
@@ -1274,10 +1313,11 @@ export default function MessagesContent() {
 
       const freshMessages = Array.isArray(result.messages) ? sortMessages(result.messages) : [];
       const mergedMessages = mergeMessages(cachedMessages, freshMessages);
-      const nextForeignUser = result.foreignUser ?? foreignUser;
+      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, result.foreignUser);
 
-      if (result.foreignUser) {
-        setForeignUser(result.foreignUser);
+      if (nextForeignUser) {
+        currentForeignUserRef.current = nextForeignUser;
+        setForeignUser(nextForeignUser);
       }
 
       setMessages(mergedMessages);
@@ -1339,14 +1379,16 @@ export default function MessagesContent() {
       if (!newerMessages.length) return;
 
       const nextMessages = mergeMessages(currentMessages, newerMessages);
+      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, result.foreignUser);
       setMessages(nextMessages);
 
-      if (result.foreignUser) {
-        setForeignUser(result.foreignUser);
+      if (nextForeignUser) {
+        currentForeignUserRef.current = nextForeignUser;
+        setForeignUser(nextForeignUser);
       }
 
       persistMessages({
-        foreignUserValue: result.foreignUser ?? foreignUser,
+        foreignUserValue: nextForeignUser,
         keepSide: 'newest',
         nextMessages,
       });
@@ -1410,9 +1452,12 @@ export default function MessagesContent() {
       }
 
       const nextMessages = mergeMessages(currentMessages, olderMessages);
+      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, result.foreignUser);
       setMessages(nextMessages);
+      currentForeignUserRef.current = nextForeignUser;
+      setForeignUser(nextForeignUser);
       persistMessages({
-        foreignUserValue: result.foreignUser ?? foreignUser,
+        foreignUserValue: nextForeignUser,
         keepSide: 'oldest',
         nextMessages,
       });
@@ -1458,10 +1503,11 @@ export default function MessagesContent() {
       }
 
       const nextDialog = result.dialog;
-      const nextForeignUser = result.foreignUser ?? null;
+      const nextForeignUser = mergeDialogUser(null, result.foreignUser);
 
       setSelectedDialog(nextDialog);
       setForeignUser(nextForeignUser);
+      currentForeignUserRef.current = nextForeignUser;
       setBlockedDialog(Boolean(result.blocked));
 
       currentDialogIdRef.current = toNumber(nextDialog.id);
@@ -2355,13 +2401,15 @@ export default function MessagesContent() {
                       <DropdownItem
                         icon="IC-user"
                         onClick={() => {
-                          if (!foreignUser?.username) {
+                          const username = normalizeText(currentForeignUserRef.current?.username);
+                          if (!hasMeaningfulValue(username)) {
                             return;
                           }
-                          router.push(`/@${foreignUser.username}`);
+
+                          router.push(`/@${username}`);
                         }}
                       >
-                        {lang?.userpage || 'Страница пользователя'}
+                        {lang?.userpage || 'Страница'}
                       </DropdownItem>
                       <DropdownItem
                         icon="IC-settings"

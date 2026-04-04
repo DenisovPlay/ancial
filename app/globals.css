@@ -54,6 +54,30 @@ body.messages-dialog-open-body [data-app-nav="mobile"] {
   display: none !important;
 }
 
+body.messages-dialog-open-body #NAVP {
+  display: none !important;
+}
+
+body.messages-dialog-open-body.pulse-player-visible #main-content {
+  padding-bottom: 0 !important;
+}
+
+body.pulse-player-full [data-app-nav="mobile"] {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  body.pulse-player-visible:not(.pulse-player-full) #main-content {
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  body.pulse-player-visible:not(.pulse-player-full) #main-content {
+    padding-bottom: 6.5rem !important;
+  }
+}
+
 @media (min-width: 768px) {
   body:has(.no-pc-nav-padding) #main-content {
     padding-left: 0 !important;
