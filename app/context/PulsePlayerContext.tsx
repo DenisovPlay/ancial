@@ -1962,7 +1962,7 @@ export function PulsePlayerProvider({
           `}</style>
           <div
             className={cn(
-              'absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] z-[60]',
+              'absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] z-[65]',
               isFullMode && isPlayerAnimatingIn
                 ? 'pointer-events-auto translate-y-0'
                 : 'pointer-events-none translate-y-full',

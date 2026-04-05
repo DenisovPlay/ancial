@@ -258,14 +258,7 @@ function goToLegacyPulsePath(path: string) {
 
 function PulseLogo({ className }: { className?: string }) {
   return (
-    <svg
-      className={cn('shrink-0 fill-none', className)}
-      viewBox="0 0 821 157"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <use href="/icons.svg#IC-pulse-logo" />
-    </svg>
+    <img src="/img/branding/pulse.svg" alt="Pulse Logo" className={cn('shrink-0', className)} />
   );
 }
 
@@ -346,7 +339,7 @@ function PulsePlaylistCard({
         <img src={coverUrl} alt={decodeHtmlEntities(card.name) || 'Playlist cover'} className="h-full w-full object-cover" />
       </button>
 
-      <div className="absolute inset-x-0 bottom-0 flex w-full gap-1 bg-gradient-to-t from-black via-black/90 to-transparent p-1 opacity-100 duration-300 lg:items-end lg:gap-3 lg:p-3 lg:opacity-0 lg:group-hover:opacity-100">
+      <div className="absolute inset-x-0 bottom-0 flex w-full gap-1 bg-gradient-to-t from-black via-black/90 to-transparent p-1 duration-300 items-end lg:gap-3 lg:p-3 opacity-0 group-hover:opacity-100">
         <button
           type="button"
           onClick={onPlay}
@@ -390,7 +383,6 @@ function PulseArtistCard({
 
       <span className="z-[1] flex max-w-32 items-center gap-1 truncate text-sm font-medium text-zinc-100 duration-300 lg:-translate-y-24 lg:group-hover:translate-y-0 lg:max-w-48">
         <span className="truncate">{decodeHtmlEntities(artist.name) || 'Артист'}</span>
-        {String(artist.verify ?? '') === '1' ? <ActionIcon className="h-5 w-5 fill-blue-500" name="IC-verify" /> : null}
       </span>
     </button>
   );
@@ -959,25 +951,25 @@ export default function PulseContent() {
 
   const topTitle = useMemo(() => (
     <>
-      {lang?.top || 'Топ'} <PulseLogo className="inline w-32 align-middle" />
+      {lang?.top || 'Топ'} <PulseLogo className="ml-1 inline w-30 align-middle" />
     </>
   ), [lang?.top]);
 
   const yourTitle = useMemo(() => (
     <>
-      {lang?.your || 'Ваш'} <PulseLogo className="inline w-32 align-middle" />
+      {lang?.your || 'Ваш'} <PulseLogo className="ml-1 inline w-30 align-middle" />
     </>
   ), [lang?.your]);
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-28">
-      <div className="sticky top-0 z-[99] flex w-full max-w-screen-2xl items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0">
+      <div className="sticky top-0 z-[99] flex w-full max-w-screen-2xl items-center bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0">
         <button
           type="button"
           onClick={() => router.push('/pulse')}
           className={cn(
             'shrink-0 cursor-pointer duration-300 active:scale-95',
-            isSearchFocused ? 'w-0 overflow-hidden opacity-0' : 'w-32 opacity-100 sm:w-48',
+            isSearchFocused ? 'w-0 overflow-hidden opacity-0' : 'w-32 opacity-100 sm:w-48 mr-3',
           )}
           aria-label="Pulse home"
         >
@@ -1008,7 +1000,7 @@ export default function PulseContent() {
           <button
             type="button"
             onClick={() => openPulseSubpage('/pulse/my')}
-            className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95"
+            className="ml-3 flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95"
             aria-label="My Pulse"
           >
             <ActionIcon className="h-8 w-8" name="IC-me" />
@@ -1049,7 +1041,7 @@ export default function PulseContent() {
       ) : null}
 
       <SectionTitle>
-        {lang?.playlistsby || 'Плейлисты от'} <PulseLogo className="inline w-32 align-middle" />
+        {lang?.playlistsby || 'Плейлисты от'} <PulseLogo className="ml-1 inline w-30 align-middle" />
       </SectionTitle>
 
       <div ref={fromPulseScrollRef} className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
