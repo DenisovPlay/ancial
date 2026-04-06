@@ -1159,7 +1159,7 @@ function StickerPickerDropdownContent({
             setTab('native');
           }}
           className={cn(
-            'backdrop-blur-lg backdrop-saturate-200  flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
+            'cursor-pointer backdrop-blur-lg backdrop-saturate-200  flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
             tab === 'native'
               ? 'bg-zinc-700 text-white'
               : 'bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
@@ -1173,13 +1173,13 @@ function StickerPickerDropdownContent({
             setTab('7tv');
           }}
           className={cn(
-            'backdrop-blur-lg backdrop-saturate-200  flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
+            'flex items-center justify-center cursor-pointer backdrop-blur-lg backdrop-saturate-200  flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
             tab === '7tv'
               ? 'bg-zinc-700 text-white'
               : 'bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
           )}
         >
-          7TV
+          <img src="/img/branding/7tv.svg?id=-1" alt="7TV" className="h-5 w-5" />
         </button>
       </div>
 
