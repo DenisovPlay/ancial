@@ -279,6 +279,36 @@ function getSevenTvStickerCacheKey(value: string) {
   return normalizeText(value).toLowerCase();
 }
 
+function buildSevenTvStickerCdnUrl(stickerId: string) {
+  const normalizedStickerId = normalizeText(stickerId);
+  if (!normalizedStickerId) {
+    return '';
+  }
+
+  return `https://cdn.7tv.app/emote/${encodeURIComponent(normalizedStickerId)}/4x.webp`;
+}
+
+function getSevenTvStickerTokenData(value: string | null | undefined) {
+  const tokenValue = decodeHtml(stripHtml(value));
+  const tokenWithIdMatch = tokenValue.match(/^:7tv-(.+)-([A-Z0-9]{26}):$/i);
+  if (tokenWithIdMatch?.[1] && tokenWithIdMatch?.[2]) {
+    return {
+      id: normalizeText(tokenWithIdMatch[2]),
+      name: normalizeText(tokenWithIdMatch[1]),
+    };
+  }
+
+  const legacyTokenMatch = tokenValue.match(/^:7tv-(.+):$/i);
+  if (legacyTokenMatch?.[1]) {
+    return {
+      id: '',
+      name: normalizeText(legacyTokenMatch[1]),
+    };
+  }
+
+  return null;
+}
+
 function isSevenTvStickerSearchCacheEntryExpired(entry: SevenTvStickerSearchCacheEntry) {
   return Date.now() - entry.updatedAt > SEVEN_TV_SEARCH_CACHE_TTL_MS;
 }
@@ -383,16 +413,6 @@ function setCachedSevenTvSearchItems(cacheKey: string, items: SevenTvSticker[]) 
     updatedAt: Date.now(),
   });
   persistSevenTvStickerSearchCache();
-}
-
-function getSevenTvStickerNameFromToken(value: string | null | undefined) {
-  const tokenValue = decodeHtml(stripHtml(value));
-  const match = tokenValue.match(/^:7tv-(.+):$/i);
-  if (!match?.[1]) {
-    return '';
-  }
-
-  return normalizeText(match[1]);
 }
 
 function seedSevenTvStickerCache(items: SevenTvSticker[]) {
@@ -580,9 +600,9 @@ function buildDialogImageSlides(messages: DialogMessage[]) {
 }
 
 function formatDialogPreview(messageValue: string | null | undefined, lang: LangMap) {
-  const sevenTvStickerName = getSevenTvStickerNameFromToken(messageValue);
-  if (sevenTvStickerName) {
-    return `7TV: ${sevenTvStickerName}`;
+  const sevenTvStickerTokenData = getSevenTvStickerTokenData(messageValue);
+  if (sevenTvStickerTokenData?.name) {
+    return `7TV: ${sevenTvStickerTokenData.name}`;
   }
 
   const previewText = decodeHtml(stripHtml(messageValue));
@@ -973,10 +993,13 @@ function isMessageMenuIgnoredTarget(target: EventTarget | null) {
 }
 
 function SevenTvStickerMessage({
+  stickerId,
   stickerName,
 }: {
+  stickerId?: string;
   stickerName: string;
 }) {
+  const directStickerUrl = buildSevenTvStickerCdnUrl(stickerId ?? '');
   const cacheKey = getSevenTvStickerCacheKey(stickerName);
   const cachedSticker = cacheKey ? sevenTvStickerCache.get(cacheKey) : undefined;
   const [resolvedState, setResolvedState] = useState<{
@@ -996,7 +1019,7 @@ function SevenTvStickerMessage({
   useEffect(() => {
     let cancelled = false;
 
-    if (!cacheKey) {
+    if (!cacheKey || directStickerUrl) {
       return undefined;
     }
 
@@ -1015,14 +1038,14 @@ function SevenTvStickerMessage({
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, cachedSticker, stickerName]);
+  }, [cacheKey, cachedSticker, directStickerUrl, stickerName]);
 
-  if (resolvedSticker?.url) {
+  if (directStickerUrl || resolvedSticker?.url) {
     return (
       <div className="overflow-hidden rounded-lg">
         <img
-          src={resolvedSticker.url}
-          alt={resolvedSticker.name}
+          src={directStickerUrl || resolvedSticker?.url || ''}
+          alt={resolvedSticker?.name || stickerName}
           className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
         />
       </div>
@@ -1124,8 +1147,8 @@ function StickerPickerDropdownContent({
   }, [cachedResults, effectiveQuery, isOpen, searchCacheKey, tab]);
 
   return (
-    <div className="flex w-[17rem] flex-col">
-      <div className="flex gap-1.5 p-1.5 pb-0">
+    <div className="flex w-[17rem] flex-col relative">
+      <div className="flex gap-1.5 p-1.5 pb-0 absolute inset-x-0 top-0">
         <button
           type="button"
           onClick={() => {
@@ -1157,7 +1180,7 @@ function StickerPickerDropdownContent({
       </div>
 
       {tab === 'native' ? (
-        <div className="grid max-h-72 grid-cols-4 gap-1.5 overflow-auto p-1.5">
+        <div className="grid max-h-72 grid-cols-4 gap-1.5 overflow-auto p-1.5 pt-[54px]">
           {STICKER_NAMES.map((stickerName) => (
             <button
               key={stickerName}
@@ -1178,13 +1201,13 @@ function StickerPickerDropdownContent({
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="max-h-56 overflow-auto p-1.5">
+          <div className="max-h-72 overflow-auto p-1.5 pt-[54px]">
             {isSevenTvLoading ? (
-              <div className="flex h-16 items-center justify-center">
+              <div className="flex h-52 w-64 items-center justify-center">
                 <Icon name="IC-loader" className="h-6 w-6 animate-spin fill-zinc-300" />
               </div>
             ) : visibleError ? (
-              <div className="px-2 py-3 text-center text-xs text-zinc-400">
+              <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-400">
                 {visibleError}
               </div>
             ) : visibleResults.length ? (
@@ -1197,33 +1220,33 @@ function StickerPickerDropdownContent({
                       onSendSevenTvSticker(sticker);
                     }}
                     disabled={isSending}
-                    className="flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-2xl bg-zinc-900/30 duration-300 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                    className="cursor-pointer shrink-0 h-16 w-16 overflow-hidden rounded-2xl duration-300 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
                     title={sticker.name}
                   >
                     <img
                       src={sticker.url}
                       alt={sticker.name}
-                      className="h-14 w-14 object-contain"
+                      className="h-16 w-16 object-contain"
                     />
                   </button>
                 ))}
               </div>
             ) : normalizedQuery && normalizedQuery.length < SEVEN_TV_MIN_QUERY_LENGTH ? (
-              <div className="px-2 py-3 text-center text-xs text-zinc-400">
+              <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-400">
                 Введите минимум {SEVEN_TV_MIN_QUERY_LENGTH} символа
               </div>
             ) : normalizedQuery ? (
-              <div className="px-2 py-3 text-center text-xs text-zinc-400">
+              <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-400">
                 Ничего не найдено
               </div>
             ) : (
-              <div className="px-2 py-3 text-center text-xs text-zinc-500">
+              <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-500">
                 Популярные стикеры 7TV
               </div>
             )}
           </div>
 
-          <div className="border-t border-zinc-600/20 p-1.5 pt-0">
+          <div className="absolute bottom-0 inset-x-0 p-1.5 pt-0">
             <div className="relative">
               <Icon name="IC-search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 fill-zinc-500" />
               <input
@@ -1238,7 +1261,7 @@ function StickerPickerDropdownContent({
                 }}
                 placeholder="Поиск 7TV"
                 autoComplete="off"
-                className="h-10 w-full rounded-2xl border border-zinc-600/30 bg-zinc-950/80 pl-9 pr-3 text-sm text-white placeholder-zinc-500 outline-none duration-300 focus:border-zinc-500/50"
+                className="h-10 w-full rounded-3xl border border-zinc-600/30 bg-zinc-950/80 pl-9 pr-3 text-sm text-white placeholder-zinc-500 outline-none duration-300 focus:border-zinc-500/50"
               />
             </div>
           </div>
@@ -1280,7 +1303,9 @@ function MessageBubble({
   const messageBodyHtml = messageImages.length
     ? getMessageBodyHtmlWithoutImages(message.message)
     : String(message.message ?? '');
-  const sevenTvStickerName = messageImages.length ? '' : getSevenTvStickerNameFromToken(messageBodyHtml);
+  const sevenTvStickerTokenData = messageImages.length ? null : getSevenTvStickerTokenData(messageBodyHtml);
+  const sevenTvStickerName = sevenTvStickerTokenData?.name ?? '';
+  const sevenTvStickerId = sevenTvStickerTokenData?.id ?? '';
   const hasMessageText = !sevenTvStickerName && Boolean(stripHtml(messageBodyHtml));
   const isStickerOnlyMessage = Boolean(sevenTvStickerName);
   const canTranslateMessage = !isOwn && isTextMessage && !isStickerOnlyMessage;
@@ -1386,7 +1411,7 @@ function MessageBubble({
               ) : null}
 
               {sevenTvStickerName ? (
-                <SevenTvStickerMessage stickerName={sevenTvStickerName} />
+                <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
               ) : null}
 
               {hasMessageText ? (
@@ -2693,7 +2718,7 @@ export default function MessagesContent() {
       seedSevenTvStickerCache([sticker]);
 
       const params = new URLSearchParams();
-      params.append('message', `:7tv-${normalizedStickerName}:`);
+      params.append('message', `:7tv-${normalizedStickerName}-${sticker.id}:`);
 
       await fetch(`/api/messages/send.php?di_id=${dialogId}`, {
         body: params.toString(),
@@ -3120,7 +3145,7 @@ export default function MessagesContent() {
 	                        align="end"
 	                        triggerSize="sm"
 	                        width="auto"
-	                        menuClassName="w-[17rem] overflow-hidden p-0 text-zinc-300"
+	                        menuClassName="w-[17rem] overflow-hidden !p-0 text-zinc-300"
 	                        triggerAriaLabel={lang?.stickers || 'Стикеры'}
 	                        triggerClassName="relative z-[1] h-10 w-10 rounded-full hover:bg-zinc-700"
 	                        triggerNode={<Icon name="IC-emoji" className="h-8 w-8 fill-zinc-300" />}
