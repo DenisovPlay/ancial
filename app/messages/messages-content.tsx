@@ -1148,14 +1148,14 @@ function StickerPickerDropdownContent({
 
   return (
     <div className="flex w-[17rem] flex-col relative">
-      <div className="flex gap-1.5 p-1.5 pb-0 absolute inset-x-0 top-0">
+      <div className="flex gap-1.5 p-1.5 pb-0 absolute inset-x-0 top-0 bg-gradient-to-b from-black via-black/90 to-transparent">
         <button
           type="button"
           onClick={() => {
             setTab('native');
           }}
           className={cn(
-            'flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
+            'backdrop-blur-lg backdrop-saturate-200  flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
             tab === 'native'
               ? 'bg-zinc-700 text-white'
               : 'bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
@@ -1169,7 +1169,7 @@ function StickerPickerDropdownContent({
             setTab('7tv');
           }}
           className={cn(
-            'flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
+            'backdrop-blur-lg backdrop-saturate-200  flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
             tab === '7tv'
               ? 'bg-zinc-700 text-white'
               : 'bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
@@ -1201,7 +1201,7 @@ function StickerPickerDropdownContent({
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="max-h-72 overflow-auto p-1.5 pt-[54px]">
+          <div className="max-h-72 overflow-auto p-1.5 pt-[54px] pb-[58px]">
             {isSevenTvLoading ? (
               <div className="flex h-52 w-64 items-center justify-center">
                 <Icon name="IC-loader" className="h-6 w-6 animate-spin fill-zinc-300" />
@@ -1248,7 +1248,6 @@ function StickerPickerDropdownContent({
 
           <div className="absolute bottom-0 inset-x-0 p-1.5 pt-0">
             <div className="relative">
-              <Icon name="IC-search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 fill-zinc-500" />
               <input
                 value={searchInput}
                 onChange={(event) => {
@@ -1261,7 +1260,7 @@ function StickerPickerDropdownContent({
                 }}
                 placeholder="Поиск 7TV"
                 autoComplete="off"
-                className="h-10 w-full rounded-3xl border border-zinc-600/30 bg-zinc-950/80 pl-9 pr-3 text-sm text-white placeholder-zinc-500 outline-none duration-300 focus:border-zinc-500/50"
+                className="backdrop-blur-lg backdrop-saturate-200 h-10 w-full rounded-3xl border border-zinc-600/30 bg-zinc-950/80 px-3 text-sm text-white placeholder-zinc-500 outline-none duration-300 focus:border-zinc-500/50"
               />
             </div>
           </div>
