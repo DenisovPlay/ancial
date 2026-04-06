@@ -118,6 +118,10 @@ function pickBestImage(images: SevenTvImage[] | null | undefined) {
   return normalizeText(sortedImages[0]?.url);
 }
 
+function buildSevenTvImageProxyUrl(stickerId: string) {
+  return `/api/7tv/image/${encodeURIComponent(stickerId)}`;
+}
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -182,11 +186,16 @@ export async function GET(request: NextRequest) {
       .filter((item) => !item?.imagesPending)
       .filter((item) => !item?.flags?.private)
       .filter((item) => item?.flags?.publicListed !== false)
-      .map((item) => ({
-        id: normalizeText(item.id),
-        name: normalizeText(item.defaultName),
-        url: pickBestImage(item.images),
-      }))
+      .map((item) => {
+        const id = normalizeText(item.id);
+        const bestImageUrl = pickBestImage(item.images);
+
+        return {
+          id,
+          name: normalizeText(item.defaultName),
+          url: bestImageUrl ? buildSevenTvImageProxyUrl(id) : '',
+        };
+      })
       .filter((item) => item.id && item.name && item.url);
 
     const normalizedQuery = query.toLowerCase();

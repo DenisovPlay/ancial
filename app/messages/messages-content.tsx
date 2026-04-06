@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
+import Image from 'next/image';
 import React, {
   useEffect,
   useLayoutEffect,
@@ -279,13 +280,13 @@ function getSevenTvStickerCacheKey(value: string) {
   return normalizeText(value).toLowerCase();
 }
 
-function buildSevenTvStickerCdnUrl(stickerId: string) {
+function buildSevenTvStickerProxyUrl(stickerId: string) {
   const normalizedStickerId = normalizeText(stickerId);
   if (!normalizedStickerId) {
     return '';
   }
 
-  return `https://cdn.7tv.app/emote/${encodeURIComponent(normalizedStickerId)}/4x.webp`;
+  return `/api/7tv/image/${encodeURIComponent(normalizedStickerId)}`;
 }
 
 function getSevenTvStickerTokenData(value: string | null | undefined) {
@@ -999,7 +1000,7 @@ function SevenTvStickerMessage({
   stickerId?: string;
   stickerName: string;
 }) {
-  const directStickerUrl = buildSevenTvStickerCdnUrl(stickerId ?? '');
+  const directStickerUrl = buildSevenTvStickerProxyUrl(stickerId ?? '');
   const cacheKey = getSevenTvStickerCacheKey(stickerName);
   const cachedSticker = cacheKey ? sevenTvStickerCache.get(cacheKey) : undefined;
   const [resolvedState, setResolvedState] = useState<{
@@ -1043,10 +1044,13 @@ function SevenTvStickerMessage({
   if (directStickerUrl || resolvedSticker?.url) {
     return (
       <div className="overflow-hidden rounded-lg">
-        <img
+        <Image
           src={directStickerUrl || resolvedSticker?.url || ''}
           alt={resolvedSticker?.name || stickerName}
-          className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
+          unoptimized
+          width={220}
+          height={220}
+          className="h-auto max-h-48 w-auto max-w-full rounded-lg object-contain shadow lg:max-h-64"
         />
       </div>
     );
@@ -1213,23 +1217,26 @@ function StickerPickerDropdownContent({
             ) : visibleResults.length ? (
               <div className="grid grid-cols-4 gap-1.5">
                 {visibleResults.map((sticker) => (
-                  <button
-                    key={sticker.id}
-                    type="button"
+	                  <button
+	                    key={sticker.id}
+	                    type="button"
                     onClick={() => {
                       onSendSevenTvSticker(sticker);
                     }}
                     disabled={isSending}
-                    className="cursor-pointer shrink-0 h-16 w-16 overflow-hidden rounded-2xl duration-300 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
-                    title={sticker.name}
-                  >
-                    <img
-                      src={sticker.url}
-                      alt={sticker.name}
-                      className="h-16 w-16 object-contain"
-                    />
-                  </button>
-                ))}
+	                    className="cursor-pointer shrink-0 h-16 w-16 overflow-hidden rounded-2xl duration-300 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+	                    title={sticker.name}
+	                  >
+	                    <Image
+	                      src={sticker.url}
+	                      alt={sticker.name}
+	                      unoptimized
+	                      width={64}
+	                      height={64}
+	                      className="h-16 w-16 object-contain"
+	                    />
+	                  </button>
+	                ))}
               </div>
             ) : normalizedQuery && normalizedQuery.length < SEVEN_TV_MIN_QUERY_LENGTH ? (
               <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-400">
