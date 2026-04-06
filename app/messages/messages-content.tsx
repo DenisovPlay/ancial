@@ -97,6 +97,12 @@ type MessageImage = {
   src: string;
 };
 
+type SevenTvSticker = {
+  id: string;
+  name: string;
+  url: string;
+};
+
 type MessageTimelineItem =
   | {
       dayKey: string;
@@ -151,6 +157,11 @@ const IMGBB_API_KEY = '595c8d872da11fdaa5225badc67cc6e6';
 const FALLBACK_AVATAR = '/includes/img/new_user.png';
 const FALLBACK_WELCOME_IMAGE = '/includes/img/anlite/chats.png';
 const NOTHING_FOUND_IMAGE = '/img/status/nothingfound.webp';
+const SEVEN_TV_SEARCH_DEBOUNCE_MS = 700;
+const SEVEN_TV_MIN_QUERY_LENGTH = 3;
+const SEVEN_TV_SEARCH_CACHE_KEY = 'messages:7tv-search-cache:v1';
+const SEVEN_TV_SEARCH_CACHE_MAX_ENTRIES = 40;
+const SEVEN_TV_SEARCH_CACHE_TTL_MS = 1000 * 60 * 60 * 6;
 const STICKER_NAMES = [
   'hi',
   'privet',
@@ -183,6 +194,16 @@ const STICKER_NAMES = [
   'hamster',
   'joker',
 ];
+
+type SevenTvStickerSearchCacheEntry = {
+  items: SevenTvSticker[];
+  updatedAt: number;
+};
+
+const sevenTvStickerCache = new Map<string, SevenTvSticker | null>();
+const sevenTvStickerPromiseCache = new Map<string, Promise<SevenTvSticker | null>>();
+const sevenTvStickerSearchCache = new Map<string, SevenTvStickerSearchCacheEntry>();
+let sevenTvStickerSearchCacheHydrated = false;
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -252,6 +273,214 @@ function escapeHtml(value: string) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function getSevenTvStickerCacheKey(value: string) {
+  return normalizeText(value).toLowerCase();
+}
+
+function isSevenTvStickerSearchCacheEntryExpired(entry: SevenTvStickerSearchCacheEntry) {
+  return Date.now() - entry.updatedAt > SEVEN_TV_SEARCH_CACHE_TTL_MS;
+}
+
+function persistSevenTvStickerSearchCache() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const nextEntries = Array.from(sevenTvStickerSearchCache.entries())
+    .filter(([, entry]) => !isSevenTvStickerSearchCacheEntryExpired(entry))
+    .sort((left, right) => right[1].updatedAt - left[1].updatedAt)
+    .slice(0, SEVEN_TV_SEARCH_CACHE_MAX_ENTRIES);
+
+  sevenTvStickerSearchCache.clear();
+  nextEntries.forEach(([cacheKey, entry]) => {
+    sevenTvStickerSearchCache.set(cacheKey, entry);
+  });
+
+  try {
+    sessionStorage.setItem(
+      SEVEN_TV_SEARCH_CACHE_KEY,
+      JSON.stringify(
+        nextEntries.map(([cacheKey, entry]) => ({
+          cacheKey,
+          items: entry.items,
+          updatedAt: entry.updatedAt,
+        })),
+      ),
+    );
+  } catch {
+    // Ignore storage quota and privacy-mode errors.
+  }
+}
+
+function hydrateSevenTvStickerSearchCache() {
+  if (typeof window === 'undefined' || sevenTvStickerSearchCacheHydrated) {
+    return;
+  }
+
+  sevenTvStickerSearchCacheHydrated = true;
+
+  try {
+    const rawValue = sessionStorage.getItem(SEVEN_TV_SEARCH_CACHE_KEY);
+    if (!rawValue) {
+      return;
+    }
+
+    const payload = JSON.parse(rawValue) as Array<{
+      cacheKey?: string;
+      items?: SevenTvSticker[];
+      updatedAt?: number;
+    }>;
+
+    if (!Array.isArray(payload)) {
+      return;
+    }
+
+    payload.forEach((entry) => {
+      const cacheKey = normalizeText(entry.cacheKey);
+      if (!cacheKey || !Array.isArray(entry.items) || !Number.isFinite(entry.updatedAt)) {
+        return;
+      }
+
+      const nextEntry: SevenTvStickerSearchCacheEntry = {
+        items: entry.items,
+        updatedAt: Number(entry.updatedAt),
+      };
+
+      if (isSevenTvStickerSearchCacheEntryExpired(nextEntry)) {
+        return;
+      }
+
+      sevenTvStickerSearchCache.set(cacheKey, nextEntry);
+      seedSevenTvStickerCache(nextEntry.items);
+    });
+  } catch {
+    // Ignore malformed cache payloads.
+  }
+}
+
+function getCachedSevenTvSearchItems(cacheKey: string) {
+  hydrateSevenTvStickerSearchCache();
+  const cacheEntry = sevenTvStickerSearchCache.get(cacheKey);
+  if (!cacheEntry) {
+    return null;
+  }
+
+  if (isSevenTvStickerSearchCacheEntryExpired(cacheEntry)) {
+    sevenTvStickerSearchCache.delete(cacheKey);
+    persistSevenTvStickerSearchCache();
+    return null;
+  }
+
+  return cacheEntry.items;
+}
+
+function setCachedSevenTvSearchItems(cacheKey: string, items: SevenTvSticker[]) {
+  hydrateSevenTvStickerSearchCache();
+  sevenTvStickerSearchCache.set(cacheKey, {
+    items,
+    updatedAt: Date.now(),
+  });
+  persistSevenTvStickerSearchCache();
+}
+
+function getSevenTvStickerNameFromToken(value: string | null | undefined) {
+  const tokenValue = decodeHtml(stripHtml(value));
+  const match = tokenValue.match(/^:7tv-(.+):$/i);
+  if (!match?.[1]) {
+    return '';
+  }
+
+  return normalizeText(match[1]);
+}
+
+function seedSevenTvStickerCache(items: SevenTvSticker[]) {
+  items.forEach((item) => {
+    const nextKey = getSevenTvStickerCacheKey(item.name);
+    if (!nextKey) return;
+    sevenTvStickerCache.set(nextKey, item);
+  });
+}
+
+async function searchSevenTvStickers(
+  query: string,
+  options?: {
+    exact?: boolean;
+    limit?: number;
+    signal?: AbortSignal;
+  },
+) {
+  const normalizedQuery = normalizeText(query);
+  const allowEmpty = !options?.exact;
+  if (!normalizedQuery && !allowEmpty) {
+    return [];
+  }
+
+  const exact = Boolean(options?.exact);
+  const limit = Math.min(Math.max(options?.limit ?? 24, 1), 72);
+  const cacheKey = `${getSevenTvStickerCacheKey(normalizedQuery)}:${exact ? '1' : '0'}:${limit}`;
+  const cachedItems = getCachedSevenTvSearchItems(cacheKey);
+  if (cachedItems) {
+    return cachedItems;
+  }
+
+  const response = await fetch(
+    `/api/7tv/search?q=${encodeURIComponent(normalizedQuery)}&limit=${limit}${exact ? '&exact=1' : ''}`,
+    {
+      cache: 'no-store',
+      signal: options?.signal,
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`7TV search failed with status ${response.status}`);
+  }
+
+  const payload = await response.json() as {
+    items?: SevenTvSticker[];
+  };
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  setCachedSevenTvSearchItems(cacheKey, items);
+  seedSevenTvStickerCache(items);
+  return items;
+}
+
+async function resolveSevenTvStickerByName(name: string) {
+  const normalizedName = normalizeText(name);
+  const cacheKey = getSevenTvStickerCacheKey(normalizedName);
+  if (!cacheKey) {
+    return null;
+  }
+
+  if (sevenTvStickerCache.has(cacheKey)) {
+    return sevenTvStickerCache.get(cacheKey) ?? null;
+  }
+
+  const existingPromise = sevenTvStickerPromiseCache.get(cacheKey);
+  if (existingPromise) {
+    return existingPromise;
+  }
+
+  const nextPromise = searchSevenTvStickers(normalizedName, { exact: true, limit: 12 })
+    .then((items) => {
+      const exactItem = items.find(
+        (item) => getSevenTvStickerCacheKey(item.name) === cacheKey,
+      ) ?? null;
+
+      sevenTvStickerCache.set(cacheKey, exactItem);
+      return exactItem;
+    })
+    .catch(() => {
+      sevenTvStickerCache.set(cacheKey, null);
+      return null;
+    })
+    .finally(() => {
+      sevenTvStickerPromiseCache.delete(cacheKey);
+    });
+
+  sevenTvStickerPromiseCache.set(cacheKey, nextPromise);
+  return nextPromise;
 }
 
 function getHtmlAttribute(tag: string, attributeName: string) {
@@ -348,6 +577,24 @@ function buildDialogImageSlides(messages: DialogMessage[]) {
   });
 
   return slides;
+}
+
+function formatDialogPreview(messageValue: string | null | undefined, lang: LangMap) {
+  const sevenTvStickerName = getSevenTvStickerNameFromToken(messageValue);
+  if (sevenTvStickerName) {
+    return `7TV: ${sevenTvStickerName}`;
+  }
+
+  const previewText = decodeHtml(stripHtml(messageValue));
+  if (previewText) {
+    return previewText;
+  }
+
+  if (extractMessageImages(messageValue).length > 0) {
+    return lang?.sticker || 'Стикер';
+  }
+
+  return '';
 }
 
 function isOnline(lastOnlineTime: number | string | null | undefined) {
@@ -725,6 +972,282 @@ function isMessageMenuIgnoredTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && Boolean(target.closest('a, button, img'));
 }
 
+function SevenTvStickerMessage({
+  stickerName,
+}: {
+  stickerName: string;
+}) {
+  const cacheKey = getSevenTvStickerCacheKey(stickerName);
+  const cachedSticker = cacheKey ? sevenTvStickerCache.get(cacheKey) : undefined;
+  const [resolvedState, setResolvedState] = useState<{
+    key: string;
+    sticker: SevenTvSticker | null;
+  } | null>(() => (
+    cacheKey && cachedSticker !== undefined
+      ? { key: cacheKey, sticker: cachedSticker }
+      : null
+  ));
+  const resolvedSticker = cachedSticker !== undefined
+    ? cachedSticker
+    : resolvedState?.key === cacheKey
+      ? resolvedState.sticker
+      : null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!cacheKey) {
+      return undefined;
+    }
+
+    if (cachedSticker !== undefined) {
+      return undefined;
+    }
+
+    void resolveSevenTvStickerByName(stickerName).then((resolvedSticker) => {
+      if (cancelled) return;
+      setResolvedState({
+        key: cacheKey,
+        sticker: resolvedSticker,
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheKey, cachedSticker, stickerName]);
+
+  if (resolvedSticker?.url) {
+    return (
+      <div className="overflow-hidden rounded-lg">
+        <img
+          src={resolvedSticker.url}
+          alt={resolvedSticker.name}
+          className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-24 min-w-24 items-center justify-center rounded-2xl bg-zinc-900/70 px-3 py-2 text-center text-sm text-zinc-300 shadow">
+      7TV: {stickerName}
+    </div>
+  );
+}
+
+function StickerPickerDropdownContent({
+  isOpen,
+  isSending,
+  onSendNativeSticker,
+  onSendSevenTvSticker,
+}: {
+  isOpen: boolean;
+  isSending: boolean;
+  onSendNativeSticker: (stickerName: string) => void;
+  onSendSevenTvSticker: (sticker: SevenTvSticker) => void;
+}) {
+  const [tab, setTab] = useState<'native' | '7tv'>('native');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchState, setSearchState] = useState<{
+    error: string;
+    items: SevenTvSticker[];
+    key: string;
+  } | null>(null);
+  const [loadingKey, setLoadingKey] = useState('');
+  const searchVersionRef = useRef(0);
+
+  const normalizedQuery = normalizeText(searchInput);
+  const effectiveQuery = normalizedQuery === ''
+    ? ''
+    : normalizedQuery.length >= SEVEN_TV_MIN_QUERY_LENGTH
+      ? normalizedQuery
+      : null;
+  const searchCacheKey = effectiveQuery === null
+    ? ''
+    : `${getSevenTvStickerCacheKey(effectiveQuery)}:0:24`;
+  const cachedResults = searchCacheKey ? getCachedSevenTvSearchItems(searchCacheKey) : null;
+  const visibleResults = cachedResults ?? (searchState?.key === searchCacheKey ? searchState.items : []);
+  const visibleError = searchState?.key === searchCacheKey ? searchState.error : '';
+  const isSevenTvLoading = Boolean(
+    isOpen
+    && tab === '7tv'
+    && searchCacheKey
+    && loadingKey === searchCacheKey
+    && cachedResults === null,
+  );
+
+  useEffect(() => {
+    if (!isOpen || tab !== '7tv' || effectiveQuery === null || !searchCacheKey || cachedResults !== null) {
+      return undefined;
+    }
+
+    const requestId = searchVersionRef.current + 1;
+    searchVersionRef.current = requestId;
+    const abortController = new AbortController();
+
+    const timeoutId = window.setTimeout(() => {
+      setLoadingKey(searchCacheKey);
+
+      void searchSevenTvStickers(effectiveQuery, {
+        signal: abortController.signal,
+      })
+        .then((items) => {
+          if (searchVersionRef.current !== requestId) return;
+          setSearchState({
+            error: '',
+            items,
+            key: searchCacheKey,
+          });
+          setLoadingKey((currentKey) => (currentKey === searchCacheKey ? '' : currentKey));
+        })
+        .catch((error) => {
+          if (searchVersionRef.current !== requestId) return;
+          if (error instanceof Error && error.name === 'AbortError') {
+            return;
+          }
+
+          console.error('Failed to search 7TV stickers', error);
+          setSearchState({
+            error: '7TV временно недоступен',
+            items: [],
+            key: searchCacheKey,
+          });
+          setLoadingKey((currentKey) => (currentKey === searchCacheKey ? '' : currentKey));
+        });
+    }, SEVEN_TV_SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      abortController.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [cachedResults, effectiveQuery, isOpen, searchCacheKey, tab]);
+
+  return (
+    <div className="flex w-[17rem] flex-col">
+      <div className="flex gap-1.5 p-1.5 pb-0">
+        <button
+          type="button"
+          onClick={() => {
+            setTab('native');
+          }}
+          className={cn(
+            'flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
+            tab === 'native'
+              ? 'bg-zinc-700 text-white'
+              : 'bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
+          )}
+        >
+          Стикеры
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setTab('7tv');
+          }}
+          className={cn(
+            'flex-1 rounded-3xl border border-zinc-600/30 px-3 py-2 text-sm font-medium duration-300 active:scale-95',
+            tab === '7tv'
+              ? 'bg-zinc-700 text-white'
+              : 'bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
+          )}
+        >
+          7TV
+        </button>
+      </div>
+
+      {tab === 'native' ? (
+        <div className="grid max-h-72 grid-cols-4 gap-1.5 overflow-auto p-1.5">
+          {STICKER_NAMES.map((stickerName) => (
+            <button
+              key={stickerName}
+              type="button"
+              onClick={() => {
+                onSendNativeSticker(stickerName);
+              }}
+              disabled={isSending}
+              className="cursor-pointer shrink-0 h-16 w-16 overflow-hidden rounded-2xl duration-300 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+            >
+              <img
+                src={`/includes/img/anlite/stickers/webp/${stickerName}.webp?id=NEW`}
+                alt={stickerName}
+                className="h-16 w-16 object-contain"
+              />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          <div className="max-h-56 overflow-auto p-1.5">
+            {isSevenTvLoading ? (
+              <div className="flex h-16 items-center justify-center">
+                <Icon name="IC-loader" className="h-6 w-6 animate-spin fill-zinc-300" />
+              </div>
+            ) : visibleError ? (
+              <div className="px-2 py-3 text-center text-xs text-zinc-400">
+                {visibleError}
+              </div>
+            ) : visibleResults.length ? (
+              <div className="grid grid-cols-4 gap-1.5">
+                {visibleResults.map((sticker) => (
+                  <button
+                    key={sticker.id}
+                    type="button"
+                    onClick={() => {
+                      onSendSevenTvSticker(sticker);
+                    }}
+                    disabled={isSending}
+                    className="flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-2xl bg-zinc-900/30 duration-300 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                    title={sticker.name}
+                  >
+                    <img
+                      src={sticker.url}
+                      alt={sticker.name}
+                      className="h-14 w-14 object-contain"
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : normalizedQuery && normalizedQuery.length < SEVEN_TV_MIN_QUERY_LENGTH ? (
+              <div className="px-2 py-3 text-center text-xs text-zinc-400">
+                Введите минимум {SEVEN_TV_MIN_QUERY_LENGTH} символа
+              </div>
+            ) : normalizedQuery ? (
+              <div className="px-2 py-3 text-center text-xs text-zinc-400">
+                Ничего не найдено
+              </div>
+            ) : (
+              <div className="px-2 py-3 text-center text-xs text-zinc-500">
+                Популярные стикеры 7TV
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-zinc-600/20 p-1.5 pt-0">
+            <div className="relative">
+              <Icon name="IC-search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 fill-zinc-500" />
+              <input
+                value={searchInput}
+                onChange={(event) => {
+                  setSearchInput(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                  }
+                }}
+                placeholder="Поиск 7TV"
+                autoComplete="off"
+                className="h-10 w-full rounded-2xl border border-zinc-600/30 bg-zinc-950/80 pl-9 pr-3 text-sm text-white placeholder-zinc-500 outline-none duration-300 focus:border-zinc-500/50"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MessageBubble({
   authUserImage,
   currentUserId,
@@ -757,7 +1280,11 @@ function MessageBubble({
   const messageBodyHtml = messageImages.length
     ? getMessageBodyHtmlWithoutImages(message.message)
     : String(message.message ?? '');
-  const hasMessageText = Boolean(stripHtml(messageBodyHtml));
+  const sevenTvStickerName = messageImages.length ? '' : getSevenTvStickerNameFromToken(messageBodyHtml);
+  const hasMessageText = !sevenTvStickerName && Boolean(stripHtml(messageBodyHtml));
+  const isStickerOnlyMessage = Boolean(sevenTvStickerName);
+  const canTranslateMessage = !isOwn && isTextMessage && !isStickerOnlyMessage;
+  const canEditMessage = isOwn && isTextMessage && !isStickerOnlyMessage;
   const reactions = parseReactions(message.reactions);
   const timeLabel = formatMessageTime(message);
   const translator = typeof window !== 'undefined'
@@ -814,8 +1341,8 @@ function MessageBubble({
             id={`msg-${messageId}`}
             className={cn(
               'flex max-w-[90vw] lg:max-w-[40vw] flex-col rounded-2xl p-1 text-left font-normal break-words lg:text-lg',
-              isOwn && isTextMessage && 'rounded-br-lg bg-purple-700',
-              !isOwn && isTextMessage && 'rounded-bl-lg bg-zinc-900',
+              isOwn && isTextMessage && !isStickerOnlyMessage && 'rounded-br-lg bg-purple-700',
+              !isOwn && isTextMessage && !isStickerOnlyMessage && 'rounded-bl-lg bg-zinc-900',
             )}
           >
             <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
@@ -856,6 +1383,10 @@ function MessageBubble({
                     )
                   ))}
                 </div>
+              ) : null}
+
+              {sevenTvStickerName ? (
+                <SevenTvStickerMessage stickerName={sevenTvStickerName} />
               ) : null}
 
               {hasMessageText ? (
@@ -945,7 +1476,7 @@ function MessageBubble({
           ))}
         </div>
 
-        {!isOwn && isTextMessage && typeof translator === 'function' ? (
+        {canTranslateMessage && typeof translator === 'function' ? (
           <DropdownItem
             icon="IC-translate"
             className="h-8"
@@ -969,7 +1500,7 @@ function MessageBubble({
           </DropdownItem>
         ) : null}
 
-        {isOwn && isTextMessage ? (
+        {canEditMessage ? (
           <DropdownItem
             icon="IC-edit"
             className="h-8"
@@ -1021,6 +1552,7 @@ export default function MessagesContent() {
   const [uploadingDialogBackground, setUploadingDialogBackground] = useState(false);
   const [activeDialogImageKey, setActiveDialogImageKey] = useState<string | null>(null);
   const [dayLabelTick, setDayLabelTick] = useState(Date.now());
+  const [stickerDropdownOpen, setStickerDropdownOpen] = useState(false);
 
   const dialogsInFlightRef = useRef(false);
   const dialogsLastFetchAtRef = useRef(0);
@@ -2135,11 +2667,48 @@ export default function MessagesContent() {
         },
       );
 
+      setStickerDropdownOpen(false);
       scrollActionRef.current = { type: 'bottom' };
       await loadMessagesNewer(dialogSessionRef.current);
       await loadDialogs({ force: true });
     } catch (error) {
       console.error('Failed to send sticker', error);
+      notify({
+        content: lang?.somethingwrong || 'Произошла ошибка =(',
+        type: 'error',
+      });
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const handleSevenTvStickerSend = async (sticker: SevenTvSticker) => {
+    const dialogId = currentDialogIdRef.current;
+    const normalizedStickerName = normalizeText(sticker.name);
+    if (!dialogId || !normalizedStickerName) return;
+
+    setSendingMessage(true);
+
+    try {
+      seedSevenTvStickerCache([sticker]);
+
+      const params = new URLSearchParams();
+      params.append('message', `:7tv-${normalizedStickerName}:`);
+
+      await fetch(`/api/messages/send.php?di_id=${dialogId}`, {
+        body: params.toString(),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        method: 'POST',
+      });
+
+      setStickerDropdownOpen(false);
+      scrollActionRef.current = { type: 'bottom' };
+      await loadMessagesNewer(dialogSessionRef.current);
+      await loadDialogs({ force: true });
+    } catch (error) {
+      console.error('Failed to send 7TV sticker', error);
       notify({
         content: lang?.somethingwrong || 'Произошла ошибка =(',
         type: 'error',
@@ -2239,7 +2808,7 @@ export default function MessagesContent() {
                       {dialogs.map((dialog) => {
                         const dialogHash = normalizeHash(dialog.hash);
                         const active = dialogHash === routeHash;
-                        const preview = decodeHtml(stripHtml(dialog.Mmessage));
+                        const preview = formatDialogPreview(dialog.Mmessage, lang);
                         const dialogName = decodeText(dialog.Uname);
                         const previewStatusIcon = getDialogPreviewStatusIconName(dialog.Mstatus);
 
@@ -2542,37 +3111,32 @@ export default function MessagesContent() {
                       >
                         <Icon name="IC-emoji" className="h-8 w-8 fill-zinc-300" />
                       </button>
-                    ) : (
-                      <Dropdown
-                        position="top"
-                        align="end"
-                        triggerSize="sm"
-                        width="auto"
-                        menuClassName="w-[17rem] overflow-hidden p-0 text-zinc-300"
-                        triggerAriaLabel={lang?.stickers || 'Стикеры'}
-                        triggerClassName="relative z-[1] h-10 w-10 rounded-full hover:bg-zinc-700"
-                        triggerNode={<Icon name="IC-emoji" className="h-8 w-8 fill-zinc-300" />}
-                      >
-                        <div className="grid h-64 grid-cols-4 gap-1.5 overflow-auto p-1.5">
-                          {STICKER_NAMES.map((stickerName) => (
-                            <button
-                              key={stickerName}
-                              type="button"
-                              onClick={() => {
-                                void handleStickerSend(stickerName);
-                              }}
-                              className="cursor-pointer shrink-0 h-16 w-16 overflow-hidden rounded-2xl duration-300 hover:bg-zinc-900 active:scale-95"
-                            >
-                              <img
-                                src={`/includes/img/anlite/stickers/webp/${stickerName}.webp?id=NEW`}
-                                alt={stickerName}
-                                className="h-16 w-16 object-contain"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </Dropdown>
-                    )}
+	                    ) : (
+	                      <Dropdown
+	                        closeOnChildClick={false}
+	                        open={stickerDropdownOpen}
+	                        onOpenChange={setStickerDropdownOpen}
+	                        position="top"
+	                        align="end"
+	                        triggerSize="sm"
+	                        width="auto"
+	                        menuClassName="w-[17rem] overflow-hidden p-0 text-zinc-300"
+	                        triggerAriaLabel={lang?.stickers || 'Стикеры'}
+	                        triggerClassName="relative z-[1] h-10 w-10 rounded-full hover:bg-zinc-700"
+	                        triggerNode={<Icon name="IC-emoji" className="h-8 w-8 fill-zinc-300" />}
+	                      >
+	                        <StickerPickerDropdownContent
+	                          isOpen={stickerDropdownOpen}
+	                          isSending={sendingMessage}
+	                          onSendNativeSticker={(stickerName) => {
+	                            void handleStickerSend(stickerName);
+	                          }}
+	                          onSendSevenTvSticker={(sticker) => {
+	                            void handleSevenTvStickerSend(sticker);
+	                          }}
+	                        />
+	                      </Dropdown>
+	                    )}
 
                     <button
                       type="submit"
