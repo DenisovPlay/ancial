@@ -124,7 +124,7 @@ function GroupsContent() {
       
       const textResponse = await res.text();
       
-      if (textResponse === "Сообщество создано!" || textResponse.includes('успешно') || textResponse.includes('"success":true')) {
+      if (textResponse === "Сообщество создано!" || textResponse.includes('создано') || textResponse.includes('"success":true')) {
         setGrTitle('');
         setGrDesc('');
         setIsModalOpen(false);

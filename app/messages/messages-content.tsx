@@ -1205,13 +1205,13 @@ function StickerPickerDropdownContent({
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="max-h-72 overflow-auto p-1.5 pt-[54px] pb-[58px]">
+          <div className="max-h-72 flex flex-col items-center overflow-y-auto overflow-x-hidden px-1.5 pt-[54px] pb-[58px]">
             {isSevenTvLoading ? (
-              <div className="flex h-52 w-64 items-center justify-center">
+              <div className="flex h-52 w-62 items-center justify-center">
                 <Icon name="IC-loader" className="h-6 w-6 animate-spin fill-zinc-300" />
               </div>
             ) : visibleError ? (
-              <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-400">
+              <div className="h-52 w-62 flex items-center justify-center text-center px-2 py-3 text-xs text-zinc-400">
                 {visibleError}
               </div>
             ) : visibleResults.length ? (
@@ -1239,15 +1239,15 @@ function StickerPickerDropdownContent({
 	                ))}
               </div>
             ) : normalizedQuery && normalizedQuery.length < SEVEN_TV_MIN_QUERY_LENGTH ? (
-              <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-400">
+              <div className="h-52 w-62 flex items-center justify-center text-center px-2 py-3 text-xs text-zinc-400">
                 Введите минимум {SEVEN_TV_MIN_QUERY_LENGTH} символа
               </div>
             ) : normalizedQuery ? (
-              <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-400">
+              <div className="h-52 w-62 flex items-center justify-center text-center px-2 py-3 text-xs text-zinc-400">
                 Ничего не найдено
               </div>
             ) : (
-              <div className="h-52 w-64 flex items-center justify-center text-center px-2 py-3 text-center text-xs text-zinc-500">
+              <div className="h-52 w-62 flex items-center justify-center text-center px-2 py-3 text-xs text-zinc-500">
                 Популярные стикеры 7TV
               </div>
             )}
