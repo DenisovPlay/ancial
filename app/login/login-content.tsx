@@ -36,6 +36,7 @@ export default function LoginPage() {
 
       const res = await fetch(`/api/auth/login.php`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },

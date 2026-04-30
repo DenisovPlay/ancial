@@ -13,6 +13,7 @@ import React, {
 import { usePathname, useRouter } from 'next/navigation';
 
 import Modal from '../components/modal';
+import { authFetch } from '../lib/auth-fetch';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 
@@ -942,9 +943,7 @@ export function PulsePlayerProvider({
     ) {
       listenReportedSessionRef.current = playbackSessionRef.current;
       setListenCounted(true);
-      void fetch(`/api/pulse/listened_track.php?id=${currentSongIdRef.current}`, {
-        cache: 'no-store',
-      }).catch(() => {
+      void authFetch(`/api/pulse/listened_track.php?id=${currentSongIdRef.current}`).catch(() => {
         // ignore listen counter errors
       });
     }
@@ -1049,9 +1048,7 @@ export function PulsePlayerProvider({
 
     void (async () => {
       try {
-        const response = await fetch('/api/pulse/playlist_manage.php?action=list', {
-          cache: 'no-store',
-        });
+        const response = await authFetch('/api/pulse/playlist_manage.php?action=list');
         const result = await response.json() as {
           data?: PulsePlaylistManageItem[];
           error?: string | null;
@@ -1104,9 +1101,8 @@ export function PulsePlayerProvider({
     });
 
     try {
-      const response = await fetch('/api/pulse/playlist_manage.php', {
+      const response = await authFetch('/api/pulse/playlist_manage.php', {
         body: payload.toString(),
-        cache: 'no-store',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         },
@@ -1172,9 +1168,7 @@ export function PulsePlayerProvider({
     }
 
     try {
-      const response = await fetch('/api/pulse/getFavorites.php', {
-        cache: 'no-store',
-      });
+      const response = await authFetch('/api/pulse/getFavorites.php');
       const result = await response.json() as { ids?: unknown };
       const nextIds = normalizeSongIds(result.ids);
       likedSongIdsRef.current = nextIds;
@@ -1203,9 +1197,7 @@ export function PulsePlayerProvider({
     if (!resolvedSongId) return;
 
     try {
-      const response = await fetch(`/api/pulse/add_favorite_song.php?id=${resolvedSongId}`, {
-        cache: 'no-store',
-      });
+      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${resolvedSongId}`);
       const result = normalizeText(await response.text());
       const currentIds = await ensureLikedSongsLoaded();
 
@@ -1266,9 +1258,7 @@ export function PulsePlayerProvider({
     if (!resolvedPlaylistId) return;
 
     try {
-      const response = await fetch(`/api/pulse/likeplaylist.php?id=${resolvedPlaylistId}`, {
-        cache: 'no-store',
-      });
+      const response = await authFetch(`/api/pulse/likeplaylist.php?id=${resolvedPlaylistId}`);
       const result = normalizeText(await response.text());
 
       window.dispatchEvent(
@@ -1375,9 +1365,7 @@ export function PulsePlayerProvider({
     }
 
     try {
-      const response = await fetch(url, {
-        cache: 'no-store',
-      });
+      const response = await authFetch(url);
       const result = await response.json() as unknown;
       return Array.isArray(result) ? result as PulseTrack[] : [];
     } catch {
@@ -1452,9 +1440,7 @@ export function PulsePlayerProvider({
     showPlayer();
 
     if (kind === 'playlist') {
-      void fetch(`/api/pulse/history_add.php?id=${encodeURIComponent(resolvedId)}&type=2`, {
-        cache: 'no-store',
-      }).catch(() => {
+      void authFetch(`/api/pulse/history_add.php?id=${encodeURIComponent(resolvedId)}&type=2`).catch(() => {
         // ignore history failures
       });
     }

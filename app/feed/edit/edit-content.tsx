@@ -7,6 +7,7 @@ import { Dropdown } from '../../components/navigation';
 import type { PostAuthor, PostData, PostImage } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { authFetch } from '../../lib/auth-fetch';
 import {
   type DraftImage,
   MAX_IMAGES,
@@ -224,9 +225,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       setError(null);
 
       try {
-        const response = await fetch(`/api/posts/get_post.php?id=${encodeURIComponent(postId)}`, {
-          cache: 'no-store',
-          credentials: 'include',
+        const response = await authFetch(`/api/posts/get_post.php?id=${encodeURIComponent(postId)}`, {
           signal: controller.signal,
         });
 
@@ -391,10 +390,8 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         title,
       });
 
-      const response = await fetch('/api/posts/edit.php', {
+      const response = await authFetch('/api/posts/edit.php', {
         body: body.toString(),
-        cache: 'no-store',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { authFetch } from '../lib/auth-fetch';
 
 interface Notification {
   id: string;
@@ -39,7 +40,7 @@ export default function NotificationsPage() {
       if (token) params.append('token', token);
 
       const url = `/api/user/getNotifications?${params.toString()}`;
-      const res = await fetch(url);
+      const res = await authFetch(url);
       const data = await res.json();
       
       if (data.status === 'success') {
@@ -66,7 +67,7 @@ export default function NotificationsPage() {
       const params = new URLSearchParams();
       if (token) params.append('token', token);
 
-      await fetch('/api/user/clearnotify.php', {
+      await authFetch('/api/user/clearnotify.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

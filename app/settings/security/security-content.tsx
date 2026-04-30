@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Modal from '../../components/modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { authFetch } from '../../lib/auth-fetch';
 import { SvgIcon } from '../../feed/editor-shared';
 
 function flag(value: boolean | number | string | null | undefined) {
@@ -188,9 +189,8 @@ export default function SecuritySettingsPage() {
         params.append('token', token);
       }
 
-      const response = await fetch('/api/user/changePassword.php', {
+      const response = await authFetch('/api/user/changePassword.php', {
         body: params.toString(),
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
@@ -230,8 +230,7 @@ export default function SecuritySettingsPage() {
     setIsSendingVerification(true);
 
     try {
-      const response = await fetch('/api/verification/sendemail.php', {
-        credentials: 'include',
+      const response = await authFetch('/api/verification/sendemail.php', {
         method: 'POST',
       });
 
@@ -282,9 +281,8 @@ export default function SecuritySettingsPage() {
         params.append('token', token);
       }
 
-      const response = await fetch('/api/user/changeEmailPhone.php', {
+      const response = await authFetch('/api/user/changeEmailPhone.php', {
         body: params.toString(),
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
@@ -326,9 +324,8 @@ export default function SecuritySettingsPage() {
       params.append('searchshow', searchShow ? '1' : '2');
       params.append('msgopen', messagesOpen ? '1' : '2');
 
-      const response = await fetch('/api/user/updateinfo.php', {
+      const response = await authFetch('/api/user/updateinfo.php', {
         body: params.toString(),
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },

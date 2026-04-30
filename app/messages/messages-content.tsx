@@ -16,6 +16,7 @@ import { Dropdown, DropdownItem } from '../components/navigation';
 import YandexRtb from '../components/yandex-rtb';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { authFetch } from '../lib/auth-fetch';
 import { globalWS } from '../lib/global-ws';
 import DialogImageViewerModal, { type DialogImageSlide } from './dialog-image-viewer-modal';
 
@@ -1784,9 +1785,7 @@ export default function MessagesContent() {
     dialogsLastFetchAtRef.current = Date.now();
 
     try {
-      const response = await fetch('/api/messages/dialogs.php', {
-        cache: 'no-store',
-      });
+      const response = await authFetch('/api/messages/dialogs.php');
       const result = (await response.json()) as DialogListResponse;
 
       if (!result.success) {
@@ -1863,9 +1862,7 @@ export default function MessagesContent() {
     }
 
     try {
-      const response = await fetch(`/api/messages/dialog.php?di_id=${dialogId}&limit=${MESSAGE_PAGE_SIZE}`, {
-        cache: 'no-store',
-      });
+      const response = await authFetch(`/api/messages/dialog.php?di_id=${dialogId}&limit=${MESSAGE_PAGE_SIZE}`);
       const result = (await response.json()) as DialogMessagesResponse;
 
       if (session !== dialogSessionRef.current) return;
@@ -1927,9 +1924,7 @@ export default function MessagesContent() {
         ? `/api/messages/dialog.php?di_id=${dialogId}&after_id=${latestId}&limit=200`
         : `/api/messages/dialog.php?di_id=${dialogId}&limit=${MESSAGE_PAGE_SIZE}`;
 
-      const response = await fetch(url, {
-        cache: 'no-store',
-      });
+      const response = await authFetch(url);
       const result = (await response.json()) as DialogMessagesResponse;
 
       if (session !== dialogSessionRef.current) return;
@@ -1993,11 +1988,8 @@ export default function MessagesContent() {
     setLoadingOlder(true);
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `/api/messages/dialog.php?di_id=${dialogId}&before_id=${earliestId}&limit=${MESSAGE_PAGE_SIZE}`,
-        {
-          cache: 'no-store',
-        },
       );
       const result = (await response.json()) as DialogMessagesResponse;
 
@@ -2048,9 +2040,7 @@ export default function MessagesContent() {
     setLoadingNewer(false);
 
     try {
-      const response = await fetch(`/api/messages/dialog_by_hash.php?hash=${encodeURIComponent(hash)}`, {
-        cache: 'no-store',
-      });
+      const response = await authFetch(`/api/messages/dialog_by_hash.php?hash=${encodeURIComponent(hash)}`);
       const result = (await response.json()) as DialogByHashResponse;
 
       if (session !== dialogSessionRef.current) return;
@@ -2323,7 +2313,7 @@ export default function MessagesContent() {
       params.append('reaction', reaction);
       params.append('action', action);
 
-      await fetch('/api/messages/reaction.php', {
+      await authFetch('/api/messages/reaction.php', {
         body: params.toString(),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -2349,7 +2339,7 @@ export default function MessagesContent() {
       const params = new URLSearchParams();
       params.append('msg_id', String(messageId));
 
-      const response = await fetch('/api/messages/delete.php', {
+      const response = await authFetch('/api/messages/delete.php', {
         body: params.toString(),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -2408,7 +2398,7 @@ export default function MessagesContent() {
       params.append('msg_id', String(messageId));
       params.append('msg_data', nextValue);
 
-      const response = await fetch('/api/messages/edit.php', {
+      const response = await authFetch('/api/messages/edit.php', {
         body: params.toString(),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -2460,7 +2450,7 @@ export default function MessagesContent() {
     if (!dialogId) return;
 
     try {
-      const response = await fetch(`/engine/modules/msg/deletedialog.php?id=${dialogId}`, {
+      const response = await authFetch(`/engine/modules/msg/deletedialog.php?id=${dialogId}`, {
         method: 'POST',
       });
       const text = normalizeText(await response.text());
@@ -2527,9 +2517,7 @@ export default function MessagesContent() {
 
     try {
       const imageUrl = await uploadToImgbb(file);
-      await fetch(`/api/messages/send_image.php?img=${encodeURIComponent(imageUrl)}&diid=${dialogId}`, {
-        cache: 'no-store',
-      });
+      await authFetch(`/api/messages/send_image.php?img=${encodeURIComponent(imageUrl)}&diid=${dialogId}`);
 
       notify({
         content: lang?.done || 'Готово',
@@ -2565,11 +2553,8 @@ export default function MessagesContent() {
     try {
       const imageUrl = await uploadToImgbb(file);
 
-      const response = await fetch(
+      const response = await authFetch(
         `/api/messages/update_bg.php?img=${encodeURIComponent(imageUrl)}&diid=${dialogId}`,
-        {
-          cache: 'no-store',
-        },
       );
       const result = (await response.json()) as {
         error?: string;
@@ -2616,9 +2601,7 @@ export default function MessagesContent() {
     if (!dialogId || !dialogHash) return;
 
     try {
-      await fetch(`/api/messages/update_bg.php?img=%22%22&gid=${encodeURIComponent(dialogHash)}&diid=${dialogId}`, {
-        cache: 'no-store',
-      });
+      await authFetch(`/api/messages/update_bg.php?img=%22%22&gid=${encodeURIComponent(dialogHash)}&diid=${dialogId}`);
 
       setSelectedDialog((currentDialog) =>
         currentDialog
@@ -2661,7 +2644,7 @@ export default function MessagesContent() {
       const params = new URLSearchParams();
       params.append('message', nextValue);
 
-      await fetch(`/api/messages/send.php?di_id=${dialogId}`, {
+      await authFetch(`/api/messages/send.php?di_id=${dialogId}`, {
         body: params.toString(),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -2691,7 +2674,7 @@ export default function MessagesContent() {
     setSendingMessage(true);
 
     try {
-      await fetch(
+      await authFetch(
         `/engine/modules/msg/sendmsg.php?di_id=${dialogId}&sticker=${encodeURIComponent(`:${stickerName}:`)}`,
         {
           method: 'POST',
@@ -2726,7 +2709,7 @@ export default function MessagesContent() {
       const params = new URLSearchParams();
       params.append('message', `:7tv-${normalizedStickerName}-${sticker.id}:`);
 
-      await fetch(`/api/messages/send.php?di_id=${dialogId}`, {
+      await authFetch(`/api/messages/send.php?di_id=${dialogId}`, {
         body: params.toString(),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

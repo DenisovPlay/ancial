@@ -1,3 +1,5 @@
+import { authFetch } from './auth-fetch';
+
 export type NetStatusState = 'hidden' | 'reconnecting';
 
 type WsPayload = {
@@ -180,9 +182,8 @@ function stopHealth() {
 }
 
 function doHeartbeat() {
-  void fetch('/api/info/ping.php', {
+  void authFetch('/api/info/ping.php', {
     method: 'POST',
-    credentials: 'include',
     keepalive: true,
   }).catch(() => {});
 }

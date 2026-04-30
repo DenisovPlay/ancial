@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import YandexRtb from '../components/yandex-rtb';
 import Modal from '../components/modal';
 import Link from 'next/link';
+import { authFetch } from '../lib/auth-fetch';
 
 interface Group {
   id: string | number;
@@ -67,7 +68,7 @@ function GroupsContent() {
       setErrorMsg('');
       const token = localStorage.getItem('token');
       
-      const res = await fetch(`/api/user/groups.php?q=${encodeURIComponent(searchQuery)}${token ? `&token=${token}` : ''}`);
+      const res = await authFetch(`/api/user/groups.php?q=${encodeURIComponent(searchQuery)}${token ? `&token=${token}` : ''}`);
       const data = await res.json();
 
       if (data.success || Array.isArray(data.groups)) {
@@ -114,7 +115,7 @@ function GroupsContent() {
         params.append('token', token);
       }
 
-      const res = await fetch(`/api/group/create.php`, {
+      const res = await authFetch(`/api/group/create.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'

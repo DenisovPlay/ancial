@@ -25,6 +25,7 @@ import PostsRenderer, {
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDragScroll } from '../../hooks/useDragScroll';
+import { authFetch, authFetchJson, authFetchText } from '../../lib/auth-fetch';
 import {
   cn,
   SvgIcon,
@@ -145,31 +146,11 @@ function clearUserProfileCache(key: string) {
 }
 
 async function apiJson<T>(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    cache: 'no-store',
-    credentials: 'include',
-    ...init,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return (await response.json()) as T;
+  return authFetchJson<T>(path, init);
 }
 
 async function apiText(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    cache: 'no-store',
-    credentials: 'include',
-    ...init,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return response.text();
+  return authFetchText(path, init);
 }
 
 export default function UserProfileContent({ login }: { login: string }) {
@@ -959,12 +940,11 @@ export default function UserProfileContent({ login }: { login: string }) {
 
     try {
       const token = localStorage.getItem('token') || '';
-      const response = await fetch('/api/messages/createdialog.php', {
+      const response = await authFetch('/api/messages/createdialog.php', {
         body: new URLSearchParams({
           token,
           withu: String(userData.id),
         }).toString(),
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
@@ -1018,9 +998,8 @@ export default function UserProfileContent({ login }: { login: string }) {
         token,
       });
 
-      const response = await fetch('/api/user/updateinfo.php', {
+      const response = await authFetch('/api/user/updateinfo.php', {
         body: body.toString(),
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },

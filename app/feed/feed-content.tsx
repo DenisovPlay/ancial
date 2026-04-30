@@ -14,6 +14,7 @@ import PostsRenderer, {
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useDragScroll } from '../hooks/useDragScroll';
+import { authFetchJson, authFetchText } from '../lib/auth-fetch';
 import { cn, SvgIcon } from './editor-shared';
 import FeedPostSkeleton from './feed-post-skeleton';
 
@@ -93,31 +94,11 @@ function writeFeedCache(key: string, value: FeedCacheEntry) {
 }
 
 async function apiJson<T>(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    cache: 'no-store',
-    credentials: 'include',
-    ...init,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return (await response.json()) as T;
+  return authFetchJson<T>(path, init);
 }
 
 async function apiText(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    cache: 'no-store',
-    credentials: 'include',
-    ...init,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return response.text();
+  return authFetchText(path, init);
 }
 
 function TopicButton({

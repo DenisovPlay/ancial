@@ -9,6 +9,7 @@ import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { PostCard, type PostCardLang, type PostData } from '../../../components/posts-renderer';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { authFetchJson, authFetchText } from '../../../lib/auth-fetch';
 import { SvgIcon } from '../../editor-shared';
 import FeedPostSkeleton from '../../feed-post-skeleton';
 
@@ -54,31 +55,11 @@ function toNumber(value: number | string | null | undefined) {
 }
 
 async function apiJson<T>(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    cache: 'no-store',
-    credentials: 'include',
-    ...init,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return (await response.json()) as T;
+  return authFetchJson<T>(path, init);
 }
 
 async function apiText(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    cache: 'no-store',
-    credentials: 'include',
-    ...init,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return response.text();
+  return authFetchText(path, init);
 }
 
 function EmptyIllustration({

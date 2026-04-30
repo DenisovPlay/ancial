@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { authFetch } from '../../lib/auth-fetch';
 import { useFirebaseMessaging, FIREBASE_CONFIG } from '../../lib/useFirebaseMessaging';
 import { SvgIcon } from '../../feed/editor-shared';
 
@@ -141,10 +142,9 @@ export default function NotificationsSettingsContent() {
         const device = detectDevice();
         console.log('Device info:', device);
 
-        const response = await fetch('/api/user/notifications.php', {
+        const response = await authFetch('/api/user/notifications.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          credentials: 'include',
           body: new URLSearchParams({
             pushsid: token,
             'device[brand]': device.brand,
@@ -209,9 +209,8 @@ export default function NotificationsSettingsContent() {
 
   const cancelNotifications = useCallback(async () => {
     try {
-      const response = await fetch('/api/user/notifications.php?pushsid=0', {
+      const response = await authFetch('/api/user/notifications.php?pushsid=0', {
         method: 'GET',
-        credentials: 'include',
       });
 
       if (!response.ok) {

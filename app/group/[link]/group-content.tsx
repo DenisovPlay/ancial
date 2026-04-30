@@ -21,6 +21,7 @@ import PostsRenderer, {
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDragScroll } from '../../hooks/useDragScroll';
+import { authFetch, authFetchJson, authFetchText } from '../../lib/auth-fetch';
 import {
   cn,
   SvgIcon,
@@ -144,31 +145,11 @@ function sanitizeGroupLink(value: string) {
 }
 
 async function apiJson<T>(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    cache: 'no-store',
-    credentials: 'include',
-    ...init,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return (await response.json()) as T;
+  return authFetchJson<T>(path, init);
 }
 
 async function apiText(path: string, init?: RequestInit) {
-  const response = await fetch(path, {
-    cache: 'no-store',
-    credentials: 'include',
-    ...init,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return response.text();
+  return authFetchText(path, init);
 }
 
 function EmptyIllustration({
@@ -1077,9 +1058,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         params.append('token', token);
       }
 
-      const response = await fetch(`/api/group/updateinfo.php?${params.toString()}`, {
-        credentials: 'include',
-      });
+      const response = await authFetch(`/api/group/updateinfo.php?${params.toString()}`);
 
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
@@ -1137,9 +1116,8 @@ export default function GroupProfileContent({ link }: { link: string }) {
         params.append('token', token);
       }
 
-      const response = await fetch('/api/group/updateinfo.php', {
+      const response = await authFetch('/api/group/updateinfo.php', {
         body: params.toString(),
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },

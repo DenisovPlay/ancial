@@ -3,6 +3,7 @@
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { SettingsItem } from '../components/settings-item';
+import { authFetch } from '../lib/auth-fetch';
 
 export default function SettingsPage() {
   const { showNote } = useNotification();
@@ -19,7 +20,7 @@ export default function SettingsPage() {
 
       const url = `/api/user/change_lang.php?${searchParams.toString()}`;
 
-      const res = await fetch(url);
+      const res = await authFetch(url);
       
       const responseText = await res.text();
       

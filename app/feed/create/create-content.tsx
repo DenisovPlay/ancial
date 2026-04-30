@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Dropdown } from '../../components/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { authFetch } from '../../lib/auth-fetch';
 import CreatePostPreview from './create-post-preview';
 import {
   type DraftImage,
@@ -169,9 +170,7 @@ export default function CreatePostContent() {
 
     const loadAuthors = async () => {
       try {
-        const response = await fetch(`/api/posts/available_authors.php`, {
-          cache: 'no-store',
-          credentials: 'include',
+        const response = await authFetch(`/api/posts/available_authors.php`, {
           signal: controller.signal,
         });
 
@@ -327,10 +326,8 @@ export default function CreatePostContent() {
         photosurls: uploadedImages,
       });
 
-      const response = await fetch(`/api/posts/create.php?${searchParams.toString()}`, {
+      const response = await authFetch(`/api/posts/create.php?${searchParams.toString()}`, {
         body: body.toString(),
-        cache: 'no-store',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },

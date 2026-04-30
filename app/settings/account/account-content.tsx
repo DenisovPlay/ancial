@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { authFetch } from '../../lib/auth-fetch';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function AccountSettingsPage() {
       });
       if (token) params.append('token', token);
 
-      const res = await fetch('/api/user/updateinfo.php', {
+      const res = await authFetch('/api/user/updateinfo.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

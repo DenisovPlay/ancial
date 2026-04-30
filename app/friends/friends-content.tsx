@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useDragScroll } from '../hooks/useDragScroll';
+import { authFetch } from '../lib/auth-fetch';
 
 interface Friend {
   id: string;
@@ -96,7 +97,7 @@ function FriendsContent() {
       if (token) params.append('token', token);
       if (searchQuery) params.append('q', searchQuery);
 
-      const res = await fetch(`/api/user/friends.php?${params.toString()}`);
+      const res = await authFetch(`/api/user/friends.php?${params.toString()}`);
       const data = await res.json();
       
       if (data.success) {
@@ -134,7 +135,7 @@ function FriendsContent() {
       const token = localStorage.getItem('token') || '';
       const params = new URLSearchParams({ token, withu: userId });
       
-      const res = await fetch(`/api/messages/createdialog.php`, {
+      const res = await authFetch(`/api/messages/createdialog.php`, {
         method: "POST",
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString()
@@ -156,7 +157,7 @@ function FriendsContent() {
     try {
       const token = localStorage.getItem('token') || '';
       
-      const res = await fetch(`/api/friends/${endpoint}?${paramName}=${id}&token=${token}`);
+      const res = await authFetch(`/api/friends/${endpoint}?${paramName}=${id}&token=${token}`);
       const text = await res.text();
       
       // Временно alert, заменить на нормальные тосты

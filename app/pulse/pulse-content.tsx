@@ -9,6 +9,7 @@ import { useAuth, type User } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
+import { authFetch } from '../lib/auth-fetch';
 import { SITE_CONFIG } from '../seo';
 
 type PulseHomePlaylistCard = {
@@ -168,9 +169,7 @@ function writeListenedCache(value: RecentlyListenedState) {
 }
 
 async function fetchJsonData<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    credentials: 'same-origin',
-  });
+  const response = await authFetch(url);
   const text = await response.text();
   return JSON.parse(text) as T;
 }
@@ -718,9 +717,7 @@ export default function PulseContent() {
     if (!trackId) return;
 
     try {
-      const response = await fetch(`/api/pulse/add_favorite_song.php?id=${trackId}`, {
-        credentials: 'same-origin',
-      });
+      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${trackId}`);
       const result = normalizeText(await response.text());
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {

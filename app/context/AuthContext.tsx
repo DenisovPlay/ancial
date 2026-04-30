@@ -96,6 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           const loginRes = await fetch(`/api/auth/login.php`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: params.toString()
           });
@@ -165,7 +166,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // ОБЯЗАТЕЛЬНО убиваем сессию на сервере (PHP cookie), 
       // иначе check.php будет продолжать возвращать auth: true
-      await fetch(`/api/auth/logout.php`);
+      await fetch(`/api/auth/logout.php`, {
+        credentials: 'include',
+      });
     } catch (e) {
       console.error('Ошибка при логауте на сервере', e);
     }
