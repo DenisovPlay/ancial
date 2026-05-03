@@ -17,7 +17,14 @@ export function getPulseExternalUrl(path: string) {
 export function getPulseNavigationTarget(path: string): PulseNavigationTarget {
   const normalizedPath = normalizePulsePath(path);
 
-  if (/^\/pulse\/playlist\/[^/?#]+(?:[?#].*)?$/.test(normalizedPath)) {
+  if (
+    /^\/pulse\/playlist\/[^/?#]+(?:[?#].*)?$/.test(normalizedPath) ||
+    /^\/pulse\/artist\/[^/?#]+(?:[?#].*)?$/.test(normalizedPath) ||
+    /^\/pulse\/track\/[^/?#]+(?:[?#].*)?$/.test(normalizedPath) ||
+    /^\/pulse\/search(?:[?#].*)?$/.test(normalizedPath) ||
+    normalizedPath === '/pulse/my' ||
+    normalizedPath === '/pulse/library'
+  ) {
     return {
       href: normalizedPath,
       type: 'internal',

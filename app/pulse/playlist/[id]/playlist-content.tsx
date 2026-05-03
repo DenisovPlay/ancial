@@ -10,6 +10,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { authFetch } from '../../../lib/auth-fetch';
 import { SITE_CONFIG } from '../../../seo';
+import { removePulseCache } from '../../pulse-cache';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -25,7 +26,9 @@ import {
   toNumber,
   type PulseTrack,
 } from '../../pulse-components';
+import PulseUploadTrackModal from '../../pulse-upload-track-modal';
 import {
+  canUploadToPulseFavoritesPlaylist,
   canViewPulsePlaylist,
   getPulsePlaylistActionTarget,
   getPulsePlaylistListenTotal,
@@ -100,7 +103,9 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [tracksLoading, setTracksLoading] = useState(true);
   const [error, setError] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isUploadTrackModalOpen, setIsUploadTrackModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [tracksReloadToken, setTracksReloadToken] = useState(0);
 
   const userCountry = useMemo(() => {
     const nextCountry = normalizeText(
@@ -120,6 +125,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const playlistCover = getPlaylistCover(playlist, tracks);
   const playlistDescription = decodeHtmlEntities(playlist?.desk);
   const playlistLikes = normalizeText(String(playlist?.likes ?? '0')) || '0';
+  const canUploadTrack = canUploadToPulseFavoritesPlaylist(playlistId, playlist);
   const listensTotal = useMemo(() => getPulsePlaylistListenTotal(tracks), [tracks]);
 
   const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
@@ -225,7 +231,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     return () => {
       cancelled = true;
     };
-  }, [lang?.somethingwrong, playlistId]);
+  }, [lang?.somethingwrong, playlistId, tracksReloadToken]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -315,15 +321,13 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   }, [playlist, playlistId, showSoon]);
 
   const openUploadTrack = useCallback(() => {
-    const legacyWindow = window as Window & { utReset?: () => void };
-
-    if (typeof legacyWindow.utReset === 'function') {
-      legacyWindow.utReset();
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы загрузить трек', 'info');
       return;
     }
 
-    showSoon();
-  }, [showSoon]);
+    setIsUploadTrackModalOpen(true);
+  }, [isAuthenticated, showPulseNote]);
 
   const likeTrack = useCallback(async (track: PulseTrack) => {
     if (!isAuthenticated) {
@@ -396,8 +400,37 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   }, []);
 
   const openArtistPage = useCallback((artistId: string) => {
-    window.location.assign(getExternalPulseUrl(`/pulse/artist/${encodeURIComponent(artistId)}`));
-  }, []);
+    router.push(`/pulse/artist/${encodeURIComponent(artistId)}`);
+  }, [router]);
+
+  const refreshAfterUpload = useCallback(() => {
+    const target = getPulsePlaylistActionTarget(playlistId, playlist);
+    const cacheKeys = [
+      FAVORITES_CACHE_KEY,
+      'pulse_library',
+      'pulse_library_big',
+      'playlist_tracks_gid_Your',
+      `playlist_tracks_${playlistId}`,
+    ];
+
+    if (target.kind === 'genlist') {
+      cacheKeys.push(`playlist_tracks_gid_${target.id}`);
+    }
+
+    removePulseCache(...cacheKeys);
+    setTracksReloadToken((token) => token + 1);
+
+    void authFetch('/api/pulse/getFavorites.php')
+      .then(async (response) => (await response.json()) as { ids?: Array<number | string> })
+      .then((result) => {
+        const nextIds = Array.isArray(result.ids)
+          ? result.ids.map((id) => toNumber(id)).filter(Boolean)
+          : [];
+        writeFavoriteIds(nextIds);
+        setFavoriteIds(nextIds);
+      })
+      .catch(() => {});
+  }, [playlist, playlistId]);
 
   const queueTrackNext = useCallback(async (trackId: number | string) => {
     await playNextTrack(trackId);
@@ -536,7 +569,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                     <span className="text-sm text-content-500">{lang?.listen || 'Слушать'}</span>
                   </div>
 
-                  {playlistType === 3 ? (
+                  {canUploadTrack ? (
                     <div className="flex flex-col items-center justify-center">
                       <button
                         type="button"
@@ -644,6 +677,12 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
           onCopyFailed={() => showPulseNote(shareUrl, 'info')}
           shareUrl={shareUrl}
           title={lang?.share || 'Поделиться'}
+        />
+        <PulseUploadTrackModal
+          isOpen={isUploadTrackModalOpen}
+          onClose={() => setIsUploadTrackModalOpen(false)}
+          onUploaded={refreshAfterUpload}
+          showNote={showPulseNote}
         />
       </div>
     </div>

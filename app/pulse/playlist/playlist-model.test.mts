@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  canUploadToPulseFavoritesPlaylist,
   canViewPulsePlaylist,
   getPulsePlaylistActionTarget,
   getPulsePlaylistListenTotal,
   getPulsePlaylistTrackEndpoint,
+  getPulseTrackUploadPayload,
   normalizePulsePlaylistId,
 } from './playlist-model.ts';
 
@@ -32,6 +34,13 @@ test('canViewPulsePlaylist follows legacy private playlist rules', () => {
   assert.equal(canViewPulsePlaylist({ genlist: '', type: '3' }, true), true);
   assert.equal(canViewPulsePlaylist({ genlist: 'Your', type: '4' }, false), false);
   assert.equal(canViewPulsePlaylist({ genlist: 'Your', type: '4' }, true), true);
+});
+
+test('canUploadToPulseFavoritesPlaylist preserves the legacy upload button rules', () => {
+  assert.equal(canUploadToPulseFavoritesPlaylist('-5', { genlist: 'Your', type: '4' }), true);
+  assert.equal(canUploadToPulseFavoritesPlaylist('120', { genlist: '', type: '3' }), true);
+  assert.equal(canUploadToPulseFavoritesPlaylist('93', { genlist: '', type: '1' }), false);
+  assert.equal(canUploadToPulseFavoritesPlaylist('-1', { genlist: 'Top', type: '4' }), false);
 });
 
 test('getPulsePlaylistActionTarget keeps legacy play and shuffle semantics', () => {
@@ -63,4 +72,22 @@ test('getPulsePlaylistListenTotal sums track listens like legacy renderPulsePlay
     { listens: 4 },
     { listens: null },
   ]), 14);
+});
+
+test('getPulseTrackUploadPayload matches legacy upload_track.php field names', () => {
+  const payload = getPulseTrackUploadPayload({
+    artist: ' Artist ',
+    explicit: '',
+    image: 'https://img.example/cover.jpg',
+    lang: '',
+    name: '',
+    trackId: ' abc123 ',
+  });
+
+  assert.equal(payload.get('trackname'), 'Неизвестный трек');
+  assert.equal(payload.get('trackartist'), 'Artist');
+  assert.equal(payload.get('trackimg'), 'https://img.example/cover.jpg');
+  assert.equal(payload.get('tracklang'), '--');
+  assert.equal(payload.get('trackexp'), '0');
+  assert.equal(payload.get('trackid'), 'abc123');
 });

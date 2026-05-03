@@ -1,0 +1,418 @@
+'use client';
+/* eslint-disable @next/next/no-img-element */
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import ShareModal from '../../../components/share-modal';
+import { useAuth, type User } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
+import { usePulsePlayer } from '../../../context/PulsePlayerContext';
+import { authFetch } from '../../../lib/auth-fetch';
+import { SITE_CONFIG } from '../../../seo';
+import { fetchPulseJson } from '../../pulse-api';
+import { readPulseJsonCache, writePulseJsonCache } from '../../pulse-cache';
+import {
+  ActionIcon,
+  DEFAULT_TRACK_IMAGE,
+  PulseEmptyState,
+  PulseLegalFooter,
+  PulsePageHeader,
+  PulsePlaylistTile,
+  PulsePlaylistTileSkeleton,
+  PulseSectionTitle,
+  PulseTrackRow,
+  TracksPanelSkeleton,
+  cn,
+  decodeHtmlEntities,
+  getImageUrl,
+  normalizeText,
+  toNumber,
+  type PulsePlaylistCardData,
+  type PulseTrack,
+} from '../../pulse-components';
+
+type PulseArtistOwner = Pick<User, 'fname' | 'img' | 'lname' | 'username'>;
+
+type PulseArtist = {
+  desk?: string | null;
+  id?: number | string | null;
+  img?: string | null;
+  listens?: number | string | null;
+  name?: string | null;
+  owner?: PulseArtistOwner | null;
+  verify?: number | string | null;
+};
+
+type PulseArtistResponse = {
+  artist?: PulseArtist | null;
+};
+
+type PulseArtistPlaylistsResponse = {
+  playlists?: PulsePlaylistCardData[] | null;
+};
+
+const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
+
+function isGenlistPlaylist(card: PulsePlaylistCardData) {
+  return String(card.type ?? '') === '4';
+}
+
+function getCardPlayableId(card: PulsePlaylistCardData) {
+  return isGenlistPlaylist(card)
+    ? normalizeText(card.genlist)
+    : normalizeText(String(card.id ?? ''));
+}
+
+function readFavoriteIds() {
+  return (readPulseJsonCache<number[]>(FAVORITES_CACHE_KEY) ?? []).map((id) => toNumber(id)).filter(Boolean);
+}
+
+function writeFavoriteIds(ids: number[]) {
+  writePulseJsonCache(FAVORITES_CACHE_KEY, ids);
+}
+
+function getExternalPulseUrl(path: string) {
+  return `${SITE_CONFIG.url}${path}`;
+}
+
+export default function PulseArtistContent({ artistId }: { artistId: string }) {
+  const router = useRouter();
+  const { isAuthenticated, lang, user } = useAuth();
+  const { showNote } = useNotification();
+  const {
+    currentCollectionId,
+    currentSongId,
+    isPlaying,
+    openAddToPlaylist,
+    playArtistPlaylist,
+    playGenlist,
+    playNextTrack,
+    playPlaylist,
+  } = usePulsePlayer();
+
+  const cacheId = normalizeText(artistId) || '0';
+  const [artist, setArtist] = useState<PulseArtist | null>(() => readPulseJsonCache<PulseArtistResponse>(`artist_${cacheId}`)?.artist ?? null);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => readFavoriteIds());
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [loadingArtist, setLoadingArtist] = useState(!artist);
+  const [loadingPlaylists, setLoadingPlaylists] = useState(true);
+  const [loadingTracks, setLoadingTracks] = useState(true);
+  const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>(() => readPulseJsonCache<PulseArtistPlaylistsResponse>(`artist_playlists_${cacheId}`)?.playlists ?? []);
+  const [shareUrl, setShareUrl] = useState('');
+  const [tracks, setTracks] = useState<PulseTrack[]>([]);
+
+  const userCountry = useMemo(() => {
+    const nextCountry = normalizeText(
+      typeof window !== 'undefined'
+        ? String((window as Window & { userCountry?: string }).userCountry ?? user?.country ?? '')
+        : String(user?.country ?? ''),
+    );
+
+    return nextCountry || 'RU';
+  }, [user?.country]);
+
+  const artistName = decodeHtmlEntities(artist?.name) || 'Артист';
+  const artistDescription = decodeHtmlEntities(artist?.desk);
+  const artistImage = getImageUrl(artist?.img, DEFAULT_TRACK_IMAGE);
+  const listensTotal = useMemo(() => tracks.reduce((sum, track) => sum + toNumber(track.listens), 0), [tracks]);
+  const verifyStatus = String(artist?.verify ?? '');
+  const owner = artist?.owner ?? null;
+
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
+    showNote({ content, time: 4, type });
+  }, [showNote]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchPulseJson<PulseArtistResponse>(`/api/pulse/pages/artist.php?id=${encodeURIComponent(cacheId)}&type=1`)
+      .then((result) => {
+        if (cancelled) return;
+
+        if (result.artist) {
+          writePulseJsonCache(`artist_${cacheId}`, result);
+          setArtist(result.artist);
+        } else {
+          setArtist(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setArtist(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingArtist(false);
+      });
+
+    void fetchPulseJson<PulseArtistPlaylistsResponse>(`/api/pulse/pages/artist.php?id=${encodeURIComponent(cacheId)}&type=2`)
+      .then((result) => {
+        if (cancelled) return;
+
+        const nextPlaylists = Array.isArray(result.playlists) ? result.playlists : [];
+        if (nextPlaylists.length) {
+          writePulseJsonCache(`artist_playlists_${cacheId}`, { playlists: nextPlaylists });
+        }
+        setPlaylists(nextPlaylists);
+      })
+      .catch(() => {
+        if (!cancelled) setPlaylists([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingPlaylists(false);
+      });
+
+    void Promise.allSettled([
+      fetchPulseJson<{ ids?: Array<number | string> }>('/api/pulse/getFavorites.php'),
+      fetchPulseJson<PulseTrack[]>(`/api/pulse/getPlaylist.php?aid=${encodeURIComponent(cacheId)}`),
+    ]).then(([favoritesResult, tracksResult]) => {
+      if (cancelled) return;
+
+      if (favoritesResult.status === 'fulfilled') {
+        const nextIds = Array.isArray(favoritesResult.value.ids)
+          ? favoritesResult.value.ids.map((id) => toNumber(id)).filter(Boolean)
+          : [];
+        writeFavoriteIds(nextIds);
+        setFavoriteIds(nextIds);
+      }
+
+      if (tracksResult.status === 'fulfilled' && Array.isArray(tracksResult.value)) {
+        setTracks(tracksResult.value);
+      } else {
+        setTracks([]);
+      }
+
+      setLoadingTracks(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheId]);
+
+  const playPlaylistCard = useCallback((card: PulsePlaylistCardData) => {
+    const playableId = getCardPlayableId(card);
+    if (!playableId) return;
+
+    if (isGenlistPlaylist(card)) {
+      void playGenlist(playableId);
+      return;
+    }
+
+    void playPlaylist(playableId);
+  }, [playGenlist, playPlaylist]);
+
+  const openPlaylistCard = useCallback((card: PulsePlaylistCardData) => {
+    const id = normalizeText(String(card.id ?? '0')) || '0';
+    router.push(`/pulse/playlist/${encodeURIComponent(id)}`);
+  }, [router]);
+
+  const likeTrack = useCallback(async (track: PulseTrack) => {
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы добавлять треки в избранное', 'info');
+      return;
+    }
+
+    const trackId = toNumber(track.sid);
+    if (!trackId) return;
+
+    try {
+      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${trackId}`);
+      const result = normalizeText(await response.text());
+
+      if (result === 'ADDED' || result === 'CREATED_ADDED') {
+        setFavoriteIds((ids) => {
+          const nextIds = ids.includes(trackId) ? ids : [...ids, trackId];
+          writeFavoriteIds(nextIds);
+          return nextIds;
+        });
+        showPulseNote(result === 'CREATED_ADDED' ? 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!' : 'Трек добавлен в ваш плейлист!', 'success');
+        return;
+      }
+
+      if (result === 'REMOVED') {
+        setFavoriteIds((ids) => {
+          const nextIds = ids.filter((id) => id !== trackId);
+          writeFavoriteIds(nextIds);
+          return nextIds;
+        });
+        showPulseNote('Трек удалён из вашего плейлиста!', 'success');
+        return;
+      }
+
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    } catch {
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    }
+  }, [isAuthenticated, lang?.pulse_error_happened, showPulseNote]);
+
+  const copyTrackLink = useCallback(async (trackId: number | string) => {
+    const resolvedTrackId = toNumber(trackId);
+    if (!resolvedTrackId) return;
+
+    setShareUrl(getExternalPulseUrl(`/pulse/track/${resolvedTrackId}`));
+    setIsShareModalOpen(true);
+  }, []);
+
+  const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы добавлять треки в плейлисты', 'info');
+      return;
+    }
+
+    openAddToPlaylist(trackId);
+  }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+
+  const missing = !loadingArtist && !artist;
+  const artistCollectionActive = currentCollectionId === `artist_${cacheId}` && isPlaying;
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-64">
+      <PulsePageHeader onBack={() => router.push('/pulse')} />
+
+      {!missing ? (
+        <div className="flex w-full max-w-screen-2xl flex-col items-center justify-center gap-6 px-3 lg:flex-row lg:justify-start lg:px-0">
+          <div className="relative flex h-64 w-64 shrink-0 rounded-full border border-zinc-600/30 shadow lg:h-72 lg:w-72">
+            {loadingArtist ? (
+              <>
+                <div className="h-full w-full animate-pulse rounded-full bg-zinc-800 blur-xl" />
+                <div className="absolute inset-x-0 h-full w-full animate-pulse rounded-full bg-zinc-800" />
+              </>
+            ) : (
+              <>
+                <img className="h-full w-full rounded-full object-cover blur-xl" src={artistImage} alt="" />
+                <img className="absolute inset-x-0 z-[9] h-full w-full rounded-full object-cover" src={artistImage} alt={artistName} />
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-col items-center gap-3 lg:items-start">
+            <div className="flex flex-col items-center gap-1.5 text-center lg:items-start lg:text-left">
+              {loadingArtist ? (
+                <>
+                  <div className="h-14 w-64 animate-pulse rounded-2xl bg-zinc-800" />
+                  <div className="h-6 w-48 animate-pulse rounded-2xl bg-zinc-800" />
+                </>
+              ) : (
+                <>
+                  <h1 className="flex max-w-[92vw] items-center gap-1.5 break-words text-2xl font-black leading-none md:text-4xl lg:max-w-4xl lg:text-7xl">
+                    {artistName}
+                    {verifyStatus === '0' || verifyStatus === '1' ? (
+                      <ActionIcon className={cn('h-5 w-5 md:h-8 md:w-8 lg:h-12 lg:w-12', verifyStatus === '1' ? 'fill-blue-500' : 'fill-amber-500')} name="IC-verify" />
+                    ) : null}
+                  </h1>
+                  {artistDescription ? (
+                    <span className="text-base text-zinc-200 md:text-lg lg:text-xl">{artistDescription}</span>
+                  ) : null}
+                  <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
+                    <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-speaker" />
+                    <span>{loadingTracks ? <ActionIcon className="h-6 w-6 animate-spin fill-purple-500" name="IC-loader" /> : listensTotal}</span>
+                    <span className="text-xs text-zinc-400 duration-300 hover:text-lg">за всё время</span>
+                  </span>
+                  {verifyStatus === '0' ? (
+                    <span className="w-fit rounded-box bg-content-100 px-2 py-1 text-xs text-zinc-300 opacity-95 shadow duration-300">
+                      <ActionIcon className="inline h-5 w-5 fill-amber-500" name="IC-verify" /> - данные настоящие, но оригинальный владелец не имеет доступа к публикуемым трекам.
+                    </span>
+                  ) : null}
+                  {verifyStatus === '1' && owner ? (
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/profile/${encodeURIComponent(normalizeText(owner.username) || 'id' + normalizeText(String(artist?.id ?? '')))}`)}
+                      className="flex w-fit cursor-pointer items-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 p-0.5 text-zinc-300 opacity-95 shadow duration-300 hover:bg-zinc-700/80 active:scale-95"
+                    >
+                      <span className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center" style={{ backgroundImage: `url(${getImageUrl(owner.img, DEFAULT_TRACK_IMAGE)})` }} />
+                      <span className="text-left text-sm text-zinc-200 lg:text-base">
+                        {decodeHtmlEntities(`${owner.fname ?? ''} ${owner.lname ?? ''}`) || 'Пользователь'} управляет данной страницей
+                      </span>
+                    </button>
+                  ) : null}
+                </>
+              )}
+            </div>
+
+            {!loadingArtist && tracks.length ? (
+              <button
+                type="button"
+                onClick={() => void playArtistPlaylist(cacheId)}
+                className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95"
+                aria-label={artistCollectionActive ? 'Pause artist' : 'Play artist'}
+              >
+                <ActionIcon className="h-10 w-10" name={artistCollectionActive ? 'IC-pause' : 'IC-play'} />
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <PulseEmptyState description={lang?.nopostsdesc || 'Артист не найден'} title={lang?.emptytopic || 'Пусто'} />
+      )}
+
+      {!missing && (loadingPlaylists || playlists.length > 0) ? (
+        <>
+          <PulseSectionTitle>{lang?.playlists || 'Плейлисты'}</PulseSectionTitle>
+          <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
+            {loadingPlaylists && !playlists.length ? Array.from({ length: 6 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
+            {playlists.map((card) => {
+              const playableId = getCardPlayableId(card);
+              return (
+                <PulsePlaylistTile
+                  card={card}
+                  isPlaying={Boolean(playableId && currentCollectionId === playableId && isPlaying)}
+                  key={`artist-playlist-${card.id ?? card.genlist ?? card.name}`}
+                  onOpen={() => openPlaylistCard(card)}
+                  onPlay={() => playPlaylistCard(card)}
+                />
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+
+      {!missing ? (
+        <>
+          <PulseSectionTitle>{lang?.tracks || 'Треки'}</PulseSectionTitle>
+          <div className="w-full max-w-screen-2xl rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
+            {loadingTracks ? <TracksPanelSkeleton rows={6} /> : null}
+            {!loadingTracks && tracks.length ? (
+              <div className="flex flex-col gap-3">
+                {tracks.map((track, index) => (
+                  <PulseTrackRow
+                    currentSongId={currentSongId}
+                    favoriteIds={favoriteIds}
+                    isAuthenticated={isAuthenticated}
+                    key={`artist-track-${track.sid ?? index}`}
+                    onAddToPlaylist={openAddTrackToPlaylist}
+                    onCopyTrackLink={copyTrackLink}
+                    onLikeTrack={likeTrack}
+                    onOpenArtist={(nextArtistId) => router.push(`/pulse/artist/${encodeURIComponent(nextArtistId)}`)}
+                    onPlayTrack={(nextTrack, nextIndex) => {
+                      void playArtistPlaylist(cacheId, true, 0, nextIndex, nextTrack.sid);
+                    }}
+                    onQueueTrackNext={(trackId) => playNextTrack(trackId)}
+                    track={track}
+                    trackIndex={index}
+                    user={user}
+                    userCountry={userCountry}
+                  />
+                ))}
+              </div>
+            ) : null}
+            {!loadingTracks && !tracks.length ? (
+              <PulseEmptyState description="Надеемся, что это не на долго" title="Здесь пока пусто" />
+            ) : null}
+          </div>
+        </>
+      ) : null}
+
+      <PulseLegalFooter className="mt-3" />
+
+      <ShareModal
+        copyLabel={lang?.copylink || 'Скопировать ссылку'}
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success')}
+        onCopyFailed={() => showPulseNote(shareUrl, 'info')}
+        shareUrl={shareUrl}
+        title={lang?.share || 'Поделиться'}
+      />
+    </div>
+  );
+}

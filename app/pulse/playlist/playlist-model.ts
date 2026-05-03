@@ -62,6 +62,17 @@ export function canViewPulsePlaylist(
   return !isPrivatePlaylist || isAuthenticated;
 }
 
+export function canUploadToPulseFavoritesPlaylist(
+  value: string | number,
+  playlist: Pick<PulsePlaylistMeta, 'genlist' | 'type'> | null | undefined,
+) {
+  const playlistId = normalizePulsePlaylistId(value);
+  const type = Number.parseInt(String(playlist?.type ?? 0), 10);
+  const genlist = String(playlist?.genlist ?? GENERATED_PLAYLISTS[playlistId] ?? '').trim();
+
+  return playlistId === '-5' || type === 3 || genlist === 'Your';
+}
+
 export function getPulsePlaylistMetaEndpoint(value: string | number) {
   return `/api/pulse/pages/playlist.php?id=${encodeURIComponent(normalizePulsePlaylistId(value))}`;
 }
@@ -90,4 +101,28 @@ export function getPulsePlaylistListenTotal(tracks: PulsePlaylistTrackMeta[]) {
     const listens = Number.parseInt(String(track.listens ?? 0), 10);
     return sum + (Number.isFinite(listens) ? listens : 0);
   }, 0);
+}
+
+export type PulseTrackUploadPayloadInput = {
+  artist?: string | null;
+  explicit?: boolean | number | string | null;
+  image?: string | null;
+  lang?: string | null;
+  name?: string | null;
+  trackId: string | number;
+};
+
+export function getPulseTrackUploadPayload(input: PulseTrackUploadPayloadInput) {
+  const payload = new URLSearchParams();
+  const explicit = String(input.explicit ?? '').trim();
+  const lang = String(input.lang ?? '').trim();
+
+  payload.set('trackname', String(input.name ?? '').trim() || 'Неизвестный трек');
+  payload.set('trackartist', String(input.artist ?? '').trim() || 'Неизвестный исполнитель');
+  payload.set('trackimg', String(input.image ?? '').trim());
+  payload.set('tracklang', lang || '--');
+  payload.set('trackexp', explicit === '' ? '0' : explicit);
+  payload.set('trackid', String(input.trackId ?? '').trim());
+
+  return payload;
 }

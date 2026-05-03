@@ -28,6 +28,24 @@ export type PulseTrack = {
   uploaded_by?: number | string | null;
 };
 
+export type PulsePlaylistCardData = {
+  creator?: string | null;
+  desk?: string | null;
+  genlist?: string | null;
+  id?: number | string | null;
+  img?: string | null;
+  name?: string | null;
+  type?: number | string | null;
+};
+
+export type PulseArtistCardData = {
+  desk?: string | null;
+  id?: number | string | null;
+  img?: string | null;
+  name?: string | null;
+  verify?: number | string | null;
+};
+
 export type PulseTrackRowProps = {
   currentSongId: number;
   favoriteIds: number[];
@@ -131,6 +149,161 @@ export function ActionIcon({ name, className }: { className?: string; name: stri
     <svg className={cn('inline fill-white', className)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
       <use href={`/icons.svg#${name}`} />
     </svg>
+  );
+}
+
+export function PulsePageHeader({
+  onBack,
+}: {
+  onBack: () => void;
+}) {
+  return (
+    <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
+      <div className="w-full max-w-screen-2xl px-3 lg:px-0">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
+        >
+          <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+          <PulseLogo className="w-32 sm:w-48" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function PulseSectionTitle({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <span className={cn('w-full max-w-screen-2xl px-3 text-2xl font-black cutetext lg:px-0 lg:text-3xl xl:text-4xl', className)}>
+      {children}
+    </span>
+  );
+}
+
+export function PulsePlaylistTileSkeleton({
+  variant = 'compact',
+}: {
+  variant?: 'big' | 'compact';
+}) {
+  return (
+    <div
+      className={cn(
+        'shrink-0 animate-pulse overflow-hidden rounded-2xl border border-zinc-600/30 bg-zinc-800 shadow',
+        variant === 'big' ? 'aspect-square w-full' : 'h-32 w-32 lg:h-48 lg:w-48',
+      )}
+    />
+  );
+}
+
+export function PulseArtistTileSkeleton() {
+  return (
+    <div className="h-32 w-32 shrink-0 animate-pulse overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-800 shadow lg:h-48 lg:w-48" />
+  );
+}
+
+export function PulseEmptyState({
+  description,
+  title,
+}: {
+  description?: string;
+  title?: string;
+}) {
+  return (
+    <div className="flex min-h-72 w-full flex-col items-center justify-center gap-1 text-center">
+      <PulseLogo className="w-48" />
+      <span className="text-xl text-zinc-300">{title || 'Пусто'}</span>
+      {description ? (
+        <span className="text-lg text-zinc-500">{description}</span>
+      ) : null}
+    </div>
+  );
+}
+
+export function PulsePlaylistTile({
+  card,
+  isPlaying,
+  onOpen,
+  onPlay,
+  variant = 'compact',
+}: {
+  card: PulsePlaylistCardData;
+  isPlaying: boolean;
+  onOpen: () => void;
+  onPlay: () => void;
+  variant?: 'big' | 'compact';
+}) {
+  const coverUrl = getImageUrl(card.img, DEFAULT_TRACK_IMAGE);
+  const title = decodeHtmlEntities(card.name) || 'Без названия';
+  const description = decodeHtmlEntities(card.desk) || 'Pulse';
+  const playButtonSize = variant === 'big' ? 'h-10 w-10 lg:h-14 lg:w-14' : 'h-10 w-10';
+  const playIconSize = variant === 'big' ? 'h-6 w-6' : 'h-6 w-6';
+  const titleWidth = variant === 'big' ? 'w-28 lg:w-32' : 'w-28';
+
+  return (
+    <div
+      className={cn(
+        'group relative shrink-0 overflow-hidden rounded-2xl border border-zinc-600/30 shadow duration-300 active:scale-95',
+        variant === 'big' ? 'aspect-square w-full' : 'h-32 w-32 lg:h-48 lg:w-48',
+      )}
+    >
+      <button type="button" onClick={onOpen} className="h-full w-full cursor-pointer">
+        <img src={coverUrl} alt={title} className="h-full w-full object-cover duration-300 group-hover:scale-105" />
+      </button>
+
+      <div className="absolute inset-x-0 bottom-0 flex w-full items-end gap-1 bg-gradient-to-t from-black via-black/90 to-transparent p-1 opacity-0 duration-300 group-hover:opacity-100 lg:gap-3 lg:p-3">
+        <button
+          type="button"
+          onClick={onPlay}
+          className={cn('flex shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500/50 shadow backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-purple-600 active:scale-95', playButtonSize)}
+          aria-label={isPlaying ? 'Pause playlist' : 'Play playlist'}
+        >
+          <ActionIcon className={playIconSize} name={isPlaying ? 'IC-pause' : 'IC-play'} />
+        </button>
+
+        <div className="flex min-w-0 flex-col gap-0 text-left">
+          <span className={cn('truncate text-sm font-medium text-white lg:text-lg', titleWidth)}>{title}</span>
+          <span className="hidden text-xs text-zinc-300 lg:flex lg:text-base">{description}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PulseArtistTile({
+  artist,
+  onOpen,
+}: {
+  artist: PulseArtistCardData;
+  onOpen: () => void;
+}) {
+  const imageUrl = getImageUrl(artist.img, DEFAULT_TRACK_IMAGE);
+  const name = decodeHtmlEntities(artist.name) || 'Артист';
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group relative flex cursor-pointer flex-col items-center justify-center duration-300 active:scale-95"
+    >
+      <div className="relative z-[2] h-32 w-32 overflow-hidden rounded-full opacity-0 blur-sm duration-300 group-hover:opacity-100 lg:h-48 lg:w-48">
+        <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
+      </div>
+
+      <div className="absolute top-0 z-[4] h-32 w-32 overflow-hidden rounded-full border border-zinc-600/30 shadow lg:h-48 lg:w-48">
+        <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
+      </div>
+
+      <span className="z-[1] flex max-w-32 items-center gap-1 truncate text-sm font-medium text-zinc-100 duration-300 lg:-translate-y-24 lg:max-w-48 lg:group-hover:translate-y-0">
+        <span className="truncate">{name}</span>
+      </span>
+    </button>
   );
 }
 
