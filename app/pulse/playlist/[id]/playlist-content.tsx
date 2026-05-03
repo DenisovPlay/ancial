@@ -1,0 +1,651 @@
+'use client';
+/* eslint-disable @next/next/no-img-element */
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import ShareModal from '../../../components/share-modal';
+import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
+import { usePulsePlayer } from '../../../context/PulsePlayerContext';
+import { authFetch } from '../../../lib/auth-fetch';
+import { SITE_CONFIG } from '../../../seo';
+import {
+  ActionIcon,
+  DEFAULT_TRACK_IMAGE,
+  PulseLegalFooter,
+  PulseLogo,
+  PulseTrackRow,
+  TracksPanelSkeleton,
+  cn,
+  decodeHtmlEntities,
+  getImageUrl,
+  getTrackArtwork,
+  normalizeText,
+  toNumber,
+  type PulseTrack,
+} from '../../pulse-components';
+import {
+  canViewPulsePlaylist,
+  getPulsePlaylistActionTarget,
+  getPulsePlaylistListenTotal,
+  getPulsePlaylistMetaEndpoint,
+  getPulsePlaylistTrackEndpoint,
+  normalizePulsePlaylistId,
+  type PulsePlaylistMeta,
+} from '../playlist-model';
+
+type PlaylistPageResponse = {
+  is_liked?: boolean;
+  playlist?: PulsePlaylistMeta | null;
+};
+
+const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
+const FALLBACK_PLAYLIST_NAME = 'Неизвестный плейлист';
+
+function readFavoriteIds() {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(FAVORITES_CACHE_KEY) || '[]') as unknown;
+    return Array.isArray(parsed) ? parsed.map((id) => toNumber(id)).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeFavoriteIds(ids: number[]) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(ids));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function getPlaylistCover(playlist: PulsePlaylistMeta | null, tracks: PulseTrack[]) {
+  return getImageUrl(playlist?.img, tracks[0] ? getTrackArtwork(tracks[0]) : DEFAULT_TRACK_IMAGE);
+}
+
+function getPlaylistTitle(playlist: PulsePlaylistMeta | null, tracks: PulseTrack[]) {
+  return decodeHtmlEntities(playlist?.name) || decodeHtmlEntities(tracks[0]?.album) || FALLBACK_PLAYLIST_NAME;
+}
+
+function getExternalPulseUrl(path: string) {
+  return `${SITE_CONFIG.url}${path}`;
+}
+
+export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { playlistId: string }) {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
+  const { showNote } = useNotification();
+  const {
+    currentCollectionId,
+    currentSongId,
+    isPlaying,
+    openAddToPlaylist,
+    playGenlist,
+    playNextTrack,
+    playPlaylist,
+  } = usePulsePlayer();
+
+  const playlistId = useMemo(() => normalizePulsePlaylistId(rawPlaylistId), [rawPlaylistId]);
+
+  const [playlist, setPlaylist] = useState<PulsePlaylistMeta | null>(null);
+  const [playlistLiked, setPlaylistLiked] = useState(false);
+  const [tracks, setTracks] = useState<PulseTrack[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => readFavoriteIds());
+  const [metaLoading, setMetaLoading] = useState(true);
+  const [tracksLoading, setTracksLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+
+  const userCountry = useMemo(() => {
+    const nextCountry = normalizeText(
+      typeof window !== 'undefined'
+        ? String((window as Window & { userCountry?: string }).userCountry ?? user?.country ?? '')
+        : String(user?.country ?? ''),
+    );
+
+    return nextCountry || 'RU';
+  }, [user?.country]);
+
+  const playlistType = toNumber(playlist?.type);
+  const playlistPlayTarget = getPulsePlaylistActionTarget(playlistId, playlist);
+  const playlistActive = currentCollectionId === playlistPlayTarget.id && isPlaying;
+  const playlistTitle = getPlaylistTitle(playlist, tracks);
+  const playlistArtist = decodeHtmlEntities(playlist?.artist);
+  const playlistCover = getPlaylistCover(playlist, tracks);
+  const playlistDescription = decodeHtmlEntities(playlist?.desk);
+  const playlistLikes = normalizeText(String(playlist?.likes ?? '0')) || '0';
+  const listensTotal = useMemo(() => getPulsePlaylistListenTotal(tracks), [tracks]);
+
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
+    showNote({
+      content,
+      time: 4,
+      type,
+    });
+  }, [showNote]);
+
+  const updateFavoriteIds = useCallback((updater: (ids: number[]) => number[]) => {
+    setFavoriteIds((currentIds) => {
+      const nextIds = updater(currentIds);
+      writeFavoriteIds(nextIds);
+      return nextIds;
+    });
+  }, []);
+
+  useEffect(() => {
+    window._pagePlaylistConf = {
+      id: playlistId,
+      type: Number(playlist?.type ?? 0),
+    };
+
+    return () => {
+      window._pagePlaylistConf = null;
+    };
+  }, [playlist?.type, playlistId]);
+
+  useEffect(() => {
+    if (!authLoading && playlistId === '-5' && !isAuthenticated) {
+      router.replace(`/login?backurl=/pulse/playlist/${encodeURIComponent(playlistId)}`);
+    }
+  }, [authLoading, isAuthenticated, playlistId, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void authFetch(getPulsePlaylistMetaEndpoint(playlistId))
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        return (await response.json()) as PlaylistPageResponse;
+      })
+      .then((result) => {
+        if (cancelled) return;
+
+        const nextPlaylist = result.playlist ?? null;
+        setPlaylist(nextPlaylist);
+        setPlaylistLiked(Boolean(result.is_liked));
+
+        if (!authLoading && nextPlaylist && !canViewPulsePlaylist(nextPlaylist, isAuthenticated)) {
+          router.replace(`/login?backurl=/pulse/playlist/${encodeURIComponent(playlistId)}`);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPlaylist(null);
+          setError(lang?.somethingwrong || 'Произошла ошибка =(');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setMetaLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, isAuthenticated, lang?.somethingwrong, playlistId, router]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void authFetch(getPulsePlaylistTrackEndpoint(playlistId))
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        return (await response.json()) as PulseTrack[];
+      })
+      .then((result) => {
+        if (!cancelled) {
+          setTracks(Array.isArray(result) ? result : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTracks([]);
+          setError(lang?.somethingwrong || 'Произошла ошибка =(');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setTracksLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [lang?.somethingwrong, playlistId]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void authFetch('/api/pulse/getFavorites.php')
+      .then(async (response) => (await response.json()) as { ids?: Array<number | string> })
+      .then((result) => {
+        if (cancelled) return;
+
+        const nextIds = Array.isArray(result.ids)
+          ? result.ids.map((id) => toNumber(id)).filter(Boolean)
+          : [];
+
+        writeFavoriteIds(nextIds);
+        setFavoriteIds(nextIds);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFavoriteIds(readFavoriteIds());
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  const playPlaylistFromStart = useCallback(() => {
+    const target = getPulsePlaylistActionTarget(playlistId, playlist);
+
+    if (target.kind === 'genlist') {
+      void playGenlist(target.id, target.forceReload, target.shuffle);
+      return;
+    }
+
+    void playPlaylist(target.id, target.forceReload, target.shuffle);
+  }, [playGenlist, playPlaylist, playlist, playlistId]);
+
+  const shufflePlaylist = useCallback(() => {
+    const target = getPulsePlaylistActionTarget(playlistId, playlist, { shuffle: true });
+
+    if (target.kind === 'genlist') {
+      void playGenlist(target.id, target.forceReload, target.shuffle);
+      return;
+    }
+
+    void playPlaylist(target.id, target.forceReload, target.shuffle);
+  }, [playGenlist, playPlaylist, playlist, playlistId]);
+
+  const playTrackAtIndex = useCallback((track: PulseTrack, index: number) => {
+    const target = getPulsePlaylistActionTarget(playlistId, playlist);
+
+    if (target.kind === 'genlist') {
+      void playGenlist(target.id, true, 0, index, track.sid);
+      return;
+    }
+
+    void playPlaylist(target.id, true, 0, index, track.sid);
+  }, [playGenlist, playPlaylist, playlist, playlistId]);
+
+  const showSoon = useCallback(() => {
+    const legacyWindow = window as Window & { toast?: (message: string) => void };
+
+    if (typeof legacyWindow.toast === 'function') {
+      legacyWindow.toast('Скоро!');
+      return;
+    }
+
+    showPulseNote('Скоро!', 'info');
+  }, [showPulseNote]);
+
+  const openPlaylistEditor = useCallback(() => {
+    const legacyWindow = window as Window & {
+      openEditPlaylist?: (id: number | string, name: string, image: string) => void;
+    };
+
+    if (typeof legacyWindow.openEditPlaylist === 'function' && playlist) {
+      legacyWindow.openEditPlaylist(playlist.id ?? playlistId, normalizeText(playlist.name), normalizeText(playlist.img));
+      return;
+    }
+
+    showSoon();
+  }, [playlist, playlistId, showSoon]);
+
+  const openUploadTrack = useCallback(() => {
+    const legacyWindow = window as Window & { utReset?: () => void };
+
+    if (typeof legacyWindow.utReset === 'function') {
+      legacyWindow.utReset();
+      return;
+    }
+
+    showSoon();
+  }, [showSoon]);
+
+  const likeTrack = useCallback(async (track: PulseTrack) => {
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы добавлять треки в избранное', 'info');
+      return;
+    }
+
+    const trackId = toNumber(track.sid);
+    if (!trackId) return;
+
+    try {
+      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${trackId}`);
+      const result = normalizeText(await response.text());
+
+      if (result === 'ADDED' || result === 'CREATED_ADDED') {
+        updateFavoriteIds((ids) => (ids.includes(trackId) ? ids : [...ids, trackId]));
+        showPulseNote(
+          result === 'CREATED_ADDED'
+            ? lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!'
+            : lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!',
+          'success',
+        );
+        return;
+      }
+
+      if (result === 'REMOVED') {
+        updateFavoriteIds((ids) => ids.filter((id) => id !== trackId));
+        showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
+        return;
+      }
+
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    } catch {
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    }
+  }, [isAuthenticated, lang, showPulseNote, updateFavoriteIds]);
+
+  const togglePlaylistLike = useCallback(async () => {
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы добавить плейлист в избранное', 'info');
+      return;
+    }
+
+    try {
+      const response = await authFetch(`/api/pulse/likeplaylist.php?id=${playlistId}`);
+      const result = normalizeText(await response.text());
+      const liked = result === 'like';
+      setPlaylistLiked(liked);
+      setPlaylist((currentPlaylist) => {
+        if (!currentPlaylist) return currentPlaylist;
+
+        const currentLikes = toNumber(currentPlaylist.likes);
+        return {
+          ...currentPlaylist,
+          likes: String(Math.max(0, currentLikes + (liked ? 1 : -1))),
+        };
+      });
+      showPulseNote(liked ? 'Плейлист добавлен' : 'Плейлист удалён', 'success');
+    } catch {
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    }
+  }, [isAuthenticated, lang?.pulse_error_happened, playlistId, showPulseNote]);
+
+  const copyTrackLink = useCallback(async (trackId: number | string) => {
+    const resolvedTrackId = toNumber(trackId);
+    if (!resolvedTrackId) return;
+
+    setShareUrl(getExternalPulseUrl(`/pulse/track/${resolvedTrackId}`));
+    setIsShareModalOpen(true);
+  }, []);
+
+  const openArtistPage = useCallback((artistId: string) => {
+    window.location.assign(getExternalPulseUrl(`/pulse/artist/${encodeURIComponent(artistId)}`));
+  }, []);
+
+  const queueTrackNext = useCallback(async (trackId: number | string) => {
+    await playNextTrack(trackId);
+  }, [playNextTrack]);
+
+  const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы добавлять треки в плейлисты', 'info');
+      return;
+    }
+
+    openAddToPlaylist(trackId);
+  }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+
+  const isMissing = !metaLoading && !playlist && playlistId !== '-5';
+  const isLoading = metaLoading || tracksLoading || authLoading;
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 pb-0 duration-300 lg:pb-64">
+      <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
+        <div className="w-full max-w-screen-2xl px-3 lg:px-0">
+          <button
+            type="button"
+            onClick={() => router.push('/pulse')}
+            className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
+          >
+            <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+            <PulseLogo className="w-32 sm:w-48" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col items-center justify-center gap-3">
+        <div className="sticky top-14 flex w-full max-w-screen-2xl flex-col items-center justify-center gap-6 sm:top-16 lg:static lg:top-0 lg:flex-row lg:justify-start">
+          <div className="relative flex h-72 w-72 shrink-0 rounded-3xl shadow lg:h-96 lg:w-96">
+            {isLoading ? (
+              <>
+                <div className="h-full w-full animate-pulse rounded-2xl bg-zinc-800 blur-xl" />
+                <div className="absolute inset-x-0 h-full w-full animate-pulse rounded-2xl bg-zinc-800" />
+              </>
+            ) : (
+              <>
+                <div className="h-full w-full rounded-2xl bg-cover bg-center opacity-80 blur-xl" style={{ backgroundImage: `url(${playlistCover})` }} />
+                <img src={playlistCover} alt={playlistTitle} className="absolute inset-x-0 h-full w-full rounded-2xl object-cover z-[9]" />
+                {playlistType === 4 ? (
+                  <span className="absolute -bottom-1.5 -right-1.5 z-[99] rounded-full border border-zinc-600/30 bg-pink-500/50 px-1 text-sm text-white backdrop-blur-sm backdrop-saturate-200">
+                    ГенЛист
+                  </span>
+                ) : null}
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-col items-center gap-3 lg:items-start">
+            {isLoading ? (
+              <>
+                <div className="flex flex-col gap-1.5 text-center lg:text-left">
+                  <h1 className="flex h-14 w-64 animate-pulse flex-col rounded-2xl bg-zinc-800 text-2xl font-black md:text-4xl lg:text-7xl" />
+                  <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
+                    <span className="h-8 w-8 animate-pulse rounded-full bg-zinc-800" />
+                    <span className="flex h-8 w-14 animate-pulse flex-col rounded-2xl bg-zinc-800 text-2xl font-black md:text-4xl lg:text-7xl" />
+                  </span>
+                </div>
+                <div className="grid w-fit grid-cols-3 gap-6">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <span key={index} className="h-16 w-16 animate-pulse rounded-full bg-zinc-800" />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1.5 text-center lg:text-left">
+                  <h1 className="flex max-w-[92vw] flex-col break-words text-2xl font-black leading-none md:text-4xl lg:max-w-4xl lg:text-7xl">
+                    {playlistTitle}
+                    <span className="text-sm font-thin text-content-600 lg:text-lg">{playlistArtist}</span>
+                  </h1>
+                  {playlistDescription ? (
+                    <span className="text-base text-zinc-200 md:text-lg lg:text-xl">{playlistDescription}</span>
+                  ) : null}
+                  {playlistType !== 3 ? (
+                    <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
+                      <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-speaker" />
+                      <span>{tracksLoading ? <ActionIcon className="h-6 w-6 animate-spin fill-purple-500" name="IC-loader" /> : listensTotal}</span>
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="grid w-fit grid-cols-3 gap-6">
+                  <div className="flex flex-col items-center justify-center">
+                    {playlistType === 2 ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={openPlaylistEditor}
+                          className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300 hover:bg-zinc-700 active:scale-95"
+                        >
+                          <ActionIcon className="h-10 w-10" name="IC-edit" />
+                        </button>
+                        <span className="text-sm text-content-500">Изменить</span>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={showSoon}
+                          className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300 hover:bg-zinc-700 active:scale-95"
+                        >
+                          <ActionIcon className="h-10 w-10" name="IC-download" />
+                        </button>
+                        <span className="text-sm text-content-500">{lang?.download || 'Скачать'}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="relative flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={playPlaylistFromStart}
+                        className={cn('flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95', `playbuttonSVG${playlistPlayTarget.id}`)}
+                        aria-label={playlistActive ? 'Pause playlist' : 'Play playlist'}
+                      >
+                        <ActionIcon className="h-10 w-10" name={playlistActive ? 'IC-pause' : 'IC-play'} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={shufflePlaylist}
+                        className={cn('absolute bottom-0 -right-3 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-lime-500 shadow duration-300 hover:bg-lime-600 active:scale-95', `shufflebuttonSVG${playlistPlayTarget.id}`)}
+                        aria-label="Shuffle playlist"
+                      >
+                        <svg className="inline h-5 w-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                          <path d="M8.7,10a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41L3.84,2.29A1,1,0,0,0,2.42,3.71ZM21,14a1,1,0,0,0-1,1v3.59L15.44,14A1,1,0,0,0,14,15.44L18.59,20H15a1,1,0,0,0,0,2h6a1,1,0,0,0,.38-.08,1,1,0,0,0,.54-.54A1,1,0,0,0,22,21V15A1,1,0,0,0,21,14Zm.92-11.38a1,1,0,0,0-.54-.54A1,1,0,0,0,21,2H15a1,1,0,0,0,0,2h3.59L2.29,20.29a1,1,0,0,0,0,1.42,1,1,0,0,0,1.42,0L20,5.41V9a1,1,0,0,0,2,0V3A1,1,0,0,0,21.92,2.62Z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <span className="text-sm text-content-500">{lang?.listen || 'Слушать'}</span>
+                  </div>
+
+                  {playlistType === 3 ? (
+                    <div className="flex flex-col items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={openUploadTrack}
+                        className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300 hover:bg-zinc-700 active:scale-95"
+                      >
+                        <ActionIcon className="h-10 w-10 rotate-180" name="IC-plus" />
+                      </button>
+                      <span className="text-sm text-content-500">Добавить</span>
+                    </div>
+                  ) : playlistType === 2 ? (
+                    <div className="flex flex-col items-center justify-center">
+                      <button
+                        type="button"
+                        disabled
+                        className="flex h-16 w-16 shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 opacity-30 shadow"
+                      >
+                        <ActionIcon className="h-10 w-10" name="IC-heart" />
+                      </button>
+                      <span className="text-sm text-content-500">{playlistLikes}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center">
+                      <button
+                        type="button"
+                        disabled={!isAuthenticated}
+                        onClick={() => void togglePlaylistLike()}
+                        className={cn(
+                          'flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300',
+                          isAuthenticated ? 'cursor-pointer hover:bg-zinc-700 active:scale-95' : 'cursor-not-allowed opacity-30',
+                        )}
+                      >
+                        <ActionIcon className="h-10 w-10" name={playlistLiked ? 'IC-heart-filled' : 'IC-heart'} />
+                      </button>
+                      <span className="text-sm text-content-500">{playlistLikes}</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="relative z-[19] h-full w-full max-w-screen-2xl rounded-3xl rounded-b-none border border-zinc-600/30 bg-zinc-900 duration-300 lg:rounded-b-3xl">
+          <div className="flex h-full w-full max-w-screen-2xl flex-col gap-3 p-3 lg:pb-3">
+            {isLoading ? <TracksPanelSkeleton rows={6} /> : null}
+
+            {!isLoading && error ? (
+              <div className="flex min-h-72 flex-col items-center justify-center gap-3 text-center text-zinc-300">
+                <ActionIcon className="h-12 w-12" name="IC-warning" />
+                <span>{error}</span>
+              </div>
+            ) : null}
+
+            {!isLoading && isMissing ? (
+              <div className="flex min-h-72 flex-col items-center justify-center gap-1 text-center">
+                <PulseLogo className="w-48" />
+                <span className="text-xl text-zinc-300">{lang?.emptytopic || FALLBACK_PLAYLIST_NAME}</span>
+                <span className="text-lg text-zinc-500">{lang?.nopostsdesc || 'Плейлист пуст или недоступен'}</span>
+              </div>
+            ) : null}
+
+            {!isLoading && !error && !isMissing && tracks.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                {tracks.map((track, index) => (
+                  <PulseTrackRow
+                    currentSongId={currentSongId}
+                    favoriteIds={favoriteIds}
+                    isAuthenticated={isAuthenticated}
+                    key={`${playlistId}-${track.sid ?? index}`}
+                    onAddToPlaylist={openAddTrackToPlaylist}
+                    onCopyTrackLink={copyTrackLink}
+                    onLikeTrack={likeTrack}
+                    onOpenArtist={openArtistPage}
+                    onPlayTrack={playTrackAtIndex}
+                    onQueueTrackNext={queueTrackNext}
+                    track={track}
+                    trackIndex={index}
+                    user={user}
+                    userCountry={userCountry}
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            {!isLoading && !error && !isMissing && tracks.length === 0 ? (
+              <div className="flex min-h-72 flex-col items-center justify-center gap-1 text-center">
+                <PulseLogo className="w-48" />
+                <span className="text-xl text-zinc-300">{lang?.emptytopic || 'Пусто'}</span>
+                <span className="text-lg text-zinc-500">{lang?.nopostsdesc || 'В этом плейлисте пока нет треков'}</span>
+              </div>
+            ) : null}
+          </div>
+
+          <PulseLegalFooter className="lg:hidden pb-80" />
+        </div>
+
+        <PulseLegalFooter className="hidden lg:flex" />
+
+        <ShareModal
+          copyLabel={lang?.copylink || 'Скопировать ссылку'}
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success')}
+          onCopyFailed={() => showPulseNote(shareUrl, 'info')}
+          shareUrl={shareUrl}
+          title={lang?.share || 'Поделиться'}
+        />
+      </div>
+    </div>
+  );
+}

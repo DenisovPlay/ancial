@@ -5,12 +5,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Dropdown, DropdownItem } from '../components/navigation';
+import ShareModal from '../components/share-modal';
 import { useAuth, type User } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { authFetch } from '../lib/auth-fetch';
-import { SITE_CONFIG } from '../seo';
+import { PulseLegalFooter } from './pulse-components';
+import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigation';
 
 type PulseHomePlaylistCard = {
   creator?: string | null;
@@ -244,15 +246,6 @@ function getArtistPath(artistId: number | string) {
 
 function getTrackPath(trackId: number | string) {
   return `/pulse/track/${encodeURIComponent(normalizeText(String(trackId)) || '0')}`;
-}
-
-function getExternalPulseUrl(path: string) {
-  return `${SITE_CONFIG.url}${path}`;
-}
-
-function goToLegacyPulsePath(path: string) {
-  if (typeof window === 'undefined') return;
-  window.location.assign(getExternalPulseUrl(path));
 }
 
 function PulseLogo({ className }: { className?: string }) {
@@ -603,7 +596,9 @@ export default function PulseContent() {
   const nowListenScrollRef = useDragScroll({ speed: 2 });
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [shareUrl, setShareUrl] = useState('');
   const [favoriteIds, setFavoriteIds] = useState<number[]>(() => {
     const cachedFavoriteIds = readJsonCache<number[]>(FAVORITES_CACHE_KEY);
     return Array.isArray(cachedFavoriteIds)
@@ -647,8 +642,15 @@ export default function PulseContent() {
   }, [showNote]);
 
   const openPulseSubpage = useCallback((path: string) => {
-    goToLegacyPulsePath(path);
-  }, []);
+    const target = getPulseNavigationTarget(path);
+
+    if (target.type === 'internal') {
+      router.push(target.href);
+      return;
+    }
+
+    window.location.assign(target.href);
+  }, [router]);
 
   const handleSearchSubmit = useCallback((event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -679,27 +681,9 @@ export default function PulseContent() {
     const resolvedTrackId = toNumber(trackId);
     if (!resolvedTrackId) return;
 
-    const shareUrl = getExternalPulseUrl(getTrackPath(resolvedTrackId));
-
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      try {
-        await navigator.share({
-          title: 'Pulse',
-          url: shareUrl,
-        });
-        return;
-      } catch {
-        // ignore and fallback to clipboard
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      showPulseNote('Ссылка скопирована', 'success', 3);
-    } catch {
-      showPulseNote(shareUrl, 'info', 5);
-    }
-  }, [showPulseNote]);
+    setShareUrl(getPulseExternalUrl(getTrackPath(resolvedTrackId)));
+    setIsShareModalOpen(true);
+  }, []);
 
   const pulseTrackAddedText = lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!';
   const pulseTrackRemovedText = lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!';
@@ -1179,39 +1163,17 @@ export default function PulseContent() {
         ) : null}
       </div>
 
-      <div className="flex w-full max-w-screen-2xl flex-col items-center justify-center gap-1.5 px-3 lg:px-0">
-        <div className="flex w-full flex-col items-center justify-center gap-1.5 lg:flex-row">
-          <span className="cutetext text-4xl font-bold text-white">18+</span>
-          <span className="text-center text-sm text-zinc-400">
-            <span className="font-bold text-purple-500">Pulse</span> - информационный посредник (ст. 15.1 Федерального закона № 149-ФЗ), платформа для загрузки и прослушивания аудиофайлов пользователями. Может содержаться контент с возрастным ограничением 18+.
-            <br />
-            Администрация не размещает контент самостоятельно, не модерирует его заранее и не несёт ответственности за правомерность материалов.
-            <br />
-            Уведомления о нарушениях авторских прав, пропаганде наркотиков или иной противоправной информации направляйте на{' '}
-            <a
-              className="cursor-pointer text-sm text-zinc-200 duration-300 hover:text-zinc-300 active:scale-95"
-              href="mailto:contact@ancial.ru?subject=[Копирайт]"
-            >
-              contact@ancial.ru
-            </a>{' '}
-            с темой &quot;[Копирайт]&quot; или &quot;[Противоправная информация]&quot; - блокируем в течение 24 часов с момента получения обоснованного требования, если нам не требуются пояснения. Более подробная информация расположена на{' '}
-            <button
-              type="button"
-              onClick={() => router.push('/about/legal')}
-              className="cursor-pointer text-sm text-zinc-200 duration-300 hover:text-zinc-300 active:scale-95"
-            >
-              ancial.ru/legal/
-            </button>{' '}
-            в разделе &quot;Правила&quot;.
-            <br />
-            <span className="uppercase text-amber-400">
-              Публичная информация о наркотических средствах и/или их использовании опасна и незаконна: пропаганда и/или употребление наркотических средств причиняет вред здоровью, незаконный оборот наркотических средств запрещён и влечёт установленную законодательством Российской Федерации ответственность.
-              <br />
-              С 1 марта 2026 года действует Федеральный закон от 08.08.2024 №224-ФЗ &quot;О внесении изменений в статьи 1 и 46 Федерального закона &quot;О наркотических средствах и психотропных веществах&quot; и отдельные законодательные акты Российской Федерации&quot;. Закон ужесточает нормы о запрете пропаганды незаконных оборота и потребления наркотиков, психотропных веществ, их аналогов и прекурсоров, а также культивирования наркосодержащих растений.
-            </span>
-          </span>
-        </div>
-      </div>
+      <PulseLegalFooter />
+
+      <ShareModal
+        copyLabel={lang?.copylink || 'Скопировать ссылку'}
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success', 3)}
+        onCopyFailed={() => showPulseNote(shareUrl, 'info', 5)}
+        shareUrl={shareUrl}
+        title={lang?.share || 'Поделиться'}
+      />
     </div>
   );
 }
