@@ -16,6 +16,32 @@ export type PulsePlaylistTrackMeta = {
   listens?: number | string | null;
 };
 
+export type PulseTrackOwnerMeta = {
+  uploaded_by?: number | string | null;
+};
+
+export type PulseTrackEditMeta = {
+  artist?: string | null;
+  artwork?: Array<{ src?: string | null }> | null;
+  explicit?: boolean | number | string | null;
+  lang?: string | null;
+  sid?: number | string | null;
+  title?: string | null;
+};
+
+export type PulseTrackOwnerUserMeta = {
+  id?: number | string | null;
+};
+
+export type PulseTrackEditInitialState = {
+  artist: string;
+  explicit: string;
+  image: string;
+  lang: string;
+  name: string;
+  trackId: string;
+};
+
 export type PulsePlaylistActionTarget = {
   forceReload: boolean;
   id: string;
@@ -129,6 +155,41 @@ export function getPulsePlaylistListenTotal(tracks: PulsePlaylistTrackMeta[]) {
     const listens = Number.parseInt(String(track.listens ?? 0), 10);
     return sum + (Number.isFinite(listens) ? listens : 0);
   }, 0);
+}
+
+export function getPulseTrackDropdownZIndex(trackIndex: number, isOpen: boolean) {
+  if (isOpen) {
+    return 1200;
+  }
+
+  const normalizedIndex = Number.isFinite(trackIndex) ? Math.max(0, Math.floor(trackIndex)) : 0;
+
+  return Math.max(1, 999 - (normalizedIndex + 1));
+}
+
+export function canManagePulseTrack(
+  track: PulseTrackOwnerMeta | null | undefined,
+  user: PulseTrackOwnerUserMeta | null | undefined,
+) {
+  const uploadedBy = Number.parseInt(String(track?.uploaded_by ?? ''), 10);
+  const userId = Number.parseInt(String(user?.id ?? ''), 10);
+
+  return Number.isFinite(uploadedBy) && uploadedBy > 0 && uploadedBy === userId;
+}
+
+export function getPulseTrackEditInitialState(track: PulseTrackEditMeta): PulseTrackEditInitialState {
+  const artwork = Array.isArray(track.artwork) ? track.artwork : [];
+  const cover = artwork.find((item) => String(item?.src ?? '').trim());
+  const explicit = track.explicit === true || String(track.explicit ?? '') === '1';
+
+  return {
+    artist: String(track.artist ?? '').trim(),
+    explicit: explicit ? '1' : '0',
+    image: String(cover?.src ?? '').trim(),
+    lang: String(track.lang ?? '').trim() || '--',
+    name: String(track.title ?? '').trim(),
+    trackId: String(track.sid ?? '').trim(),
+  };
 }
 
 export type PulseTrackUploadPayloadInput = {

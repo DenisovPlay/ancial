@@ -9,9 +9,12 @@ import {
   getPulsePlaylistListenTotal,
   getPulsePlaylistTrackEndpoint,
   getPulsePlaylistTracksCacheKey,
+  canManagePulseTrack,
+  getPulseTrackEditInitialState,
   getPulseTrackUploadPayload,
   normalizePulsePlaylistId,
 } from './playlist-model.ts';
+import * as playlistModel from './playlist-model.ts';
 
 test('normalizePulsePlaylistId keeps supported ids and falls back to zero', () => {
   assert.equal(normalizePulsePlaylistId('93'), '93');
@@ -100,4 +103,38 @@ test('getPulseTrackUploadPayload matches legacy upload_track.php field names', (
   assert.equal(payload.get('tracklang'), '--');
   assert.equal(payload.get('trackexp'), '0');
   assert.equal(payload.get('trackid'), 'abc123');
+});
+
+test('canManagePulseTrack follows legacy uploaded_by ownership rule', () => {
+  assert.equal(canManagePulseTrack({ uploaded_by: '42' }, { id: 42 }), true);
+  assert.equal(canManagePulseTrack({ uploaded_by: 42 }, { id: '42' }), true);
+  assert.equal(canManagePulseTrack({ uploaded_by: '41' }, { id: 42 }), false);
+  assert.equal(canManagePulseTrack({ uploaded_by: null }, { id: 42 }), false);
+});
+
+test('getPulseTrackEditInitialState maps an existing track to update_track.php fields', () => {
+  assert.deepEqual(getPulseTrackEditInitialState({
+    artist: 'Artist',
+    artwork: [{ src: 'https://img.example/cover.jpg' }],
+    explicit: true,
+    lang: 'ru',
+    sid: '777',
+    title: 'Track',
+  }), {
+    artist: 'Artist',
+    explicit: '1',
+    image: 'https://img.example/cover.jpg',
+    lang: 'ru',
+    name: 'Track',
+    trackId: '777',
+  });
+});
+
+test('getPulseTrackDropdownZIndex keeps open menus above following track buttons', () => {
+  const getPulseTrackDropdownZIndex = playlistModel.getPulseTrackDropdownZIndex;
+
+  assert.equal(typeof getPulseTrackDropdownZIndex, 'function');
+  assert.ok(getPulseTrackDropdownZIndex(0, false) > getPulseTrackDropdownZIndex(1, false));
+  assert.ok(getPulseTrackDropdownZIndex(5, true) > getPulseTrackDropdownZIndex(0, false));
+  assert.equal(getPulseTrackDropdownZIndex(Number.NaN, false), getPulseTrackDropdownZIndex(0, false));
 });

@@ -10,9 +10,10 @@ import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { authFetch } from '../../../lib/auth-fetch';
 import { SITE_CONFIG } from '../../../seo';
+import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import { getPulsePlaylistTracksCacheKey } from '../../playlist/playlist-model';
 import { fetchPulseJson } from '../../pulse-api';
-import { readPulseJsonCache, writePulseJsonCache } from '../../pulse-cache';
+import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -98,6 +99,9 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const [artist, setArtist] = useState<PulseArtist | null>(() => readPulseJsonCache<PulseArtistResponse>(`artist_${cacheId}`)?.artist ?? null);
   const [favoriteIds, setFavoriteIds] = useState<number[]>(() => readFavoriteIds());
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
+  const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
+  const [tracksReloadToken, setTracksReloadToken] = useState(0);
   const [loadingArtist, setLoadingArtist] = useState(!artist);
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
   const [loadingTracks, setLoadingTracks] = useState(!cachedTracks.length);
@@ -191,7 +195,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [artistTracksCacheKey, cacheId]);
+  }, [artistTracksCacheKey, cacheId, tracksReloadToken]);
 
   const playPlaylistCard = useCallback((card: PulsePlaylistCardData) => {
     const playableId = getCardPlayableId(card);
@@ -265,6 +269,23 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
 
     openAddToPlaylist(trackId);
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+
+  const refreshTracksAfterMutation = useCallback(() => {
+    removePulseCache(artistTracksCacheKey);
+    setTracksReloadToken((token) => token + 1);
+  }, [artistTracksCacheKey]);
+
+  const openEditTrack = useCallback((track: PulseTrack) => {
+    setTrackToEdit(track);
+  }, []);
+
+  const closeEditTrack = useCallback(() => {
+    setTrackToEdit(null);
+  }, []);
+
+  const openDeleteTrack = useCallback((track: PulseTrack) => {
+    setTrackToDelete(track);
+  }, []);
 
   const missing = !loadingArtist && !artist;
   const artistCollectionActive = currentCollectionId === `artist_${cacheId}` && isPlaying;
@@ -385,6 +406,8 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                     key={`artist-track-${track.sid ?? index}`}
                     onAddToPlaylist={openAddTrackToPlaylist}
                     onCopyTrackLink={copyTrackLink}
+                    onDeleteTrack={openDeleteTrack}
+                    onEditTrack={openEditTrack}
                     onLikeTrack={likeTrack}
                     onOpenArtist={(nextArtistId) => router.push(`/pulse/artist/${encodeURIComponent(nextArtistId)}`)}
                     onPlayTrack={(nextTrack, nextIndex) => {
@@ -416,6 +439,20 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
         onCopyFailed={() => showPulseNote(shareUrl, 'info')}
         shareUrl={shareUrl}
         title={lang?.share || 'Поделиться'}
+      />
+      <PulseUploadTrackModal
+        isOpen={Boolean(trackToEdit)}
+        onClose={closeEditTrack}
+        onUploaded={refreshTracksAfterMutation}
+        showNote={showPulseNote}
+        track={trackToEdit}
+      />
+      <PulseDeleteTrackModal
+        isOpen={Boolean(trackToDelete)}
+        onClose={() => setTrackToDelete(null)}
+        onDeleted={refreshTracksAfterMutation}
+        showNote={showPulseNote}
+        track={trackToDelete}
       />
     </div>
   );

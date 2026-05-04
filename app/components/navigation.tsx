@@ -73,6 +73,7 @@ type DropdownProps = {
   triggerSize?: 'default' | 'sm';
   width?: 'default' | 'auto';
   wrapperClassName?: string;
+  wrapperStyle?: React.CSSProperties;
 };
 
 export const Dropdown = ({
@@ -96,6 +97,7 @@ export const Dropdown = ({
   renderTrigger = true,
   triggerDisabled = false,
   wrapperClassName,
+  wrapperStyle,
 }: DropdownProps) => {
   const pathname = usePathname();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -179,6 +181,7 @@ export const Dropdown = ({
         wrapperClassName,
       )}
       ref={dropdownRef}
+      style={wrapperStyle}
     >
       {renderTrigger && isCompactTrigger ? (
         <button

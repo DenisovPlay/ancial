@@ -10,6 +10,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { authFetch } from '../../lib/auth-fetch';
 import { SITE_CONFIG } from '../../seo';
+import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../pulse-upload-track-modal';
 import { fetchPulseJson } from '../pulse-api';
 import { writePulseJsonCache } from '../pulse-cache';
 import {
@@ -71,8 +72,11 @@ export default function PulseSearchContent() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>([]);
+  const [searchReloadToken, setSearchReloadToken] = useState(0);
   const [searchValue, setSearchValue] = useState(query);
   const [shareUrl, setShareUrl] = useState('');
+  const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
+  const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracks, setTracks] = useState<PulseTrack[]>([]);
 
   const userCountry = useMemo(() => {
@@ -88,10 +92,6 @@ export default function PulseSearchContent() {
   const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
     showNote({ content, time: 4, type });
   }, [showNote]);
-
-  useEffect(() => {
-    setSearchValue(query);
-  }, [query]);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,7 +140,7 @@ export default function PulseSearchContent() {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, searchReloadToken]);
 
   const playPlaylistCard = useCallback((card: PulsePlaylistCardData) => {
     const playableId = getCardPlayableId(card);
@@ -209,6 +209,22 @@ export default function PulseSearchContent() {
 
     openAddToPlaylist(trackId);
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+
+  const refreshSearchAfterMutation = useCallback(() => {
+    setSearchReloadToken((token) => token + 1);
+  }, []);
+
+  const openEditTrack = useCallback((track: PulseTrack) => {
+    setTrackToEdit(track);
+  }, []);
+
+  const closeEditTrack = useCallback(() => {
+    setTrackToEdit(null);
+  }, []);
+
+  const openDeleteTrack = useCallback((track: PulseTrack) => {
+    setTrackToDelete(track);
+  }, []);
 
   const empty = !loading && !artists.length && !playlists.length && !tracks.length;
 
@@ -334,6 +350,8 @@ export default function PulseSearchContent() {
                   key={`search-track-${track.sid ?? index}`}
                   onAddToPlaylist={openAddTrackToPlaylist}
                   onCopyTrackLink={copyTrackLink}
+                  onDeleteTrack={openDeleteTrack}
+                  onEditTrack={openEditTrack}
                   onLikeTrack={likeTrack}
                   onOpenArtist={(artistId) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`)}
                   onPlayTrack={(nextTrack) => {
@@ -367,6 +385,20 @@ export default function PulseSearchContent() {
         onCopyFailed={() => showPulseNote(shareUrl, 'info')}
         shareUrl={shareUrl}
         title={lang?.share || 'Поделиться'}
+      />
+      <PulseUploadTrackModal
+        isOpen={Boolean(trackToEdit)}
+        onClose={closeEditTrack}
+        onUploaded={refreshSearchAfterMutation}
+        showNote={showPulseNote}
+        track={trackToEdit}
+      />
+      <PulseDeleteTrackModal
+        isOpen={Boolean(trackToDelete)}
+        onClose={() => setTrackToDelete(null)}
+        onDeleted={refreshSearchAfterMutation}
+        showNote={showPulseNote}
+        track={trackToDelete}
       />
     </div>
   );

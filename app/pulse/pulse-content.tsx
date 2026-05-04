@@ -12,7 +12,9 @@ import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { authFetch } from '../lib/auth-fetch';
 import { PulseLegalFooter } from './pulse-components';
+import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigation';
+import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-track-modal';
 
 type PulseHomePlaylistCard = {
   creator?: string | null;
@@ -63,6 +65,8 @@ type PulseTrackRowProps = {
   isAuthenticated: boolean;
   onAddToPlaylist: (trackId: number | string) => void;
   onCopyTrackLink: (trackId: number | string) => Promise<void>;
+  onDeleteTrack?: (track: PulseTrack) => void;
+  onEditTrack?: (track: PulseTrack) => void;
   onLikeTrack: (track: PulseTrack) => Promise<void>;
   onOpenArtist: (artistId: string) => void;
   onPlayTrack: (track: PulseTrack, index: number) => void;
@@ -415,6 +419,8 @@ function PulseTrackRow({
   isAuthenticated,
   onAddToPlaylist,
   onCopyTrackLink,
+  onDeleteTrack,
+  onEditTrack,
   onLikeTrack,
   onOpenArtist,
   onPlayTrack,
@@ -426,13 +432,15 @@ function PulseTrackRow({
 }: PulseTrackRowProps) {
   const trackId = toNumber(track.sid);
   const isCurrentSong = currentSongId > 0 && currentSongId === trackId;
-  const isOwnTrack = toNumber(track.uploaded_by) > 0 && toNumber(track.uploaded_by) === toNumber(user?.id);
+  const isOwnTrack = canManagePulseTrack(track, user);
   const isLiked = trackId > 0 && favoriteIds.includes(trackId);
   const isAvailable = isTrackAvailable(track, userCountry);
   const firstArtistId = getArtistIds(track)[0] ?? '';
   const coverUrl = getTrackArtwork(track);
   const title = decodeHtmlEntities(track.title) || 'Без названия';
   const artist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
+  const [isTrackMenuOpen, setIsTrackMenuOpen] = useState(false);
+  const trackMenuZIndex = getPulseTrackDropdownZIndex(trackIndex, isTrackMenuOpen);
 
   return (
     <div className={cn('rounded-2xl flex items-center gap-3 duration-300', isAvailable ? 'group hover:bg-zinc-800 hover:pr-3' : 'opacity-80', isCurrentSong && 'bg-lime-500/10 pr-3')}>
@@ -478,8 +486,21 @@ function PulseTrackRow({
         align="end"
         triggerSize="sm"
         menuClassName="min-w-[12rem]"
-        wrapperClassName="relative z-20"
+        onOpenChange={setIsTrackMenuOpen}
+        open={isTrackMenuOpen}
+        wrapperClassName="relative"
+        wrapperStyle={{ zIndex: trackMenuZIndex }}
       >
+        {isAuthenticated && isOwnTrack && onEditTrack ? (
+          <DropdownItem icon="IC-edit" onClick={() => onEditTrack(track)}>
+            Изменить
+          </DropdownItem>
+        ) : null}
+        {isAuthenticated && isOwnTrack && onDeleteTrack ? (
+          <DropdownItem icon="IC-trash" onClick={() => onDeleteTrack(track)}>
+            Удалить
+          </DropdownItem>
+        ) : null}
         {isAuthenticated ? (
           <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
             Следующим
@@ -599,6 +620,9 @@ export default function PulseContent() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [shareUrl, setShareUrl] = useState('');
+  const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
+  const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
+  const [tracksReloadToken, setTracksReloadToken] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState<number[]>(() => {
     const cachedFavoriteIds = readJsonCache<number[]>(FAVORITES_CACHE_KEY);
     return Array.isArray(cachedFavoriteIds)
@@ -746,6 +770,26 @@ export default function PulseContent() {
     openAddToPlaylist(trackId);
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
 
+  const refreshHomeTracksAfterMutation = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      Object.values(TRACK_CACHE_KEYS).forEach((key) => window.localStorage.removeItem(key));
+    }
+
+    setTracksReloadToken((token) => token + 1);
+  }, []);
+
+  const openEditTrack = useCallback((track: PulseTrack) => {
+    setTrackToEdit(track);
+  }, []);
+
+  const closeEditTrack = useCallback(() => {
+    setTrackToEdit(null);
+  }, []);
+
+  const openDeleteTrack = useCallback((track: PulseTrack) => {
+    setTrackToDelete(track);
+  }, []);
+
   useEffect(() => {
     const cachedFavoriteIds = readJsonCache<number[]>(FAVORITES_CACHE_KEY);
 
@@ -857,7 +901,7 @@ export default function PulseContent() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tracksReloadToken]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -902,7 +946,7 @@ export default function PulseContent() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading, tracksReloadToken]);
 
   const topCollectionActive = currentCollectionId === 'Top' && isPlaying;
   const newCollectionActive = currentCollectionId === 'New' && isPlaying;
@@ -917,6 +961,8 @@ export default function PulseContent() {
       key={`${collectionId}-${track.sid ?? index}`}
       onAddToPlaylist={openAddTrackToPlaylist}
       onCopyTrackLink={copyTrackLink}
+      onDeleteTrack={openDeleteTrack}
+      onEditTrack={openEditTrack}
       onLikeTrack={likeTrack}
       onOpenArtist={openArtistPage}
       onPlayTrack={() => {
@@ -928,7 +974,7 @@ export default function PulseContent() {
       user={user}
       userCountry={userCountry}
     />
-  ), [copyTrackLink, currentSongId, favoriteIds, isAuthenticated, likeTrack, openAddTrackToPlaylist, openArtistPage, playGenlist, queueTrackNext, user, userCountry]);
+  ), [copyTrackLink, currentSongId, favoriteIds, isAuthenticated, likeTrack, openAddTrackToPlaylist, openArtistPage, openDeleteTrack, openEditTrack, playGenlist, queueTrackNext, user, userCountry]);
 
   const topTitle = useMemo(() => (
     <>
@@ -1173,6 +1219,20 @@ export default function PulseContent() {
         onCopyFailed={() => showPulseNote(shareUrl, 'info', 5)}
         shareUrl={shareUrl}
         title={lang?.share || 'Поделиться'}
+      />
+      <PulseUploadTrackModal
+        isOpen={Boolean(trackToEdit)}
+        onClose={closeEditTrack}
+        onUploaded={refreshHomeTracksAfterMutation}
+        showNote={showPulseNote}
+        track={trackToEdit}
+      />
+      <PulseDeleteTrackModal
+        isOpen={Boolean(trackToDelete)}
+        onClose={() => setTrackToDelete(null)}
+        onDeleted={refreshHomeTracksAfterMutation}
+        showNote={showPulseNote}
+        track={trackToDelete}
       />
     </div>
   );

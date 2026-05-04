@@ -26,7 +26,7 @@ import {
   toNumber,
   type PulseTrack,
 } from '../../pulse-components';
-import PulseUploadTrackModal from '../../pulse-upload-track-modal';
+import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import {
   canUploadToPulseFavoritesPlaylist,
   canViewPulsePlaylist,
@@ -113,6 +113,8 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUploadTrackModalOpen, setIsUploadTrackModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
+  const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
 
   const userCountry = useMemo(() => {
@@ -354,6 +356,11 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     setIsUploadTrackModalOpen(true);
   }, [isAuthenticated, showPulseNote]);
 
+  const closeTrackEditor = useCallback(() => {
+    setIsUploadTrackModalOpen(false);
+    setTrackToEdit(null);
+  }, []);
+
   const likeTrack = useCallback(async (track: PulseTrack) => {
     if (!isAuthenticated) {
       showPulseNote('Войдите, чтобы добавлять треки в избранное', 'info');
@@ -469,6 +476,14 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
     openAddToPlaylist(trackId);
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+
+  const openEditTrack = useCallback((track: PulseTrack) => {
+    setTrackToEdit(track);
+  }, []);
+
+  const openDeleteTrack = useCallback((track: PulseTrack) => {
+    setTrackToDelete(track);
+  }, []);
 
   const isMissing = !metaLoading && !playlist && playlistId !== '-5';
   const isLoading = metaLoading || tracksLoading || authLoading;
@@ -667,6 +682,8 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                     key={`${playlistId}-${track.sid ?? index}`}
                     onAddToPlaylist={openAddTrackToPlaylist}
                     onCopyTrackLink={copyTrackLink}
+                    onDeleteTrack={openDeleteTrack}
+                    onEditTrack={openEditTrack}
                     onLikeTrack={likeTrack}
                     onOpenArtist={openArtistPage}
                     onPlayTrack={playTrackAtIndex}
@@ -704,10 +721,18 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
           title={lang?.share || 'Поделиться'}
         />
         <PulseUploadTrackModal
-          isOpen={isUploadTrackModalOpen}
-          onClose={() => setIsUploadTrackModalOpen(false)}
+          isOpen={isUploadTrackModalOpen || Boolean(trackToEdit)}
+          onClose={closeTrackEditor}
           onUploaded={refreshAfterUpload}
           showNote={showPulseNote}
+          track={trackToEdit}
+        />
+        <PulseDeleteTrackModal
+          isOpen={Boolean(trackToDelete)}
+          onClose={() => setTrackToDelete(null)}
+          onDeleted={refreshAfterUpload}
+          showNote={showPulseNote}
+          track={trackToDelete}
         />
       </div>
     </div>

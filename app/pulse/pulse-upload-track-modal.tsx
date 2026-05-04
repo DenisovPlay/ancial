@@ -6,17 +6,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from '../components/modal';
 import { authFetch } from '../lib/auth-fetch';
 import {
+  getPulseTrackEditInitialState,
   getPulseTrackUploadPayload,
 } from './playlist/playlist-model';
 import {
   ActionIcon,
   cn,
+  decodeHtmlEntities,
   normalizeText,
+  type PulseTrack,
 } from './pulse-components';
 
 type PulseUploadTrackModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  track?: PulseTrack | null;
   onUploaded: () => void;
   showNote: (content: string, type?: 'error' | 'info' | 'success', time?: number) => void;
 };
@@ -126,6 +130,7 @@ function getPictureBlob(picture: JsMediaTagsPicture | null | undefined) {
 export default function PulseUploadTrackModal({
   isOpen,
   onClose,
+  track = null,
   onUploaded,
   showNote,
 }: PulseUploadTrackModalProps) {
@@ -143,6 +148,7 @@ export default function PulseUploadTrackModal({
   const [name, setName] = useState('');
   const [statusText, setStatusText] = useState('');
   const [trackId, setTrackId] = useState('');
+  const isEditingExistingTrack = Boolean(track);
 
   const setPreviewUrl = useCallback((url: string) => {
     if (coverObjectUrlRef.current) {
@@ -179,10 +185,33 @@ export default function PulseUploadTrackModal({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    if (!track) {
       reset();
+      return;
     }
-  }, [isOpen, reset]);
+
+    if (coverObjectUrlRef.current) {
+      URL.revokeObjectURL(coverObjectUrlRef.current);
+      coverObjectUrlRef.current = '';
+    }
+
+    const initialState = getPulseTrackEditInitialState(track);
+    setArtist(initialState.artist);
+    setCoverPreview(initialState.image);
+    setCoverUrl(initialState.image);
+    setExplicit(initialState.explicit);
+    setFileInputKey((key) => key + 1);
+    setIsAudioUploading(false);
+    setIsCoverUploading(false);
+    setIsSaved(true);
+    setIsSaving(false);
+    setLang(initialState.lang);
+    setName(initialState.name);
+    setStatusText('Готово');
+    setTrackId(initialState.trackId);
+  }, [isOpen, reset, track]);
 
   useEffect(() => {
     return () => {
@@ -263,12 +292,15 @@ export default function PulseUploadTrackModal({
       setStatusText('Изменения сохранены');
       showNote('Изменения сохранены!', 'success', 3);
       onUploaded();
+      if (isEditingExistingTrack) {
+        onClose();
+      }
     } catch (error) {
       showNote(`Ошибка: ${error instanceof Error ? error.message : 'не удалось сохранить изменения'}`, 'error', 5);
     } finally {
       setIsSaving(false);
     }
-  }, [artist, coverUrl, explicit, lang, name, onUploaded, showNote, trackId]);
+  }, [artist, coverUrl, explicit, isEditingExistingTrack, lang, name, onClose, onUploaded, showNote, trackId]);
 
   const handleAudioChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -388,7 +420,7 @@ export default function PulseUploadTrackModal({
       bodyClassName="pt-[72px]"
       isOpen={isOpen}
       onClose={onClose}
-      title="Добавить трек"
+      title={isEditingExistingTrack ? 'Редактировать трек' : 'Добавить трек'}
       width="md"
     >
       <div className="flex flex-col gap-3">
@@ -494,6 +526,93 @@ export default function PulseUploadTrackModal({
             </div>
           </div>
         ) : null}
+      </div>
+    </Modal>
+  );
+}
+
+export function PulseDeleteTrackModal({
+  isOpen,
+  onClose,
+  onDeleted,
+  showNote,
+  track,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onDeleted: () => void;
+  showNote: (content: string, type?: 'error' | 'info' | 'success', time?: number) => void;
+  track: PulseTrack | null;
+}) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const trackId = normalizeText(String(track?.sid ?? ''));
+  const title = decodeHtmlEntities(track?.title) || 'трек';
+
+  const deleteTrack = useCallback(async () => {
+    if (!trackId) return;
+
+    setIsDeleting(true);
+
+    try {
+      const payload = new URLSearchParams();
+      payload.set('trackid', trackId);
+
+      const response = await authFetch('/api/pulse/delete_track.php', {
+        body: payload.toString(),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        },
+        method: 'POST',
+      });
+      const result = normalizeText(await response.text());
+
+      if (result !== 'SUCCESS') {
+        throw new Error(result || 'Unknown error');
+      }
+
+      showNote('Трек удалён', 'success', 3);
+      onDeleted();
+      onClose();
+    } catch (error) {
+      showNote(`Ошибка: ${error instanceof Error ? error.message : 'не удалось удалить трек'}`, 'error', 5);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [onClose, onDeleted, showNote, trackId]);
+
+  return (
+    <Modal
+      animation="fade"
+      align="center"
+      bodyClassName="pt-[72px]"
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Удалить трек"
+      width="sm"
+    >
+      <div className="flex flex-col gap-3">
+        <div className="rounded-3xl border border-zinc-600/30 bg-zinc-950/40 p-4 text-sm text-zinc-300">
+          Вы точно хотите удалить <span className="font-bold text-white">{title}</span>? Это действие нельзя отменить.
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isDeleting}
+            className="cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-900/40 px-4 py-2 font-bold text-zinc-200 duration-300 hover:bg-zinc-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={() => void deleteTrack()}
+            disabled={isDeleting}
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-full border border-red-400/30 bg-red-500 px-4 py-2 font-bold text-white duration-300 hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isDeleting ? <ActionIcon className="h-5 w-5 animate-spin" name="IC-loader" /> : <ActionIcon className="h-5 w-5" name="IC-trash" />}
+            <span>Удалить</span>
+          </button>
+        </div>
       </div>
     </Modal>
   );

@@ -2,10 +2,11 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from 'next/link';
-import React from 'react';
+import React, { useState } from 'react';
 
 import { Dropdown, DropdownItem } from '../components/navigation';
 import type { User } from '../context/AuthContext';
+import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 
 export type PulseTrackArtwork = {
   src?: string | null;
@@ -52,6 +53,8 @@ export type PulseTrackRowProps = {
   isAuthenticated: boolean;
   onAddToPlaylist: (trackId: number | string) => void;
   onCopyTrackLink: (trackId: number | string) => Promise<void>;
+  onDeleteTrack?: (track: PulseTrack) => void;
+  onEditTrack?: (track: PulseTrack) => void;
   onLikeTrack: (track: PulseTrack) => Promise<void>;
   onOpenArtist: (artistId: string) => void;
   onPlayTrack: (track: PulseTrack, index: number) => void;
@@ -329,6 +332,8 @@ export function PulseTrackRow({
   isAuthenticated,
   onAddToPlaylist,
   onCopyTrackLink,
+  onDeleteTrack,
+  onEditTrack,
   onLikeTrack,
   onOpenArtist,
   onPlayTrack,
@@ -340,13 +345,15 @@ export function PulseTrackRow({
 }: PulseTrackRowProps) {
   const trackId = toNumber(track.sid);
   const isCurrentSong = currentSongId > 0 && currentSongId === trackId;
-  const isOwnTrack = toNumber(track.uploaded_by) > 0 && toNumber(track.uploaded_by) === toNumber(user?.id);
+  const isOwnTrack = canManagePulseTrack(track, user);
   const isLiked = trackId > 0 && favoriteIds.includes(trackId);
   const isAvailable = isTrackAvailable(track, userCountry);
   const firstArtistId = getArtistIds(track)[0] ?? '';
   const coverUrl = getTrackArtwork(track);
   const title = decodeHtmlEntities(track.title) || 'Без названия';
   const artist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
+  const [isTrackMenuOpen, setIsTrackMenuOpen] = useState(false);
+  const trackMenuZIndex = getPulseTrackDropdownZIndex(trackIndex, isTrackMenuOpen);
 
   return (
     <div className={cn('rounded-2xl flex items-center gap-3 duration-300', isAvailable ? 'group cursor-pointer hover:bg-zinc-800 hover:pr-3' : 'group', isCurrentSong && 'bg-lime-500/10 pr-3')}>
@@ -393,8 +400,21 @@ export function PulseTrackRow({
         align="end"
         triggerSize="sm"
         menuClassName="min-w-[12rem]"
-        wrapperClassName="relative z-20"
+        onOpenChange={setIsTrackMenuOpen}
+        open={isTrackMenuOpen}
+        wrapperClassName="relative"
+        wrapperStyle={{ zIndex: trackMenuZIndex }}
       >
+        {isAuthenticated && isOwnTrack && onEditTrack ? (
+          <DropdownItem icon="IC-edit" onClick={() => onEditTrack(track)}>
+            Изменить
+          </DropdownItem>
+        ) : null}
+        {isAuthenticated && isOwnTrack && onDeleteTrack ? (
+          <DropdownItem icon="IC-trash" onClick={() => onDeleteTrack(track)}>
+            Удалить
+          </DropdownItem>
+        ) : null}
         {isAuthenticated ? (
           <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
             Следующим
