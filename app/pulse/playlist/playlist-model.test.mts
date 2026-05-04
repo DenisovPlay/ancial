@@ -5,8 +5,10 @@ import {
   canUploadToPulseFavoritesPlaylist,
   canViewPulsePlaylist,
   getPulsePlaylistActionTarget,
+  getPulsePlaylistCacheKey,
   getPulsePlaylistListenTotal,
   getPulsePlaylistTrackEndpoint,
+  getPulsePlaylistTracksCacheKey,
   getPulseTrackUploadPayload,
   normalizePulsePlaylistId,
 } from './playlist-model.ts';
@@ -22,10 +24,18 @@ test('getPulsePlaylistTrackEndpoint maps generated playlists to gid requests', (
   assert.equal(getPulsePlaylistTrackEndpoint('-1'), '/api/pulse/getPlaylist.php?gid=Top');
   assert.equal(getPulsePlaylistTrackEndpoint('-2'), '/api/pulse/getPlaylist.php?gid=New');
   assert.equal(getPulsePlaylistTrackEndpoint('-5'), '/api/pulse/getPlaylist.php?gid=Your');
+  assert.equal(getPulsePlaylistTrackEndpoint('777', { genlist: 'Mood', type: '4' }), '/api/pulse/getPlaylist.php?gid=Mood');
 });
 
 test('getPulsePlaylistTrackEndpoint maps regular playlists to pid requests', () => {
   assert.equal(getPulsePlaylistTrackEndpoint('93'), '/api/pulse/getPlaylist.php?pid=93');
+});
+
+test('playlist cache keys follow legacy renderPulsePlaylistPage and renderPulsePlaylist names', () => {
+  assert.equal(getPulsePlaylistCacheKey('93'), 'playlist_93');
+  assert.equal(getPulsePlaylistTracksCacheKey('93', { genlist: '', type: '1' }), 'playlist_tracks_93');
+  assert.equal(getPulsePlaylistTracksCacheKey('-5', { genlist: 'Your', type: '4' }), 'playlist_tracks_gid_Your');
+  assert.equal(getPulsePlaylistTracksCacheKey('777', { genlist: '', type: '5' }, '12'), 'playlist_tracks_aid_12');
 });
 
 test('canViewPulsePlaylist follows legacy private playlist rules', () => {

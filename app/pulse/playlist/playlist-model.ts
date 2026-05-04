@@ -38,11 +38,15 @@ export function normalizePulsePlaylistId(value: string | number | null | undefin
   return normalizedValue;
 }
 
-export function getPulsePlaylistTrackEndpoint(value: string | number) {
+export function getPulsePlaylistTrackEndpoint(
+  value: string | number,
+  playlist?: Pick<PulsePlaylistMeta, 'genlist' | 'type'> | null,
+) {
   const playlistId = normalizePulsePlaylistId(value);
-  const genlist = GENERATED_PLAYLISTS[playlistId];
+  const genlist = String(playlist?.genlist ?? GENERATED_PLAYLISTS[playlistId] ?? '').trim();
+  const type = Number.parseInt(String(playlist?.type ?? 0), 10);
 
-  if (genlist) {
+  if (type === 4 || genlist) {
     return `/api/pulse/getPlaylist.php?gid=${encodeURIComponent(genlist)}`;
   }
 
@@ -75,6 +79,30 @@ export function canUploadToPulseFavoritesPlaylist(
 
 export function getPulsePlaylistMetaEndpoint(value: string | number) {
   return `/api/pulse/pages/playlist.php?id=${encodeURIComponent(normalizePulsePlaylistId(value))}`;
+}
+
+export function getPulsePlaylistCacheKey(value: string | number) {
+  return `playlist_${normalizePulsePlaylistId(value)}`;
+}
+
+export function getPulsePlaylistTracksCacheKey(
+  value: string | number,
+  playlist: Pick<PulsePlaylistMeta, 'genlist' | 'type'> | null | undefined,
+  artistId?: string | number | null,
+) {
+  const playlistId = normalizePulsePlaylistId(value);
+  const genlist = String(playlist?.genlist ?? GENERATED_PLAYLISTS[playlistId] ?? '').trim();
+  const type = Number.parseInt(String(playlist?.type ?? 0), 10);
+
+  if (type === 4 || genlist) {
+    return `playlist_tracks_gid_${genlist}`;
+  }
+
+  if (type === 5 && artistId != null) {
+    return `playlist_tracks_aid_${String(artistId).trim()}`;
+  }
+
+  return `playlist_tracks_${playlistId}`;
 }
 
 export function getPulsePlaylistActionTarget(

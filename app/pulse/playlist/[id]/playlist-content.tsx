@@ -10,7 +10,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { authFetch } from '../../../lib/auth-fetch';
 import { SITE_CONFIG } from '../../../seo';
-import { removePulseCache } from '../../pulse-cache';
+import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -31,9 +31,11 @@ import {
   canUploadToPulseFavoritesPlaylist,
   canViewPulsePlaylist,
   getPulsePlaylistActionTarget,
+  getPulsePlaylistCacheKey,
   getPulsePlaylistListenTotal,
   getPulsePlaylistMetaEndpoint,
   getPulsePlaylistTrackEndpoint,
+  getPulsePlaylistTracksCacheKey,
   normalizePulsePlaylistId,
   type PulsePlaylistMeta,
 } from '../playlist-model';
@@ -94,13 +96,19 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   } = usePulsePlayer();
 
   const playlistId = useMemo(() => normalizePulsePlaylistId(rawPlaylistId), [rawPlaylistId]);
+  const cachedPlaylistResponse = useMemo(() => readPulseJsonCache<PlaylistPageResponse>(getPulsePlaylistCacheKey(playlistId)), [playlistId]);
+  const cachedPlaylist = cachedPlaylistResponse?.playlist ?? null;
+  const cachedTracks = useMemo(
+    () => readPulseJsonCache<PulseTrack[]>(getPulsePlaylistTracksCacheKey(playlistId, cachedPlaylist)) ?? [],
+    [cachedPlaylist, playlistId],
+  );
 
-  const [playlist, setPlaylist] = useState<PulsePlaylistMeta | null>(null);
-  const [playlistLiked, setPlaylistLiked] = useState(false);
-  const [tracks, setTracks] = useState<PulseTrack[]>([]);
+  const [playlist, setPlaylist] = useState<PulsePlaylistMeta | null>(cachedPlaylist);
+  const [playlistLiked, setPlaylistLiked] = useState(Boolean(cachedPlaylistResponse?.is_liked));
+  const [tracks, setTracks] = useState<PulseTrack[]>(cachedTracks);
   const [favoriteIds, setFavoriteIds] = useState<number[]>(() => readFavoriteIds());
-  const [metaLoading, setMetaLoading] = useState(true);
-  const [tracksLoading, setTracksLoading] = useState(true);
+  const [metaLoading, setMetaLoading] = useState(!cachedPlaylist);
+  const [tracksLoading, setTracksLoading] = useState(!cachedTracks.length);
   const [error, setError] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUploadTrackModalOpen, setIsUploadTrackModalOpen] = useState(false);
@@ -179,6 +187,12 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
         setPlaylist(nextPlaylist);
         setPlaylistLiked(Boolean(result.is_liked));
 
+        if (nextPlaylist) {
+          writePulseJsonCache(getPulsePlaylistCacheKey(playlistId), result);
+        } else {
+          removePulseCache(getPulsePlaylistCacheKey(playlistId));
+        }
+
         if (!authLoading && nextPlaylist && !canViewPulsePlaylist(nextPlaylist, isAuthenticated)) {
           router.replace(`/login?backurl=/pulse/playlist/${encodeURIComponent(playlistId)}`);
         }
@@ -202,8 +216,17 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
   useEffect(() => {
     let cancelled = false;
+    const isBuiltinGeneratedPlaylist = playlistId === '-1' || playlistId === '-2' || playlistId === '-5';
 
-    void authFetch(getPulsePlaylistTrackEndpoint(playlistId))
+    if (!playlist && !isBuiltinGeneratedPlaylist) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const tracksCacheKey = getPulsePlaylistTracksCacheKey(playlistId, playlist);
+
+    void authFetch(getPulsePlaylistTrackEndpoint(playlistId, playlist))
       .then(async (response) => {
         if (!response.ok) {
           throw new Error(`Request failed with status ${response.status}`);
@@ -213,7 +236,9 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       })
       .then((result) => {
         if (!cancelled) {
-          setTracks(Array.isArray(result) ? result : []);
+          const nextTracks = Array.isArray(result) ? result : [];
+          setTracks(nextTracks);
+          writePulseJsonCache(tracksCacheKey, nextTracks);
         }
       })
       .catch(() => {
@@ -231,7 +256,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     return () => {
       cancelled = true;
     };
-  }, [lang?.somethingwrong, playlistId, tracksReloadToken]);
+  }, [lang?.somethingwrong, metaLoading, playlist, playlistId, tracksReloadToken]);
 
   useEffect(() => {
     if (!isAuthenticated) {

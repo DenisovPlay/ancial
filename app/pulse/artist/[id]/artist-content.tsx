@@ -10,6 +10,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { authFetch } from '../../../lib/auth-fetch';
 import { SITE_CONFIG } from '../../../seo';
+import { getPulsePlaylistTracksCacheKey } from '../../playlist/playlist-model';
 import { fetchPulseJson } from '../../pulse-api';
 import { readPulseJsonCache, writePulseJsonCache } from '../../pulse-cache';
 import {
@@ -92,15 +93,17 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   } = usePulsePlayer();
 
   const cacheId = normalizeText(artistId) || '0';
+  const artistTracksCacheKey = getPulsePlaylistTracksCacheKey(cacheId, { genlist: '', type: '5' }, cacheId);
+  const cachedTracks = readPulseJsonCache<PulseTrack[]>(artistTracksCacheKey) ?? [];
   const [artist, setArtist] = useState<PulseArtist | null>(() => readPulseJsonCache<PulseArtistResponse>(`artist_${cacheId}`)?.artist ?? null);
   const [favoriteIds, setFavoriteIds] = useState<number[]>(() => readFavoriteIds());
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loadingArtist, setLoadingArtist] = useState(!artist);
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
-  const [loadingTracks, setLoadingTracks] = useState(true);
+  const [loadingTracks, setLoadingTracks] = useState(!cachedTracks.length);
   const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>(() => readPulseJsonCache<PulseArtistPlaylistsResponse>(`artist_playlists_${cacheId}`)?.playlists ?? []);
   const [shareUrl, setShareUrl] = useState('');
-  const [tracks, setTracks] = useState<PulseTrack[]>([]);
+  const [tracks, setTracks] = useState<PulseTrack[]>(cachedTracks);
 
   const userCountry = useMemo(() => {
     const nextCountry = normalizeText(
@@ -176,6 +179,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
       }
 
       if (tracksResult.status === 'fulfilled' && Array.isArray(tracksResult.value)) {
+        writePulseJsonCache(artistTracksCacheKey, tracksResult.value);
         setTracks(tracksResult.value);
       } else {
         setTracks([]);
@@ -187,7 +191,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [cacheId]);
+  }, [artistTracksCacheKey, cacheId]);
 
   const playPlaylistCard = useCallback((card: PulsePlaylistCardData) => {
     const playableId = getCardPlayableId(card);

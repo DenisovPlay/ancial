@@ -7,16 +7,15 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
+import { authFetch } from '../../lib/auth-fetch';
 import { fetchPulseJson } from '../pulse-api';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
-  PulseLegalFooter,
-  PulsePageHeader,
+  PulseLogo,
   PulsePlaylistTile,
   PulsePlaylistTileSkeleton,
-  PulseSectionTitle,
   cn,
   decodeHtmlEntities,
   getImageUrl,
@@ -115,7 +114,7 @@ function PulseHistoryRow({
 
 export default function PulseMyContent() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading, lang } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const { showNote } = useNotification();
   const {
     currentCollectionId,
@@ -140,7 +139,7 @@ export default function PulseMyContent() {
     if (authLoading) return;
 
     if (!isAuthenticated) {
-      router.replace('/login?backurl=/pulse/my');
+      router.replace('/login?backurl=/pulse/');
       return;
     }
 
@@ -214,86 +213,184 @@ export default function PulseMyContent() {
     router.push(`/pulse/playlist/${encodeURIComponent(id)}`);
   }, [router]);
 
+  const deleteHistory = useCallback(async () => {
+    try {
+      const response = await authFetch('/api/pulse/delete_history.php');
+      const result = normalizeText(await response.text());
+
+      if (result === 'CL') {
+        removePulseCache(HISTORY_CACHE_KEY);
+        setHistory([]);
+        showPulseNote('История очищена!', 'success');
+      }
+    } catch {
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    }
+  }, [lang?.pulse_error_happened, showPulseNote]);
+
   const isEmpty = !libraryLoading && !historyLoading && !libraryItems.length && !history?.length;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-64">
-      <PulsePageHeader onBack={() => router.push('/pulse')} />
-
-      <PulseSectionTitle>{lang?.library || 'Библиотека'}</PulseSectionTitle>
-      <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
-        {libraryLoading && !libraryItems.length ? Array.from({ length: 6 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
-        {libraryItems.map((card) => {
-          const playableId = getCardPlayableId(card);
-          return (
-            <PulsePlaylistTile
-              card={card}
-              isPlaying={Boolean(playableId && currentCollectionId === playableId && isPlaying)}
-              key={`my-library-${card.id ?? card.genlist ?? card.name}`}
-              onOpen={() => openPlaylistCard(card)}
-              onPlay={() => playPlaylistCard(card)}
-            />
-          );
-        })}
-      </div>
-
-      <PulseSectionTitle>{lang?.history || 'История'}</PulseSectionTitle>
-      <div className="w-full max-w-screen-2xl rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
-        {historyLoading && !history?.length ? (
-          <div className="flex flex-col gap-3 animate-pulse">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="flex items-center gap-3 rounded-2xl">
-                <div className="h-16 w-16 shrink-0 rounded-2xl bg-zinc-800" />
-                <div className="flex flex-grow flex-col gap-2">
-                  <div className="h-4 w-2/3 rounded-full bg-zinc-800" />
-                  <div className="h-3 w-1/3 rounded-full bg-zinc-800" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {!historyLoading && !history?.length ? (
-          <div className="flex min-h-48 flex-col items-center justify-center gap-2 text-center text-zinc-400">
-            <ActionIcon className="h-12 w-12 fill-zinc-500" name="IC-music" />
-            <span>История пока пустая</span>
-          </div>
-        ) : null}
-
-        {history?.length ? (
-          <div className={cn('flex flex-col gap-3', historyLoading && 'opacity-70')}>
-            {history.map((item, index) => (
-              <PulseHistoryRow
-                item={item}
-                key={`history-${item.HTYPE}-${item.id}-${index}`}
-                onOpenPlaylist={() => router.push(`/pulse/playlist/${encodeURIComponent(normalizeText(String(item.id ?? '0')) || '0')}`)}
-                onPlayTrack={() => {
-                  const trackId = toNumber(item.id);
-                  if (!trackId) {
-                    showPulseNote('Неизвестная песня...', 'error');
-                    return;
-                  }
-                  void playTrack(trackId);
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      {isEmpty ? (
-        <div className="flex w-full max-w-screen-2xl flex-col items-center justify-center gap-1 text-center">
-          <PulseLogoFallback />
-          <span className="text-xl text-zinc-300">{lang?.emptytopic || 'Пусто'}</span>
-          <span className="text-lg text-zinc-500">{lang?.nopostsdesc || 'Здесь пока ничего нет'}</span>
+    <div className="flex flex-col items-center justify-center gap-3 pb-64 duration-300">
+      <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
+        <div className="flex w-full max-w-screen-2xl items-center px-3 lg:px-0">
+          <button
+            type="button"
+            onClick={() => router.push('/pulse')}
+            className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
+          >
+            <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+            <PulseLogo className="w-32 sm:w-48" />
+          </button>
+          <div className="flex-grow" />
+          <button
+            type="button"
+            onClick={() => router.push('/pulse/create/')}
+            className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900/20 p-1 duration-300 hover:bg-zinc-700 active:scale-95"
+            aria-label="Pulse Creators"
+          >
+            <PulseCreatorsLogo />
+          </button>
         </div>
-      ) : null}
+      </div>
 
-      <PulseLegalFooter className="mt-3" />
+      <div className="flex w-full max-w-screen-2xl flex-col gap-3">
+        <div className="flex flex-col items-center justify-center gap-3 px-3 duration-300 lg:flex-row lg:justify-start lg:px-0" style={{ zIndex: 10 }}>
+          <div className="relative flex h-48 w-48 shrink-0 rounded-full border border-zinc-600/30 shadow lg:h-64 lg:w-64">
+            {user?.img ? (
+              <>
+                <img className="h-48 w-48 rounded-full object-cover blur-xl lg:h-64 lg:w-64" src={user.img} alt="" />
+                <img className="absolute inset-x-0 z-[9] h-48 w-48 rounded-full object-cover lg:h-64 lg:w-64" src={user.img} alt={decodeHtmlEntities(`${user?.fname ?? ''} ${user?.lname ?? ''}`)} />
+              </>
+            ) : (
+              <>
+                <div className="h-48 w-48 animate-pulse rounded-full bg-zinc-800 blur-xl lg:h-64 lg:w-64" />
+                <div className="absolute inset-x-0 z-[9] h-48 w-48 animate-pulse rounded-full bg-zinc-800 lg:h-64 lg:w-64" />
+              </>
+            )}
+          </div>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 text-center lg:text-left">
+              <span className="text-2xl font-bold text-zinc-100 md:text-4xl lg:text-7xl">
+                {decodeHtmlEntities(`${user?.fname ?? ''} ${user?.lname ?? ''}`) || user?.username || 'Pulse'}
+              </span>
+              <span className="text-base text-zinc-300 md:text-lg lg:text-xl">{lang?.myuserhello || 'Рады видеть вас снова'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex w-full flex-col gap-3">
+          <div className={cn('flex w-full items-center justify-center gap-3 px-3 lg:px-0', !libraryItems.length && !libraryLoading && 'hidden')}>
+            <span className="cutetext flex-grow text-2xl font-black lg:text-3xl xl:text-4xl">{lang?.mylibrary || 'Моя библиотека'}</span>
+            <button
+              type="button"
+              onClick={() => router.push('/pulse/library')}
+              className="flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/20 px-3 py-1.5 text-zinc-300 shadow duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
+            >
+              <ActionIcon className="h-5 w-5" name="IC-chevron-right" />
+              <span>{lang?.all || 'Все'}</span>
+            </button>
+          </div>
+
+          <div className={cn('viewport dragscroll flex overflow-auto px-3 lg:px-0', !libraryItems.length && !libraryLoading && 'hidden')}>
+            <div className="flex flex-row flex-nowrap gap-3">
+              {libraryLoading && !libraryItems.length ? Array.from({ length: 6 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
+              {libraryItems.map((card) => {
+                const playableId = getCardPlayableId(card);
+                return (
+                  <PulsePlaylistTile
+                    card={card}
+                    isPlaying={Boolean(playableId && currentCollectionId === playableId && isPlaying)}
+                    key={`my-library-${card.id ?? card.genlist ?? card.name}`}
+                    onOpen={() => openPlaylistCard(card)}
+                    onPlay={() => playPlaylistCard(card)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={cn('flex w-full items-center justify-center gap-3 px-3 lg:px-0', !history?.length && !historyLoading && 'hidden')}>
+            <span className="cutetext flex-grow text-2xl font-black lg:text-3xl xl:text-4xl">{lang?.mylistened || 'Вы слушали'}</span>
+            <button
+              type="button"
+              onClick={() => void deleteHistory()}
+              className="flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/20 px-3 py-1.5 text-zinc-300 shadow duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
+            >
+              {lang?.clear || 'Очистить'}
+            </button>
+          </div>
+
+          <div className={cn('flex h-full w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 duration-300', !history?.length && !historyLoading && 'hidden')}>
+            {historyLoading && !history?.length ? (
+              <div className="flex flex-col gap-3 animate-pulse">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="flex items-center gap-3 rounded-2xl">
+                    <div className="h-16 w-16 shrink-0 rounded-2xl bg-zinc-800" />
+                    <div className="flex flex-grow flex-col gap-2">
+                      <div className="h-4 w-2/3 rounded-full bg-zinc-800" />
+                      <div className="h-3 w-1/3 rounded-full bg-zinc-800" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {history?.length ? (
+              <div className={cn('flex flex-col gap-3', historyLoading && 'opacity-70')}>
+                {history.map((item, index) => (
+                  <PulseHistoryRow
+                    item={item}
+                    key={`history-${item.HTYPE}-${item.id}-${index}`}
+                    onOpenPlaylist={() => router.push(`/pulse/playlist/${encodeURIComponent(normalizeText(String(item.id ?? '0')) || '0')}`)}
+                    onPlayTrack={() => {
+                      const trackId = toNumber(item.id);
+                      if (!trackId) {
+                        showPulseNote('Неизвестная песня...', 'error');
+                        return;
+                      }
+                      void playTrack(trackId);
+                    }}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          {isEmpty ? (
+            <div className="flex w-full flex-col items-center justify-center gap-1 text-center">
+              <PulseLogo className="w-48" />
+              <span className="text-xl text-zinc-300">{lang?.emptytopic || 'Пусто'}</span>
+              <span className="text-lg text-zinc-500">{lang?.nopostsdesc || 'Здесь пока ничего нет'}</span>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
 
-function PulseLogoFallback() {
-  return <img src="/img/branding/pulse.svg" alt="Pulse Logo" className="w-48 shrink-0" />;
+function PulseCreatorsLogo() {
+  return (
+    <svg className="h-6 lg:h-8" viewBox="0 0 574 97" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="pulse-creators-gradient" x1="0" y1="0" x2="574" y2="97" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#00DDFF" />
+          <stop offset="0.504808" stopColor="#0086E6" />
+          <stop offset="1" stopColor="#0998FF" />
+        </linearGradient>
+      </defs>
+      <text
+        x="0"
+        y="76"
+        fill="url(#pulse-creators-gradient)"
+        fontFamily="Inter, Arial, sans-serif"
+        fontSize="86"
+        fontWeight="900"
+        letterSpacing="0"
+      >
+        Creators
+      </text>
+    </svg>
+  );
 }

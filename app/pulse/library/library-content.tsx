@@ -8,12 +8,11 @@ import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { fetchPulseJson } from '../pulse-api';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import {
+  ActionIcon,
   PulseEmptyState,
-  PulseLegalFooter,
-  PulsePageHeader,
+  PulseLogo,
   PulsePlaylistTile,
   PulsePlaylistTileSkeleton,
-  PulseSectionTitle,
   normalizeText,
   type PulsePlaylistCardData,
 } from '../pulse-components';
@@ -67,7 +66,7 @@ export default function PulseLibraryContent() {
     if (authLoading) return;
 
     if (!isAuthenticated) {
-      router.replace('/login?backurl=/pulse/library');
+      router.replace('/login?backurl=/pulse/');
       return;
     }
 
@@ -119,12 +118,22 @@ export default function PulseLibraryContent() {
   }, [router]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-64">
-      <PulsePageHeader onBack={() => router.push('/pulse')} />
-      <PulseSectionTitle>{lang?.library || 'Библиотека'}</PulseSectionTitle>
+    <div className="flex flex-col items-center justify-center gap-3 pb-64 duration-300">
+      <div className="sticky top-0 z-[101] flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
+        <div className="w-full max-w-screen-2xl px-3 lg:px-0">
+          <button
+            type="button"
+            onClick={() => router.push('/pulse/my')}
+            className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
+          >
+            <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+            <PulseLogo className="w-32 sm:w-48" />
+          </button>
+        </div>
+      </div>
 
-      <div className="grid w-full max-w-screen-2xl grid-cols-2 gap-3 px-3 sm:grid-cols-3 lg:grid-cols-4 lg:px-0 xl:grid-cols-5">
-        {loading && !libraryItems.length ? Array.from({ length: 10 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} variant="big" />) : null}
+      <div className="grid max-w-screen-2xl grid-cols-2 gap-3 overflow-x-hidden px-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 lg:px-0">
+        {loading && !libraryItems.length ? Array.from({ length: 6 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} variant="big" />) : null}
 
         {libraryItems.map((card) => {
           const playableId = getCardPlayableId(card);
@@ -143,12 +152,10 @@ export default function PulseLibraryContent() {
 
       {!loading && !libraryItems.length ? (
         <PulseEmptyState
-          description={lang?.nopostsdesc || 'Создайте плейлист или добавьте треки в Избранное'}
+          description={lang?.nopostsdesc || 'Здесь пока ничего нет'}
           title={lang?.emptytopic || 'Пусто'}
         />
       ) : null}
-
-      <PulseLegalFooter className="mt-3" />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import ShareModal from '../../components/share-modal';
@@ -12,15 +13,12 @@ import { SITE_CONFIG } from '../../seo';
 import { fetchPulseJson } from '../pulse-api';
 import { writePulseJsonCache } from '../pulse-cache';
 import {
+  ActionIcon,
   PulseArtistTile,
-  PulseEmptyState,
-  PulseLegalFooter,
-  PulsePageHeader,
+  PulseLogo,
   PulsePlaylistTile,
-  PulsePlaylistTileSkeleton,
-  PulseSectionTitle,
   PulseTrackRow,
-  TracksPanelSkeleton,
+  cn,
   normalizeText,
   toNumber,
   type PulseArtistCardData,
@@ -70,8 +68,10 @@ export default function PulseSearchContent() {
   const [artists, setArtists] = useState<PulseArtistCardData[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>([]);
+  const [searchValue, setSearchValue] = useState(query);
   const [shareUrl, setShareUrl] = useState('');
   const [tracks, setTracks] = useState<PulseTrack[]>([]);
 
@@ -88,6 +88,10 @@ export default function PulseSearchContent() {
   const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
     showNote({ content, time: 4, type });
   }, [showNote]);
+
+  useEffect(() => {
+    setSearchValue(query);
+  }, [query]);
 
   useEffect(() => {
     let cancelled = false;
@@ -208,66 +212,120 @@ export default function PulseSearchContent() {
 
   const empty = !loading && !artists.length && !playlists.length && !tracks.length;
 
+  const submitSearch = useCallback((event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    router.push(`/pulse/search?q=${encodeURIComponent(searchValue)}`);
+  }, [router, searchValue]);
+
+  const label = useCallback((text: string) => (
+    <span className="cutetext w-full px-3 text-2xl font-black lg:px-0 lg:text-3xl xl:text-4xl">
+      {text}
+    </span>
+  ), []);
+
   return (
-    <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-64">
-      <PulsePageHeader onBack={() => router.push('/pulse')} />
+    <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-64 duration-300 lg:from-black">
+      <div className="sticky top-0 flex w-full max-w-screen-2xl items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0" style={{ zIndex: 99 }}>
+        <button
+          type="button"
+          onClick={() => router.push('/pulse')}
+          className={cn(
+            'shrink-0 cursor-pointer duration-300 hover:opacity-80 active:scale-95',
+            isSearchFocused && 'hidden',
+          )}
+        >
+          <PulseLogo className="w-32 sm:w-48" />
+        </button>
+        <form
+          onSubmit={submitSearch}
+          className="flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200"
+          style={{ zIndex: 11 }}
+        >
+          <input
+            value={searchValue}
+            onBlur={() => setIsSearchFocused(false)}
+            onChange={(event) => setSearchValue(event.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            className="w-full bg-transparent pl-2 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
+            placeholder={lang?.pulse_search || 'Поиск'}
+            autoComplete="off"
+          />
+          <button
+            type="submit"
+            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95"
+          >
+            <ActionIcon className="h-8 w-8" name="IC-search" />
+          </button>
+        </form>
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={() => router.push('/pulse/my')}
+            className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95"
+          >
+            <ActionIcon className="h-8 w-8" name="IC-me" />
+          </button>
+        ) : null}
+      </div>
 
-      {query ? (
-        <PulseSectionTitle>{query}</PulseSectionTitle>
-      ) : null}
-
-      {loading ? (
-        <>
-          <PulseSectionTitle>{lang?.playlists || 'Плейлисты'}</PulseSectionTitle>
-          <div className="flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
-            {Array.from({ length: 6 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />)}
-          </div>
-          <div className="w-full max-w-screen-2xl rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
-            <TracksPanelSkeleton rows={5} />
-          </div>
-        </>
-      ) : null}
-
-      {!loading && artists.length ? (
-        <>
-          <PulseSectionTitle>{lang?.artists || 'Артисты'}</PulseSectionTitle>
-          <div className="viewport dragscroll -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
-            {artists.map((artist) => (
-              <PulseArtistTile
-                artist={artist}
-                key={`search-artist-${artist.id ?? artist.name}`}
-                onOpen={() => router.push(`/pulse/artist/${encodeURIComponent(normalizeText(String(artist.id ?? '0')) || '0')}`)}
-              />
+      <div className="relative flex w-full max-w-screen-2xl flex-col gap-3" style={{ zIndex: 19 }}>
+        {loading ? (
+          <div className="flex flex-col gap-3 px-3 lg:px-0 animate-pulse">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-3 rounded-2xl">
+                <div className="h-16 w-16 shrink-0 rounded-2xl bg-zinc-800" />
+                <div className="flex flex-grow flex-col gap-2">
+                  <div className="h-4 w-2/3 rounded-full bg-zinc-800" />
+                  <div className="h-3 w-1/3 rounded-full bg-zinc-800" />
+                </div>
+              </div>
             ))}
           </div>
-        </>
-      ) : null}
+        ) : null}
 
-      {!loading && playlists.length ? (
-        <>
-          <PulseSectionTitle>{lang?.playlists || 'Плейлисты'}</PulseSectionTitle>
-          <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
-            {playlists.map((card) => {
-              const playableId = getCardPlayableId(card);
-              return (
-                <PulsePlaylistTile
-                  card={card}
-                  isPlaying={Boolean(playableId && currentCollectionId === playableId && isPlaying)}
-                  key={`search-playlist-${card.id ?? card.genlist ?? card.name}`}
-                  onOpen={() => router.push(`/pulse/playlist/${encodeURIComponent(normalizeText(String(card.id ?? '0')) || '0')}`)}
-                  onPlay={() => playPlaylistCard(card)}
-                />
-              );
-            })}
-          </div>
-        </>
-      ) : null}
+        {!loading && artists.length ? (
+          <>
+            {label(lang?.artists || 'Артисты')}
+            <div className="viewport dragscroll -my-3 flex overflow-auto px-3 py-3 lg:px-0">
+              <div className="flex flex-row flex-nowrap gap-3">
+                {artists.map((artist) => (
+                  <PulseArtistTile
+                    artist={artist}
+                    key={`search-artist-${artist.id ?? artist.name}`}
+                    onOpen={() => router.push(`/pulse/artist/${encodeURIComponent(normalizeText(String(artist.id ?? '0')) || '0')}`)}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        ) : null}
 
-      {!loading && tracks.length ? (
-        <>
-          <PulseSectionTitle>{lang?.tracks || 'Треки'}</PulseSectionTitle>
-          <div className="w-full max-w-screen-2xl rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
-            <div className="flex flex-col gap-3">
+        {!loading && playlists.length ? (
+          <>
+            {label(lang?.playlists || 'Плейлисты')}
+            <div className="viewport dragscroll flex overflow-auto px-3 lg:px-0">
+              <div className="flex flex-row flex-nowrap gap-3">
+                {playlists.map((card) => {
+                  const playableId = getCardPlayableId(card);
+                  return (
+                    <PulsePlaylistTile
+                      card={card}
+                      isPlaying={Boolean(playableId && currentCollectionId === playableId && isPlaying)}
+                      key={`search-playlist-${card.id ?? card.genlist ?? card.name}`}
+                      onOpen={() => router.push(`/pulse/playlist/${encodeURIComponent(normalizeText(String(card.id ?? '0')) || '0')}`)}
+                      onPlay={() => playPlaylistCard(card)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {!loading && tracks.length ? (
+          <>
+            {label(lang?.tracks || 'Треки')}
+            <div className="flex h-full w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
               {tracks.map((track, index) => (
                 <PulseTrackRow
                   currentSongId={currentSongId}
@@ -289,15 +347,17 @@ export default function PulseSearchContent() {
                 />
               ))}
             </div>
+          </>
+        ) : null}
+
+        {empty ? (
+          <div className="flex w-full flex-col items-center justify-center gap-0.5 text-center">
+            <img src="/includes/img/anlite/nothingfound.webp" className="h-56" alt="" />
+            <span className="w-full text-center text-base font-black text-content-600">{lang?.noposts || 'Ничего не найдено'}</span>
+            <span className="w-full text-center text-sm font-medium text-content-400">{lang?.nopostsdesc || 'Попробуйте другой запрос'}</span>
           </div>
-        </>
-      ) : null}
-
-      {empty ? (
-        <PulseEmptyState description={lang?.nopostsdesc || 'Попробуйте другой запрос'} title={lang?.noposts || 'Ничего не найдено'} />
-      ) : null}
-
-      <PulseLegalFooter className="mt-3" />
+        ) : null}
+      </div>
 
       <ShareModal
         copyLabel={lang?.copylink || 'Скопировать ссылку'}
