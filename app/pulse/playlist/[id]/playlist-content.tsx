@@ -11,6 +11,7 @@ import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { authFetch } from '../../../lib/auth-fetch';
 import { SITE_CONFIG } from '../../../seo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
+import PulsePlaylistEditorModal from '../../pulse-playlist-editor-modal';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -110,6 +111,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [metaLoading, setMetaLoading] = useState(!cachedPlaylist);
   const [tracksLoading, setTracksLoading] = useState(!cachedTracks.length);
   const [error, setError] = useState('');
+  const [isPlaylistEditorOpen, setIsPlaylistEditorOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUploadTrackModalOpen, setIsUploadTrackModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
@@ -335,17 +337,19 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   }, [showPulseNote]);
 
   const openPlaylistEditor = useCallback(() => {
-    const legacyWindow = window as Window & {
-      openEditPlaylist?: (id: number | string, name: string, image: string) => void;
-    };
+    setIsPlaylistEditorOpen(true);
+  }, []);
 
-    if (typeof legacyWindow.openEditPlaylist === 'function' && playlist) {
-      legacyWindow.openEditPlaylist(playlist.id ?? playlistId, normalizeText(playlist.name), normalizeText(playlist.img));
-      return;
-    }
-
-    showSoon();
-  }, [playlist, playlistId, showSoon]);
+  const handlePlaylistSaved = useCallback((nextPlaylist: { img?: string | null; name: string }) => {
+    removePulseCache(getPulsePlaylistCacheKey(playlistId), 'pulse_library', 'pulse_library_big');
+    setPlaylist((currentPlaylist) => currentPlaylist
+      ? {
+          ...currentPlaylist,
+          img: nextPlaylist.img ?? currentPlaylist.img,
+          name: nextPlaylist.name,
+        }
+      : currentPlaylist);
+  }, [playlistId]);
 
   const openUploadTrack = useCallback(() => {
     if (!isAuthenticated) {
@@ -733,6 +737,13 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
           onDeleted={refreshAfterUpload}
           showNote={showPulseNote}
           track={trackToDelete}
+        />
+        <PulsePlaylistEditorModal
+          isOpen={isPlaylistEditorOpen}
+          onClose={() => setIsPlaylistEditorOpen(false)}
+          onSaved={handlePlaylistSaved}
+          playlist={playlist}
+          showNote={showPulseNote}
         />
       </div>
     </div>

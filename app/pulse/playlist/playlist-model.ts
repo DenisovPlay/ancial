@@ -215,3 +215,28 @@ export function getPulseTrackUploadPayload(input: PulseTrackUploadPayloadInput) 
 
   return payload;
 }
+
+export type PulsePlaylistManagePayloadInput = {
+  id?: number | string | null;
+  image?: string | null;
+  name?: string | null;
+};
+
+export function getPulsePlaylistManagePayload(input: PulsePlaylistManagePayloadInput) {
+  const payload = new URLSearchParams();
+  const id = String(input.id ?? '').trim();
+  const image = String(input.image ?? '').trim();
+
+  payload.set('action', id ? 'update' : 'create');
+  payload.set('name', String(input.name ?? '').trim());
+
+  if (id) {
+    payload.set('id', id);
+  }
+
+  if (image) {
+    payload.set('img', image);
+  }
+
+  return payload;
+}

@@ -12,8 +12,9 @@ import React, {
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
-import Modal from '../components/modal';
 import { authFetch } from '../lib/auth-fetch';
+import PulsePlaylistEditorModal from '../pulse/pulse-playlist-editor-modal';
+import { PulseModal } from '../pulse/pulse-modal';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 
@@ -736,6 +737,7 @@ export function PulsePlayerProvider({
   const [listenCounted, setListenCounted] = useState(false);
   const [statusAudio, setStatusAudio] = useState('');
   const [isAddToPlaylistOpen, setIsAddToPlaylistOpen] = useState(false);
+  const [isPlaylistEditorOpen, setIsPlaylistEditorOpen] = useState(false);
   const [addToPlaylistSongId, setAddToPlaylistSongId] = useState(0);
   const [playlistOptions, setPlaylistOptions] = useState<PulsePlaylistOption[]>([]);
   const [playlistOptionsLoading, setPlaylistOptionsLoading] = useState(false);
@@ -2307,18 +2309,15 @@ export function PulsePlayerProvider({
         </div>
       ) : null}
 
-      <Modal
-        align="responsive"
-        animation="sheet"
-        bodyClassName="pt-[72px]"
+      <PulseModal
         isOpen={isAddToPlaylistOpen}
         onClose={() => {
           setIsAddToPlaylistOpen(false);
         }}
-        title={lang?.pulse_add_to_playlist || 'Добавить в плейлист'}
-        width="sm"
+        scrollable
+        title={lang?.pulse_add_to_playlist || 'В плейлист'}
       >
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
           {playlistOptionsLoading ? (
             <div className="py-6 text-center text-sm text-zinc-400">
               {lang?.loading || 'Загрузка...'}
@@ -2372,8 +2371,38 @@ export function PulsePlayerProvider({
                 </button>
               ))
             : null}
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsAddToPlaylistOpen(false);
+              setIsPlaylistEditorOpen(true);
+            }}
+            className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2.5 text-zinc-300 duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
+          >
+            <PlayerIcon name="IC-plus" className="h-4 w-4 fill-current" />
+            <span>{lang?.pulse_create_playlist || 'Создать новый плейлист'}</span>
+          </button>
         </div>
-      </Modal>
+      </PulseModal>
+
+      <PulsePlaylistEditorModal
+        isOpen={isPlaylistEditorOpen}
+        onClose={() => {
+          setIsPlaylistEditorOpen(false);
+          if (addToPlaylistSongId) {
+            setIsAddToPlaylistOpen(true);
+          }
+        }}
+        onSaved={() => {
+          if (addToPlaylistSongId) {
+            openAddToPlaylist(addToPlaylistSongId);
+          }
+        }}
+        showNote={(content, type = 'info', time = 4) => {
+          notify({ content, type, time });
+        }}
+      />
     </PulsePlayerContext.Provider>
   );
 }

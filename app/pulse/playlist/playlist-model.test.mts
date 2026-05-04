@@ -138,3 +138,28 @@ test('getPulseTrackDropdownZIndex keeps open menus above following track buttons
   assert.ok(getPulseTrackDropdownZIndex(5, true) > getPulseTrackDropdownZIndex(0, false));
   assert.equal(getPulseTrackDropdownZIndex(Number.NaN, false), getPulseTrackDropdownZIndex(0, false));
 });
+
+test('getPulsePlaylistManagePayload matches legacy playlist_manage.php fields', () => {
+  const getPulsePlaylistManagePayload = playlistModel.getPulsePlaylistManagePayload;
+
+  assert.equal(typeof getPulsePlaylistManagePayload, 'function');
+
+  const createPayload = getPulsePlaylistManagePayload({
+    image: '',
+    name: '  Новый плейлист  ',
+  });
+  assert.equal(createPayload.get('action'), 'create');
+  assert.equal(createPayload.get('id'), null);
+  assert.equal(createPayload.get('img'), null);
+  assert.equal(createPayload.get('name'), 'Новый плейлист');
+
+  const updatePayload = getPulsePlaylistManagePayload({
+    id: ' 93 ',
+    image: ' https://img.example/cover.jpg ',
+    name: '  Старый плейлист  ',
+  });
+  assert.equal(updatePayload.get('action'), 'update');
+  assert.equal(updatePayload.get('id'), '93');
+  assert.equal(updatePayload.get('img'), 'https://img.example/cover.jpg');
+  assert.equal(updatePayload.get('name'), 'Старый плейлист');
+});

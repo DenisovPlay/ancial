@@ -3,12 +3,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import Modal from '../components/modal';
 import { authFetch } from '../lib/auth-fetch';
 import {
   getPulseTrackEditInitialState,
   getPulseTrackUploadPayload,
 } from './playlist/playlist-model';
+import { PulseModal, PulseModalField, PulseModalSelectField } from './pulse-modal';
 import {
   ActionIcon,
   cn,
@@ -369,7 +369,7 @@ export default function PulseUploadTrackModal({
         setPreviewUrl(nextCoverUrl);
         showNote('Обложка загружена', 'success', 3);
 
-        if (trackId && isSaved) {
+        if (trackId && isSaved && !isEditingExistingTrack) {
           setIsSaving(true);
           setStatusText('Сохраняю изменения...');
 
@@ -409,125 +409,133 @@ export default function PulseUploadTrackModal({
     } finally {
       setIsCoverUploading(false);
     }
-  }, [artist, explicit, isSaved, lang, name, onUploaded, setPreviewUrl, showNote, trackId]);
+  }, [artist, explicit, isEditingExistingTrack, isSaved, lang, name, onUploaded, setPreviewUrl, showNote, trackId]);
 
   const canUpdate = Boolean(trackId) && isSaved && !isSaving && !isAudioUploading && !isCoverUploading;
   const cover = coverPreview || coverUrl;
   const isBusy = isAudioUploading || isCoverUploading || isSaving;
 
   return (
-    <Modal
-      bodyClassName="pt-[72px]"
+    <PulseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditingExistingTrack ? 'Редактировать трек' : 'Добавить трек'}
-      width="md"
+      title={isEditingExistingTrack ? 'Редактирование трека' : 'Загрузка трека'}
     >
-      <div className="flex flex-col gap-3">
-        <label
-          className={cn(
-            'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-zinc-600/50 bg-zinc-950/40 p-6 text-center duration-300 hover:bg-zinc-800/60 active:scale-[0.99]',
-            trackId && 'hidden',
-          )}
-        >
+      {!isEditingExistingTrack && !trackId ? (
+        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-600 p-4 duration-300 hover:bg-zinc-800/60 active:scale-95">
           <input
             key={fileInputKey}
-            accept="audio/*"
+            accept=".mp3"
             className="hidden"
             disabled={isBusy}
             onChange={handleAudioChange}
             type="file"
           />
-          <span className="flex h-16 w-16 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/80">
-            <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-music" />
-          </span>
-          <span className="text-base font-bold text-white">Выберите аудиофайл</span>
-          <span className="text-sm text-zinc-400">После загрузки трек автоматически добавится в Избранное</span>
+          <ActionIcon className="h-8 w-8 fill-zinc-400" name="IC-download" />
+          <span className="text-sm text-zinc-400">Выбрать .mp3 файл (до 10 МБ)</span>
         </label>
+      ) : null}
 
-        {isAudioUploading ? (
-          <div className="flex items-center justify-center gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-950/30 p-4 text-sm text-zinc-300">
-            <ActionIcon className="h-6 w-6 animate-spin fill-purple-500" name="IC-loader" />
-            <span>{statusText || 'Загружаю трек...'}</span>
-          </div>
-        ) : null}
+      {isAudioUploading ? (
+        <div className="flex flex-col items-center gap-2 py-4 text-sm text-zinc-400">
+          <ActionIcon className="h-10 w-10 animate-spin fill-purple-400" name="IC-loader" />
+          <span>{statusText || 'Загружаю трек...'}</span>
+        </div>
+      ) : null}
 
-        {trackId ? (
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <label className="group relative flex h-36 w-36 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-800">
+      {trackId ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <label className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-zinc-600/30 bg-zinc-800 duration-300 hover:bg-zinc-700/80 active:scale-95">
+              <input accept="image/*" className="hidden" disabled={isBusy} onChange={handleCoverChange} type="file" />
+              {cover ? (
+                <img src={cover} alt="Обложка трека" className="h-full w-full object-cover" />
+              ) : (
+                <ActionIcon className="h-7 w-7 fill-zinc-600" name="IC-music" />
+              )}
+            </label>
+
+            <div className="flex flex-grow flex-col gap-1">
+              <span className={cn('text-zinc-500', isEditingExistingTrack ? 'text-sm' : 'text-xs')}>
+                {isEditingExistingTrack ? 'Обложка трека' : 'Обложка извлечена из тега. Можно заменить:'}
+              </span>
+              <label className={cn('cursor-pointer text-purple-400 duration-300 hover:text-purple-300', isEditingExistingTrack ? 'text-sm' : 'text-xs')}>
+                {isEditingExistingTrack ? 'Заменить обложку' : 'Загрузить свою обложку'}
                 <input accept="image/*" className="hidden" disabled={isBusy} onChange={handleCoverChange} type="file" />
-                {cover ? (
-                  <img src={cover} alt="Обложка трека" className="h-full w-full object-cover duration-300 group-hover:scale-105" />
-                ) : (
-                  <ActionIcon className="h-9 w-9 fill-zinc-600" name="IC-music" />
-                )}
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent p-2 text-center text-xs text-zinc-200 opacity-0 duration-300 group-hover:opacity-100">
-                  Обложка
-                </span>
               </label>
-
-              <div className="grid min-w-0 flex-grow grid-cols-1 gap-2">
-                <input
-                  className="rounded-2xl border border-zinc-600/30 bg-zinc-950/50 px-3 py-2 text-white outline-none duration-300 placeholder:text-zinc-600 focus:border-purple-500/60"
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Название"
-                  value={name}
-                />
-                <input
-                  className="rounded-2xl border border-zinc-600/30 bg-zinc-950/50 px-3 py-2 text-white outline-none duration-300 placeholder:text-zinc-600 focus:border-purple-500/60"
-                  onChange={(event) => setArtist(event.target.value)}
-                  placeholder="Исполнитель"
-                  value={artist}
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    className="rounded-2xl border border-zinc-600/30 bg-zinc-950/50 px-3 py-2 text-white outline-none duration-300 placeholder:text-zinc-600 focus:border-purple-500/60"
-                    onChange={(event) => setLang(event.target.value)}
-                    placeholder="--"
-                    value={lang}
-                  />
-                  <select
-                    className="rounded-2xl border border-zinc-600/30 bg-zinc-950/50 px-3 py-2 text-white outline-none duration-300 focus:border-purple-500/60"
-                    onChange={(event) => setExplicit(event.target.value)}
-                    value={explicit}
-                  >
-                    <option value="0">Без E</option>
-                    <option value="1">18+ / E</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-950/30 p-3">
-              <div className="flex items-center gap-2 text-sm text-zinc-300">
-                {isBusy ? (
-                  <ActionIcon className="h-5 w-5 animate-spin fill-purple-500" name="IC-loader" />
-                ) : (
-                  <ActionIcon className="h-5 w-5 fill-emerald-400" name={isSaved ? 'IC-check' : 'IC-music'} />
-                )}
-                <span>{statusText || 'Готово'}</span>
-              </div>
-
-              {isSaved ? (
-                <button
-                  type="button"
-                  disabled={!canUpdate}
-                  onClick={() => void updateTrack()}
-                  className={cn(
-                    'flex w-full items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-purple-500 px-4 py-2 font-bold text-white shadow duration-300',
-                    canUpdate ? 'cursor-pointer hover:bg-purple-600 active:scale-95' : 'cursor-not-allowed opacity-60',
-                  )}
-                >
-                  <ActionIcon className="h-5 w-5" name="IC-check" />
-                  <span>Сохранить изменения</span>
-                </button>
-              ) : null}
             </div>
           </div>
-        ) : null}
-      </div>
-    </Modal>
+
+          <PulseModalField
+            autoComplete="off"
+            label="Исполнитель"
+            onChange={(event) => setArtist(event.target.value)}
+            type="text"
+            value={artist}
+          />
+          <PulseModalField
+            autoComplete="off"
+            label="Название трека"
+            onChange={(event) => setName(event.target.value)}
+            type="text"
+            value={name}
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <PulseModalSelectField
+              label="Язык трека"
+              onChange={(event) => setLang(event.target.value)}
+              value={lang}
+            >
+              <option value="" disabled>Выберите язык</option>
+              <option value="--">Не указан</option>
+              <option value="RU">Русский</option>
+              <option value="EN">Английский</option>
+              <option value="" disabled>Другой язык пока недоступен</option>
+            </PulseModalSelectField>
+            <PulseModalSelectField
+              label="Контент"
+              onChange={(event) => setExplicit(event.target.value)}
+              value={explicit}
+            >
+              <option value="" disabled>Возрастное ограничение</option>
+              <option value="0">Без 18+</option>
+              <option value="1">18+ / E</option>
+              <option value="" disabled>Выберите отметку</option>
+            </PulseModalSelectField>
+          </div>
+
+          {isSaving && !isEditingExistingTrack ? (
+            <div className="flex items-center justify-center gap-2 py-1 text-sm text-zinc-400">
+              <ActionIcon className="h-4 w-4 animate-spin fill-purple-400" name="IC-loader" />
+              <span>{statusText || 'Сохраняю в Избранное...'}</span>
+            </div>
+          ) : null}
+
+          {isSaved && !isEditingExistingTrack ? (
+            <div className="flex items-center gap-2 py-1 text-sm text-green-400">
+              <ActionIcon className="h-4 w-4 shrink-0 fill-green-400" name="IC-check" />
+              <span>Сохранено в Избранное</span>
+            </div>
+          ) : null}
+
+          {isEditingExistingTrack || isSaved ? (
+            <button
+              type="button"
+              disabled={!canUpdate}
+              onClick={() => void updateTrack()}
+              className={cn(
+                'flex items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-purple-700 px-4 py-2.5 font-medium text-zinc-100 duration-300',
+                canUpdate ? 'cursor-pointer hover:bg-purple-600 active:scale-95' : 'cursor-not-allowed opacity-60',
+              )}
+            >
+              <ActionIcon className={cn('h-4 w-4', isBusy && 'animate-spin')} name={isBusy ? 'IC-loader' : 'IC-check'} />
+              <span>Сохранить изменения</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </PulseModal>
   );
 }
 
@@ -581,25 +589,24 @@ export function PulseDeleteTrackModal({
   }, [onClose, onDeleted, showNote, trackId]);
 
   return (
-    <Modal
-      animation="fade"
-      align="center"
-      bodyClassName="pt-[72px]"
+    <PulseModal
       isOpen={isOpen}
       onClose={onClose}
       title="Удалить трек"
-      width="sm"
     >
-      <div className="flex flex-col gap-3">
-        <div className="rounded-3xl border border-zinc-600/30 bg-zinc-950/40 p-4 text-sm text-zinc-300">
-          Вы точно хотите удалить <span className="font-bold text-white">{title}</span>? Это действие нельзя отменить.
+      <div className="flex flex-col items-center gap-4 py-4">
+        <ActionIcon className="h-12 w-12 fill-red-500" name="IC-trash" />
+        <div className="text-center">
+          <p className="text-sm text-zinc-300">Вы уверены, что хотите удалить трек?</p>
+          <p className="mt-1 font-medium text-white">{title}</p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <p className="text-center text-xs text-zinc-500">Это действие необратимо. Файл будет удалён с сервера.</p>
+        <div className="grid w-full grid-cols-2 gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-900/40 px-4 py-2 font-bold text-zinc-200 duration-300 hover:bg-zinc-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-700 px-4 py-2.5 font-medium text-zinc-100 duration-300 hover:bg-zinc-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Отмена
           </button>
@@ -607,13 +614,13 @@ export function PulseDeleteTrackModal({
             type="button"
             onClick={() => void deleteTrack()}
             disabled={isDeleting}
-            className="flex cursor-pointer items-center justify-center gap-2 rounded-full border border-red-400/30 bg-red-500 px-4 py-2 font-bold text-white duration-300 hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-red-700 px-4 py-2.5 font-medium text-zinc-100 duration-300 hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isDeleting ? <ActionIcon className="h-5 w-5 animate-spin" name="IC-loader" /> : <ActionIcon className="h-5 w-5" name="IC-trash" />}
+            {isDeleting ? <ActionIcon className="h-4 w-4 animate-spin" name="IC-loader" /> : <ActionIcon className="h-4 w-4" name="IC-trash" />}
             <span>Удалить</span>
           </button>
         </div>
       </div>
-    </Modal>
+    </PulseModal>
   );
 }
