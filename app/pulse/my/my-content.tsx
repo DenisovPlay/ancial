@@ -10,6 +10,7 @@ import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { authFetch } from '../../lib/auth-fetch';
 import { fetchPulseJson } from '../pulse-api';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
+import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -92,7 +93,11 @@ function PulseHistoryRow({
       className="group flex w-full cursor-pointer items-center gap-3 rounded-2xl text-left duration-300 hover:bg-zinc-800 hover:pr-3 active:scale-[0.99]"
     >
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
-        <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+        <PulseCoverImage
+          alt={title}
+          sizes={PULSE_COVER_IMAGE_SIZES.trackRow}
+          src={imageUrl}
+        />
       </div>
       <div className="min-w-0 flex-grow">
         <span className="flex items-center gap-3 truncate text-sm font-medium text-white md:text-base lg:text-lg">

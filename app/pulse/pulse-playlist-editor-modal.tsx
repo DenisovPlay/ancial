@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 
@@ -8,6 +7,7 @@ import {
   getPulsePlaylistManagePayload,
   type PulsePlaylistMeta,
 } from './playlist/playlist-model';
+import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { PulseModal, PulseModalField } from './pulse-modal';
 import {
   ActionIcon,
@@ -139,7 +139,7 @@ export default function PulsePlaylistEditorModal({
       title={isEditing ? 'Редактировать плейлист' : 'Создать плейлист'}
     >
       <div className="flex items-center gap-3">
-        <label className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-zinc-600/30 bg-zinc-800 duration-300 hover:bg-zinc-700/80 active:scale-95">
+        <label className="relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-zinc-600/30 bg-zinc-800 duration-300 hover:bg-zinc-700/80 active:scale-95">
           <input
             accept="image/*"
             className="hidden"
@@ -148,7 +148,12 @@ export default function PulsePlaylistEditorModal({
             type="file"
           />
           {coverUrl ? (
-            <img src={coverUrl} alt="Обложка плейлиста" className="h-full w-full object-cover" />
+            <PulseCoverImage
+              alt="Обложка плейлиста"
+              className="rounded-xl"
+              sizes={PULSE_COVER_IMAGE_SIZES.modal}
+              src={coverUrl}
+            />
           ) : (
             <ActionIcon className="h-7 w-7 fill-zinc-600" name={isCoverUploading ? 'IC-loader' : 'IC-music'} />
           )}

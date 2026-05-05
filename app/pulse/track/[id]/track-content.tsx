@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,6 +9,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { authFetch } from '../../../lib/auth-fetch';
 import { fetchPulseJson } from '../../pulse-api';
+import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -183,8 +183,18 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
         <>
           <div className="flex w-full max-w-screen-2xl flex-col items-center justify-center gap-6 px-3 lg:flex-row lg:justify-start lg:px-0">
             <div className="relative flex h-72 w-72 shrink-0 rounded-3xl shadow lg:h-96 lg:w-96">
-              <img className="h-full w-full rounded-2xl object-cover blur-xl" src={image} alt="" />
-              <img className="absolute inset-x-0 h-full w-full rounded-2xl object-cover" src={image} alt={title} />
+              <PulseCoverImage
+                alt=""
+                className="rounded-2xl blur-xl"
+                sizes={PULSE_COVER_IMAGE_SIZES.hero}
+                src={image}
+              />
+              <PulseCoverImage
+                alt={title}
+                className="rounded-2xl"
+                sizes={PULSE_COVER_IMAGE_SIZES.hero}
+                src={image}
+              />
             </div>
 
             <div className="flex flex-col items-center gap-3 lg:items-start">

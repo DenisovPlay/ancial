@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -7,7 +6,9 @@ import { authFetch } from '../lib/auth-fetch';
 import {
   getPulseTrackEditInitialState,
   getPulseTrackUploadPayload,
+  getPulseUploadDropzoneVisible,
 } from './playlist/playlist-model';
+import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { PulseModal, PulseModalField, PulseModalSelectField } from './pulse-modal';
 import {
   ActionIcon,
@@ -414,6 +415,11 @@ export default function PulseUploadTrackModal({
   const canUpdate = Boolean(trackId) && isSaved && !isSaving && !isAudioUploading && !isCoverUploading;
   const cover = coverPreview || coverUrl;
   const isBusy = isAudioUploading || isCoverUploading || isSaving;
+  const showUploadDropzone = getPulseUploadDropzoneVisible({
+    isAudioUploading,
+    isEditingExistingTrack,
+    trackId,
+  });
 
   return (
     <PulseModal
@@ -421,7 +427,7 @@ export default function PulseUploadTrackModal({
       onClose={onClose}
       title={isEditingExistingTrack ? 'Редактирование трека' : 'Загрузка трека'}
     >
-      {!isEditingExistingTrack && !trackId ? (
+      {showUploadDropzone ? (
         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-600 p-4 duration-300 hover:bg-zinc-800/60 active:scale-95">
           <input
             key={fileInputKey}
@@ -446,10 +452,15 @@ export default function PulseUploadTrackModal({
       {trackId ? (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <label className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-zinc-600/30 bg-zinc-800 duration-300 hover:bg-zinc-700/80 active:scale-95">
+            <label className="relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-zinc-600/30 bg-zinc-800 duration-300 hover:bg-zinc-700/80 active:scale-95">
               <input accept="image/*" className="hidden" disabled={isBusy} onChange={handleCoverChange} type="file" />
               {cover ? (
-                <img src={cover} alt="Обложка трека" className="h-full w-full object-cover" />
+                <PulseCoverImage
+                  alt="Обложка трека"
+                  className="rounded-xl"
+                  sizes={PULSE_COVER_IMAGE_SIZES.modal}
+                  src={cover}
+                />
               ) : (
                 <ActionIcon className="h-7 w-7 fill-zinc-600" name="IC-music" />
               )}

@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import React, {
   createContext,
@@ -13,6 +12,7 @@ import React, {
 import { usePathname, useRouter } from 'next/navigation';
 
 import { authFetch } from '../lib/auth-fetch';
+import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse/pulse-image';
 import PulsePlaylistEditorModal from '../pulse/pulse-playlist-editor-modal';
 import { PulseModal } from '../pulse/pulse-modal';
 import { useAuth } from './AuthContext';
@@ -2044,8 +2044,18 @@ export function PulsePlayerProvider({
                               transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1)' : 'none',
                             }}
                           >
-                            <img src={prevArtwork} alt="Previous Track" className="absolute inset-0 h-full w-full rounded-3xl object-cover blur-xl" />
-                            <img src={prevArtwork} alt="Previous Track" className="absolute inset-0 h-full w-full rounded-3xl object-cover" />
+                            <PulseCoverImage
+                              alt="Previous Track"
+                              className="rounded-3xl blur-xl"
+                              sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
+                              src={prevArtwork}
+                            />
+                            <PulseCoverImage
+                              alt="Previous Track"
+                              className="rounded-3xl"
+                              sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
+                              src={prevArtwork}
+                            />
                           </div>
                         ) : null}
 
@@ -2057,15 +2067,17 @@ export function PulsePlayerProvider({
                             transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1), opacity 0.4s' : 'none',
                           }}
                         >
-                          <img
-                            src={playerArtwork}
+                          <PulseCoverImage
                             alt={playerTitle}
-                            className="absolute inset-0 h-full w-full rounded-3xl object-cover blur-xl"
+                            className="rounded-3xl blur-xl"
+                            sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
+                            src={playerArtwork}
                           />
-                          <img
-                            src={playerArtwork}
+                          <PulseCoverImage
                             alt={playerTitle}
-                            className="absolute inset-0 h-full w-full rounded-3xl object-cover"
+                            className="rounded-3xl"
+                            sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
+                            src={playerArtwork}
                           />
 
                           {lyricsLines.length ? (
@@ -2086,8 +2098,18 @@ export function PulsePlayerProvider({
                               transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1)' : 'none',
                             }}
                           >
-                            <img src={nextArtwork} alt="Next Track" className="absolute inset-0 h-full w-full rounded-3xl object-cover blur-xl" />
-                            <img src={nextArtwork} alt="Next Track" className="absolute inset-0 h-full w-full rounded-3xl object-cover" />
+                            <PulseCoverImage
+                              alt="Next Track"
+                              className="rounded-3xl blur-xl"
+                              sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
+                              src={nextArtwork}
+                            />
+                            <PulseCoverImage
+                              alt="Next Track"
+                              className="rounded-3xl"
+                              sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
+                              src={nextArtwork}
+                            />
                           </div>
                         ) : null}
                       </div>
@@ -2224,7 +2246,12 @@ export function PulsePlayerProvider({
                 onClick={() => setMode('full')}
                 className="group relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-16 lg:w-16"
               >
-                <img src={playerArtwork} alt={playerTitle} className="h-full w-full object-cover" />
+                <PulseCoverImage
+                  alt={playerTitle}
+                  className="rounded-full"
+                  sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer}
+                  src={playerArtwork}
+                />
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90 opacity-0 duration-300 group-hover:opacity-100">
                   <PlayerIcon name="IC-full-mode" className="h-10 w-10 fill-white" />
                 </div>
@@ -2340,12 +2367,13 @@ export function PulsePlayerProvider({
                   }}
                   className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left duration-300 hover:bg-zinc-800/60 hover:pr-3 active:scale-95"
                 >
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800">
+                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800">
                     {playlistOption.image ? (
-                      <img
-                        src={playlistOption.image}
+                      <PulseCoverImage
                         alt={playlistOption.name}
-                        className="h-full w-full object-cover"
+                        className="rounded-xl"
+                        sizes={PULSE_COVER_IMAGE_SIZES.modal}
+                        src={playlistOption.image}
                       />
                     ) : (
                       <PlayerIcon name="IC-music" className="h-7 w-7 fill-zinc-600" />

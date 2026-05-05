@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Dropdown, DropdownItem } from '../components/navigation';
 import type { User } from '../context/AuthContext';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
+import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 
 export type PulseTrackArtwork = {
   src?: string | null;
@@ -257,7 +258,12 @@ export function PulsePlaylistTile({
       )}
     >
       <button type="button" onClick={onOpen} className="h-full w-full cursor-pointer">
-        <img src={coverUrl} alt={title} className="h-full w-full object-cover duration-300 group-hover:scale-105" />
+        <PulseCoverImage
+          alt={title}
+          className="duration-300 group-hover:scale-105"
+          sizes={variant === 'big' ? PULSE_COVER_IMAGE_SIZES.playlistTileBig : PULSE_COVER_IMAGE_SIZES.playlistTile}
+          src={coverUrl}
+        />
       </button>
 
       <div className="absolute inset-x-0 bottom-0 flex w-full items-end gap-1 bg-gradient-to-t from-black via-black/90 to-transparent p-1 opacity-0 duration-300 group-hover:opacity-100 lg:gap-3 lg:p-3">
@@ -370,7 +376,12 @@ export function PulseTrackRow({
           />
         ) : null}
 
-        <img src={coverUrl} alt={`${title} cover`} className="h-full w-full rounded-2xl object-cover" />
+        <PulseCoverImage
+          alt={`${title} cover`}
+          className="rounded-2xl"
+          sizes={PULSE_COVER_IMAGE_SIZES.trackRow}
+          src={coverUrl}
+        />
 
         {isTrackExplicit(track) ? (
           <div className="group absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800/50 p-1 text-xs text-white duration-300 backdrop-blur-sm backdrop-saturate-200 hover:w-fit">

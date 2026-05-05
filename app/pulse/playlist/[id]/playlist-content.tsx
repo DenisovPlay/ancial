@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -11,6 +10,7 @@ import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { authFetch } from '../../../lib/auth-fetch';
 import { SITE_CONFIG } from '../../../seo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
+import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
 import PulsePlaylistEditorModal from '../../pulse-playlist-editor-modal';
 import {
   ActionIcon,
@@ -517,8 +517,18 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
               </>
             ) : (
               <>
-                <div className="h-full w-full rounded-2xl bg-cover bg-center opacity-80 blur-xl" style={{ backgroundImage: `url(${playlistCover})` }} />
-                <img src={playlistCover} alt={playlistTitle} className="absolute inset-x-0 h-full w-full rounded-2xl object-cover z-[9]" />
+                <PulseCoverImage
+                  alt=""
+                  className="rounded-2xl opacity-80 blur-xl"
+                  sizes={PULSE_COVER_IMAGE_SIZES.hero}
+                  src={playlistCover}
+                />
+                <PulseCoverImage
+                  alt={playlistTitle}
+                  className="z-[9] rounded-2xl"
+                  sizes={PULSE_COVER_IMAGE_SIZES.hero}
+                  src={playlistCover}
+                />
                 {playlistType === 4 ? (
                   <span className="absolute -bottom-1.5 -right-1.5 z-[99] rounded-full border border-zinc-600/30 bg-pink-500/50 px-1 text-sm text-white backdrop-blur-sm backdrop-saturate-200">
                     ГенЛист

@@ -163,3 +163,29 @@ test('getPulsePlaylistManagePayload matches legacy playlist_manage.php fields', 
   assert.equal(updatePayload.get('img'), 'https://img.example/cover.jpg');
   assert.equal(updatePayload.get('name'), 'Старый плейлист');
 });
+
+test('getPulseUploadDropzoneVisible hides file picker while audio is uploading', () => {
+  const getPulseUploadDropzoneVisible = playlistModel.getPulseUploadDropzoneVisible;
+
+  assert.equal(typeof getPulseUploadDropzoneVisible, 'function');
+  assert.equal(getPulseUploadDropzoneVisible({
+    isAudioUploading: false,
+    isEditingExistingTrack: false,
+    trackId: '',
+  }), true);
+  assert.equal(getPulseUploadDropzoneVisible({
+    isAudioUploading: true,
+    isEditingExistingTrack: false,
+    trackId: '',
+  }), false);
+  assert.equal(getPulseUploadDropzoneVisible({
+    isAudioUploading: false,
+    isEditingExistingTrack: false,
+    trackId: 'abc123',
+  }), false);
+  assert.equal(getPulseUploadDropzoneVisible({
+    isAudioUploading: false,
+    isEditingExistingTrack: true,
+    trackId: '',
+  }), false);
+});

@@ -240,3 +240,15 @@ export function getPulsePlaylistManagePayload(input: PulsePlaylistManagePayloadI
 
   return payload;
 }
+
+export type PulseUploadDropzoneVisibilityInput = {
+  isAudioUploading: boolean;
+  isEditingExistingTrack: boolean;
+  trackId?: string | number | null;
+};
+
+export function getPulseUploadDropzoneVisible(input: PulseUploadDropzoneVisibilityInput) {
+  return !input.isEditingExistingTrack
+    && !input.isAudioUploading
+    && !String(input.trackId ?? '').trim();
+}

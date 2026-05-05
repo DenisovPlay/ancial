@@ -13,6 +13,7 @@ import { useDragScroll } from '../hooks/useDragScroll';
 import { authFetch } from '../lib/auth-fetch';
 import { PulseLegalFooter } from './pulse-components';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
+import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigation';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-track-modal';
 
@@ -332,7 +333,11 @@ function PulsePlaylistCard({
   return (
     <div className="group relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-zinc-600/30 shadow duration-300 active:scale-95 lg:h-48 lg:w-48">
       <button type="button" onClick={onOpen} className="h-full w-full cursor-pointer">
-        <img src={coverUrl} alt={decodeHtmlEntities(card.name) || 'Playlist cover'} className="h-full w-full object-cover" />
+        <PulseCoverImage
+          alt={decodeHtmlEntities(card.name) || 'Playlist cover'}
+          sizes={PULSE_COVER_IMAGE_SIZES.playlistTile}
+          src={coverUrl}
+        />
       </button>
 
       <div className="absolute inset-x-0 bottom-0 flex w-full gap-1 bg-gradient-to-t from-black via-black/90 to-transparent p-1 duration-300 items-end lg:gap-3 lg:p-3 opacity-0 group-hover:opacity-100">
@@ -397,8 +402,13 @@ function RecentlyListenedPill({
 }) {
   return (
     <div className="flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95">
-      <button type="button" onClick={onPlay} className="relative h-14 w-14 shrink-0 cursor-pointer rounded-full xl:h-16 xl:w-16 2xl:h-20 2xl:w-20">
-        <img src={getImageUrl(card.img, DEFAULT_TRACK_IMAGE)} alt={decodeHtmlEntities(card.name) || 'Playlist cover'} className="h-full w-full rounded-full object-cover" />
+      <button type="button" onClick={onPlay} className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full xl:h-16 xl:w-16 2xl:h-20 2xl:w-20">
+        <PulseCoverImage
+          alt={decodeHtmlEntities(card.name) || 'Playlist cover'}
+          className="rounded-full"
+          sizes={PULSE_COVER_IMAGE_SIZES.playlistPill}
+          src={getImageUrl(card.img, DEFAULT_TRACK_IMAGE)}
+        />
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 duration-300 hover:bg-black/20">
           <ActionIcon className="h-7 w-7 opacity-0 duration-300 hover:opacity-100" name={isPlaying ? 'IC-pause' : 'IC-play'} />
         </span>
@@ -457,7 +467,12 @@ function PulseTrackRow({
           />
         ) : null}
 
-        <img src={coverUrl} alt={`${title} cover`} className="h-full w-full rounded-2xl object-cover" />
+        <PulseCoverImage
+          alt={`${title} cover`}
+          className="rounded-2xl"
+          sizes={PULSE_COVER_IMAGE_SIZES.trackRow}
+          src={coverUrl}
+        />
 
         {isTrackExplicit(track) ? (
           <div className="absolute -bottom-1.5 -right-1.5 flex h-6 min-w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800/70 px-1 text-[10px] font-bold text-white backdrop-blur-sm backdrop-saturate-200">
