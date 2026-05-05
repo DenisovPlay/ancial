@@ -1994,9 +1994,7 @@ export function PulsePlayerProvider({
                   >
                     {normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
                   </button>
-                  <svg className="w-24 shrink-0 backdrop-shadow-lg" viewBox="0 0 821 157" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <use href="/icons.svg#IC-pulse-logo"></use>
-                  </svg>
+                  <img alt="Pulse Logo" className="w-24 shrink-0 backdrop-shadow-lg" src="/img/branding/pulse.svg"></img>
                 </div>
 
                 <button
