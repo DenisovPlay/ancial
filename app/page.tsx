@@ -11,7 +11,7 @@ export const metadata: Metadata = createPageMetadata({
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center w-full h-screen no-mobile-nav-padding p-3 md:p-0 duration-300">
+    <div className="home-route relative isolate flex h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden overscroll-none no-mobile-nav-padding p-3 duration-300 md:p-0">
       <video
         id="videobackground"
         autoPlay

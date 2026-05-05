@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useRef, useState, useEffect } from 'react';
 import { getLangFromCache, saveLangToCache } from '../lib/lang';
+import { restoreLegacyAuthSession } from '../lib/auth-fetch';
 
 // Типизация пользователя на основе данных обоих методов (check.php и info.php)
 export interface User {
@@ -40,7 +41,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   lang: Record<string, string> | null;
-  checkAuth: () => Promise<void>;
+  checkAuth: (options?: { silent?: boolean }) => Promise<void>;
   logout: () => void;
   updateLang: () => Promise<void>;
 }
@@ -52,23 +53,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lang, setLang] = useState<Record<string, string> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const authStateRef = useRef<{ isAuthenticated: boolean; user: User | null }>({
+    isAuthenticated: false,
+    user: null,
+  });
 
-  const updateLang = async () => {
+  const publishLangState = useCallback((nextLang: Record<string, string> | null) => {
+    if (typeof window === 'undefined') return;
+    (window as Window & { lang?: Record<string, string> | null }).lang = nextLang;
+  }, []);
+
+  const publishAuthState = useCallback((auth: boolean, nextUser: User | null, authChecking: boolean) => {
+    if (typeof window === 'undefined') return;
+    const legacyWindow = window as Window & {
+      auth?: boolean;
+      authChecking?: boolean;
+      user?: User | null;
+    };
+
+    legacyWindow.auth = auth;
+    legacyWindow.user = nextUser;
+    legacyWindow.authChecking = authChecking;
+  }, []);
+
+  const updateLang = useCallback(async () => {
     try {
       const res = await fetch(`/api/info/lang.php`);
       const data = await res.json();
       setLang(data);
+      publishLangState(data);
       saveLangToCache(data);
     } catch (error) {
       console.error('Ошибка при загрузке языка:', error);
     }
-  };
+  }, [publishLangState]);
 
-  const checkAuth = async () => {
-    setIsLoading(true);
+  const checkAuth = useCallback(async (options: { silent?: boolean } = {}) => {
+    const silent = options.silent === true;
+    let nextPublishedAuth = authStateRef.current.isAuthenticated;
+    let nextPublishedUser = authStateRef.current.user;
+
+    const applyAuthState = (auth: boolean, nextUser: User | null) => {
+      nextPublishedAuth = auth;
+      nextPublishedUser = nextUser;
+      authStateRef.current = {
+        isAuthenticated: auth,
+        user: nextUser,
+      };
+      setUser(nextUser);
+      setIsAuthenticated(auth);
+      publishAuthState(auth, nextUser, false);
+    };
+
+    if (!silent) {
+      setIsLoading(true);
+    }
+    publishAuthState(authStateRef.current.isAuthenticated, authStateRef.current.user, true);
     try {
       const readSessionUser = async () => {
         const checkRes = await fetch(`/api/auth/check.php`, {
+          cache: 'no-store',
           credentials: 'include',
         });
 
@@ -84,25 +128,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (checkData.auth === true && checkData.user) {
         // Пользователь авторизован на сервере
-        setUser(checkData.user);
-        setIsAuthenticated(true);
+        applyAuthState(true, checkData.user);
+        window.GlobalWS?.init();
       } else {
         // Разлогинило на сервере (или сессии нет). Пробуем войти по токену
         const token = localStorage.getItem('token');
         if (token) {
-          const params = new URLSearchParams();
-          params.append('do_login', 'True');
-          params.append('token', token);
+          const restored = await restoreLegacyAuthSession(token);
 
-          const loginRes = await fetch(`/api/auth/login.php`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: params.toString()
-          });
-          const loginData = await loginRes.json();
-
-          if (loginData.status === 'success') {
+          if (restored) {
             console.log('[Auth] Авторизован через токен. Обновляем данные.');
 
             // После логина по токену повторно читаем серверную сессию,
@@ -110,42 +144,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             checkData = await readSessionUser();
 
             if (checkData.auth === true && checkData.user) {
-              setUser(checkData.user);
-              setIsAuthenticated(true);
+              applyAuthState(true, checkData.user);
+              window.GlobalWS?.init();
             } else {
               // Запасной путь для старых сценариев, если check.php ещё не успел обновиться
-              const infoRes = await fetch(`/api/user/info.php?token=${token}`);
+              const infoRes = await fetch(`/api/user/info.php?token=${encodeURIComponent(token)}`, {
+                cache: 'no-store',
+                credentials: 'include',
+              });
               const infoData = await infoRes.json();
 
               if (infoData.status === 'success') {
-                setUser(infoData.response);
-                setIsAuthenticated(true);
+                applyAuthState(true, infoData.response);
+                window.GlobalWS?.init();
               } else {
-                setUser(null);
-                setIsAuthenticated(false);
+                applyAuthState(false, null);
                 localStorage.removeItem('token');
               }
             }
           } else {
             // Ошибка авторизации по токену (например, просрочен)
-            setUser(null);
-            setIsAuthenticated(false);
+            applyAuthState(false, null);
             localStorage.removeItem('token');
           }
         } else {
           // Ни сессии, ни токена
-          setUser(null);
-          setIsAuthenticated(false);
+          applyAuthState(false, null);
         }
       }
     } catch (error) {
       console.error('Ошибка при проверке авторизации:', error);
-      setUser(null);
-      setIsAuthenticated(false);
+      if (!silent) {
+        applyAuthState(false, null);
+      }
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
+      if (silent) {
+        publishAuthState(nextPublishedAuth, nextPublishedUser, false);
+      }
     }
-  };
+  }, [publishAuthState]);
 
   // Проверяем авторизацию при первой загрузке приложения
   useEffect(() => {
@@ -154,10 +194,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const cachedLang = getLangFromCache();
     if (cachedLang) {
       setLang(cachedLang);
+      publishLangState(cachedLang);
     }
     // Затем обновляем в фоне
     updateLang();
-  }, []);
+  }, [checkAuth, publishLangState, updateLang]);
+
+  useEffect(() => {
+    const refreshAuth = () => {
+      if (window.location.pathname === '/login' || window.location.pathname === '/signup') {
+        return;
+      }
+
+      void checkAuth({ silent: true });
+    };
+
+    window.addEventListener('focus', refreshAuth);
+    window.addEventListener('online', refreshAuth);
+    window.addEventListener('storage', refreshAuth);
+
+    return () => {
+      window.removeEventListener('focus', refreshAuth);
+      window.removeEventListener('online', refreshAuth);
+      window.removeEventListener('storage', refreshAuth);
+    };
+  }, [checkAuth]);
 
   const logout = async () => {
     // Удаляем токен из локального хранилища
@@ -175,6 +236,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     setUser(null);
     setIsAuthenticated(false);
+    authStateRef.current = {
+      isAuthenticated: false,
+      user: null,
+    };
+    publishAuthState(false, null, false);
+    window.PlayerClose?.();
     
     // Перенаправляем на окно логина
     window.location.href = '/login';

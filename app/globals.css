@@ -46,6 +46,18 @@ body:has(.no-mobile-nav-padding) #main-content {
   padding-bottom: 0 !important;
 }
 
+html:has(.home-route),
+body:has(.home-route) {
+  overflow: hidden;
+  overscroll-behavior-y: none;
+}
+
+body:has(.home-route) #main-content {
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 html.messages-dialog-open [data-app-nav="mobile"] {
   display: none !important;
 }
