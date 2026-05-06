@@ -8,6 +8,7 @@ const NEXT_IMAGE_REMOTE_HOSTS = new Set([
   'ancial.ru',
   'cdn.betterttv.net',
   'i.ibb.co',
+  'i.imgur.com',
 ]);
 
 export const PULSE_COVER_IMAGE_SIZES = {
@@ -70,7 +71,13 @@ export function PulseCoverImage({
   const imageSrc = normalizePulseImageSrc(src, fallback);
 
   if (!canUseNextImage(imageSrc)) {
-    return <img src={imageSrc} alt={alt} className={cn('h-full w-full object-cover', className)} />;
+    return (
+      <img
+        src={imageSrc}
+        alt={alt}
+        className={cn('absolute inset-0 h-full w-full object-cover', className)}
+      />
+    );
   }
 
   return (

@@ -11,7 +11,11 @@ import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { authFetch } from '../lib/auth-fetch';
-import { PulseLegalFooter } from './pulse-components';
+import {
+  PulseLegalFooter,
+  PulsePlaylistTile,
+  PulsePlaylistTileSkeleton,
+} from './pulse-components';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigation';
@@ -281,12 +285,6 @@ function SectionTitle({
   );
 }
 
-function PlaylistCardSkeleton() {
-  return (
-    <div className="h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-zinc-600/30 bg-zinc-800 shadow duration-300 animate-pulse lg:h-48 lg:w-48" />
-  );
-}
-
 function ArtistCardSkeleton() {
   return (
     <div className="h-32 w-32 shrink-0 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-800 shadow duration-300 animate-pulse lg:h-48 lg:w-48" />
@@ -313,48 +311,6 @@ function TracksPanelSkeleton() {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function PulsePlaylistCard({
-  card,
-  isPlaying,
-  onOpen,
-  onPlay,
-}: {
-  card: PulseHomePlaylistCard;
-  isPlaying: boolean;
-  onOpen: () => void;
-  onPlay: () => void;
-}) {
-  const coverUrl = getImageUrl(card.img, DEFAULT_TRACK_IMAGE);
-
-  return (
-    <div className="group relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-zinc-600/30 shadow duration-300 active:scale-95 lg:h-48 lg:w-48">
-      <button type="button" onClick={onOpen} className="h-full w-full cursor-pointer">
-        <PulseCoverImage
-          alt={decodeHtmlEntities(card.name) || 'Playlist cover'}
-          sizes={PULSE_COVER_IMAGE_SIZES.playlistTile}
-          src={coverUrl}
-        />
-      </button>
-
-      <div className="absolute inset-x-0 bottom-0 flex w-full gap-1 bg-gradient-to-t from-black via-black/90 to-transparent p-1 duration-300 items-end lg:gap-3 lg:p-3 opacity-0 group-hover:opacity-100">
-        <button
-          type="button"
-          onClick={onPlay}
-          className="shrink-0 cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500/50 p-2 shadow backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-purple-600 active:scale-95"
-          aria-label={isPlaying ? 'Pause playlist' : 'Play playlist'}
-        >
-          <ActionIcon className="h-6 w-6" name={isPlaying ? 'IC-pause' : 'IC-play'} />
-        </button>
-
-        <div className="flex min-w-0 flex-col gap-0 text-left">
-          <span className="w-28 truncate text-sm font-medium text-white">{decodeHtmlEntities(card.name) || 'Без названия'}</span>
-          <span className="hidden text-xs text-zinc-300 lg:flex">{decodeHtmlEntities(card.desk) || 'Pulse'}</span>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1087,11 +1043,11 @@ export default function PulseContent() {
       </SectionTitle>
 
       <div ref={fromPulseScrollRef} className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
-        {fromPulse === null ? Array.from({ length: 8 }).map((_, index) => <PlaylistCardSkeleton key={index} />) : null}
+        {fromPulse === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
         {Array.isArray(fromPulse) ? fromPulse.map((card) => {
           const cardPlayId = getPlayableCardId(card);
           return (
-            <PulsePlaylistCard
+            <PulsePlaylistTile
               key={`from-pulse-${card.id ?? card.genlist ?? card.name}`}
               card={card}
               isPlaying={Boolean(cardPlayId && currentCollectionId === cardPlayId && isPlaying)}
@@ -1118,11 +1074,11 @@ export default function PulseContent() {
       <SectionTitle>{lang?.welove || 'Мы любим'}</SectionTitle>
 
       <div ref={weLikeScrollRef} className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
-        {weLike === null ? Array.from({ length: 8 }).map((_, index) => <PlaylistCardSkeleton key={index} />) : null}
+        {weLike === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
         {Array.isArray(weLike) ? weLike.map((card) => {
           const cardPlayId = getPlayableCardId(card);
           return (
-            <PulsePlaylistCard
+            <PulsePlaylistTile
               key={`we-like-${card.id ?? card.genlist ?? card.name}`}
               card={card}
               isPlaying={Boolean(cardPlayId && currentCollectionId === cardPlayId && isPlaying)}
@@ -1136,11 +1092,11 @@ export default function PulseContent() {
       <SectionTitle>{lang?.nowlis || 'Сейчас слушают'}</SectionTitle>
 
       <div ref={nowListenScrollRef} className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
-        {nowListen === null ? Array.from({ length: 8 }).map((_, index) => <PlaylistCardSkeleton key={index} />) : null}
+        {nowListen === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
         {Array.isArray(nowListen) ? nowListen.map((card) => {
           const cardPlayId = getPlayableCardId(card);
           return (
-            <PulsePlaylistCard
+            <PulsePlaylistTile
               key={`now-listen-${card.id ?? card.genlist ?? card.name}`}
               card={card}
               isPlaying={Boolean(cardPlayId && currentCollectionId === cardPlayId && isPlaying)}

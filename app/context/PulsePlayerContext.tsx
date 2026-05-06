@@ -2044,12 +2044,6 @@ export function PulsePlayerProvider({
                           >
                             <PulseCoverImage
                               alt="Previous Track"
-                              className="rounded-3xl blur-xl"
-                              sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
-                              src={prevArtwork}
-                            />
-                            <PulseCoverImage
-                              alt="Previous Track"
                               className="rounded-3xl"
                               sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
                               src={prevArtwork}
@@ -2065,12 +2059,6 @@ export function PulsePlayerProvider({
                             transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1), opacity 0.4s' : 'none',
                           }}
                         >
-                          <PulseCoverImage
-                            alt={playerTitle}
-                            className="rounded-3xl blur-xl"
-                            sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
-                            src={playerArtwork}
-                          />
                           <PulseCoverImage
                             alt={playerTitle}
                             className="rounded-3xl"
@@ -2096,12 +2084,6 @@ export function PulsePlayerProvider({
                               transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1)' : 'none',
                             }}
                           >
-                            <PulseCoverImage
-                              alt="Next Track"
-                              className="rounded-3xl blur-xl"
-                              sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
-                              src={nextArtwork}
-                            />
                             <PulseCoverImage
                               alt="Next Track"
                               className="rounded-3xl"

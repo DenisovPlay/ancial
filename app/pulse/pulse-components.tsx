@@ -249,6 +249,8 @@ export function PulsePlaylistTile({
   const playButtonSize = variant === 'big' ? 'h-10 w-10 lg:h-14 lg:w-14' : 'h-10 w-10';
   const playIconSize = variant === 'big' ? 'h-6 w-6' : 'h-6 w-6';
   const titleWidth = variant === 'big' ? 'w-28 lg:w-32' : 'w-28';
+  const titleTextClass = variant === 'big' ? 'text-sm lg:text-lg' : 'text-sm';
+  const descriptionTextClass = variant === 'big' ? 'hidden text-xs text-zinc-300 lg:flex lg:text-base' : 'hidden text-xs text-zinc-300 lg:flex';
 
   return (
     <div
@@ -277,8 +279,8 @@ export function PulsePlaylistTile({
         </button>
 
         <div className="flex min-w-0 flex-col gap-0 text-left">
-          <span className={cn('truncate text-sm font-medium text-white lg:text-lg', titleWidth)}>{title}</span>
-          <span className="hidden text-xs text-zinc-300 lg:flex lg:text-base">{description}</span>
+          <span className={cn('truncate font-medium text-white', titleTextClass, titleWidth)}>{title}</span>
+          <span className={descriptionTextClass}>{description}</span>
         </div>
       </div>
     </div>
