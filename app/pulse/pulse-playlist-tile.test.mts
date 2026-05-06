@@ -23,3 +23,9 @@ test('pulse library keeps the large playlist tile variant', async () => {
   assert.match(source, /<PulsePlaylistTileSkeleton key=\{index\} variant="big" \/>/);
   assert.match(source, /<PulsePlaylistTile[\s\S]*?variant="big"[\s\S]*?\/>/);
 });
+
+test('pulse library grid gives big playlist tiles a nonzero width', async () => {
+  const source = await readFile(new URL('./library/library-content.tsx', import.meta.url), 'utf8');
+
+  assert.match(source, /className="grid w-full max-w-screen-2xl grid-cols-2/);
+});

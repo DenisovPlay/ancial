@@ -132,7 +132,7 @@ export default function PulseLibraryContent() {
         </div>
       </div>
 
-      <div className="grid max-w-screen-2xl grid-cols-2 gap-3 overflow-x-hidden px-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 lg:px-0">
+      <div className="grid w-full max-w-screen-2xl grid-cols-2 gap-3 overflow-x-hidden px-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 lg:px-0">
         {loading && !libraryItems.length ? Array.from({ length: 6 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} variant="big" />) : null}
 
         {libraryItems.map((card) => {
