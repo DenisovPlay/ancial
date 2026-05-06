@@ -270,3 +270,91 @@ button{
 button:focus{
   outline: none !important;
 }
+
+body:has(.apps-overlay-route) {
+  overflow: hidden;
+}
+
+body:has(.apps-overlay-route) [data-app-nav] {
+  display: none !important;
+}
+
+body:has(.apps-overlay-route) #main-content {
+  min-height: 100dvh;
+  padding: 0 !important;
+}
+
+.mancard:hover .mananim{
+  animation: walk 2s ease;
+  animation-iteration-count: 2;
+}
+
+@keyframes walk {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-10deg); }
+  50%  { transform: rotate(10deg); }
+  100%  { transform: rotate(0deg); }
+}
+
+.shovelcard:hover .shovelanim{
+  animation: dig 2s ease;
+  animation-iteration-count: 2;
+}
+
+@keyframes dig {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(90deg); }
+  100%  { transform: rotate(0deg); }
+}
+
+.carcard:hover .caranim{
+  animation: ride 2s ease;
+  animation-iteration-count: 2;
+}
+
+@keyframes ride {
+  0%   { transform: rotate(0deg) scale(1); }
+  25%  { transform: rotate(-15deg) scale(1.2); }
+  50%  { transform: rotate(15deg) scale(1.1); }
+  100%  { transform: rotate(0deg) scale(1); }
+}
+
+.retrocard:hover .retroanim{
+  animation: jump 1s ease;
+  animation-iteration-count: 2;
+}
+
+@keyframes jump {
+  0%   { transform: scale(1,1)    translateY(0); }
+  10%  { transform: scale(1.1,.9) translateY(0); }
+  30%  { transform: scale(.9,1.1) translateY(-20px); }
+  50%  { transform: scale(1,1)    translateY(0); }
+  57%  { transform: scale(1,1)    translateY(-3px); }
+  64%  { transform: scale(1,1)    translateY(0); }
+  100% { transform: scale(1,1)    translateY(0); }
+}
+
+.headphonecard:hover .headphonesanim{
+  animation: musicdance 1s ease;
+  animation-iteration-count: 2;
+}
+
+@keyframes musicdance {
+  0%   { transform: rotate(0) translateY(0); }
+  25%  { transform: rotate(10deg) translateY(-10px); }
+  50%  { transform: rotate(-10deg) translateY(-10px); }
+  100%  { transform: rotate(0) translateY(0); }
+}
+
+.moneycard:hover .moneyanim{
+  animation: fly 1.5s ease;
+  animation-iteration-count: 2;
+}
+
+@keyframes fly {
+  0%   { transform: rotate(0) translateX(0) translateY(0) scale(1); }
+  25%  { transform: rotate(-5deg) translateX(150px) scale(1.2); }
+  50%  { transform: rotate(5deg) translateX(150px) translateY(150px) scale(1); }
+  75%  { transform: rotate(-5deg) translateX(-300px)  translateY(0) scale(1.2);}
+  100%  { transform: rotate(0) translateX(0) translateY(0) scale(1); }
+}

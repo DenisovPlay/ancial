@@ -317,14 +317,14 @@ export default function Navigation() {
             )}
 
             {isAuthenticated && user && (
-            <Dropdown icon="IC-compass" position="right" activePaths={['/pulse', '/wallet', '/games']}>
+            <Dropdown icon="IC-compass" position="right" activePaths={['/pulse', '/wallet', '/apps', '/games']}>
                 <DropdownItem href="/pulse" icon="IC-music">
                     Pulse
                 </DropdownItem>
                 <DropdownItem href="/wallet" icon="IC-wallet">
                     Wallet
                 </DropdownItem>
-                <DropdownItem href="/games" icon="IC-games">
+                <DropdownItem href="/apps" icon="IC-games">
                     ZYNT
                 </DropdownItem>
             </Dropdown>
@@ -348,7 +348,7 @@ export default function Navigation() {
             )}
 
             {!isAuthenticated && (
-                <NavItem href="/games" icon="IC-games" />
+                <NavItem href="/apps" icon="IC-games" />
             )}
 
             {!isAuthenticated && (
@@ -408,10 +408,10 @@ export default function Navigation() {
                         </DropdownItem>
                     </Dropdown>
                 )}
-                <Dropdown icon="IC-compass" position="top" align="end" direction="row" activePaths={['/pulse', '/wallet', '/games']}>
+                <Dropdown icon="IC-compass" position="top" align="end" direction="row" activePaths={['/pulse', '/wallet', '/apps', '/games']}>
                     <NavItem href="/pulse" icon="IC-music" />
                     <NavItem href="/wallet" icon="IC-wallet" />
-                    <NavItem href="/games" icon="IC-games" />
+                    <NavItem href="/apps" icon="IC-games" />
                     <NavItem href="/" icon="IC-search" />
                 </Dropdown>
             </div>
