@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
+import ImageViewerModal, { type ImageViewerSlide } from '../components/image-viewer-modal';
 import Modal from '../components/modal';
 import { useAuth } from '../context/AuthContext';
 import { useDragScroll } from '../hooks/useDragScroll';
@@ -30,6 +31,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
   const [app, setApp] = useState<LegacyAppInfo | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedScreenshotIndex, setSelectedScreenshotIndex] = useState<number | null>(null);
   const screenshotsRef = useDragScroll({ speed: 1.4 });
 
   useEffect(() => {
@@ -80,6 +82,89 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
   }, [appId, isOpen]);
 
   const screenshots = useMemo(() => splitScreenshots(app?.screenshots), [app]);
+  const screenshotSlides = useMemo<ImageViewerSlide[]>(
+    () =>
+      screenshots.map((url, index) => ({
+        alt: `${app?.name ?? 'App'} screenshot ${index + 1}`,
+        url,
+      })),
+    [app?.name, screenshots],
+  );
+  const selectedScreenshot =
+    selectedScreenshotIndex === null ? null : screenshotSlides[selectedScreenshotIndex] ?? null;
+
+  useEffect(() => {
+    setSelectedScreenshotIndex(null);
+  }, [appId, isOpen]);
+
+  useEffect(() => {
+    if (
+      selectedScreenshotIndex !== null &&
+      selectedScreenshotIndex >= screenshotSlides.length
+    ) {
+      setSelectedScreenshotIndex(null);
+    }
+  }, [selectedScreenshotIndex, screenshotSlides.length]);
+
+  useEffect(() => {
+    if (selectedScreenshotIndex === null || screenshotSlides.length <= 1) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        setSelectedScreenshotIndex((current) =>
+          current === null ? 0 : (current + 1) % screenshotSlides.length,
+        );
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setSelectedScreenshotIndex((current) =>
+          current === null ? 0 : (current - 1 + screenshotSlides.length) % screenshotSlides.length,
+        );
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedScreenshotIndex, screenshotSlides.length]);
+
+  const openScreenshot = (index: number) => {
+    setSelectedScreenshotIndex(index);
+  };
+
+  const closeScreenshot = () => {
+    setSelectedScreenshotIndex(null);
+  };
+
+  const handlePrevScreenshot = () => {
+    setSelectedScreenshotIndex((current) => {
+      if (screenshotSlides.length === 0) return current;
+      return current === null
+        ? screenshotSlides.length - 1
+        : (current - 1 + screenshotSlides.length) % screenshotSlides.length;
+    });
+  };
+
+  const handleNextScreenshot = () => {
+    setSelectedScreenshotIndex((current) => {
+      if (screenshotSlides.length === 0) return current;
+      return current === null ? 0 : (current + 1) % screenshotSlides.length;
+    });
+  };
+
+  const handleModalClose = () => {
+    if (selectedScreenshotIndex !== null) {
+      closeScreenshot();
+      return;
+    }
+
+    onClose();
+  };
 
   const handlePlay = () => {
     if (!app) {
@@ -101,16 +186,17 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
   };
 
   return (
-    <Modal
-      align="responsive"
-      animation="sheet"
-      bodyClassName="py-3"
-      isOpen={isOpen}
-      onClose={onClose}
-      panelClassName="bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl"
-      showHeader={false}
-      width="lg"
-    >
+    <>
+      <Modal
+        align="responsive"
+        animation="sheet"
+        bodyClassName="py-3"
+        isOpen={isOpen}
+        onClose={handleModalClose}
+        panelClassName="bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl"
+        showHeader={false}
+        width="lg"
+      >
       {loading && <AppInfoSkeleton lang={lang} />}
       {!loading && error && <AppInfoError error={error} />}
       {!loading && !error && !app && <AppInfoEmpty lang={lang} />}
@@ -187,14 +273,20 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
           </div>
 
           <div ref={screenshotsRef} className="flex w-full overflow-auto gap-3 viewport dragscroll mt-3 px-3">
-            {screenshots.map((image) => (
-              <a href={image} key={image} target="_blank">
+            {screenshots.map((image, index) => (
+              <button
+                aria-label={`${app.name} screenshot ${index + 1}`}
+                className="shrink-0"
+                key={`${image}-${index}`}
+                onClick={() => openScreenshot(index)}
+                type="button"
+              >
                 <img
                   alt={`${app.name} screenshot`}
                   className="h-32 lg:h-64 bg-zinc-800 shadow rounded-2xl shrink-0 cursor-pointer duration-300 active:scale-95"
                   src={image}
                 />
-              </a>
+              </button>
             ))}
           </div>
 
@@ -203,7 +295,19 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
           </span>
         </div>
       )}
-    </Modal>
+      </Modal>
+      {selectedScreenshot && (
+        <ImageViewerModal
+          activeImageIndex={selectedScreenshotIndex}
+          image={selectedScreenshot}
+          imagesLength={screenshotSlides.length}
+          isOpen={selectedScreenshotIndex !== null}
+          onClose={closeScreenshot}
+          onNext={handleNextScreenshot}
+          onPrev={handlePrevScreenshot}
+        />
+      )}
+    </>
   );
 }
 
