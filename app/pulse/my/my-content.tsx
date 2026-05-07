@@ -377,25 +377,6 @@ export default function PulseMyContent() {
 
 function PulseCreatorsLogo() {
   return (
-    <svg className="h-6 lg:h-8" viewBox="0 0 574 97" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <defs>
-        <linearGradient id="pulse-creators-gradient" x1="0" y1="0" x2="574" y2="97" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#00DDFF" />
-          <stop offset="0.504808" stopColor="#0086E6" />
-          <stop offset="1" stopColor="#0998FF" />
-        </linearGradient>
-      </defs>
-      <text
-        x="0"
-        y="76"
-        fill="url(#pulse-creators-gradient)"
-        fontFamily="Inter, Arial, sans-serif"
-        fontSize="86"
-        fontWeight="900"
-        letterSpacing="0"
-      >
-        Creators
-      </text>
-    </svg>
+    <img src="/img/logos/creators.svg" alt="Pulse Creators Logo" className={cn('h-6 lg:h-8')} />
   );
 }
