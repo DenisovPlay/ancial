@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import IconSprite from './components/icon-sprite';
 import Navigation from './components/navigation';
 import { AuthProvider } from './context/AuthContext';
 import { GlobalWSProvider } from './context/GlobalWSProvider';
@@ -53,6 +54,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-black text-white">
+        <IconSprite />
         <NotificationProvider>
           <AuthProvider>
             <GlobalWSProvider>

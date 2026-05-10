@@ -31,7 +31,7 @@ const VerifyIcon = ({ verify }: { verify?: string | number }) => {
   if (verify == 1) {
     return (
       <svg className="w-5 h-5 inline fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <use href="/icons.svg#IC-verify"></use>
+        <use href="#IC-verify"></use>
       </svg>
     );
   }
@@ -172,7 +172,7 @@ function FriendsContent() {
     return (
       <div className="w-full flex items-center justify-center py-12">
         <svg className="w-16 h-16 inline animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="/icons.svg#IC-loader"></use>
+          <use href="#IC-loader"></use>
         </svg>
       </div>
     );
@@ -197,7 +197,7 @@ function FriendsContent() {
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"
           >
             <svg className="w-8 h-8 fill-white inline" viewBox="0 0 48 48">
-              <use href="/icons.svg#IC-chevron-left"></use>
+              <use href="#IC-chevron-left"></use>
             </svg> 
             <span>{lang?.friends}</span>
           </span>
@@ -215,7 +215,7 @@ function FriendsContent() {
           />
           <button type="submit" className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700/50 border border-transparent hover:border-zinc-600/30">
             <svg className="inline w-8 h-8 fill-white" viewBox="0 0 48 48">
-              <use href="/icons.svg#IC-search"></use>
+              <use href="#IC-search"></use>
             </svg>
           </button>
         </form>
@@ -271,7 +271,7 @@ function FriendsContent() {
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                          <use href="/icons.svg#IC-plus"></use>
+                          <use href="#IC-plus"></use>
                         </svg>
                       </div>
                     )}
@@ -282,7 +282,7 @@ function FriendsContent() {
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                          <use href="/icons.svg#IC-times"></use>
+                          <use href="#IC-times"></use>
                         </svg>
                       </div>
                     )}
@@ -293,7 +293,7 @@ function FriendsContent() {
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                          <use href="/icons.svg#IC-chats"></use>
+                          <use href="#IC-chats"></use>
                         </svg>
                       </div>
                     ) : null}
@@ -315,7 +315,7 @@ export default function FriendsPage() {
     <Suspense fallback={
        <div className="w-full flex items-center justify-center py-12">
         <svg className="w-16 h-16 inline animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="/icons.svg#IC-loader"></use>
+          <use href="#IC-loader"></use>
         </svg>
       </div>
     }>

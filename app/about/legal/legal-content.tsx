@@ -26,7 +26,7 @@ export default function LegalPage() {
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 48 48"
             >
-              <use href={`/icons.svg#IC-chevron-left`}></use>
+              <use href={`#IC-chevron-left`}></use>
             </svg>
             {lang?.documents || "Документы"}
           </span>
@@ -48,7 +48,7 @@ export default function LegalPage() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 48 48"
               >
-                <use href={`/icons.svg#IC-globe`}></use>
+                <use href={`#IC-globe`}></use>
               </svg>
             </button>
             <button
@@ -87,7 +87,7 @@ export default function LegalPage() {
               Русский
             </span>
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0,0,256,256">
-              <use href="/icons.svg#IC-goverment-document"></use>
+              <use href="#IC-goverment-document"></use>
             </svg>
             <span className="text-zinc-200 text-center">
               Политика обработки персональных данных
@@ -103,7 +103,7 @@ export default function LegalPage() {
               Русский
             </span>
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0 0 32 32">
-              <use href="/icons.svg#IC-document"></use>
+              <use href="#IC-document"></use>
             </svg>
             <span className="text-zinc-200 text-center">Правила</span>
           </div>
@@ -117,7 +117,7 @@ export default function LegalPage() {
               Русский
             </span>
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0 0 32 32">
-              <use href="/icons.svg#IC-document"></use>
+              <use href="#IC-document"></use>
             </svg>
             <span className="text-zinc-200 text-center">
               Правила публикации на Pulse
@@ -133,7 +133,7 @@ export default function LegalPage() {
               English
             </span>
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0 0 32 32">
-              <use href="/icons.svg#IC-document"></use>
+              <use href="#IC-document"></use>
             </svg>
             <span className="text-zinc-200 text-center">Terms of Service</span>
           </div>
@@ -147,7 +147,7 @@ export default function LegalPage() {
               Русский
             </span>
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0,0,256,256">
-              <use href="/icons.svg#IC-goverment-document"></use>
+              <use href="#IC-goverment-document"></use>
             </svg>
             <span className="text-zinc-200 text-center">
               Политика использования файлов Cookie

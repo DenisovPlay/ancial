@@ -193,7 +193,7 @@ export default function Modal({
                       className="cursor-pointer hidden sm:flex p-1.5 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-600/30 duration-300 active:scale-95"
                   >
                       <svg className="w-5 h-5 fill-zinc-300" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <use href="/icons.svg#IC-times"></use>
+                        <use href="#IC-times"></use>
                       </svg>
                   </button>
               </div>

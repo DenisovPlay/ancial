@@ -12,7 +12,7 @@ export default function ContactsPage() {
   return (
     <div className="flex flex-col jusitify-center items-center gap-3 py-3">
       <div className="w-full max-w-4xl flex items-center">
-          <span onClick={() => router.push('/about')} className="cursor-pointer w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-chevron-left`}></use></svg> {lang?.contacts} </span>
+          <span onClick={() => router.push('/about')} className="cursor-pointer w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg> {lang?.contacts} </span>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full max-w-4xl items-cente justify-center gap-3 px-3 lg:px-0 duration-300">
@@ -107,7 +107,7 @@ export default function ContactsPage() {
           <a target="_blank" href="https://dzen.ru/znflw" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
               <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative" style={{ backgroundImage: 'url(/img/logos/zeni.png)' }}>
                   <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-black shadow">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 fill-white" viewBox="0 0 129 129"><use href={`/icons.svg#IC-dzen-logo`}></use></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 fill-white" viewBox="0 0 129 129"><use href={`#IC-dzen-logo`}></use></svg>
                   </div>
               </div>
               <div className="flex flex-col">
@@ -118,7 +118,7 @@ export default function ContactsPage() {
           
           <a target="_blank" href="mailto:contact@ancial.ru" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
               <div className="w-14 h-14 flex items-center justify-center bg-zinc-600 rounded-full shadow">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 fill-white" viewBox="0 0 48 48"><use href={`/icons.svg#IC-email`}></use></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 fill-white" viewBox="0 0 48 48"><use href={`#IC-email`}></use></svg>
               </div>
               <div className="flex flex-col">
                   <span className="text-lg font-bold">{lang?.email}</span>

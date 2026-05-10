@@ -1352,7 +1352,7 @@ export default function FeedContent() {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 justify-center items-center">
             <svg className="w-24 h-24 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-             <use href="/icons.svg#IC-trash"></use>
+             <use href="#IC-trash"></use>
             </svg>
             <span className="text-base text-zinc-200">{strings.reallywantdeletepost}</span>
           </div>

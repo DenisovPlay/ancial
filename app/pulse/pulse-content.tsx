@@ -266,7 +266,7 @@ function PulseLogo({ className }: { className?: string }) {
 function ActionIcon({ name, className }: { className?: string; name: string }) {
   return (
     <svg className={cn('inline fill-white', className)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <use href={`/icons.svg#${name}`} />
+      <use href={`#${name}`} />
     </svg>
   );
 }
@@ -1060,7 +1060,7 @@ export default function PulseContent() {
 
       <SectionTitle>{lang?.artists || 'Артисты'}</SectionTitle>
 
-      <div ref={artistsScrollRef} className="viewport dragscroll -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
+      <div ref={artistsScrollRef} className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
         {artists === null ? Array.from({ length: 8 }).map((_, index) => <ArtistCardSkeleton key={index} />) : null}
         {Array.isArray(artists) ? artists.map((artist) => (
           <PulseArtistCard

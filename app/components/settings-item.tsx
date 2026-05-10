@@ -36,7 +36,7 @@ export function SettingsItem({
           className="w-6 h-6 fill-zinc-500 mr-1.5 group-hover:fill-zinc-600 duration-300"
           viewBox="0 0 48 48"
         >
-          <use href={`/icons.svg#IC-chevron-right`}></use>
+          <use href={`#IC-chevron-right`}></use>
         </svg>
       ) : null}
     </div>

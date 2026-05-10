@@ -10,6 +10,7 @@ export const SITE_CONFIG = {
 };
 
 export const DEFAULT_SEO: Metadata = {
+  metadataBase: new URL(SITE_CONFIG.url),
   title: {
     default: SITE_CONFIG.title,
     template: `%s | ${SITE_CONFIG.title}`,

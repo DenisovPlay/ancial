@@ -68,7 +68,7 @@ export default function SettingsPage() {
               title={lang?.account || 'Аккаунт'}
               iconBgClass="bg-pink-500/10"
               icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-pink-500" viewBox="0 0 48 48"><use href={`/icons.svg#IC-me`}></use></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-pink-500" viewBox="0 0 48 48"><use href={`#IC-me`}></use></svg>
               }
             />
 
@@ -77,7 +77,7 @@ export default function SettingsPage() {
               title={lang?.security || 'Безопасность'}
               iconBgClass="bg-blue-500/10"
               icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-blue-500" viewBox="0 0 48 48"><use href={`/icons.svg#IC-lock`}></use></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-blue-500" viewBox="0 0 48 48"><use href={`#IC-lock`}></use></svg>
               }
             />
 
@@ -86,7 +86,7 @@ export default function SettingsPage() {
               title={lang?.socialnetworks || 'Социальные сети'}
               iconBgClass="bg-lime-500/10"
               icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-lime-500" viewBox="0 0 48 48"><use href={`/icons.svg#IC-socials`}></use></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-lime-500" viewBox="0 0 48 48"><use href={`#IC-socials`}></use></svg>
               }
             />
 
@@ -95,7 +95,7 @@ export default function SettingsPage() {
               title={lang?.notif || 'Уведомления'}
               iconBgClass="bg-amber-500/10"
               icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-amber-500" viewBox="0 0 48 48"><use href={`/icons.svg#IC-notification`}></use></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-amber-500" viewBox="0 0 48 48"><use href={`#IC-notification`}></use></svg>
               }
             />
           </>
@@ -105,7 +105,7 @@ export default function SettingsPage() {
           title={lang?.language || 'Язык'}
           iconBgClass="bg-red-500/10"
           icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-red-500" viewBox="0 0 48 48"><use href={`/icons.svg#IC-globe`}></use></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-red-500" viewBox="0 0 48 48"><use href={`#IC-globe`}></use></svg>
           }
           rightContent={
             <select
@@ -124,7 +124,7 @@ export default function SettingsPage() {
           title={`${lang?.about || 'О'} Ancial`}
           iconBgClass="bg-emerald-500/10"
           icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-emerald-500" viewBox="0 0 48 48"><use href={`/icons.svg#IC-book`}></use></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-emerald-500" viewBox="0 0 48 48"><use href={`#IC-book`}></use></svg>
           }
         />
       </div>

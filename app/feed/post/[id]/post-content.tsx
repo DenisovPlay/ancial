@@ -9,6 +9,7 @@ import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { PostCard, type PostCardLang, type PostData } from '../../../components/posts-renderer';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 import { authFetchJson, authFetchText } from '../../../lib/auth-fetch';
 import { SvgIcon } from '../../editor-shared';
 import FeedPostSkeleton from '../../feed-post-skeleton';
@@ -52,6 +53,32 @@ function flag(value: boolean | number | string | null | undefined) {
 function toNumber(value: number | string | null | undefined) {
   const nextValue = Number(value ?? 0);
   return Number.isFinite(nextValue) ? nextValue : 0;
+}
+
+function htmlToPlainText(value: string | null | undefined) {
+  return (value ?? '')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function truncateText(value: string, maxLength: number) {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength).trim()}...`;
+}
+
+function getPostDocumentTitle(post: PostData | null) {
+  if (!post) return null;
+
+  const title = htmlToPlainText(post.title);
+  if (title) return title;
+
+  const content = htmlToPlainText(post.content);
+  if (content) return truncateText(content, 60);
+
+  const authorName = post.author?.name?.trim();
+  return authorName ? `Пост от ${authorName}` : 'Пост';
 }
 
 async function apiJson<T>(path: string, init?: RequestInit) {
@@ -281,6 +308,9 @@ export default function SinglePostContent({ postId }: { postId: string }) {
     tobookmarks: strings.tbookmark,
     translate: lang?.translate || 'Перевести',
   };
+  const postDocumentTitle = useMemo(() => getPostDocumentTitle(post), [post]);
+
+  useDocumentTitle(postDocumentTitle);
 
   const loadComments = useCallback(async (nextPostId: Id) => {
     setIsCommentsLoading(true);
@@ -753,7 +783,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                         )}
                       >
                         <svg className="fill-white w-8 h-8 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                          <use href="/icons.svg#IC-send"></use>
+                          <use href="#IC-send"></use>
                         </svg>
                       </button>
                     </div>
@@ -764,7 +794,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                   {isCommentsLoading ? (
                     <div className="w-full flex items-center justify-center py-6">
                       <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                        <use href="/icons.svg#IC-loader"></use>
+                        <use href="#IC-loader"></use>
                       </svg>
                     </div>
                   ) : comments.length > 0 ? (
@@ -896,7 +926,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 justify-center items-center">
             <svg className="w-24 h-24 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="/icons.svg#IC-trash"></use>
+              <use href="#IC-trash"></use>
             </svg>
             <span className="text-base text-zinc-200">{strings.reallywantdeletepost}</span>
           </div>

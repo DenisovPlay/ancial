@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Modal from '../../components/modal';
-import { Dropdown, DropdownItem } from '../../components/navigation';
 import { CommentsModal, type FeedComment } from '../../components/comments-modal';
 import {
   EmptyIllustration,
@@ -24,7 +23,7 @@ import PostsRenderer, {
 } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { useDragScroll } from '../../hooks/useDragScroll';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { authFetch, authFetchJson, authFetchText } from '../../lib/auth-fetch';
 import {
   cn,
@@ -202,6 +201,15 @@ export default function UserProfileContent({ login }: { login: string }) {
     () => getUserProfileCacheKey(login, user?.id, isAuthenticated),
     [isAuthenticated, login, user?.id],
   );
+  const profileDocumentTitle = useMemo(() => {
+    if (!userData) return null;
+
+    const handle = userData.login?.trim() || login;
+    const name = `${userData.fname || ''} ${userData.lname || ''}`.trim();
+    return name ? `${name} (@${handle})` : `@${handle}`;
+  }, [login, userData]);
+
+  useDocumentTitle(profileDocumentTitle);
 
   const strings = useMemo(() => {
     const fallback = {

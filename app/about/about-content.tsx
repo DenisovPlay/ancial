@@ -18,12 +18,12 @@
     return (
   <div className="flex flex-col jusitify-center items-center gap-3 py-3">
       <div className="w-full max-w-3xl flex items-center">
-          <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Ancial`}</span>
+          <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Ancial`}</span>
       </div>
 
       <div className="px-3 lg:px-0 w-full max-w-3xl">
           <div className="border border-zinc-600/30 p-3 bg-blue-500/25 text-blue-500 shadow rounded-3xl flex items-center w-full gap-3">
-              <svg className="w-8 h-8 fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-warning`}></use></svg>
+              <svg className="w-8 h-8 fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-warning`}></use></svg>
               <span className="text-sm lg:text-base w-full">Документы переехали - теперь они находятся на отдельной странице!</span>
           </div>
       </div>
@@ -46,28 +46,28 @@
           <span className="w-full max-w-3xl text-lg text-zinc-300 px-3 lg:px-0">Ancial by ZeniFlow - это уникальный проект, объединяющий в себе множество полезных сервисов.</span>
           <div className="flex items-center gap-3 w-full flex-nowrap overflow-x-auto drag-scroll viewport py-3 px-3 lg:px-0" ref={iconsScrollRef}>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-indigo-500 flex items-center justify-center shrink-0">
-                  <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-feed`}></use></svg>
+                  <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-feed`}></use></svg>
               </div>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-purple-500 flex items-center justify-center shrink-0">
-                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-search`}></use></svg>
+                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-search`}></use></svg>
               </div>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-blue-500 flex items-center justify-center shrink-0">
-                  <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-chats`}></use></svg>
+                  <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chats`}></use></svg>
               </div>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-amber-500 flex items-center justify-center shrink-0">
-                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-play`}></use></svg>
+                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-play`}></use></svg>
               </div>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-pink-500 flex items-center justify-center shrink-0">
-                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-music`}></use></svg>
+                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-music`}></use></svg>
               </div>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-emerald-500 flex items-center justify-center shrink-0">
-                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-wallet`}></use></svg>
+                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-wallet`}></use></svg>
               </div>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-cyan-500 flex items-center justify-center shrink-0">
-                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-call`}></use></svg>
+                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-call`}></use></svg>
               </div>
               <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-green-500 flex items-center justify-center shrink-0">
-                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-games`}></use></svg>
+                  <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-games`}></use></svg>
               </div>
               <div className="h-14 rounded-2xl flex items-center justify-center shrink-0">
                   <span className="text-lg text-zinc-300">И другие...</span>
@@ -84,7 +84,7 @@
           <span className="w-full max-w-3xl text-lg text-zinc-300">GG-Connect v3.1</span>
           <span className="text-xl font-bold text-zinc-100 mt-1.5">Стороннее ПО</span>
           <div className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-500 shadow rounded-3xl flex items-center w-full gap-3">
-              <svg className="w-8 h-8 fill-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-warning`}></use></svg>
+              <svg className="w-8 h-8 fill-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-warning`}></use></svg>
               <span className="text-sm lg:text-base w-full">Используя Ancial, вы автоматически соглашаетесь с правилами и политиками сторонних сервисов, интегрированных в Ancial.</span>
           </div>
           <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-green-400">Icons8</b> - все иконки на сайте</span>

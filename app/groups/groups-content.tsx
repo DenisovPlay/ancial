@@ -20,7 +20,7 @@ const VerifyIcon = ({ verify }: { verify?: string | number }) => {
   if (verify == 1) {
     return (
       <svg className="w-5 h-5 inline fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <use href="/icons.svg#IC-verify"></use>
+        <use href="#IC-verify"></use>
       </svg>
     );
   }
@@ -157,7 +157,7 @@ function GroupsContent() {
             }} 
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-chevron-left"></use></svg> 
+            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-chevron-left"></use></svg> 
             <span>{lang?.groups || 'Сообщества'}</span>
           </span>
         </div>
@@ -173,21 +173,21 @@ function GroupsContent() {
             autoComplete="off" 
           />
           <button type="submit" className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700">
-            <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-search"></use></svg>
+            <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-search"></use></svg>
           </button>
         </form>
         <button 
           onClick={() => setIsModalOpen(true)}
           className="cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full"
         >
-          <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-plus"></use></svg>
+          <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-plus"></use></svg>
         </button>
       </div>
 
       <div className="overflow-hidden border border-transparent lg:border-zinc-600/30 lg:bg-zinc-900 lg:rounded-3xl lg:shadow w-full max-w-3xl duration-300">
         {isLoading ? (
           <div className="w-full flex items-center justify-center py-12">
-            <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-loader"></use></svg>
+            <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-loader"></use></svg>
           </div>
         ) : errorMsg ? (
           <div className="p-3 text-center text-zinc-400">{errorMsg}</div>
@@ -256,7 +256,7 @@ export default function GroupsPage() {
   return (
     <Suspense fallback={
       <div className="w-full flex items-center justify-center py-12">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-loader"></use></svg>
+        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-loader"></use></svg>
       </div>
     }>
       <GroupsContent />

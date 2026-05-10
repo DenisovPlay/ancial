@@ -168,7 +168,7 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
         )}
         <button onClick={startClosing} className="ml-3 cursor-pointer p-1 opacity-60 hover:opacity-100 transition-opacity">
           <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-            <use href={`/icons.svg#IC-times`}></use>
+            <use href={`#IC-times`}></use>
           </svg>
         </button>
       </div>

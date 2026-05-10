@@ -9,7 +9,7 @@ export default function GuidesPage() {
   return (
     <div className="flex flex-col jusitify-center items-center gap-3 py-3">
         <div className="w-full max-w-4xl">
-            <span onClick={() => router.push("/about/guides/")} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-chevron-left`}></use></svg> {lang?.guides} </span>
+            <span onClick={() => router.push("/about/guides/")} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg> {lang?.guides} </span>
         </div>
         <div className="flex flex-col w-full max-w-4xl pb-64">
             <h1 className="w-full text-2xl text-zinc-100 px-3 lg:px-0 font-bold">Как установить приложение?</h1>

@@ -94,18 +94,14 @@ export default function PulseSearchContent() {
   }, [showNote]);
 
   useEffect(() => {
+    setSearchValue(query);
+  }, [query]);
+
+  useEffect(() => {
     let cancelled = false;
 
     const runSearch = async () => {
       setLoading(true);
-
-      if (!query) {
-        setArtists([]);
-        setPlaylists([]);
-        setTracks([]);
-        setLoading(false);
-        return;
-      }
 
       const [favoritesResult, searchResult] = await Promise.allSettled([
         fetchPulseJson<{ ids?: Array<number | string> }>('/api/pulse/getFavorites.php'),
@@ -302,7 +298,7 @@ export default function PulseSearchContent() {
         {!loading && artists.length ? (
           <>
             {label(lang?.artists || 'Артисты')}
-            <div className="viewport dragscroll -my-3 flex overflow-auto px-3 py-3 lg:px-0">
+            <div className="viewport dragscroll -mx-3 -my-3 flex overflow-auto px-3 py-3 lg:px-0">
               <div className="flex flex-row flex-nowrap gap-3">
                 {artists.map((artist) => (
                   <PulseArtistTile

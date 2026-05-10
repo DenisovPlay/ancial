@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 
 import { createPageMetadata } from '../../seo';
 import PulseSearchContent from './search-content';
+import PulseSearchLoading from './search-loading';
 
 export const metadata: Metadata = createPageMetadata({
   canonical: '/pulse/search',
@@ -12,7 +13,7 @@ export const metadata: Metadata = createPageMetadata({
 
 export default function PulseSearchPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PulseSearchLoading />}>
       <PulseSearchContent />
     </Suspense>
   );

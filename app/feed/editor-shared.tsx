@@ -78,7 +78,7 @@ export function SvgIcon({
 }) {
   return (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox={viewBox}>
-      <use href={`/icons.svg#${id}`}></use>
+      <use href={`#${id}`}></use>
     </svg>
   );
 }

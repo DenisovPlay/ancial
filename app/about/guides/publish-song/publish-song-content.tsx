@@ -9,7 +9,7 @@ export default function GuidesPage() {
   return (
     <div className="flex flex-col jusitify-center items-center gap-3 py-3">
         <div className="w-full max-w-4xl">
-            <span onClick={() => router.push("/about/guides/")} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-chevron-left`}></use></svg> {lang?.guides} </span>
+            <span onClick={() => router.push("/about/guides/")} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg> {lang?.guides} </span>
         </div>
         
         <div className="flex flex-col w-full max-w-4xl pb-64">
@@ -19,7 +19,7 @@ export default function GuidesPage() {
             
             <div className="px-3 pt-3 lg:px-0 w-full max-w-4xl">
                 <div className="border border-zinc-600/30 p-3 bg-blue-500/25 text-blue-500 shadow rounded-3xl flex items-center w-full gap-3">
-                    <svg className="w-8 h-8 fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-warning"></use></svg>
+                    <svg className="w-8 h-8 fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-warning"></use></svg>
                     <span className="text-sm lg:text-base w-full">Ограничение - <b>10МБ</b> на трек, до 10-ти треков в альбоме.</span>
                 </div>
             </div>

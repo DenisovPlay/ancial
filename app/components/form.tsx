@@ -30,7 +30,7 @@ export const SearchBar = (props: InputHTMLAttributes<HTMLInputElement>) => {
     <div className={`relative w-full ${props.className || ''}`}>
       <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
         <svg className="w-5 h-5 fill-zinc-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="/icons.svg#IC-search"></use>
+          <use href="#IC-search"></use>
         </svg>
       </div>
       <input

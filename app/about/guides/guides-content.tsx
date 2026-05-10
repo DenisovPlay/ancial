@@ -9,7 +9,7 @@ export default function GuidesPage() {
   return (
     <div className="flex flex-col jusitify-center items-center gap-3 py-3">
         <div className="w-full max-w-4xl">
-            <span onClick={() => router.push("/about")} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`/icons.svg#IC-chevron-left`}></use></svg> {lang?.guides} </span>
+            <span onClick={() => router.push("/about")} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg> {lang?.guides} </span>
         </div>
         <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 lg:px-0 pb-64">
             <div onClick={() => router.push("/about/guides/app")} className="bg-zinc-900 hover:bg-zinc-800 rounded-2xl flex flex-col duration-300 active:scale-95 cursor-pointer relative group border border-zinc-600/30">

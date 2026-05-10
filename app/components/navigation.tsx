@@ -33,7 +33,7 @@ const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, ico
     </>
   ) : icon ? (
     <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <use href={`/icons.svg#${icon}`}></use>
+      <use href={`#${icon}`}></use>
     </svg>
   ) : null;
   
@@ -197,7 +197,7 @@ export const Dropdown = ({
         >
           {triggerNode ?? (
             <svg className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href={`/icons.svg#${compactTriggerIcon}`}></use>
+              <use href={`#${compactTriggerIcon}`}></use>
             </svg>
           )}
         </button>
@@ -275,7 +275,7 @@ export const DropdownItem = ({
     <>
       {iconNode ?? (
         <svg className={cn('inline w-6 h-6 fill-white', iconClassName)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href={`/icons.svg#${icon}`}></use>
+          <use href={`#${icon}`}></use>
         </svg>
       )}
       {children}

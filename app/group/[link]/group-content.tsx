@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { type ChangeEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Modal from '../../components/modal';
 import { CommentsModal, type FeedComment } from '../../components/comments-modal';
@@ -13,13 +13,13 @@ import {
   type UserPreview,
   UserMiniCard,
 } from '../../components/profile-ui';
-import { Dropdown, DropdownItem } from '../../components/navigation';
 import PostsRenderer, {
   type PostCardLang,
   type PostData,
 } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useDragScroll } from '../../hooks/useDragScroll';
 import { authFetch, authFetchJson, authFetchText } from '../../lib/auth-fetch';
 import {
@@ -270,13 +270,21 @@ export default function GroupProfileContent({ link }: { link: string }) {
     slnk: '',
   });
 
-  const subscribersScrollRef = useDragScroll({ speed: 2 });
   const officialGroupsScrollRef = useDragScroll({ speed: 2 });
 
   const groupCacheKey = useMemo(
     () => getGroupProfileCacheKey(link, user?.id, isAuthenticated),
     [isAuthenticated, link, user?.id],
   );
+  const groupDocumentTitle = useMemo(() => {
+    if (!groupData) return null;
+
+    const handle = groupData.slnk?.trim() || link;
+    const name = groupData.name?.trim();
+    return name ? `${name} ($${handle})` : `$${handle}`;
+  }, [groupData, link]);
+
+  useDocumentTitle(groupDocumentTitle);
 
   const strings = useMemo(() => {
     const fb = {

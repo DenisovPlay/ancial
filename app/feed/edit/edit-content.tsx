@@ -430,7 +430,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
         <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="/icons.svg#IC-loader"></use>
+          <use href="#IC-loader"></use>
         </svg>
       </div>
     );
@@ -440,7 +440,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
         <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="/icons.svg#IC-loader"></use>
+          <use href="#IC-loader"></use>
         </svg>
       </div>
     );
@@ -471,7 +471,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       {isPostLoading && (
         <div className="flex justify-center items-center w-full py-10">
           <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <use href="/icons.svg#IC-loader"></use>
+            <use href="#IC-loader"></use>
           </svg>
         </div>
       )}
@@ -508,7 +508,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
               className="border border-zinc-600/30 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 px-3 py-1 shadow rounded-3xl shrink-0 text-sm cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               <svg className="fill-white w-6 h-6 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                <use href="/icons.svg#IC-send"></use>
+                <use href="#IC-send"></use>
               </svg>
               <span>{strings.save}</span>
             </button>
@@ -556,7 +556,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
                       {image.status === 'uploading' ? (
                         <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full text-5xl font-bold duration-300">
                           <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                            <use href="/icons.svg#IC-loader"></use>
+                            <use href="#IC-loader"></use>
                           </svg>
                         </div>
                       ) : (

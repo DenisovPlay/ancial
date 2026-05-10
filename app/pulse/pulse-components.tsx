@@ -151,7 +151,7 @@ export function PulseLogo({ className }: { className?: string }) {
 export function ActionIcon({ name, className }: { className?: string; name: string }) {
   return (
     <svg className={cn('inline fill-white', className)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <use href={`/icons.svg#${name}`} />
+      <use href={`#${name}`} />
     </svg>
   );
 }

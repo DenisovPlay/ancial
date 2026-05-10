@@ -371,7 +371,7 @@ export default function CreatePostContent() {
     return (
       <div className="flex justify-center items-center w-full h-screen">
         <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="/icons.svg#IC-loader"></use>
+          <use href="#IC-loader"></use>
         </svg>
       </div>
     );
@@ -381,7 +381,7 @@ export default function CreatePostContent() {
     return (
       <div className="flex justify-center items-center w-full h-screen">
         <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="/icons.svg#IC-loader"></use>
+          <use href="#IC-loader"></use>
         </svg>
       </div>
     );
@@ -440,7 +440,7 @@ export default function CreatePostContent() {
           )}
         >
           <svg className="fill-white w-6 h-6 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <use href="/icons.svg#IC-send"></use>
+            <use href="#IC-send"></use>
           </svg>
           <span>{strings.publicpost}</span>
         </button>
@@ -488,7 +488,7 @@ export default function CreatePostContent() {
                   {image.status === 'uploading' ? (
                     <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full text-5xl font-bold duration-300">
                       <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                        <use href="/icons.svg#IC-loader"></use>
+                        <use href="#IC-loader"></use>
                       </svg>
                     </div>
                   ) : (

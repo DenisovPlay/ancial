@@ -55,6 +55,18 @@ const GENERATED_PLAYLISTS: Record<string, string> = {
   '-5': 'Your',
 };
 
+const BUILTIN_PLAYLIST_TITLES: Record<string, string> = {
+  '-1': 'Топ',
+  '-2': 'Новинки',
+  '-5': 'Избранное',
+};
+
+const BUILTIN_PLAYLIST_DESCRIPTIONS: Record<string, string> = {
+  '-1': 'Самые популярные треки Ancial Pulse.',
+  '-2': 'Новые треки Ancial Pulse.',
+  '-5': 'Ваши избранные треки в Ancial Pulse.',
+};
+
 export function normalizePulsePlaylistId(value: string | number | null | undefined) {
   const normalizedValue = String(value ?? '').trim();
   if (!/^-?\d+$/.test(normalizedValue)) {
@@ -62,6 +74,18 @@ export function normalizePulsePlaylistId(value: string | number | null | undefin
   }
 
   return normalizedValue;
+}
+
+export function isPulseBuiltinGeneratedPlaylist(value: string | number | null | undefined) {
+  return Object.prototype.hasOwnProperty.call(GENERATED_PLAYLISTS, normalizePulsePlaylistId(value));
+}
+
+export function getPulseBuiltinPlaylistTitle(value: string | number | null | undefined) {
+  return BUILTIN_PLAYLIST_TITLES[normalizePulsePlaylistId(value)] ?? '';
+}
+
+export function getPulseBuiltinPlaylistDescription(value: string | number | null | undefined) {
+  return BUILTIN_PLAYLIST_DESCRIPTIONS[normalizePulsePlaylistId(value)] ?? '';
 }
 
 export function getPulsePlaylistTrackEndpoint(
