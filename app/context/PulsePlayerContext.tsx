@@ -153,6 +153,12 @@ const PulsePlayerContext = createContext<PulsePlayerContextValue | undefined>(un
 const FALLBACK_TRACK_IMAGE = '/includes/img/pulse/track.png';
 const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
+const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;
+const PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
+
+type SyncTrackProgressOptions = {
+  forceProgressUpdate?: boolean;
+};
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -705,6 +711,7 @@ export function PulsePlayerProvider({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const preloadAudioRef = useRef<HTMLAudioElement | null>(null);
   const progressLoopRef = useRef<number | null>(null);
+  const lastMediaPositionUpdateRef = useRef(0);
   const collectionRequestIdRef = useRef(0);
   const preloadStartedRef = useRef(false);
   const playbackSessionRef = useRef(0);
@@ -843,6 +850,11 @@ export function PulsePlayerProvider({
     }
   };
 
+  const forceUpdateMediaPositionState = () => {
+    lastMediaPositionUpdateRef.current = Date.now();
+    updateMediaPositionState();
+  };
+
   const clearMediaSession = () => {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
 
@@ -919,15 +931,16 @@ export function PulsePlayerProvider({
         audioRef.current.currentTime = event.seekTime;
         setCurrentTime(event.seekTime);
         setSeekValue(event.seekTime);
-        updateMediaPositionState();
+        forceUpdateMediaPositionState();
       });
     } catch {}
   };
 
-  const syncTrackProgress = () => {
+  const syncTrackProgress = (options: SyncTrackProgressOptions = {}) => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    const { forceProgressUpdate = false } = options;
     const nextCurrentTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
     const nextDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
     setCurrentTime(nextCurrentTime);
@@ -962,12 +975,18 @@ export function PulsePlayerProvider({
       }
     }
 
-    updateMediaPositionState();
+    const now = Date.now();
+    if (
+      forceProgressUpdate ||
+      now - lastMediaPositionUpdateRef.current >= PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS
+    ) {
+      forceUpdateMediaPositionState();
+    }
   };
 
   const stopProgressLoop = () => {
     if (progressLoopRef.current !== null) {
-      window.cancelAnimationFrame(progressLoopRef.current);
+      window.clearTimeout(progressLoopRef.current);
       progressLoopRef.current = null;
     }
   };
@@ -979,13 +998,13 @@ export function PulsePlayerProvider({
       syncTrackProgress();
 
       if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
-        progressLoopRef.current = window.requestAnimationFrame(tick);
+        progressLoopRef.current = window.setTimeout(tick, PLAYER_PROGRESS_LOOP_INTERVAL_MS);
       } else {
         progressLoopRef.current = null;
       }
     };
 
-    progressLoopRef.current = window.requestAnimationFrame(tick);
+    progressLoopRef.current = window.setTimeout(tick, PLAYER_PROGRESS_LOOP_INTERVAL_MS);
   };
 
   const showPlayer = () => {
@@ -1015,6 +1034,7 @@ export function PulsePlayerProvider({
     stopProgressLoop();
     setStatusAudio('');
     preloadStartedRef.current = false;
+    lastMediaPositionUpdateRef.current = 0;
     currentSongIdRef.current = 0;
     setPlaylistState([]);
     setPlaylistIndex(0);
@@ -1709,7 +1729,7 @@ export function PulsePlayerProvider({
         } catch {}
       }
       startProgressLoop();
-      syncTrackProgress();
+      syncTrackProgress({ forceProgressUpdate: true });
     };
 
     const handlePause = () => {
@@ -1720,7 +1740,7 @@ export function PulsePlayerProvider({
         } catch {}
       }
       stopProgressLoop();
-      syncTrackProgress();
+      syncTrackProgress({ forceProgressUpdate: true });
     };
 
     const handleEnded = () => {
@@ -1729,7 +1749,7 @@ export function PulsePlayerProvider({
     };
 
     const handleLoadedMetadata = () => {
-      syncTrackProgress();
+      syncTrackProgress({ forceProgressUpdate: true });
     };
 
     const handleTimeUpdate = () => {
@@ -2127,7 +2147,7 @@ export function PulsePlayerProvider({
                         seekingSliderRef.current = null;
                         setActiveSeekSlider(null);
                         setCurrentTime(seekValue);
-                        updateMediaPositionState();
+                        forceUpdateMediaPositionState();
                       }}
                       onChange={(event) => {
                         setSeekValue(Number(event.target.value));
@@ -2200,7 +2220,7 @@ export function PulsePlayerProvider({
                       audioRef.current.currentTime = nextTime;
                       setCurrentTime(nextTime);
                       setSeekValue(nextTime);
-                      updateMediaPositionState();
+                      forceUpdateMediaPositionState();
                     }}
                     progress={activeLyricState.progress}
                   />
@@ -2263,7 +2283,7 @@ export function PulsePlayerProvider({
                     seekingSliderRef.current = null;
                     setActiveSeekSlider(null);
                     setCurrentTime(seekValue);
-                    updateMediaPositionState();
+                    forceUpdateMediaPositionState();
                   }}
                   onChange={(event) => {
                     setSeekValue(Number(event.target.value));
