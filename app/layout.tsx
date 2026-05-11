@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import IconSprite from './components/icon-sprite';
+import MainContent from './components/main-content';
 import Navigation from './components/navigation';
 import { AuthProvider } from './context/AuthContext';
 import { GlobalWSProvider } from './context/GlobalWSProvider';
@@ -60,9 +61,9 @@ export default function RootLayout({
             <GlobalWSProvider>
               <PulsePlayerProvider>
                 <Navigation />
-                <div id="main-content" className="flex-1 flex flex-col pb-20 md:pb-0 md:pl-24 duration-300">
+                <MainContent>
                   {children}
-                </div>
+                </MainContent>
               </PulsePlayerProvider>
             </GlobalWSProvider>
           </AuthProvider>

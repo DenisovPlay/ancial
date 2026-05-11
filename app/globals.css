@@ -5,6 +5,12 @@
   --foreground: #ffffff;
 }
 
+@property --pulse-lyric-fill {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

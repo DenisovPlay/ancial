@@ -154,6 +154,7 @@ const FALLBACK_TRACK_IMAGE = '/includes/img/pulse/track.png';
 const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
 const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;
+const PLAYER_LYRIC_FILL_TRANSITION_MS = 160;
 const PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
 
 type SyncTrackProgressOptions = {
@@ -373,13 +374,16 @@ function renderLyricWords(text: string, progress: number, isActive: boolean) {
       }
     }
 
+    const isCurrentWordFill = isActive && fill > 0 && fill < 100;
     const style = isActive
       ? ({
-          backgroundImage: `linear-gradient(90deg, #ffffff ${fill}%, rgba(255,255,255,0.4) ${fill}%)`,
+          transition: isCurrentWordFill ? `--pulse-lyric-fill ${PLAYER_LYRIC_FILL_TRANSITION_MS}ms linear` : 'none',
+          '--pulse-lyric-fill': `${fill}%`,
+          backgroundImage: 'linear-gradient(90deg, #ffffff var(--pulse-lyric-fill), rgba(255,255,255,0.4) var(--pulse-lyric-fill))',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           color: 'transparent',
-        } satisfies CSSProperties)
+        } as CSSProperties)
       : undefined;
 
     return (
@@ -723,6 +727,11 @@ export function PulsePlayerProvider({
   const indexRef = useRef(0);
   const likedSongIdsRef = useRef<number[] | null>(null);
   const seekingSliderRef = useRef<'desktop' | 'mobile' | null>(null);
+  const visualProgressFrameRef = useRef<number | null>(null);
+  const mobileSeekInputRef = useRef<HTMLInputElement | null>(null);
+  const desktopSeekInputRef = useRef<HTMLInputElement | null>(null);
+  const mobileCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
+  const desktopCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
   const volumeSliderRef = useRef<HTMLInputElement | null>(null);
 
   const [isVisible, setIsVisible] = useState(false);
@@ -931,6 +940,7 @@ export function PulsePlayerProvider({
         audioRef.current.currentTime = event.seekTime;
         setCurrentTime(event.seekTime);
         setSeekValue(event.seekTime);
+        syncVisualProgress();
         forceUpdateMediaPositionState();
       });
     } catch {}
@@ -982,6 +992,56 @@ export function PulsePlayerProvider({
     ) {
       forceUpdateMediaPositionState();
     }
+
+    syncVisualProgress();
+  };
+
+  const syncVisualProgress = () => {
+    const audio = audioRef.current;
+    if (!audio || seekingSliderRef.current) return;
+
+    const nextCurrentTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+    const nextDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+    const nextValue = String(nextCurrentTime);
+    const nextMax = String(nextDuration || 0);
+
+    [mobileSeekInputRef.current, desktopSeekInputRef.current].forEach((slider) => {
+      if (!slider) return;
+
+      slider.max = nextMax;
+      slider.value = nextValue;
+    });
+
+    const formattedTime = formatPlaybackTime(nextCurrentTime);
+    if (mobileCurrentTimeLabelRef.current) {
+      mobileCurrentTimeLabelRef.current.textContent = formattedTime;
+    }
+    if (desktopCurrentTimeLabelRef.current) {
+      desktopCurrentTimeLabelRef.current.textContent = formattedTime;
+    }
+  };
+
+  const stopVisualProgressLoop = () => {
+    if (visualProgressFrameRef.current !== null) {
+      window.cancelAnimationFrame(visualProgressFrameRef.current);
+      visualProgressFrameRef.current = null;
+    }
+  };
+
+  const startVisualProgressLoop = () => {
+    stopVisualProgressLoop();
+
+    const tick = () => {
+      syncVisualProgress();
+
+      if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
+        visualProgressFrameRef.current = window.requestAnimationFrame(tick);
+      } else {
+        visualProgressFrameRef.current = null;
+      }
+    };
+
+    visualProgressFrameRef.current = window.requestAnimationFrame(tick);
   };
 
   const stopProgressLoop = () => {
@@ -1032,6 +1092,7 @@ export function PulsePlayerProvider({
     }
 
     stopProgressLoop();
+    stopVisualProgressLoop();
     setStatusAudio('');
     preloadStartedRef.current = false;
     lastMediaPositionUpdateRef.current = 0;
@@ -1703,6 +1764,7 @@ export function PulsePlayerProvider({
     preloadAudioRef.current.preload = 'auto';
 
     return () => {
+      stopVisualProgressLoop();
       stopProgressLoop();
       preloadAudioRef.current = null;
     };
@@ -1729,6 +1791,7 @@ export function PulsePlayerProvider({
         } catch {}
       }
       startProgressLoop();
+      startVisualProgressLoop();
       syncTrackProgress({ forceProgressUpdate: true });
     };
 
@@ -1740,11 +1803,13 @@ export function PulsePlayerProvider({
         } catch {}
       }
       stopProgressLoop();
+      stopVisualProgressLoop();
       syncTrackProgress({ forceProgressUpdate: true });
     };
 
     const handleEnded = () => {
       stopProgressLoop();
+      stopVisualProgressLoop();
       void nextTrack();
     };
 
@@ -2147,15 +2212,17 @@ export function PulsePlayerProvider({
                         seekingSliderRef.current = null;
                         setActiveSeekSlider(null);
                         setCurrentTime(seekValue);
+                        syncVisualProgress();
                         forceUpdateMediaPositionState();
                       }}
                       onChange={(event) => {
                         setSeekValue(Number(event.target.value));
                       }}
                       className="h-3 w-full appearance-none rounded-full bg-zinc-800 accent-purple-500"
+                      ref={mobileSeekInputRef}
                     />
                     <div className="flex w-full text-xs text-zinc-300 duration-300 lg:text-sm">
-                      <div className="flex-grow">{formatPlaybackTime(displayedCurrentTime)}</div>
+                      <div ref={mobileCurrentTimeLabelRef} className="flex-grow">{formatPlaybackTime(displayedCurrentTime)}</div>
                       <div>{formatPlaybackTime(duration)}</div>
                     </div>
                   </div>
@@ -2283,15 +2350,17 @@ export function PulsePlayerProvider({
                     seekingSliderRef.current = null;
                     setActiveSeekSlider(null);
                     setCurrentTime(seekValue);
+                    syncVisualProgress();
                     forceUpdateMediaPositionState();
                   }}
                   onChange={(event) => {
                     setSeekValue(Number(event.target.value));
                   }}
                   className="h-3 w-full max-w-sm appearance-none rounded-full bg-zinc-800 accent-purple-500"
+                  ref={desktopSeekInputRef}
                 />
                 <div className="flex w-full max-w-sm text-xs text-zinc-300 lg:text-sm">
-                  <div className="flex-grow">{formatPlaybackTime(activeSeekSlider === 'desktop' ? seekValue : currentTime)}</div>
+                  <div ref={desktopCurrentTimeLabelRef} className="flex-grow">{formatPlaybackTime(activeSeekSlider === 'desktop' ? seekValue : currentTime)}</div>
                   <div>{formatPlaybackTime(duration)}</div>
                 </div>
               </div>

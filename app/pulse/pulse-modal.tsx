@@ -3,7 +3,7 @@
 import React from 'react';
 
 import Modal from '../components/modal';
-import { ActionIcon, cn } from './pulse-components';
+import { cn } from './pulse-components';
 
 type PulseModalProps = {
   children: React.ReactNode;
@@ -26,40 +26,18 @@ export function PulseModal({
     <Modal
       align="responsive"
       animation="sheet"
-      bodyClassName="p-0"
+      bodyClassName={cn(
+        scrollable && 'max-h-[80vh] overflow-y-auto',
+        contentClassName,
+      )}
       isOpen={isOpen}
       onClose={onClose}
       panelClassName="w-full max-w-xl sm:mx-3"
-      showHeader={false}
-      unstyled
+      title={title}
       width="full"
     >
-      <div
-        className={cn(
-          'w-full rounded-2xl border border-zinc-600/30 bg-zinc-900/70 px-3 py-3 text-zinc-100 shadow-2xl backdrop-blur-lg',
-          scrollable && 'max-h-[80vh] overflow-y-auto',
-          contentClassName,
-        )}
-      >
-        <div className="px-20 md:hidden">
-          <div className="rounded-full bg-zinc-500 px-6 py-0.5" />
-        </div>
-
-        <div className="flex items-center">
-          <span className="flex-grow text-left text-lg font-medium text-zinc-100">{title}</span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="hidden h-5 w-5 cursor-pointer items-center justify-center duration-300 hover:opacity-80 active:scale-95 md:flex"
-            aria-label="Закрыть"
-          >
-            <ActionIcon className="h-5 w-5 fill-white" name="IC-times" />
-          </button>
-        </div>
-
-        <div className="mt-2 flex w-full flex-col gap-3">
-          {children}
-        </div>
+      <div className="flex w-full flex-col gap-3">
+        {children}
       </div>
     </Modal>
   );
@@ -103,4 +81,3 @@ export function PulseModalSelectField({ children, label, ...selectProps }: Pulse
     </div>
   );
 }
-
