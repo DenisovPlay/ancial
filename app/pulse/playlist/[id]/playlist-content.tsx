@@ -31,6 +31,8 @@ import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload
 import {
   canUploadToPulseFavoritesPlaylist,
   canViewPulsePlaylist,
+  getPulseBuiltinPlaylistCover,
+  getPulseBuiltinPlaylistMeta,
   getPulseBuiltinPlaylistTitle,
   getPulsePlaylistActionTarget,
   getPulsePlaylistCacheKey,
@@ -72,8 +74,11 @@ function writeFavoriteIds(ids: number[]) {
   }
 }
 
-function getPlaylistCover(playlist: PulsePlaylistMeta | null, tracks: PulseTrack[]) {
-  return getImageUrl(playlist?.img, tracks[0] ? getTrackArtwork(tracks[0]) : DEFAULT_TRACK_IMAGE);
+function getPlaylistCover(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[]) {
+  const fallbackCover = getPulseBuiltinPlaylistCover(playlistId)
+    || (tracks[0] ? getTrackArtwork(tracks[0]) : DEFAULT_TRACK_IMAGE);
+
+  return getImageUrl(playlist?.img, fallbackCover);
 }
 
 function getPlaylistTitle(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[]) {
@@ -103,8 +108,9 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
   const playlistId = useMemo(() => normalizePulsePlaylistId(rawPlaylistId), [rawPlaylistId]);
   const isBuiltinPlaylist = useMemo(() => isPulseBuiltinGeneratedPlaylist(playlistId), [playlistId]);
+  const builtinPlaylist = useMemo(() => getPulseBuiltinPlaylistMeta(playlistId), [playlistId]);
   const cachedPlaylistResponse = useMemo(() => readPulseJsonCache<PlaylistPageResponse>(getPulsePlaylistCacheKey(playlistId)), [playlistId]);
-  const cachedPlaylist = cachedPlaylistResponse?.playlist ?? null;
+  const cachedPlaylist = cachedPlaylistResponse?.playlist ?? builtinPlaylist;
   const cachedTracks = useMemo(
     () => readPulseJsonCache<PulseTrack[]>(getPulsePlaylistTracksCacheKey(playlistId, cachedPlaylist)) ?? [],
     [cachedPlaylist, playlistId],
@@ -140,7 +146,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const playlistActive = currentCollectionId === playlistPlayTarget.id && isPlaying;
   const playlistTitle = getPlaylistTitle(playlistId, playlist, tracks);
   const playlistArtist = decodeHtmlEntities(playlist?.artist);
-  const playlistCover = getPlaylistCover(playlist, tracks);
+  const playlistCover = getPlaylistCover(playlistId, playlist, tracks);
   const playlistDescription = decodeHtmlEntities(playlist?.desk);
   const playlistLikes = normalizeText(String(playlist?.likes ?? '0')) || '0';
   const canUploadTrack = canUploadToPulseFavoritesPlaylist(playlistId, playlist);
@@ -182,7 +188,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   useEffect(() => {
     let cancelled = false;
 
-    if (isBuiltinPlaylist) {
+    if (isBuiltinPlaylist && playlistId === '-5' && !isAuthenticated) {
       return () => {
         cancelled = true;
       };
@@ -199,12 +205,15 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       .then((result) => {
         if (cancelled) return;
 
-        const nextPlaylist = result.playlist ?? null;
+        const nextPlaylist = result.playlist ?? builtinPlaylist;
         setPlaylist(nextPlaylist);
         setPlaylistLiked(Boolean(result.is_liked));
 
         if (nextPlaylist) {
-          writePulseJsonCache(getPulsePlaylistCacheKey(playlistId), result);
+          writePulseJsonCache(getPulsePlaylistCacheKey(playlistId), {
+            ...result,
+            playlist: nextPlaylist,
+          });
         } else {
           removePulseCache(getPulsePlaylistCacheKey(playlistId));
         }
@@ -215,8 +224,12 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       })
       .catch(() => {
         if (!cancelled) {
-          setPlaylist(null);
-          setError(lang?.somethingwrong || 'Произошла ошибка =(');
+          if (builtinPlaylist) {
+            setPlaylist(builtinPlaylist);
+          } else {
+            setPlaylist(null);
+            setError(lang?.somethingwrong || 'Произошла ошибка =(');
+          }
         }
       })
       .finally(() => {
@@ -228,7 +241,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, isBuiltinPlaylist, lang?.somethingwrong, playlistId, router]);
+  }, [authLoading, builtinPlaylist, isAuthenticated, isBuiltinPlaylist, lang?.somethingwrong, playlistId, router]);
 
   useEffect(() => {
     let cancelled = false;

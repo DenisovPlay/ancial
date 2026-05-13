@@ -67,6 +67,42 @@ const BUILTIN_PLAYLIST_DESCRIPTIONS: Record<string, string> = {
   '-5': 'Ваши избранные треки в Ancial Pulse.',
 };
 
+const BUILTIN_PLAYLIST_META: Record<string, PulsePlaylistMeta> = {
+  '-1': {
+    artist: '',
+    creator: 'Pulse',
+    desk: 'Лучшие песни',
+    genlist: 'Top',
+    id: '-1',
+    img: '/includes/img/pulse/cover/top.png',
+    likes: '0',
+    name: 'Топ',
+    type: '4',
+  },
+  '-2': {
+    artist: '',
+    creator: 'Pulse',
+    desk: 'Громкие новинки',
+    genlist: 'New',
+    id: '-2',
+    img: '/includes/img/pulse/cover/new.png',
+    likes: '0',
+    name: 'Новое',
+    type: '4',
+  },
+  '-5': {
+    artist: '',
+    creator: 'Pulse',
+    desk: 'Ваши избранные треки в Ancial Pulse.',
+    genlist: 'Your',
+    id: '-5',
+    img: '/includes/img/pulse/cover/your.png',
+    likes: '0',
+    name: 'Избранное',
+    type: '4',
+  },
+};
+
 export function normalizePulsePlaylistId(value: string | number | null | undefined) {
   const normalizedValue = String(value ?? '').trim();
   if (!/^-?\d+$/.test(normalizedValue)) {
@@ -86,6 +122,15 @@ export function getPulseBuiltinPlaylistTitle(value: string | number | null | und
 
 export function getPulseBuiltinPlaylistDescription(value: string | number | null | undefined) {
   return BUILTIN_PLAYLIST_DESCRIPTIONS[normalizePulsePlaylistId(value)] ?? '';
+}
+
+export function getPulseBuiltinPlaylistMeta(value: string | number | null | undefined) {
+  const playlist = BUILTIN_PLAYLIST_META[normalizePulsePlaylistId(value)];
+  return playlist ? { ...playlist } : null;
+}
+
+export function getPulseBuiltinPlaylistCover(value: string | number | null | undefined) {
+  return BUILTIN_PLAYLIST_META[normalizePulsePlaylistId(value)]?.img ?? '';
 }
 
 export function getPulsePlaylistTrackEndpoint(

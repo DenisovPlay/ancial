@@ -4,6 +4,8 @@ import test from 'node:test';
 import {
   canUploadToPulseFavoritesPlaylist,
   canViewPulsePlaylist,
+  getPulseBuiltinPlaylistCover,
+  getPulseBuiltinPlaylistMeta,
   getPulsePlaylistActionTarget,
   getPulsePlaylistCacheKey,
   getPulsePlaylistListenTotal,
@@ -21,6 +23,25 @@ test('normalizePulsePlaylistId keeps supported ids and falls back to zero', () =
   assert.equal(normalizePulsePlaylistId('-1'), '-1');
   assert.equal(normalizePulsePlaylistId(''), '0');
   assert.equal(normalizePulsePlaylistId('abc'), '0');
+});
+
+test('built-in generated playlists expose stable cover metadata', () => {
+  assert.equal(getPulseBuiltinPlaylistCover('-1'), '/includes/img/pulse/cover/top.png');
+  assert.equal(getPulseBuiltinPlaylistCover('-2'), '/includes/img/pulse/cover/new.png');
+  assert.equal(getPulseBuiltinPlaylistCover('-5'), '/includes/img/pulse/cover/your.png');
+  assert.equal(getPulseBuiltinPlaylistCover('93'), '');
+
+  assert.deepEqual(getPulseBuiltinPlaylistMeta('-1'), {
+    artist: '',
+    creator: 'Pulse',
+    desk: 'Лучшие песни',
+    genlist: 'Top',
+    id: '-1',
+    img: '/includes/img/pulse/cover/top.png',
+    likes: '0',
+    name: 'Топ',
+    type: '4',
+  });
 });
 
 test('getPulsePlaylistTrackEndpoint maps generated playlists to gid requests', () => {
