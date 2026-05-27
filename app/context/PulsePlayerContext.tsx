@@ -2015,7 +2015,7 @@ export function PulsePlayerProvider({
       {effectivePlayerVisible ? (
         <div
           id="NAVP"
-          className="pointer-events-none fixed inset-0 z-[102]"
+          className="pointer-events-none fixed inset-0 z-[1500]"
         >
           <style>{`
             @keyframes animate-opacity-fade-in {

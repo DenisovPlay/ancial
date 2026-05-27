@@ -367,7 +367,7 @@ export default function Navigation() {
         </nav>
 
 
-        <nav data-app-nav="mobile" className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[103]">
+        <nav data-app-nav="mobile" className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
             <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1">
                 <NavItem href="/feed" icon="IC-feed" />
                 {!isAuthenticated && (
