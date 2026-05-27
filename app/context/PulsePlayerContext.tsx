@@ -1632,7 +1632,7 @@ export function PulsePlayerProvider({
     return () => {
       slider.removeEventListener('wheel', handleWheel);
     };
-  }, [changeVolume]);
+  }, [changeVolume, effectivePlayerVisible]);
 
   const queueTrackNext = async (trackId: number | string) => {
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) {
