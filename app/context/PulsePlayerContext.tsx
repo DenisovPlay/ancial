@@ -1517,6 +1517,12 @@ export function PulsePlayerProvider({
     setPlaylistMode(kind !== 'track', kind !== 'track' ? playId : '0');
     await playLoadedTrack(nextTrack);
     showPlayer();
+
+    if (kind === 'playlist') {
+      AncialAPI.pulsePlaylistAction('history_add', { id: resolvedId }).catch(() => {
+        // ignore history failures
+      });
+    }
   };
 
   const playTrack = async (trackId: number | string) => {
