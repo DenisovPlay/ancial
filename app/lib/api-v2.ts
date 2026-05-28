@@ -170,10 +170,22 @@ export class AncialAPI {
 
   static async sendMessage<T = unknown>(params: { di_id: string | number, message?: string, img?: string, sticker?: string | number }): Promise<T> {
     const body = new URLSearchParams();
+    const query = new URLSearchParams();
+    
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) body.set(key, String(value));
+      if (value !== undefined) {
+        if (key === 'sticker' || key === 'img') {
+          query.set(key, String(value));
+        } else {
+          body.set(key, String(value));
+        }
+      }
     });
-    return this.request<T>('/messages/SendMessage.php', { method: 'POST', body });
+    
+    const queryString = query.toString();
+    const url = queryString ? `/messages/SendMessage.php?${queryString}` : '/messages/SendMessage.php';
+    
+    return this.request<T>(url, { method: 'POST', body });
   }
 
   static async messageAction<T = unknown>(action: 'reaction' | 'edit' | 'delete', params: Record<string, string | number>): Promise<T> {
