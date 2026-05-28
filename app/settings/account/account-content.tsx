@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { authFetch } from '../../lib/auth-fetch';
+import { AncialAPI } from '../../lib/api-v2';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -44,24 +44,7 @@ export default function AccountSettingsPage() {
   const updateInform = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      
-      // Добавляем все поля формы
-      Object.entries(formData).forEach(([key, value]) => {
-        params.append(key, value);
-      });
-      if (token) params.append('token', token);
-
-      const res = await authFetch('/api/user/updateinfo.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString(),
-      });
-
-      if (res.ok) {
+      await AncialAPI.updateProfile(formData);
         showNote({
           content: lang?.informupdated || 'Информация обновлена',
           type: 'success',
@@ -71,9 +54,6 @@ export default function AccountSettingsPage() {
         if (checkAuth) {
             await checkAuth();
         }
-      } else {
-        throw new Error('Network error');
-      }
     } catch (error) {
       console.error(error);
       showNote({

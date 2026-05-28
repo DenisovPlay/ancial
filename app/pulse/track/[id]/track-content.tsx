@@ -7,8 +7,7 @@ import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
-import { authFetch } from '../../../lib/auth-fetch';
-import { fetchPulseJson } from '../../pulse-api';
+import { AncialAPI } from '../../../lib/api-v2';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
 import {
   ActionIcon,
@@ -95,7 +94,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   useEffect(() => {
     let cancelled = false;
 
-    void fetchPulseJson<PulseTrackPageResponse>(`/api/pulse/pages/track.php?id=${encodeURIComponent(trackId)}`)
+    void AncialAPI.pulseGetTrack<PulseTrackPageResponse>(trackId)
       .then((result) => {
         if (cancelled) return;
         setTrack(result.track ?? null);
@@ -122,8 +121,8 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
     if (!trackNumericId) return;
 
     try {
-      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${trackNumericId}`);
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', trackNumericId);
+      const result = response.message || '';
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
         setIsLiked(true);

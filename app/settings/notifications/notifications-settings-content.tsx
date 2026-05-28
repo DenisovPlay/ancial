@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { authFetch } from '../../lib/auth-fetch';
+import { AncialAPI } from '../../lib/api-v2';
 import { useFirebaseMessaging, FIREBASE_CONFIG } from '../../lib/useFirebaseMessaging';
 import { SvgIcon } from '../../feed/editor-shared';
 
@@ -142,44 +143,23 @@ export default function NotificationsSettingsContent() {
         const device = detectDevice();
         console.log('Device info:', device);
 
-        const response = await authFetch('/api/user/notifications.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
+        let result: any;
+        try {
+          result = await AncialAPI.updateProfile({
             pushsid: token,
             'device[brand]': device.brand,
             'device[model]': device.model,
             'device[os]': device.os,
             'device[osver]': device.osver,
             'device[client]': device.client,
-          }),
-        });
-
-        console.log('API Response status:', response.status);
-        const responseText = await response.text();
-        console.log('API Response:', responseText);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        let result;
-        try {
-          // PHP выводит debug логи перед JSON, ищем JSON в ответе
-          const jsonStart = responseText.indexOf('{');
-          const jsonEnd = responseText.lastIndexOf('}');
-          if (jsonStart === -1 || jsonEnd === -1) {
-            throw new Error('No JSON in response');
-          }
-          const jsonStr = responseText.substring(jsonStart, jsonEnd + 1);
-          result = JSON.parse(jsonStr);
-        } catch (parseError) {
-          console.error('Invalid JSON response:', responseText);
+          });
+        } catch (error) {
+          console.error('API error:', error);
           throw new Error('Invalid response from server');
         }
 
         // Firebase Admin SDK возвращает { name: 'projects/...' } при успехе
-        if (result.success || result.name) {
+        if (result?.success || result?.message || result?.name) {
           showNote({
             content: 'Подключено!',
             type: 'success',
@@ -209,23 +189,15 @@ export default function NotificationsSettingsContent() {
 
   const cancelNotifications = useCallback(async () => {
     try {
-      const response = await authFetch('/api/user/notifications.php?pushsid=0', {
-        method: 'GET',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      let result;
+      let result: any;
       try {
-        result = await response.json();
+        result = await AncialAPI.updateProfile({ pushsid: '0' });
       } catch {
         throw new Error('Invalid response from server');
       }
 
       // Firebase Admin SDK возвращает { name: 'projects/...' } при успехе
-      if (result.success || result.name) {
+      if (result?.success || result?.message || result?.name) {
         showNote({
           content: 'Отключено',
           type: 'success',

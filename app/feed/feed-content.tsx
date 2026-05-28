@@ -14,7 +14,7 @@ import PostsRenderer, {
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useDragScroll } from '../hooks/useDragScroll';
-import { authFetchJson, authFetchText } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 import { cn, SvgIcon } from './editor-shared';
 import FeedPostSkeleton from './feed-post-skeleton';
 
@@ -93,13 +93,7 @@ function writeFeedCache(key: string, value: FeedCacheEntry) {
   }
 }
 
-async function apiJson<T>(path: string, init?: RequestInit) {
-  return authFetchJson<T>(path, init);
-}
-
-async function apiText(path: string, init?: RequestInit) {
-  return authFetchText(path, init);
-}
+// Removed local api helpers
 
 function TopicButton({
   active,
@@ -147,11 +141,11 @@ function MobileTopicCard({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-3xl bg-gradient-to-br from-zinc-800 to-zinc-700 duration-300 shadow active:scale-95 border border-zinc-600/30"
+      className="cursor-pointer rounded-3xl bg-gradient-to-br from-zinc-800 to-zinc-700 duration-300 shadow active:scale-95 border border-zinc-600/30"
     >
       <div
         className={cn(
-          'h-24 p-3 w-full flex items-center justify-start rounded-2xl duration-300 relative overflow-hidden',
+          'h-24 p-3 w-full flex items-center justify-start rounded-3xl duration-300 relative overflow-hidden',
           active ? 'bg-zinc-600' : 'bg-zinc-800/0 hover:bg-zinc-800',
         )}
       >
@@ -521,9 +515,7 @@ export default function FeedContent() {
     setIsCommentsLoading(true);
 
     try {
-      const nextComments = await apiJson<FeedComment[]>(
-        `/api/posts/comments.php?id=${postId}`,
-      );
+      const nextComments = await AncialAPI.getComments<FeedComment[]>(postId);
       setComments(Array.isArray(nextComments) ? nextComments : []);
     } catch (error) {
       console.error('Failed to load comments', error);
@@ -571,11 +563,12 @@ export default function FeedContent() {
     }
 
     try {
-      const response = await apiJson<FeedResponse>(
-        `/api/posts/feed.php?last_id=${lastId}&topic=${encodeURIComponent(
-          requestedTopic ?? 'null',
-        )}&_r=${nextRequestId}`,
-        { signal: controller.signal },
+      const response = await AncialAPI.getFeed<FeedResponse>(
+        requestedTopic ?? undefined,
+        lastId,
+        undefined,
+        undefined,
+        { signal: controller.signal }
       );
 
       if (controller.signal.aborted || requestedTopic !== activeTopicRef.current) {
@@ -708,10 +701,10 @@ export default function FeedContent() {
 
   const handleBookmark = async (post: PostData, nextValue: boolean) => {
     try {
-      const response = await apiText(`/api/posts/bookmarks.php?pid=${post.id}`);
+      const response = (await AncialAPI.postAction('bookmark', { pid: post.id })) as { message: string, action: string };
 
       showNote({
-        content: response,
+        content: response.message,
         html: true,
         type: 'success',
         time: 5,
@@ -723,8 +716,8 @@ export default function FeedContent() {
             return currentPost;
           }
 
-          const isAdded = response === strings.bookmarkadded;
-          const isRemoved = response === strings.bookmarkremoved;
+          const isAdded = response.action === 'added';
+          const isRemoved = response.action === 'removed';
           const nextBookmarked = isAdded ? true : isRemoved ? false : nextValue;
           const currentAmount = toNumber(currentPost.bookmarked_amount);
 
@@ -754,11 +747,9 @@ export default function FeedContent() {
 
   const handleVote = async (post: PostData, direction: 'up' | 'down') => {
     try {
-      const response = await apiText(
-        `/api/posts/vote.php?pid=${post.id}&vt=${direction}`,
-      );
+      const response = (await AncialAPI.votePost(post.id, direction)) as { status: string };
 
-      if (response === 'nlog') {
+      if (response.status === 'nlog') {
         showNote({
           content: strings.logintoreact,
           type: 'success',
@@ -801,13 +792,7 @@ export default function FeedContent() {
     if (!commentInput.trim()) return;
 
     try {
-      await apiText(`/api/posts/createcomment.php?pid=${activeCommentsPost.id}`, {
-        body: new URLSearchParams({ content: commentInput.trim() }).toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
+      await AncialAPI.createComment(activeCommentsPost.id, commentInput.trim());
 
       setCommentInput('');
       incrementCommentsCount(activeCommentsPost.id, 1);
@@ -824,10 +809,10 @@ export default function FeedContent() {
 
   const handleDeleteComment = async (comment: FeedComment) => {
     try {
-      const response = await apiText(`/api/posts/deletecomment.php?id=${comment.id}`);
+      const response = await AncialAPI.deleteComment<{ message?: string }>(comment.id);
 
       showNote({
-        content: response,
+        content: response?.message || 'Удалено',
         html: true,
         type: 'success',
         time: 5,
@@ -857,12 +842,10 @@ export default function FeedContent() {
     setIsReportModalOpen(false);
 
     try {
-      const response = await apiText(
-        `/api/posts/report.php?id=${currentTarget.id}&type=${currentTarget.type}&comment=${encodeURIComponent(reason)}`,
-      );
+      const response = (await AncialAPI.reportAction({ id: currentTarget.id, type: currentTarget.type, comment: reason })) as { message: string };
 
       showNote({
-        content: response,
+        content: response.message || 'Жалоба отправлена',
         html: true,
         type: 'success',
         time: 5,
@@ -884,12 +867,10 @@ export default function FeedContent() {
     setIsDeleteModalOpen(false);
 
     try {
-      const response = await apiText(
-        `/api/posts/delete.php?pid=${currentTarget.id}&gid=${currentTarget.author.id}`,
-      );
+      const response = (await AncialAPI.deletePost(currentTarget.id)) as { message: string };
 
       showNote({
-        content: response,
+        content: response.message || 'Пост удален',
         html: true,
         type: 'success',
         time: 5,

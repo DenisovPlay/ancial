@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/button';
 import { Input } from '../components/form';
@@ -34,7 +35,7 @@ export default function LoginPage() {
       params.append('password', password);
 
 
-      const res = await fetch(`/api/auth/login.php`, {
+      const res = await fetch(`/api/V2/auth/Login.php`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -45,10 +46,10 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-      if (data.status !== 'success') {
-        setError(data.response || 'Ошибка авторизации');
+      if (!data.success) {
+        setError(data.error || 'Ошибка авторизации');
       } else {
-        localStorage.setItem('token', data.response);
+        localStorage.setItem('token', data.data?.token || '');
         
         // После получения токена заставляем контекст обновить данные о пользователе
         await checkAuth();
@@ -109,9 +110,17 @@ export default function LoginPage() {
             type="submit"
             disabled={isLoading}
             fullWidth
+            className="mt-2"
           >
             {isLoading ? 'Вход...' : 'Войти'}
           </Button>
+          
+          <div className="text-center mt-4">
+            <span className="text-zinc-400 text-sm">Нет аккаунта? </span>
+            <Link href="/signup" className="text-purple-400 hover:text-purple-300 text-sm font-medium">
+              Зарегистрироваться
+            </Link>
+          </div>
         </form>
       </div>
     </main>

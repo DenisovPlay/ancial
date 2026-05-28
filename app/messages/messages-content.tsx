@@ -16,7 +16,7 @@ import { Dropdown, DropdownItem } from '../components/navigation';
 import YandexRtb from '../components/yandex-rtb';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { authFetch } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 import { globalWS } from '../lib/global-ws';
 import DialogImageViewerModal, { type DialogImageSlide } from './dialog-image-viewer-modal';
 
@@ -287,7 +287,7 @@ function buildSevenTvStickerProxyUrl(stickerId: string) {
     return '';
   }
 
-  return `/api/7tv/image/${encodeURIComponent(normalizedStickerId)}`;
+  return `/api/V2/7tv/Image.php?id=${encodeURIComponent(normalizedStickerId)}`;
 }
 
 function getSevenTvStickerTokenData(value: string | null | undefined) {
@@ -447,25 +447,20 @@ async function searchSevenTvStickers(
     return cachedItems;
   }
 
-  const response = await fetch(
-    `/api/7tv/search?q=${encodeURIComponent(normalizedQuery)}&limit=${limit}${exact ? '&exact=1' : ''}`,
-    {
-      cache: 'no-store',
-      signal: options?.signal,
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(`7TV search failed with status ${response.status}`);
+  try {
+    const payload = await AncialAPI.search7tv<{ items?: SevenTvSticker[] }>(
+      normalizedQuery,
+      limit,
+      exact,
+      { signal: options?.signal }
+    );
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    setCachedSevenTvSearchItems(cacheKey, items);
+    seedSevenTvStickerCache(items);
+    return items;
+  } catch (err) {
+    throw new Error(`7TV search failed: ${err}`);
   }
-
-  const payload = await response.json() as {
-    items?: SevenTvSticker[];
-  };
-  const items = Array.isArray(payload.items) ? payload.items : [];
-  setCachedSevenTvSearchItems(cacheKey, items);
-  seedSevenTvStickerCache(items);
-  return items;
 }
 
 async function resolveSevenTvStickerByName(name: string) {
@@ -1586,6 +1581,9 @@ export default function MessagesContent() {
   const [dayLabelTick, setDayLabelTick] = useState(Date.now());
   const [stickerDropdownOpen, setStickerDropdownOpen] = useState(false);
 
+  const [hasActiveCall, setHasActiveCall] = useState(false);
+  const activeCallTimeoutRef = useRef<number | null>(null);
+  
   const dialogsInFlightRef = useRef(false);
   const dialogsLastFetchAtRef = useRef(0);
   const dialogSessionRef = useRef(0);
@@ -1764,7 +1762,13 @@ export default function MessagesContent() {
     setEditingMessage(null);
     setEditingValue('');
     setActiveDialogImageKey(null);
+    setActiveDialogImageKey(null);
     scrollActionRef.current = null;
+    setHasActiveCall(false);
+    if (activeCallTimeoutRef.current !== null) {
+      window.clearTimeout(activeCallTimeoutRef.current);
+      activeCallTimeoutRef.current = null;
+    }
   };
 
   const loadDialogs = async ({ force = false }: { force?: boolean } = {}) => {
@@ -1785,14 +1789,8 @@ export default function MessagesContent() {
     dialogsLastFetchAtRef.current = Date.now();
 
     try {
-      const response = await authFetch('/api/messages/dialogs.php');
-      const result = (await response.json()) as DialogListResponse;
-
-      if (!result.success) {
-        throw new Error(result.error || 'Не удалось загрузить диалоги');
-      }
-
-      const nextDialogs = Array.isArray(result.dialogs) ? result.dialogs : [];
+      const result = await AncialAPI.getDialogList<DialogListResponse>();
+      const nextDialogs = Array.isArray(result) ? result : Array.isArray((result as any).dialogs) ? (result as any).dialogs : [];
       setDialogs(nextDialogs);
       setDialogsError('');
       setDialogsLoading(false);
@@ -1862,18 +1860,16 @@ export default function MessagesContent() {
     }
 
     try {
-      const response = await authFetch(`/api/messages/dialog.php?di_id=${dialogId}&limit=${MESSAGE_PAGE_SIZE}`);
-      const result = (await response.json()) as DialogMessagesResponse;
+      const result = await AncialAPI.getDialog<DialogMessagesResponse>(dialogId, undefined, MESSAGE_PAGE_SIZE);
 
       if (session !== dialogSessionRef.current) return;
 
-      if (!result.success) {
-        throw new Error(result.error || 'Не удалось загрузить сообщения');
-      }
+      const nextMessages = Array.isArray(result) ? result : Array.isArray((result as any).messages) ? (result as any).messages : [];
+      const newForeignUser = (result as any).foreignUser;
 
-      const freshMessages = Array.isArray(result.messages) ? sortMessages(result.messages) : [];
+      const freshMessages = sortMessages(nextMessages);
       const mergedMessages = mergeMessages(cachedMessages, freshMessages);
-      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, result.foreignUser);
+      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, newForeignUser);
 
       if (nextForeignUser) {
         currentForeignUserRef.current = nextForeignUser;
@@ -1920,25 +1916,24 @@ export default function MessagesContent() {
     const stickToBottom = shouldStickToBottom(messageScrollRef.current);
 
     try {
-      const url = latestId
-        ? `/api/messages/dialog.php?di_id=${dialogId}&after_id=${latestId}&limit=200`
-        : `/api/messages/dialog.php?di_id=${dialogId}&limit=${MESSAGE_PAGE_SIZE}`;
-
-      const response = await authFetch(url);
-      const result = (await response.json()) as DialogMessagesResponse;
+      const result = await AncialAPI.getDialog<DialogMessagesResponse>(
+        dialogId,
+        undefined,
+        latestId ? 200 : MESSAGE_PAGE_SIZE,
+        latestId
+      );
 
       if (session !== dialogSessionRef.current) return;
 
-      if (!result.success) {
-        throw new Error(result.error || 'Не удалось обновить сообщения');
-      }
+      const nextMessages = Array.isArray(result) ? result : Array.isArray((result as any).messages) ? (result as any).messages : [];
+      const newForeignUser = (result as any).foreignUser;
 
-      const newerMessages = Array.isArray(result.messages) ? result.messages : [];
+      const newerMessages = sortMessages(nextMessages);
       if (!newerMessages.length) return;
 
-      const nextMessages = mergeMessages(currentMessages, newerMessages);
-      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, result.foreignUser);
-      setMessages(nextMessages);
+      const mergedMessages = mergeMessages(currentMessages, newerMessages);
+      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, newForeignUser);
+      setMessages(mergedMessages);
 
       if (nextForeignUser) {
         currentForeignUserRef.current = nextForeignUser;
@@ -1948,7 +1943,7 @@ export default function MessagesContent() {
       persistMessages({
         foreignUserValue: nextForeignUser,
         keepSide: 'newest',
-        nextMessages,
+        nextMessages: mergedMessages,
       });
 
       if (stickToBottom) {
@@ -1988,35 +1983,37 @@ export default function MessagesContent() {
     setLoadingOlder(true);
 
     try {
-      const response = await authFetch(
-        `/api/messages/dialog.php?di_id=${dialogId}&before_id=${earliestId}&limit=${MESSAGE_PAGE_SIZE}`,
+      const result = await AncialAPI.getDialog<DialogMessagesResponse>(
+        dialogId,
+        undefined,
+        MESSAGE_PAGE_SIZE,
+        undefined,
+        earliestId
       );
-      const result = (await response.json()) as DialogMessagesResponse;
 
       if (session !== dialogSessionRef.current) return;
 
-      if (!result.success) {
-        throw new Error(result.error || 'Не удалось загрузить старые сообщения');
-      }
+      const nextMessages = Array.isArray(result) ? result : Array.isArray((result as any).messages) ? (result as any).messages : [];
+      const newForeignUser = (result as any).foreignUser;
 
-      const olderMessages = Array.isArray(result.messages) ? result.messages : [];
+      const olderMessages = sortMessages(nextMessages);
       if (!olderMessages.length) {
         setHasMoreMessages(false);
         scrollActionRef.current = null;
         return;
       }
 
-      const nextMessages = mergeMessages(currentMessages, olderMessages);
-      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, result.foreignUser);
-      setMessages(nextMessages);
+      const mergedMessages = mergeMessages(currentMessages, olderMessages);
+      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, newForeignUser);
+      setMessages(mergedMessages);
       currentForeignUserRef.current = nextForeignUser;
       setForeignUser(nextForeignUser);
       persistMessages({
         foreignUserValue: nextForeignUser,
         keepSide: 'oldest',
-        nextMessages,
+        nextMessages: mergedMessages,
       });
-      setHasMoreMessages(getEarliestMessageId(nextMessages) > 1);
+      setHasMoreMessages(getEarliestMessageId(mergedMessages) > 1);
     } catch (error) {
       console.error('Failed to load older messages', error);
       scrollActionRef.current = null;
@@ -2040,28 +2037,29 @@ export default function MessagesContent() {
     setLoadingNewer(false);
 
     try {
-      const response = await authFetch(`/api/messages/dialog_by_hash.php?hash=${encodeURIComponent(hash)}`);
-      const result = (await response.json()) as DialogByHashResponse;
+      const result = await AncialAPI.getDialogByHash<DialogByHashResponse>(hash);
 
       if (session !== dialogSessionRef.current) return;
 
-      if (!result.success || !result.dialog) {
-        if (result.blocked) {
+      const dialogMeta = (result as any).dialog || result;
+
+      if (!dialogMeta || !dialogMeta.id) {
+        if ((result as any).blocked) {
           setBlockedDialog(true);
-          setDialogError(result.error || '');
+          setDialogError((result as any).error || 'Диалог заблокирован');
           return;
         }
 
-        throw new Error(result.error || 'Диалог не найден');
+        throw new Error((result as any).error || 'Диалог не найден');
       }
 
-      const nextDialog = result.dialog;
-      const nextForeignUser = mergeDialogUser(null, result.foreignUser);
+      const nextDialog = dialogMeta;
+      const nextForeignUser = mergeDialogUser(null, (result as any).foreignUser);
 
       setSelectedDialog(nextDialog);
       setForeignUser(nextForeignUser);
       currentForeignUserRef.current = nextForeignUser;
-      setBlockedDialog(Boolean(result.blocked));
+      setBlockedDialog(Boolean((result as any).blocked));
 
       currentDialogIdRef.current = toNumber(nextDialog.id);
       currentDialogHashRef.current = normalizeHash(nextDialog.hash ?? hash);
@@ -2195,11 +2193,15 @@ export default function MessagesContent() {
   };
 
   const handleWsCallSignal = () => {
-    notify({
-      content: lang?.incomingcall || 'Сигнал звонка получен',
-      time: 3,
-      type: 'info',
-    });
+    setHasActiveCall(true);
+    if (activeCallTimeoutRef.current !== null) {
+      window.clearTimeout(activeCallTimeoutRef.current);
+    }
+    // Keep the "active call" indication alive for 10 seconds after the last signal
+    activeCallTimeoutRef.current = window.setTimeout(() => {
+      setHasActiveCall(false);
+      activeCallTimeoutRef.current = null;
+    }, 10000);
   };
 
   useEffect(() => {
@@ -2308,18 +2310,7 @@ export default function MessagesContent() {
 
   const sendReaction = async (messageId: number, reaction: string, action: 'add' | 'delete') => {
     try {
-      const params = new URLSearchParams();
-      params.append('msg_id', String(messageId));
-      params.append('reaction', reaction);
-      params.append('action', action);
-
-      await authFetch('/api/messages/reaction.php', {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
+      await AncialAPI.messageAction('reaction', { msg_id: messageId, reaction, action });
 
       await loadMessagesInitial(dialogSessionRef.current);
     } catch (error) {
@@ -2336,18 +2327,8 @@ export default function MessagesContent() {
     if (!messageId) return;
 
     try {
-      const params = new URLSearchParams();
-      params.append('msg_id', String(messageId));
-
-      const response = await authFetch('/api/messages/delete.php', {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
-
-      const text = normalizeText(await response.text());
+      const response = await AncialAPI.messageAction<{ message?: string }>('delete', { msg_id: messageId });
+      const text = response.message || '';
 
       setMessages((currentMessages) => {
         const nextMessages = currentMessages.filter((item) => getMessageId(item) !== messageId);
@@ -2394,19 +2375,8 @@ export default function MessagesContent() {
     }
 
     try {
-      const params = new URLSearchParams();
-      params.append('msg_id', String(messageId));
-      params.append('msg_data', nextValue);
-
-      const response = await authFetch('/api/messages/edit.php', {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
-
-      const text = normalizeText(await response.text());
+      const response = await AncialAPI.messageAction<{ message?: string }>('edit', { msg_id: messageId, msg_data: nextValue });
+      const text = response.message || '';
 
       setMessages((currentMessages) => {
         const nextMessages = currentMessages.map((message) =>
@@ -2450,10 +2420,8 @@ export default function MessagesContent() {
     if (!dialogId) return;
 
     try {
-      const response = await authFetch(`/engine/modules/msg/deletedialog.php?id=${dialogId}`, {
-        method: 'POST',
-      });
-      const text = normalizeText(await response.text());
+      const response = await AncialAPI.dialogAction<{ message?: string }>('delete', dialogId);
+      const text = response.message || '';
 
       try {
         window.localStorage.removeItem(DIALOGS_CACHE_KEY);
@@ -2517,7 +2485,7 @@ export default function MessagesContent() {
 
     try {
       const imageUrl = await uploadToImgbb(file);
-      await authFetch(`/api/messages/send_image.php?img=${encodeURIComponent(imageUrl)}&diid=${dialogId}`);
+      await AncialAPI.sendMessage({ di_id: dialogId, img: imageUrl });
 
       notify({
         content: lang?.done || 'Готово',
@@ -2553,16 +2521,10 @@ export default function MessagesContent() {
     try {
       const imageUrl = await uploadToImgbb(file);
 
-      const response = await authFetch(
-        `/api/messages/update_bg.php?img=${encodeURIComponent(imageUrl)}&diid=${dialogId}`,
-      );
-      const result = (await response.json()) as {
-        error?: string;
-        success?: boolean;
-      };
-
-      if (!result.success) {
-        throw new Error(result.error || 'Не удалось обновить фон');
+      const result = await AncialAPI.updateDialogBackground<{ success?: boolean; error?: string }>(dialogId, imageUrl);
+      const isSuccess = (result as any).success !== false;
+      if (!isSuccess) {
+        throw new Error((result as any).error || 'Не удалось обновить фон');
       }
 
       setSelectedDialog((currentDialog) =>
@@ -2601,7 +2563,7 @@ export default function MessagesContent() {
     if (!dialogId || !dialogHash) return;
 
     try {
-      await authFetch(`/api/messages/update_bg.php?img=%22%22&gid=${encodeURIComponent(dialogHash)}&diid=${dialogId}`);
+      await AncialAPI.updateDialogBackground(dialogId, '""');
 
       setSelectedDialog((currentDialog) =>
         currentDialog
@@ -2641,16 +2603,7 @@ export default function MessagesContent() {
     setSendingMessage(true);
 
     try {
-      const params = new URLSearchParams();
-      params.append('message', nextValue);
-
-      await authFetch(`/api/messages/send.php?di_id=${dialogId}`, {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
+      await AncialAPI.sendMessage({ di_id: dialogId, message: nextValue });
 
       setComposerText('');
       scrollActionRef.current = { type: 'bottom' };
@@ -2674,12 +2627,7 @@ export default function MessagesContent() {
     setSendingMessage(true);
 
     try {
-      await authFetch(
-        `/engine/modules/msg/sendmsg.php?di_id=${dialogId}&sticker=${encodeURIComponent(`:${stickerName}:`)}`,
-        {
-          method: 'POST',
-        },
-      );
+      await AncialAPI.sendMessage({ di_id: dialogId, sticker: `:${stickerName}:` });
 
       setStickerDropdownOpen(false);
       scrollActionRef.current = { type: 'bottom' };
@@ -2706,16 +2654,7 @@ export default function MessagesContent() {
     try {
       seedSevenTvStickerCache([sticker]);
 
-      const params = new URLSearchParams();
-      params.append('message', `:7tv-${normalizedStickerName}-${sticker.id}:`);
-
-      await authFetch(`/api/messages/send.php?di_id=${dialogId}`, {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
+      await AncialAPI.sendMessage({ di_id: dialogId, message: `:7tv-${normalizedStickerName}-${sticker.id}:` });
 
       setStickerDropdownOpen(false);
       scrollActionRef.current = { type: 'bottom' };
@@ -2733,10 +2672,9 @@ export default function MessagesContent() {
   };
 
   const handleStartCall = () => {
-    notify({
-      content: lang?.callssoon || 'Звонки пока ещё не перенесены в React-версию.',
-      type: 'info',
-    });
+    if (routeHash) {
+      router.push(`/call/${routeHash}`);
+    }
   };
 
   const handleMessagesScroll = () => {
@@ -2959,7 +2897,10 @@ export default function MessagesContent() {
                       id="call-button"
                       type="button"
                       onClick={handleStartCall}
-                      className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95"
+                      className={cn(
+                        'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95',
+                        hasActiveCall ? 'bg-lime-500 hover:bg-lime-400' : 'hover:bg-zinc-700'
+                      )}
                     >
                       <Icon name="IC-call" className="h-8 w-8 fill-white" />
                     </button>

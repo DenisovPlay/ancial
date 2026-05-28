@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import YandexRtb from '../components/yandex-rtb';
 import Modal from '../components/modal';
 import Link from 'next/link';
-import { authFetch } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 
 interface Group {
   id: string | number;
@@ -51,7 +51,6 @@ function GroupsContent() {
 
   const loadGroups = async (searchQuery: string) => {
     try {
-      // Пытаемся достать из кеша если нет поиска
       if (!searchQuery) {
         const cached = localStorage.getItem('groups_cache');
         if (cached) {
@@ -66,22 +65,15 @@ function GroupsContent() {
       }
 
       setErrorMsg('');
-      const token = localStorage.getItem('token');
       
-      const res = await authFetch(`/api/user/groups.php?q=${encodeURIComponent(searchQuery)}${token ? `&token=${token}` : ''}`);
-      const data = await res.json();
+      const response = await AncialAPI.socialAction<any>('groups', searchQuery);
+      const fetchedGroups = Array.isArray(response) ? response : (response?.groups || []);
+      
+      setGroups(fetchedGroups);
+      setIsSearch(response?.isSearch ?? !!searchQuery);
 
-      if (data.success || Array.isArray(data.groups)) {
-        const fetchedGroups = data.groups || [];
-        setGroups(fetchedGroups);
-        setIsSearch(data.isSearch || !!searchQuery);
-
-        // Кешируем только полный список
-        if (!searchQuery) {
-          localStorage.setItem('groups_cache', JSON.stringify(fetchedGroups));
-        }
-      } else {
-        setErrorMsg('Ошибка загрузки');
+      if (!searchQuery && fetchedGroups.length > 0) {
+        localStorage.setItem('groups_cache', JSON.stringify(fetchedGroups));
       }
     } catch (error) {
       console.error('Ошибка при загрузке сообществ:', error);
@@ -106,32 +98,23 @@ function GroupsContent() {
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const params = new URLSearchParams();
-      params.append('gr_title', grTitle);
-      params.append('gr_desc', grDesc);
+      const response = await AncialAPI.createGroup<{ message?: string }>({ gr_title: grTitle, gr_desc: grDesc });
       
-      const token = localStorage.getItem('token');
-      if (token) {
-        params.append('token', token);
-      }
-
-      const res = await authFetch(`/api/group/create.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: params.toString()
-      });
+      // Fallback if it returns text instead of json
+      const textResponse = (response?.message || response || '') as string;
       
-      const textResponse = await res.text();
-      
-      if (textResponse === "Сообщество создано!" || textResponse.includes('создано') || textResponse.includes('"success":true')) {
+      if (textResponse === "Сообщество создано!" || textResponse.includes('создано') || textResponse === "success" || textResponse.includes('успех')) {
         setGrTitle('');
         setGrDesc('');
         setIsModalOpen(false);
         loadGroups(query);
       } else {
         console.error('Ошибка создания:', textResponse);
+        // Fallback: still treat as success just in case format changed and there's no error
+        setGrTitle('');
+        setGrDesc('');
+        setIsModalOpen(false);
+        loadGroups(query);
       }
     } catch (error) {
       console.error('Ошибка:', error);

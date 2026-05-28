@@ -8,11 +8,10 @@ import ShareModal from '../../../components/share-modal';
 import { useAuth, type User } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
-import { authFetch } from '../../../lib/auth-fetch';
+import { AncialAPI } from '../../../lib/api-v2';
 import { SITE_CONFIG } from '../../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import { getPulsePlaylistTracksCacheKey } from '../../playlist/playlist-model';
-import { fetchPulseJson } from '../../pulse-api';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import {
   ActionIcon,
@@ -52,6 +51,10 @@ type PulseArtistResponse = {
 
 type PulseArtistPlaylistsResponse = {
   playlists?: PulsePlaylistCardData[] | null;
+};
+
+type PulseArtistTracksResponse = {
+  popular_tracks?: PulseTrack[] | null;
 };
 
 const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
@@ -133,64 +136,56 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   useEffect(() => {
     let cancelled = false;
 
-    void fetchPulseJson<PulseArtistResponse>(`/api/pulse/pages/artist.php?id=${encodeURIComponent(cacheId)}&type=1`)
+    void AncialAPI.pulseGetArtist<PulseArtistResponse & PulseArtistPlaylistsResponse & PulseArtistTracksResponse>(cacheId)
       .then((result) => {
         if (cancelled) return;
 
         if (result.artist) {
-          writePulseJsonCache(`artist_${cacheId}`, result);
+          writePulseJsonCache(`artist_${cacheId}`, { artist: result.artist });
           setArtist(result.artist);
         } else {
           setArtist(null);
         }
-      })
-      .catch(() => {
-        if (!cancelled) setArtist(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingArtist(false);
-      });
-
-    void fetchPulseJson<PulseArtistPlaylistsResponse>(`/api/pulse/pages/artist.php?id=${encodeURIComponent(cacheId)}&type=2`)
-      .then((result) => {
-        if (cancelled) return;
-
+        
         const nextPlaylists = Array.isArray(result.playlists) ? result.playlists : [];
         if (nextPlaylists.length) {
           writePulseJsonCache(`artist_playlists_${cacheId}`, { playlists: nextPlaylists });
         }
         setPlaylists(nextPlaylists);
+
+        const nextTracks = Array.isArray(result.popular_tracks) ? result.popular_tracks : [];
+        if (nextTracks.length) {
+          writePulseJsonCache(artistTracksCacheKey, nextTracks);
+        }
+        setTracks(nextTracks);
+        setLoadingTracks(false);
       })
       .catch(() => {
-        if (!cancelled) setPlaylists([]);
+        if (!cancelled) {
+          setArtist(null);
+          setPlaylists([]);
+        }
       })
       .finally(() => {
-        if (!cancelled) setLoadingPlaylists(false);
+        if (!cancelled) {
+          setLoadingArtist(false);
+          setLoadingPlaylists(false);
+        }
       });
 
-    void Promise.allSettled([
-      fetchPulseJson<{ ids?: Array<number | string> }>('/api/pulse/getFavorites.php'),
-      fetchPulseJson<PulseTrack[]>(`/api/pulse/getPlaylist.php?aid=${encodeURIComponent(cacheId)}`),
-    ]).then(([favoritesResult, tracksResult]) => {
-      if (cancelled) return;
+    void AncialAPI.pulseGetLibrary<{ ids?: Array<number | string> }>('favorites')
+      .then((favoritesResult) => {
+        if (cancelled) return;
 
-      if (favoritesResult.status === 'fulfilled') {
-        const nextIds = Array.isArray(favoritesResult.value.ids)
-          ? favoritesResult.value.ids.map((id) => toNumber(id)).filter(Boolean)
+        const nextIds = Array.isArray(favoritesResult.ids)
+          ? favoritesResult.ids.map((id) => toNumber(id)).filter(Boolean)
           : [];
         writeFavoriteIds(nextIds);
         setFavoriteIds(nextIds);
-      }
-
-      if (tracksResult.status === 'fulfilled' && Array.isArray(tracksResult.value)) {
-        writePulseJsonCache(artistTracksCacheKey, tracksResult.value);
-        setTracks(tracksResult.value);
-      } else {
-        setTracks([]);
-      }
-
-      setLoadingTracks(false);
-    });
+      })
+      .catch(() => {
+        // ignore
+      });
 
     return () => {
       cancelled = true;
@@ -224,8 +219,8 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     if (!trackId) return;
 
     try {
-      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${trackId}`);
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', trackId);
+      const result = response.message || '';
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
         setFavoriteIds((ids) => {
@@ -341,7 +336,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                   {verifyStatus === '1' && owner ? (
                     <button
                       type="button"
-                      onClick={() => router.push(`/profile/${encodeURIComponent(normalizeText(owner.username) || 'id' + normalizeText(String(artist?.id ?? '')))}`)}
+                      onClick={() => router.push(`/@${encodeURIComponent(normalizeText(owner.username) || 'id' + normalizeText(String(artist?.id ?? '')))}`)}
                       className="flex w-fit cursor-pointer items-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 p-0.5 text-zinc-300 opacity-95 shadow duration-300 hover:bg-zinc-700/80 active:scale-95"
                     >
                       <span className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center" style={{ backgroundImage: `url(${getImageUrl(owner.img, DEFAULT_TRACK_IMAGE)})` }} />

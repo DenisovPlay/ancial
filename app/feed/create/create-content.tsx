@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Dropdown } from '../../components/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { authFetch } from '../../lib/auth-fetch';
+import { AncialAPI } from '../../lib/api-v2';
 import CreatePostPreview from './create-post-preview';
 import {
   type DraftImage,
@@ -170,15 +170,10 @@ export default function CreatePostContent() {
 
     const loadAuthors = async () => {
       try {
-        const response = await authFetch(`/api/posts/available_authors.php`, {
+        const data = await AncialAPI.request<AvailableAuthor[]>('/posts/AvailableAuthors.php', {
           signal: controller.signal,
         });
 
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
-
-        const data = (await response.json()) as AvailableAuthor[];
         setAuthors(
           Array.isArray(data)
             ? data.map((author) => ({
@@ -314,39 +309,22 @@ export default function CreatePostContent() {
         .map((image) => image.uploadedUrl as string)
         .join(',');
 
-      const searchParams = new URLSearchParams({
+      const response = await AncialAPI.createPost<{ message?: string }>({
         author_type: authorType,
         gid: selectedAuthorId,
         tags: selectedTopic || 'null',
-      });
-
-      const body = new URLSearchParams({
         contentext: content,
         new_post_title: title,
         photosurls: uploadedImages,
       });
 
-      const response = await authFetch(`/api/posts/create.php?${searchParams.toString()}`, {
-        body: body.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
-
-      const responseText = await response.text();
-
-      if (!response.ok) {
-        throw new Error(responseText || `Request failed with status ${response.status}`);
-      }
-
-      if (responseText.trim() === '') {
+      if (!response || !response.message) {
         router.push('/feed');
         return;
       }
 
       showNote({
-        content: responseText,
+        content: response.message,
         html: true,
         type: 'success',
         time: 5,

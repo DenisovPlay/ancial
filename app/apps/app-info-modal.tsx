@@ -10,6 +10,7 @@ import ImageViewerModal, { type ImageViewerSlide } from '../components/image-vie
 import Modal from '../components/modal';
 import { useAuth } from '../context/AuthContext';
 import { useDragScroll } from '../hooks/useDragScroll';
+import { AncialAPI } from '../lib/api-v2';
 import {
   type LegacyAppInfo,
   type LegacyAppInfoResponse,
@@ -47,20 +48,15 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
       setError('');
 
       try {
-        const response = await fetch(`/apps/api/info?id=${encodeURIComponent(String(appId))}`, {
-          cache: 'no-store',
-        });
-        const data = (await response.json()) as LegacyAppInfoResponse;
+        const data = await AncialAPI.getAppInfo<{ app?: LegacyAppInfo | LegacyAppInfo[] | null }>(appId!);
 
         if (!alive) {
           return;
         }
 
-        if (!data.success) {
-          throw new Error(data.error || 'Неизвестная ошибка');
-        }
-
-        setApp(data.app?.[0] ?? null);
+        // The API might return an object with an app property that is an array or a single object.
+        const appData = Array.isArray(data.app) ? data.app[0] : data.app;
+        setApp(appData ?? null);
       } catch (caughtError) {
         if (!alive) {
           return;
@@ -171,15 +167,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
       return;
     }
 
-    const countUrl = new URL('/apps/api/count', window.location.origin);
-    countUrl.searchParams.set('appid', String(app.id));
-
-    const token = window.localStorage.getItem('token');
-    if (token) {
-      countUrl.searchParams.set('token', token);
-    }
-
-    void fetch(countUrl, { cache: 'no-store' }).catch(() => undefined);
+    void AncialAPI.trackAppLaunch(app.id).catch(() => undefined);
 
     router.push(rewriteLegacyPlayUrl(app.link_web));
     onClose();

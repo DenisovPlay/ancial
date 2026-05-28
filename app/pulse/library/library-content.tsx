@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '../../context/AuthContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
-import { fetchPulseJson } from '../pulse-api';
+import { AncialAPI } from '../../lib/api-v2';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import {
   ActionIcon,
@@ -72,7 +72,7 @@ export default function PulseLibraryContent() {
 
     let cancelled = false;
 
-    void fetchPulseJson<PulseLibraryResponse>('/api/pulse/pages/my.php?type=1&view=library')
+    void AncialAPI.pulseGetLibrary<PulseLibraryResponse>('all')
       .then((result) => {
         if (cancelled) return;
 

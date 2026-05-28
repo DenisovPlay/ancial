@@ -1,4 +1,4 @@
-import { authFetch } from './auth-fetch';
+import { AncialAPI } from './api-v2';
 
 export type NetStatusState = 'hidden' | 'reconnecting';
 
@@ -182,7 +182,7 @@ function stopHealth() {
 }
 
 function doHeartbeat() {
-  void authFetch('/api/info/ping.php', {
+  void AncialAPI.request('/info/Ping.php', {
     method: 'POST',
     keepalive: true,
   }).catch(() => {});

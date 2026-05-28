@@ -3,7 +3,7 @@
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { SettingsItem } from '../components/settings-item';
-import { authFetch } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 
 export default function SettingsPage() {
   const { showNote } = useNotification();
@@ -12,20 +12,10 @@ export default function SettingsPage() {
   const selectLanguage = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedLang = e.target.value;
     try {
-      const token = localStorage.getItem('token');
-      
-      const searchParams = new URLSearchParams();
-      searchParams.append('lang', selectedLang);
-      if (token) searchParams.append('token', token);
-
-      const url = `/api/user/change_lang.php?${searchParams.toString()}`;
-
-      const res = await authFetch(url);
-      
-      const responseText = await res.text();
+      const result = await AncialAPI.updateProfile<any>({ lang: selectedLang });
       
       showNote({
-        content: responseText || (selectedLang === 'ru' ? 'Язык изменен' : 'Language changed'),
+        content: result?.message || (selectedLang === 'ru' ? 'Язык изменен' : 'Language changed'),
         html: true,
         type: 'success',
         time: 5

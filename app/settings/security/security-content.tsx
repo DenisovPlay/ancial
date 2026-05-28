@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Modal from '../../components/modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { authFetch } from '../../lib/auth-fetch';
+import { AncialAPI } from '../../lib/api-v2';
 import { SvgIcon } from '../../feed/editor-shared';
 
 function flag(value: boolean | number | string | null | undefined) {
@@ -168,40 +168,11 @@ export default function SecuritySettingsPage() {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
 
-      const compatibleEntries: Array<[string, string]> = [
-        ['oldpas', oldPassword],
-        ['newpas', newPassword],
-        ['nrepas', repeatPassword],
-        ['old_pass', oldPassword],
-        ['new_pass', newPassword],
-        ['new_rep_pass', repeatPassword],
-        ['old_password', oldPassword],
-        ['new_password', newPassword],
-        ['repeat_new_password', repeatPassword],
-        ['oldPassword', oldPassword],
-        ['newPassword', newPassword],
-        ['repeatNewPassword', repeatPassword],
-      ];
-
-      compatibleEntries.forEach(([key, value]) => params.append(key, value));
-
-      if (token) {
-        params.append('token', token);
-      }
-
-      const response = await authFetch('/api/user/changePassword.php', {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
+      const responseText = await AncialAPI.securityAction<string>('change_password', {
+        oldpas: oldPassword,
+        newpas: newPassword,
+        nrepas: repeatPassword,
       });
-
-      const responseText = (await response.text()).trim();
-
-      if (!response.ok) {
-        throw new Error(responseText || 'Password change failed');
-      }
 
       showNote({
         content: responseText || (lang?.done || 'Готово'),
@@ -230,36 +201,19 @@ export default function SecuritySettingsPage() {
     setIsSendingVerification(true);
 
     try {
-      const response = await authFetch('/api/verification/sendemail.php', {
+      const result = await AncialAPI.request<{ message?: string }>('/verification/SendEmail.php', {
         method: 'POST',
       });
 
-      const result = (await response.json()) as {
-        data?: {
-          message?: string;
-        };
-        error?: string;
-        success?: boolean;
-      };
-
-      if (result?.success) {
-        showNote({
-          content: result.data?.message || lang?.done || 'Готово',
-          time: 5,
-          type: 'success',
-        });
-        return;
-      }
-
       showNote({
-        content: result?.error || lang?.errorhappend || 'Произошла ошибка =(',
+        content: result?.message || lang?.done || 'Готово',
         time: 5,
-        type: 'error',
+        type: 'success',
       });
     } catch (error) {
       console.error(error);
       showNote({
-        content: lang?.errorhappend || 'Произошла ошибка =(',
+        content: error instanceof Error ? error.message : (lang?.errorhappend || 'Произошла ошибка =('),
         time: 5,
         type: 'error',
       });
@@ -272,28 +226,10 @@ export default function SecuritySettingsPage() {
     setIsSavingContacts(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      params.append('phone', changePhone);
-      params.append('email', changeEmail);
-
-      if (token) {
-        params.append('token', token);
-      }
-
-      const response = await authFetch('/api/user/changeEmailPhone.php', {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
+      const responseText = await AncialAPI.securityAction<string>('change_email_phone', {
+        phone: changePhone,
+        email: changeEmail,
       });
-
-      const responseText = (await response.text()).trim();
-
-      if (!response.ok) {
-        throw new Error(responseText || 'Contacts change failed');
-      }
 
       showNote({
         content: responseText || (lang?.done || 'Готово'),
@@ -320,21 +256,10 @@ export default function SecuritySettingsPage() {
     setIsSavingPrivacy(true);
 
     try {
-      const params = new URLSearchParams();
-      params.append('searchshow', searchShow ? '1' : '2');
-      params.append('msgopen', messagesOpen ? '1' : '2');
-
-      const response = await authFetch('/api/user/updateinfo.php', {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
+      await AncialAPI.updateProfile({
+        searchshow: searchShow ? '1' : '2',
+        msgopen: messagesOpen ? '1' : '2',
       });
-
-      if (!response.ok) {
-        throw new Error('Privacy update failed');
-      }
 
       showNote({
         content: lang?.informupdated || 'Информация обновлена',

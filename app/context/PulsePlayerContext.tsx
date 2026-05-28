@@ -11,7 +11,7 @@ import React, {
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
-import { authFetch } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse/pulse-image';
 import PulsePlaylistEditorModal from '../pulse/pulse-playlist-editor-modal';
 import { PulseModal } from '../pulse/pulse-modal';
@@ -68,6 +68,7 @@ type PulsePlaylistOption = {
   id: string;
   image: string;
   name: string;
+  songs: number[];
 };
 
 type PulsePlayerContextValue = {
@@ -968,7 +969,7 @@ export function PulsePlayerProvider({
     ) {
       listenReportedSessionRef.current = playbackSessionRef.current;
       setListenCounted(true);
-      void authFetch(`/api/pulse/listened_track.php?id=${currentSongIdRef.current}`).catch(() => {
+      AncialAPI.pulseTrackAction('listened', currentSongIdRef.current).catch(() => {
         // ignore listen counter errors
       });
     }
@@ -1131,14 +1132,8 @@ export function PulsePlayerProvider({
 
     void (async () => {
       try {
-        const response = await authFetch('/api/pulse/playlist_manage.php?action=list');
-        const result = await response.json() as {
-          data?: PulsePlaylistManageItem[];
-          error?: string | null;
-          success?: boolean;
-        };
-
-        if (!result.success) {
+        const result = await AncialAPI.pulsePlaylistAction<{ data?: PulsePlaylistManageItem[]; error?: string }>('list', {});
+        if (!result || !Array.isArray(result.data)) {
           notify({
             content: result.error || (lang?.pulse_error_happened || 'Произошла ошибка =('),
             type: 'error',
@@ -1150,12 +1145,14 @@ export function PulsePlayerProvider({
 
         const nextOptions = Array.isArray(result.data)
           ? result.data.map((item) => {
-              const playlistId = normalizeText(String(item.id ?? ''));
+            const parsedSongs = parsePlaylistSongs(item.songs);
+            const playlistId = normalizeText(String(item.id ?? ''));
               return {
-                hasSong: parsePlaylistSongs(item.songs).includes(resolvedSongId),
+                hasSong: parsedSongs.includes(resolvedSongId),
                 id: playlistId,
                 image: normalizeText(item.img),
                 name: normalizeText(item.name) || (lang?.pulse_unknown_playlist || 'Без названия'),
+                songs: parsedSongs,
               } satisfies PulsePlaylistOption;
             }).filter((item) => item.id)
           : [];
@@ -1177,40 +1174,29 @@ export function PulsePlayerProvider({
   const toggleSongInPlaylist = async (playlistId: string, hasSong: boolean) => {
     if (!playlistId || !addToPlaylistSongId) return;
 
-    const payload = new URLSearchParams({
-      action: hasSong ? 'remove_song' : 'add_song',
-      id: playlistId,
-      song_id: String(addToPlaylistSongId),
-    });
+    const option = playlistOptions.find((o) => o.id === playlistId);
+    if (!option) return;
+
+    let updatedSongs = [...option.songs];
+    if (hasSong) {
+      updatedSongs = updatedSongs.filter((id) => id !== addToPlaylistSongId);
+    } else {
+      updatedSongs.push(addToPlaylistSongId);
+    }
 
     try {
-      const response = await authFetch('/api/pulse/playlist_manage.php', {
-        body: payload.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        },
-        method: 'POST',
+      await AncialAPI.pulsePlaylistAction('update', {
+        id: playlistId,
+        songs: updatedSongs.join('|'),
       });
-      const result = await response.json() as {
-        error?: string | null;
-        success?: boolean;
-      };
-
-      if (!result.success) {
-        notify({
-          content: result.error || (lang?.pulse_error_happened || 'Произошла ошибка =('),
-          type: 'error',
-          time: 5,
-        });
-        return;
-      }
 
       setPlaylistOptions((currentOptions) =>
         currentOptions.map((item) =>
-          item.id === playlistId
+              item.id === playlistId
             ? {
                 ...item,
                 hasSong: !hasSong,
+                songs: updatedSongs,
               }
             : item,
         ),
@@ -1251,8 +1237,7 @@ export function PulsePlayerProvider({
     }
 
     try {
-      const response = await authFetch('/api/pulse/getFavorites.php');
-      const result = await response.json() as { ids?: unknown };
+      const result = await AncialAPI.pulseGetLibrary<{ ids?: unknown }>('favorites');
       const nextIds = normalizeSongIds(result.ids);
       likedSongIdsRef.current = nextIds;
       setLikedSongIds(nextIds);
@@ -1264,9 +1249,25 @@ export function PulsePlayerProvider({
     }
   };
 
+  useEffect(() => {
+    const handleLikesUpdated = (e: CustomEvent) => {
+      likedSongIdsRef.current = e.detail;
+      setLikedSongIds(e.detail);
+      if (typeof window !== 'undefined') {
+        window._pulseLikedSongs = e.detail;
+      }
+    };
+    window.addEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
+    return () => window.removeEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
+  }, []);
+
   const setLikedSongsState = (nextIds: number[]) => {
     likedSongIdsRef.current = nextIds;
     setLikedSongIds(nextIds);
+    if (typeof window !== 'undefined') {
+      window._pulseLikedSongs = nextIds;
+      window.dispatchEvent(new CustomEvent('pulse-likes-updated', { detail: nextIds }));
+    }
   };
 
   const toggleSongLike = async (
@@ -1280,8 +1281,8 @@ export function PulsePlayerProvider({
     if (!resolvedSongId) return;
 
     try {
-      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${resolvedSongId}`);
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', resolvedSongId);
+      const result = response.message || '';
       const currentIds = await ensureLikedSongsLoaded();
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
@@ -1341,8 +1342,8 @@ export function PulsePlayerProvider({
     if (!resolvedPlaylistId) return;
 
     try {
-      const response = await authFetch(`/api/pulse/likeplaylist.php?id=${resolvedPlaylistId}`);
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulsePlaylistAction<{ message?: string }>('like', { id: resolvedPlaylistId });
+      const result = response.message || '';
 
       window.dispatchEvent(
         new CustomEvent('pulse:playlist-like-changed', {
@@ -1435,22 +1436,14 @@ export function PulsePlayerProvider({
     const resolvedId = normalizeText(String(id));
     if (!resolvedId) return [];
 
-    let url = '';
-
-    if (kind === 'playlist') {
-      url = `/api/pulse/getPlaylist.php?pid=${encodeURIComponent(resolvedId)}`;
-    } else if (kind === 'genlist') {
-      url = `/api/pulse/getPlaylist.php?gid=${encodeURIComponent(resolvedId)}`;
-    } else if (kind === 'artist') {
-      url = `/api/pulse/getPlaylist.php?aid=${encodeURIComponent(resolvedId)}`;
-    } else {
-      url = `/api/pulse/getPlaylist.php?tid=${encodeURIComponent(resolvedId)}`;
-    }
-
     try {
-      const response = await authFetch(url);
-      const result = await response.json() as unknown;
-      return Array.isArray(result) ? result as PulseTrack[] : [];
+      const result = await AncialAPI.pulseGetPlaylist<PulseTrack[]>({
+        id: kind === 'playlist' ? resolvedId : undefined,
+        gid: kind === 'genlist' ? String(resolvedId) : undefined,
+        aid: kind === 'artist' ? String(resolvedId) : undefined,
+        tid: kind === 'track' ? String(resolvedId) : undefined,
+      });
+      return Array.isArray(result) ? result : [];
     } catch {
       return [];
     }
@@ -1523,7 +1516,7 @@ export function PulsePlayerProvider({
     showPlayer();
 
     if (kind === 'playlist') {
-      void authFetch(`/api/pulse/history_add.php?id=${encodeURIComponent(resolvedId)}&type=2`).catch(() => {
+      AncialAPI.pulseTrackAction('history_add', resolvedId).catch(() => {
         // ignore history failures
       });
     }

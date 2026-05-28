@@ -7,7 +7,7 @@ import { Dropdown } from '../../components/navigation';
 import type { PostAuthor, PostData, PostImage } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { authFetch } from '../../lib/auth-fetch';
+import { AncialAPI } from '../../lib/api-v2';
 import {
   type DraftImage,
   MAX_IMAGES,
@@ -225,36 +225,30 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       setError(null);
 
       try {
-        const response = await authFetch(`/api/posts/get_post.php?id=${encodeURIComponent(postId)}`, {
+        const nextPost = await AncialAPI.getPost<EditablePostData>(postId, {
           signal: controller.signal,
         });
 
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
-
-        const data = (await response.json()) as GetPostResponse;
-
-        if (!data.success || !data.data) {
+        if (!nextPost) {
           setPost(null);
           setError('not_found');
           return;
         }
 
-        const nextPost = normalizePost(data.data);
-        setPost(nextPost);
+        const normalizedPost = normalizePost(nextPost);
+        setPost(normalizedPost);
 
-        if (!flag(nextPost.can_edit)) {
+        if (!flag(normalizedPost.can_edit)) {
           setError('permission_denied');
           return;
         }
 
-        setTitle(nextPost.title ?? '');
+        setTitle(normalizedPost.title ?? '');
         setContent(
-          decodeHtmlToTextareaValue(nextPost.original_content ?? nextPost.content ?? ''),
+          decodeHtmlToTextareaValue(normalizedPost.original_content ?? normalizedPost.content ?? ''),
         );
-        setSelectedTopic(nextPost.tags ?? '');
-        setImages(toDraftImages(nextPost.images));
+        setSelectedTopic(normalizedPost.tags ?? '');
+        setImages(toDraftImages(normalizedPost.images));
       } catch (nextError) {
         if (controller.signal.aborted) return;
         console.error('Failed to load post for editing', nextError);
@@ -382,7 +376,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         .map((image) => image.uploadedUrl ?? image.previewUrl)
         .join(',');
 
-      const body = new URLSearchParams({
+      const response = await AncialAPI.editPost<{ message?: string }>({
         data: content,
         id: postId,
         photos,
@@ -390,22 +384,8 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         title,
       });
 
-      const response = await authFetch('/api/posts/edit.php', {
-        body: body.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
-
-      const responseText = await response.text();
-
-      if (!response.ok) {
-        throw new Error(responseText || `Request failed with status ${response.status}`);
-      }
-
       showNote({
-        content: responseText.trim() || strings.saved,
+        content: response?.message?.trim() || strings.saved,
         html: true,
         type: 'success',
         time: 5,

@@ -7,11 +7,13 @@ import Modal from './modal';
 
 export interface UserPreview {
   fname?: string | null;
+  name?: string | null;
   id: string | number;
   img?: string | null;
   lname?: string | null;
   online?: boolean | number | string | null;
   username?: string | null;
+  login?: string | null;
 }
 
 export interface GroupPreview {

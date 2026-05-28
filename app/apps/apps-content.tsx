@@ -13,6 +13,7 @@ import {
   toAppId,
   toBooleanFlag,
 } from './apps-model';
+import { AncialAPI } from '../lib/api-v2';
 import AppInfoModal from './app-info-modal';
 import {
   CategoryIcon,
@@ -106,38 +107,28 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
   const [modalAppId, setModalAppId] = useState<number | string | null>(null);
   const [query, setQuery] = useState(initialQuery);
 
-  const endpoint = useMemo(() => {
-    if (mode === 'search') {
-      return `/apps/api/search?q=${encodeURIComponent(initialQuery)}`;
-    }
-
-    if (mode === 'category' && category) {
-      return `/apps/api/category?q=${encodeURIComponent(category)}`;
-    }
-
-    return '/apps/api/home';
-  }, [category, initialQuery, mode]);
-
   const loadApps = useCallback(async () => {
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(endpoint, { cache: 'no-store' });
-      const result = (await response.json()) as LegacyAppsResponse;
-
-      if (!result.success) {
-        throw new Error(result.error || 'Не удалось загрузить приложения');
+      let data: { apps?: LegacyAppSummary[] };
+      if (mode === 'search') {
+        data = await AncialAPI.searchApps<{ apps?: LegacyAppSummary[] }>(initialQuery);
+      } else if (mode === 'category' && category) {
+        data = await AncialAPI.getAppsCategory<{ apps?: LegacyAppSummary[] }>(category);
+      } else {
+        data = await AncialAPI.getAppsHomePage<{ apps?: LegacyAppSummary[] }>();
       }
 
-      setApps(result.data?.apps ?? []);
+      setApps(data.apps ?? []);
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Ошибка загрузки');
       setApps([]);
     } finally {
       setLoading(false);
     }
-  }, [endpoint]);
+  }, [category, initialQuery, mode]);
 
   useEffect(() => {
     void loadApps();

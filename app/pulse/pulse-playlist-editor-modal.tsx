@@ -2,11 +2,8 @@
 
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 
-import { authFetch } from '../lib/auth-fetch';
-import {
-  getPulsePlaylistManagePayload,
-  type PulsePlaylistMeta,
-} from './playlist/playlist-model';
+import { AncialAPI } from '../lib/api-v2';
+import { type PulsePlaylistMeta } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { PulseModal, PulseModalField } from './pulse-modal';
 import {
@@ -90,32 +87,17 @@ export default function PulsePlaylistEditorModal({
     setIsSaving(true);
 
     try {
-      const payload = getPulsePlaylistManagePayload({
-        id: playlistId,
-        image: coverUrl,
-        name: nextName,
-      });
-
-      const response = await authFetch('/api/pulse/playlist_manage.php', {
-        body: payload.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        },
-        method: 'POST',
-      });
-      const result = await response.json() as {
-        data?: { id?: number | string | null };
-        error?: string | null;
-        id?: number | string | null;
-        success?: boolean;
-      };
-
-      if (!result.success) {
-        throw new Error(result.error || 'Unknown error');
-      }
+      const result = await AncialAPI.pulsePlaylistAction<{ id?: number | string | null }>(
+        isEditing ? 'update' : 'create',
+        {
+          ...(isEditing ? { id: playlistId } : {}),
+          img: coverUrl,
+          name: nextName,
+        }
+      );
 
       const nextPlaylist = {
-        id: playlistId || result.id || result.data?.id || null,
+        id: playlistId || result?.id || null,
         img: coverUrl,
         name: nextName,
       };

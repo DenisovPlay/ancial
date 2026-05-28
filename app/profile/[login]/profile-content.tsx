@@ -24,7 +24,7 @@ import PostsRenderer, {
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
-import { authFetch, authFetchJson, authFetchText } from '../../lib/auth-fetch';
+import { AncialAPI } from '../../lib/api-v2';
 import {
   cn,
   SvgIcon,
@@ -57,6 +57,15 @@ interface UserPageData {
   online?: boolean | number | string | null;
   subscribers?: UserPreview[] | null;
   verify?: boolean | number | string | null;
+  full_data?: {
+    friend_status?: UserFriendButton | null;
+    friends?: UserPreview[] | null;
+    subscribers?: UserPreview[] | null;
+    groups?: GroupPreview[] | null;
+    friends_count?: number;
+    subscribers_count?: number;
+    groups_count?: number;
+  };
 }
 
 interface UserPageResponse {
@@ -144,13 +153,7 @@ function clearUserProfileCache(key: string) {
   }
 }
 
-async function apiJson<T>(path: string, init?: RequestInit) {
-  return authFetchJson<T>(path, init);
-}
 
-async function apiText(path: string, init?: RequestInit) {
-  return authFetchText(path, init);
-}
 
 export default function UserProfileContent({ login }: { login: string }) {
   const router = useRouter();
@@ -321,9 +324,13 @@ export default function UserProfileContent({ login }: { login: string }) {
     };
   }, [lang]);
 
-  const hasFriends = Boolean(userData?.friends?.length);
-  const hasSubscribers = Boolean(userData?.subscribers?.length);
-  const hasGroups = Boolean(userData?.groups?.length);
+  const mappedFriends = userData?.full_data?.friends || userData?.friends;
+  const mappedSubscribers = userData?.full_data?.subscribers || userData?.subscribers;
+  const mappedGroups = userData?.full_data?.groups || userData?.groups;
+
+  const hasFriends = Boolean(mappedFriends?.length);
+  const hasSubscribers = Boolean(mappedSubscribers?.length);
+  const hasGroups = Boolean(mappedGroups?.length);
 
   const navigateToUser = useCallback(
     (username: string | null | undefined) => {
@@ -346,7 +353,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       setIsCommentsLoading(true);
 
       try {
-        const nextComments = await apiJson<FeedComment[]>(`/api/posts/comments.php?id=${postId}`);
+        const nextComments = await AncialAPI.getComments<FeedComment[]>(postId);
         setComments(Array.isArray(nextComments) ? nextComments : []);
       } catch (nextError) {
         console.error('Failed to load comments', nextError);
@@ -381,15 +388,13 @@ export default function UserProfileContent({ login }: { login: string }) {
       setError(null);
 
       try {
-        const response = await apiJson<UserPageResponse>(
-          `/api/user/get_user_page.php?login=${encodeURIComponent(login)}`,
-        );
+        const response = await AncialAPI.getUserPage<UserPageData>(login);
 
-        if (!response.success || !response.data) {
+        if (!response) {
           clearUserProfileCache(profileCacheKey);
           setUserData(null);
           profileIdRef.current = null;
-          setError(response.error || strings.pagenotfound);
+          setError((response as { error?: string })?.error || strings.pagenotfound);
           setPosts([]);
           setPostsLoading(false);
           currentLastIdRef.current = 0;
@@ -398,7 +403,7 @@ export default function UserProfileContent({ login }: { login: string }) {
           return;
         }
 
-        if (String(response.data.active ?? 1) === '0') {
+        if (String(response.active ?? 1) === '0') {
           clearUserProfileCache(profileCacheKey);
           setUserData(null);
           profileIdRef.current = null;
@@ -411,8 +416,8 @@ export default function UserProfileContent({ login }: { login: string }) {
           return;
         }
 
-        setUserData(response.data);
-        profileIdRef.current = response.data.id;
+        setUserData(response);
+        profileIdRef.current = response.id;
         setError(null);
 
         if (!preserveExisting) {
@@ -423,7 +428,7 @@ export default function UserProfileContent({ login }: { login: string }) {
           setPostsLoading(true);
         }
 
-        void loadPostsRef.current(response.data.id, 0, false, { preserveExisting });
+        void loadPostsRef.current(response.id, 0, false, { preserveExisting });
       } catch (nextError) {
         console.error('Failed to load profile', nextError);
 
@@ -469,9 +474,12 @@ export default function UserProfileContent({ login }: { login: string }) {
       }
 
       try {
-        const response = await apiJson<FeedResponse>(
-          `/api/posts/feed.php?last_id=${lastId}&id=${profileId}&type=1`,
-          { signal: controller.signal },
+        const response = await AncialAPI.getFeed<FeedResponse>(
+          undefined,
+          lastId,
+          profileId,
+          1,
+          { signal: controller.signal }
         );
 
         if (controller.signal.aborted) return;
@@ -575,18 +583,19 @@ export default function UserProfileContent({ login }: { login: string }) {
 
   const handleBookmark = async (post: PostData, nextValue: boolean) => {
     try {
-      const response = await apiText(`/api/posts/bookmarks.php?pid=${post.id}`);
+      const response = await AncialAPI.postAction<{ message?: string }>('bookmark', { pid: post.id });
+      const text = response.message || '';
 
       showNote({
-        content: response,
+        content: text,
         html: true,
         type: 'success',
         time: 5,
       });
 
       updatePost(post.id, (currentPost) => {
-        const isAdded = response === strings.bookmarkadded;
-        const isRemoved = response === strings.bookmarkremoved;
+        const isAdded = text === strings.bookmarkadded;
+        const isRemoved = text === strings.bookmarkremoved;
         const nextBookmarked = isAdded ? true : isRemoved ? false : nextValue;
         const currentAmount = toNumber(currentPost.bookmarked_amount);
 
@@ -615,9 +624,10 @@ export default function UserProfileContent({ login }: { login: string }) {
 
   const handleVote = async (post: PostData, direction: 'up' | 'down') => {
     try {
-      const response = await apiText(`/api/posts/vote.php?pid=${post.id}&vt=${direction}`);
+      const response = await AncialAPI.votePost<{ message?: string }>(post.id, direction);
+      const text = response.message || '';
 
-      if (response === 'nlog') {
+      if (text === 'nlog') {
         showNote({
           content: strings.logintoreact,
           type: 'success',
@@ -745,13 +755,7 @@ export default function UserProfileContent({ login }: { login: string }) {
     if (!commentInput.trim()) return;
 
     try {
-      await apiText(`/api/posts/createcomment.php?pid=${activeCommentsPost.id}`, {
-        body: new URLSearchParams({ content: commentInput.trim() }).toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
+      await AncialAPI.createComment(activeCommentsPost.id, commentInput.trim());
 
       setCommentInput('');
       incrementCommentsCount(activeCommentsPost.id, 1);
@@ -768,10 +772,11 @@ export default function UserProfileContent({ login }: { login: string }) {
 
   const handleDeleteComment = async (comment: FeedComment) => {
     try {
-      const response = await apiText(`/api/posts/deletecomment.php?id=${comment.id}`);
+      const response = await AncialAPI.deleteComment<{ message?: string }>(comment.id);
+      const text = response?.message || 'Удалено';
 
       showNote({
-        content: response,
+        content: text,
         html: true,
         type: 'success',
         time: 5,
@@ -801,12 +806,11 @@ export default function UserProfileContent({ login }: { login: string }) {
     setIsReportModalOpen(false);
 
     try {
-      const response = await apiText(
-        `/api/posts/report.php?id=${currentTarget.id}&type=${currentTarget.type}&comment=${encodeURIComponent(reason)}`,
-      );
+      const response = await AncialAPI.report<{ message?: string }>(currentTarget.id, currentTarget.type, reason);
+      const text = response.message || '';
 
       showNote({
-        content: response,
+        content: text,
         html: true,
         type: 'success',
         time: 5,
@@ -828,12 +832,11 @@ export default function UserProfileContent({ login }: { login: string }) {
     setIsDeleteModalOpen(false);
 
     try {
-      const response = await apiText(
-        `/api/posts/delete.php?pid=${currentTarget.id}&gid=${currentTarget.author.id}`,
-      );
+      const response = await AncialAPI.postAction<{ message?: string }>('delete', { pid: currentTarget.id, gid: currentTarget.author.id });
+      const text = response.message || '';
 
       showNote({
-        content: response,
+        content: text,
         html: true,
         type: 'success',
         time: 5,
@@ -909,24 +912,28 @@ export default function UserProfileContent({ login }: { login: string }) {
     const friendButton = userData?.friend_button;
     if (!friendButton) return;
 
-    const token = localStorage.getItem('token') || '';
+    let actionToCall = '';
+    let targetId: string | number | undefined;
 
-    let path = '';
     if (friendButton.action === 'delete' || friendButton.action === 'cancel') {
-      path = `/api/friends/delete.php?frid=${friendButton.relation_id}&token=${encodeURIComponent(token)}`;
+      actionToCall = 'delete';
+      targetId = friendButton.relation_id!;
     } else if (friendButton.action === 'accept') {
-      path = `/api/friends/add.php?frid=${friendButton.relation_id}&token=${encodeURIComponent(token)}`;
+      actionToCall = 'add';
+      targetId = friendButton.relation_id!;
     } else if (friendButton.action === 'add') {
-      path = `/api/friends/create.php?fid=${friendButton.target_id}&token=${encodeURIComponent(token)}`;
+      actionToCall = 'create';
+      targetId = friendButton.target_id!;
     }
 
-    if (!path) return;
+    if (!actionToCall || !targetId) return;
 
     try {
-      const response = await apiText(path);
+      const response = await AncialAPI.friendAction<{ message?: string }>(actionToCall as 'add' | 'delete' | 'create', targetId);
+      const text = response.message || '';
 
       showNote({
-        content: response,
+        content: text,
         html: true,
         type: 'success',
         time: 5,
@@ -947,23 +954,8 @@ export default function UserProfileContent({ login }: { login: string }) {
     if (!userData) return;
 
     try {
-      const token = localStorage.getItem('token') || '';
-      const response = await authFetch('/api/messages/createdialog.php', {
-        body: new URLSearchParams({
-          token,
-          withu: String(userData.id),
-        }).toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-
-      const html = await response.text();
+      const response = await AncialAPI.createDialog<{ message?: string }>(userData.id);
+      const html = response.message || '';
 
       if (html === strings.dialogcreated || html === strings.dialogblocked) {
         showNote({
@@ -1000,25 +992,9 @@ export default function UserProfileContent({ login }: { login: string }) {
       });
 
       const uploadedUrl = await uploadImageToImgbb(file);
-      const token = localStorage.getItem('token') || '';
-      const body = new URLSearchParams({
-        [field]: uploadedUrl,
-        token,
-      });
 
-      const response = await authFetch('/api/user/updateinfo.php', {
-        body: body.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-
-      const message = (await response.text()) || strings.successProfileUpdate;
+      const response = await AncialAPI.updateProfileMedia<{ message?: string }>(field, uploadedUrl);
+      const message = response.message || strings.successProfileUpdate;
 
       showNote({
         content: message,
@@ -1048,7 +1024,7 @@ export default function UserProfileContent({ login }: { login: string }) {
   };
 
   const friendButtonConfig = useMemo(() => {
-    const button = userData?.friend_button;
+    const button = userData?.full_data?.friend_status || userData?.friend_button;
     if (!button) return null;
 
     const isAddAction = button.action === 'add' || button.action === 'accept';
@@ -1070,7 +1046,7 @@ export default function UserProfileContent({ login }: { login: string }) {
               ? strings.delete
               : strings.cancel,
     };
-  }, [strings.accept, strings.add, strings.cancel, strings.delete, userData?.friend_button]);
+  }, [strings.accept, strings.add, strings.cancel, strings.delete, userData?.friend_button, userData?.full_data?.friend_status]);
 
   const currentCover = userData?.cover || '/img/covers/placeholder.png';
   const currentAvatar = userData?.img || 'https://ancial.ru/includes/img/new_user.png';
@@ -1270,13 +1246,13 @@ export default function UserProfileContent({ login }: { login: string }) {
                   onOpen={() => setIsFriendsModalOpen(true)}
                   title={strings.friends}
                 >
-                  {(userData.friends || []).slice(0, 6).map((friend) => (
+                  {(mappedFriends || []).slice(0, 6).map((friend) => (
                     <UserMiniCard
                       key={String(friend.id)}
                       image={friend.img || 'https://ancial.ru/includes/img/new_user.png'}
                       isOnline={flag(friend.online)}
-                      label={friend.fname || ''}
-                      onClick={() => navigateToUser(friend.username)}
+                      label={friend.fname || friend.name || ''}
+                      onClick={() => navigateToUser(friend.username || friend.login)}
                     />
                   ))}
                 </PeopleSection>
@@ -1290,13 +1266,13 @@ export default function UserProfileContent({ login }: { login: string }) {
                   onOpen={() => setIsSubscribersModalOpen(true)}
                   title={strings.subscribers}
                 >
-                  {(userData.subscribers || []).slice(0, 6).map((subscriber) => (
+                  {(mappedSubscribers || []).slice(0, 6).map((subscriber) => (
                     <UserMiniCard
                       key={String(subscriber.id)}
                       image={subscriber.img || 'https://ancial.ru/includes/img/new_user.png'}
                       isOnline={flag(subscriber.online)}
-                      label={subscriber.fname || ''}
-                      onClick={() => navigateToUser(subscriber.username)}
+                      label={subscriber.fname || subscriber.name || ''}
+                      onClick={() => navigateToUser(subscriber.username || subscriber.login)}
                     />
                   ))}
                 </PeopleSection>
@@ -1308,7 +1284,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                   onOpen={() => setIsGroupsModalOpen(true)}
                   title={strings.groups}
                 >
-                  {(userData.groups || []).slice(0, 6).map((group) => (
+                  {(mappedGroups || []).slice(0, 6).map((group) => (
                     <GroupMiniCard
                       key={String(group.id)}
                       image={group.img || 'https://ancial.ru/includes/img/new_user.png'}
@@ -1332,11 +1308,11 @@ export default function UserProfileContent({ login }: { login: string }) {
       <RelationGridModal
         emptyText="Нет друзей..."
         isOpen={isFriendsModalOpen}
-        items={userData?.friends || []}
+        items={mappedFriends || []}
         onClose={() => setIsFriendsModalOpen(false)}
         onOpen={(value) => {
           setIsFriendsModalOpen(false);
-          navigateToUser((value as UserPreview).username);
+          navigateToUser((value as UserPreview).username || (value as UserPreview).login);
         }}
         title={strings.friends}
         type="users"
@@ -1345,11 +1321,11 @@ export default function UserProfileContent({ login }: { login: string }) {
       <RelationGridModal
         emptyText="Нет подписчиков..."
         isOpen={isSubscribersModalOpen}
-        items={userData?.subscribers || []}
+        items={mappedSubscribers || []}
         onClose={() => setIsSubscribersModalOpen(false)}
         onOpen={(value) => {
           setIsSubscribersModalOpen(false);
-          navigateToUser((value as UserPreview).username);
+          navigateToUser((value as UserPreview).username || (value as UserPreview).login);
         }}
         title={strings.subscribers}
         type="users"
@@ -1358,7 +1334,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       <RelationGridModal
         emptyText="Нет групп..."
         isOpen={isGroupsModalOpen}
-        items={userData?.groups || []}
+        items={mappedGroups || []}
         onClose={() => setIsGroupsModalOpen(false)}
         onOpen={(value) => {
           setIsGroupsModalOpen(false);

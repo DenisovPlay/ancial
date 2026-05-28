@@ -7,8 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
-import { authFetch } from '../../lib/auth-fetch';
-import { fetchPulseJson } from '../pulse-api';
+import { AncialAPI } from '../../lib/api-v2';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import {
@@ -150,7 +149,7 @@ export default function PulseMyContent() {
 
     let cancelled = false;
 
-    void fetchPulseJson<PulseLibraryResponse>('/api/pulse/pages/my.php?type=1')
+    void AncialAPI.pulseGetLibrary<PulseLibraryResponse>('my')
       .then((result) => {
         if (cancelled) return;
 
@@ -173,7 +172,7 @@ export default function PulseMyContent() {
         if (!cancelled) setLibraryLoading(false);
       });
 
-    void fetchPulseJson<PulseHistoryResponse>('/api/pulse/pages/my.php?type=2')
+    void AncialAPI.pulseGetLibrary<PulseHistoryResponse>('history')
       .then((result) => {
         if (cancelled) return;
 
@@ -220,8 +219,8 @@ export default function PulseMyContent() {
 
   const deleteHistory = useCallback(async () => {
     try {
-      const response = await authFetch('/api/pulse/delete_history.php');
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('clear_history', 0);
+      const result = response.message || '';
 
       if (result === 'CL') {
         removePulseCache(HISTORY_CACHE_KEY);

@@ -6,23 +6,27 @@ import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useDragScroll } from '../hooks/useDragScroll';
-import { authFetch } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 
 interface Friend {
-  id: string;
-  relation_id?: string;
+  id: string | number;
+  relation_id?: string | number;
   is_request?: boolean;
   is_outgoing?: boolean;
   login?: string;
   username?: string;
-  fname: string;
-  lname: string;
-  img: string;
+  name?: string;
+  fname?: string;
+  lname?: string;
+  img?: string;
   verify?: string | number;
+  online?: boolean;
   isOnline?: boolean;
+  status?: number;
   isPending?: boolean;
+  is_incoming?: boolean;
   isIncoming?: boolean;
-  friendId?: string;
+  friendId?: string | number;
   isCurrentUser?: boolean;
 }
 
@@ -79,47 +83,31 @@ function FriendsContent() {
 
   const fetchFriends = useCallback(async () => {
     try {
-      // Пытаемся достать из кеша если нет поиска
-      if (!searchQuery) {
-        const cached = localStorage.getItem('friends_cache');
-        if (cached) {
-          setFriends(JSON.parse(cached));
-          setIsLoading(false);
+        if (!searchQuery) {
+          const cached = localStorage.getItem('friends_cache');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            setFriends(Array.isArray(parsed) ? parsed : []);
+            setIsLoading(false);
+          } else {
+            setIsLoading(true);
+          }
         } else {
           setIsLoading(true);
         }
-      } else {
-        setIsLoading(true);
-      }
 
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (token) params.append('token', token);
-      if (searchQuery) params.append('q', searchQuery);
-
-      const res = await authFetch(`/api/user/friends.php?${params.toString()}`);
-      const data = await res.json();
-      
-      if (data.success) {
-        const fetchedFriends = data.friends || [];
+        const response = await AncialAPI.socialAction<any>('friends', searchQuery);
+        const fetchedFriends = Array.isArray(response) ? response : (response?.friends || response?.data || []);
+        
         setFriends(fetchedFriends);
         
-        // Кешируем только полный список
-        if (!searchQuery) {
+        if (!searchQuery && fetchedFriends.length > 0) {
           localStorage.setItem('friends_cache', JSON.stringify(fetchedFriends));
         }
 
-        // TODO: Здесь можно добавить логику подписки на вебсокеты как было в php
-        // if (window.GlobalWS) {
-        //    const userIds = fetchedFriends.map(f => parseInt(f.id)).filter(id => id > 0);
-        //    GlobalWS.subscribePresence(userIds);
-        // }
-      } else {
-        console.error(data.error);
-      }
-    } catch (error) {
-      console.error('Error fetching friends:', error);
-    } finally {
+      } catch (error) {
+        console.error('Error fetching friends:', error);
+      } finally {
       setIsLoading(false);
     }
   }, [searchQuery]);
@@ -132,21 +120,20 @@ function FriendsContent() {
 
   const handleCreateDialog = async (userId: string) => {
     try {
-      const token = localStorage.getItem('token') || '';
-      const params = new URLSearchParams({ token, withu: userId });
+      const response = await AncialAPI.createDialog<{ message?: string, dialog_id?: string }>(userId);
       
-      const res = await authFetch(`/api/messages/createdialog.php`, {
-        method: "POST",
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString()
-      });
-      const html = await res.text();
-      
-      if (html === lang?.dialogcreated || html === lang?.dialogblocked) {
-        // Уведомление об успешном/заблокированном создании
-        alert(html); // Временно alert, можно заменить на toast/note
+      if (response.message) {
+        alert(response.message);
+      } else if (response.dialog_id) {
+        router.push(`/messages/${response.dialog_id}`);
       } else {
-        router.push(`/messages/${html}`);
+        // Fallback if the API returns string directly
+        const rawRes = response as unknown as string;
+        if (rawRes === lang?.dialogcreated || rawRes === lang?.dialogblocked) {
+          alert(rawRes);
+        } else {
+          router.push(`/messages/${rawRes}`);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -155,14 +142,15 @@ function FriendsContent() {
 
   const handleAction = async (endpoint: string, paramName: string, id: string) => {
     try {
-      const token = localStorage.getItem('token') || '';
+      const actionMap: Record<string, 'create' | 'add' | 'delete' | 'cancel'> = {
+        'add.php': 'add',
+        'delete.php': 'delete'
+      };
+      const action = actionMap[endpoint] || 'add';
       
-      const res = await authFetch(`/api/friends/${endpoint}?${paramName}=${id}&token=${token}`);
-      const text = await res.text();
-      
-      // Временно alert, заменить на нормальные тосты
-      console.log(text);
-      fetchFriends(); // Обновляем список
+      const response = await AncialAPI.friendAction<{ message?: string }>(action, id);
+      console.log(response.message || response);
+      fetchFriends();
     } catch (e) {
       console.error(e);
     }
@@ -230,7 +218,14 @@ function FriendsContent() {
               <span className="text-sm text-zinc-300 w-full text-center font-medium">{lang?.nosfriendsdesc}</span>
             </div>
           ) : (
-            friends.map((friend, i) => (
+            friends.map((friend, i) => {
+              const friendName = friend.name || `${friend.fname || ''} ${friend.lname || ''}`.trim() || 'Аноним';
+              const isOnline = onlineUsers[friend.id] || friend.online || friend.isOnline;
+              const isPending = friend.status === 0 || friend.isPending || friend.is_request;
+              const isIncoming = friend.is_incoming || friend.isIncoming;
+              const actionId = friend.id || friend.friendId || friend.relation_id || '';
+
+              return (
               <React.Fragment key={friend.id || i}>
                 <li id={`friend_${friend.id}`} className="group relative flex items-center justify-between gap-3 p-3 hover:bg-zinc-800 duration-300 cursor-pointer active:scale-95 active:rounded-3xl">
                   {friend.id === user?.id && (
@@ -240,23 +235,23 @@ function FriendsContent() {
                   {/* Аватарка */}
                   <Link 
                     className="flex-shrink-0 relative cursor-pointer" 
-                    href={`/@${friend.username}`}
+                    href={`/@${friend.username || friend.login || friend.id}`}
                   >
                     <img 
                       src={friend.img || '/includes/img/anlite/default_avatar.png'} 
                       loading="lazy"
-                      className={`shadow w-16 h-16 rounded-full object-cover shrink-0 border ${onlineUsers[friend.id] || friend.isOnline ? 'border-lime-500' : 'border-transparent'}`}
-                      alt={`${friend.fname} ${friend.lname}`} 
+                      className={`shadow w-16 h-16 rounded-full object-cover shrink-0 border ${isOnline ? 'border-lime-500' : 'border-transparent'}`}
+                      alt={friendName} 
                     />
                   </Link>
                   
                   {/* Инфо */}
                   <Link 
                     className="flex-grow flex flex-col justify-center overflow-hidden cursor-pointer"
-                    href={`/@${friend.username}`}
+                    href={`/@${friend.username || friend.login || friend.id}`}
                   >
                     <div className="text-zinc-200 lg:text-lg font-medium cursor-pointer truncate">
-                      {friend.fname} {friend.lname} <VerifyIcon verify={friend.verify} />
+                      {friendName} <VerifyIcon verify={friend.verify} />
                     </div>
                     {friend.id === user?.id && (
                       <div className="text-sm text-lime-500 font-medium">👆 {lang?.friends_your_account || 'Это ваш аккаунт'}</div>
@@ -265,9 +260,9 @@ function FriendsContent() {
 
                   {/* Кнопки */}
                   <div className="flex gap-1.5 shrink-0">
-                    {friend.isPending && friend.isIncoming && (
+                    {isPending && isIncoming && (
                       <div 
-                        onClick={() => handleAction('add.php', 'frid', friend.friendId || friend.relation_id || '')}
+                        onClick={() => handleAction('add.php', 'frid', String(actionId))}
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
@@ -276,9 +271,9 @@ function FriendsContent() {
                       </div>
                     )}
 
-                    {friend.isPending && (
+                    {isPending && (
                       <div 
-                        onClick={() => handleAction('delete.php', 'frid', friend.friendId || friend.relation_id || '')}
+                        onClick={() => handleAction('delete.php', 'frid', String(actionId))}
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
@@ -287,9 +282,9 @@ function FriendsContent() {
                       </div>
                     )}
 
-                    {!friend.isPending && !searchQuery ? (
+                    {!isPending && !searchQuery ? (
                       <div 
-                        onClick={() => handleCreateDialog(friend.id)}
+                        onClick={() => handleCreateDialog(String(friend.id))}
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
                         <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
@@ -301,7 +296,8 @@ function FriendsContent() {
                   </div>
                 </li>
               </React.Fragment>
-            ))
+            );
+          })
           )}
         </ul>
         <div className="lg:hidden"><br/><br/><br/></div>

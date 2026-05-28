@@ -42,3 +42,5 @@ next-env.d.ts
 
 # AI trash
 /.qwen/
+
+/php-v2-api/

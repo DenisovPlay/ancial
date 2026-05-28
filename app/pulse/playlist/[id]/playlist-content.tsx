@@ -7,7 +7,7 @@ import ShareModal from '../../../components/share-modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
-import { authFetch } from '../../../lib/auth-fetch';
+import { AncialAPI } from '../../../lib/api-v2';
 import { SITE_CONFIG } from '../../../seo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
@@ -37,11 +37,10 @@ import {
   getPulsePlaylistActionTarget,
   getPulsePlaylistCacheKey,
   getPulsePlaylistListenTotal,
-  getPulsePlaylistMetaEndpoint,
-  getPulsePlaylistTrackEndpoint,
   getPulsePlaylistTracksCacheKey,
   isPulseBuiltinGeneratedPlaylist,
   normalizePulsePlaylistId,
+  getPulsePlaylistTrackParams,
   type PulsePlaylistMeta,
 } from '../playlist-model';
 
@@ -164,8 +163,28 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     setFavoriteIds((currentIds) => {
       const nextIds = updater(currentIds);
       writeFavoriteIds(nextIds);
+      if (typeof window !== 'undefined') {
+        window._pulseLikedSongs = nextIds;
+        window.dispatchEvent(new CustomEvent('pulse-likes-updated', { detail: nextIds }));
+      }
       return nextIds;
     });
+  }, []);
+
+  useEffect(() => {
+    const handleLikesUpdated = (e: CustomEvent) => {
+      setFavoriteIds(e.detail);
+      if (window._pagePlaylistConf?.type === 3) {
+        setTracksReloadToken((t) => t + 1);
+      }
+    };
+    window.addEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
+    
+    if (typeof window !== 'undefined' && Array.isArray(window._pulseLikedSongs)) {
+      setFavoriteIds(window._pulseLikedSongs);
+    }
+    
+    return () => window.removeEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
   }, []);
 
   useEffect(() => {
@@ -194,14 +213,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       };
     }
 
-    void authFetch(getPulsePlaylistMetaEndpoint(playlistId))
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
-
-        return (await response.json()) as PlaylistPageResponse;
-      })
+    void AncialAPI.pulseGetPlaylistMeta<PlaylistPageResponse>(playlistId)
       .then((result) => {
         if (cancelled) return;
 
@@ -254,14 +266,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
     const tracksCacheKey = getPulsePlaylistTracksCacheKey(playlistId, playlist);
 
-    void authFetch(getPulsePlaylistTrackEndpoint(playlistId, playlist))
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
-
-        return (await response.json()) as PulseTrack[];
-      })
+    void AncialAPI.pulseGetPlaylist<PulseTrack[]>(getPulsePlaylistTrackParams(playlistId, playlist))
       .then((result) => {
         if (!cancelled) {
           const nextTracks = Array.isArray(result) ? result : [];
@@ -293,8 +298,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
     let cancelled = false;
 
-    void authFetch('/api/pulse/getFavorites.php')
-      .then(async (response) => (await response.json()) as { ids?: Array<number | string> })
+    void AncialAPI.pulseGetLibrary<{ ids?: Array<number | string> }>('favorites')
       .then((result) => {
         if (cancelled) return;
 
@@ -399,8 +403,8 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     if (!trackId) return;
 
     try {
-      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${trackId}`);
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', trackId);
+      const result = response.message || '';
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
         updateFavoriteIds((ids) => (ids.includes(trackId) ? ids : [...ids, trackId]));
@@ -423,7 +427,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang, showPulseNote, updateFavoriteIds]);
+  }, [isAuthenticated, lang, playlist, showPulseNote, updateFavoriteIds]);
 
   const togglePlaylistLike = useCallback(async () => {
     if (!isAuthenticated) {
@@ -432,24 +436,24 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     }
 
     try {
-      const response = await authFetch(`/api/pulse/likeplaylist.php?id=${playlistId}`);
-      const result = normalizeText(await response.text());
-      const liked = result === 'like';
+      const action = playlistLiked ? 'unlike' : 'like';
+      const response = await AncialAPI.pulsePlaylistAction<{ message?: string; likes?: number }>(action, { id: playlistId });
+      
+      const liked = action === 'like';
       setPlaylistLiked(liked);
       setPlaylist((currentPlaylist) => {
         if (!currentPlaylist) return currentPlaylist;
 
-        const currentLikes = toNumber(currentPlaylist.likes);
         return {
           ...currentPlaylist,
-          likes: String(Math.max(0, currentLikes + (liked ? 1 : -1))),
+          likes: response.likes !== undefined ? String(response.likes) : String(Math.max(0, toNumber(currentPlaylist.likes) + (liked ? 1 : -1))),
         };
       });
       showPulseNote(liked ? 'Плейлист добавлен' : 'Плейлист удалён', 'success');
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang?.pulse_error_happened, playlistId, showPulseNote]);
+  }, [isAuthenticated, lang?.pulse_error_happened, playlistId, playlistLiked, showPulseNote]);
 
   const copyTrackLink = useCallback(async (trackId: number | string) => {
     const resolvedTrackId = toNumber(trackId);
@@ -480,8 +484,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     removePulseCache(...cacheKeys);
     setTracksReloadToken((token) => token + 1);
 
-    void authFetch('/api/pulse/getFavorites.php')
-      .then(async (response) => (await response.json()) as { ids?: Array<number | string> })
+    void AncialAPI.pulseGetLibrary<{ ids?: Array<number | string> }>('favorites')
       .then((result) => {
         const nextIds = Array.isArray(result.ids)
           ? result.ids.map((id) => toNumber(id)).filter(Boolean)

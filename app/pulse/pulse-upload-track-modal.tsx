@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { authFetch } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 import {
   getPulseTrackEditInitialState,
   getPulseTrackUploadPayload,
@@ -105,11 +105,8 @@ async function uploadAudioFile(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await authFetch('/api/pulse/awsuploadtrack.php', {
-    body: formData,
-    method: 'POST',
-  });
-  const result = normalizeText(await response.text());
+  const response = await AncialAPI.pulseManagement<{ id?: string | number; src?: string; message?: string }>('file', 'upload', formData);
+  const result = String(response.src || response.message || '');
 
   if (!result || result === 'Failure') {
     throw new Error('Upload failed');
@@ -236,14 +233,9 @@ export default function PulseUploadTrackModal({
         trackId: nextTrackId,
       });
 
-      const response = await authFetch('/api/pulse/upload_track.php', {
-        body: payload.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        },
-        method: 'POST',
-      });
-      const result = normalizeText(await response.text());
+      const payloadObj = Object.fromEntries(payload.entries());
+      const response = await AncialAPI.pulseManagement<{ message?: string }>('track', 'create', payloadObj);
+      const result = response.message || 'SUCCESS'; // Assume success if no error thrown
 
       if (result !== 'SUCCESS') {
         throw new Error(result || 'Unknown error');
@@ -277,14 +269,9 @@ export default function PulseUploadTrackModal({
         trackId,
       });
 
-      const response = await authFetch('/api/pulse/update_track.php', {
-        body: payload.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        },
-        method: 'POST',
-      });
-      const result = normalizeText(await response.text());
+      const payloadObj = Object.fromEntries(payload.entries());
+      const response = await AncialAPI.pulseManagement<{ message?: string }>('track', 'update', payloadObj);
+      const result = response.message || 'SUCCESS'; // Assume success if no error thrown
 
       if (result !== 'SUCCESS') {
         throw new Error(result || 'Unknown error');
@@ -383,14 +370,9 @@ export default function PulseUploadTrackModal({
               name,
               trackId,
             });
-            const response = await authFetch('/api/pulse/update_track.php', {
-              body: payload.toString(),
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-              },
-              method: 'POST',
-            });
-            const result = normalizeText(await response.text());
+            const payloadObj = Object.fromEntries(payload.entries());
+            const response = await AncialAPI.pulseManagement<{ message?: string }>('track', 'update', payloadObj);
+            const result = response.message || 'SUCCESS';
             if (result === 'SUCCESS') {
               setStatusText('Изменения сохранены');
               showNote('Изменения сохранены!', 'success', 3);
@@ -573,17 +555,8 @@ export function PulseDeleteTrackModal({
     setIsDeleting(true);
 
     try {
-      const payload = new URLSearchParams();
-      payload.set('trackid', trackId);
-
-      const response = await authFetch('/api/pulse/delete_track.php', {
-        body: payload.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        },
-        method: 'POST',
-      });
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulseManagement<{ message?: string }>('track', 'delete', { id: trackId });
+      const result = response.message || 'SUCCESS';
 
       if (result !== 'SUCCESS') {
         throw new Error(result || 'Unknown error');

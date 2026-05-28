@@ -53,7 +53,9 @@ export function isLegacyNotLoggedInResponseText(value: string) {
     || text === 'not_logged_in'
     || text.includes('"not logged in"')
     || text.includes("'not logged in'")
-    || text.includes('not logged in');
+    || text.includes('not logged in')
+    || text.includes('auth required')
+    || text.includes('"auth required"');
 }
 
 export function getStoredAuthToken() {
@@ -80,15 +82,15 @@ export async function restoreLegacyAuthSession(token = getStoredAuthToken()) {
     params.set('token', nextToken);
 
     try {
-      const response = await fetch('/api/auth/login.php', {
+      const response = await fetch('/api/V2/auth/Login.php', {
         body: params.toString(),
         cache: 'no-store',
         credentials: 'include',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         method: 'POST',
       });
-      const data = await response.json().catch(() => null) as { status?: string } | null;
-      const restored = data?.status === 'success';
+      const data = await response.json().catch(() => null) as { success?: boolean } | null;
+      const restored = data?.success === true;
 
       if (restored && typeof window !== 'undefined') {
         window.dispatchEvent(new Event(AUTH_SESSION_RESTORED_EVENT));

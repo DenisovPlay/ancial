@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { authFetch } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 
 interface Notification {
   id: string;
@@ -25,30 +25,23 @@ export default function NotificationsPage() {
   }, [isAuthenticated, authLoading, router]);
 
   const fetchNotifications = async () => {
-    try {
-      // Сначала пытаемся достать из кеша
-      const cached = localStorage.getItem('notifications_cache');
-      if (cached) {
-        setNotifications(JSON.parse(cached));
-        setIsLoading(false); // Отключаем лоадер сразу, так как есть кеш
-      } else {
-        setIsLoading(true);
-      }
+      try {
+        const cached = localStorage.getItem('notifications_cache');
+        if (cached) {
+          setNotifications(JSON.parse(cached));
+          setIsLoading(false);
+        } else {
+          setIsLoading(true);
+        }
 
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (token) params.append('token', token);
-
-      const url = `/api/user/getNotifications?${params.toString()}`;
-      const res = await authFetch(url);
-      const data = await res.json();
-      
-      if (data.status === 'success') {
-        const notifs = data.notifications || [];
-        setNotifications(notifs);
-        localStorage.setItem('notifications_cache', JSON.stringify(notifs));
-      }
-    } catch (error) {
+        const data = await AncialAPI.getNotifications<any>();
+        
+        if (data?.status === 'success' || data?.notifications || Array.isArray(data)) {
+          const notifs = data.notifications || (Array.isArray(data) ? data : []);
+          setNotifications(notifs);
+          localStorage.setItem('notifications_cache', JSON.stringify(notifs));
+        }
+      } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
       setIsLoading(false);
@@ -63,17 +56,7 @@ export default function NotificationsPage() {
 
   const clearNotif = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (token) params.append('token', token);
-
-      await authFetch('/api/user/clearnotify.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString()
-      });
+      await AncialAPI.clearNotifications();
       setNotifications([]);
       localStorage.setItem('notifications_cache', JSON.stringify([]));
     } catch (error) {
@@ -94,23 +77,24 @@ export default function NotificationsPage() {
     return text;
   };
 
-  const renderIcon = (type: string) => {
-    if (type === '1') {
+  const renderIcon = (type: string | number) => {
+    const t = String(type);
+    if (t === '1') {
       return (
         <div className="border border-zinc-600/30 shadow flex justify-center items-center w-12 h-12 rounded-3xl bg-purple-500/25 fill-purple-500 shrink-0">
           <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 3.9980469 C 12.972292 3.9980469 4 12.970339 4 23.998047 C 4 27.273363 4.8627078 30.334853 6.2617188 33.064453 L 4.09375 40.826172 C 3.5887973 42.629575 5.3719261 44.41261 7.1757812 43.908203 L 14.943359 41.740234 C 17.670736 43.136312 20.727751 43.998047 24 43.998047 C 35.027708 43.998047 44 35.025755 44 23.998047 C 44 12.970339 35.027708 3.9980469 24 3.9980469 z M 24 6.9980469 C 33.406292 6.9980469 41 14.591755 41 23.998047 C 41 33.404339 33.406292 40.998047 24 40.998047 C 20.998416 40.998047 18.190601 40.217527 15.742188 38.853516 A 1.50015 1.50015 0 0 0 14.609375 38.71875 L 7.2226562 40.779297 L 9.2851562 33.396484 A 1.50015 1.50015 0 0 0 9.1503906 32.261719 C 7.7836522 29.811523 7 27.002565 7 23.998047 C 7 14.591755 14.593708 6.9980469 24 6.9980469 z M 15.5 18.998047 A 1.50015 1.50015 0 1 0 15.5 21.998047 L 32.5 21.998047 A 1.50015 1.50015 0 1 0 32.5 18.998047 L 15.5 18.998047 z M 15.5 25.998047 A 1.50015 1.50015 0 1 0 15.5 28.998047 L 28.5 28.998047 A 1.50015 1.50015 0 1 0 28.5 25.998047 L 15.5 25.998047 z"></path></svg>
         </div>
       );
-    } else if (type === '2') {
+    } else if (t === '2') {
       return (
         <div className="border border-zinc-600/30 shadow flex justify-center items-center w-12 h-12 rounded-3xl bg-pink-500/25 fill-pink-500 shrink-0">
           <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 15 7 C 8.9424416 7 4 11.942442 4 18 C 4 22.096154 7.0876448 25.952899 10.851562 29.908203 C 14.615481 33.863507 19.248379 37.869472 22.939453 41.560547 A 1.50015 1.50015 0 0 0 25.060547 41.560547 C 28.751621 37.869472 33.384518 33.863507 37.148438 29.908203 C 40.912356 25.952899 44 22.096154 44 18 C 44 11.942442 39.057558 7 33 7 C 29.523564 7 26.496821 8.8664883 24 12.037109 C 21.503179 8.8664883 18.476436 7 15 7 z M 15 10 C 17.928571 10 20.3663 11.558399 22.732422 15.300781 A 1.50015 1.50015 0 0 0 25.267578 15.300781 C 27.6337 11.558399 30.071429 10 33 10 C 37.436442 10 41 13.563558 41 18 C 41 20.403846 38.587644 24.047101 34.976562 27.841797 C 31.68359 31.30221 27.590312 34.917453 24 38.417969 C 20.409688 34.917453 16.31641 31.30221 13.023438 27.841797 C 9.4123552 24.047101 7 20.403846 7 18 C 7 13.563558 10.563558 10 15 10 z"></path></svg>
         </div>
       );
-    } else if (type === '3') {
+    } else if (t === '3') {
       return (
         <div className="border border-zinc-600/30 shadow flex justify-center items-center w-12 h-12 rounded-3xl bg-lime-500/25 fill-lime-500 shrink-0">
-          <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 17 2 C 11.494917 2 7 6.494921 7 12 C 7 17.505079 11.494917 22 17 22 C 22.505083 22 27 17.505079 27 12 C 27 6.494921 22.505083 2 17 2 z M 17 5 C 20.883764 5 24 8.1162385 24 12 C 24 15.883762 20.883764 19 17 19 C 13.116236 19 10 15.883762 10 12 C 10 8.1162385 13.116236 5 17 5 z M 35 24 C 28.925 24 24 28.925 24 35 C 24 41.075 28.925 46 35 46 C 41.075 46 46 41.075 46 35 C 46 28.925 41.075 24 35 24 z M 6.2226562 26 C 4.1706562 26 2.5 27.784516 2.5 29.978516 L 2.5 31.5 C 2.5 34.781 4.1953906 37.632344 7.2753906 39.527344 C 9.8663906 41.122344 13.32 42 17 42 C 19.19 42 21.431516 41.675766 23.478516 41.009766 C 23.018516 40.128766 22.664062 39.186172 22.414062 38.201172 C 20.717062 38.735172 18.837 39 17 39 C 11.461 39 5.5 36.653 5.5 31.5 L 5.5 29.978516 C 5.5 29.447516 5.8316562 29 6.2226562 29 L 23.474609 29 C 24.049609 27.897 24.778813 26.889 25.632812 26 L 6.2226562 26 z M 35 27 C 35.552 27 36 27.448 36 28 L 36 34 L 42 34 C 42.552 34 43 34.448 43 35 C 43 35.552 42.552 36 42 36 L 36 36 L 36 42 C 36 42.552 35.552 43 35 43 C 34.448 43 34 42.552 34 42 L 34 36 L 28 36 C 27.448 36 27 35.552 27 35 C 27 34.448 27.448 34 28 34 L 34 34 L 34 28 C 34 27.448 34.448 27 35 27 z"></path></svg>
+          <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 17 2 C 11.494917 2 7 6.494921 7 12 C 7 17.505079 11.494917 22 17 22 C 22.505083 22 27 17.505079 27 12 C 27 6.494921 22.505083 2 17 2 z M 17 5 C 20.883764 5 24 8.1162385 24 12 C 24 15.883762 20.883764 19 17 19 C 13.116236 19 10 15.883762 10 12 C 10 8.1162385 13.116236 5 17 5 z M 35 24 C 28.925 24 24 28.925 24 35 C 24 41.075 28.925 46 35 46 C 41.075 46 46 41.075 46 35 C 46 28.925 41.075 24 35 24 z M 6.2226562 26 C 4.1706562 26 2.5 27.784516 2.5 29.978516 L 2.5 31.5 C 2.5 34.781 4.1953906 37.632344 7.2753906 39.527344 C 9.8663906 41.122344 13.32 42 17 42 C 19.19 42 21.431516 41.675766 23.478516 41.009766 C 23.018516 40.128766 22.664062 39.186172 22.414062 38.201172 C 20.717062 38.735172 18.837 39 17 39 C 11.461 39 5.5 36.653 5.5 31.5 L 5.5 29.978516 C 5.5 29.447516 5.8316562 29 6.2226562 29 L 23.474609 29 C 24.049609 27.897 24.778813 26.889 25.632812 26 L 6.2226562 26 z M 35 27 C 35.552 27 36 27.448 36 28 L 36 34 L 42 34 C 42.552 34 43 35.552 42 36 L 36 36 L 36 42 C 36 42.552 35.552 43 35 43 C 34.448 43 34 42.552 34 42 L 34 36 L 28 36 C 27.448 36 27 35.552 27 35 C 27 34.448 27.448 34 28 34 L 34 34 L 34 28 C 34 27.448 34.448 27 35 27 z"></path></svg>
         </div>
       );
     }

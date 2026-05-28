@@ -133,7 +133,7 @@ export function getPulseBuiltinPlaylistCover(value: string | number | null | und
   return BUILTIN_PLAYLIST_META[normalizePulsePlaylistId(value)]?.img ?? '';
 }
 
-export function getPulsePlaylistTrackEndpoint(
+export function getPulsePlaylistTrackParams(
   value: string | number,
   playlist?: Pick<PulsePlaylistMeta, 'genlist' | 'type'> | null,
 ) {
@@ -142,10 +142,10 @@ export function getPulsePlaylistTrackEndpoint(
   const type = Number.parseInt(String(playlist?.type ?? 0), 10);
 
   if (type === 4 || genlist) {
-    return `/api/pulse/getPlaylist.php?gid=${encodeURIComponent(genlist)}`;
+    return { gid: genlist };
   }
 
-  return `/api/pulse/getPlaylist.php?pid=${encodeURIComponent(playlistId)}`;
+  return { pid: playlistId };
 }
 
 export function canViewPulsePlaylist(
@@ -172,9 +172,6 @@ export function canUploadToPulseFavoritesPlaylist(
   return playlistId === '-5' || type === 3 || genlist === 'Your';
 }
 
-export function getPulsePlaylistMetaEndpoint(value: string | number) {
-  return `/api/pulse/pages/playlist.php?id=${encodeURIComponent(normalizePulsePlaylistId(value))}`;
-}
 
 export function getPulsePlaylistCacheKey(value: string | number) {
   return `playlist_${normalizePulsePlaylistId(value)}`;
@@ -275,12 +272,16 @@ export function getPulseTrackUploadPayload(input: PulseTrackUploadPayloadInput) 
   const explicit = String(input.explicit ?? '').trim();
   const lang = String(input.lang ?? '').trim();
 
-  payload.set('trackname', String(input.name ?? '').trim() || 'Неизвестный трек');
-  payload.set('trackartist', String(input.artist ?? '').trim() || 'Неизвестный исполнитель');
-  payload.set('trackimg', String(input.image ?? '').trim());
-  payload.set('tracklang', lang || '--');
-  payload.set('trackexp', explicit === '' ? '0' : explicit);
-  payload.set('trackid', String(input.trackId ?? '').trim());
+  payload.set('name', String(input.name ?? '').trim() || 'Неизвестный трек');
+  payload.set('artist', String(input.artist ?? '').trim() || 'Неизвестный исполнитель');
+  payload.set('img', String(input.image ?? '').trim());
+  payload.set('lang', lang || '--');
+  payload.set('explicit', explicit === '' ? '0' : explicit);
+  payload.set('id', String(input.trackId ?? '').trim());
+  payload.set('src', String(input.trackId ?? '').trim());
+  payload.set('genre', '');
+  payload.set('artists_ids', '');
+  payload.set('duration', '0');
 
   return payload;
 }

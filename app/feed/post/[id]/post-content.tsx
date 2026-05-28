@@ -10,7 +10,7 @@ import { PostCard, type PostCardLang, type PostData } from '../../../components/
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
-import { authFetchJson, authFetchText } from '../../../lib/auth-fetch';
+import { AncialAPI } from '../../../lib/api-v2';
 import { SvgIcon } from '../../editor-shared';
 import FeedPostSkeleton from '../../feed-post-skeleton';
 
@@ -81,13 +81,7 @@ function getPostDocumentTitle(post: PostData | null) {
   return authorName ? `Пост от ${authorName}` : 'Пост';
 }
 
-async function apiJson<T>(path: string, init?: RequestInit) {
-  return authFetchJson<T>(path, init);
-}
-
-async function apiText(path: string, init?: RequestInit) {
-  return authFetchText(path, init);
-}
+// Removed local api helpers
 
 function EmptyIllustration({
   title,
@@ -316,7 +310,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
     setIsCommentsLoading(true);
 
     try {
-      const nextComments = await apiJson<FeedComment[]>(`/api/posts/comments.php?id=${nextPostId}`);
+      const nextComments = await AncialAPI.getComments<FeedComment[]>(nextPostId);
       setComments(Array.isArray(nextComments) ? nextComments : []);
     } catch (nextError) {
       console.error('Failed to load comments', nextError);
@@ -337,13 +331,13 @@ export default function SinglePostContent({ postId }: { postId: string }) {
       setError(null);
 
       try {
-        const result = await apiJson<SinglePostResponse>(`/api/posts/get_post.php?id=${postId}`);
+        const data = await AncialAPI.getPost<PostData>(postId);
 
-        if (result.success && result.data) {
-          setPost(result.data);
-          await loadComments(result.data.id);
+        if (data) {
+          setPost(data);
+          await loadComments(data.id);
         } else {
-          setError(result.error || strings.postnotfound);
+          setError(strings.postnotfound);
         }
       } catch (nextError) {
         console.error('Error loading post:', nextError);
@@ -362,10 +356,10 @@ export default function SinglePostContent({ postId }: { postId: string }) {
 
   const handleBookmark = async (targetPost: PostData, nextValue: boolean) => {
     try {
-      const response = await apiText(`/api/posts/bookmarks.php?pid=${targetPost.id}`);
+      const response = (await AncialAPI.postAction('bookmark', { pid: targetPost.id })) as { message: string, action: string };
 
       showNote({
-        content: response,
+        content: response.message,
         html: true,
         type: 'success',
         time: 5,
@@ -374,8 +368,8 @@ export default function SinglePostContent({ postId }: { postId: string }) {
       updatePost((currentPost) => {
         if (String(currentPost.id) !== String(targetPost.id)) return currentPost;
 
-        const isAdded = response === strings.bookmarkadded;
-        const isRemoved = response === strings.bookmarkremoved;
+        const isAdded = response.action === 'added';
+        const isRemoved = response.action === 'removed';
         const nextBookmarked = isAdded ? true : isRemoved ? false : nextValue;
         const currentAmount = toNumber(currentPost.bookmarked_amount);
 
@@ -404,9 +398,9 @@ export default function SinglePostContent({ postId }: { postId: string }) {
 
   const handleVote = async (targetPost: PostData, direction: 'up' | 'down') => {
     try {
-      const response = await apiText(`/api/posts/vote.php?pid=${targetPost.id}&vt=${direction}`);
+      const response = (await AncialAPI.votePost(targetPost.id, direction)) as { status: string };
 
-      if (response === 'nlog') {
+      if (response.status === 'nlog') {
         showNote({
           content: strings.logintoreact,
           type: 'success',
@@ -533,13 +527,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
     if (!post || !commentInput.trim()) return;
 
     try {
-      await apiText(`/api/posts/createcomment.php?pid=${post.id}`, {
-        body: new URLSearchParams({ content: commentInput.trim() }).toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
+      await AncialAPI.createComment(post.id, commentInput.trim());
 
       setCommentInput('');
       updatePost((currentPost) => ({
@@ -559,10 +547,10 @@ export default function SinglePostContent({ postId }: { postId: string }) {
 
   const handleDeleteComment = async (comment: FeedComment) => {
     try {
-      const response = await apiText(`/api/posts/deletecomment.php?id=${comment.id}`);
+      const response = await AncialAPI.deleteComment<{ message?: string }>(comment.id);
 
       showNote({
-        content: response,
+        content: response?.message || 'Удалено',
         html: true,
         type: 'success',
         time: 5,
@@ -593,12 +581,10 @@ export default function SinglePostContent({ postId }: { postId: string }) {
     setIsReportModalOpen(false);
 
     try {
-      const response = await apiText(
-        `/api/posts/report.php?id=${currentTarget.id}&type=${currentTarget.type}&comment=${encodeURIComponent(reason)}`,
-      );
+      const response = (await AncialAPI.reportAction({ id: currentTarget.id, type: currentTarget.type, comment: reason })) as { message: string };
 
       showNote({
-        content: response,
+        content: response.message || 'Жалоба отправлена',
         html: true,
         type: 'success',
         time: 5,
@@ -620,12 +606,10 @@ export default function SinglePostContent({ postId }: { postId: string }) {
     setIsDeleteModalOpen(false);
 
     try {
-      const response = await apiText(
-        `/api/posts/delete.php?pid=${currentTarget.id}&gid=${currentTarget.author.id}`,
-      );
+      const response = (await AncialAPI.deletePost(currentTarget.id)) as { message: string };
 
       showNote({
-        content: response,
+        content: response.message || 'Пост удален',
         html: true,
         type: 'success',
         time: 5,

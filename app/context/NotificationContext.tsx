@@ -178,6 +178,11 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const showNote = useCallback(({ content, html = false, type = 'info', time = 5 }: Omit<Note, 'id'>) => {
     const id = Date.now() + Math.random();
@@ -191,7 +196,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   return (
     <NotificationContext.Provider value={{ showNote }}>
       {children}
-      {typeof document !== 'undefined'
+      {mounted
         ? createPortal(
             <div
               className="fixed top-4 right-4 z-[10010] flex flex-col pointer-events-none"

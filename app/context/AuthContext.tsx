@@ -78,8 +78,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateLang = useCallback(async () => {
     try {
-      const res = await fetch(`/api/info/lang.php`);
-      const data = await res.json();
+      const res = await fetch(`/api/V2/info/GetLang.php`);
+      const payload = await res.json();
+      const data = payload.success ? payload.data : payload;
       setLang(data);
       publishLangState(data);
       saveLangToCache(data);
@@ -111,13 +112,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     publishAuthState(authStateRef.current.isAuthenticated, authStateRef.current.user, true);
     try {
       const readSessionUser = async () => {
-        const checkRes = await fetch(`/api/auth/check.php`, {
+        const checkRes = await fetch(`/api/V2/auth/CheckStatus.php`, {
           cache: 'no-store',
           credentials: 'include',
         });
 
         try {
-          return await checkRes.json();
+          const json = await checkRes.json();
+          if (json.success && json.data) {
+            return json.data;
+          }
+          return { auth: false };
         } catch {
           return { auth: false };
         }
@@ -148,14 +153,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               window.GlobalWS?.init();
             } else {
               // Запасной путь для старых сценариев, если check.php ещё не успел обновиться
-              const infoRes = await fetch(`/api/user/info.php?token=${encodeURIComponent(token)}`, {
+              const formData = new URLSearchParams();
+              formData.set('token', token);
+              const infoRes = await fetch(`/api/V2/auth/Login.php`, {
+                method: 'POST',
+                body: formData.toString(),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 cache: 'no-store',
                 credentials: 'include',
               });
               const infoData = await infoRes.json();
 
-              if (infoData.status === 'success') {
-                applyAuthState(true, infoData.response);
+              if (infoData.success && infoData.data && infoData.data.user) {
+                applyAuthState(true, infoData.data.user);
                 window.GlobalWS?.init();
               } else {
                 applyAuthState(false, null);
@@ -227,7 +237,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // ОБЯЗАТЕЛЬНО убиваем сессию на сервере (PHP cookie), 
       // иначе check.php будет продолжать возвращать auth: true
-      await fetch(`/api/auth/logout.php`, {
+      await fetch(`/api/V2/auth/LogOut.php`, {
         credentials: 'include',
       });
     } catch (e) {

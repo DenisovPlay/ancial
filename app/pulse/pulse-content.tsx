@@ -10,7 +10,7 @@ import { useAuth, type User } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
-import { authFetch } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 import {
   PulseLegalFooter,
   PulsePlaylistTile,
@@ -179,11 +179,6 @@ function writeListenedCache(value: RecentlyListenedState) {
   }
 }
 
-async function fetchJsonData<T>(url: string): Promise<T> {
-  const response = await authFetch(url);
-  const text = await response.text();
-  return JSON.parse(text) as T;
-}
 
 function getImageUrl(value: string | null | undefined, fallback = DEFAULT_TRACK_IMAGE) {
   const nextValue = normalizeText(value);
@@ -696,8 +691,8 @@ export default function PulseContent() {
     if (!trackId) return;
 
     try {
-      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${trackId}`);
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', trackId);
+      const result = response.message || '';
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
         updateFavoriteIds((currentIds) => (
@@ -766,7 +761,7 @@ export default function PulseContent() {
 
     let cancelled = false;
 
-    void fetchJsonData<{ ids?: Array<number | string> }>('/api/pulse/getFavorites.php')
+    void AncialAPI.pulseGetLibrary<{ ids?: Array<number | string> }>('favorites')
       .then((result) => {
         if (cancelled) return;
 
@@ -797,10 +792,10 @@ export default function PulseContent() {
     let cancelled = false;
 
     const requests = [
-      fetchJsonData<PulseHomePlaylistCard[]>('/api/pulse/pages/home.php?type=from_pulse'),
-      fetchJsonData<PulseHomeArtist[]>('/api/pulse/pages/home.php?type=artists'),
-      fetchJsonData<PulseHomePlaylistCard[]>('/api/pulse/pages/home.php?type=welike'),
-      fetchJsonData<PulseHomePlaylistCard[]>('/api/pulse/pages/home.php?type=nowlisten'),
+      AncialAPI.pulseGetHomePage<PulseHomePlaylistCard[]>('from_pulse'),
+      AncialAPI.pulseGetHomePage<PulseHomeArtist[]>('artists'),
+      AncialAPI.pulseGetHomePage<PulseHomePlaylistCard[]>('welike'),
+      AncialAPI.pulseGetHomePage<PulseHomePlaylistCard[]>('nowlisten'),
     ] as const;
 
     void Promise.allSettled(requests).then(([fromPulseResult, artistsResult, weLikeResult, nowListenResult]) => {
@@ -847,8 +842,8 @@ export default function PulseContent() {
     let cancelled = false;
 
     const requests = [
-      fetchJsonData<PulseTrack[]>('/api/pulse/getPlaylist.php?gid=Top'),
-      fetchJsonData<PulseTrack[]>('/api/pulse/getPlaylist.php?gid=New'),
+      AncialAPI.pulseGetPlaylist<PulseTrack[]>({ gid: 'Top' }),
+      AncialAPI.pulseGetPlaylist<PulseTrack[]>({ gid: 'New' }),
     ] as const;
 
     void Promise.allSettled(requests).then(([topResult, newResult]) => {
@@ -887,8 +882,8 @@ export default function PulseContent() {
     let cancelled = false;
 
     const requests = [
-      fetchJsonData<PulseHomePlaylistCard[] | { error?: boolean; message?: string }>('/api/pulse/pages/home.php?type=listened'),
-      fetchJsonData<PulseTrack[]>('/api/pulse/getPlaylist.php?gid=Your'),
+      AncialAPI.pulseGetHomePage<PulseHomePlaylistCard[] | { error?: boolean; message?: string }>('listened'),
+      AncialAPI.pulseGetPlaylist<PulseTrack[]>({ gid: 'Your' }),
     ] as const;
 
     void Promise.allSettled(requests).then(([listenedResult, yourTracksResult]) => {

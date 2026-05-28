@@ -8,10 +8,9 @@ import ShareModal from '../../components/share-modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
-import { authFetch } from '../../lib/auth-fetch';
+import { AncialAPI } from '../../lib/api-v2';
 import { SITE_CONFIG } from '../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../pulse-upload-track-modal';
-import { fetchPulseJson } from '../pulse-api';
 import { writePulseJsonCache } from '../pulse-cache';
 import {
   ActionIcon,
@@ -104,8 +103,8 @@ export default function PulseSearchContent() {
       setLoading(true);
 
       const [favoritesResult, searchResult] = await Promise.allSettled([
-        fetchPulseJson<{ ids?: Array<number | string> }>('/api/pulse/getFavorites.php'),
-        fetchPulseJson<PulseSearchResponse>(`/api/pulse/search.php?q=${encodeURIComponent(query)}`),
+        AncialAPI.pulseGetLibrary<{ ids?: Array<number | string> }>('favorites'),
+        AncialAPI.pulseSearch<PulseSearchResponse>(query),
       ]);
 
       if (cancelled) return;
@@ -160,8 +159,8 @@ export default function PulseSearchContent() {
     if (!trackId) return;
 
     try {
-      const response = await authFetch(`/api/pulse/add_favorite_song.php?id=${trackId}`);
-      const result = normalizeText(await response.text());
+      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', trackId);
+      const result = response.message || '';
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
         setFavoriteIds((ids) => {
@@ -242,11 +241,11 @@ export default function PulseSearchContent() {
           type="button"
           onClick={() => router.push('/pulse')}
           className={cn(
-            'shrink-0 cursor-pointer duration-300 hover:opacity-80 active:scale-95',
-            isSearchFocused && 'hidden',
+            'shrink-0 overflow-hidden cursor-pointer duration-300 active:scale-95 flex items-center',
+            isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100',
           )}
         >
-          <PulseLogo className="w-32 sm:w-48" />
+          <PulseLogo className="w-32 sm:w-48 duration-300 hover:opacity-80" />
         </button>
         <form
           onSubmit={submitSearch}

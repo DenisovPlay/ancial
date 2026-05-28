@@ -21,7 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useDragScroll } from '../../hooks/useDragScroll';
-import { authFetch, authFetchJson, authFetchText } from '../../lib/auth-fetch';
+import { AncialAPI } from '../../lib/api-v2';
 import {
   cn,
   SvgIcon,
@@ -144,13 +144,7 @@ function sanitizeGroupLink(value: string) {
   return value.replace(/[-_*/+=()~!@#$%^&*.<>|]/g, '');
 }
 
-async function apiJson<T>(path: string, init?: RequestInit) {
-  return authFetchJson<T>(path, init);
-}
-
-async function apiText(path: string, init?: RequestInit) {
-  return authFetchText(path, init);
-}
+// Local helpers removed
 
 function EmptyIllustration({
   description,
@@ -436,7 +430,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       setIsCommentsLoading(true);
 
       try {
-        const nextComments = await apiJson<FeedComment[]>(`/api/posts/comments.php?id=${postId}`);
+        const nextComments = await AncialAPI.getComments<FeedComment[]>(postId);
         setComments(Array.isArray(nextComments) ? nextComments : []);
       } catch (nextError) {
         console.error('Failed to load comments', nextError);
@@ -472,16 +466,14 @@ export default function GroupProfileContent({ link }: { link: string }) {
       setBlocked(false);
 
       try {
-        const response = await apiJson<GroupPageResponse>(
-          `/api/group/get_group_page.php?link=${encodeURIComponent(link)}`,
-        );
+        const data = await AncialAPI.getGroupPage<GroupPageData>(link);
 
-        if (!response.success || !response.data) {
+        if (!data) {
           clearGroupProfileCache(groupCacheKey);
           setGroupData(null);
           groupIdRef.current = null;
-          setBlocked(Boolean(response.blocked));
-          setError(response.blocked ? null : response.error || strings.groupnotfound);
+          setBlocked(false);
+          setError(strings.groupnotfound);
           setPosts([]);
           setPostsLoading(false);
           currentLastIdRef.current = 0;
@@ -490,7 +482,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
           return;
         }
 
-        if (response.blocked || String(response.data.status ?? 1) === '0') {
+        if (String(data.status ?? 1) === '0') {
           clearGroupProfileCache(groupCacheKey);
           setGroupData(null);
           groupIdRef.current = null;
@@ -504,12 +496,12 @@ export default function GroupProfileContent({ link }: { link: string }) {
           return;
         }
 
-        setGroupData(response.data);
-        groupIdRef.current = response.data.id;
+        setGroupData(data);
+        groupIdRef.current = data.id;
         setEditForm({
-          desk: response.data.description || '',
-          name: response.data.name || '',
-          slnk: response.data.slnk || '',
+          desk: data.description || '',
+          name: data.name || '',
+          slnk: data.slnk || '',
         });
         setBlocked(false);
         setError(null);
@@ -522,7 +514,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
           setPostsLoading(true);
         }
 
-        void loadPostsRef.current(response.data.id, 0, false, { preserveExisting });
+        void loadPostsRef.current(data.id, 0, false, { preserveExisting });
       } catch (nextError) {
         console.error('Failed to load group', nextError);
 
@@ -569,9 +561,12 @@ export default function GroupProfileContent({ link }: { link: string }) {
       }
 
       try {
-        const response = await apiJson<FeedResponse>(
-          `/api/posts/feed.php?last_id=${lastId}&id=${groupId}&type=2`,
-          { signal: controller.signal },
+        const response = await AncialAPI.getFeed<FeedResponse>(
+          undefined,
+          lastId,
+          groupId,
+          2,
+          { signal: controller.signal }
         );
 
         if (controller.signal.aborted) return;
@@ -680,18 +675,18 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
   const handleBookmark = async (post: PostData, nextValue: boolean) => {
     try {
-      const response = await apiText(`/api/posts/bookmarks.php?pid=${post.id}`);
+      const response = (await AncialAPI.postAction('bookmark', { pid: post.id })) as { message: string, action: string };
 
       showNote({
-        content: response,
+        content: response.message,
         html: true,
         type: 'success',
         time: 5,
       });
 
       updatePost(post.id, (currentPost) => {
-        const isAdded = response === strings.bookmarkadded;
-        const isRemoved = response === strings.bookmarkremoved;
+        const isAdded = response.action === 'added';
+        const isRemoved = response.action === 'removed';
         const nextBookmarked = isAdded ? true : isRemoved ? false : nextValue;
         const currentAmount = toNumber(currentPost.bookmarked_amount);
 
@@ -720,9 +715,9 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
   const handleVote = async (post: PostData, direction: 'up' | 'down') => {
     try {
-      const response = await apiText(`/api/posts/vote.php?pid=${post.id}&vt=${direction}`);
+      const response = (await AncialAPI.votePost(post.id, direction)) as { status: string };
 
-      if (response === 'nlog') {
+      if (response.status === 'nlog') {
         showNote({
           content: strings.logintoreact,
           type: 'success',
@@ -850,13 +845,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     if (!commentInput.trim()) return;
 
     try {
-      await apiText(`/api/posts/createcomment.php?pid=${activeCommentsPost.id}`, {
-        body: new URLSearchParams({ content: commentInput.trim() }).toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
+      await AncialAPI.createComment(activeCommentsPost.id, commentInput.trim());
 
       setCommentInput('');
       incrementCommentsCount(activeCommentsPost.id, 1);
@@ -873,10 +862,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
   const handleDeleteComment = async (comment: FeedComment) => {
     try {
-      const response = await apiText(`/api/posts/deletecomment.php?id=${comment.id}`);
+      const response = await AncialAPI.deleteComment<{ message?: string }>(comment.id);
 
       showNote({
-        content: response,
+        content: response?.message || 'Удалено',
         html: true,
         type: 'success',
         time: 5,
@@ -906,12 +895,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
     setIsReportModalOpen(false);
 
     try {
-      const response = await apiText(
-        `/api/posts/report.php?id=${currentTarget.id}&type=${currentTarget.type}&comment=${encodeURIComponent(reason)}`,
-      );
+      const response = (await AncialAPI.reportAction({ id: currentTarget.id, type: currentTarget.type, comment: reason })) as { message: string };
 
       showNote({
-        content: response,
+        content: response.message || 'Жалоба отправлена',
         html: true,
         type: 'success',
         time: 5,
@@ -933,12 +920,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
     setIsDeleteModalOpen(false);
 
     try {
-      const response = await apiText(
-        `/api/posts/delete.php?pid=${currentTarget.id}&gid=${currentTarget.author.id}`,
-      );
+      const response = (await AncialAPI.deletePost(currentTarget.id)) as { message: string };
 
       showNote({
-        content: response,
+        content: response.message || 'Пост удален',
         html: true,
         type: 'success',
         time: 5,
@@ -1014,19 +999,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
     if (!groupData) return;
 
     try {
-      const token = localStorage.getItem('token') || '';
-      const params = new URLSearchParams({
-        gid: String(groupData.id),
-        slnk: groupData.slnk || '',
-      });
-      if (token) {
-        params.append('token', token);
-      }
-
-      const response = await apiText(`/api/group/${action}.php?${params.toString()}`);
+      const response = (await AncialAPI.groupSubscription(action, groupData.id)) as { message: string };
 
       showNote({
-        content: response,
+        content: response.message || 'Готово',
         html: true,
         type: 'success',
         time: 5,
@@ -1057,22 +1033,13 @@ export default function GroupProfileContent({ link }: { link: string }) {
       });
 
       const uploadedUrl = await uploadImageToImgbb(file);
-      const token = localStorage.getItem('token') || '';
-      const params = new URLSearchParams({
+
+      const response = (await AncialAPI.updateGroupInfo({
         gid: String(groupData.id),
         [field]: uploadedUrl,
-      });
-      if (token) {
-        params.append('token', token);
-      }
+      })) as { message: string };
 
-      const response = await authFetch(`/api/group/updateinfo.php?${params.toString()}`);
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-
-      const message = (await response.text()) || strings.successGroupUpdate;
+      const message = response.message || strings.successGroupUpdate;
 
       showNote({
         content: message,
@@ -1113,30 +1080,14 @@ export default function GroupProfileContent({ link }: { link: string }) {
     setIsSavingGroupInfo(true);
 
     try {
-      const token = localStorage.getItem('token') || '';
-      const params = new URLSearchParams({
+      const response = (await AncialAPI.updateGroupInfo({
         desk: editForm.desk,
         gid: String(groupData.id),
         name: editForm.name,
         slnk: editForm.slnk,
-      });
-      if (token) {
-        params.append('token', token);
-      }
+      })) as { message: string };
 
-      const response = await authFetch('/api/group/updateinfo.php', {
-        body: params.toString(),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-
-      const message = await response.text();
+      const message = response.message || 'Данные обновлены!';
 
       showNote({
         content: message,
