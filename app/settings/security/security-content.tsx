@@ -201,7 +201,7 @@ export default function SecuritySettingsPage() {
     setIsSendingVerification(true);
 
     try {
-      const result = await AncialAPI.request<{ message?: string }>('/verification/SendEmail.php', {
+      const result = await AncialAPI.request<{ message?: string }>('/verification/Email.php?action=send', {
         method: 'POST',
       });
 
