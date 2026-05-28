@@ -10,7 +10,7 @@ export default function CallClient() {
   const router = useRouter();
   const params = useParams<{ hash?: string }>();
   const hash = params?.hash || '';
-  const { isAuthenticated, isLoading: authLoading, lang } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
 
   const [dialogInfo, setDialogInfo] = useState<any>(null);
   const [foreignUser, setForeignUser] = useState<any>(null);
@@ -65,7 +65,7 @@ export default function CallClient() {
       
       const dialog = resp.dialog;
       const fUser = resp.foreignUser;
-      const cUserId = parseInt(resp.currentUserId) || 0;
+      const cUserId = parseInt(user?.id || resp.currentUserId) || 0;
       const fUserId = parseInt(fUser.id) || 0;
       
       setDialogInfo(dialog);
@@ -129,7 +129,8 @@ export default function CallClient() {
     pc.onnegotiationneeded = async () => {
       try {
         makingOfferRef.current = true;
-        await pc.setLocalDescription();
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
         sendWsSignal({ kind: 'offer', sdp: pc.localDescription?.sdp });
       } catch (err) {
         console.error(err);
@@ -230,8 +231,17 @@ export default function CallClient() {
           ignoreOfferRef.current = !isPolite && offerCollision;
           if (ignoreOfferRef.current) return;
 
-          await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
-          await pc.setLocalDescription();
+          if (offerCollision) {
+            await Promise.all([
+              pc.setLocalDescription({ type: 'rollback' }),
+              pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp })
+            ]);
+          } else {
+            await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+          }
+          
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
           sendWsSignal({ kind: 'answer', sdp: pc.localDescription?.sdp });
         } else if (msg.kind === 'answer') {
           await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
