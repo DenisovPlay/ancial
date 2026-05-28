@@ -225,11 +225,6 @@ export default function CallClient() {
           return;
         }
 
-        if (msg.kind === 'hangup') {
-          handleRemoteHangup();
-          return;
-        }
-
         if (msg.kind === 'offer') {
           const offerCollision = makingOfferRef.current || pc.signalingState !== 'stable';
           ignoreOfferRef.current = !isPolite && offerCollision;
