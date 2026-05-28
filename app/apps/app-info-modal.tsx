@@ -222,7 +222,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
             </div>
             <div className="relative flex items-center justify-center shrink-0">
               <button
-                className="absolute -top-1 -right-1 lg:top-2 lg:right-2 z-30 p-1.5 lg:p-2 bg-black/50 hover:bg-black/70 rounded-full text-white duration-300 shadow-md backdrop-blur-sm"
+                className="absolute -top-1 -right-1 lg:top-2 lg:right-2 z-30 p-1.5 lg:p-2 bg-black/50 hover:bg-black/70 rounded-full text-white cursor-pointer active:scale-95 border border-zinc-600/30 duration-300 shadow-md backdrop-blur-sm"
                 onClick={handleModalClose}
                 type="button"
                 aria-label={lang?.close ?? 'Закрыть'}
