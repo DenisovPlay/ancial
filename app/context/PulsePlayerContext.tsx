@@ -972,6 +972,9 @@ export function PulsePlayerProvider({
       AncialAPI.pulseTrackAction('listened', currentSongIdRef.current).catch(() => {
         // ignore listen counter errors
       });
+      AncialAPI.pulseTrackAction('history_add', currentSongIdRef.current).catch(() => {
+        // ignore history errors
+      });
     }
 
     if (
@@ -1514,12 +1517,6 @@ export function PulsePlayerProvider({
     setPlaylistMode(kind !== 'track', kind !== 'track' ? playId : '0');
     await playLoadedTrack(nextTrack);
     showPlayer();
-
-    if (kind === 'playlist') {
-      AncialAPI.pulseTrackAction('history_add', resolvedId).catch(() => {
-        // ignore history failures
-      });
-    }
   };
 
   const playTrack = async (trackId: number | string) => {
