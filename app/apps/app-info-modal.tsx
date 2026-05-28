@@ -221,6 +221,16 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
               </button>
             </div>
             <div className="relative flex items-center justify-center shrink-0">
+              <button
+                className="absolute -top-1 -right-1 lg:top-2 lg:right-2 z-30 p-1.5 lg:p-2 bg-black/50 hover:bg-black/70 rounded-full text-white duration-300 shadow-md backdrop-blur-sm"
+                onClick={handleModalClose}
+                type="button"
+                aria-label={lang?.close ?? 'Закрыть'}
+              >
+                <svg className="w-4 h-4 lg:w-6 lg:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
               <img
                 alt={app.name}
                 className="border border-zinc-600/30 shadow rounded-3xl w-24 lg:w-64 z-20 lg:rounded-3xl"
