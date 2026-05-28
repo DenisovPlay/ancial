@@ -34,6 +34,8 @@ export default function CallClient() {
   const localStreamRef = useRef<MediaStream | null>(null);
   const callIdRef = useRef('');
   const isPoliteRef = useRef(false);
+  const cUserIdRef = useRef(0);
+  const fUserIdRef = useRef(0);
   const makingOfferRef = useRef(false);
   const ignoreOfferRef = useRef(false);
 
@@ -69,6 +71,8 @@ export default function CallClient() {
       setDialogInfo(dialog);
       setForeignUser(fUser);
       
+      cUserIdRef.current = cUserId;
+      fUserIdRef.current = fUserId;
       isPoliteRef.current = (fUserId > 0 && cUserId > fUserId);
 
       // Require permissions
@@ -197,34 +201,45 @@ export default function CallClient() {
       const pc = pcRef.current;
       if (!pc) return;
 
-    try {
-      if (msg.call_id && !callIdRef.current) {
-        callIdRef.current = msg.call_id;
-      } else if (msg.call_id && callIdRef.current && msg.call_id !== callIdRef.current) {
-        if (isPoliteRef.current && msg.kind === 'offer') {
-          // If we are polite, we adopt the other peer's call_id during a collision
+      let isPolite = isPoliteRef.current;
+      if (cUserIdRef.current > 0 && cUserIdRef.current === fUserIdRef.current) {
+        // Tie-breaker if testing with oneself (e.g. two tabs of the same account)
+        isPolite = callIdRef.current < msg.call_id;
+      }
+
+      try {
+        if (msg.call_id && !callIdRef.current) {
           callIdRef.current = msg.call_id;
-        } else {
-          return; // Ignore signals from other call sessions
+        } else if (msg.call_id && callIdRef.current && msg.call_id !== callIdRef.current) {
+          if (isPolite && msg.kind === 'offer') {
+            // If we are polite, we adopt the other peer's call_id during a collision
+            callIdRef.current = msg.call_id;
+          } else {
+            return; // Ignore signals from other call sessions
+          }
         }
-      }
 
-      if (msg.kind === 'media') {
-        if (msg.mic_enabled !== undefined) setRemoteMicEnabled(msg.mic_enabled);
-        if (msg.cam_enabled !== undefined) setRemoteCamEnabled(msg.cam_enabled);
-        return;
-      }
+        if (msg.kind === 'media') {
+          if (msg.mic_enabled !== undefined) setRemoteMicEnabled(msg.mic_enabled);
+          if (msg.cam_enabled !== undefined) setRemoteCamEnabled(msg.cam_enabled);
+          return;
+        }
 
-      if (msg.kind === 'offer') {
-        const offerCollision = makingOfferRef.current || pc.signalingState !== 'stable';
-        ignoreOfferRef.current = !isPoliteRef.current && offerCollision;
-        if (ignoreOfferRef.current) return;
+        if (msg.kind === 'hangup') {
+          handleRemoteHangup();
+          return;
+        }
 
-        await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
-        await pc.setLocalDescription();
-        sendWsSignal({ kind: 'answer', sdp: pc.localDescription?.sdp });
-      } else if (msg.kind === 'answer') {
-        await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+        if (msg.kind === 'offer') {
+          const offerCollision = makingOfferRef.current || pc.signalingState !== 'stable';
+          ignoreOfferRef.current = !isPolite && offerCollision;
+          if (ignoreOfferRef.current) return;
+
+          await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+          await pc.setLocalDescription();
+          sendWsSignal({ kind: 'answer', sdp: pc.localDescription?.sdp });
+        } else if (msg.kind === 'answer') {
+          await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
         } else if (msg.kind === 'candidate' || msg.kind === 'ice') {
           try {
             await pc.addIceCandidate(msg.candidate);
@@ -235,7 +250,7 @@ export default function CallClient() {
       } catch (err) {
         console.error(err);
       }
-    }); // End of signalQueueRef.current.then
+    });
   };
 
   const toggleMic = () => {
