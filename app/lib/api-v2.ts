@@ -235,8 +235,18 @@ export class AncialAPI {
 
   static async updateGroupInfo<T = unknown>(params: Record<string, string | number>): Promise<T> {
     const body = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => body.set(key, String(value)));
-    return this.request<T>('/groups/UpdateInfo.php', { method: 'POST', body });
+    const query = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (key === 'img' || key === 'cover') {
+        query.set(key, String(value));
+      } else {
+        body.set(key, String(value));
+      }
+    });
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return this.request<T>(`/groups/UpdateInfo.php${queryString}`, { method: 'POST', body });
   }
 
   // --- FRIENDS ---
