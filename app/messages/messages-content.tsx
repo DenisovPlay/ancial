@@ -1550,7 +1550,12 @@ export default function MessagesContent() {
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const { showNote } = useNotification();
 
-  const routeHash = normalizeHash(params.hash);
+  const paramsHash = normalizeHash(params.hash);
+  const [routeHash, setRouteHash] = useState(paramsHash);
+
+  useEffect(() => {
+    setRouteHash(paramsHash);
+  }, [paramsHash]);
   const currentUserId = toNumber(user?.id);
   const authUserImage = normalizeAssetUrl(user?.img, FALLBACK_AVATAR);
 
@@ -2301,11 +2306,13 @@ export default function MessagesContent() {
   const handleDialogOpen = (hash: string) => {
     const normalizedHash = normalizeHash(hash);
     if (!normalizedHash || normalizedHash === routeHash) return;
-    router.push(`/messages/${encodeURIComponent(normalizedHash)}`);
+    setRouteHash(normalizedHash);
+    window.history.pushState(null, '', `/messages/${encodeURIComponent(normalizedHash)}`);
   };
 
   const handleDialogClose = () => {
-    router.push('/messages');
+    setRouteHash('');
+    window.history.pushState(null, '', '/messages');
   };
 
   const sendReaction = async (messageId: number, reaction: string, action: 'add' | 'delete') => {
