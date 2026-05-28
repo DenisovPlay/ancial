@@ -145,6 +145,9 @@ export default function CallClient() {
     };
   };
 
+  const isSubscribedRef = useRef(false);
+  const outgoingSignalQueueRef = useRef<any[]>([]);
+
   const setupGlobalWS = () => {
     if (!window.GlobalWS) return;
     
@@ -159,6 +162,11 @@ export default function CallClient() {
     });
     window.GlobalWS.addDialogListener('subscribed', () => {
       setCallStatus('Ожидание ответа...');
+      isSubscribedRef.current = true;
+      // Flush the queue
+      const queue = outgoingSignalQueueRef.current;
+      outgoingSignalQueueRef.current = [];
+      queue.forEach(data => sendWsSignal(data, true));
     });
     
     window.GlobalWS.addDialogListener('call:signal', async (msg: any) => {
@@ -166,7 +174,11 @@ export default function CallClient() {
     });
   };
 
-  const sendWsSignal = (data: any) => {
+  const sendWsSignal = (data: any, force = false) => {
+    if (!isSubscribedRef.current && !force) {
+      outgoingSignalQueueRef.current.push(data);
+      return;
+    }
     if (!window.GlobalWS) return;
     window.GlobalWS.send({
       type: 'call:signal',
