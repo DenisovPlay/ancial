@@ -1546,11 +1546,15 @@ function MessageBubble({
 export default function MessagesContent() {
   const router = useRouter();
   const pathname = usePathname();
-  const params = useParams<{ hash?: string[] }>();
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const { showNote } = useNotification();
 
-  const paramsHash = normalizeHash(params.hash);
+  // Next.js useParams in a layout might not see child segment params.
+  // So we extract it from the pathname directly.
+  const pathParts = pathname.split('/').filter(Boolean);
+  const hashFromPath = pathParts[1] || '';
+  const paramsHash = normalizeHash(hashFromPath);
+  
   const [routeHash, setRouteHash] = useState(paramsHash);
 
   useEffect(() => {
