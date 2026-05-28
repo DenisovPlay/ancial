@@ -1180,7 +1180,7 @@ function StickerPickerDropdownContent({
       </div>
 
       {tab === 'native' ? (
-        <div className="grid max-h-72 grid-cols-4 gap-1.5 overflow-auto p-1.5 pt-[54px]">
+        <div className="grid max-h-72 grid-cols-4 gap-1.5 overflow-y-auto overflow-x-hidden p-1.5 pt-[54px]">
           {STICKER_NAMES.map((stickerName) => (
             <button
               key={stickerName}
