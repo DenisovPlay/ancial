@@ -66,7 +66,14 @@ export default function CallClient() {
       const dialog = resp.dialog;
       const fUser = resp.foreignUser;
       const cUserId = parseInt(user?.id || resp.currentUserId) || 0;
-      const fUserId = parseInt(fUser.id) || 0;
+      let fUserId = parseInt(fUser.id) || 0;
+      
+      if (!fUserId && dialog) {
+        const creatorId = parseInt(dialog.creator_id) || 0;
+        const recipientId = parseInt(dialog.recipient_id) || 0;
+        if (cUserId === creatorId) fUserId = recipientId;
+        else if (cUserId === recipientId) fUserId = creatorId;
+      }
       
       setDialogInfo(dialog);
       setForeignUser(fUser);
