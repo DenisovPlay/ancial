@@ -176,9 +176,14 @@ export default function CallClient() {
     });
   };
 
-  const handleWsSignal = async (msg: any) => {
-    const pc = pcRef.current;
-    if (!pc) return;
+  // A queue to ensure signals are processed sequentially,
+  // preventing ICE candidates from failing if setRemoteDescription is still pending.
+  const signalQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const handleWsSignal = (msg: any) => {
+    signalQueueRef.current = signalQueueRef.current.then(async () => {
+      const pc = pcRef.current;
+      if (!pc) return;
 
     try {
       if (msg.call_id && !callIdRef.current) {
@@ -208,16 +213,17 @@ export default function CallClient() {
         sendWsSignal({ kind: 'answer', sdp: pc.localDescription?.sdp });
       } else if (msg.kind === 'answer') {
         await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
-      } else if (msg.kind === 'candidate' || msg.kind === 'ice') {
-        try {
-          await pc.addIceCandidate(msg.candidate);
-        } catch (err) {
-          if (!ignoreOfferRef.current) console.error(err);
+        } else if (msg.kind === 'candidate' || msg.kind === 'ice') {
+          try {
+            await pc.addIceCandidate(msg.candidate);
+          } catch (err) {
+            if (!ignoreOfferRef.current) console.error(err);
+          }
         }
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
-    }
+    }); // End of signalQueueRef.current.then
   };
 
   const toggleMic = () => {
@@ -274,6 +280,14 @@ export default function CallClient() {
               <div className="mt-4 text-zinc-100 text-2xl font-semibold">{fName}</div>
               <div className="mt-2 text-zinc-300">{remoteCamEnabled === false ? 'Камера выключена' : callStatus}</div>
             </div>
+          </div>
+        )}
+
+        {remoteMicEnabled === false && (
+          <div className="absolute top-6 right-6 bg-red-500/80 backdrop-blur-md p-2 rounded-full shadow-lg z-50">
+            <svg className="w-6 h-6 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M19 11v1.6l-2-2V11c0-2.76-2.24-5-5-5-1.04 0-1.99.32-2.79.86l-1.48-1.48C9.07 4.54 10.45 4 12 4c3.87 0 7 3.13 7 7zm-7 8c-3.53 0-6.43-2.61-6.92-6H3.05c.53 4.3 4.14 7.68 8.45 7.93V24h1v-3.07c1.33-.08 2.6-.46 3.73-1.05l-1.47-1.47C13.88 18.79 12.96 19 12 19zm4.27-2.68L20.2 20.25l-1.27 1.27-3.95-3.95C14.15 17.84 13.11 18 12 18c-3.87 0-7-3.13-7-7H3c0 3.99 2.8 7.33 6.5 7.91v2.99h1v-2.99c1.69-.26 3.22-.96 4.49-1.95l3.54 3.54 1.27-1.27-3.53-3.53zM12 13.17L7.83 9A5 5 0 0 1 12 6c1.66 0 3 1.34 3 3v2.17l-3-3zM5.41 4.59L4 6l2.12 2.12A4.986 4.986 0 0 0 6 11v1h2v-1c0-.43.06-.85.18-1.25L10.33 12H12v2.54l1.23 1.23A4.986 4.986 0 0 0 14 11v-1.63L18.41 19 19.83 17.59 5.41 4.59z"/>
+            </svg>
           </div>
         )}
 

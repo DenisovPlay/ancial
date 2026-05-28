@@ -2910,7 +2910,7 @@ export default function MessagesContent() {
                       onClick={handleStartCall}
                       className={cn(
                         'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95',
-                        hasActiveCall ? 'bg-lime-500 hover:bg-lime-400' : 'hover:bg-zinc-700'
+                        hasActiveCall ? 'bg-lime-500 hover:bg-lime-400 animate-pulse' : 'hover:bg-zinc-700'
                       )}
                     >
                       <Icon name="IC-call" className="h-8 w-8 fill-white" />
