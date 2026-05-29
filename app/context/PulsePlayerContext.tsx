@@ -154,8 +154,8 @@ const PulsePlayerContext = createContext<PulsePlayerContextValue | undefined>(un
 const FALLBACK_TRACK_IMAGE = '/includes/img/pulse/track.png';
 const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
-const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;
-const PLAYER_LYRIC_FILL_TRANSITION_MS = 80;
+const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 100;
+const PLAYER_LYRIC_FILL_TRANSITION_MS = 100;
 const PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
 
 type SyncTrackProgressOptions = {
@@ -2032,10 +2032,6 @@ export function PulsePlayerProvider({
             @keyframes animate-smooth-appear {
               from { opacity: 0; transform: translateY(8px) scale(0.98); }
               to { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @keyframes pulse-marquee {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-100%); }
             }
             .animate-opacity-fade-in {
               animation: animate-opacity-fade-in 0.6s cubic-bezier(0.32,0.72,0,1) forwards;
