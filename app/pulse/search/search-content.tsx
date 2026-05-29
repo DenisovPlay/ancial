@@ -297,7 +297,7 @@ export default function PulseSearchContent() {
         {!loading && artists.length ? (
           <>
             {label(lang?.artists || 'Артисты')}
-            <div className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
+            <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
               {artists.map((artist) => (
                 <PulseArtistTile
                   artist={artist}
@@ -312,7 +312,7 @@ export default function PulseSearchContent() {
         {!loading && playlists.length ? (
           <>
             {label(lang?.playlists || 'Плейлисты')}
-            <div className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
+            <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
               {playlists.map((card) => {
                 const playableId = getCardPlayableId(card);
                 return (
