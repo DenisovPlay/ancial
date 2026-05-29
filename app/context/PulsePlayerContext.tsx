@@ -155,7 +155,7 @@ const FALLBACK_TRACK_IMAGE = '/includes/img/pulse/track.png';
 const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
 const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;
-const PLAYER_LYRIC_FILL_TRANSITION_MS = 160;
+const PLAYER_LYRIC_FILL_TRANSITION_MS = 80;
 const PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
 
 type SyncTrackProgressOptions = {
@@ -2335,29 +2335,8 @@ export function PulsePlayerProvider({
                 </div>
               </button>
 
-              <div className="flex w-40 shrink-0 flex-col overflow-hidden lg:w-64">
-                <span
-                  className="w-full text-sm text-white lg:text-base"
-                  style={{
-                    display: 'block',
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
-                  }}
-                >
-                  <span
-                    key={`mini-title-${playerTitle}`}
-                    style={{
-                      display: 'inline-block',
-                      paddingLeft: '100%',
-                      animation: `pulse-marquee 8s linear infinite`,
-                      animationPlayState: isPlaying ? 'running' : 'paused',
-                    }}
-                  >
-                    {playerTitle}
-                  </span>
-                </span>
+              <div className="flex w-40 shrink-0 flex-col lg:w-64">
+                <span className="w-full truncate text-sm text-white lg:text-base">{playerTitle}</span>
                 <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{playerArtist}</span>
               </div>
 
