@@ -297,16 +297,14 @@ export default function PulseSearchContent() {
         {!loading && artists.length ? (
           <>
             {label(lang?.artists || 'Артисты')}
-            <div className="viewport dragscroll -mx-3 -my-3 flex overflow-auto px-3 py-3 lg:px-0">
-              <div className="flex flex-row flex-nowrap gap-3">
-                {artists.map((artist) => (
-                  <PulseArtistTile
-                    artist={artist}
-                    key={`search-artist-${artist.id ?? artist.name}`}
-                    onOpen={() => router.push(`/pulse/artist/${encodeURIComponent(normalizeText(String(artist.id ?? '0')) || '0')}`)}
-                  />
-                ))}
-              </div>
+            <div className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
+              {artists.map((artist) => (
+                <PulseArtistTile
+                  artist={artist}
+                  key={`search-artist-${artist.id ?? artist.name}`}
+                  onOpen={() => router.push(`/pulse/artist/${encodeURIComponent(normalizeText(String(artist.id ?? '0')) || '0')}`)}
+                />
+              ))}
             </div>
           </>
         ) : null}
@@ -314,21 +312,19 @@ export default function PulseSearchContent() {
         {!loading && playlists.length ? (
           <>
             {label(lang?.playlists || 'Плейлисты')}
-            <div className="viewport dragscroll flex overflow-auto px-3 lg:px-0">
-              <div className="flex flex-row flex-nowrap gap-3">
-                {playlists.map((card) => {
-                  const playableId = getCardPlayableId(card);
-                  return (
-                    <PulsePlaylistTile
-                      card={card}
-                      isPlaying={Boolean(playableId && currentCollectionId === playableId && isPlaying)}
-                      key={`search-playlist-${card.id ?? card.genlist ?? card.name}`}
-                      onOpen={() => router.push(`/pulse/playlist/${encodeURIComponent(normalizeText(String(card.id ?? '0')) || '0')}`)}
-                      onPlay={() => playPlaylistCard(card)}
-                    />
-                  );
-                })}
-              </div>
+            <div className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
+              {playlists.map((card) => {
+                const playableId = getCardPlayableId(card);
+                return (
+                  <PulsePlaylistTile
+                    card={card}
+                    isPlaying={Boolean(playableId && currentCollectionId === playableId && isPlaying)}
+                    key={`search-playlist-${card.id ?? card.genlist ?? card.name}`}
+                    onOpen={() => router.push(`/pulse/playlist/${encodeURIComponent(normalizeText(String(card.id ?? '0')) || '0')}`)}
+                    onPlay={() => playPlaylistCard(card)}
+                  />
+                );
+              })}
             </div>
           </>
         ) : null}

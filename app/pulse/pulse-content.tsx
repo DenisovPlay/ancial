@@ -961,12 +961,12 @@ export default function PulseContent() {
           type="button"
           onClick={() => router.push('/pulse')}
           className={cn(
-            'shrink-0 cursor-pointer duration-300 active:scale-95',
-            isSearchFocused ? 'w-0 overflow-hidden opacity-0' : 'w-32 opacity-100 sm:w-48 mr-3',
+            'shrink-0 overflow-hidden cursor-pointer duration-300 active:scale-95 flex items-center',
+            isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100 mr-3',
           )}
           aria-label="Pulse home"
         >
-          <PulseLogo className="w-32 sm:w-48" />
+          <PulseLogo className="w-32 sm:w-48 duration-300 hover:opacity-80" />
         </button>
 
         <form
