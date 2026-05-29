@@ -154,8 +154,8 @@ const PulsePlayerContext = createContext<PulsePlayerContextValue | undefined>(un
 const FALLBACK_TRACK_IMAGE = '/includes/img/pulse/track.png';
 const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
-const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 100;
-const PLAYER_LYRIC_FILL_TRANSITION_MS = 100;
+const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;
+const PLAYER_LYRIC_FILL_TRANSITION_MS = 250;
 const PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
 
 type SyncTrackProgressOptions = {
@@ -613,6 +613,41 @@ function PulseLyricsMobile({
   );
 }
 
+const PulseLyricLineDesktop = React.memo(
+  React.forwardRef<HTMLButtonElement, {
+    isActive: boolean;
+    line: PulseLyricsLine;
+    onSeek: (time: number) => void;
+    progress: number;
+  }>(function PulseLyricLineDesktop({ isActive, line, onSeek, progress }, ref) {
+    return (
+      <button
+        ref={ref}
+        type="button"
+        onClick={() => onSeek(line.time)}
+        className={cn(
+          'block cursor-pointer py-1 text-center text-white/40 duration-300',
+          isActive && 'pointer-events-none scale-[1.03] text-white',
+          !isActive && 'hover:text-white/70',
+        )}
+        style={{
+          textShadow: isActive ? '0 0 18px rgba(255,255,255,0.2)' : undefined,
+          transformOrigin: 'center',
+        }}
+      >
+        {renderLyricWords(line.text, isActive ? progress : 0, isActive)}
+      </button>
+    );
+  }),
+  (prevProps, nextProps) => {
+    return (
+      prevProps.isActive === nextProps.isActive &&
+      prevProps.progress === nextProps.progress &&
+      prevProps.line === nextProps.line
+    );
+  }
+);
+
 function PulseLyricsDesktop({
   activeIndex,
   lines,
@@ -677,23 +712,14 @@ function PulseLyricsDesktop({
             const nextProgress = isActive ? progress : 0;
 
             return (
-              <button
+              <PulseLyricLineDesktop
                 key={`${line.time}:${lineIndex}`}
                 ref={isActive ? activeLineRef : null}
-                type="button"
-                onClick={() => onSeek(line.time)}
-                className={cn(
-                  'block cursor-pointer py-1 text-center text-white/40 duration-300',
-                  isActive && 'pointer-events-none scale-[1.03] text-white',
-                  !isActive && 'hover:text-white/70',
-                )}
-                style={{
-                  textShadow: isActive ? '0 0 18px rgba(255,255,255,0.2)' : undefined,
-                  transformOrigin: 'center',
-                }}
-              >
-                {renderLyricWords(line.text, nextProgress, isActive)}
-              </button>
+                isActive={isActive}
+                line={line}
+                onSeek={onSeek}
+                progress={nextProgress}
+              />
             );
           })}
           <div className="h-[45vh] shrink-0"></div>
