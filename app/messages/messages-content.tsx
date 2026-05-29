@@ -1363,7 +1363,7 @@ function MessageBubble({
         startLongPress();
       }}
     >
-      <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}>
+      <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
         <div className="relative flex flex-col">
           <div
             id={`msg-${messageId}`}

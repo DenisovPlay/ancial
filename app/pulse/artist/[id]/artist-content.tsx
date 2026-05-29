@@ -94,6 +94,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     playGenlist,
     playNextTrack,
     playPlaylist,
+    togglePlay,
   } = usePulsePlayer();
 
   const cacheId = normalizeText(artistId) || '0';
@@ -321,7 +322,10 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                     ) : null}
                   </h1>
                   {artistDescription ? (
-                    <span className="text-base text-zinc-200 md:text-lg lg:text-xl">{artistDescription}</span>
+                    <span
+                      className="text-base text-zinc-200 md:text-lg lg:text-xl"
+                      dangerouslySetInnerHTML={{ __html: artistDescription.replace(/\n/g, '<br>') }}
+                    />
                   ) : null}
                   <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
                     <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-speaker" />
@@ -350,14 +354,32 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
             </div>
 
             {!loadingArtist && tracks.length ? (
-              <button
-                type="button"
-                onClick={() => void playArtistPlaylist(cacheId)}
-                className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95"
-                aria-label={artistCollectionActive ? 'Pause artist' : 'Play artist'}
-              >
-                <ActionIcon className="h-10 w-10" name={artistCollectionActive ? 'IC-pause' : 'IC-play'} />
-              </button>
+              <div className="relative flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (artistCollectionActive) {
+                      togglePlay();
+                    } else {
+                      void playArtistPlaylist(cacheId);
+                    }
+                  }}
+                  className={cn('flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95')}
+                  aria-label={artistCollectionActive ? 'Pause artist' : 'Play artist'}
+                >
+                  <ActionIcon className="h-10 w-10" name={artistCollectionActive ? 'IC-pause' : 'IC-play'} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void playArtistPlaylist(cacheId, true, 1)}
+                  className="absolute bottom-0 -right-3 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-lime-500 shadow duration-300 hover:bg-lime-600 active:scale-95"
+                  aria-label="Shuffle artist"
+                >
+                  <svg className="inline h-5 w-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M8.7,10a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41L3.84,2.29A1,1,0,0,0,2.42,3.71ZM21,14a1,1,0,0,0-1,1v3.59L15.44,14A1,1,0,0,0,14,15.44L18.59,20H15a1,1,0,0,0,0,2h6a1,1,0,0,0,.38-.08,1,1,0,0,0,.54-.54A1,1,0,0,0,22,21V15A1,1,0,0,0,21,14Zm.92-11.38a1,1,0,0,0-.54-.54A1,1,0,0,0,21,2H15a1,1,0,0,0,0,2h3.59L2.29,20.29a1,1,0,0,0,0,1.42,1,1,0,0,0,1.42,0L20,5.41V9a1,1,0,0,0,2,0V3A1,1,0,0,0,21.92,2.62Z" />
+                  </svg>
+                </button>
+              </div>
             ) : null}
           </div>
         </div>

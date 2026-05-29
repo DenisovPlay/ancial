@@ -2033,6 +2033,10 @@ export function PulsePlayerProvider({
               from { opacity: 0; transform: translateY(8px) scale(0.98); }
               to { opacity: 1; transform: translateY(0) scale(1); }
             }
+            @keyframes pulse-marquee {
+              0% { transform: translateX(0); }
+              100% { transform: translateX(-100%); }
+            }
             .animate-opacity-fade-in {
               animation: animate-opacity-fade-in 0.6s cubic-bezier(0.32,0.72,0,1) forwards;
             }
@@ -2331,8 +2335,29 @@ export function PulsePlayerProvider({
                 </div>
               </button>
 
-              <div className="flex w-40 shrink-0 flex-col lg:w-64">
-                <span className="w-full truncate text-sm text-white lg:text-base">{playerTitle}</span>
+              <div className="flex w-40 shrink-0 flex-col overflow-hidden lg:w-64">
+                <span
+                  className="w-full text-sm text-white lg:text-base"
+                  style={{
+                    display: 'block',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
+                    maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)',
+                  }}
+                >
+                  <span
+                    key={`mini-title-${playerTitle}`}
+                    style={{
+                      display: 'inline-block',
+                      paddingLeft: '100%',
+                      animation: `pulse-marquee 8s linear infinite`,
+                      animationPlayState: isPlaying ? 'running' : 'paused',
+                    }}
+                  >
+                    {playerTitle}
+                  </span>
+                </span>
                 <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{playerArtist}</span>
               </div>
 
