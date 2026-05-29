@@ -2002,6 +2002,17 @@ export function PulsePlayerProvider({
 
   const isFullMode = mode === 'full';
 
+  useEffect(() => {
+    if (isFullMode) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullMode]);
+
   return (
     <PulsePlayerContext.Provider value={contextValue}>
       {children}

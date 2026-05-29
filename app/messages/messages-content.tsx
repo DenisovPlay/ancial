@@ -16,6 +16,7 @@ import { Dropdown, DropdownItem } from '../components/navigation';
 import YandexRtb from '../components/yandex-rtb';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { AncialAPI } from '../lib/api-v2';
 import { globalWS } from '../lib/global-ws';
 import DialogImageViewerModal, { type DialogImageSlide } from './dialog-image-viewer-modal';
@@ -1548,6 +1549,7 @@ export default function MessagesContent() {
   const pathname = usePathname();
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const { showNote } = useNotification();
+  const { isPlaying, togglePlay } = usePulsePlayer();
 
   // Next.js useParams in a layout might not see child segment params.
   // So we extract it from the pathname directly.
@@ -2684,6 +2686,7 @@ export default function MessagesContent() {
 
   const handleStartCall = () => {
     if (routeHash) {
+      if (isPlaying) togglePlay();
       router.push(`/call/${routeHash}`);
     }
   };
