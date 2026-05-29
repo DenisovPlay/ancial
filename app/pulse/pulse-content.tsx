@@ -956,17 +956,17 @@ export default function PulseContent() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-28">
-      <div className="sticky top-0 z-[99] flex w-full max-w-screen-2xl items-center bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0">
+      <div className="sticky top-0 z-[99] flex w-full max-w-screen-2xl items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0">
         <button
           type="button"
           onClick={() => router.push('/pulse')}
           className={cn(
-            'shrink-0 overflow-hidden cursor-pointer duration-300 active:scale-95 flex items-center',
-            isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100 mr-3',
+            'shrink-0 overflow-hidden duration-300 active:scale-95',
+            isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100',
           )}
           aria-label="Pulse home"
         >
-          <PulseLogo className="w-32 sm:w-48 duration-300 hover:opacity-80" />
+          <PulseLogo className="w-32 sm:w-48 hover:opacity-80 duration-300 cursor-pointer" />
         </button>
 
         <form
@@ -993,7 +993,7 @@ export default function PulseContent() {
           <button
             type="button"
             onClick={() => openPulseSubpage('/pulse/my')}
-            className="ml-3 flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95"
+            className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95"
             aria-label="My Pulse"
           >
             <ActionIcon className="h-8 w-8" name="IC-me" />

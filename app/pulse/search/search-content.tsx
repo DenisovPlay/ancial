@@ -241,11 +241,11 @@ export default function PulseSearchContent() {
           type="button"
           onClick={() => router.push('/pulse')}
           className={cn(
-            'shrink-0 overflow-hidden cursor-pointer duration-300 active:scale-95 flex items-center',
+            'shrink-0 overflow-hidden duration-300 active:scale-95',
             isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100',
           )}
         >
-          <PulseLogo className="w-32 sm:w-48 duration-300 hover:opacity-80" />
+          <PulseLogo className="w-32 sm:w-48 hover:opacity-80 duration-300 cursor-pointer" />
         </button>
         <form
           onSubmit={submitSearch}
