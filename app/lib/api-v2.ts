@@ -188,12 +188,22 @@ export class AncialAPI {
     return this.request<T>(url, { method: 'POST', body });
   }
 
-  static async messageAction<T = unknown>(action: 'reaction' | 'edit' | 'delete', params: Record<string, string | number>): Promise<T> {
+    static async messageAction<T = unknown>(action: 'reaction' | 'edit' | 'delete', params: Record<string, string | number>): Promise<T> {
     const body = new URLSearchParams({ action });
     Object.entries(params).forEach(([key, value]) => body.set(key, String(value)));
-    const endpoint = action === 'reaction' ? '/messages/Reaction.php' : '/messages/MessageAction.php';
+
+    let endpoint = '';
+    if( action === 'edit') {
+      endpoint = '/messages/EditMessage.php';
+    }else if (action == 'reaction') {
+      endpoint = '/messages/Reaction.php';
+    } else if (action === 'delete') {
+      endpoint = '/messages/DeleteMessage.php';
+    }
+
     return this.request<T>(endpoint, { method: 'POST', body });
   }
+
 
   static async dialogAction<T = unknown>(action: 'delete' | 'clear' | 'block', dialogId: string | number): Promise<T> {
     const body = new URLSearchParams({ action, id: String(dialogId) });
