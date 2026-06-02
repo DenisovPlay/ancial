@@ -2531,7 +2531,7 @@ export function PulsePlayerProvider({
           >
             <div
               id="NAVPmini"
-              className="pulse-player-mini-shell flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300 w-full"
+              className="pulse-player-mini-shell flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300 w-full touch-none"
               onTouchStart={(e) => {
                 if (window.innerWidth >= 1024) return;
                 touchStartMiniRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
