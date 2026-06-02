@@ -31,7 +31,10 @@ export function PulseHeader({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   return (
-    <div className="sticky top-0 flex w-full max-w-screen-2xl justify-between items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0" style={{ zIndex: 1300 }}>
+    <div
+      className="sticky top-0 flex min-h-[60px] w-full max-w-screen-2xl justify-between items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0"
+      style={{ zIndex: 1300 }}
+    >
       <button
         type="button"
         onClick={onLogoClick}

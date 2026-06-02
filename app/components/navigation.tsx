@@ -376,7 +376,7 @@ export default function Navigation() {
                         <NavItem href="/pulse" icon="IC-home" />
                         <NavItem href="/pulse/search" icon="IC-search" />
                         {isAuthenticated && user && (
-                            <NavItem href="/pulse/my" icon="IC-library" />
+                            <NavItem href="/pulse/my" icon="IC-book" />
                         )}
                     </div>
                 ) : (
