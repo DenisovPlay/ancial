@@ -427,7 +427,10 @@ export default function Navigation() {
                   position="top" 
                   align="end" 
                   direction="row" 
-                  menuClassName="flex-wrap !w-[16rem] justify-center !rounded-3xl"
+                  menuClassName={cn(
+                    "flex-wrap justify-center",
+                    isPulseContext ? "!w-[16.5rem] !rounded-[2rem]" : "!w-auto !rounded-full"
+                  )}
                   activePaths={isPulseContext ? ['/wallet', '/apps', '/games'] : ['/pulse', '/wallet', '/apps', '/games']}
                 >
                     {isPulseContext && <NavItem href="/feed" icon="IC-feed" />}
