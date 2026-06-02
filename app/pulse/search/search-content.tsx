@@ -11,6 +11,7 @@ import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { AncialAPI } from '../../lib/api-v2';
 import { SITE_CONFIG } from '../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../pulse-upload-track-modal';
+import { PulseHeader } from '../pulse-header';
 import { writePulseJsonCache } from '../pulse-cache';
 import {
   ActionIcon,
@@ -68,7 +69,6 @@ export default function PulseSearchContent() {
   const [artists, setArtists] = useState<PulseArtistCardData[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>([]);
   const [searchReloadToken, setSearchReloadToken] = useState(0);
@@ -236,48 +236,16 @@ export default function PulseSearchContent() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-64 duration-300 lg:from-black">
-      <div className="sticky top-0 flex w-full max-w-screen-2xl items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0" style={{ zIndex: 99 }}>
-        <button
-          type="button"
-          onClick={() => router.push('/pulse')}
-          className={cn(
-            'shrink-0 overflow-hidden duration-300 active:scale-95',
-            isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100',
-          )}
-        >
-          <PulseLogo className="w-32 sm:w-48 hover:opacity-80 duration-300 cursor-pointer" />
-        </button>
-        <form
-          onSubmit={submitSearch}
-          className="flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200"
-          style={{ zIndex: 11 }}
-        >
-          <input
-            value={searchValue}
-            onBlur={() => setIsSearchFocused(false)}
-            onChange={(event) => setSearchValue(event.target.value)}
-            onFocus={() => setIsSearchFocused(true)}
-            className="w-full bg-transparent pl-2 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
-            placeholder={lang?.pulse_search || 'Поиск'}
-            autoComplete="off"
-          />
-          <button
-            type="submit"
-            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95"
-          >
-            <ActionIcon className="h-8 w-8" name="IC-search" />
-          </button>
-        </form>
-        {isAuthenticated ? (
-          <button
-            type="button"
-            onClick={() => router.push('/pulse/my')}
-            className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95"
-          >
-            <ActionIcon className="h-8 w-8" name="IC-me" />
-          </button>
-        ) : null}
-      </div>
+      <PulseHeader
+        isAuthenticated={isAuthenticated}
+        lang={lang}
+        onLogoClick={() => router.push('/pulse')}
+        onOpenMyPulse={() => router.push('/pulse/my')}
+        onSubmitSearch={submitSearch}
+        searchValue={searchValue}
+        setSearchValue={setSearchValue}
+        placeholder={lang?.pulse_search || 'Поиск'}
+      />
 
       <div className="relative flex flex-col gap-3 items-center w-full max-w-screen-2xl" style={{ zIndex: 19 }}>
         {loading ? (
