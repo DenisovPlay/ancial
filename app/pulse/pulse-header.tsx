@@ -45,8 +45,8 @@ export function PulseHeader({
       <form
         onSubmit={onSubmitSearch}
         className={cn(
-          "flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200",
-          hideSearchOnMobile && "hidden md:flex"
+          "h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200",
+          hideSearchOnMobile ? "hidden md:flex" : "flex"
         )}
         style={{ zIndex: 11 }}
       >
@@ -69,8 +69,8 @@ export function PulseHeader({
           type="button"
           onClick={onOpenMyPulse}
           className={cn(
-            "flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95",
-            hideProfileOnMobile && "hidden md:flex"
+            "h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95",
+            hideProfileOnMobile ? "hidden md:flex" : "flex"
           )}
           aria-label="My Pulse"
         >
