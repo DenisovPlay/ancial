@@ -373,7 +373,7 @@ export default function Navigation() {
             <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1 relative overflow-hidden transition-all duration-300">
                 {isPulseContext ? (
                     <div className="flex gap-1 animate-in fade-in slide-in-from-left duration-300">
-                        <NavItem href="/pulse" icon="IC-home" />
+                        <NavItem href="/pulse" icon="IC-home" isActive={pathname === '/pulse'} />
                         <NavItem href="/pulse/search" icon="IC-search" />
                         {isAuthenticated && user && (
                             <NavItem href="/pulse/my" icon="IC-book" />
