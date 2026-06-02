@@ -829,6 +829,22 @@ export function PulsePlayerProvider({
   const eqFiltersRef = useRef<BiquadFilterNode[]>([]);
   const [eqGains, setEqGains] = useState<number[]>(() => readSavedEqGains());
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
+  const [isIOSDevice, setIsIOSDevice] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const isIOS = [
+        'iPad Simulator',
+        'iPhone Simulator',
+        'iPod Simulator',
+        'iPad',
+        'iPhone',
+        'iPod'
+      ].includes(navigator.platform)
+      || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+      setIsIOSDevice(isIOS);
+    }
+  }, []);
   const eqGainsRef = useRef<number[]>(eqGains);
 
   useEffect(() => {
@@ -836,6 +852,19 @@ export function PulsePlayerProvider({
   }, [eqGains]);
 
   const initWebAudio = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const isIOS = [
+      'iPad Simulator',
+      'iPhone Simulator',
+      'iPod Simulator',
+      'iPad',
+      'iPhone',
+      'iPod'
+    ].includes(navigator.platform)
+    || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+    
+    if (isIOS) return;
+
     if (!audioRef.current || audioContextRef.current) return;
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -2428,9 +2457,11 @@ export function PulsePlayerProvider({
                               В плейлист
                             </DropdownItem>
                           )}
-                          <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
-                            Эквалайзер
-                          </DropdownItem>
+                          {!isIOSDevice && (
+                            <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
+                              Эквалайзер
+                            </DropdownItem>
+                          )}
                         </Dropdown>
                       </div>
 
