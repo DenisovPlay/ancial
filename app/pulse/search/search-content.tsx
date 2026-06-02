@@ -279,13 +279,13 @@ export default function PulseSearchContent() {
         ) : null}
       </div>
 
-      <div className="relative flex w-full max-w-screen-2xl flex-col gap-3" style={{ zIndex: 19 }}>
+      <div className="relative flex flex-col gap-3 items-center w-full max-w-screen-2xl" style={{ zIndex: 19 }}>
         {loading ? (
-          <div className="flex flex-col gap-3 px-3 lg:px-0 animate-pulse">
+          <div className="flex flex-col gap-3 px-3 lg:px-0 animate-pulse w-full">
             {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="flex items-center gap-3 rounded-2xl">
+              <div key={index} className="flex items-center gap-3 rounded-2xl w-full">
                 <div className="h-16 w-16 shrink-0 rounded-2xl bg-zinc-800" />
-                <div className="flex flex-grow flex-col gap-2">
+                <div className="flex flex-grow flex-col gap-2 w-full">
                   <div className="h-4 w-2/3 rounded-full bg-zinc-800" />
                   <div className="h-3 w-1/3 rounded-full bg-zinc-800" />
                 </div>
@@ -297,7 +297,7 @@ export default function PulseSearchContent() {
         {!loading && artists.length ? (
           <>
             {label(lang?.artists || 'Артисты')}
-            <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
+            <div className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
               {artists.map((artist) => (
                 <PulseArtistTile
                   artist={artist}

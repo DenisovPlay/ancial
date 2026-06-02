@@ -956,7 +956,7 @@ export default function PulseContent() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-28">
-      <div className="sticky top-0 z-[99] flex w-full max-w-screen-2xl items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0">
+      <div className="sticky top-0 flex w-full max-w-screen-2xl items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0" style={{ zIndex: 99999999 }}>
         <button
           type="button"
           onClick={() => router.push('/pulse')}
