@@ -2402,8 +2402,9 @@ export function PulsePlayerProvider({
                         <Dropdown
                           position="top"
                           align="start"
+                          triggerSize="sm"
                           triggerNode={<PlayerIcon name="IC-more" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />}
-                          triggerClassName="cursor-pointer duration-300 active:scale-95 block"
+                          triggerClassName="cursor-pointer duration-300 active:scale-95 block !w-auto !h-auto !p-0 !bg-transparent hover:!bg-transparent"
                         >
                           {isAuthenticated && (
                             <DropdownItem onClick={() => openAddToPlaylist(currentSongId)} icon="IC-plus">
