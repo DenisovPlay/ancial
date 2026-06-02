@@ -12,6 +12,8 @@ export function PulseHeader({
   searchValue,
   setSearchValue,
   placeholder,
+  hideSearchOnMobile,
+  hideProfileOnMobile,
 }: {
   isAuthenticated: boolean;
   lang?: any;
