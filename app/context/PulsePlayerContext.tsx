@@ -919,6 +919,8 @@ export function PulsePlayerProvider({
   const [swipeX, setSwipeX] = useState(0);
 
   const touchStartXRef = useRef<number | null>(null);
+  const touchStartFullRef = useRef<{x: number, y: number} | null>(null);
+  const touchStartMiniRef = useRef<{x: number, y: number} | null>(null);
   
   const currentTrack = playlist[index] ?? null;
   const prevTrackObj = playlist[index - 1] ?? null;
@@ -2221,6 +2223,21 @@ export function PulsePlayerProvider({
                 WebkitBackdropFilter: 'blur(40px) saturate(180%)',
                 overscrollBehavior: 'none'
               }}
+              onTouchStart={(e) => {
+                if (window.innerWidth >= 1024) return;
+                touchStartFullRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+              }}
+              onTouchEnd={(e) => {
+                if (touchStartFullRef.current && window.innerWidth < 1024) {
+                  const navpFull = e.currentTarget;
+                  const deltaY = e.changedTouches[0].clientY - touchStartFullRef.current.y;
+                  const deltaX = e.changedTouches[0].clientX - touchStartFullRef.current.x;
+                  if (deltaY > 50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5 && navpFull.scrollTop <= 0) {
+                    setMode('mini');
+                  }
+                  touchStartFullRef.current = null;
+                }
+              }}
             >
               <div className="absolute top-3 z-[20] flex w-full items-center px-3">
                 <button
@@ -2484,6 +2501,20 @@ export function PulsePlayerProvider({
             <div
               id="NAVPmini"
               className="pulse-player-mini-shell flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300 w-full"
+              onTouchStart={(e) => {
+                if (window.innerWidth >= 1024) return;
+                touchStartMiniRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+              }}
+              onTouchEnd={(e) => {
+                if (touchStartMiniRef.current && window.innerWidth < 1024) {
+                  const deltaY = e.changedTouches[0].clientY - touchStartMiniRef.current.y;
+                  const deltaX = e.changedTouches[0].clientX - touchStartMiniRef.current.x;
+                  if (deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
+                    setMode('full');
+                  }
+                  touchStartMiniRef.current = null;
+                }
+              }}
             >
               <button
                 type="button"
