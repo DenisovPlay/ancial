@@ -428,8 +428,8 @@ export default function Navigation() {
                   align="end" 
                   direction="row" 
                   menuClassName={cn(
-                    "flex-wrap justify-center",
-                    isPulseContext ? "!w-[16.5rem] !rounded-[2rem]" : "!w-auto !rounded-full"
+                    "justify-center",
+                    isPulseContext ? "flex-wrap !w-[16.5rem] !rounded-[2rem]" : "flex-nowrap !w-max !rounded-full"
                   )}
                   activePaths={isPulseContext ? ['/wallet', '/apps', '/games'] : ['/pulse', '/wallet', '/apps', '/games']}
                 >
