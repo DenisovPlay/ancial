@@ -299,6 +299,8 @@ export const DropdownItem = ({
 
 export default function Navigation() {
   const { user, isAuthenticated, logout, lang } = useAuth();
+  const pathname = usePathname();
+  const isPulseContext = pathname === '/pulse' || pathname?.startsWith('/pulse/');
 
   return (
     <>
@@ -368,19 +370,31 @@ export default function Navigation() {
 
 
         <nav data-app-nav="mobile" className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
-            <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1">
-                <NavItem href="/feed" icon="IC-feed" />
-                {!isAuthenticated && (
-                    <NavItem href="/pulse" icon="IC-music" />
-                )}
-                {isAuthenticated && user && (
-                    <NavItem href="/messages" icon="IC-chats" />
-                )}
-                {isAuthenticated && user && (
-                    <NavItem href="/friends" icon="IC-friends" />
-                )}
-                {isAuthenticated && user && (
-                    <NavItem href="/groups" icon="IC-groups" />
+            <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1 relative overflow-hidden transition-all duration-300">
+                {isPulseContext ? (
+                    <div className="flex gap-1 animate-in fade-in slide-in-from-left duration-300">
+                        <NavItem href="/pulse" icon="IC-home" />
+                        <NavItem href="/pulse/search" icon="IC-search" />
+                        {isAuthenticated && user && (
+                            <NavItem href="/pulse/my" icon="IC-music" />
+                        )}
+                    </div>
+                ) : (
+                    <div className="flex gap-1 animate-in fade-in slide-in-from-left duration-300">
+                        <NavItem href="/feed" icon="IC-feed" />
+                        {!isAuthenticated && (
+                            <NavItem href="/pulse" icon="IC-music" />
+                        )}
+                        {isAuthenticated && user && (
+                            <NavItem href="/messages" icon="IC-chats" />
+                        )}
+                        {isAuthenticated && user && (
+                            <NavItem href="/friends" icon="IC-friends" />
+                        )}
+                        {isAuthenticated && user && (
+                            <NavItem href="/groups" icon="IC-groups" />
+                        )}
+                    </div>
                 )}
             </div>
             <div className='flex-grow'></div>
@@ -408,7 +422,26 @@ export default function Navigation() {
                         </DropdownItem>
                     </Dropdown>
                 )}
-                <Dropdown icon="IC-compass" position="top" align="end" direction="row" activePaths={['/pulse', '/wallet', '/apps', '/games']}>
+                <Dropdown 
+                  icon="IC-compass" 
+                  position="top" 
+                  align="end" 
+                  direction="row" 
+                  menuClassName="flex-wrap !w-[16rem] justify-center"
+                  activePaths={['/pulse', '/wallet', '/apps', '/games']}
+                >
+                    {isPulseContext && (
+                        <>
+                            <NavItem href="/feed" icon="IC-feed" />
+                            {isAuthenticated && user && (
+                                <>
+                                    <NavItem href="/messages" icon="IC-chats" />
+                                    <NavItem href="/friends" icon="IC-friends" />
+                                    <NavItem href="/groups" icon="IC-groups" />
+                                </>
+                            )}
+                        </>
+                    )}
                     <NavItem href="/pulse" icon="IC-music" />
                     <NavItem href="/wallet" icon="IC-wallet" />
                     <NavItem href="/apps" icon="IC-games" />
