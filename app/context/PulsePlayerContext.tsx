@@ -15,6 +15,7 @@ import { AncialAPI } from '../lib/api-v2';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse/pulse-image';
 import PulsePlaylistEditorModal from '../pulse/pulse-playlist-editor-modal';
 import { PulseModal } from '../pulse/pulse-modal';
+import { Dropdown, DropdownItem } from '../components/navigation';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 
@@ -729,6 +730,68 @@ function PulseLyricsDesktop({
   );
 }
 
+const EQ_BANDS = [60, 230, 910, 3600, 14000];
+
+function readSavedEqGains() {
+  if (typeof window === 'undefined') return [0, 0, 0, 0, 0];
+  try {
+    const saved = window.localStorage.getItem('pulse-eq-bands');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length === 5) return parsed;
+    }
+  } catch {}
+  return [0, 0, 0, 0, 0];
+}
+
+const PulseEqualizerModal = ({ isOpen, onClose, eqGains, onGainChange, onReset }: {
+  isOpen: boolean;
+  onClose: () => void;
+  eqGains: number[];
+  onGainChange: (index: number, gain: number) => void;
+  onReset: () => void;
+}) => {
+  return (
+    <PulseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Эквалайзер"
+    >
+      <div className="flex flex-col gap-4 py-4 px-2">
+          <div className="flex justify-around items-center h-48 w-full">
+              {EQ_BANDS.map((freq, index) => (
+                  <div key={freq} className="flex flex-col items-center justify-between h-full w-10">
+                      <span className="text-xs text-zinc-400 font-medium h-4">
+                          {eqGains[index] > 0 ? '+' : ''}{eqGains[index]}
+                      </span>
+                      <div className="flex-grow flex items-center justify-center w-full relative my-2">
+                          <input
+                              type="range"
+                              min="-12"
+                              max="12"
+                              step="1"
+                              value={eqGains[index]}
+                              onChange={(e) => onGainChange(index, Number(e.target.value))}
+                              className="w-40 appearance-none h-1.5 rounded-full bg-zinc-800 accent-purple-500 absolute origin-center -rotate-90"
+                          />
+                      </div>
+                      <span className="text-xs text-zinc-400 font-medium h-4">
+                         {freq >= 1000 ? `${(freq / 1000).toFixed(1).replace('.0', '')}k` : freq}
+                      </span>
+                  </div>
+              ))}
+          </div>
+          <button
+              onClick={onReset}
+              className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2.5 text-zinc-300 duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
+          >
+              <span>Сбросить настройки</span>
+          </button>
+      </div>
+    </PulseModal>
+  );
+};
+
 export function PulsePlayerProvider({
   children,
 }: {
@@ -760,6 +823,75 @@ export function PulsePlayerProvider({
   const mobileCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
   const desktopCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
   const volumeSliderRef = useRef<HTMLInputElement | null>(null);
+
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const eqFiltersRef = useRef<BiquadFilterNode[]>([]);
+  const [eqGains, setEqGains] = useState<number[]>(() => readSavedEqGains());
+  const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
+  const eqGainsRef = useRef<number[]>(eqGains);
+
+  useEffect(() => {
+    eqGainsRef.current = eqGains;
+  }, [eqGains]);
+
+  const initWebAudio = useCallback(() => {
+    if (!audioRef.current || audioContextRef.current) return;
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = audioCtx;
+      const source = audioCtx.createMediaElementSource(audioRef.current);
+      sourceNodeRef.current = source;
+
+      const filters = EQ_BANDS.map((freq, index) => {
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = index === 0 ? 'lowshelf' : index === EQ_BANDS.length - 1 ? 'highshelf' : 'peaking';
+        filter.frequency.value = freq;
+        filter.gain.value = eqGainsRef.current[index];
+        if (filter.type === 'peaking') {
+          filter.Q.value = 1;
+        }
+        return filter;
+      });
+
+      eqFiltersRef.current = filters;
+
+      source.connect(filters[0]);
+      for (let i = 0; i < filters.length - 1; i++) {
+        filters[i].connect(filters[i + 1]);
+      }
+      filters[filters.length - 1].connect(audioCtx.destination);
+    } catch (err) {
+      console.warn("Failed to initialize Web Audio API", err);
+    }
+  }, []);
+
+  const changeEqGain = useCallback((index: number, nextGain: number) => {
+    setEqGains(prev => {
+      const newGains = [...prev];
+      newGains[index] = nextGain;
+      
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('pulse-eq-bands', JSON.stringify(newGains));
+      }
+      return newGains;
+    });
+
+    if (eqFiltersRef.current[index]) {
+      eqFiltersRef.current[index].gain.value = nextGain;
+    }
+  }, []);
+
+  const resetEqGains = useCallback(() => {
+    const newGains = [0, 0, 0, 0, 0];
+    setEqGains(newGains);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('pulse-eq-bands', JSON.stringify(newGains));
+    }
+    eqFiltersRef.current.forEach((filter) => {
+      filter.gain.value = 0;
+    });
+  }, []);
 
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -1806,6 +1938,10 @@ export function PulsePlayerProvider({
 
     const handlePlay = () => {
       setIsPlaying(true);
+      initWebAudio();
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
       bindMediaSession();
       if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
         try {
@@ -2043,7 +2179,7 @@ export function PulsePlayerProvider({
     <PulsePlayerContext.Provider value={contextValue}>
       {children}
 
-      <audio ref={audioRef} id="htmlaudio" className="hidden" />
+      <audio ref={audioRef} id="htmlaudio" className="hidden" crossOrigin="anonymous" />
 
       {effectivePlayerVisible ? (
         <div
@@ -2262,16 +2398,23 @@ export function PulsePlayerProvider({
 
                   <div className="flex w-full max-w-sm items-center justify-center">
                     <div className="mt-3 flex items-center gap-3 duration-300 lg:gap-6">
-                      {isAuthenticated ? (
-                        <button
-                          id="player_addtoplaylist"
-                          type="button"
-                          onClick={() => openAddToPlaylist(currentSongId)}
-                          className="mr-6 cursor-pointer duration-300 active:scale-95"
+                      <div className="mr-6">
+                        <Dropdown
+                          position="top"
+                          align="start"
+                          triggerNode={<PlayerIcon name="IC-plus" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />}
+                          triggerClassName="cursor-pointer duration-300 active:scale-95 block"
                         >
-                          <PlayerIcon name="IC-plus" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />
-                        </button>
-                      ) : null}
+                          {isAuthenticated && (
+                            <DropdownItem onClick={() => openAddToPlaylist(currentSongId)} icon="IC-plus">
+                              В плейлист
+                            </DropdownItem>
+                          )}
+                          <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
+                            Эквалайзер
+                          </DropdownItem>
+                        </Dropdown>
+                      </div>
 
                       <button type="button" onClick={() => { void prevTrack(); }}>
                         <PlayerIcon name="IC-moveback" className="h-10 w-10 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
@@ -2532,6 +2675,13 @@ export function PulsePlayerProvider({
         showNote={(content, type = 'info', time = 4) => {
           notify({ content, type, time });
         }}
+      />
+      <PulseEqualizerModal
+        isOpen={isEqualizerOpen}
+        onClose={() => setIsEqualizerOpen(false)}
+        eqGains={eqGains}
+        onGainChange={changeEqGain}
+        onReset={resetEqGains}
       />
     </PulsePlayerContext.Provider>
   );
