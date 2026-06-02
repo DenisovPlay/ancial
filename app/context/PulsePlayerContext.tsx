@@ -829,20 +829,13 @@ export function PulsePlayerProvider({
   const eqFiltersRef = useRef<BiquadFilterNode[]>([]);
   const [eqGains, setEqGains] = useState<number[]>(() => readSavedEqGains());
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
-  const [isIOSDevice, setIsIOSDevice] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
-      const isIOS = [
-        'iPad Simulator',
-        'iPhone Simulator',
-        'iPod Simulator',
-        'iPad',
-        'iPhone',
-        'iPod'
-      ].includes(navigator.platform)
-      || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-      setIsIOSDevice(isIOS);
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+      setIsMobileDevice(isMobile);
     }
   }, []);
   const eqGainsRef = useRef<number[]>(eqGains);
@@ -853,17 +846,10 @@ export function PulsePlayerProvider({
 
   const initWebAudio = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const isIOS = [
-      'iPad Simulator',
-      'iPhone Simulator',
-      'iPod Simulator',
-      'iPad',
-      'iPhone',
-      'iPod'
-    ].includes(navigator.platform)
-    || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
     
-    if (isIOS) return;
+    if (isMobile) return;
 
     if (!audioRef.current || audioContextRef.current) return;
     try {
@@ -2457,7 +2443,7 @@ export function PulsePlayerProvider({
                               В плейлист
                             </DropdownItem>
                           )}
-                          {!isIOSDevice && (
+                          {!isMobileDevice && (
                             <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
                               Эквалайзер
                             </DropdownItem>
