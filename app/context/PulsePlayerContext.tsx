@@ -2402,7 +2402,7 @@ export function PulsePlayerProvider({
                         <Dropdown
                           position="top"
                           align="start"
-                          triggerNode={<PlayerIcon name="IC-plus" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />}
+                          triggerNode={<PlayerIcon name="IC-more" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />}
                           triggerClassName="cursor-pointer duration-300 active:scale-95 block"
                         >
                           {isAuthenticated && (
