@@ -966,6 +966,7 @@ export default function PulseContent() {
         setSearchValue={setSearchValue}
         placeholder={lang?.pulse_search || 'Поиск по Pulse'}
         hideSearchOnMobile
+        hideProfileOnMobile
         centerLogoOnMobile
       />
 
