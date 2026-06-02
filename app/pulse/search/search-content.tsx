@@ -245,6 +245,7 @@ export default function PulseSearchContent() {
         searchValue={searchValue}
         setSearchValue={setSearchValue}
         placeholder={lang?.pulse_search || 'Поиск'}
+        hideProfileOnMobile
       />
 
       <div className="relative flex flex-col gap-3 items-center w-full max-w-screen-2xl" style={{ zIndex: 19 }}>

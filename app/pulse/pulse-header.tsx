@@ -21,11 +21,13 @@ export function PulseHeader({
   searchValue: string;
   setSearchValue: (val: string) => void;
   placeholder?: string;
+  hideSearchOnMobile?: boolean;
+  hideProfileOnMobile?: boolean;
 }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   return (
-    <div className="sticky top-0 flex w-full max-w-screen-2xl items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0" style={{ zIndex: 1300 }}>
+    <div className="sticky top-0 flex w-full max-w-screen-2xl justify-between items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0" style={{ zIndex: 1300 }}>
       <button
         type="button"
         onClick={onLogoClick}
@@ -40,7 +42,10 @@ export function PulseHeader({
 
       <form
         onSubmit={onSubmitSearch}
-        className="flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200"
+        className={cn(
+          "flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200",
+          hideSearchOnMobile && "hidden md:flex"
+        )}
         style={{ zIndex: 11 }}
       >
         <input
@@ -61,7 +66,10 @@ export function PulseHeader({
         <button
           type="button"
           onClick={onOpenMyPulse}
-          className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95"
+          className={cn(
+            "flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95",
+            hideProfileOnMobile && "hidden md:flex"
+          )}
           aria-label="My Pulse"
         >
           <ActionIcon className="h-8 w-8" name="IC-me" />

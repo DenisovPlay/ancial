@@ -427,8 +427,8 @@ export default function Navigation() {
                   position="top" 
                   align="end" 
                   direction="row" 
-                  menuClassName="flex-wrap !w-[16rem] justify-center"
-                  activePaths={['/pulse', '/wallet', '/apps', '/games']}
+                  menuClassName="flex-wrap !w-[16rem] justify-center !rounded-3xl"
+                  activePaths={isPulseContext ? ['/wallet', '/apps', '/games'] : ['/pulse', '/wallet', '/apps', '/games']}
                 >
                     {isPulseContext && (
                         <>
@@ -442,7 +442,9 @@ export default function Navigation() {
                             )}
                         </>
                     )}
-                    <NavItem href="/pulse" icon="IC-music" />
+                    {!isPulseContext && (
+                        <NavItem href="/pulse" icon="IC-music" />
+                    )}
                     <NavItem href="/wallet" icon="IC-wallet" />
                     <NavItem href="/apps" icon="IC-games" />
                     <NavItem href="/" icon="IC-search" />
