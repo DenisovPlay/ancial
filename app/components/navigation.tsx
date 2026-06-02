@@ -430,21 +430,11 @@ export default function Navigation() {
                   menuClassName="flex-wrap !w-[16rem] justify-center !rounded-3xl"
                   activePaths={isPulseContext ? ['/wallet', '/apps', '/games'] : ['/pulse', '/wallet', '/apps', '/games']}
                 >
-                    {isPulseContext && (
-                        <>
-                            <NavItem href="/feed" icon="IC-feed" />
-                            {isAuthenticated && user && (
-                                <>
-                                    <NavItem href="/messages" icon="IC-chats" />
-                                    <NavItem href="/friends" icon="IC-friends" />
-                                    <NavItem href="/groups" icon="IC-groups" />
-                                </>
-                            )}
-                        </>
-                    )}
-                    {!isPulseContext && (
-                        <NavItem href="/pulse" icon="IC-music" />
-                    )}
+                    {isPulseContext && <NavItem href="/feed" icon="IC-feed" />}
+                    {isPulseContext && isAuthenticated && user && <NavItem href="/messages" icon="IC-chats" />}
+                    {isPulseContext && isAuthenticated && user && <NavItem href="/friends" icon="IC-friends" />}
+                    {isPulseContext && isAuthenticated && user && <NavItem href="/groups" icon="IC-groups" />}
+                    {!isPulseContext && <NavItem href="/pulse" icon="IC-music" />}
                     <NavItem href="/wallet" icon="IC-wallet" />
                     <NavItem href="/apps" icon="IC-games" />
                     <NavItem href="/" icon="IC-search" />
