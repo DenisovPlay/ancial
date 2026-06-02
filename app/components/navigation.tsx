@@ -4,6 +4,7 @@ import Link from 'next/link';
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -297,6 +298,25 @@ export const DropdownItem = ({
   );
 };
 
+const MotionNavItem = ({ children, isVisible, id }: { children: React.ReactNode, isVisible: boolean | undefined | null | "", id: string }) => {
+    return (
+        <AnimatePresence mode="popLayout">
+            {isVisible ? (
+                <motion.div
+                    layout
+                    key={id}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                >
+                    {children}
+                </motion.div>
+            ) : null}
+        </AnimatePresence>
+    );
+};
+
 export default function Navigation() {
   const { user, isAuthenticated, logout, lang } = useAuth();
   const pathname = usePathname();
@@ -370,33 +390,33 @@ export default function Navigation() {
 
 
         <nav data-app-nav="mobile" className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
-            <div className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1 relative overflow-hidden transition-all duration-300">
-                {isPulseContext ? (
-                    <div className="flex gap-1 animate-in fade-in slide-in-from-left duration-300">
-                        <NavItem href="/pulse" icon="IC-home" isActive={pathname === '/pulse'} />
-                        <NavItem href="/pulse/search" icon="IC-search" />
-                        {isAuthenticated && user && (
-                            <NavItem href="/pulse/my" icon="IC-book" />
-                        )}
-                    </div>
-                ) : (
-                    <div className="flex gap-1 animate-in fade-in slide-in-from-left duration-300">
-                        <NavItem href="/feed" icon="IC-feed" />
-                        {!isAuthenticated && (
-                            <NavItem href="/pulse" icon="IC-music" />
-                        )}
-                        {isAuthenticated && user && (
-                            <NavItem href="/messages" icon="IC-chats" />
-                        )}
-                        {isAuthenticated && user && (
-                            <NavItem href="/friends" icon="IC-friends" />
-                        )}
-                        {isAuthenticated && user && (
-                            <NavItem href="/groups" icon="IC-groups" />
-                        )}
-                    </div>
-                )}
-            </div>
+            <motion.div layout className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1 relative overflow-hidden">
+                <MotionNavItem id="pulse" isVisible={isPulseContext}>
+                    <NavItem href="/pulse" icon="IC-home" isActive={pathname === '/pulse'} />
+                </MotionNavItem>
+                <MotionNavItem id="pulse-search" isVisible={isPulseContext}>
+                    <NavItem href="/pulse/search" icon="IC-search" />
+                </MotionNavItem>
+                <MotionNavItem id="pulse-my" isVisible={isPulseContext && isAuthenticated && user ? true : false}>
+                    <NavItem href="/pulse/my" icon="IC-book" />
+                </MotionNavItem>
+                
+                <MotionNavItem id="feed" isVisible={!isPulseContext}>
+                    <NavItem href="/feed" icon="IC-feed" />
+                </MotionNavItem>
+                <MotionNavItem id="general-pulse" isVisible={!isPulseContext && !isAuthenticated}>
+                    <NavItem href="/pulse" icon="IC-music" />
+                </MotionNavItem>
+                <MotionNavItem id="messages" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
+                    <NavItem href="/messages" icon="IC-chats" />
+                </MotionNavItem>
+                <MotionNavItem id="friends" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
+                    <NavItem href="/friends" icon="IC-friends" />
+                </MotionNavItem>
+                <MotionNavItem id="groups" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
+                    <NavItem href="/groups" icon="IC-groups" />
+                </MotionNavItem>
+            </motion.div>
             <div className='flex-grow'></div>
             <div className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30 gap-1">
                 <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
