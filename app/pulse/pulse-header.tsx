@@ -25,6 +25,7 @@ export function PulseHeader({
   placeholder?: string;
   hideSearchOnMobile?: boolean;
   hideProfileOnMobile?: boolean;
+  centerLogoOnMobile?: boolean;
 }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -36,6 +37,7 @@ export function PulseHeader({
         className={cn(
           'shrink-0 overflow-hidden duration-300 active:scale-95',
           isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100',
+          centerLogoOnMobile && "absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 md:left-auto"
         )}
         aria-label="Pulse home"
       >
@@ -69,7 +71,7 @@ export function PulseHeader({
           type="button"
           onClick={onOpenMyPulse}
           className={cn(
-            "h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95",
+            "h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95 ml-auto",
             hideProfileOnMobile ? "hidden md:flex" : "flex"
           )}
           aria-label="My Pulse"

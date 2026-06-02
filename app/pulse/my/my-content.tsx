@@ -243,7 +243,9 @@ export default function PulseMyContent() {
             onClick={() => router.push('/pulse')}
             className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
           >
-            <ActionIcon className="hidden md:block h-8 w-8" name="IC-chevron-left" />
+            <div className="hidden md:block">
+              <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+            </div>
             <PulseLogo className="w-32 sm:w-48" />
           </button>
           <div className="flex-grow" />
