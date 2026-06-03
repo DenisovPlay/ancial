@@ -91,7 +91,11 @@ body.pulse-player-full [data-app-nav="mobile"] {
 }
 
 @media (min-width: 768px) {
-  body.pulse-player-visible:not(.pulse-player-full) #main-content {
+  body.pulse-player-visible:not(.pulse-player-full):not(:has(#dialogs-pane)) #main-content {
+    padding-bottom: 6.5rem !important;
+  }
+  
+  body.pulse-player-visible:not(.pulse-player-full) #dialog-list-container {
     padding-bottom: 6.5rem !important;
   }
 }
