@@ -2431,24 +2431,30 @@ export function PulsePlayerProvider({
                   <div className="flex w-full max-w-sm items-center justify-center">
                     <div className="mt-3 flex items-center gap-3 duration-300 lg:gap-6">
                       <div className="mr-6">
-                        <Dropdown
-                          position="top"
-                          align="start"
-                          triggerSize="sm"
-                          triggerNode={<PlayerIcon name="IC-more" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />}
-                          triggerClassName="cursor-pointer duration-300 active:scale-95 block !w-auto !h-auto !p-0 !bg-transparent hover:!bg-transparent"
-                        >
-                          {isAuthenticated && (
+                        {isAuthenticated && !isMobileDevice ? (
+                          <Dropdown
+                            position="top"
+                            align="start"
+                            triggerSize="sm"
+                            triggerNode={<PlayerIcon name="IC-more" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />}
+                            triggerClassName="cursor-pointer duration-300 active:scale-95 block !w-auto !h-auto !p-0 !bg-transparent hover:!bg-transparent"
+                          >
                             <DropdownItem onClick={() => openAddToPlaylist(currentSongId)} icon="IC-plus">
                               В плейлист
                             </DropdownItem>
-                          )}
-                          {!isMobileDevice && (
                             <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
                               Эквалайзер
                             </DropdownItem>
-                          )}
-                        </Dropdown>
+                          </Dropdown>
+                        ) : isAuthenticated && isMobileDevice ? (
+                          <button title="В плейлист" type="button" onClick={() => openAddToPlaylist(currentSongId)} className="cursor-pointer duration-300 active:scale-95 block group">
+                            <PlayerIcon name="IC-plus" className="h-9 w-9 fill-white duration-300 group-hover:fill-zinc-300" />
+                          </button>
+                        ) : !isAuthenticated && !isMobileDevice ? (
+                          <button title="Эквалайзер" type="button" onClick={() => setIsEqualizerOpen(true)} className="cursor-pointer duration-300 active:scale-95 block group">
+                            <PlayerIcon name="IC-equalizer" className="h-9 w-9 fill-white duration-300 group-hover:fill-zinc-300" />
+                          </button>
+                        ) : null}
                       </div>
 
                       <button type="button" onClick={() => { void prevTrack(); }}>
