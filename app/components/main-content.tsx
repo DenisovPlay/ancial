@@ -15,8 +15,8 @@ export default function MainContent({ children }: { children: React.ReactNode })
     <div
       id="main-content"
       className={cn(
-        'flex-1 flex flex-col md:pl-24 duration-300',
-        !isPulsePlaylistPage && 'pb-20 md:pb-0',
+        'flex-1 flex flex-col lg:pl-24 duration-300',
+        !isPulsePlaylistPage && 'pb-20 lg:pb-0',
       )}
     >
       {children}
