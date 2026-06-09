@@ -324,7 +324,7 @@ export default function Navigation() {
 
   return (
     <>
-        <motion.nav layoutRoot layout data-app-nav="desktop" className="hidden md:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
+        <motion.nav layoutRoot layout data-app-nav="desktop" className="hidden lg:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
             <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
             
             <MotionNavItem id="desktop-home" isVisible={true}>
@@ -400,7 +400,7 @@ export default function Navigation() {
         </motion.nav>
 
 
-        <nav data-app-nav="mobile" className="md:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
+        <nav data-app-nav="mobile" className="lg:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
             <motion.div layoutRoot layout className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1 relative overflow-hidden">
                 <MotionNavItem id="pulse" isVisible={isPulseContext}>
                     <NavItem href="/pulse" icon="IC-home" isActive={pathname === '/pulse'} />

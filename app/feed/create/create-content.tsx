@@ -488,7 +488,7 @@ export default function CreatePostContent() {
               position="top"
               align="start"
               triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-white"
-              menuClassName="min-w-32 !gap-1.5 !p-2 !rounded-2xl"
+              menuClassName="min-w-32 !gap-1.5 !p-2"
             >
               <button
                 type="button"
