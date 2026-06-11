@@ -2232,7 +2232,7 @@ export function PulsePlayerProvider({
           >
             <div
               id="NAVPfull"
-              className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto overflow-x-hidden rounded-none bg-zinc-900/80 p-1 shadow md:h-full md:gap-3"
+              className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto overflow-x-hidden rounded-none bg-zinc-900/80 p-1 shadow lg:h-full lg:gap-3"
               style={{
                 backdropFilter: 'blur(40px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -2515,7 +2515,7 @@ export function PulsePlayerProvider({
 
           <div
             className={cn(
-              'absolute inset-x-0 bottom-16 flex justify-center px-1.5 pb-2.5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] md:bottom-1.5 md:justify-end md:pb-1.5 z-[60]',
+              'absolute inset-x-0 bottom-16 flex justify-center px-1.5 pb-2.5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] lg:bottom-1.5 lg:justify-end lg:pb-1.5 z-[60]',
               !isFullMode && isPlayerAnimatingIn
                 ? 'pointer-events-auto translate-y-0'
                 : 'pointer-events-none translate-y-[200%]',
