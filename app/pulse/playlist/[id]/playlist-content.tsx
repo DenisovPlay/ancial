@@ -17,6 +17,7 @@ import {
   DEFAULT_TRACK_IMAGE,
   PulseLegalFooter,
   PulseLogo,
+  PulseReportModal,
   PulseTrackRow,
   TracksPanelSkeleton,
   cn,
@@ -123,9 +124,11 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [tracksLoading, setTracksLoading] = useState(!cachedTracks.length);
   const [error, setError] = useState('');
   const [isPlaylistEditorOpen, setIsPlaylistEditorOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUploadTrackModalOpen, setIsUploadTrackModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [reportTrackTarget, setReportTrackTarget] = useState<PulseTrack | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
@@ -508,7 +511,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     openAddToPlaylist(trackId);
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
 
-  const reportTrack = useCallback(async (track: PulseTrack) => {
+  const reportTrack = useCallback((track: PulseTrack) => {
     if (!isAuthenticated) {
       showPulseNote('Войдите, чтобы отправить жалобу', 'info');
       return;
@@ -517,26 +520,29 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     const trackId = toNumber(track.sid);
     if (!trackId) return;
 
-    const reason = window.prompt('Причина жалобы');
-    if (reason === null) return;
+    setReportTrackTarget(track);
+    setIsReportModalOpen(true);
+  }, [isAuthenticated, showPulseNote]);
 
-    const normalizedReason = reason.trim();
-    if (!normalizedReason) {
-      showPulseNote('Опишите причину жалобы', 'info');
-      return;
-    }
+  const handleTrackReport = useCallback(async (reason: string) => {
+    if (!reportTrackTarget) return;
 
+    const trackId = toNumber(reportTrackTarget.sid);
+    if (!trackId) return;
+
+    setIsReportModalOpen(false);
     try {
       const result = await AncialAPI.reportAction<{ message?: string }>({
-        comment: normalizedReason,
+        comment: reason,
         id: trackId,
-        type: 'track',
+        type: 6,
       });
+      setReportTrackTarget(null);
       showPulseNote(result?.message || lang?.reportsended || 'Жалоба отправлена', 'success');
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang, showPulseNote]);
+  }, [lang, reportTrackTarget, showPulseNote]);
 
   const openEditTrack = useCallback((track: PulseTrack) => {
     setTrackToEdit(track);
@@ -792,6 +798,15 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
           onCopyFailed={() => showPulseNote(shareUrl, 'info')}
           shareUrl={shareUrl}
           title={lang?.share || 'Поделиться'}
+        />
+        <PulseReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => {
+            setIsReportModalOpen(false);
+            setReportTrackTarget(null);
+          }}
+          onSelectReason={handleTrackReport}
+          title={lang?.report || 'Пожаловаться'}
         />
         <PulseUploadTrackModal
           isOpen={isUploadTrackModalOpen || Boolean(trackToEdit)}

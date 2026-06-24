@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import React, { useState } from 'react';
 
+import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
 import type { User } from '../context/AuthContext';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
@@ -550,5 +551,50 @@ export function PulseLegalFooter({ className }: { className?: string }) {
         </span>
       </div>
     </div>
+  );
+}
+
+export function PulseReportModal({
+  isOpen,
+  onClose,
+  onSelectReason,
+  title = 'Пожаловаться',
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectReason: (reason: string) => void | Promise<void>;
+  title?: string;
+}) {
+  const reasons = [
+    { label: 'Спам', value: 'Спам' },
+    { label: 'Запрещённый товар', value: 'Запрещённый товар' },
+    { label: 'Обман', value: 'Обман' },
+    { label: 'Насилие и вражда', value: 'Насилие и вражда' },
+    { label: 'Откровенное изображение', value: 'Откровенное изображение' },
+    { label: 'Нарушение интеллектуальных прав', value: 'Нарушение интеллектуальных прав' },
+  ];
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      width="sm"
+    >
+      <div className="flex flex-col justify-center overflow-hidden rounded-3xl shadow">
+        {reasons.map((reason) => (
+          <button
+            key={reason.value}
+            type="button"
+            onClick={() => {
+              void onSelectReason(reason.value);
+            }}
+            className="cursor-pointer bg-zinc-800 p-1.5 text-left text-lg duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
+          >
+            {reason.label}
+          </button>
+        ))}
+      </div>
+    </Modal>
   );
 }
