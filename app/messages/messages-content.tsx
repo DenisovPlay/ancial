@@ -9,7 +9,7 @@ import React, {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { useParams, usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
@@ -152,7 +152,6 @@ type WsPayload = {
 };
 
 const DIALOGS_CACHE_KEY = 'dialogs-cache';
-const DIALOGS_CACHE_TTL_MS = 15_000;
 const DIALOGS_REFRESH_INTERVAL_MS = 20_000;
 const MESSAGE_PAGE_SIZE = 30;
 const MESSAGE_CACHE_LIMIT = 2000;
@@ -727,6 +726,10 @@ function writeDialogsCache(dialogs: DialogListItem[]) {
   } catch {
     // ignore cache write failures
   }
+}
+
+function applyCachedDialogs(dialogs: DialogListItem[]) {
+  return dialogs.map((dialog) => ({ ...dialog }));
 }
 
 function getMessageCacheKey(userId: number, dialogId: number) {
@@ -1786,8 +1789,8 @@ export default function MessagesContent() {
     if (!isAuthenticated) return;
 
     const dialogCache = getDialogsCache();
-    if (!force && dialogCache && Date.now() - dialogCache.time < DIALOGS_CACHE_TTL_MS) {
-      setDialogs(dialogCache.dialogs);
+    if (!force && dialogCache) {
+      setDialogs(applyCachedDialogs(dialogCache.dialogs));
       setDialogsLoading(false);
     }
 

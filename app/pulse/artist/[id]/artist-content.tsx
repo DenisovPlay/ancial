@@ -266,6 +266,36 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     openAddToPlaylist(trackId);
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
 
+  const reportTrack = useCallback(async (track: PulseTrack) => {
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы отправить жалобу', 'info');
+      return;
+    }
+
+    const trackId = toNumber(track.sid);
+    if (!trackId) return;
+
+    const reason = window.prompt('Причина жалобы');
+    if (reason === null) return;
+
+    const normalizedReason = reason.trim();
+    if (!normalizedReason) {
+      showPulseNote('Опишите причину жалобы', 'info');
+      return;
+    }
+
+    try {
+      const result = await AncialAPI.reportAction<{ message?: string }>({
+        comment: normalizedReason,
+        id: trackId,
+        type: 'track',
+      });
+      showPulseNote(result?.message || lang?.reportsended || 'Жалоба отправлена', 'success');
+    } catch {
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    }
+  }, [isAuthenticated, lang, showPulseNote]);
+
   const refreshTracksAfterMutation = useCallback(() => {
     removePulseCache(artistTracksCacheKey);
     setTracksReloadToken((token) => token + 1);
@@ -431,6 +461,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                       void playArtistPlaylist(cacheId, true, 0, nextIndex, nextTrack.sid);
                     }}
                     onQueueTrackNext={(trackId) => playNextTrack(trackId)}
+                    onReportTrack={reportTrack}
                     track={track}
                     trackIndex={index}
                     user={user}

@@ -60,6 +60,7 @@ export type PulseTrackRowProps = {
   onOpenArtist: (artistId: string) => void;
   onPlayTrack: (track: PulseTrack, index: number) => void;
   onQueueTrackNext: (trackId: number | string) => Promise<void>;
+  onReportTrack?: (track: PulseTrack) => Promise<void> | void;
   track: PulseTrack;
   trackIndex: number;
   user: User | null;
@@ -346,6 +347,7 @@ export function PulseTrackRow({
   onOpenArtist,
   onPlayTrack,
   onQueueTrackNext,
+  onReportTrack,
   track,
   trackIndex,
   user,
@@ -362,6 +364,58 @@ export function PulseTrackRow({
   const artist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
   const [isTrackMenuOpen, setIsTrackMenuOpen] = useState(false);
   const trackMenuZIndex = getPulseTrackDropdownZIndex(trackIndex, isTrackMenuOpen);
+  const manageActions = [
+    isAuthenticated && isOwnTrack && onEditTrack
+      ? {
+          icon: 'IC-edit',
+          key: 'edit',
+          label: 'Изменить',
+          onClick: () => onEditTrack(track),
+        }
+      : null,
+    isAuthenticated && isOwnTrack && onDeleteTrack
+      ? {
+          icon: 'IC-trash',
+          key: 'delete',
+          label: 'Удалить',
+          onClick: () => onDeleteTrack(track),
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    icon: string;
+    key: string;
+    label: string;
+    onClick: () => void;
+  }>;
+  const footerActions = [
+    firstArtistId
+      ? {
+          icon: 'IC-user',
+          key: 'artist',
+          label: 'Исполнитель',
+          onClick: () => onOpenArtist(firstArtistId),
+        }
+      : null,
+    {
+      icon: 'IC-share',
+      key: 'share',
+      label: 'Поделиться',
+      onClick: () => void onCopyTrackLink(track.sid ?? 0),
+    },
+    onReportTrack
+      ? {
+          icon: 'IC-report',
+          key: 'report',
+          label: 'Пожаловаться',
+          onClick: () => void onReportTrack(track),
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    icon: string;
+    key: string;
+    label: string;
+    onClick: () => void;
+  }>;
 
   return (
     <div className={cn('rounded-2xl flex items-center gap-3 duration-300', isAvailable ? 'group cursor-pointer hover:bg-zinc-800 hover:pr-3' : 'group', isCurrentSong && 'bg-lime-500/10 pr-3')}>
@@ -412,27 +466,30 @@ export function PulseTrackRow({
         position="bottom"
         align="end"
         triggerSize="sm"
-        menuClassName="min-w-[12rem]"
+        menuClassName="min-w-[12rem] !gap-1.5"
         onOpenChange={setIsTrackMenuOpen}
         open={isTrackMenuOpen}
         wrapperClassName="relative"
         wrapperStyle={{ zIndex: trackMenuZIndex }}
       >
-        {isAuthenticated && isOwnTrack && onEditTrack ? (
-          <DropdownItem icon="IC-edit" onClick={() => onEditTrack(track)}>
-            Изменить
-          </DropdownItem>
+        {manageActions.length ? (
+          <div className="grid w-full grid-cols-2 gap-1.5">
+            {manageActions.map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                aria-label={action.label}
+                onClick={action.onClick}
+                className="flex h-10 w-full cursor-pointer items-center justify-center rounded-2xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
+              >
+                <ActionIcon className="h-6 w-6" name={action.icon} />
+              </button>
+            ))}
+          </div>
         ) : null}
-        {isAuthenticated && isOwnTrack && onDeleteTrack ? (
-          <DropdownItem icon="IC-trash" onClick={() => onDeleteTrack(track)}>
-            Удалить
-          </DropdownItem>
-        ) : null}
-        {isAuthenticated ? (
-          <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
-            Следующим
-          </DropdownItem>
-        ) : null}
+        <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
+          Следующим
+        </DropdownItem>
         {isAuthenticated ? (
           <DropdownItem icon="IC-plus" onClick={() => onAddToPlaylist(track.sid ?? 0)}>
             В плейлист
@@ -441,14 +498,19 @@ export function PulseTrackRow({
         <DropdownItem icon="IC-download" onClick={() => window.open(normalizeText(track.src), '_blank', 'noopener,noreferrer')}>
           Скачать
         </DropdownItem>
-        {firstArtistId ? (
-          <DropdownItem icon="IC-me" onClick={() => onOpenArtist(firstArtistId)}>
-            Исполнитель
-          </DropdownItem>
-        ) : null}
-        <DropdownItem icon="IC-share" onClick={() => void onCopyTrackLink(track.sid ?? 0)}>
-          Поделиться
-        </DropdownItem>
+        <div className={cn('grid w-full gap-1.5', footerActions.length >= 3 ? 'grid-cols-3' : 'grid-cols-2')}>
+          {footerActions.map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              aria-label={action.label}
+              onClick={action.onClick}
+              className="flex h-10 w-full cursor-pointer items-center justify-center rounded-2xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
+            >
+              <ActionIcon className="h-6 w-6" name={action.icon} />
+            </button>
+          ))}
+        </div>
       </Dropdown>
     </div>
   );

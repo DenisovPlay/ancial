@@ -508,6 +508,36 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     openAddToPlaylist(trackId);
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
 
+  const reportTrack = useCallback(async (track: PulseTrack) => {
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы отправить жалобу', 'info');
+      return;
+    }
+
+    const trackId = toNumber(track.sid);
+    if (!trackId) return;
+
+    const reason = window.prompt('Причина жалобы');
+    if (reason === null) return;
+
+    const normalizedReason = reason.trim();
+    if (!normalizedReason) {
+      showPulseNote('Опишите причину жалобы', 'info');
+      return;
+    }
+
+    try {
+      const result = await AncialAPI.reportAction<{ message?: string }>({
+        comment: normalizedReason,
+        id: trackId,
+        type: 'track',
+      });
+      showPulseNote(result?.message || lang?.reportsended || 'Жалоба отправлена', 'success');
+    } catch {
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    }
+  }, [isAuthenticated, lang, showPulseNote]);
+
   const openEditTrack = useCallback((track: PulseTrack) => {
     setTrackToEdit(track);
   }, []);
@@ -730,6 +760,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                     onOpenArtist={openArtistPage}
                     onPlayTrack={playTrackAtIndex}
                     onQueueTrackNext={queueTrackNext}
+                    onReportTrack={reportTrack}
                     track={track}
                     trackIndex={index}
                     user={user}

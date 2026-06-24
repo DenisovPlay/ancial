@@ -17,7 +17,7 @@ export function PulseHeader({
   centerLogoOnMobile,
 }: {
   isAuthenticated: boolean;
-  lang?: any;
+  lang?: Record<string, string> | null;
   onLogoClick: () => void;
   onOpenMyPulse: () => void;
   onSubmitSearch: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -32,7 +32,7 @@ export function PulseHeader({
 
   return (
     <div
-      className="sticky top-0 flex min-h-[60px] w-full max-w-screen-2xl justify-between items-center gap-3 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0"
+      className="sticky top-0 flex min-h-[60px] w-full max-w-screen-2xl items-center justify-between bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0"
       style={{ zIndex: 1300 }}
     >
       <button
@@ -51,7 +51,7 @@ export function PulseHeader({
       <form
         onSubmit={onSubmitSearch}
         className={cn(
-          "h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200",
+          "ml-3 mr-3 h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200",
           hideSearchOnMobile ? "hidden md:flex" : "flex"
         )}
         style={{ zIndex: 11 }}

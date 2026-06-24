@@ -731,6 +731,34 @@ function PulseLyricsDesktop({
 }
 
 const EQ_BANDS = [60, 230, 910, 3600, 14000];
+type WebkitAudioWindow = Window & typeof globalThis & {
+  webkitAudioContext?: typeof AudioContext;
+};
+
+function hasCoarsePointer() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+
+  try {
+    return window.matchMedia('(pointer: coarse)').matches;
+  } catch {
+    return false;
+  }
+}
+
+function shouldDisableWebAudioForDevice() {
+  if (typeof navigator === 'undefined') {
+    return false;
+  }
+
+  const userAgent = navigator.userAgent || '';
+  const maybeMobileByUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  const maybeTouchDesktop = userAgent.includes('Mac') && typeof document !== 'undefined' && 'ontouchend' in document;
+  const maybeMobileByPointer = typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 0 && hasCoarsePointer();
+
+  return maybeMobileByUA || maybeTouchDesktop || maybeMobileByPointer;
+}
 
 function readSavedEqGains() {
   if (typeof window === 'undefined') return [0, 0, 0, 0, 0];
@@ -833,9 +861,7 @@ export function PulsePlayerProvider({
 
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-      setIsMobileDevice(isMobile);
+      setIsMobileDevice(shouldDisableWebAudioForDevice());
     }
   }, []);
   const eqGainsRef = useRef<number[]>(eqGains);
@@ -846,14 +872,14 @@ export function PulsePlayerProvider({
 
   const initWebAudio = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-    
-    if (isMobile) return;
+    if (shouldDisableWebAudioForDevice()) return;
 
     if (!audioRef.current || audioContextRef.current) return;
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextConstructor = window.AudioContext || (window as WebkitAudioWindow).webkitAudioContext;
+      if (!AudioContextConstructor) return;
+
+      const audioCtx = new AudioContextConstructor();
       audioContextRef.current = audioCtx;
       const source = audioCtx.createMediaElementSource(audioRef.current);
       sourceNodeRef.current = source;
@@ -906,6 +932,30 @@ export function PulsePlayerProvider({
     eqFiltersRef.current.forEach((filter) => {
       filter.gain.value = 0;
     });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      try {
+        sourceNodeRef.current?.disconnect();
+      } catch {
+        // ignore cleanup errors
+      }
+
+      eqFiltersRef.current.forEach((filter) => {
+        try {
+          filter.disconnect();
+        } catch {
+          // ignore cleanup errors
+        }
+      });
+
+      if (audioContextRef.current) {
+        void audioContextRef.current.close().catch(() => {
+          // ignore cleanup errors
+        });
+      }
+    };
   }, []);
 
   const [isVisible, setIsVisible] = useState(false);

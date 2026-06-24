@@ -12,14 +12,11 @@ import { AncialAPI } from '../../lib/api-v2';
 import { SITE_CONFIG } from '../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../pulse-upload-track-modal';
 import { PulseHeader } from '../pulse-header';
-import { writePulseJsonCache } from '../pulse-cache';
+import { readPulseJsonCache, writePulseJsonCache } from '../pulse-cache';
 import {
-  ActionIcon,
   PulseArtistTile,
-  PulseLogo,
   PulsePlaylistTile,
   PulseTrackRow,
-  cn,
   normalizeText,
   toNumber,
   type PulseArtistCardData,
@@ -34,6 +31,10 @@ type PulseSearchResponse = {
 };
 
 const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
+
+function getPulseSearchCacheKey(query: string) {
+  return `pulse_search:${encodeURIComponent(query || '__empty__')}`;
+}
 
 function isGenlistPlaylist(card: PulsePlaylistCardData) {
   return String(card.type ?? '') === '4';
@@ -67,7 +68,9 @@ export default function PulseSearchContent() {
   } = usePulsePlayer();
 
   const [artists, setArtists] = useState<PulseArtistCardData[]>([]);
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => (
+    (readPulseJsonCache<number[]>(FAVORITES_CACHE_KEY) ?? []).map((id) => toNumber(id)).filter(Boolean)
+  ));
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>([]);
@@ -98,9 +101,21 @@ export default function PulseSearchContent() {
 
   useEffect(() => {
     let cancelled = false;
+    const searchCacheKey = getPulseSearchCacheKey(query);
+    const cachedSearch = readPulseJsonCache<PulseSearchResponse>(searchCacheKey);
 
     const runSearch = async () => {
-      setLoading(true);
+      if (cachedSearch) {
+        setArtists(Array.isArray(cachedSearch.artists) ? cachedSearch.artists : []);
+        setPlaylists(Array.isArray(cachedSearch.playlists) ? cachedSearch.playlists : []);
+        setTracks(Array.isArray(cachedSearch.tracks) ? cachedSearch.tracks : []);
+        setLoading(false);
+      } else {
+        setArtists([]);
+        setPlaylists([]);
+        setTracks([]);
+        setLoading(true);
+      }
 
       const [favoritesResult, searchResult] = await Promise.allSettled([
         AncialAPI.pulseGetLibrary<{ ids?: Array<number | string> }>('favorites'),
@@ -118,13 +133,21 @@ export default function PulseSearchContent() {
       }
 
       if (searchResult.status === 'fulfilled') {
-        setArtists(Array.isArray(searchResult.value.artists) ? searchResult.value.artists : []);
-        setPlaylists(Array.isArray(searchResult.value.playlists) ? searchResult.value.playlists : []);
-        setTracks(Array.isArray(searchResult.value.tracks) ? searchResult.value.tracks : []);
+        const nextSearchResult: PulseSearchResponse = {
+          artists: Array.isArray(searchResult.value.artists) ? searchResult.value.artists : [],
+          playlists: Array.isArray(searchResult.value.playlists) ? searchResult.value.playlists : [],
+          tracks: Array.isArray(searchResult.value.tracks) ? searchResult.value.tracks : [],
+        };
+        writePulseJsonCache(searchCacheKey, nextSearchResult);
+        setArtists(nextSearchResult.artists ?? []);
+        setPlaylists(nextSearchResult.playlists ?? []);
+        setTracks(nextSearchResult.tracks ?? []);
       } else {
-        setArtists([]);
-        setPlaylists([]);
-        setTracks([]);
+        if (!cachedSearch) {
+          setArtists([]);
+          setPlaylists([]);
+          setTracks([]);
+        }
       }
 
       setLoading(false);
@@ -206,8 +229,43 @@ export default function PulseSearchContent() {
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
 
   const refreshSearchAfterMutation = useCallback(() => {
+    writePulseJsonCache(getPulseSearchCacheKey(query), {
+      artists,
+      playlists,
+      tracks,
+    });
     setSearchReloadToken((token) => token + 1);
-  }, []);
+  }, [artists, playlists, query, tracks]);
+
+  const reportTrack = useCallback(async (track: PulseTrack) => {
+    if (!isAuthenticated) {
+      showPulseNote('Войдите, чтобы отправить жалобу', 'info');
+      return;
+    }
+
+    const trackId = toNumber(track.sid);
+    if (!trackId) return;
+
+    const reason = window.prompt('Причина жалобы');
+    if (reason === null) return;
+
+    const normalizedReason = reason.trim();
+    if (!normalizedReason) {
+      showPulseNote('Опишите причину жалобы', 'info');
+      return;
+    }
+
+    try {
+      const result = await AncialAPI.reportAction<{ message?: string }>({
+        comment: normalizedReason,
+        id: trackId,
+        type: 'track',
+      });
+      showPulseNote(result?.message || lang?.reportsended || 'Жалоба отправлена', 'success');
+    } catch {
+      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    }
+  }, [isAuthenticated, lang, showPulseNote]);
 
   const openEditTrack = useCallback((track: PulseTrack) => {
     setTrackToEdit(track);
@@ -318,6 +376,7 @@ export default function PulseSearchContent() {
                     void playTrack(nextTrack.sid ?? 0);
                   }}
                   onQueueTrackNext={(trackId) => playNextTrack(trackId)}
+                  onReportTrack={reportTrack}
                   track={track}
                   trackIndex={index}
                   user={user}
