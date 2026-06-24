@@ -480,7 +480,7 @@ export function PulseTrackRow({
                 type="button"
                 aria-label={action.label}
                 onClick={action.onClick}
-                className="flex h-10 w-full cursor-pointer items-center justify-center rounded-2xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
+                className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
               >
                 <ActionIcon className="h-6 w-6" name={action.icon} />
               </button>
@@ -505,7 +505,7 @@ export function PulseTrackRow({
               type="button"
               aria-label={action.label}
               onClick={action.onClick}
-              className="flex h-10 w-full cursor-pointer items-center justify-center rounded-2xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
+              className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
             >
               <ActionIcon className="h-6 w-6" name={action.icon} />
             </button>
