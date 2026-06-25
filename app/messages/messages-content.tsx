@@ -2716,7 +2716,7 @@ export default function MessagesContent() {
     <div className="flex h-full w-full items-center justify-center lg:py-3 lg:pr-3">
       <div
         className={cn(
-          'messages-route flex h-[100dvh] w-full items-center justify-center bg-center bg-cover lg:h-[97.75dvh] lg:max-w-[72rem] lg:rounded-3xl lg:border lg:border-zinc-600/30 lg:overflow-hidden xl:max-w-[76rem]',
+          'messages-route flex h-[100dvh] w-full items-center justify-center bg-center bg-cover lg:h-[97.5dvh] lg:max-w-[72rem] lg:rounded-3xl lg:border lg:border-zinc-600/30 lg:overflow-hidden xl:max-w-[76rem]',
           routeHash && 'no-mobile-nav-padding',
         )}
       >
