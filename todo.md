@@ -1,24 +1,36 @@
-- /pulse/search
-  fix cache
-
-- /messages
-  fix dialogs list cache to act like in /friends, /groups, /pulse/*
-
-- chrome on Android crashes after play any song on /pulse (after update with equalizer)
-
-- fix pageswitch-animation on subpages like /pulse/search and /pulse/my to act like switch from /feed to /messages
-
-- change gap-3 to mr-3 and ml-3 in pulse header (that one with search input in it)
-
-- change tracks dropdown to this layout:
- [Edit] | [Delete] <- two buttons with grid grid-cols-2 and only icons
- [play next] 
- [add to playlist]
- [download]
- [artist page] | [share] | [report]  <- three buttons with grid grid-cols-3 and only icons (when artistpage available, if not - use layout with grid-cols-2)
-
 - add translations (on php-backend) for:
   - [ ] /pulse/playlist
   - [ ] track dropdown
   - [ ] pulse disclaimer 
   - [ ] /messages - stickers
+
+- слушаем вместе:
+  - возможность пригласить друга или группу в совместное прослушивание
+  - синхронный старт, пауза, переключение и перемотка треков у всех участников
+  - общий экран с текущим треком, участниками сессии и статусом подключения
+  - понятный сценарий входа из плеера, профиля и чата
+
+- вернуть кошелек:
+  - восстановить отдельный раздел кошелька с балансом, историей операций и основными действиями
+  - вернуть пополнение, переводы и остальные ключевые сценарии, которые были раньше
+  - продумать, как это выглядит на мобиле и на пк без перегруза интерфейса
+
+- интеграция кошелька в мессенджер:
+  - переводы прямо из диалога без выхода в отдельный раздел
+  - запрос денег у собеседника и понятный сценарий подтверждения
+  - системные сообщения в чате о переводе, запросе и успешной оплате
+  - быстрые действия в поле ввода или в меню диалога
+
+- статусы / presence:
+  - online: показывать, что человек сейчас в сети
+  - typing: показывать набор текста в реальном времени в диалогах
+  - listening: показывать, что человек сейчас слушает, с треком или без него в зависимости от приватности
+  - last seen: показывать последнее появление в сети с настройками приватности
+  - продумать, где эти статусы видны: список диалогов, шапка чата, профиль, pulse
+
+- звонки и история звонков:
+  - уведомление о пропущенном звонке
+  - системное сообщение в чате о том, что звонок был
+  - отображение типа звонка: входящий, исходящий, пропущенный, отклоненный
+  - длительность звонка, время начала и время завершения
+  - понятный список недавних звонков и быстрый перезвон
