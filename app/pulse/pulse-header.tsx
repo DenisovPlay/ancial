@@ -39,8 +39,8 @@ export function PulseHeader({
         type="button"
         onClick={onLogoClick}
         className={cn(
-          'shrink-0 overflow-hidden duration-300 active:scale-95 mr-3',
-          isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100',
+          'shrink-0 overflow-hidden duration-300 active:scale-95',
+          isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100 mr-3',
           centerLogoOnMobile && "absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 md:left-auto"
         )}
         aria-label="Pulse home"
