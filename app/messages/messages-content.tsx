@@ -2713,7 +2713,7 @@ export default function MessagesContent() {
 
   return (
     <>
-    <div className="flex h-full w-full items-center justify-center lg:py-3">
+    <div className="flex h-full w-full items-center justify-center lg:py-3 lg:pr-3">
       <div
         className={cn(
           'messages-route flex h-[100dvh] w-full items-center justify-center bg-center bg-cover lg:h-[97.5dvh] lg:max-w-[96rem] lg:rounded-3xl lg:border lg:border-zinc-600/30 lg:overflow-hidden xl:max-w-[76rem]',
