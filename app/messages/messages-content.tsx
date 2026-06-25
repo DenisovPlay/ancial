@@ -2713,9 +2713,10 @@ export default function MessagesContent() {
 
   return (
     <>
+    <div className="flex h-full w-full items-center justify-center lg:py-3">
       <div
         className={cn(
-          'messages-route flex h-[100dvh] w-full items-center justify-center bg-center bg-cover',
+          'messages-route flex h-[100dvh] w-full items-center justify-center bg-center bg-cover lg:h-[97.75dvh] lg:max-w-[72rem] lg:rounded-3xl lg:border lg:border-zinc-600/30 lg:overflow-hidden xl:max-w-[76rem]',
           routeHash && 'no-mobile-nav-padding',
         )}
       >
@@ -2723,7 +2724,7 @@ export default function MessagesContent() {
           <div
             id="dialogs-pane"
             className={cn(
-              'flex h-full w-full max-w-3xl flex-col duration-300 lg:max-w-sm lg:bg-zinc-900 lg:shadow',
+              'flex h-full w-full max-w-3xl flex-col duration-300 lg:w-80 lg:max-w-sm lg:flex-none lg:bg-zinc-900 lg:shadow',
               routeHash && 'hidden lg:flex',
             )}
           >
@@ -2846,8 +2847,8 @@ export default function MessagesContent() {
           <div
             id="dialog-pane"
             className={cn(
-              'w-full max-w-screen-lg',
-              routeHash ? 'flex h-full flex-col' : 'hidden lg:flex lg:h-full lg:flex-col',
+              'w-full lg:min-w-0 lg:flex-1 lg:max-w-[52rem] xl:max-w-[56rem]',
+              routeHash ? 'flex h-full flex-col' : 'hidden w-full lg:flex lg:h-full lg:flex-col',
             )}
           >
             {!routeHash ? (
@@ -3128,6 +3129,7 @@ export default function MessagesContent() {
           </div>
         </div>
       </div>
+    </div>
 
       <DialogImageViewerModal
         activeImageIndex={resolvedActiveDialogImageIndex}
