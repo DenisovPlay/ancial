@@ -4,10 +4,10 @@ import { usePathname } from 'next/navigation';
 
 export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const rootSegment = pathname.split('/')[1] || '';
+  const animationKey = pathname.startsWith('/messages') ? 'messages' : pathname;
 
   return (
-    <div key={rootSegment} className="flex-1 flex flex-col animate-page-enter">
+    <div key={animationKey} className="flex-1 flex flex-col animate-page-enter">
       {children}
     </div>
   );

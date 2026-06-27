@@ -22,6 +22,7 @@ export default function HistoryContent() {
   const [selectedTransaction, setSelectedTransaction] = useState<WalletTransaction | null>(null);
   const hasLoadedTransactions = useRef(false);
   const latestTransactionsRequest = useRef(0);
+  const filterButtonsRef = useRef<HTMLDivElement>(null);
 
   const strings = useMemo(() => {
     return {
@@ -78,6 +79,21 @@ export default function HistoryContent() {
     const requestId = latestTransactionsRequest.current + 1;
     latestTransactionsRequest.current = requestId;
 
+    const cacheKey = `wallet_history_cache_${activeFilter}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setTransactions(parsed);
+          hasLoadedTransactions.current = true;
+          setInitialLoading(false);
+        }
+      } catch (e) {
+        console.error('Failed to parse history cache:', e);
+      }
+    }
+
     const loadTransactions = async () => {
       if (hasLoadedTransactions.current) {
         setIsRefreshing(true);
@@ -92,8 +108,10 @@ export default function HistoryContent() {
           return;
         }
 
-        setTransactions(response.transactions || []);
+        const fetchedTransactions = response.transactions || [];
+        setTransactions(fetchedTransactions);
         hasLoadedTransactions.current = true;
+        localStorage.setItem(cacheKey, JSON.stringify(fetchedTransactions));
       } catch (err) {
         if (latestTransactionsRequest.current !== requestId) {
           return;
@@ -112,6 +130,25 @@ export default function HistoryContent() {
 
     loadTransactions();
   }, [activeFilter, authLoading, isAuthenticated]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const container = filterButtonsRef.current;
+      const activeButton = container?.querySelector<HTMLElement>('[data-filter-active="true"]');
+
+      if (!container || !activeButton) return;
+
+      const scrollLeft =
+        activeButton.offsetLeft - container.offsetWidth / 2 + activeButton.offsetWidth / 2;
+
+      container.scrollTo({
+        left: scrollLeft,
+        behavior: 'smooth',
+      });
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [activeFilter]);
 
   const ownedAccountIds = useMemo(() => new Set(accounts.map((account) => account.id)), [accounts]);
 
@@ -264,13 +301,7 @@ export default function HistoryContent() {
     }
   };
 
-  if (initialLoading) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-purple-500 border-t-transparent" />
-      </div>
-    );
-  }
+
 
   return (
     <div className="flex flex-col w-full items-center justify-start pb-6 gap-3 bg-gradient-to-b from-black to-black via-black min-h-screen text-white">
@@ -285,19 +316,19 @@ export default function HistoryContent() {
           {strings.history}
         </span>
         <div className="flex-grow hidden lg:flex" />
-        <div className="overflow-auto px-3 md:px-0 py-3 -my-3 flex viewport duration-300">
+        <div ref={filterButtonsRef} className="overflow-auto px-3 md:px-0 py-3 -my-3 flex viewport duration-300">
           <div className="flex flex-row flex-nowrap gap-3">
             {filterButtons.map((filter) => {
               const isActive = activeFilter === filter.id;
               return (
                 <button
                   key={filter.id}
+                  data-filter-active={isActive ? 'true' : 'false'}
                   onClick={() => setActiveFilter(filter.id)}
-                  className={`border border-zinc-600/30 shrink-0 flex items-center gap-3 shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200 ${
-                    isActive
+                  className={`border border-zinc-600/30 shrink-0 flex items-center gap-3 shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200 ${isActive
                       ? 'bg-zinc-800 text-white'
                       : 'text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white'
-                  }`}
+                    }`}
                 >
                   {renderFilterIcon(filter.id)}
                   <span>{filter.label}</span>
@@ -318,7 +349,20 @@ export default function HistoryContent() {
               <div className="h-full w-1/3 bg-purple-500 animate-[pulse_0.9s_ease-in-out_infinite]" />
             </div>
           ) : null}
-          {transactions.length > 0 ? (
+          {initialLoading && transactions.length === 0 ? (
+            <div className="w-full flex flex-col p-3 gap-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex gap-3 items-center w-full animate-pulse py-1">
+                  <div className="h-10 w-10 lg:h-12 lg:w-12 bg-zinc-700/60 rounded-full shrink-0" />
+                  <div className="flex flex-col gap-1.5 flex-grow">
+                    <div className="h-4 w-32 lg:w-48 bg-zinc-700/60 rounded" />
+                    <div className="h-3 w-20 bg-zinc-700/60 rounded" />
+                  </div>
+                  <div className="h-5 w-16 bg-zinc-700/60 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : transactions.length > 0 ? (
             <div className={`w-full transition-opacity duration-200 ${isRefreshing ? 'opacity-85' : 'opacity-100'}`}>
               {transactions.map((trans) => (
                 <div
@@ -365,7 +409,7 @@ export default function HistoryContent() {
 
       <Modal isOpen={isTransactionDetailsModalOpen} onClose={() => setIsTransactionDetailsModalOpen(false)} title="Детали операции" width="sm">
         {selectedTransaction ? (
-          <div className="flex flex-col gap-4 text-zinc-100 text-left">
+          <div className="flex flex-col gap-3 text-zinc-100 text-left">
             <div className="bg-zinc-800/60 rounded-3xl p-4 w-full text-sm space-y-2.5 border border-zinc-600/30">
               <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
                 <span className="text-zinc-400">ID Операции:</span>

@@ -654,4 +654,26 @@ export class AncialAPI {
   static async resolveQRCode(qrData: string): Promise<{ type: string; account_id?: number; account_name?: string; owner_name?: string }> {
     return this.request<{ type: string; account_id?: number; account_name?: string; owner_name?: string }>(`/wallet/QRCode.php?action=resolve&qr_data=${encodeURIComponent(qrData)}`);
   }
+
+  static async createWithdrawal(params: {
+    account_id: number;
+    gateway_id: number;
+    amount: number;
+    details: string;
+  }): Promise<{ success?: boolean; message?: string; transaction_id?: number }> {
+    const body = new URLSearchParams();
+    body.set('account_id', String(params.account_id));
+    body.set('gateway_id', String(params.gateway_id));
+    body.set('amount', String(params.amount));
+    body.set('details', params.details);
+
+    return this.request<{ success?: boolean; message?: string; transaction_id?: number }>('/wallet/Withdraw.php?action=create', {
+      method: 'POST',
+      body
+    });
+  }
+
+  static async getGatewayForm(gatewayId: number): Promise<{ gateway: any }> {
+    return this.request<{ gateway: any }>(`/wallet/GetGateWayForm.php?gateway=${gatewayId}`);
+  }
 }

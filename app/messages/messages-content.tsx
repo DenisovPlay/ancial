@@ -39,6 +39,7 @@ type DialogMeta = {
   hash?: string | null;
   id?: number | string | null;
   img?: string | null;
+  blocked?: boolean | number | string | null;
 };
 
 type DialogUser = {
@@ -736,6 +737,10 @@ function getMessageCacheKey(userId: number, dialogId: number) {
   return `msg-cache:${userId}:${dialogId}`;
 }
 
+function getMessageHashCacheKey(userId: number, dialogHash: string) {
+  return `msg-cache-hash:${userId}:${normalizeHash(dialogHash)}`;
+}
+
 function readMessageCache(cacheKey: string) {
   if (typeof window === 'undefined' || !cacheKey) return null;
 
@@ -747,6 +752,7 @@ function readMessageCache(cacheKey: string) {
       dialog_hash?: string;
       dialog_id?: number | string;
       foreignUser?: DialogUser | null;
+      dialogMeta?: DialogMeta | null;
       messages?: DialogMessage[];
       time?: number;
     };
@@ -759,6 +765,12 @@ function readMessageCache(cacheKey: string) {
   } catch {
     return null;
   }
+}
+
+function readMessageCacheByHash(userId: number, dialogHash: string) {
+  if (typeof window === 'undefined' || !dialogHash || !userId) return null;
+  const hashKey = getMessageHashCacheKey(userId, dialogHash);
+  return readMessageCache(hashKey);
 }
 
 function getMessageId(message: DialogMessage) {
@@ -812,29 +824,40 @@ function writeMessageCache({
   dialogHash,
   dialogId,
   foreignUser,
+  dialogMeta,
   keepSide,
   messages,
+  userId,
 }: {
   cacheKey: string;
   dialogHash: string;
   dialogId: number;
   foreignUser?: DialogUser | null;
+  dialogMeta?: DialogMeta | null;
   keepSide: 'newest' | 'oldest';
   messages: DialogMessage[];
+  userId?: number;
 }) {
-  if (typeof window === 'undefined' || !cacheKey) return;
+  if (typeof window === 'undefined') return;
 
   try {
-    window.localStorage.setItem(
-      cacheKey,
-      JSON.stringify({
-        dialog_hash: dialogHash,
-        dialog_id: dialogId,
-        foreignUser: foreignUser ?? null,
-        messages: trimMessageCache(sortMessages(messages), keepSide),
-        time: Date.now(),
-      }),
-    );
+    const payload = JSON.stringify({
+      dialog_hash: dialogHash,
+      dialog_id: dialogId,
+      foreignUser: foreignUser ?? null,
+      dialogMeta: dialogMeta ?? null,
+      messages: trimMessageCache(sortMessages(messages), keepSide),
+      time: Date.now(),
+    });
+
+    if (cacheKey) {
+      window.localStorage.setItem(cacheKey, payload);
+    }
+
+    if (userId && dialogHash) {
+      const hashKey = getMessageHashCacheKey(userId, dialogHash);
+      window.localStorage.setItem(hashKey, payload);
+    }
   } catch {
     // ignore cache write failures
   }
@@ -1626,6 +1649,7 @@ export default function MessagesContent() {
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const wsRefreshTimerRef = useRef<number | null>(null);
   const scrollActionRef = useRef<ScrollAction | null>(null);
+  const currentDialogMetaRef = useRef<DialogMeta | null>(null);
   const currentDialogIdRef = useRef(0);
   const currentDialogHashRef = useRef('');
   const currentForeignUserRef = useRef<DialogUser | null>(null);
@@ -1708,6 +1732,7 @@ export default function MessagesContent() {
   }, []);
 
   useEffect(() => {
+    currentDialogMetaRef.current = selectedDialog;
     currentDialogIdRef.current = toNumber(selectedDialog?.id);
     currentDialogHashRef.current = normalizeHash(selectedDialog?.hash);
     currentForeignUserRef.current = foreignUser;
@@ -1715,7 +1740,7 @@ export default function MessagesContent() {
     currentMessageCacheKeyRef.current = currentDialogIdRef.current
       ? getMessageCacheKey(currentUserId, currentDialogIdRef.current)
       : '';
-  }, [currentUserId, foreignUser, selectedDialog?.hash, selectedDialog?.id]);
+  }, [currentUserId, foreignUser, selectedDialog]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -1780,6 +1805,7 @@ export default function MessagesContent() {
   const resetDialogState = () => {
     teardownWs();
     setSelectedDialog(null);
+    currentDialogMetaRef.current = null;
     setForeignUser(null);
     currentForeignUserRef.current = null;
     setDialogPresenceOnline(null);
@@ -1845,10 +1871,12 @@ export default function MessagesContent() {
 
   const persistMessages = ({
     foreignUserValue,
+    dialogMetaValue,
     keepSide,
     nextMessages,
   }: {
     foreignUserValue?: DialogUser | null;
+    dialogMetaValue?: DialogMeta | null;
     keepSide: 'newest' | 'oldest';
     nextMessages: DialogMessage[];
   }) => {
@@ -1861,9 +1889,11 @@ export default function MessagesContent() {
       cacheKey,
       dialogHash,
       dialogId,
-      foreignUser: foreignUserValue ?? foreignUser,
+      foreignUser: foreignUserValue ?? currentForeignUserRef.current ?? foreignUser,
+      dialogMeta: dialogMetaValue ?? currentDialogMetaRef.current ?? selectedDialog,
       keepSide,
       messages: nextMessages,
+      userId: currentUserId,
     });
   };
 
@@ -2061,16 +2091,58 @@ export default function MessagesContent() {
   };
 
   const loadDialogByHash = async (hash: string, session: number) => {
-    setDialogLoading(true);
+    if (session !== dialogSessionRef.current) return;
+
+    const normalizedHash = normalizeHash(hash);
     setDialogError('');
-    setBlockedDialog(false);
-    setSelectedDialog(null);
-    setForeignUser(null);
-    setDialogPresenceOnline(null);
-    setMessages([]);
     setHasMoreMessages(true);
     setLoadingOlder(false);
     setLoadingNewer(false);
+
+    const dialogFromList = dialogs.find((d) => normalizeHash(d.hash) === normalizedHash);
+    let cached = readMessageCacheByHash(currentUserId, normalizedHash);
+    if (!cached && dialogFromList?.id) {
+      cached = readMessageCache(getMessageCacheKey(currentUserId, toNumber(dialogFromList.id)));
+    }
+
+    const rawImg = (cached?.dialogMeta as any)?.img || (cached?.dialogMeta as any)?.bg || (dialogFromList as any)?.bg || (dialogFromList as any)?.img || '';
+    const cachedDialogMeta: DialogMeta | null = (cached?.dialogMeta || dialogFromList) ? ({
+      id: cached?.dialogMeta?.id || dialogFromList?.id,
+      hash: cached?.dialogMeta?.hash || dialogFromList?.hash || normalizedHash,
+      img: normalizeAssetUrl(rawImg, ''),
+      blocked: Boolean((cached?.dialogMeta as any)?.blocked ?? (dialogFromList as any)?.blocked),
+    } as any) : null;
+
+    const cachedForeignUser: DialogUser | null = cached?.foreignUser || mapDialogListItemToUser(dialogFromList);
+
+    if (session !== dialogSessionRef.current) return;
+
+    if (cachedDialogMeta && cachedForeignUser) {
+      setSelectedDialog(cachedDialogMeta);
+      currentDialogMetaRef.current = cachedDialogMeta;
+      setForeignUser(cachedForeignUser);
+      currentForeignUserRef.current = cachedForeignUser;
+      currentDialogIdRef.current = toNumber(cachedDialogMeta.id);
+      currentDialogHashRef.current = normalizedHash;
+      currentForeignUserIdRef.current = toNumber(cachedForeignUser?.id);
+      currentMessageCacheKeyRef.current = getMessageCacheKey(currentUserId, currentDialogIdRef.current);
+      setBlockedDialog(Boolean((cachedDialogMeta as any).blocked));
+
+      const cachedMsgs = cached?.messages ? sortMessages(cached.messages) : [];
+      if (cachedMsgs.length) {
+        setMessages(cachedMsgs);
+        scrollActionRef.current = { type: 'bottom' };
+      }
+      setDialogLoading(false);
+    } else {
+      setDialogLoading(true);
+      setBlockedDialog(false);
+      setSelectedDialog(null);
+      currentDialogMetaRef.current = null;
+      setForeignUser(null);
+      setDialogPresenceOnline(null);
+      setMessages([]);
+    }
 
     try {
       const result = await AncialAPI.getDialogByHash<DialogByHashResponse>(hash);
@@ -2079,15 +2151,22 @@ export default function MessagesContent() {
 
       const raw = result as any;
       const payload = raw.data ?? raw;
-      const dialogMeta = payload.dialog ?? null;
+      const dialogMetaRaw = payload.dialog ?? null;
 
-      if (!dialogMeta?.id) {
+      if (!dialogMetaRaw?.id) {
         throw new Error(payload.error ?? 'Диалог не найден');
       }
 
-      const nextForeignUser = mergeDialogUser(null, payload.foreignUser);
+      const serverImg = (dialogMetaRaw as any).img || (dialogMetaRaw as any).bg || (cachedDialogMeta as any)?.img || '';
+      const dialogMeta: DialogMeta = {
+        ...dialogMetaRaw,
+        img: normalizeAssetUrl(serverImg, ''),
+      };
+
+      const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, payload.foreignUser);
 
       setSelectedDialog(dialogMeta);
+      currentDialogMetaRef.current = dialogMeta;
       setForeignUser(nextForeignUser);
       currentForeignUserRef.current = nextForeignUser;
 
@@ -2114,6 +2193,7 @@ export default function MessagesContent() {
       }
     }
   };
+
 
   const handlePresenceUpdate = (userId: number, payload: unknown) => {
     if (!payload || typeof payload !== 'object') return;

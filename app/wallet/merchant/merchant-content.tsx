@@ -26,16 +26,19 @@ export default function MerchantContent() {
   }, [lang]);
 
   const loadData = async (showLoading = false) => {
-    if (showLoading) setLoading(true);
+    if (showLoading && merchants.length === 0) setLoading(true);
     try {
       const res = await AncialAPI.getMerchants();
-      setMerchants(res.merchants || []);
-      setStats(res.stats || { total_merchants: 0, total_payments: 0, total_earned: 0 });
+      const fetchedMerchants = res.merchants || [];
+      const fetchedStats = res.stats || { total_merchants: 0, total_payments: 0, total_earned: 0 };
+      setMerchants(fetchedMerchants);
+      setStats(fetchedStats);
       setError(null);
+      localStorage.setItem('wallet_merchants_cache', JSON.stringify({ merchants: fetchedMerchants, stats: fetchedStats }));
     } catch (err: any) {
-      setError(err.message || 'Ошибка загрузки панели мерчанта');
+      if (merchants.length === 0) setError(err.message || 'Ошибка загрузки панели мерчанта');
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -45,17 +48,58 @@ export default function MerchantContent() {
       router.push('/login?backurl=/wallet/merchant');
       return;
     }
-    loadData(true);
+
+    const cached = localStorage.getItem('wallet_merchants_cache');
+    let hasCache = false;
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.merchants)) {
+          setMerchants(parsed.merchants);
+          if (parsed.stats) setStats(parsed.stats);
+          hasCache = true;
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error('Failed to parse merchants cache', e);
+      }
+    }
+
+    loadData(!hasCache);
   }, [authLoading, isAuthenticated]);
 
   const handleTopage = (path: string) => {
     router.push(path);
   };
 
-  if (loading) {
+  if (loading && merchants.length === 0) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-purple-500 border-t-transparent" />
+      <div className="p-3 lg:px-0 flex flex-col items-center gap-6 bg-black min-h-screen text-zinc-100">
+        <div className="flex items-center gap-3 max-w-screen-2xl w-full pt-3">
+          <span style={{ marginTop: '0.1rem' }} className="shrink-0 text-3xl font-bold bg-gradient-to-br from-lime-500 to-emerald-500 text-transparent bg-clip-text">
+            Мерчант
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 w-full max-w-screen-2xl">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-zinc-900/20 border border-zinc-600/30 shadow rounded-3xl p-4 h-24 animate-pulse" />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full max-w-screen-2xl">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="flex flex-col gap-3 p-4 border border-zinc-600/30 bg-zinc-800/70 rounded-3xl h-28 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl h-14 w-14 bg-zinc-700/60 shrink-0" />
+                <div className="flex flex-col gap-2 flex-grow">
+                  <div className="h-4 w-24 bg-zinc-700/60 rounded" />
+                  <div className="h-3 w-16 bg-zinc-700/60 rounded" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

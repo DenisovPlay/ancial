@@ -49,7 +49,7 @@ function AboutContentInner() {
       setLoading(false);
       return;
     }
-    if (showLoading) setLoading(true);
+    if (showLoading && !merchant) setLoading(true);
     try {
       const res = await AncialAPI.getMerchantInfo(merchantId);
       if (res && res.merchant) {
@@ -66,13 +66,15 @@ function AboutContentInner() {
         setCUrl(res.merchant.c_url || '');
         setFeePaid(res.merchant.fee_paid || 'buyer');
         setError(null);
+
+        localStorage.setItem(`wallet_merchant_detail_cache_${merchantId}`, JSON.stringify(res));
       } else {
-        setError('Мерчант не найден');
+        if (!merchant) setError('Мерчант не найден');
       }
     } catch (err: any) {
-      setError(err.message || 'Ошибка загрузки настроек мерчанта');
+      if (!merchant) setError(err.message || 'Ошибка загрузки настроек мерчанта');
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -82,7 +84,35 @@ function AboutContentInner() {
       router.push(`/login?backurl=/wallet/merchant/about?id=${merchantId}`);
       return;
     }
-    loadData(true);
+
+    const cacheKey = `wallet_merchant_detail_cache_${merchantId}`;
+    const cached = localStorage.getItem(cacheKey);
+    let hasCache = false;
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.merchant) {
+          setMerchant(parsed.merchant);
+          if (parsed.stats) {
+            setTotalPayments(parsed.stats.total_payments || 0);
+            setTotalEarned(parsed.stats.total_earned || 0);
+          }
+          if (parsed.orders) setOrders(parsed.orders);
+          setImg(parsed.merchant.img || '');
+          setDescription(parsed.merchant.description || '');
+          setSUrl(parsed.merchant.s_url || '');
+          setEUrl(parsed.merchant.e_url || '');
+          setCUrl(parsed.merchant.c_url || '');
+          setFeePaid(parsed.merchant.fee_paid || 'buyer');
+          hasCache = true;
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error('Failed to parse merchant detail cache', e);
+      }
+    }
+
+    loadData(!hasCache);
   }, [authLoading, isAuthenticated, merchantId]);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -183,10 +213,16 @@ function AboutContentInner() {
     }
   };
 
-  if (loading) {
+  if (loading && !merchant) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-purple-500 border-t-transparent" />
+      <div className="p-3 lg:px-0 flex flex-col items-center gap-6 bg-black min-h-screen text-zinc-100">
+        <div className="flex items-center gap-3 max-w-screen-2xl w-full pt-3">
+          <div className="h-8 w-32 bg-zinc-800/70 rounded-xl animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 w-full max-w-screen-2xl">
+          <div className="lg:col-span-2 bg-zinc-900/20 border border-zinc-600/30 rounded-3xl p-4 h-48 animate-pulse" />
+          <div className="bg-zinc-900/20 border border-zinc-600/30 rounded-3xl p-4 h-48 animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -206,7 +242,7 @@ function AboutContentInner() {
 
   return (
     <div className="p-3 lg:px-0 flex flex-col items-center gap-6 bg-black min-h-screen text-zinc-100 pb-16">
-      
+
       {/* Header bar */}
       <div className="flex items-center gap-3 max-w-screen-2xl w-full pt-3">
         <span
@@ -279,14 +315,14 @@ function AboutContentInner() {
 
       {/* Main Settings Form + Orders Table split layout */}
       <div className="w-full max-w-screen-2xl grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Left Side: Settings Form */}
-        <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col gap-3 w-full">
           <div className="flex gap-3 items-center w-full duration-300">
             <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">Настройки</span>
           </div>
 
-          <form onSubmit={handleSaveSettings} className="flex flex-col gap-4 w-full text-left bg-zinc-900/20 border border-zinc-800 p-5 rounded-3xl">
+          <form onSubmit={handleSaveSettings} className="flex flex-col gap-3 w-full text-left bg-zinc-900/20 border border-zinc-800 p-5 rounded-3xl">
             {/* Input: Image */}
             <div className="flex flex-col w-full text-left">
               <span className="text-zinc-400 pl-4 z-20">Изображение</span>
@@ -362,7 +398,7 @@ function AboutContentInner() {
               <span className="text-zinc-400">Комиссию платит:</span>
               <div className="flex-grow" />
               <span className={feePaid === 'buyer' ? 'text-white font-bold' : 'text-zinc-500'}>Покупатель</span>
-              
+
               <div className="flex items-center h-5">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -400,14 +436,14 @@ function AboutContentInner() {
         </div>
 
         {/* Right Side: Orders list table */}
-        <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-col gap-3 w-full">
           <div className="flex gap-3 items-center w-full duration-300">
             <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">Операции</span>
           </div>
 
           <div className="flex flex-col justify-center w-full duration-300 shrink-0">
             <div className="flex flex-col items-center justify-center w-full border border-zinc-700/30 bg-zinc-800/70 rounded-3xl overflow-hidden duration-300 max-h-[500px] overflow-y-auto">
-              
+
               {orders.length > 0 ? (
                 <div className="w-full divide-y divide-zinc-750">
                   {orders.map((order) => (
@@ -419,7 +455,7 @@ function AboutContentInner() {
                         <span className="font-bold text-white text-sm md:text-base truncate">
                           [#{order.id}] {order.order_hash}
                         </span>
-                        
+
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-zinc-400 text-xs mt-1">
                           <span>
                             Сумма: <span className="text-zinc-200 font-medium">{order.amount} ₽</span>

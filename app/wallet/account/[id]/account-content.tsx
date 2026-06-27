@@ -60,7 +60,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
   }, [lang]);
 
   const loadData = useCallback(async (showLoading = false) => {
-    if (showLoading) setLoading(true);
+    if (showLoading && !currentAccount) setLoading(true);
     try {
       const overview = await AncialAPI.getWalletOverview();
       const loadedAccounts = overview.accounts || [];
@@ -69,15 +69,16 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       if (found) {
         setCurrentAccount(found);
         setError(null);
+        localStorage.setItem(`wallet_account_cache_${accountId}`, JSON.stringify(found));
       } else {
-        setError('Счёт не найден или доступ ограничен');
+        if (!currentAccount) setError('Счёт не найден или доступ ограничен');
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки счёта');
+      if (!currentAccount) setError(err instanceof Error ? err.message : 'Ошибка загрузки счёта');
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
-  }, [accountId]);
+  }, [accountId, currentAccount]);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -85,7 +86,9 @@ export default function AccountContent({ accountId }: AccountContentProps) {
         account_id: accountId,
         sort: activeFilter
       });
-      setTransactions(response.transactions || []);
+      const fetchedTrans = response.transactions || [];
+      setTransactions(fetchedTrans);
+      localStorage.setItem(`wallet_account_trans_cache_${accountId}`, JSON.stringify(fetchedTrans));
     } catch (err: unknown) {
       console.error('Failed to load account transactions:', err);
     }
@@ -98,14 +101,38 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       setError('Auth required');
       return;
     }
-    loadData(true);
-  }, [authLoading, isAuthenticated, loadData]);
 
-  useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      loadTransactions();
+    const cachedAccount = localStorage.getItem(`wallet_account_cache_${accountId}`);
+    const cachedTrans = localStorage.getItem(`wallet_account_trans_cache_${accountId}`);
+    let hasCache = false;
+
+    if (cachedAccount) {
+      try {
+        const parsedAccount = JSON.parse(cachedAccount);
+        if (parsedAccount && parsedAccount.id) {
+          setCurrentAccount(parsedAccount);
+          hasCache = true;
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error('Failed to parse cached account:', e);
+      }
     }
-  }, [isAuthenticated, authLoading, loadTransactions]);
+
+    if (cachedTrans) {
+      try {
+        const parsedTrans = JSON.parse(cachedTrans);
+        if (Array.isArray(parsedTrans)) {
+          setTransactions(parsedTrans);
+        }
+      } catch (e) {
+        console.error('Failed to parse cached account transactions:', e);
+      }
+    }
+
+    loadData(!hasCache);
+    loadTransactions();
+  }, [authLoading, isAuthenticated, accountId]);
 
   // Load QR code when receive modal opens
   useEffect(() => {
@@ -252,10 +279,61 @@ export default function AccountContent({ accountId }: AccountContentProps) {
     return `${getPartyLabel(trans.sender, trans.sender_name)}->${trans.receiver}`;
   };
 
-  if (loading) {
+  if (loading && !currentAccount) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-purple-500 border-t-transparent" />
+      <div className="flex flex-col w-full items-center justify-start min-h-screen pb-3 lg:pb-6 gap-3 bg-gradient-to-b from-black to-black via-black text-white">
+        <div className="w-full max-w-screen-2xl h-14 flex items-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[99]">
+          <span className="w-fit text-3xl font-extralight flex items-center gap-1.5 cursor-pointer">
+            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+              <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
+            </svg>
+            {strings.bankaccount}
+          </span>
+        </div>
+
+        <div className="flex max-w-screen-2xl flex-col lg:flex-row gap-3 w-full duration-300">
+          <div className="flex flex-col gap-3 w-full lg:w-fit duration-300 shrink-0">
+            <div className="px-6 lg:-mx-3 -my-3 py-3 flex flex-nowrap gap-3 justify-center items-center w-full overflow-x-auto viewport duration-300">
+              <div className="shrink-0 p-3 flex flex-col border border-zinc-600/30 bg-zinc-800/70 rounded-3xl shadow-lg duration-300 w-48 lg:w-64 h-24 lg:h-32 animate-pulse">
+                <div className="w-24 lg:w-32 h-6 lg:h-8 bg-zinc-700/60 rounded-xl mb-2" />
+                <div className="w-16 lg:w-24 h-4 bg-zinc-700/60 rounded-lg" />
+                <div className="flex-grow" />
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-4 bg-zinc-700/60 rounded-full" />
+                  <div className="flex-grow" />
+                  <div className="w-12 h-4 bg-zinc-700/60 rounded-full" />
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky flex flex-col gap-3 w-full duration-300 shrink-0 lg:pt-0" style={{ zIndex: 98, top: '56px' }}>
+              <div className="px-3 lg:px-0 flex flex-nowrap justify-start items-center gap-3 overflow-x-auto viewport w-full duration-300">
+                <div className="h-9 w-32 bg-zinc-800/70 border border-zinc-600/30 rounded-3xl animate-pulse shrink-0" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 w-full duration-300 flex-grow">
+            <div className="flex gap-3 items-center w-full duration-300 px-3 lg:px-0">
+              <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 duration-300">{strings.history}</span>
+            </div>
+
+            <div className="flex flex-col items-center justify-center w-full border border-zinc-600/30 bg-zinc-800/50 lg:bg-zinc-800/70 rounded-3xl overflow-hidden duration-300 p-3 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center justify-between w-full animate-pulse py-1">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-zinc-700/60 rounded-full shrink-0" />
+                    <div className="flex flex-col gap-1.5">
+                      <div className="h-4 w-32 bg-zinc-700/60 rounded" />
+                      <div className="h-3 w-20 bg-zinc-700/60 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-5 w-16 bg-zinc-700/60 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -331,53 +409,53 @@ export default function AccountContent({ accountId }: AccountContentProps) {
           </div>
 
           <div className="flex flex-col items-center justify-center w-full border border-zinc-600/30 bg-zinc-800/50 lg:bg-zinc-800/70 rounded-3xl overflow-hidden duration-300">
-          {transactions.length > 0 ? (
-            <div className="w-full">
-              {transactions.map((trans) => (
-                <div
-                  key={trans.id}
-                  onClick={() => {
-                    setSelectedTransaction(trans);
-                    setIsTransactionDetailsModalOpen(true);
-                  }}
-                  className="flex gap-3 items-center w-full p-3 hover:bg-zinc-800/80 duration-300 cursor-pointer active:scale-95 active:rounded-3xl"
-                >
-                  {getTransactionIcon(trans)}
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm lg:text-base text-white font-medium lg:font-semibold">
-                      {getTransactionDirectionName(trans)}
-                    </span>
-                    {trans.comment ? (
-                      <span className="text-zinc-400 text-xs lg:text-sm">{trans.comment}</span>
-                    ) : null}
+            {transactions.length > 0 ? (
+              <div className="w-full">
+                {transactions.map((trans) => (
+                  <div
+                    key={trans.id}
+                    onClick={() => {
+                      setSelectedTransaction(trans);
+                      setIsTransactionDetailsModalOpen(true);
+                    }}
+                    className="flex gap-3 items-center w-full p-3 hover:bg-zinc-800/80 duration-300 cursor-pointer active:scale-95 active:rounded-3xl"
+                  >
+                    {getTransactionIcon(trans)}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm lg:text-base text-white font-medium lg:font-semibold">
+                        {getTransactionDirectionName(trans)}
+                      </span>
+                      {trans.comment ? (
+                        <span className="text-zinc-400 text-xs lg:text-sm">{trans.comment}</span>
+                      ) : null}
+                    </div>
+                    <div className="flex-grow" />
+                    <div className="flex flex-col items-end">
+                      <span className={`${getTransactionTextClass(trans)} font-semibold`}>
+                        {getTransactionPrefix(trans)}
+                        {Number(trans.amount)}
+                      </span>
+                      <span className="text-zinc-400 text-xs lg:text-sm max-w-20 md:max-w-64 text-right">
+                        {trans.date}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex-grow" />
-                  <div className="flex flex-col items-end">
-                    <span className={`${getTransactionTextClass(trans)} font-semibold`}>
-                      {getTransactionPrefix(trans)}
-                      {Number(trans.amount)}
-                    </span>
-                    <span className="text-zinc-400 text-xs lg:text-sm max-w-20 md:max-w-64 text-right">
-                      {trans.date}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
-              <Image src="/img/status/nothingfound.webp" width={224} height={224} className="h-56 w-auto" alt="Empty" />
-              <span className="text-base text-zinc-100 w-full text-center font-black">Слишком пусто...</span>
-              <span className="text-sm text-zinc-300 w-full text-center font-medium">Может фильтры сломались или ты ничего не переводил...</span>
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
+                <Image src="/img/status/nothingfound.webp" width={224} height={224} className="h-56 w-auto" alt="Empty" />
+                <span className="text-base text-zinc-100 w-full text-center font-black">Слишком пусто...</span>
+                <span className="text-sm text-zinc-300 w-full text-center font-medium">Может фильтры сломались или ты ничего не переводил...</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       </div>
 
       {/* MODAL 1: Пополнение (Deposit) */}
       <Modal isOpen={isTopupModalOpen} onClose={() => setIsTopupModalOpen(false)} title="Пополнение" width="sm">
-        <form onSubmit={handleTopupSubmit} className="flex flex-col gap-4 text-zinc-100 text-left">
+        <form onSubmit={handleTopupSubmit} className="flex flex-col gap-3 text-zinc-100 text-left">
 
           <div className="flex flex-col w-full text-left">
             <span className="text-zinc-400 pl-4 z-20">Сумма пополнения (₽)</span>
@@ -447,7 +525,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
 
       {/* MODAL 3: Закрытие счёта (Close account confirmation) */}
       <Modal isOpen={isCloseConfirmModalOpen} onClose={() => setIsCloseConfirmModalOpen(false)} title="Закрытие счета" width="sm">
-        <div className="flex flex-col gap-4 text-zinc-100 text-left">
+        <div className="flex flex-col gap-3 text-zinc-100 text-left">
           <span className="text-zinc-300 text-base leading-relaxed">
             Вы действительно хотите закрыть этот счёт? Все средства должны быть выведены до закрытия счёта. Данное действие необратимо.
           </span>
@@ -475,7 +553,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       {/* MODAL 4: Transaction Details (Детали операции) */}
       <Modal isOpen={isTransactionDetailsModalOpen} onClose={() => setIsTransactionDetailsModalOpen(false)} title="Детали операции" width="sm">
         {selectedTransaction && (
-          <div className="flex flex-col gap-4 text-zinc-100 text-left">
+          <div className="flex flex-col gap-3 text-zinc-100 text-left">
             <div className="bg-zinc-800/60 rounded-3xl p-4 w-full text-sm space-y-2.5 border border-zinc-600/30">
               <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
                 <span className="text-zinc-400">ID Операции:</span>

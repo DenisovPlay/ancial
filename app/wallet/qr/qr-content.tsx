@@ -5,20 +5,15 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AncialAPI } from '../../lib/api-v2';
 
-declare global {
-  interface Window {
-    jsQR: any;
-  }
-}
-
 export default function QRContent() {
   const router = useRouter();
   const { lang, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(true);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [cameraActive, setCameraActive] = useState(false);
   const [flashSupported, setFlashSupported] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
 
@@ -38,6 +33,9 @@ export default function QRContent() {
   const overlayRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const lastQRResultRef = useRef<{ data: string; location: any } | null>(null);
+  const workerBusyRef = useRef<boolean>(false);
 
   // Detection states (like legacy code)
   const detectionStartTimeRef = useRef<number | null>(null);
@@ -68,24 +66,7 @@ export default function QRContent() {
     };
   }, [lang]);
 
-  // Load jsQR script
-  useEffect(() => {
-    if (window.jsQR) {
-      setScriptLoaded(true);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
-    script.async = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => setCameraError('Не удалось загрузить библиотеку сканера QR-кодов');
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+  // jsQR is bundled directly via npm import
 
   // Camera start / stop flow
   const startCamera = async () => {
@@ -105,6 +86,7 @@ export default function QRContent() {
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
+      setCameraActive(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -123,6 +105,7 @@ export default function QRContent() {
     } catch (err: any) {
       console.error('Camera startup error:', err);
       setCameraError(strings.noaccesstocamera);
+      setCameraActive(false);
     }
   };
 
@@ -131,10 +114,17 @@ export default function QRContent() {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    setCameraActive(false);
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+    workerBusyRef.current = false;
+    lastQRResultRef.current = null;
     setFlashEnabled(false);
   };
 
@@ -156,7 +146,7 @@ export default function QRContent() {
 
   // Main scan loop using requestAnimationFrame
   useEffect(() => {
-    if (!scriptLoaded || !scanning || !streamRef.current) return;
+    if (!scriptLoaded || !scanning || !cameraActive || !streamRef.current) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -167,52 +157,66 @@ export default function QRContent() {
     const overlayContext = overlay.getContext('2d');
     if (!canvasContext || !overlayContext) return;
 
-    const loop = () => {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        // Set dimensions
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+    // Spin up QR decoder Worker
+    const worker = new Worker('/qr-worker.js');
+    workerRef.current = worker;
+    workerBusyRef.current = false;
+    lastQRResultRef.current = null;
 
-        // Set overlay canvas size matching display size
+    worker.onmessage = (e: MessageEvent) => {
+      workerBusyRef.current = false;
+      lastQRResultRef.current = e.data; // null or { data, location }
+    };
+
+    // RAF loop — only captures frames and draws overlay. Decode is async in worker.
+    const loop = () => {
+      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+        // Set canvas dimensions only when they change
+        if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
+        if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
+
+        // Update overlay size to match display
         const displayWidth = video.clientWidth;
         const displayHeight = video.clientHeight;
-        if (overlay.width !== displayWidth || overlay.height !== displayHeight) {
+        if (displayWidth > 0 && displayHeight > 0 && (overlay.width !== displayWidth || overlay.height !== displayHeight)) {
           overlay.width = displayWidth;
           overlay.height = displayHeight;
         }
 
-        // Draw current frame to scanning canvas
+        // Grab current frame and send to worker if idle
         canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+        if (!workerBusyRef.current) {
+          const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+          workerBusyRef.current = true;
+          worker.postMessage(
+            { data: imageData.data, width: imageData.width, height: imageData.height },
+            [imageData.data.buffer]
+          );
+        }
 
-        const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: 'attemptBoth'
-        });
-
-        if (code && code.data && code.location) {
+        // Process latest worker result
+        const result = lastQRResultRef.current;
+        if (result && result.data && result.location) {
           lastQRSeenTimeRef.current = Date.now();
-          lastQRLocationRef.current = code.location;
+          lastQRLocationRef.current = result.location;
 
-          if (!detectionStartTimeRef.current || lastDetectedDataRef.current !== code.data) {
+          if (!detectionStartTimeRef.current || lastDetectedDataRef.current !== result.data) {
             detectionStartTimeRef.current = Date.now();
-            lastDetectedDataRef.current = code.data;
+            lastDetectedDataRef.current = result.data;
           }
 
           const elapsed = Date.now() - detectionStartTimeRef.current;
-          const progress = Math.min(elapsed / SCAN_DELAY, 1);
-          
-          drawTelegramOverlay(overlay, overlayContext, code.location, progress);
+          const progress = Math.min(elapsed / 300, 1);
 
-          if (elapsed >= SCAN_DELAY) {
-            // Trigger QR success
-            if (navigator.vibrate) {
-              navigator.vibrate(200);
-            }
-            handleQRSuccess(code.data);
+          drawTelegramOverlay(overlay, overlayContext, result.location, progress);
+
+          if (elapsed >= 300) {
+            if (navigator.vibrate) navigator.vibrate(200);
+            handleQRSuccess(result.data);
             return;
           }
         } else {
-          // If we lost QR frame, tolerate brief lost frames (like legacy)
+          // Handle brief frame-loss tolerance
           if (detectionStartTimeRef.current && lastQRSeenTimeRef.current && lastQRLocationRef.current) {
             const timeSinceLastSeen = Date.now() - lastQRSeenTimeRef.current;
             if (timeSinceLastSeen <= QR_LOST_TOLERANCE) {
@@ -221,14 +225,11 @@ export default function QRContent() {
               drawTelegramOverlay(overlay, overlayContext, lastQRLocationRef.current, progress);
 
               if (elapsed >= SCAN_DELAY && lastDetectedDataRef.current) {
-                if (navigator.vibrate) {
-                  navigator.vibrate(200);
-                }
+                if (navigator.vibrate) navigator.vibrate(200);
                 handleQRSuccess(lastDetectedDataRef.current);
                 return;
               }
             } else {
-              // Lost permanently
               clearOverlay(overlay, overlayContext);
               detectionStartTimeRef.current = null;
               lastDetectedDataRef.current = null;
@@ -250,8 +251,10 @@ export default function QRContent() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      worker.terminate();
+      workerRef.current = null;
     };
-  }, [scriptLoaded, scanning, facingMode]);
+  }, [scriptLoaded, scanning, cameraActive, facingMode]);
 
   // Drawing overlay box (Telegram style frame)
   const drawTelegramOverlay = (
@@ -416,11 +419,16 @@ export default function QRContent() {
     stopCamera();
     setScannedData(data);
 
-    // If it is an internal wallet QR, try to resolve it
-    if (data.startsWith('ancial:wallet:') || data.startsWith('ancwal:')) {
+    const trimmedData = data.trim();
+    const isWallet = trimmedData.startsWith('ancial:wallet:') || trimmedData.startsWith('ancwal:') || /^\d+$/.test(trimmedData);
+
+    if (isWallet) {
       setResolvedLoading(true);
       try {
-        const cleanQR = data.replace('ancwal:', 'ancial:wallet:');
+        const cleanQR = trimmedData.startsWith('ancial:wallet:') || trimmedData.startsWith('ancwal:')
+          ? trimmedData.replace('ancwal:', 'ancial:wallet:')
+          : `ancial:wallet:${trimmedData}`;
+
         const res = await AncialAPI.resolveQRCode(cleanQR);
         if (res && res.type === 'wallet') {
           setResolvedWallet({
@@ -598,10 +606,10 @@ export default function QRContent() {
       </div>
 
       {/* Main scanning viewport / results card */}
-      <div className="w-full max-w-screen-md flex flex-col gap-3 px-3 lg:px-0 flex-grow justify-center items-center">
-        
+      <div className="w-full max-w-screen-md flex flex-col gap-3 px-3 lg:px-0 flex-grow items-center">
+
         {scanning && (
-          <div className="flex flex-col gap-4 items-center w-full max-w-md">
+          <div className="flex flex-col gap-3 items-center w-full max-w-md">
             {/* Viewport container */}
             <div className="relative w-full aspect-square bg-zinc-950 rounded-3xl overflow-hidden shadow-2xl border border-zinc-800">
               <video
@@ -635,11 +643,10 @@ export default function QRContent() {
               <button
                 onClick={handleToggleFlash}
                 disabled={!flashSupported}
-                className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-3xl backdrop-blur-lg active:scale-95 duration-300 ${
-                  flashEnabled
-                    ? 'bg-purple-700 hover:bg-purple-650 border-purple-650 text-white shadow'
-                    : 'bg-zinc-900/40 border-zinc-700/30 hover:bg-zinc-800 text-zinc-300'
-                } ${!flashSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-3xl backdrop-blur-lg active:scale-95 duration-300 ${flashEnabled
+                  ? 'bg-purple-700 hover:bg-purple-650 border-purple-650 text-white shadow'
+                  : 'bg-zinc-900/40 border-zinc-700/30 hover:bg-zinc-800 text-zinc-300'
+                  } ${!flashSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <svg className="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -661,8 +668,8 @@ export default function QRContent() {
 
         {/* Scan Result Container */}
         {scannedData && (
-          <div className="flex flex-col gap-4 items-center w-full max-w-md">
-            
+          <div className="flex flex-col gap-3 items-center w-full max-w-md">
+
             {/* QR Content Box */}
             <div className="w-full p-4 bg-zinc-900/60 border border-zinc-800 backdrop-blur-lg rounded-3xl text-left">
               <div className="flex items-center gap-2 mb-2 text-zinc-400">

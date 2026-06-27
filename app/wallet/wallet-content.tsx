@@ -143,6 +143,18 @@ export default function WalletContent() {
 
   // Selected payment gateway for withdrawal warning
   const [selectedGateway, setSelectedGateway] = useState<WalletGateway | null>(null);
+  const [withdrawAccountId, setWithdrawAccountId] = useState<number>(0);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawDetails, setWithdrawDetails] = useState('');
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
+
+  // Dynamic gateway form states from server (/wallet/GetGateWayForm.php)
+  const [gatewayFormLoading, setGatewayFormLoading] = useState(false);
+  const [gatewayFormError, setGatewayFormError] = useState<string | null>(null);
+  const [gatewayConfig, setGatewayConfig] = useState<any | null>(null);
+  const [dynamicFieldsData, setDynamicFieldsData] = useState<Record<string, string>>({});
 
   const strings = useMemo(() => {
     return {
@@ -164,7 +176,7 @@ export default function WalletContent() {
 
   // General data fetcher
   const fetchWallet = async (showLoading = false) => {
-    if (showLoading) setLoading(true);
+    if (showLoading && accounts.length === 0) setLoading(true);
     try {
       const overview = await AncialAPI.getWalletOverview();
       const loadedAccounts = overview.accounts || [];
@@ -180,10 +192,13 @@ export default function WalletContent() {
         setReceiveAccountId((prev) => (prev && loadedAccounts.some(a => a.id === prev) ? prev : loadedAccounts[0].id));
       }
       setError(null);
+      localStorage.setItem('wallet_overview_cache', JSON.stringify(overview));
     } catch (err: any) {
-      setError(err.message || 'Ошибка загрузки кошелька');
+      if (accounts.length === 0) {
+        setError(err.message || 'Ошибка загрузки кошелька');
+      }
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -196,7 +211,32 @@ export default function WalletContent() {
       return;
     }
 
-    fetchWallet(true);
+    const cached = localStorage.getItem('wallet_overview_cache');
+    let hasCachedData = false;
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.accounts)) {
+          const loadedAccounts = parsed.accounts || [];
+          setAccounts(loadedAccounts);
+          setGateways(parsed.gateways || []);
+          setTopupOrders(parsed.topupOrders || []);
+          setTransactions(parsed.transactions || []);
+
+          if (loadedAccounts.length > 0) {
+            setSendSenderId(loadedAccounts[0].id);
+            setTopupAccountId(loadedAccounts[0].id);
+            setReceiveAccountId(loadedAccounts[0].id);
+          }
+          hasCachedData = true;
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error('Failed to parse wallet cache', e);
+      }
+    }
+
+    fetchWallet(!hasCachedData);
   }, [authLoading, isAuthenticated]);
 
   // Reset transfer modal state when opened/closed
@@ -490,19 +530,164 @@ export default function WalletContent() {
   }, [isUserProfModalOpen, receiveAccountId]);
 
   // Open withdrawal dialog for clicked gateway
-  const handleGatewayClick = (gw: WalletGateway) => {
+  const handleGatewayClick = async (gw: WalletGateway) => {
     setSelectedGateway(gw);
+    setWithdrawAmount('');
+    setWithdrawDetails('');
+    setWithdrawError(null);
+    setWithdrawSuccess(null);
+    setGatewayConfig(null);
+    setGatewayFormError(null);
+    setDynamicFieldsData({});
+    if (accounts.length > 0) {
+      setWithdrawAccountId(accounts[0].id);
+    }
     setIsWithdrawModalOpen(true);
+    setGatewayFormLoading(true);
+
+    try {
+      const res = await AncialAPI.getGatewayForm(gw.id);
+      const targetGw = res?.gateway;
+      if (targetGw) {
+        let fieldsObj = targetGw.withdrawal_fields;
+        if (typeof fieldsObj === 'string') {
+          try { fieldsObj = JSON.parse(fieldsObj); } catch (e) { }
+        }
+        targetGw.withdrawal_fields = fieldsObj;
+        setGatewayConfig(targetGw);
+      } else {
+        setGatewayFormError('Не удалось загрузить форму вывода');
+      }
+    } catch (err: any) {
+      setGatewayFormError(err.message || 'Ошибка загрузки формы вывода с сервера');
+    } finally {
+      setGatewayFormLoading(false);
+    }
+  };
+
+  const handleWithdrawSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGateway) return;
+    const numAmount = parseFloat(withdrawAmount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setWithdrawError('Укажите корректную сумму вывода');
+      return;
+    }
+
+    let finalDetails = withdrawDetails.trim();
+    const serverFields = gatewayConfig?.withdrawal_fields?.fields;
+    if (Array.isArray(serverFields) && serverFields.length > 0) {
+      const parts: string[] = [];
+      for (const f of serverFields) {
+        const val = dynamicFieldsData[f.key] || '';
+        if (f.required && !val.trim()) {
+          setWithdrawError(`Заполните поле "${f.label || f.key}"`);
+          return;
+        }
+        parts.push(`${f.key || f.label}: ${val}`);
+      }
+      finalDetails = parts.join('; ');
+    }
+
+    if (!finalDetails) {
+      setWithdrawError('Укажите реквизиты получателя');
+      return;
+    }
+    const selectedAcc = accounts.find(a => a.id === withdrawAccountId);
+    if (selectedAcc && selectedAcc.balance < numAmount) {
+      setWithdrawError('Недостаточно средств на выбранном счёте');
+      return;
+    }
+
+    setWithdrawLoading(true);
+    setWithdrawError(null);
+    setWithdrawSuccess(null);
+
+    try {
+      const res = await AncialAPI.createWithdrawal({
+        account_id: withdrawAccountId,
+        gateway_id: selectedGateway.id,
+        amount: numAmount,
+        details: finalDetails
+      });
+
+      setWithdrawSuccess(res.message || 'Заявка на вывод средств успешно создана!');
+      fetchWallet(false);
+    } catch (err: any) {
+      setWithdrawError(err.message || 'Ошибка при создании заявки на вывод');
+    } finally {
+      setWithdrawLoading(false);
+    }
   };
 
   const handleTopage = (path: string) => {
     router.push(path);
   };
 
-  if (loading) {
+  if (loading && accounts.length === 0) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-purple-500 border-t-transparent" />
+      <div className="flex flex-col w-full items-center justify-start min-h-screen pb-3 lg:pb-6 gap-3 bg-gradient-to-b from-lime-800/50 lg:from-black to-black via-black text-white">
+        <div className="w-full max-w-screen-2xl h-14 flex items-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[99]">
+          <WalletLogo className="shrink-0 h-6 sm:h-8" />
+          <div className="flex flex-grow" />
+          <div className="hidden lg:flex items-center gap-3">
+            <div className="w-28 h-9 rounded-3xl bg-zinc-800/70 border border-zinc-600/30 animate-pulse" />
+            <div className="w-28 h-9 rounded-3xl bg-zinc-800/70 border border-zinc-600/30 animate-pulse" />
+            <div className="w-28 h-9 rounded-3xl bg-zinc-800/70 border border-zinc-600/30 animate-pulse" />
+          </div>
+        </div>
+
+        {/* Accounts skeleton */}
+        <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl duration-300 -mb-3 lg:mb-0">
+          <div className="flex flex-nowrap gap-3 items-center w-full overflow-x-auto viewport px-3 lg:-mx-3 -my-3 py-3 duration-300">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="shrink-0 p-3 flex flex-col border border-zinc-600/30 bg-zinc-800/70 rounded-3xl w-48 lg:w-64 h-24 lg:h-32 animate-pulse">
+                <div className="w-24 lg:w-32 h-6 lg:h-8 bg-zinc-700/60 rounded-xl mb-2" />
+                <div className="w-16 lg:w-24 h-4 bg-zinc-700/60 rounded-lg" />
+                <div className="flex-grow" />
+                <div className="flex items-center justify-between">
+                  <div className="w-8 h-4 bg-zinc-700/60 rounded-full" />
+                  <div className="w-12 h-4 bg-zinc-700/60 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Gateways skeleton */}
+        <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl shrink-0 mt-3">
+          <div className="h-8 w-32 bg-zinc-800/70 rounded-xl animate-pulse mx-3 lg:mx-0" />
+          <div className="flex flex-nowrap gap-3 items-center w-full overflow-x-auto viewport px-3 lg:-mx-3 -my-3 py-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="border border-zinc-600/30 shrink-0 p-1.5 flex items-center gap-1.5 bg-zinc-800/70 rounded-3xl w-48 animate-pulse">
+                <div className="h-14 w-14 lg:h-16 lg:w-16 rounded-3xl bg-zinc-700/60 shrink-0" />
+                <div className="flex flex-col gap-2 flex-grow">
+                  <div className="h-4 w-20 bg-zinc-700/60 rounded" />
+                  <div className="h-3 w-16 bg-zinc-700/60 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* History skeleton */}
+        <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl shrink-0 mt-3">
+          <div className="h-8 w-32 bg-zinc-800/70 rounded-xl animate-pulse mx-3 lg:mx-0" />
+          <div className="flex flex-col w-full border border-zinc-600/30 bg-zinc-800/50 rounded-3xl overflow-hidden p-3 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center justify-between w-full animate-pulse py-1">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 lg:h-12 lg:w-12 bg-zinc-700/60 rounded-full shrink-0" />
+                  <div className="flex flex-col gap-1.5">
+                    <div className="h-4 w-32 lg:w-48 bg-zinc-700/60 rounded" />
+                    <div className="h-3 w-20 bg-zinc-700/60 rounded" />
+                  </div>
+                </div>
+                <div className="h-5 w-16 bg-zinc-700/60 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -780,36 +965,13 @@ export default function WalletContent() {
         isOpen={isProductsModalOpen}
         onClose={() => setIsProductsModalOpen(false)}
         width="sm"
-        showHeader={false}
-        bodyClassName="p-0"
+        showHeader={true}
+        title={productsView === 'list' ? (lang?.my_prod || 'Мои продукты') : productsView === 'create' ? (lang?.t_account || 'Новый счёт') : 'Закрыть счёт'}
+        bodyClassName="max-h-96 p-0"
       >
-        <div className="bg-zinc-900/70 text-zinc-100 rounded-t-3xl sm:rounded-3xl py-3 pt-0 px-0 backdrop-filter backdrop-blur-lg">
-          <div className="flex flex-col absolute inset-x-0 top-0 w-full bg-gradient-to-b from-zinc-900 via-zinc-900 to-transparent p-3 z-[5]">
-            <div className="px-20">
-              <div className="bg-zinc-500 py-0.5 px-6 rounded-full sm:hidden" />
-            </div>
-            <div className="flex items-center">
-              <span className="font-medium text-left text-zinc-200 text-lg flex-grow">
-                {productsView === 'list'
-                  ? (lang?.my_prod || 'Мои продукты')
-                  : productsView === 'create'
-                    ? (lang?.t_account || 'Новый счёт')
-                    : 'Закрыть счёт'}
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsProductsModalOpen(false)}
-                className="hidden sm:inline duration-300 cursor-pointer"
-              >
-                <svg className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                  <path d="M 39.486328 6.9785156 A 1.50015 1.50015 0 0 0 38.439453 7.4394531 L 24 21.878906 L 9.5605469 7.4394531 A 1.50015 1.50015 0 0 0 8.484375 6.984375 A 1.50015 1.50015 0 0 0 7.4394531 9.5605469 L 21.878906 24 L 7.4394531 38.439453 A 1.50015 1.50015 0 1 0 9.5605469 40.560547 L 24 26.121094 L 38.439453 40.560547 A 1.50015 1.50015 0 1 0 40.560547 38.439453 L 26.121094 24 L 40.560547 9.5605469 A 1.50015 1.50015 0 0 0 39.486328 6.9785156 z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
+        <div className="backdrop-filter backdrop-blur-lg">
           {productsView === 'list' && (
-            <div className="relative max-h-96 overflow-auto flex flex-col gap-3 px-3 pt-14">
+            <div className="flex flex-col gap-3">
               {accounts.map((acc) => (
                 <div key={acc.id} className="border border-zinc-600/30 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 bg-zinc-900 hover:bg-zinc-700 duration-300 cursor-pointer justify-center">
                   <div className="flex flex-col flex-grow">
@@ -836,7 +998,7 @@ export default function WalletContent() {
                 <button
                   type="button"
                   onClick={() => setProductsView('create')}
-                  className="border border-zinc-600/30 active:scale-95 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 bg-zinc-900/20 hover:bg-zinc-700 backdrop-blur-md backdrop-saturate-200 duration-300 cursor-pointer justify-center"
+                  className="shadow border border-zinc-600/30 active:scale-95 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 bg-zinc-900/20 hover:bg-zinc-700 backdrop-blur-md backdrop-saturate-200 duration-300 cursor-pointer justify-center"
                 >
                   <div className="flex flex-col flex-grow text-left">
                     <span className="text-lg lg:text-2xl font-extrabold">{lang?.t_account || 'Товарный счёт'}</span>
@@ -851,7 +1013,7 @@ export default function WalletContent() {
                 <button
                   type="button"
                   onClick={() => { setIsProductsModalOpen(false); handleTopage('/wallet/merchant'); }}
-                  className="border border-zinc-600/30 active:scale-95 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 bg-zinc-900/20 hover:bg-zinc-700 backdrop-blur-md backdrop-saturate-200 duration-300 cursor-pointer justify-center"
+                  className="shadow border border-zinc-600/30 active:scale-95 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 bg-zinc-900/20 hover:bg-zinc-700 backdrop-blur-md backdrop-saturate-200 duration-300 cursor-pointer justify-center"
                 >
                   <div className="flex flex-col flex-grow text-left">
                     <span className="text-lg lg:text-2xl font-extrabold">{lang?.merchant || 'Мерчант'}</span>
@@ -1643,32 +1805,197 @@ export default function WalletContent() {
         )}
       </Modal>
 
-      {/* 5. MODAL: Withdrawal Warning (Вывод средств) */}
-      <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`Вывод через ${selectedGateway?.name || 'платёжную систему'}`} width="sm">
+      {/* 5. MODAL: Withdrawal (Вывод средств) */}
+      <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`Вывод через ${gatewayConfig?.withdrawal_fields?.title || selectedGateway?.name || 'платёжную систему'}`} width="sm">
         <div className="flex flex-col gap-3 text-zinc-100">
-          <div className="p-3.5 border border-amber-500/35 bg-amber-500/10 text-amber-500 rounded-3xl shadow flex flex-col w-full">
-            <span className="font-bold text-lg">Ой...</span>
-            <span className="text-sm mt-0.5">Функция вывода средств временно находится в разработке, скоро всё будет доступно.</span>
-          </div>
-
           {selectedGateway && (
-            <div className="flex items-center gap-3 border border-zinc-600/30 p-3 rounded-3xl bg-zinc-950/20">
-              <div className="h-10 w-10 p-1 bg-zinc-850 rounded-xl flex items-center justify-center">
+            <div className="flex items-center gap-3 border border-zinc-600/30 p-3 rounded-3xl bg-zinc-900/40">
+              <div className="h-12 w-12 p-1 bg-zinc-800 rounded-2xl flex items-center justify-center shrink-0">
                 <img alt={selectedGateway.name} src={selectedGateway.image} className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold">{selectedGateway.name}</span>
-                <span className="text-xs text-zinc-500">Комиссия системы: {selectedGateway.fee_percent}%</span>
+                <span className="text-base font-semibold">{gatewayConfig?.withdrawal_fields?.title || selectedGateway.name}</span>
+                <span className="text-xs text-zinc-400">Комиссия системы: {gatewayConfig?.fee_percent ?? selectedGateway.fee_percent}%</span>
               </div>
             </div>
           )}
 
-          <button
-            onClick={() => setIsWithdrawModalOpen(false)}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-700 mt-2"
-          >
-            Закрыть
-          </button>
+          {gatewayFormLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <svg className="w-10 h-10 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                <path d="M 24 4 A 1.50015 1.50015 0 1 0 24 7 C 30.255882 7 35.765936 10.406785 38.703125 15.455078 A 1.5005776 1.5005776 0 1 0 41.296875 13.945312 C 37.834064 7.9936061 31.344118 4 24 4 z"></path>
+              </svg>
+            </div>
+          ) : gatewayFormError ? (
+            <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-3xl text-center">
+              {gatewayFormError}
+            </div>
+          ) : withdrawSuccess ? (
+            <div className="flex flex-col gap-3 items-center text-center py-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl font-bold">✓</div>
+              <span className="text-emerald-400 font-medium text-lg">{withdrawSuccess}</span>
+              <button
+                type="button"
+                onClick={() => setIsWithdrawModalOpen(false)}
+                className="w-full mt-2 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-3xl duration-300 font-medium"
+              >
+                Отлично
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleWithdrawSubmit} className="flex flex-col gap-3 text-left">
+              {/* Select account */}
+              <div className="flex flex-col w-full">
+                <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">Счёт списания</span>
+                <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                  <select
+                    value={withdrawAccountId}
+                    onChange={(e) => setWithdrawAccountId(Number(e.target.value))}
+                    className="rounded-3xl bg-zinc-800/60 w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-zinc-200 text-sm"
+                  >
+                    {accounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        Счёт №{acc.id} ({acc.name}) — {acc.balance} ANCI
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Server dynamic fields */}
+              {Array.isArray(gatewayConfig?.withdrawal_fields?.fields) && gatewayConfig.withdrawal_fields.fields.length > 0 ? (
+                gatewayConfig.withdrawal_fields.fields.map((f: any) => {
+                  const label = f.label || f.key || '';
+                  const key = f.key || 'field';
+                  const req = !!f.required;
+                  const type = (f.type || '').toLowerCase();
+
+                  if (type === 'select') {
+                    const options = Array.isArray(f.options) ? f.options : [];
+                    return (
+                      <div key={key} className="flex flex-col w-full">
+                        <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">{label}</span>
+                        <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                          <select
+                            required={req}
+                            value={dynamicFieldsData[key] || ''}
+                            onChange={(e) => setDynamicFieldsData(prev => ({ ...prev, [key]: e.target.value }))}
+                            className="rounded-3xl bg-zinc-800/60 w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-zinc-200 text-sm"
+                          >
+                            <option value="" disabled>Выберите...</option>
+                            {options.map((o: any, idx: number) => (
+                              <option key={idx} value={o.value ?? ''}>
+                                {o.label ?? o.value}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {f.hint && <div className="text-xs text-zinc-500 pl-4 mt-1">{f.hint}</div>}
+                      </div>
+                    );
+                  }
+
+                  const inputType = ['text', 'number', 'email', 'tel', 'password'].includes(type) ? type : 'text';
+                  return (
+                    <div key={key} className="flex flex-col w-full">
+                      <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">{label}</span>
+                      <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                        <input
+                          autoComplete="off"
+                          type={inputType}
+                          required={req}
+                          placeholder={f.placeholder || ''}
+                          value={dynamicFieldsData[key] || ''}
+                          onChange={(e) => setDynamicFieldsData(prev => ({ ...prev, [key]: e.target.value }))}
+                          className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
+                        />
+                      </div>
+                      {f.hint && <div className="text-xs text-zinc-500 pl-4 mt-1">{f.hint}</div>}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex flex-col w-full">
+                  <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">
+                    {selectedGateway?.name.toLowerCase().includes('yoomoney')
+                      ? 'Номер кошелька YooMoney / телефона'
+                      : 'Реквизиты получателя (номер карты/счёта)'}
+                  </span>
+                  <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                    <input
+                      autoComplete="off"
+                      type="text"
+                      placeholder={selectedGateway?.name.toLowerCase().includes('yoomoney') ? '41001...' : 'Реквизиты'}
+                      value={withdrawDetails}
+                      onChange={(e) => setWithdrawDetails(e.target.value)}
+                      className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Amount */}
+              <div className="flex flex-col w-full">
+                <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">Сумма вывода</span>
+                <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                  <input
+                    autoComplete="off"
+                    type="number"
+                    step="any"
+                    placeholder="0.00"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Calculation info */}
+              {withdrawAmount && parseFloat(withdrawAmount) > 0 && selectedGateway && (
+                <div className="flex flex-col gap-1 p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-3xl text-xs text-zinc-300">
+                  <div className="flex justify-between">
+                    <span>Комиссия ({gatewayConfig?.fee_percent ?? selectedGateway.fee_percent}%):</span>
+                    <span>{((parseFloat(withdrawAmount) * (gatewayConfig?.fee_percent ?? selectedGateway.fee_percent)) / 100).toFixed(2)} ANCI</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-white pt-1.5 border-t border-zinc-800 text-sm">
+                    <span>К получению:</span>
+                    <span className="text-emerald-400">
+                      {Math.max(0, parseFloat(withdrawAmount) - (parseFloat(withdrawAmount) * (gatewayConfig?.fee_percent ?? selectedGateway.fee_percent)) / 100).toFixed(2)} ANCI
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {withdrawError && (
+                <div className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 p-3 rounded-3xl text-center">
+                  {withdrawError}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsWithdrawModalOpen(false)}
+                  className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-3xl duration-300 text-sm font-medium"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={withdrawLoading || !withdrawAmount}
+                  className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-3xl duration-300 text-sm font-semibold flex items-center justify-center gap-2"
+                >
+                  {withdrawLoading ? (
+                    <div className="w-4 h-4 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
+                  ) : (
+                    'Вывести'
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </Modal>
     </>

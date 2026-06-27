@@ -214,6 +214,23 @@ function FormContentInner() {
   };
 
   const loadAccounts = async (senderIdOverride?: number) => {
+    const cached = localStorage.getItem('wallet_overview_cache');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.accounts)) {
+          setAccounts(parsed.accounts);
+          if (parsed.accounts.length > 0) {
+            const preferredId = senderIdOverride ?? selectedSenderId ?? preferredSenderId;
+            const matched = preferredId ? parsed.accounts.find((account: any) => account.id === preferredId) : null;
+            setSelectedSenderId(matched ? matched.id : parsed.accounts[0].id);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse cached overview in form:', e);
+      }
+    }
+
     try {
       const overview = await AncialAPI.getWalletOverview();
       setAccounts(overview.accounts || []);
@@ -222,6 +239,7 @@ function FormContentInner() {
         const matched = preferredId ? overview.accounts.find((account) => account.id === preferredId) : null;
         setSelectedSenderId(matched ? matched.id : overview.accounts[0].id);
       }
+      localStorage.setItem('wallet_overview_cache', JSON.stringify(overview));
     } catch (err: any) {
       console.error('Failed to load user accounts:', err);
     }
@@ -357,14 +375,19 @@ function FormContentInner() {
 
   if (authLoading) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-purple-500 border-t-transparent" />
+      <div className="flex flex-col w-full items-center justify-start pt-4 pb-6 gap-3 bg-zinc-950 min-h-screen text-zinc-100">
+        <div className="w-full max-w-3xl h-14 flex items-center gap-3 px-3 lg:px-0">
+          <div className="h-8 w-32 bg-zinc-900 border border-zinc-800 rounded-xl animate-pulse" />
+        </div>
+        <div className="w-full max-w-3xl flex flex-col gap-3 px-3 lg:px-0">
+          <div className="w-full h-48 bg-zinc-900/40 border border-zinc-800/60 rounded-3xl animate-pulse" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`flex flex-col w-full items-center justify-start pb-6 gap-4 bg-zinc-950 min-h-screen text-zinc-100 ${embeded ? 'pt-2' : 'pt-4'}`}>
+    <div className={`flex flex-col w-full items-center justify-start pb-6 gap-3 bg-zinc-950 min-h-screen text-zinc-100 ${embeded ? 'pt-2' : 'pt-4'}`}>
 
       {/* Header (hidden if embeded) */}
       {!embeded && (
@@ -413,8 +436,8 @@ function FormContentInner() {
                     key={preset}
                     onClick={() => selectAmountPreset(preset)}
                     className={`border border-zinc-700/30 rounded-3xl p-4 flex flex-col justify-center items-center cursor-pointer active:scale-95 duration-300 shadow-xl ${amount === String(preset)
-                        ? 'bg-purple-700/80 border-purple-500 text-white shadow-purple-900/20'
-                        : 'bg-zinc-800/80 hover:bg-zinc-900 text-zinc-300'
+                      ? 'bg-purple-700/80 border-purple-500 text-white shadow-purple-900/20'
+                      : 'bg-zinc-800/80 hover:bg-zinc-900 text-zinc-300'
                       }`}
                   >
                     <span className="text-2xl font-bold">{preset} ₽</span>
@@ -459,8 +482,8 @@ function FormContentInner() {
 
       {/* STEP 2: SEND TO USER */}
       {step === 'sendtouser' && (
-        <div className="w-full max-w-3xl flex flex-col gap-4 px-3">
-          <form onSubmit={handleSendToUserSubmit} className="flex flex-col gap-4 w-full">
+        <div className="w-full max-w-3xl flex flex-col gap-3 px-3">
+          <form onSubmit={handleSendToUserSubmit} className="flex flex-col gap-3 w-full">
             {!embeded && <span className="text-xl font-bold text-left">Перевод пользователю:</span>}
 
             {/* Recipient Selector (Login, Email, Phone) */}
@@ -557,7 +580,7 @@ function FormContentInner() {
 
       {/* STEP 3: CONFIRM SEND */}
       {step === 'confirmsend' && (
-        <div className="w-full max-w-3xl flex flex-col gap-4 px-3 text-left">
+        <div className="w-full max-w-3xl flex flex-col gap-3 px-3 text-left">
           {!embeded && <span className="text-xl font-bold">Подтверждение перевода</span>}
 
           <div className="bg-zinc-900/60 rounded-3xl p-5 space-y-4 border border-zinc-800">
@@ -612,7 +635,7 @@ function FormContentInner() {
 
       {/* STEP 4: SELECT SENDER ACCOUNT */}
       {step === 'select' && (
-        <div className="w-full max-w-3xl flex flex-col gap-4 px-3 text-left">
+        <div className="w-full max-w-3xl flex flex-col gap-3 px-3 text-left">
 
           <div className="bg-zinc-900/60 rounded-3xl p-5 flex items-center justify-center border border-zinc-800">
             <span className="text-3xl font-black text-purple-400">{amount} ₽</span>
@@ -628,8 +651,8 @@ function FormContentInner() {
                   key={acc.id}
                   onClick={() => setSelectedSenderId(acc.id)}
                   className={`border rounded-3xl p-4 flex flex-col cursor-pointer duration-300 active:scale-98 shadow-md ${isSelected
-                      ? 'bg-purple-700/30 border-purple-500 text-white'
-                      : 'bg-zinc-850 hover:bg-zinc-800 border-zinc-750 text-zinc-300'
+                    ? 'bg-purple-700/30 border-purple-500 text-white'
+                    : 'bg-zinc-850 hover:bg-zinc-800 border-zinc-750 text-zinc-300'
                     }`}
                 >
                   <div className="flex justify-between items-center">
