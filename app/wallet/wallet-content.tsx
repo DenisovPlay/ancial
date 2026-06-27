@@ -1859,11 +1859,11 @@ export default function WalletContent() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleWithdrawSubmit} className="flex flex-col gap-3 text-left">
+            <form onSubmit={handleWithdrawSubmit} className="flex flex-col gap-1.5 text-left">
               {/* Select account */}
               <div className="flex flex-col w-full">
                 <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">Счёт списания</span>
-                <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={withdrawAccountId}
                     onChange={(e) => setWithdrawAccountId(Number(e.target.value))}
@@ -1891,7 +1891,7 @@ export default function WalletContent() {
                     return (
                       <div key={key} className="flex flex-col w-full">
                         <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">{label}</span>
-                        <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                        <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
                           <select
                             required={req}
                             value={dynamicFieldsData[key] || ''}
@@ -1915,7 +1915,7 @@ export default function WalletContent() {
                   return (
                     <div key={key} className="flex flex-col w-full">
                       <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">{label}</span>
-                      <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                      <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
                         <input
                           autoComplete="off"
                           type={inputType}
@@ -1926,7 +1926,7 @@ export default function WalletContent() {
                           className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
                         />
                       </div>
-                      {f.hint && <div className="text-xs text-zinc-500 pl-4 mt-1">{f.hint}</div>}
+                      {f.hint && <div className="text-xs text-zinc-500 pl-4 -mt-2 z-20">{f.hint}</div>}
                     </div>
                   );
                 })
@@ -1937,7 +1937,7 @@ export default function WalletContent() {
                       ? 'Номер кошелька YooMoney / телефона'
                       : 'Реквизиты получателя (номер карты/счёта)'}
                   </span>
-                  <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                  <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
                     <input
                       autoComplete="off"
                       type="text"
@@ -1954,7 +1954,7 @@ export default function WalletContent() {
               {/* Amount */}
               <div className="flex flex-col w-full">
                 <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">Сумма вывода</span>
-                <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
                   <input
                     autoComplete="off"
                     type="number"
