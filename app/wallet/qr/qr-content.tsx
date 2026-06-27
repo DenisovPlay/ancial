@@ -23,6 +23,7 @@ export default function QRContent() {
     account_id: number;
     account_name: string;
     owner_name: string;
+    owner_login: string;
   } | null>(null);
   const [resolvedLoading, setResolvedLoading] = useState(false);
   const [copiedSuccess, setCopiedSuccess] = useState(false);
@@ -434,7 +435,8 @@ export default function QRContent() {
           setResolvedWallet({
             account_id: res.account_id || 0,
             account_name: res.account_name || 'Счёт',
-            owner_name: res.owner_name || 'Пользователь'
+            owner_name: res.owner_name || 'Пользователь',
+            owner_login: res.owner_login || ''
           });
         }
       } catch (err) {
@@ -488,7 +490,7 @@ export default function QRContent() {
     setScanning(true);
   };
 
-  // Render actions buttons depending on content
+
   const renderActions = () => {
     if (!scannedData) return null;
 
@@ -499,13 +501,13 @@ export default function QRContent() {
       buttons.push(
         <button
           key="pay-wallet"
-          onClick={() =>
-            router.push(
-              `/wallet/form?form=sendtouser&receiver_id=${resolvedWallet.account_id}&receiver_name=${encodeURIComponent(
-                resolvedWallet.owner_name
-              )}`
-            )
-          }
+          onClick={() => {
+            stopCamera();
+            const loginParam = resolvedWallet.owner_login
+              ? `&login=${encodeURIComponent(resolvedWallet.owner_login)}`
+              : '';
+            router.push(`/wallet?action=send${loginParam}`);
+          }}
           className="flex items-center justify-center gap-3 p-3 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-3xl duration-300 active:scale-95 border border-zinc-700/30"
         >
           <svg className="w-6 h-6 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -578,7 +580,7 @@ export default function QRContent() {
       <button
         key="copy-text"
         onClick={() => copyToClipboard(scannedData)}
-        className="flex items-center justify-center gap-3 p-3 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white font-semibold rounded-3xl duration-300 active:scale-95 border border-zinc-750"
+        className="flex items-center justify-center gap-3 p-3 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white font-semibold rounded-3xl duration-300 active:scale-95 border border-zinc-600/30"
       >
         <span>{strings.copytext}</span>
       </button>
@@ -606,7 +608,7 @@ export default function QRContent() {
       </div>
 
       {/* Main scanning viewport / results card */}
-      <div className="w-full max-w-screen-md flex flex-col gap-3 px-3 lg:px-0 flex-grow items-center">
+      <div className="w-full max-w-screen-md flex flex-col gap-3 px-3 lg:px-0 flex-grow lg:items-center">
 
         {scanning && (
           <div className="flex flex-col gap-3 items-center w-full max-w-md">

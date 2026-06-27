@@ -455,7 +455,7 @@ function FormContentInner() {
               {/* Input for Amount with rounded-full container */}
               <div className="flex flex-col w-full text-left">
                 <span className="text-zinc-400 pl-4 z-20">Сумма (₽)</span>
-                <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-750">
+                <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="number"
                     value={amount}
@@ -511,7 +511,7 @@ function FormContentInner() {
                   <span className="text-zinc-400 pl-4 z-20">
                     {recipientType === 'username' ? 'Логин получателя' : recipientType === 'email' ? 'Email получателя' : 'Телефон получателя'}
                   </span>
-                  <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-750">
+                  <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <input
                       type={recipientType === 'email' ? 'email' : recipientType === 'phone' ? 'tel' : 'text'}
                       value={recipientValue}
@@ -538,7 +538,7 @@ function FormContentInner() {
             {/* Amount Input */}
             <div className="flex flex-col w-full text-left">
               <span className="text-zinc-400 pl-4 z-20">Сумма перевода (₽)</span>
-              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-750">
+              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="number"
                   value={amount}
@@ -555,7 +555,7 @@ function FormContentInner() {
             {/* Comment Area */}
             <div className="flex flex-col w-full text-left">
               <span className="text-zinc-400 pl-4 z-20">Комментарий (опционально)</span>
-              <div className="flex bg-zinc-850 rounded-3xl w-full p-2 h-24 -mt-3 z-10 border border-zinc-750">
+              <div className="flex bg-zinc-850 rounded-3xl w-full p-2 h-24 -mt-3 z-10 border border-zinc-600/30">
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
@@ -652,7 +652,7 @@ function FormContentInner() {
                   onClick={() => setSelectedSenderId(acc.id)}
                   className={`border rounded-3xl p-4 flex flex-col cursor-pointer duration-300 active:scale-98 shadow-md ${isSelected
                     ? 'bg-purple-700/30 border-purple-500 text-white'
-                    : 'bg-zinc-850 hover:bg-zinc-800 border-zinc-750 text-zinc-300'
+                    : 'bg-zinc-850 hover:bg-zinc-800 border-zinc-600/30 text-zinc-300'
                     }`}
                 >
                   <div className="flex justify-between items-center">
@@ -730,7 +730,7 @@ function FormContentInner() {
             )}
             <button
               onClick={() => router.push('/wallet')}
-              className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-750"
+              className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-600/30"
             >
               В кошелёк
             </button>
@@ -764,7 +764,7 @@ function FormContentInner() {
             </button>
             <button
               onClick={() => router.push('/wallet')}
-              className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-750"
+              className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-600/30"
             >
               В кошелёк
             </button>

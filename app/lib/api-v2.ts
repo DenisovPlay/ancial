@@ -651,8 +651,8 @@ export class AncialAPI {
     });
   }
 
-  static async resolveQRCode(qrData: string): Promise<{ type: string; account_id?: number; account_name?: string; owner_name?: string }> {
-    return this.request<{ type: string; account_id?: number; account_name?: string; owner_name?: string }>(`/wallet/QRCode.php?action=resolve&qr_data=${encodeURIComponent(qrData)}`);
+  static async resolveQRCode(qrData: string): Promise<{ type: string; account_id?: number; account_name?: string; owner_name?: string; owner_login?: string }> {
+    return this.request<{ type: string; account_id?: number; account_name?: string; owner_name?: string; owner_login?: string }>(`/wallet/QRCode.php?action=resolve&qr_data=${encodeURIComponent(qrData)}`);
   }
 
   static async createWithdrawal(params: {

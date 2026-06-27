@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
@@ -62,6 +62,7 @@ function buildPayUrl(orderHash: string) {
 
 export default function WalletContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { lang, isAuthenticated, isLoading: authLoading, user } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -267,6 +268,21 @@ export default function WalletContent() {
       setCreateAccountError(null);
     }
   }, [isProductsModalOpen]);
+
+  // Open send modal from QR scanner (?action=send&login=...)
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const login = searchParams.get('login');
+    if (action === 'send') {
+      setSendStep('sdb');
+      setSdbDetailType('login');
+      if (login) setSdbLogin(login);
+      setIsSendMoneyModalOpen(true);
+      // Clean URL without navigating away
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState(null, '', cleanUrl);
+    }
+  }, [searchParams]);
 
   // Load friends list for STF step
   const loadFriends = async () => {

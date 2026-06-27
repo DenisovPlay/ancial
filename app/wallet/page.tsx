@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import WalletContent from './wallet-content';
 import { createPageMetadata } from '../seo';
 
@@ -11,5 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function WalletPage() {
-  return <WalletContent />;
+  return (
+    <Suspense fallback={null}>
+      <WalletContent />
+    </Suspense>
+  );
 }

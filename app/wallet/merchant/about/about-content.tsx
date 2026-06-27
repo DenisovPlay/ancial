@@ -326,7 +326,7 @@ function AboutContentInner() {
             {/* Input: Image */}
             <div className="flex flex-col w-full text-left">
               <span className="text-zinc-400 pl-4 z-20">Изображение</span>
-              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-750">
+              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
                   value={img}
@@ -340,7 +340,7 @@ function AboutContentInner() {
             {/* Input: Description */}
             <div className="flex flex-col w-full text-left">
               <span className="text-zinc-400 pl-4 z-20">Описание</span>
-              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-750">
+              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
                   value={description}
@@ -354,7 +354,7 @@ function AboutContentInner() {
             {/* Input: Success URL */}
             <div className="flex flex-col w-full text-left">
               <span className="text-zinc-400 pl-4 z-20">URL успешной оплаты</span>
-              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-750">
+              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
                   value={sUrl}
@@ -368,7 +368,7 @@ function AboutContentInner() {
             {/* Input: Error URL */}
             <div className="flex flex-col w-full text-left">
               <span className="text-zinc-400 pl-4 z-20">URL неуспешной оплаты</span>
-              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-750">
+              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
                   value={eUrl}
@@ -382,7 +382,7 @@ function AboutContentInner() {
             {/* Input: Callback URL */}
             <div className="flex flex-col w-full text-left">
               <span className="text-zinc-400 pl-4 z-20">CallBack URL</span>
-              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-750">
+              <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
                   value={cUrl}
