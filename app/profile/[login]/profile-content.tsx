@@ -171,7 +171,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       append?: boolean,
       options?: { preserveExisting?: boolean },
     ) => Promise<void>
-  >(async () => {});
+  >(async () => { });
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -1064,7 +1064,7 @@ export default function UserProfileContent({ login }: { login: string }) {
             height={224}
             className="h-56 w-auto"
           />
-          <div className="text-center text-zinc-200">{error}</div>
+          <div className="text-center text-zinc-200" dangerouslySetInnerHTML={{ __html: error }} />
           <button
             type="button"
             onClick={() => router.push('/')}
@@ -1126,8 +1126,8 @@ export default function UserProfileContent({ login }: { login: string }) {
                   <span className="text-xl font-bold text-zinc-100 flex items-center gap-1.5">
                     <span>{`${userData.fname || ''} ${userData.lname || ''}`.trim()}</span>
                     {isAuthenticated && flag(userData.verify) ? (
-                    <SvgIcon className="w-5 h-5 inline fill-blue-500" id="IC-verify" viewBox="0 0 48 48" />
-                  ) : null}
+                      <SvgIcon className="w-5 h-5 inline fill-blue-500" id="IC-verify" viewBox="0 0 48 48" />
+                    ) : null}
                   </span>
                   {userData.description?.trim() ? (
                     <span className="text-xs md:text-sm text-zinc-300 lg:truncate lg:w-96">
@@ -1153,9 +1153,9 @@ export default function UserProfileContent({ login }: { login: string }) {
                 ) : null}
 
                 {isAuthenticated &&
-                user &&
-                !flag(userData.is_owner) &&
-                String(userData.id) !== String(user?.id) ? (
+                  user &&
+                  !flag(userData.is_owner) &&
+                  String(userData.id) !== String(user?.id) ? (
                   <button
                     type="button"
                     onClick={() => void handleCreateDialog()}

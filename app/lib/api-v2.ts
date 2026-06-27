@@ -11,6 +11,94 @@ export interface AncialV2Response<T> {
   error: string | null;
 }
 
+// --- WALLET TYPINGS ---
+export interface WalletAccount {
+  id: number;
+  name: string;
+  balance: number;
+  status: number;
+}
+
+export interface WalletGateway {
+  id: number;
+  name: string;
+  image: string;
+  withdrawal_description: string;
+  fee_percent: number;
+}
+
+export interface WalletTopupOrder {
+  id: number;
+  label: string;
+  status: string;
+  order_hash: string;
+  amount: number;
+  created_at: string;
+}
+
+export interface WalletTransaction {
+  id: number;
+  sender: number;
+  receiver: number;
+  amount: number;
+  total: number;
+  status: number;
+  date?: string;
+  type?: number;
+  comment?: string;
+  fees: number;
+  other_party_name: string;
+  is_internal: boolean;
+  direction: 'in' | 'out';
+  sender_name?: string;
+  receiver_name?: string;
+}
+
+export interface WalletOverview {
+  accounts: WalletAccount[];
+  gateways: WalletGateway[];
+  topupOrders: WalletTopupOrder[];
+  transactions: WalletTransaction[];
+}
+
+export interface WalletMerchant {
+  id: number;
+  name: string;
+  img: string;
+  status: number;
+  c_url: string;
+  payments_count: number;
+}
+
+export interface WalletMerchantStats {
+  total_merchants: number;
+  total_payments: number;
+  total_earned: number;
+}
+
+export interface WalletMerchantDetails {
+  id: number;
+  name: string;
+  img: string;
+  status: number;
+  c_url: string;
+  s_url: string;
+  e_url: string;
+  description: string;
+  fee_paid: 'buyer' | 'merchant';
+}
+
+export interface WalletMerchantOrder {
+  id: number;
+  merchant_id: number;
+  order_hash: string;
+  amount: number;
+  status: string;
+  label: string;
+  description: string;
+  created_at: string;
+}
+
 /**
  * Centralized client for Ancial API V2
  */
@@ -465,5 +553,105 @@ export class AncialAPI {
 
   static async getStatic<T = unknown>(type: string): Promise<T> {
     return this.request<T>(`/info/GetStatic.php?type=${type}`);
+  }
+
+  // --- WALLET ---
+  
+  static async getWalletOverview(): Promise<WalletOverview> {
+    return this.request<WalletOverview>('/wallet/Overview.php');
+  }
+
+  static async createAccount(title: string): Promise<{ id: number; message: string }> {
+    return this.request<{ id: number; message: string }>('/wallet/Account.php?action=create', {
+      method: 'POST',
+      body: new URLSearchParams({ title })
+    });
+  }
+
+  static async deleteAccount(id: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/wallet/Account.php?action=delete&id=${id}`, {
+      method: 'POST'
+    });
+  }
+
+  static async sendMoney(params: {
+    sender_id: number;
+    amount: number;
+    comment: string;
+    receiver_id?: number;
+    receiver_login?: string;
+    receiver_email?: string;
+    receiver_phone?: string;
+  }): Promise<{ transaction_id: number; amount: number; fees: number }> {
+    const body = new URLSearchParams();
+    body.set('sender_id', String(params.sender_id));
+    body.set('amount', String(params.amount));
+    body.set('comment', params.comment);
+    if (params.receiver_id !== undefined) body.set('receiver_id', String(params.receiver_id));
+    if (params.receiver_login !== undefined) body.set('receiver_login', params.receiver_login);
+    if (params.receiver_email !== undefined) body.set('receiver_email', params.receiver_email);
+    if (params.receiver_phone !== undefined) body.set('receiver_phone', params.receiver_phone);
+
+    return this.request<{ transaction_id: number; amount: number; fees: number }>('/wallet/Transaction.php?action=send', {
+      method: 'POST',
+      body
+    });
+  }
+
+  static async createTopup(amount: number, accountId: number): Promise<{ payment_url: string; order_hash: string }> {
+    return this.request<{ payment_url: string; order_hash: string }>('/wallet/Topup.php?action=create', {
+      method: 'POST',
+      body: new URLSearchParams({ amount: String(amount), account_id: String(accountId) })
+    });
+  }
+
+  static async cancelTopup(orderHash: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/wallet/Topup.php?action=cancel', {
+      method: 'POST',
+      body: new URLSearchParams({ order_hash: orderHash })
+    });
+  }
+
+  static async generateQRCode(accountId: number): Promise<{ qr_data: string; qr_url: string }> {
+    return this.request<{ qr_data: string; qr_url: string }>(`/wallet/QRCode.php?action=generate&account_id=${accountId}`);
+  }
+
+  static async getAccountInfo(id: number): Promise<WalletAccount> {
+    return this.request<WalletAccount>(`/wallet/Account.php?action=info&id=${id}`);
+  }
+
+  static async getTransactions(params: { account_id?: number; sort?: string }): Promise<{ transactions: WalletTransaction[] }> {
+    const query = new URLSearchParams();
+    if (params.account_id !== undefined) query.set('account_id', String(params.account_id));
+    if (params.sort !== undefined) query.set('sort', params.sort);
+    return this.request<{ transactions: WalletTransaction[] }>(`/wallet/Transaction.php?action=list&${query.toString()}`);
+  }
+
+  static async getMerchants(): Promise<{ merchants: WalletMerchant[]; stats: WalletMerchantStats }> {
+    return this.request<{ merchants: WalletMerchant[]; stats: WalletMerchantStats }>('/wallet/Merchant.php?action=list');
+  }
+
+  static async getMerchantInfo(id: number): Promise<{ merchant: WalletMerchantDetails; stats: { total_payments: number; total_earned: number }; orders: WalletMerchantOrder[] }> {
+    return this.request<{ merchant: WalletMerchantDetails; stats: { total_payments: number; total_earned: number }; orders: WalletMerchantOrder[] }>(`/wallet/Merchant.php?action=info&id=${id}`);
+  }
+
+  static async updateMerchant(id: number, params: Partial<WalletMerchantDetails>): Promise<{ success: boolean; message?: string }> {
+    const body = new URLSearchParams();
+    body.set('id', String(id));
+    if (params.img !== undefined) body.set('img', params.img);
+    if (params.description !== undefined) body.set('description', params.description);
+    if (params.s_url !== undefined) body.set('s_url', params.s_url);
+    if (params.e_url !== undefined) body.set('e_url', params.e_url);
+    if (params.c_url !== undefined) body.set('c_url', params.c_url);
+    if (params.fee_paid !== undefined) body.set('fee_paid', params.fee_paid);
+
+    return this.request<{ success: boolean; message?: string }>('/wallet/Merchant.php?action=update', {
+      method: 'POST',
+      body
+    });
+  }
+
+  static async resolveQRCode(qrData: string): Promise<{ type: string; account_id?: number; account_name?: string; owner_name?: string }> {
+    return this.request<{ type: string; account_id?: number; account_name?: string; owner_name?: string }>(`/wallet/QRCode.php?action=resolve&qr_data=${encodeURIComponent(qrData)}`);
   }
 }
