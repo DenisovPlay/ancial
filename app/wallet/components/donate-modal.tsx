@@ -278,7 +278,7 @@ export function DonateModal({
 
         {/* STEP 2: SELECT SENDER ACCOUNT & CONFIRM (EXACT PHP MATCH) */}
         {step === 'select' && (
-          <div className="w-full flex flex-col gap-3 text-left relative">
+          <div className="w-full flex flex-col gap-3 text-left relative max-h-128 overflow-y-auto">
             {/* Top Amount Banner matching form.php */}
             <div className="fixed top-16 inset-x-0 z-[30] px-3 bg-gradient-to-b from-zinc-900">
               <div className="rounded-3xl border border-zinc-600/30 bg-zinc-800 flex items-center justify-center p-3">
@@ -291,7 +291,7 @@ export function DonateModal({
 
             {/* Account List matching form.php exactly with iOS touch scrolling fixes */}
             <div
-              className="flex flex-col gap-3 max-h-128 overflow-y-auto overscroll-contain pr-1 pt-19 pb-35"
+              className="flex flex-col gap-3 pt-19 pb-35"
               style={{ WebkitOverflowScrolling: 'touch' }}
               onTouchStart={(e) => e.stopPropagation()}
               onTouchMove={(e) => e.stopPropagation()}
