@@ -206,6 +206,7 @@ export default function Modal({
             bodyClassName,
           )}
           onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
         >
           {children}
         </div>

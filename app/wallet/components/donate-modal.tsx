@@ -289,8 +289,13 @@ export function DonateModal({
               </div>
             </div>
 
-            {/* Account List matching form.php exactly */}
-            <div className="flex flex-col gap-3 max-h-128 overflow-y-auto pr-1 pt-19 pb-35">
+            {/* Account List matching form.php exactly with iOS touch scrolling fixes */}
+            <div
+              className="flex flex-col gap-3 max-h-128 overflow-y-auto overscroll-contain pr-1 pt-19 pb-35"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {loadingAccounts ? (
                 <div className="flex flex-col gap-3">
                   <div className="h-16 bg-zinc-800/80 border border-zinc-600/30 rounded-3xl animate-pulse" />
