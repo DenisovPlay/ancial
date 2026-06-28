@@ -710,7 +710,8 @@ export default function WalletContent() {
     );
   }
 
-  if (error && error !== 'У вас нет активных счетов. Создайте счет в разделе \'Кошелёк\'') {
+  const isNoAccountsError = error?.includes('У вас нет активных счетов');
+  if (error && !isNoAccountsError) {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-white p-4">
         <p className="text-xl text-red-500 mb-4">{error}</p>
@@ -741,18 +742,18 @@ export default function WalletContent() {
       <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
 
       {!hasAccounts ? (
-        <div className="w-screen min-h-screen flex flex-col items-center justify-center gap-3 bg-black text-white">
+        <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-black text-white">
           <div className="flex-grow max-w-md flex flex-col items-start justify-end p-3 pb-0 w-full">
             <WalletLogo className="shrink-0 h-10 mb-3 hover:opacity-80 duration-300 cursor-pointer active:scale-95" />
             <div className="flex-grow"></div>
             <span className="text-3xl font-bold">Начните сейчас!</span>
             <span className="text-xl text-zinc-300 mt-2">Откройте бесплатный счёт, переводите и получайте средства по всему миру.</span>
-            <div className="w-full mt-4 flex justify-center">
-              <img src="/img/wallet-intro.webp" alt="Wallet Intro" className="w-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <div className="w-full mt-4 flex justify-center absolute bottom-0 right-0">
+              <img src="/img/backgrounds/wallet-intro.webp" alt="Wallet Intro" className="w-full max-h-140 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
           </div>
           <div className="flex flex-col items-center justify-center gap-3 w-full max-w-md fixed bottom-20 lg:bottom-3 px-3">
-            <button onClick={() => setIsProductsModalOpen(true)} className="flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl w-full shadow cursor-pointer">
+            <button onClick={() => setIsProductsModalOpen(true)} className="flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl w-full shadow cursor-pointer border border-zinc-600/30">
               Открыть новый счёт
             </button>
           </div>
