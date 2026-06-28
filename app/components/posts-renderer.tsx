@@ -8,6 +8,7 @@ import { Dropdown, DropdownItem } from './navigation';
 import { SvgIcon } from '../feed/editor-shared';
 import YandexRtb from './yandex-rtb';
 import Link from 'next/link';
+import { DonateModal } from '../wallet/components/donate-modal';
 
 type Id = string | number;
 type VoteDirection = 'up' | 'down';
@@ -370,9 +371,6 @@ function PostCardInner({
 
   const handleDonate = () => {
     onDonate?.(post);
-    if (!onDonate && post.author.username) {
-      callLegacy('donateframe', 'vf', post.author.username);
-    }
   };
 
   const handleEdit = () => {
@@ -734,31 +732,46 @@ export default function PostsRenderer({
   posts,
   shareBaseUrl,
 }: PostsRendererProps) {
+  const [donatePost, setDonatePost] = useState<PostData | null>(null);
+
   if (!posts.length) return null;
 
+  const handleDonatePost = onDonate || ((post: PostData) => setDonatePost(post));
+
   return (
-    <div className={cn('flex flex-col gap-3 w-full', className)}>
-      {posts.map((post, index) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          renderIndex={index + 1}
-          currentUserId={currentUserId}
-          hideComments={hideComments}
-          lang={lang}
-          onBookmark={onBookmark}
-          onComment={onComment}
-          onDelete={onDelete}
-          onDonate={onDonate}
-          onEdit={onEdit}
-          onNavigate={onNavigate}
-          onReport={onReport}
-          onShare={onShare}
-          onTranslate={onTranslate}
-          onVote={onVote}
-          shareBaseUrl={shareBaseUrl}
-        />
-      ))}
-    </div>
+    <>
+      <div className={cn('flex flex-col gap-3 w-full', className)}>
+        {posts.map((post, index) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            renderIndex={index + 1}
+            currentUserId={currentUserId}
+            hideComments={hideComments}
+            lang={lang}
+            onBookmark={onBookmark}
+            onComment={onComment}
+            onDelete={onDelete}
+            onDonate={handleDonatePost}
+            onEdit={onEdit}
+            onNavigate={onNavigate}
+            onReport={onReport}
+            onShare={onShare}
+            onTranslate={onTranslate}
+            onVote={onVote}
+            shareBaseUrl={shareBaseUrl}
+          />
+        ))}
+      </div>
+
+      <DonateModal
+        isOpen={!!donatePost}
+        onClose={() => setDonatePost(null)}
+        recipientUsername={donatePost?.author.username || undefined}
+        recipientName={donatePost?.author.name}
+        recipientImg={donatePost?.author.img}
+      />
+    </>
   );
 }
+

@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { AncialAPI, type WalletOverview, type WalletAccount, type WalletGateway, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
 import Modal from '../components/modal';
 import WalletLogo from './wallet-logo';
+import { TransactionItem, TransactionDetailsModal } from './components/transaction-item';
+
 
 const animationStyles = `
   .checkmark-circle {
@@ -671,7 +673,7 @@ export default function WalletContent() {
         </div>
 
         {/* Gateways skeleton */}
-        <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl shrink-0 mt-3">
+        <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl shrink-0">
           <div className="h-8 w-32 bg-zinc-800/70 rounded-xl animate-pulse mx-3 lg:mx-0" />
           <div className="flex flex-nowrap gap-3 items-center w-full overflow-x-auto viewport px-3 lg:-mx-3 -my-3 py-3">
             {[1, 2, 3, 4].map((i) => (
@@ -687,7 +689,7 @@ export default function WalletContent() {
         </div>
 
         {/* History skeleton */}
-        <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl shrink-0 mt-3">
+        <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl shrink-0">
           <div className="h-8 w-32 bg-zinc-800/70 rounded-xl animate-pulse mx-3 lg:mx-0" />
           <div className="flex flex-col w-full border border-zinc-600/30 bg-zinc-800/50 rounded-3xl overflow-hidden p-3 gap-3">
             {[1, 2, 3, 4].map((i) => (
@@ -826,7 +828,7 @@ export default function WalletContent() {
           </div>
 
           {/* SERVICES */}
-          <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl duration-300 shrink-0 mt-3">
+          <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl duration-300 shrink-0">
             <div className="flex gap-3 items-center w-full duration-300">
               <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">{strings.payments}</span>
               <div className="hidden lg:flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300">
@@ -861,7 +863,7 @@ export default function WalletContent() {
 
           {/* Pending topups */}
           {topupOrders.length > 0 && (
-            <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl duration-300 shrink-0 mt-3">
+            <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl duration-300 shrink-0">
               <div className="flex gap-3 items-center w-full duration-300">
                 <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">Пополнения</span>
                 <div className="hidden lg:flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300">
@@ -904,7 +906,7 @@ export default function WalletContent() {
           )}
 
           {/* HISTORY */}
-          <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl duration-300 shrink-0 mt-3">
+          <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl duration-300 shrink-0">
             <div className="flex gap-3 items-center w-full duration-300">
               <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">{strings.history}</span>
               <div className="flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300">
@@ -915,62 +917,15 @@ export default function WalletContent() {
             </div>
             <div className="flex flex-col items-center justify-center w-full border border-zinc-600/30 bg-zinc-800/50 lg:bg-zinc-800/70 rounded-3xl overflow-hidden duration-300">
               {/* HISTORY_ITEMS */}
-              {transactions.map((trans) => {
-                const transactionKind = getTransactionKind(trans);
-                let typeoftrans = null;
-                let textmoncol = '';
-                let displayAmount = '';
-                let accountLabel = '';
-                let title = '';
-
-                if (transactionKind === 'internal') {
-                  textmoncol = "text-blue-500";
-                  title = "Между счетами";
-                  accountLabel = `${trans.sender}->${trans.receiver}`;
-                  displayAmount = `<span class="${textmoncol} font-semibold">${trans.amount}</span>`;
-                  typeoftrans = (
-                    <div className="border border-zinc-600/30 shrink-0 flex justify-center items-center bg-blue-500/25 h-10 w-10 lg:h-12 lg:w-12 duration-300 rounded-full cursor-pointer">
-                      <svg className="fill-blue-500 h-6 w-6 lg:w-8 lg:h-8 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 11.478516 5 A 1.50015 1.50015 0 0 0 10.439453 5.4394531 L 4.4394531 11.439453 A 1.50015 1.50015 0 1 0 6.5605469 13.560547 L 10 10.121094 L 10 35.25 C 10 39.512545 13.487455 43 17.75 43 C 22.012545 43 25.5 39.512545 25.5 35.25 L 25.5 12.75 C 25.5 10.108545 27.608545 8 30.25 8 C 32.891455 8 35 10.108545 35 12.75 L 35 37.878906 L 31.560547 34.439453 A 1.50015 1.50015 0 0 0 30.484375 33.984375 A 1.50015 1.50015 0 0 0 29.439453 36.560547 L 35.439453 42.560547 A 1.50015 1.50015 0 0 0 37.560547 42.560547 L 43.560547 36.560547 A 1.50015 1.50015 0 1 0 41.439453 34.439453 L 38 37.878906 L 38 12.75 C 38 8.4874554 34.512545 5 30.25 5 C 25.987455 5 22.5 8.4874554 22.5 12.75 L 22.5 35.25 C 22.5 37.891455 20.391455 40 17.75 40 C 15.108545 40 13 37.891455 13 35.25 L 13 10.121094 L 16.439453 13.560547 A 1.50015 1.50015 0 1 0 18.560547 11.439453 L 12.560547 5.4394531 A 1.50015 1.50015 0 0 0 11.478516 5 z"></path></svg>
-                    </div>
-                  );
-                } else if (transactionKind === 'out') {
-                  textmoncol = "text-red-500";
-                  title = "Исходящий";
-                  accountLabel = `${trans.sender}->${trans.other_party_name || trans.receiver}`;
-                  displayAmount = `<span class="${textmoncol} font-semibold">- ${trans.amount}</span>`;
-                  typeoftrans = (
-                    <div className="border border-zinc-600/30 shrink-0 flex justify-center items-center bg-red-500/25 h-10 w-10 lg:h-12 lg:w-12 duration-300 rounded-full cursor-pointer">
-                      <svg className="fill-red-500 h-6 w-6 lg:w-8 lg:h-8 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 8.5 5 A 1.50015 1.50015 0 1 0 8.5 8 L 39.5 8 A 1.50015 1.50015 0 1 0 39.5 5 L 8.5 5 z M 23.925781 8.0019531 A 1.50015 1.50015 0 0 0 22.976562 8.4042969 L 15.476562 15.404297 A 1.50015 1.50015 0 0 0 16.5 18 L 31.5 18 A 1.50015 1.50015 0 0 0 32.523438 15.404297 L 25.023438 8.4042969 A 1.50015 1.50015 0 0 0 23.925781 8.0019531 z M 24 11.550781 L 27.695312 15 L 20.304688 15 L 24 11.550781 z M 14.556641 24 C 13.182903 24 12 25.12855 12 26.529297 L 12 41 L 5.5 41 A 1.50015 1.50015 0 1 0 5.5 44 L 42.5 44 A 1.50015 1.50015 0 1 0 42.5 41 L 36.001953 41 L 36.001953 26.529297 C 36.001953 25.12855 34.81905 24 33.445312 24 L 14.556641 24 z M 18.828125 27 L 29.173828 27 A 3 3 0 0 0 32 31 A 3 3 0 0 0 33.001953 30.824219 L 33.001953 41 L 29.972656 41 C 29.696418 38.195222 27.12612 36 24 36 C 20.87388 36 18.303582 38.195222 18.027344 41 L 15 41 L 15 30.828125 A 3 3 0 0 0 16 31 A 3 3 0 0 0 18.828125 27 z M 24 30 A 2 2 0 0 0 24 34 A 2 2 0 0 0 24 30 z M 24 39 C 25.445326 39 26.66023 39.859275 26.939453 41 L 21.060547 41 C 21.33977 39.859275 22.554674 39 24 39 z"></path></svg>
-                    </div>
-                  );
-                } else {
-                  textmoncol = "text-green-500";
-                  title = "Входящий";
-                  accountLabel = `${trans.other_party_name || trans.sender}->${trans.receiver}`;
-                  displayAmount = `<span class="${textmoncol} font-semibold">+ ${trans.total}</span>`;
-                  typeoftrans = (
-                    <div className="border border-zinc-600/30 shrink-0 flex justify-center items-center bg-green-500/25 h-10 w-10 lg:h-12 lg:w-12 duration-300 rounded-full cursor-pointer">
-                      <svg className="fill-green-500 h-6 w-6 lg:w-8 lg:h-8 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 4 C 18.494917 4 14 8.494921 14 14 C 14 19.505079 18.494917 24 24 24 C 29.505083 24 34 19.505079 34 14 C 34 8.494921 29.505083 4 24 4 z M 24 7 C 27.883764 7 31 10.116238 31 14 C 31 17.883762 27.883764 21 24 21 C 20.116236 21 17 17.883762 17 14 C 17 10.116238 20.116236 7 24 7 z M 22.75 10 C 22.273 10 21.862531 10.336688 21.769531 10.804688 L 21.269531 13.304688 C 21.210531 13.598688 21.286562 13.903766 21.476562 14.134766 C 21.666562 14.366766 21.95 14.5 22.25 14.5 L 24.25 14.5 C 24.664 14.5 25 14.836 25 15.25 C 25 15.765 24.481 16 24 16 C 23.115 16 22.583922 15.660156 22.544922 15.660156 C 22.085922 15.363156 21.472969 15.489313 21.167969 15.945312 C 20.861969 16.405313 20.986313 17.026031 21.445312 17.332031 C 21.548313 17.400031 22.491 18 24 18 C 25.71 18 27 16.818 27 15.25 C 27 13.733 25.767 12.5 24.25 12.5 L 23.470703 12.5 L 23.570312 12 L 25.5 12 C 26.052 12 26.5 11.552 26.5 11 C 26.5 10.448 26.052 10 25.5 10 L 22.75 10 z M 2.5 13 A 1.50015 1.50015 0 1 0 2.5 16 L 5.5 16 C 5.7950452 16 6 16.204955 6 16.5 L 6 38.5 C 6 41.519774 8.4802259 44 11.5 44 L 36.5 44 C 39.519774 44 42 41.519774 42 38.5 L 42 16.5 C 42 16.204955 42.204955 16 42.5 16 L 45 16 A 1.50015 1.50015 0 1 0 45 13 L 42.5 13 C 40.585045 13 39 14.585045 39 16.5 L 39 38.5 C 39 39.898226 37.898226 41 36.5 41 L 11.5 41 C 10.101774 41 9 39.898226 9 38.5 L 9 16.5 C 9 14.585045 7.4149548 13 5.5 13 L 2.5 13 z M 18.402344 27.980469 A 1.50015 1.50015 0 0 0 17.394531 30.513672 L 22.894531 36.513672 A 1.50015 1.50015 0 0 0 25.105469 36.513672 L 30.605469 30.513672 A 1.50015 1.50015 0 0 0 29.554688 27.984375 A 1.50015 1.50015 0 0 0 28.394531 28.486328 L 24 33.28125 L 19.605469 28.486328 A 1.50015 1.50015 0 0 0 18.402344 27.980469 z"></path></svg>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div key={trans.id} onClick={() => { setSelectedTransaction(trans); setIsTransactionDetailsModalOpen(true); }} className="hover:bg-zinc-700/50 relative group shrink-0 flex items-center gap-3 justify-between active:rounded-3xl active:scale-95 duration-300 cursor-pointer w-full p-3">
-                    <div className="flex items-center gap-3">
-                      {typeoftrans}
-                      <div className="flex flex-col justify-center">
-                        <span className="text-sm lg:text-base text-zinc-100">{title}</span>
-                        <span className="text-xs lg:text-sm text-zinc-400 max-w-40 md:max-w-64 truncate">{accountLabel}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end shrink-0">
-                      <div dangerouslySetInnerHTML={{ __html: displayAmount }} />
-                      {trans.date && <span className="text-zinc-400 text-xs lg:text-sm max-w-20 md:max-w-64 text-right">{trans.date}</span>}
-                    </div>
-                  </div>
-                );
-              })}
+              {transactions.map((trans) => (
+                <TransactionItem
+                  key={trans.id}
+                  trans={trans}
+                  ownedIds={ownedAccountIds}
+                  systemLabel={strings.system}
+                  onClick={(t) => { setSelectedTransaction(t); setIsTransactionDetailsModalOpen(true); }}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -1740,86 +1695,13 @@ export default function WalletContent() {
       </Modal>
 
       {/* 6. MODAL: Transaction Details (Детали операции) */}
-      <Modal isOpen={isTransactionDetailsModalOpen} onClose={() => setIsTransactionDetailsModalOpen(false)} title="Детали операции" width="sm">
-        {selectedTransaction && (
-          <div className="flex flex-col gap-3 text-zinc-100 text-left">
-            {(() => {
-              const transactionKind = getTransactionKind(selectedTransaction);
-
-              return (
-                <div className="bg-zinc-800/60 rounded-3xl p-4 w-full text-sm space-y-2.5 border border-zinc-600/30">
-                  <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                    <span className="text-zinc-400">ID Операции:</span>
-                    <span className="font-mono text-zinc-200">#{selectedTransaction.id}</span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                    <span className="text-zinc-400">Тип:</span>
-                    <span className="font-semibold text-zinc-200">
-                      {transactionKind === 'internal'
-                        ? 'Внутренний перевод'
-                        : transactionKind === 'out'
-                          ? 'Исходящий перевод'
-                          : 'Входящий перевод'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                    <span className="text-zinc-400">Сумма:</span>
-                    <span className="text-lg font-bold text-zinc-100">{selectedTransaction.amount} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
-                  </div>
-                  {selectedTransaction.fees > 0 && (
-                    <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                      <span className="text-zinc-400">Комиссия:</span>
-                      <span className="text-zinc-300">{selectedTransaction.fees} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                    <span className="text-zinc-400">Зачислено:</span>
-                    <span className="text-lg font-bold text-green-500">{selectedTransaction.total} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
-                  </div>
-                  {selectedTransaction.comment && (
-                    <div className="flex flex-col gap-1 border-b border-zinc-700 pb-2">
-                      <span className="text-zinc-400 text-xs">Комментарий:</span>
-                      <span className="text-zinc-100">{selectedTransaction.comment}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                    <span className="text-zinc-400">Отправитель:</span>
-                    <span className="text-zinc-300">
-                      {selectedTransaction.sender === -1 ? 'Система' : `Счёт №${selectedTransaction.sender}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                    <span className="text-zinc-400">Получатель:</span>
-                    <span className="text-zinc-300">
-                      {selectedTransaction.receiver === -1 ? 'Система' : `Счёт №${selectedTransaction.receiver}`}
-                      {transactionKind !== 'internal' && selectedTransaction.other_party_name && ` (${selectedTransaction.other_party_name})`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-0.5">
-                    <span className="text-zinc-400">Дата:</span>
-                    <span className="text-zinc-400 text-xs">{selectedTransaction.date}</span>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => window.open(`https://ancial.ru/api/wallet/generate_receipt.php?id=${selectedTransaction.id}`, '_blank')}
-                className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
-              >
-                Чек
-              </button>
-              <button
-                onClick={() => setIsTransactionDetailsModalOpen(false)}
-                className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-700"
-              >
-                Закрыть
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <TransactionDetailsModal
+        transaction={selectedTransaction}
+        isOpen={isTransactionDetailsModalOpen}
+        onClose={() => setIsTransactionDetailsModalOpen(false)}
+        ownedIds={ownedAccountIds}
+        systemLabel={strings.system}
+      />
 
       {/* 5. MODAL: Withdrawal (Вывод средств) */}
       <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`Вывод через ${gatewayConfig?.withdrawal_fields?.title || selectedGateway?.name || 'платёжную систему'}`} width="sm">
