@@ -85,6 +85,9 @@ type DialogMessage = {
   time_full?: string | null;
   type?: number | string | null;
   userImg?: string | null;
+  dialog_id?: number | string | null;
+  di_id?: number | string | null;
+  isSending?: boolean;
 };
 
 type DialogMessagesResponse = {
@@ -1533,26 +1536,34 @@ function MessageBubble({
                 })}
               </div>
 
-              {timeLabel ? (
-                <span
-                  className={cn(
-                    'select-none whitespace-nowrap text-[10px]',
-                    isOwn ? 'text-zinc-300' : 'text-zinc-400',
-                  )}
-                >
-                  {timeLabel}
+              {message.isSending ? (
+                <span className="select-none whitespace-nowrap text-[10px] flex items-center gap-1">
+                  <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
                 </span>
-              ) : null}
+              ) : (
+                <>
+                  {timeLabel ? (
+                    <span
+                      className={cn(
+                        'select-none whitespace-nowrap text-[10px]',
+                        isOwn ? 'text-zinc-300' : 'text-zinc-400',
+                      )}
+                    >
+                      {timeLabel}
+                    </span>
+                  ) : null}
 
-              {isOwn ? (
-                <Icon
-                  name={getMessageStatusIconName(message.status)}
-                  className={cn(
-                    'h-3 w-3',
-                    String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
-                  )}
-                />
-              ) : null}
+                  {isOwn ? (
+                    <Icon
+                      name={getMessageStatusIconName(message.status)}
+                      className={cn(
+                        'h-3 w-3',
+                        String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
+                      )}
+                    />
+                  ) : null}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -2375,7 +2386,38 @@ export default function MessagesContent() {
     scheduleWsRefresh();
   };
 
-  const handleWsMessageReaction = () => {
+  const handleWsMessageReaction = (payload?: unknown) => {
+    const wsPayload = payload as WsPayload | undefined;
+    if (wsPayload?.data?.message_id && wsPayload.data.reaction && wsPayload.data.action) {
+      const msgId = toNumber(wsPayload.data.message_id as string | number);
+      const dataObj = wsPayload.data as Record<string, unknown>;
+      const reactedByStr = String(dataObj.reacted_by ?? dataObj.user_id ?? 0);
+      const reaction = String(wsPayload.data.reaction);
+      const action = String(wsPayload.data.action);
+
+      setMessages((currentMessages) =>
+        currentMessages.map((msg) => {
+          if (getMessageId(msg) !== msgId) return msg;
+          const currentReactions = parseReactions(msg.reactions);
+          let nextReactions = [...currentReactions];
+          if (action === 'add') {
+            if (!nextReactions.some((r) => r.userId === reactedByStr && r.emoji === reaction)) {
+              nextReactions.push({ userId: reactedByStr, emoji: reaction });
+            }
+          } else {
+            nextReactions = nextReactions.filter(
+              (r) => !(r.userId === reactedByStr && r.emoji === reaction),
+            );
+          }
+          return {
+            ...msg,
+            reactions: nextReactions.map((r) => `${r.userId}:${r.emoji}`).join('|'),
+          };
+        }),
+      );
+      return;
+    }
+
     void loadMessagesInitial(dialogSessionRef.current, true);
     void loadDialogs({ force: true });
   };
@@ -2499,16 +2541,38 @@ export default function MessagesContent() {
   };
 
   const sendReaction = async (messageId: number, reaction: string, action: 'add' | 'delete') => {
+    const currentUserIdStr = String(currentUserId);
+
+    setMessages((currentMessages) =>
+      currentMessages.map((msg) => {
+        if (getMessageId(msg) !== messageId) return msg;
+        const currentReactions = parseReactions(msg.reactions);
+        let nextReactions = [...currentReactions];
+        if (action === 'add') {
+          if (!nextReactions.some((r) => r.userId === currentUserIdStr && r.emoji === reaction)) {
+            nextReactions.push({ userId: currentUserIdStr, emoji: reaction });
+          }
+        } else {
+          nextReactions = nextReactions.filter(
+            (r) => !(r.userId === currentUserIdStr && r.emoji === reaction),
+          );
+        }
+        return {
+          ...msg,
+          reactions: nextReactions.map((r) => `${r.userId}:${r.emoji}`).join('|'),
+        };
+      }),
+    );
+
     try {
       await AncialAPI.messageAction('reaction', { msg_id: messageId, reaction, action });
-
-      await loadMessagesInitial(dialogSessionRef.current, true);
     } catch (error) {
       console.error('Failed to update reaction', error);
       notify({
         content: lang?.somethingwrong || 'Произошла ошибка =(',
         type: 'error',
       });
+      await loadMessagesInitial(dialogSessionRef.current, true);
     }
   };
 
@@ -2673,14 +2737,43 @@ export default function MessagesContent() {
       type: 'info',
     });
 
+    let tempId: number | null = null;
+
     try {
       const imageUrl = await uploadToImgbb(file);
+      tempId = Date.now();
+      const currentReplyingTo = replyingTo;
+      const imgHtml = `<img src="${imageUrl}" data-src="${imageUrl}" data-type="image" data-fancybox="images" class="max-h-48 lg:max-h-64 shrink-0 cursor-pointer duration-300 active:scale-95 overflow rounded-lg">`;
+
+      const optimisticMsg: DialogMessage = {
+        id: tempId,
+        dialog_id: dialogId,
+        sender_id: currentUserId,
+        message: imgHtml,
+        date: new Date().toISOString(),
+        isSending: true,
+        reply_to: currentReplyingTo ? currentReplyingTo.id : null,
+        reply_author: currentReplyingTo ? currentReplyingTo.sender_id : null,
+        reply_msg: currentReplyingTo ? currentReplyingTo.message : null,
+        reply_type: currentReplyingTo ? currentReplyingTo.type : null,
+        type: 1,
+      };
+
+      setReplyingTo(null);
+      scrollActionRef.current = { type: 'bottom' };
+      setMessages((prev) => [...prev, optimisticMsg]);
+
+      window.requestAnimationFrame(() => {
+        if (messageScrollRef.current) {
+          messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
+        }
+      });
+
       await AncialAPI.sendMessage({
         di_id: dialogId,
         img: imageUrl,
-        ...(replyingTo ? { reply_to: replyingTo.id } : {})
+        ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
       });
-      setReplyingTo(null);
 
       notify({
         content: lang?.done || 'Готово',
@@ -2795,18 +2888,43 @@ export default function MessagesContent() {
       return;
     }
 
+    const tempId = Date.now();
+    const currentReplyingTo = replyingTo;
+
+    const optimisticMsg: DialogMessage = {
+      id: tempId,
+      dialog_id: dialogId,
+      sender_id: currentUserId,
+      message: escapeHtml(nextValue),
+      date: new Date().toISOString(),
+      isSending: true,
+      reply_to: currentReplyingTo ? currentReplyingTo.id : null,
+      reply_author: currentReplyingTo ? currentReplyingTo.sender_id : null,
+      reply_msg: currentReplyingTo ? currentReplyingTo.message : null,
+      reply_type: currentReplyingTo ? currentReplyingTo.type : null,
+      type: 0,
+    };
+
+    setComposerText('');
+    setReplyingTo(null);
+    scrollActionRef.current = { type: 'bottom' };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    window.requestAnimationFrame(() => {
+      if (messageScrollRef.current) {
+        messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
+      }
+    });
+
     setSendingMessage(true);
 
     try {
       await AncialAPI.sendMessage({
         di_id: dialogId,
         message: nextValue,
-        ...(replyingTo ? { reply_to: replyingTo.id } : {})
+        ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
       });
 
-      setComposerText('');
-      setReplyingTo(null);
-      scrollActionRef.current = { type: 'bottom' };
       await loadMessagesNewer(dialogSessionRef.current);
       await loadDialogs({ force: true });
     } catch (error) {
@@ -2816,6 +2934,7 @@ export default function MessagesContent() {
         type: 'error',
       });
     } finally {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setSendingMessage(false);
     }
   };
@@ -2824,18 +2943,43 @@ export default function MessagesContent() {
     const dialogId = currentDialogIdRef.current;
     if (!dialogId) return;
 
+    const tempId = Date.now();
+    const currentReplyingTo = replyingTo;
+
+    const optimisticMsg: DialogMessage = {
+      id: tempId,
+      dialog_id: dialogId,
+      sender_id: currentUserId,
+      message: `:${stickerName}:`,
+      date: new Date().toISOString(),
+      isSending: true,
+      reply_to: currentReplyingTo ? currentReplyingTo.id : null,
+      reply_author: currentReplyingTo ? currentReplyingTo.sender_id : null,
+      reply_msg: currentReplyingTo ? currentReplyingTo.message : null,
+      reply_type: currentReplyingTo ? currentReplyingTo.type : null,
+      type: 1,
+    };
+
+    setStickerDropdownOpen(false);
+    setReplyingTo(null);
+    scrollActionRef.current = { type: 'bottom' };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    window.requestAnimationFrame(() => {
+      if (messageScrollRef.current) {
+        messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
+      }
+    });
+
     setSendingMessage(true);
 
     try {
       await AncialAPI.sendMessage({
         di_id: dialogId,
         sticker: `:${stickerName}:`,
-        ...(replyingTo ? { reply_to: replyingTo.id } : {})
+        ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
       });
 
-      setStickerDropdownOpen(false);
-      setReplyingTo(null);
-      scrollActionRef.current = { type: 'bottom' };
       await loadMessagesNewer(dialogSessionRef.current);
       await loadDialogs({ force: true });
     } catch (error) {
@@ -2845,6 +2989,7 @@ export default function MessagesContent() {
         type: 'error',
       });
     } finally {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setSendingMessage(false);
     }
   };
@@ -2854,6 +2999,34 @@ export default function MessagesContent() {
     const normalizedStickerName = normalizeText(sticker.name);
     if (!dialogId || !normalizedStickerName) return;
 
+    const tempId = Date.now();
+    const currentReplyingTo = replyingTo;
+
+    const optimisticMsg: DialogMessage = {
+      id: tempId,
+      dialog_id: dialogId,
+      sender_id: currentUserId,
+      message: `:7tv-${normalizedStickerName}-${sticker.id}:`,
+      date: new Date().toISOString(),
+      isSending: true,
+      reply_to: currentReplyingTo ? currentReplyingTo.id : null,
+      reply_author: currentReplyingTo ? currentReplyingTo.sender_id : null,
+      reply_msg: currentReplyingTo ? currentReplyingTo.message : null,
+      reply_type: currentReplyingTo ? currentReplyingTo.type : null,
+      type: 0,
+    };
+
+    setStickerDropdownOpen(false);
+    setReplyingTo(null);
+    scrollActionRef.current = { type: 'bottom' };
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    window.requestAnimationFrame(() => {
+      if (messageScrollRef.current) {
+        messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
+      }
+    });
+
     setSendingMessage(true);
 
     try {
@@ -2862,12 +3035,9 @@ export default function MessagesContent() {
       await AncialAPI.sendMessage({
         di_id: dialogId,
         message: `:7tv-${normalizedStickerName}-${sticker.id}:`,
-        ...(replyingTo ? { reply_to: replyingTo.id } : {})
+        ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
       });
 
-      setStickerDropdownOpen(false);
-      setReplyingTo(null);
-      scrollActionRef.current = { type: 'bottom' };
       await loadMessagesNewer(dialogSessionRef.current);
       await loadDialogs({ force: true });
     } catch (error) {
@@ -2877,6 +3047,7 @@ export default function MessagesContent() {
         type: 'error',
       });
     } finally {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setSendingMessage(false);
     }
   };
