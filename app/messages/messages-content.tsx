@@ -2472,14 +2472,9 @@ export default function MessagesContent() {
           if (action === 'add') {
             const existingIndex = nextReactions.findIndex((r) => r.userId === reactedByStr);
             if (existingIndex !== -1) {
-              const oldReaction = nextReactions[existingIndex].emoji;
               nextReactions.splice(existingIndex, 1);
-              if (oldReaction !== reaction) {
-                nextReactions.push({ userId: reactedByStr, emoji: reaction });
-              }
-            } else {
-              nextReactions.push({ userId: reactedByStr, emoji: reaction });
             }
+            nextReactions.push({ userId: reactedByStr, emoji: reaction });
           } else {
             nextReactions = nextReactions.filter(
               (r) => !(r.userId === reactedByStr && r.emoji === reaction),
