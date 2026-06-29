@@ -4,6 +4,9 @@ import { join } from 'node:path';
 let iconSpriteMarkup: string | null = null;
 
 function getIconSpriteMarkup() {
+  if (process.env.NODE_ENV === 'development') {
+    return readFileSync(join(process.cwd(), 'public/icons.svg'), 'utf8');
+  }
   if (!iconSpriteMarkup) {
     iconSpriteMarkup = readFileSync(join(process.cwd(), 'public/icons.svg'), 'utf8');
   }

@@ -329,6 +329,7 @@ export default function CreatePostContent() {
         type: 'success',
         time: 5,
       });
+      router.push('/feed');
     } catch (error) {
       console.error('Create post failed', error);
       showNote({

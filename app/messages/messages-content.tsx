@@ -76,6 +76,10 @@ type DialogMessage = {
   reactions?: string | null;
   sender_id?: number | string | null;
   status?: number | string | null;
+  reply_to?: number | string | null;
+  reply_msg?: string | null;
+  reply_type?: number | string | null;
+  reply_author?: number | string | null;
   time?: string | null;
   timeFull?: string | null;
   time_full?: string | null;
@@ -1326,6 +1330,7 @@ function MessageBubble({
   lang,
   message,
   onAddReaction,
+  onReply,
   onDeleteMessage,
   onDeleteReaction,
   onEditMessage,
@@ -1337,6 +1342,7 @@ function MessageBubble({
   lang: LangMap;
   message: DialogMessage;
   onAddReaction: (messageId: number, reaction: string) => void;
+  onReply: (message: DialogMessage) => void;
   onDeleteMessage: (message: DialogMessage) => void;
   onDeleteReaction: (messageId: number, reaction: string) => void;
   onEditMessage: (message: DialogMessage) => void;
@@ -1419,6 +1425,30 @@ function MessageBubble({
             )}
           >
             <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
+              {message.reply_to ? (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const el = document.getElementById(`msg-${message.reply_to}`);
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      el.classList.add('bg-purple-500/30', 'transition-colors', 'duration-500');
+                      setTimeout(() => el.classList.remove('bg-purple-500/30'), 1500);
+                    }
+                  }}
+                  className={cn(
+                    "flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-2xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 transition-colors max-w-full",
+                    !isOwn && isTextMessage && !isStickerOnlyMessage && "bg-zinc-800/50 hover:bg-zinc-700/50"
+                  )}
+                >
+                  <span className="font-semibold text-purple-300 text-xs">
+                    {message.reply_author == currentUserId ? 'Вы' : (foreignUser?.fname || 'Собеседник')}
+                  </span>
+                  <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
+                    {message.reply_type == 1 ? 'Картинка/стикер' : message.reply_msg?.replace(/<[^>]*>?/gm, '') || 'Сообщение'}
+                  </span>
+                </div>
+              ) : null}
               {messageImages.length ? (
                 <div
                   className={cn(
@@ -1549,6 +1579,16 @@ function MessageBubble({
           ))}
         </div>
 
+        <DropdownItem
+          icon="IC-reply"
+          className="h-8"
+          onClick={() => {
+            onReply(message);
+          }}
+        >
+          {lang?.reply || 'Ответить'}
+        </DropdownItem>
+
         {canTranslateMessage && typeof translator === 'function' ? (
           <DropdownItem
             icon="IC-translate"
@@ -1638,6 +1678,9 @@ export default function MessagesContent() {
   const [stickerDropdownOpen, setStickerDropdownOpen] = useState(false);
 
   const [hasActiveCall, setHasActiveCall] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<DialogMessage | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const activeCallTimeoutRef = useRef<number | null>(null);
 
   const dialogsInFlightRef = useRef(false);
@@ -1897,7 +1940,7 @@ export default function MessagesContent() {
     });
   };
 
-  const loadMessagesInitial = async (session: number) => {
+  const loadMessagesInitial = async (session: number, preserveScroll = false) => {
     const dialogId = currentDialogIdRef.current;
     const dialogHash = currentDialogHashRef.current;
     const cacheKey = currentMessageCacheKeyRef.current;
@@ -1911,7 +1954,7 @@ export default function MessagesContent() {
     const lastCachedId = getLatestMessageId(cachedMessages);
 
     if (cachedMessages.length) {
-      scrollActionRef.current = { type: 'bottom' };
+      if (!preserveScroll) scrollActionRef.current = { type: 'bottom' };
       setMessages(cachedMessages);
       if (cached?.foreignUser) {
         setForeignUser((currentForeignUser) => {
@@ -1921,7 +1964,7 @@ export default function MessagesContent() {
         });
       }
     } else {
-      scrollActionRef.current = { type: 'bottom' };
+      if (!preserveScroll) scrollActionRef.current = { type: 'bottom' };
       setMessages([]);
     }
 
@@ -1950,7 +1993,9 @@ export default function MessagesContent() {
         nextMessages: mergedMessages,
       });
 
-      scrollActionRef.current = { type: 'bottom' };
+      if (!preserveScroll) {
+        scrollActionRef.current = { type: 'bottom' };
+      }
 
       if (lastCachedId > getLatestMessageId(freshMessages)) {
         void loadMessagesNewer(session);
@@ -2014,6 +2059,8 @@ export default function MessagesContent() {
 
       if (stickToBottom) {
         scrollActionRef.current = { type: 'bottom' };
+      } else {
+        setUnreadCount((prev) => prev + newerMessages.length);
       }
     } catch (error) {
       console.error('Failed to load newer messages', error);
@@ -2300,7 +2347,7 @@ export default function MessagesContent() {
   };
 
   const handleWsMessageReaction = () => {
-    void loadMessagesInitial(dialogSessionRef.current);
+    void loadMessagesInitial(dialogSessionRef.current, true);
     void loadDialogs({ force: true });
   };
 
@@ -2426,7 +2473,7 @@ export default function MessagesContent() {
     try {
       await AncialAPI.messageAction('reaction', { msg_id: messageId, reaction, action });
 
-      await loadMessagesInitial(dialogSessionRef.current);
+      await loadMessagesInitial(dialogSessionRef.current, true);
     } catch (error) {
       console.error('Failed to update reaction', error);
       notify({
@@ -2599,7 +2646,12 @@ export default function MessagesContent() {
 
     try {
       const imageUrl = await uploadToImgbb(file);
-      await AncialAPI.sendMessage({ di_id: dialogId, img: imageUrl });
+      await AncialAPI.sendMessage({
+        di_id: dialogId,
+        img: imageUrl,
+        ...(replyingTo ? { reply_to: replyingTo.id } : {})
+      });
+      setReplyingTo(null);
 
       notify({
         content: lang?.done || 'Готово',
@@ -2717,9 +2769,14 @@ export default function MessagesContent() {
     setSendingMessage(true);
 
     try {
-      await AncialAPI.sendMessage({ di_id: dialogId, message: nextValue });
+      await AncialAPI.sendMessage({
+        di_id: dialogId,
+        message: nextValue,
+        ...(replyingTo ? { reply_to: replyingTo.id } : {})
+      });
 
       setComposerText('');
+      setReplyingTo(null);
       scrollActionRef.current = { type: 'bottom' };
       await loadMessagesNewer(dialogSessionRef.current);
       await loadDialogs({ force: true });
@@ -2741,9 +2798,14 @@ export default function MessagesContent() {
     setSendingMessage(true);
 
     try {
-      await AncialAPI.sendMessage({ di_id: dialogId, sticker: `:${stickerName}:` });
+      await AncialAPI.sendMessage({
+        di_id: dialogId,
+        sticker: `:${stickerName}:`,
+        ...(replyingTo ? { reply_to: replyingTo.id } : {})
+      });
 
       setStickerDropdownOpen(false);
+      setReplyingTo(null);
       scrollActionRef.current = { type: 'bottom' };
       await loadMessagesNewer(dialogSessionRef.current);
       await loadDialogs({ force: true });
@@ -2768,9 +2830,14 @@ export default function MessagesContent() {
     try {
       seedSevenTvStickerCache([sticker]);
 
-      await AncialAPI.sendMessage({ di_id: dialogId, message: `:7tv-${normalizedStickerName}-${sticker.id}:` });
+      await AncialAPI.sendMessage({
+        di_id: dialogId,
+        message: `:7tv-${normalizedStickerName}-${sticker.id}:`,
+        ...(replyingTo ? { reply_to: replyingTo.id } : {})
+      });
 
       setStickerDropdownOpen(false);
+      setReplyingTo(null);
       scrollActionRef.current = { type: 'bottom' };
       await loadMessagesNewer(dialogSessionRef.current);
       await loadDialogs({ force: true });
@@ -2798,6 +2865,12 @@ export default function MessagesContent() {
 
     if (scrollContainer.scrollTop < 160 && hasMoreMessages && !loadingOlder) {
       void loadMessagesOlder(dialogSessionRef.current);
+    }
+
+    const atBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 150;
+    setIsAtBottom(atBottom);
+    if (atBottom) {
+      setUnreadCount(0);
     }
   };
 
@@ -3088,7 +3161,7 @@ export default function MessagesContent() {
                       </div>
                     ) : (
                       <div id="msgbox" className="flex min-h-full flex-col">
-                        <div className="mt-auto pb-[72px]">
+                        <div className={cn("mt-auto transition-all duration-300", replyingTo ? "pb-[130px]" : "pb-[72px]")}>
                           {loadingOlder ? (
                             <div className="mb-3 flex items-center justify-center">
                               <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-purple-500" />
@@ -3113,6 +3186,12 @@ export default function MessagesContent() {
                                 onAddReaction={(messageId, reaction) => {
                                   void sendReaction(messageId, reaction, 'add');
                                 }}
+                                onReply={(message) => {
+                                  setReplyingTo(message);
+                                  setTimeout(() => {
+                                    messageInputRef.current?.focus();
+                                  }, 0);
+                                }}
                                 onDeleteMessage={(message) => {
                                   void handleMessageDelete(message);
                                 }}
@@ -3125,6 +3204,8 @@ export default function MessagesContent() {
                             ),
                           )}
 
+
+
                           {!dialogLoading && !messages.length ? (
                             <div className="flex min-h-[50vh] items-center justify-center">
                               <span className="rounded-full border border-zinc-600/30 bg-zinc-900/70 px-4 py-2 text-sm text-zinc-300 shadow backdrop-blur-md backdrop-saturate-200">
@@ -3135,6 +3216,48 @@ export default function MessagesContent() {
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (messageScrollRef.current) {
+                        messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
+                      }
+                    }}
+                    className={cn(
+                      "cursor-pointer absolute right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-800/70 backdrop-blur-lg backdrop-saturate-200 backdrop-hue-200 text-white shadow-lg border border-zinc-600/30 hover:bg-zinc-700/70 active:scale-95 duration-300 transition-all",
+                      !isAtBottom ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none",
+                      replyingTo ? "bottom-[110px]" : "bottom-18"
+                    )}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 fill-white" viewBox="0 0 24 24" fill="currentColor">
+                      <use href="#IC-chevron-down"></use>
+                    </svg>
+                    {unreadCount > 0 && (
+                      <div className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-purple-500 px-1 text-xs font-bold text-white shadow">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </div>
+                    )}
+                  </button>
+
+                  <div
+                    className={cn(
+                      "absolute bottom-16 inset-x-3 z-10 flex items-center justify-between rounded-3xl border-x border-t border-zinc-600/30 bg-zinc-800/70 backdrop-blur backdrop-saturate-200 backdrop-hue-200 p-1 shadow-lg transition-all duration-300",
+                      replyingTo ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
+                    )}
+                  >
+                    <div className="flex flex-col min-w-0 pr-1 rounded-full border-l-2 border-purple-500 pl-2">
+                      <span className="text-xs font-semibold text-purple-400">Ответ {replyingTo?.sender_id == currentUserId ? 'себе' : (foreignUser?.fname || 'собеседнику')}</span>
+                      <span className="text-sm text-zinc-300 truncate max-w-[200px] sm:max-w-xs md:max-w-md -mt-1">
+                        {replyingTo?.type == 1 ? 'Картинка/стикер' : replyingTo?.message?.replace(/<[^>]*>?/gm, '') || 'Сообщение'}
+                      </span>
+                    </div>
+                    <button type="button" onClick={() => setReplyingTo(null)} className="shrink-0 p-1 rounded-full hover:bg-zinc-700/50 text-zinc-400 cursor-pointer active:scale-95 duration-300">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
+                      </svg>
+                    </button>
                   </div>
 
                   {blockedDialog ? (
