@@ -1584,7 +1584,7 @@ function MessageBubble({
                       }
                     }}
                     className={cn(
-                      "flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-2xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 transition-colors max-w-full",
+                      "flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-2xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 transition-colors max-w-full shadow",
                       !isOwn && isTextMessage && !isStickerOnlyMessage && "bg-zinc-800/50 hover:bg-zinc-700/50"
                     )}
                   >
@@ -1592,7 +1592,12 @@ function MessageBubble({
                       {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
                     </span>
                     <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
-                      {message.reply_type == 1 ? (lang?.image_sticker || 'Картинка/стикер') : message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')}
+                      {message.reply_type == 1 
+                        ? (lang?.image_sticker || 'Картинка/стикер') 
+                        : (getSevenTvStickerTokenData(message.reply_msg)
+                            ? (lang?.image_sticker || 'Картинка/стикер')
+                            : (message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')))
+                      }
                     </span>
                   </div>
                 ) : null}
