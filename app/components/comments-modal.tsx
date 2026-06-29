@@ -201,7 +201,7 @@ function CommentCard({
         </Dropdown>
       </div>
 
-      <div className="text-base lg:text-lg text-zinc-200 font-medium">{comment.content}</div>
+      <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: comment.content }} />
     </div>
   );
 }

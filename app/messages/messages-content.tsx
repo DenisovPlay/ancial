@@ -1463,34 +1463,33 @@ function MessageBubble({
           startLongPress();
         }}
       >
-        <div className={cn('flex w-full relative', isOwn ? 'justify-end' : 'justify-start')} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+        {/* Анимированная иконка ответа при свайпе */}
+        <motion.div
+          style={{ opacity: replyIconOpacity, scale: replyIconScale, x: replyIconX }}
+          className="absolute right-2 top-1/2 z-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-800/70 backdrop-blur backdrop-saturate-200 backdrop-hue-200 border border-zinc-600/30 text-zinc-200 pointer-events-none"
+        >
+          <Icon name="IC-reply" className="h-4 w-4 fill-current" />
+        </motion.div>
 
-          {/* Анимированная иконка ответа при свайпе */}
-          <motion.div
-            style={{ opacity: replyIconOpacity, scale: replyIconScale, x: replyIconX }}
-            className="absolute right-2 top-1/2 z-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-800/70 backdrop-blur backdrop-saturate-200 backdrop-hue-200 border border-zinc-600/30 text-zinc-200 pointer-events-none"
-          >
-            <Icon name="IC-reply" className="h-4 w-4 fill-current" />
-          </motion.div>
-
-          <motion.div
-            style={{ x: dragX }}
-            drag="x"
-            dragDirectionLock
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={{ left: 0.3, right: 0 }}
-            onDragStart={stopLongPress}
-            onDragEnd={(event, info) => {
-              if (info.offset.x < -50) {
-                onReply(message);
-                // Haptic feedback if supported
-                if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-                  window.navigator.vibrate(50);
-                }
+        <motion.div
+          style={{ x: dragX, userSelect: 'none', WebkitUserSelect: 'none' }}
+          className={cn('flex w-full relative z-10', isOwn ? 'justify-end' : 'justify-start')}
+          drag="x"
+          dragDirectionLock
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={{ left: 0.3, right: 0 }}
+          onDragStart={stopLongPress}
+          onDragEnd={(event, info) => {
+            if (info.offset.x < -50) {
+              onReply(message);
+              // Haptic feedback if supported
+              if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
               }
-            }}
-            className="relative z-10 flex flex-col"
-          >
+            }
+          }}
+        >
+          <div className="relative flex flex-col">
             <Dropdown
               open={menuOpen}
               onOpenChange={setMenuOpen}
@@ -1711,9 +1710,9 @@ function MessageBubble({
                 )}
               </div>
             </div>
-          </motion.div>
-        </div>
-      </div>
+          </div>
+        </motion.div>
+    </div>
     </>
   );
 }
