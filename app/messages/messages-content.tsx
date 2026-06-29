@@ -623,6 +623,54 @@ function formatDialogPreview(messageValue: string | null | undefined, lang: Lang
   return '';
 }
 
+function parseMessageLinks(text: string) {
+  if (!text) return text;
+
+  let html = text;
+
+  // Парсинг ссылок: [url|text] или обычные ссылки
+  html = html.replace(
+    /(?<=^|[\s\n])(?:\[url\|(.*?)\]|((?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))(?=$|[\s\n])/gi,
+    (match, m1, m2) => {
+      let url = '';
+      let linkText = '';
+
+      if (m1) {
+        const parts = m1.split('|');
+        url = parts[0].trim();
+        linkText = parts.length > 1 ? parts[1].trim() : url;
+      } else if (m2) {
+        url = m2.trim();
+        linkText = url;
+        if (!/^https?:\/\//i.test(url) && /\.(php|html?|js|css|zip|rar|exe|png|jpe?g|gif|mp4|avi)$/i.test(url)) {
+          return match;
+        }
+      }
+
+      if (!url) return match;
+
+      let finalUrl = url;
+      if (!/^https?:\/\//i.test(url)) {
+        finalUrl = 'https://' + url;
+      }
+
+      return `<a href="https://ancial.ru/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" class="text-purple-300 hover:text-purple-200 underline duration-300">${linkText}</a>`;
+    }
+  );
+
+  // Парсинг email
+  html = html.replace(
+    /(?<=^|[\s\n])([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(?=$|[\s\n])/gi,
+    (match, email) => {
+      const cleanEmail = email ? email.trim() : '';
+      if (!cleanEmail) return match;
+      return `<a href="mailto:${cleanEmail}" class="text-purple-300 hover:text-purple-200 underline duration-300">${cleanEmail}</a>`;
+    }
+  );
+
+  return html;
+}
+
 function isOnline(lastOnlineTime: number | string | null | undefined) {
   const onlineAt = toNumber(lastOnlineTime);
   if (!onlineAt) return false;
@@ -1344,6 +1392,7 @@ function MessageBubble({
   onDeleteReaction,
   onEditMessage,
   onOpenImage,
+  onReplyClick,
 }: {
   authUserImage: string;
   currentUserId: number;
@@ -1356,6 +1405,7 @@ function MessageBubble({
   onDeleteReaction: (messageId: number, reaction: string) => void;
   onEditMessage: (message: DialogMessage) => void;
   onOpenImage: (imageKey: string) => void;
+  onReplyClick: (replyToId: string | number) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [transformY, setTransformY] = useState(0);
@@ -1370,9 +1420,10 @@ function MessageBubble({
   const isOwn = toNumber(message.sender_id) === currentUserId;
   const isTextMessage = String(message.type ?? '0') === '0';
   const messageImages = extractMessageImages(message.message);
-  const messageBodyHtml = messageImages.length
+  const messageBodyRaw = messageImages.length
     ? getMessageBodyHtmlWithoutImages(message.message)
     : String(message.message ?? '');
+  const messageBodyHtml = parseMessageLinks(messageBodyRaw);
   const sevenTvStickerTokenData = messageImages.length ? null : getSevenTvStickerTokenData(messageBodyHtml);
   const sevenTvStickerName = sevenTvStickerTokenData?.name ?? '';
   const sevenTvStickerId = sevenTvStickerTokenData?.id ?? '';
@@ -1575,15 +1626,10 @@ function MessageBubble({
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
-                      const el = document.getElementById(`msg-${message.reply_to}`);
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        el.classList.add('bg-purple-500/30', 'transition-colors', 'duration-500');
-                        setTimeout(() => el.classList.remove('bg-purple-500/30'), 1500);
-                      }
+                      onReplyClick(message.reply_to!);
                     }}
                     className={cn(
-                      "flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-2xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 transition-colors max-w-full shadow",
+                      "flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-2xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 max-w-full shadow active:scale-95 duration-300",
                       !isOwn && isTextMessage && !isStickerOnlyMessage && "bg-zinc-800/50 hover:bg-zinc-700/50"
                     )}
                   >
@@ -1591,11 +1637,11 @@ function MessageBubble({
                       {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
                     </span>
                     <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
-                      {message.reply_type == 1 
-                        ? (lang?.image_sticker || 'Картинка/стикер') 
+                      {message.reply_type == 1
+                        ? (lang?.image_sticker || 'Картинка/стикер')
                         : (getSevenTvStickerTokenData(message.reply_msg)
-                            ? (lang?.image_sticker || 'Картинка/стикер')
-                            : (message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')))
+                          ? (lang?.image_sticker || 'Картинка/стикер')
+                          : (message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')))
                       }
                     </span>
                   </div>
@@ -1712,7 +1758,7 @@ function MessageBubble({
             </div>
           </div>
         </motion.div>
-    </div>
+      </div>
     </>
   );
 }
@@ -2247,6 +2293,99 @@ export default function MessagesContent() {
       if (session === dialogSessionRef.current) {
         setLoadingOlder(false);
       }
+    }
+  };
+
+  const seekToMessage = async (replyToId: string | number) => {
+    const targetId = `msg-${replyToId}`;
+    let el = document.getElementById(targetId);
+
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('bg-purple-500/30', 'transition-colors', 'duration-500');
+      setTimeout(() => el.classList.remove('bg-purple-500/30'), 1500);
+      return;
+    }
+
+    if (!currentDialogIdRef.current || loadingOlder) return;
+
+    setLoadingOlder(true);
+    let found = false;
+    let currentEarliestId = getEarliestMessageId(messages);
+    let currentMessages = messages;
+    let newForeignUser: DialogUser | null = null;
+
+    // Пытаемся подгрузить до 3 раз по 200 сообщений
+    for (let i = 0; i < 3; i++) {
+      if (!currentEarliestId || currentEarliestId <= 1) break;
+
+      const result = await AncialAPI.getDialog<DialogMessagesResponse>(
+        currentDialogIdRef.current,
+        undefined,
+        200,
+        undefined,
+        currentEarliestId
+      );
+
+      const nextMessages = Array.isArray(result) ? result : Array.isArray((result as any).messages) ? (result as any).messages : [];
+      if (result && !Array.isArray(result) && (result as any).foreignUser) {
+        newForeignUser = (result as any).foreignUser as DialogUser;
+      }
+
+      if (!nextMessages.length) break;
+
+      const olderMessages = sortMessages(nextMessages);
+      currentMessages = mergeMessages(currentMessages, olderMessages);
+      currentEarliestId = getEarliestMessageId(currentMessages);
+
+      if (currentMessages.some(m => getMessageId(m) == replyToId)) {
+        found = true;
+        break;
+      }
+    }
+
+    if (currentMessages.length > messages.length) {
+      const scrollContainer = messageScrollRef.current;
+      scrollActionRef.current = {
+        prevHeight: scrollContainer?.scrollHeight ?? 0,
+        prevTop: scrollContainer?.scrollTop ?? 0,
+        type: 'preserve',
+      };
+
+      if (newForeignUser) {
+        const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, newForeignUser);
+        currentForeignUserRef.current = nextForeignUser;
+        setForeignUser(nextForeignUser);
+      }
+
+      setMessages(currentMessages);
+
+      const cacheKey = currentMessageCacheKeyRef.current;
+      if (cacheKey) {
+        writeMessageCache({
+          cacheKey,
+          dialogHash: currentDialogHashRef.current || '',
+          dialogId: currentDialogIdRef.current,
+          foreignUser: currentForeignUserRef.current,
+          dialogMeta: currentDialogMetaRef.current,
+          keepSide: 'oldest',
+          messages: currentMessages,
+        });
+      }
+      setHasMoreMessages(currentEarliestId > 1);
+    }
+
+    setLoadingOlder(false);
+
+    if (found) {
+      setTimeout(() => {
+        const newEl = document.getElementById(targetId);
+        if (newEl) {
+          newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          newEl.classList.add('bg-purple-500/30', 'transition-colors', 'duration-500');
+          setTimeout(() => newEl.classList.remove('bg-purple-500/30'), 1500);
+        }
+      }, 100);
     }
   };
 
@@ -3483,6 +3622,7 @@ export default function MessagesContent() {
                                 }}
                                 onEditMessage={handleMessageEditOpen}
                                 onOpenImage={setActiveDialogImageKey}
+                                onReplyClick={seekToMessage}
                               />
                             ),
                           )}
@@ -3505,7 +3645,10 @@ export default function MessagesContent() {
                     type="button"
                     onClick={() => {
                       if (messageScrollRef.current) {
-                        messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
+                        messageScrollRef.current.scrollTo({
+                          top: messageScrollRef.current.scrollHeight,
+                          behavior: 'smooth'
+                        });
                       }
                     }}
                     style={{ bottom: `${composerHeight + (replyingTo ? 54 : 12)}px` }}
