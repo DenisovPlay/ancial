@@ -123,7 +123,7 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
 
       setApps(data.apps ?? []);
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Ошибка загрузки');
+      setError(caughtError instanceof Error ? caughtError.message : (lang?.loading_error || 'Ошибка загрузки'));
       setApps([]);
     } finally {
       setLoading(false);
@@ -237,8 +237,8 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
       {!loading && error && (
         <div className="text-center w-full max-w-screen-2xl flex flex-col gap-0.5 justify-center items-center py-20 px-3">
           <img alt="" className="h-56" src="/includes/img/stickers/sponge.gif" />
-          <span className="text-lg text-center text-zinc-200">Связь потеряна!</span>
-          <span className="text-content-600">Попробуйте обновить страницу</span>
+          <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
+          <span className="text-content-600">{lang?.try_refresh || 'Попробуйте обновить страницу'}</span>
           <span className="text-xs text-zinc-400">{error}</span>
         </div>
       )}

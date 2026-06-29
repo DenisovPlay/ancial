@@ -36,7 +36,7 @@ export default function MerchantContent() {
       setError(null);
       localStorage.setItem('wallet_merchants_cache', JSON.stringify({ merchants: fetchedMerchants, stats: fetchedStats }));
     } catch (err: any) {
-      if (merchants.length === 0) setError(err.message || 'Ошибка загрузки панели мерчанта');
+      if (merchants.length === 0) setError(err.message || (lang?.error_loading_merchant_panel || 'Ошибка загрузки панели мерчанта'));
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function MerchantContent() {
       <div className="p-3 lg:px-0 flex flex-col items-center gap-6 bg-black min-h-screen text-zinc-100">
         <div className="flex items-center gap-3 max-w-screen-2xl w-full pt-3">
           <span style={{ marginTop: '0.1rem' }} className="shrink-0 text-3xl font-bold bg-gradient-to-br from-lime-500 to-emerald-500 text-transparent bg-clip-text">
-            Мерчант
+            {lang?.merchant || 'Мерчант'}
           </span>
         </div>
 
@@ -117,7 +117,7 @@ export default function MerchantContent() {
             <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
           </svg>
           <span style={{ marginTop: '0.1rem' }} className="shrink-0 text-3xl font-bold bg-gradient-to-br from-lime-500 to-emerald-500 text-transparent bg-clip-text cutetext">
-            Мерчант
+            {lang?.merchant || 'Мерчант'}
           </span>
         </span>
         <div className="flex-grow" />
@@ -126,13 +126,13 @@ export default function MerchantContent() {
             onClick={() => handleTopage('/wallet')}
             className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200"
           >
-            Главная
+            {lang?.home || 'Главная'}
           </button>
           <button
             onClick={() => handleTopage('/wallet/merchant')}
             className="border border-zinc-500 shrink-0 flex items-center gap-3 text-white bg-zinc-800 shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95"
           >
-            Мои мерчанты
+            {lang?.my_merchants || 'Мои мерчанты'}
           </button>
         </div>
       </div>
@@ -145,27 +145,27 @@ export default function MerchantContent() {
 
       {/* Stats Widgets */}
       <div className="flex gap-3 items-center w-full duration-300 max-w-screen-2xl">
-        <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">Статистика</span>
+        <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">{lang?.statistics || 'Статистика'}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 w-full max-w-screen-2xl">
         <div className="bg-zinc-900/20 border border-zinc-600/30 shadow rounded-3xl p-4 duration-300 w-full text-left">
           <div className="text-3xl font-bold text-white">{stats.total_merchants}</div>
-          <span className="text-zinc-400 text-sm">Всего мерчантов</span>
+          <span className="text-zinc-400 text-sm">{lang?.total_merchants || 'Всего мерчантов'}</span>
         </div>
         <div className="bg-zinc-900/20 border border-zinc-600/30 shadow rounded-3xl p-4 duration-300 w-full text-left">
           <div className="text-3xl font-bold text-white">{stats.total_payments}</div>
-          <span className="text-zinc-400 text-sm">Всего платежей</span>
+          <span className="text-zinc-400 text-sm">{lang?.total_payments || 'Всего платежей'}</span>
         </div>
         <div className="bg-zinc-900/20 border border-zinc-600/30 shadow rounded-3xl p-4 duration-300 w-full text-left">
           <div className="text-3xl font-bold text-white">{stats.total_earned} ₽</div>
-          <span className="text-zinc-400 text-sm">Доступно для вывода</span>
+          <span className="text-zinc-400 text-sm">{lang?.available_for_withdrawal || 'Доступно для вывода'}</span>
         </div>
       </div>
 
       {/* Merchants Header */}
       <div className="flex gap-3 items-center w-full duration-300 max-w-screen-2xl">
-        <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">Мерчанты</span>
+        <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">{lang?.merchants_list || 'Мерчанты'}</span>
         <div className="flex flex-nowrap items-center gap-3 overflow-x-auto viewport duration-300">
           <button
             onClick={() => handleTopage('/wallet/merchant')}
@@ -183,15 +183,15 @@ export default function MerchantContent() {
             const isActive = merchant.status === 1;
             const statusBadge = isActive ? (
               <span className="border border-zinc-600/30 bg-green-500/25 text-green-500 px-1.5 py-0.5 text-xs rounded-full w-fit">
-                Активен
+                {lang?.active || 'Активен'}
               </span>
             ) : (
               <span className="border border-zinc-600/30 bg-red-500/25 text-red-500 px-1.5 py-0.5 text-xs rounded-full w-fit">
-                Неактивен
+                {lang?.inactive || 'Неактивен'}
               </span>
             );
 
-            const callbackStatus = merchant.c_url ? 'Callback подключён' : '';
+            const callbackStatus = merchant.c_url ? (lang?.callback_connected || 'Callback подключён') : '';
 
             return (
               <div
@@ -215,14 +215,14 @@ export default function MerchantContent() {
                       <div className="rounded-full h-1 w-1 bg-zinc-500" />
                     </>
                   )}
-                  <span className="text-zinc-400 text-xs truncate">{merchant.payments_count} платежей</span>
+                  <span className="text-zinc-400 text-xs truncate">{merchant.payments_count} {lang?.payments_count || 'платежей'}</span>
                 </div>
               </div>
             );
           })
         ) : (
           <div className="col-span-full text-zinc-400 py-10 text-center w-full">
-            У вас пока нет созданных мерчантов.
+            {lang?.no_merchants_yet || 'У вас пока нет созданных мерчантов.'}
           </div>
         )}
       </div>

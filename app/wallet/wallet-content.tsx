@@ -91,7 +91,7 @@ export default function WalletContent() {
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
 
   // Form states - Create Account
-  const [createAccountTitle, setCreateAccountTitle] = useState('Счёт');
+  const [createAccountTitle, setCreateAccountTitle] = useState(lang?.account || 'Счёт');
   const [createAccountLoading, setCreateAccountLoading] = useState(false);
   const [createAccountError, setCreateAccountError] = useState<string | null>(null);
 
@@ -198,7 +198,7 @@ export default function WalletContent() {
       localStorage.setItem('wallet_overview_cache', JSON.stringify(overview));
     } catch (err: any) {
       if (accounts.length === 0) {
-        setError(err.message || 'Ошибка загрузки кошелька');
+        setError(err.message || (lang?.walletloaderror || 'Ошибка загрузки кошелька'));
       }
     } finally {
       setLoading(false);
@@ -266,7 +266,7 @@ export default function WalletContent() {
       setProductsView('list');
       setAccountToDelete(null);
       setDeleteAccountError(null);
-      setCreateAccountTitle('Счёт');
+      setCreateAccountTitle(lang?.account || 'Счёт');
       setCreateAccountError(null);
     }
   }, [isProductsModalOpen]);
@@ -301,7 +301,7 @@ export default function WalletContent() {
         }
       }
     } catch (err: any) {
-      setFriendsError(err.message || 'Не удалось загрузить список друзей');
+      setFriendsError(err.message || (lang?.friendsloaderror || 'Не удалось загрузить список друзей'));
     } finally {
       setFriendsLoading(false);
     }
@@ -330,7 +330,7 @@ export default function WalletContent() {
       setProductsView('list');
       await fetchWallet();
     } catch (err: any) {
-      setDeleteAccountError(err.message || 'Не удалось закрыть счёт');
+      setDeleteAccountError(err.message || (lang?.failedtocloseaccount || 'Не удалось закрыть счёт'));
     } finally {
       setDeleteAccountLoading(false);
     }
@@ -340,18 +340,18 @@ export default function WalletContent() {
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createAccountTitle.trim()) {
-      setCreateAccountError('Введите название счёта');
+      setCreateAccountError(lang?.enteraccountname || 'Введите название счёта');
       return;
     }
     setCreateAccountLoading(true);
     setCreateAccountError(null);
     try {
       await AncialAPI.createAccount(createAccountTitle);
-      setCreateAccountTitle('Счёт');
+      setCreateAccountTitle(lang?.account || 'Счёт');
       setProductsView('list');
       await fetchWallet();
     } catch (err: any) {
-      setCreateAccountError(err.message || 'Не удалось создать счёт');
+      setCreateAccountError(err.message || (lang?.failedtocreateaccount || 'Не удалось создать счёт'));
     } finally {
       setCreateAccountLoading(false);
     }
@@ -378,10 +378,10 @@ export default function WalletContent() {
       const { fees, total, feePercent } = getCommissionInfo(amountStr);
       setSuccessDetails({
         receiver: payload.receiver_id
-          ? `Счёт №${payload.receiver_id}`
+          ? `${lang?.account_num || 'Счёт №'}${payload.receiver_id}`
           : `@${payload.receiver_login || payload.receiver_email || payload.receiver_phone}`,
         sender: String(payload.sender_id),
-        comment: payload.comment || 'Без комментария',
+        comment: payload.comment || (lang?.nocomment || 'Без комментария'),
         amount: parseFloat(amountStr),
         fees,
         feePercent,
@@ -390,7 +390,7 @@ export default function WalletContent() {
       setSendStep('success');
       await fetchWallet();
     } catch (err: any) {
-      setSendError(err.message || 'Ошибка перевода средств');
+      setSendError(err.message || (lang?.transfererror || 'Ошибка перевода средств'));
       setSendStep('error');
     } finally {
       setSendLoading(false);
@@ -401,18 +401,18 @@ export default function WalletContent() {
   const handleSdaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sendSenderId || !sdaToAccountId || sendSenderId === sdaToAccountId) {
-      setSendError('Выберите корректный счёт получателя');
+      setSendError(lang?.selectcorrectreceiver || 'Выберите корректный счёт получателя');
       return;
     }
     const amt = parseFloat(sdaAmount);
     if (isNaN(amt) || amt <= 0) {
-      setSendError('Укажите корректную сумму');
+      setSendError(lang?.enteramount || 'Укажите корректную сумму');
       return;
     }
     const payload = {
       sender_id: sendSenderId,
       amount: amt,
-      comment: 'Перевод между счетами',
+      comment: lang?.transferbetweenaccounts || 'Перевод между счетами',
       receiver_id: sdaToAccountId
     };
     handleSendSubmit(payload, sdaAmount);
@@ -421,18 +421,18 @@ export default function WalletContent() {
   const handleStfSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!stfFriendUsername) {
-      setSendError('Выберите друга');
+      setSendError(lang?.selectfriend || 'Выберите друга');
       return;
     }
     const amt = parseFloat(stfAmount);
     if (isNaN(amt) || amt <= 0) {
-      setSendError('Укажите корректную сумму');
+      setSendError(lang?.enteramount || 'Укажите корректную сумму');
       return;
     }
     const payload = {
       sender_id: sendSenderId,
       amount: amt,
-      comment: stfComment.trim() || `Перевод другу @${stfFriendUsername}`,
+      comment: stfComment.trim() || `${lang?.transfertofriend || 'Перевод другу @'}${stfFriendUsername}`,
       receiver_login: stfFriendUsername
     };
     handleSendSubmit(payload, stfAmount);
@@ -442,31 +442,31 @@ export default function WalletContent() {
     e.preventDefault();
     const amt = parseFloat(sdbAmount);
     if (isNaN(amt) || amt <= 0) {
-      setSendError('Укажите корректную сумму');
+      setSendError(lang?.enteramount || 'Укажите корректную сумму');
       return;
     }
 
     const payload: any = {
       sender_id: sendSenderId,
       amount: amt,
-      comment: sdbComment.trim() || 'Перевод по реквизитам'
+      comment: sdbComment.trim() || (lang?.transferbydetails || 'Перевод по реквизитам')
     };
 
     if (sdbDetailType === 'email') {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sdbEmail.trim())) {
-        setSendError('Некорректный формат email');
+        setSendError(lang?.invalidemail || 'Некорректный формат email');
         return;
       }
       payload.receiver_email = sdbEmail.trim();
     } else if (sdbDetailType === 'phone') {
       if (sdbPhone.trim().length < 10) {
-        setSendError('Укажите корректный телефон (от 10 символов)');
+        setSendError(lang?.invalidphone || 'Укажите корректный телефон (от 10 символов)');
         return;
       }
       payload.receiver_phone = sdbPhone.trim();
     } else {
       if (sdbLogin.trim().length < 3) {
-        setSendError('Укажите корректный никнейм (от 3 символов)');
+        setSendError(lang?.invalidnickname || 'Укажите корректный никнейм (от 3 символов)');
         return;
       }
       payload.receiver_login = sdbLogin.trim();
@@ -479,16 +479,16 @@ export default function WalletContent() {
   const handleCreateTopup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!topupAccountId) {
-      setTopupError('Выберите счёт для пополнения');
+      setTopupError(lang?.selecttopupaccount || 'Выберите счёт для пополнения');
       return;
     }
     const amountVal = parseFloat(topupAmount);
     if (isNaN(amountVal) || amountVal <= 0) {
-      setTopupError('Укажите корректную сумму');
+      setTopupError(lang?.enteramount || 'Укажите корректную сумму');
       return;
     }
     if (amountVal > 15000) {
-      setTopupError('Максимальная сумма пополнения за один раз — 15 000 <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>');
+      setTopupError(`${lang?.max_topup_amount || 'Максимальная сумма пополнения за один раз — 15 000 '}<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>`);
       return;
     }
 
@@ -508,7 +508,7 @@ export default function WalletContent() {
 
       await fetchWallet();
     } catch (err: any) {
-      setTopupError(err.message || 'Ошибка создания пополнения');
+      setTopupError(err.message || (lang?.topupcreateerror || 'Ошибка создания пополнения'));
     } finally {
       setTopupLoading(false);
     }
@@ -520,7 +520,7 @@ export default function WalletContent() {
       await AncialAPI.cancelTopup(orderHash);
       await fetchWallet();
     } catch (err: any) {
-      alert(err.message || 'Не удалось отменить пополнение');
+      alert(err.message || (lang?.failedtocanceltopup || 'Не удалось отменить пополнение'));
     }
   };
 
@@ -534,7 +534,7 @@ export default function WalletContent() {
       const res = await AncialAPI.generateQRCode(accountId);
       setReceiveQrUrl(res.qr_url);
     } catch (err: any) {
-      setReceiveError(err.message || 'Не удалось сгенерировать QR-код');
+      setReceiveError(err.message || (lang?.failedtogenerateqr || 'Не удалось сгенерировать QR-код'));
     } finally {
       setReceiveLoading(false);
     }
@@ -574,10 +574,10 @@ export default function WalletContent() {
         targetGw.withdrawal_fields = fieldsObj;
         setGatewayConfig(targetGw);
       } else {
-        setGatewayFormError('Не удалось загрузить форму вывода');
+        setGatewayFormError(lang?.failedtoloadwithdrawform || 'Не удалось загрузить форму вывода');
       }
     } catch (err: any) {
-      setGatewayFormError(err.message || 'Ошибка загрузки формы вывода с сервера');
+      setGatewayFormError(err.message || (lang?.withdrawformloaderror || 'Ошибка загрузки формы вывода с сервера'));
     } finally {
       setGatewayFormLoading(false);
     }
@@ -588,7 +588,7 @@ export default function WalletContent() {
     if (!selectedGateway) return;
     const numAmount = parseFloat(withdrawAmount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      setWithdrawError('Укажите корректную сумму вывода');
+      setWithdrawError(lang?.enterwithdrawamount || 'Укажите корректную сумму вывода');
       return;
     }
 
@@ -599,7 +599,7 @@ export default function WalletContent() {
       for (const f of serverFields) {
         const val = dynamicFieldsData[f.key] || '';
         if (f.required && !val.trim()) {
-          setWithdrawError(`Заполните поле "${f.label || f.key}"`);
+          setWithdrawError(`${lang?.fillfield || 'Заполните поле '}"${f.label || f.key}"`);
           return;
         }
         parts.push(`${f.key || f.label}: ${val}`);
@@ -608,12 +608,12 @@ export default function WalletContent() {
     }
 
     if (!finalDetails) {
-      setWithdrawError('Укажите реквизиты получателя');
+      setWithdrawError(lang?.enterreceiverdetails || 'Укажите реквизиты получателя');
       return;
     }
     const selectedAcc = accounts.find(a => a.id === withdrawAccountId);
     if (selectedAcc && selectedAcc.balance < numAmount) {
-      setWithdrawError('Недостаточно средств на выбранном счёте');
+      setWithdrawError(lang?.insufficientfunds || 'Недостаточно средств на выбранном счёте');
       return;
     }
 
@@ -629,10 +629,10 @@ export default function WalletContent() {
         details: finalDetails
       });
 
-      setWithdrawSuccess(res.message || 'Заявка на вывод средств успешно создана!');
+      setWithdrawSuccess(res.message || (lang?.withdrawrequestcreated || 'Заявка на вывод средств успешно создана!'));
       fetchWallet(false);
     } catch (err: any) {
-      setWithdrawError(err.message || 'Ошибка при создании заявки на вывод');
+      setWithdrawError(err.message || (lang?.withdrawcreateerror || 'Ошибка при создании заявки на вывод'));
     } finally {
       setWithdrawLoading(false);
     }
@@ -710,13 +710,13 @@ export default function WalletContent() {
     );
   }
 
-  const isNoAccountsError = error?.includes('У вас нет активных счетов');
+  const isNoAccountsError = error?.includes('У вас нет активных счетов') || error?.includes(lang?.noactiveaccounts || 'У вас нет активных счетов');
   if (error && !isNoAccountsError) {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-white p-4">
         <p className="text-xl text-red-500 mb-4">{error}</p>
         <button onClick={() => window.location.reload()} className="px-4 py-2 bg-purple-600 rounded-3xl active:scale-95 duration-300">
-          Повторить
+          {lang?.retry || 'Повторить'}
         </button>
       </div>
     );
@@ -746,15 +746,15 @@ export default function WalletContent() {
           <div className="flex-grow max-w-md flex flex-col items-start justify-end p-3 pb-0 w-full">
             <WalletLogo className="shrink-0 h-10 mb-3 hover:opacity-80 duration-300 cursor-pointer active:scale-95" />
             <div className="flex-grow"></div>
-            <span className="text-3xl font-bold">Начните сейчас!</span>
-            <span className="text-xl text-zinc-300 mt-2">Откройте бесплатный счёт, переводите и получайте средства по всему миру.</span>
+            <span className="text-3xl font-bold">{lang?.startnow || 'Начните сейчас!'}</span>
+            <span className="text-xl text-zinc-300 mt-2">{lang?.openfreeaccount || 'Откройте бесплатный счёт, переводите и получайте средства по всему миру.'}</span>
             <div className="w-full mt-4 flex justify-center absolute bottom-0 right-0">
               <img src="/img/backgrounds/wallet-intro.webp" alt="Wallet Intro" className="w-full max-h-140 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
           </div>
           <div className="flex flex-col items-center justify-center gap-3 w-full max-w-md fixed bottom-20 lg:bottom-3 px-3">
             <button onClick={() => setIsProductsModalOpen(true)} className="flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl w-full shadow cursor-pointer border border-zinc-600/30">
-              Открыть новый счёт
+              {lang?.opennewaccount || 'Открыть новый счёт'}
             </button>
           </div>
         </div>
@@ -866,7 +866,7 @@ export default function WalletContent() {
           {topupOrders.length > 0 && (
             <div className="flex flex-col justify-center gap-3 w-full max-w-screen-2xl duration-300 shrink-0">
               <div className="flex gap-3 items-center w-full duration-300">
-                <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">Пополнения</span>
+                <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">{lang?.topups || 'Пополнения'}</span>
                 <div className="hidden lg:flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300">
                   <button className="shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 border border-zinc-600/30 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
                     <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 18.484375 2.984375 A 1.50015 1.50015 0 0 0 17.439453 5.5605469 L 35.878906 24 L 17.439453 42.439453 A 1.50015 1.50015 0 1 0 19.560547 44.560547 L 39.060547 25.060547 A 1.50015 1.50015 0 0 0 39.060547 22.939453 L 19.560547 3.4394531 A 1.50015 1.50015 0 0 0 18.484375 2.984375 z"></path></svg> {strings.all}
@@ -889,7 +889,7 @@ export default function WalletContent() {
                           </svg>
                         </div>
                         <div className="flex flex-col justify-center">
-                          <span onClick={() => window.location.href = buildPayUrl(order.order_hash)} className="text-sm lg:text-base text-zinc-100">[#{order.id}] Пополнение счёта №{order.label}</span>
+                          <span onClick={() => window.location.href = buildPayUrl(order.order_hash)} className="text-sm lg:text-base text-zinc-100">[#{order.id}] {lang?.topup_of_account || 'Пополнение счёта №'}{order.label}</span>
                           <button onClick={(e) => { e.stopPropagation(); handleCancelTopup(order.order_hash); }} className="shrink-0 text-sm mt-1.5 w-fit flex items-center gap-1.5 text-red-500 bg-red-500/25 hover:bg-red-700/40 shadow rounded-3xl cursor-pointer py-0.5 px-1 duration-300 active:scale-95 backdrop-blur-lg border border-zinc-600/30">
                             <span>{strings.cancel}</span>
                           </button>
@@ -912,7 +912,7 @@ export default function WalletContent() {
               <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">{strings.history}</span>
               <div className="flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300">
                 <button onClick={() => handleTopage('/wallet/history')} className="shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 border border-zinc-600/30 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
-                  <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 18.484375 2.984375 A 1.50015 1.50015 0 0 0 17.439453 5.5605469 L 35.878906 24 L 17.439453 42.439453 A 1.50015 1.50015 0 1 0 19.560547 44.560547 L 39.060547 25.060547 A 1.50015 1.50015 0 0 0 39.060547 22.939453 L 19.560547 3.4394531 A 1.50015 1.50015 0 0 0 18.484375 2.984375 z"></path></svg> <span>Все</span>
+                  <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 18.484375 2.984375 A 1.50015 1.50015 0 0 0 17.439453 5.5605469 L 35.878906 24 L 17.439453 42.439453 A 1.50015 1.50015 0 1 0 19.560547 44.560547 L 39.060547 25.060547 A 1.50015 1.50015 0 0 0 39.060547 22.939453 L 19.560547 3.4394531 A 1.50015 1.50015 0 0 0 18.484375 2.984375 z"></path></svg> <span>{lang?.all || 'Все'}</span>
                 </button>
               </div>
             </div>
@@ -938,7 +938,7 @@ export default function WalletContent() {
         onClose={() => setIsProductsModalOpen(false)}
         width="sm"
         showHeader={true}
-        title={productsView === 'list' ? (lang?.my_prod || 'Мои продукты') : productsView === 'create' ? (lang?.t_account || 'Новый счёт') : 'Закрыть счёт'}
+        title={productsView === 'list' ? (lang?.my_prod || 'Мои продукты') : productsView === 'create' ? (lang?.t_account || 'Новый счёт') : (lang?.closeaccount || 'Закрыть счёт')}
         bodyClassName="max-h-96 p-0"
       >
         <div className="backdrop-filter backdrop-blur-lg">
@@ -1004,10 +1004,10 @@ export default function WalletContent() {
           {productsView === 'confirm_delete' && accountToDelete && (
             <div className="flex flex-col gap-3 px-3 pt-14 text-zinc-100">
               <p className="text-base text-zinc-300">
-                Вы хотите закрыть счет <span className="font-bold text-white">{accountToDelete.name}</span> <span className="font-mono text-zinc-400">({accountToDelete.id})</span>?
+                {lang?.want_to_close_account || 'Вы хотите закрыть счет'} <span className="font-bold text-white">{accountToDelete.name}</span> <span className="font-mono text-zinc-400">({accountToDelete.id})</span>?
               </p>
               <p className="text-xs text-zinc-400">
-                Закрытые счета нельзя будет восстановить. Убедитесь, что на счете отсутствуют средства, иначе они будут списаны безвозвратно.
+                {lang?.closed_accounts_notice || 'Закрытые счета нельзя будет восстановить. Убедитесь, что на счете отсутствуют средства, иначе они будут списаны безвозвратно.'}
               </p>
               {deleteAccountError && (
                 <p className="text-red-500 text-sm font-semibold">{deleteAccountError}</p>
@@ -1022,7 +1022,7 @@ export default function WalletContent() {
                   {deleteAccountLoading ? (
                     <div className="w-5 h-5 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
                   ) : (
-                    'Закрыть счёт'
+                    lang?.closeaccount || 'Закрыть счёт'
                   )}
                 </button>
                 <button
@@ -1031,7 +1031,7 @@ export default function WalletContent() {
                   disabled={deleteAccountLoading}
                   className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-700"
                 >
-                  Отмена
+                  {lang?.cancel || 'Отмена'}
                 </button>
               </div>
             </div>
@@ -1040,16 +1040,16 @@ export default function WalletContent() {
           {productsView === 'create' && (
             <form onSubmit={handleCreateAccount} className="flex flex-col gap-3 px-3 pt-14 text-zinc-100">
               <p className="text-sm text-zinc-400">
-                Счёт позволит вам отправлять переводы внутри системы, а также принимать пополнения и оплачивать услуги.
+                {lang?.account_desc || 'Счёт позволит вам отправлять переводы внутри системы, а также принимать пополнения и оплачивать услуги.'}
               </p>
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Название счёта</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.accountname || 'Название счёта'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="text"
                     value={createAccountTitle}
                     onChange={(e) => setCreateAccountTitle(e.target.value)}
-                    placeholder="Например: Личный счёт"
+                    placeholder={lang?.eg_personal_account || "Например: Личный счёт"}
                     maxLength={50}
                     className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                   />
@@ -1067,7 +1067,7 @@ export default function WalletContent() {
                   {createAccountLoading ? (
                     <div className="w-5 h-5 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
                   ) : (
-                    'Создать счёт'
+                    lang?.createaccount || 'Создать счёт'
                   )}
                 </button>
                 <button
@@ -1076,7 +1076,7 @@ export default function WalletContent() {
                   disabled={createAccountLoading}
                   className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-700"
                 >
-                  Назад
+                  {lang?.back || 'Назад'}
                 </button>
               </div>
             </form>
@@ -1100,7 +1100,7 @@ export default function WalletContent() {
               <svg className="w-4 h-4 fill-current rotate-180" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <use href="/icons.svg#IC-chevron-right"></use>
               </svg>
-              Назад
+              {lang?.back || 'Назад'}
             </button>
           )}
 
@@ -1122,8 +1122,8 @@ export default function WalletContent() {
                   </svg>
                 </div>
                 <div className="flex flex-col flex-grow">
-                  <span className="text-base font-bold text-white">Между своими счетами</span>
-                  <span className="text-xs text-zinc-400 mt-0.5">Перевод средств между собственными кошельками</span>
+                  <span className="text-base font-bold text-white">{lang?.betweenownaccounts || 'Между своими счетами'}</span>
+                  <span className="text-xs text-zinc-400 mt-0.5">{lang?.betweenownaccounts_desc || 'Перевод средств между собственными кошельками'}</span>
                 </div>
               </button>
 
@@ -1137,8 +1137,8 @@ export default function WalletContent() {
                   </svg>
                 </div>
                 <div className="flex flex-col flex-grow">
-                  <span className="text-base font-bold text-white">Перевод другу</span>
-                  <span className="text-xs text-zinc-400 mt-0.5">Быстрый перевод контактам из списка друзей</span>
+                  <span className="text-base font-bold text-white">{lang?.transfertofriend || 'Перевод другу'}</span>
+                  <span className="text-xs text-zinc-400 mt-0.5">{lang?.transfertofriend_desc || 'Быстрый перевод контактам из списка друзей'}</span>
                 </div>
               </button>
 
@@ -1152,8 +1152,8 @@ export default function WalletContent() {
                   </svg>
                 </div>
                 <div className="flex flex-col flex-grow">
-                  <span className="text-base font-bold text-white">Перевод по реквизитам</span>
-                  <span className="text-xs text-zinc-400 mt-0.5">Перевод по никнейму, почте или номеру телефона</span>
+                  <span className="text-base font-bold text-white">{lang?.transferbydetails || 'Перевод по реквизитам'}</span>
+                  <span className="text-xs text-zinc-400 mt-0.5">{lang?.transferbydetails_desc || 'Перевод по никнейму, почте или номеру телефона'}</span>
                 </div>
               </button>
             </div>
@@ -1163,7 +1163,7 @@ export default function WalletContent() {
           {sendStep === 'sda' && (
             <form onSubmit={handleSdaSubmit} className="flex flex-col gap-3">
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Счёт списания</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.fromaccount || 'Счёт списания'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={sendSenderId}
@@ -1180,14 +1180,14 @@ export default function WalletContent() {
               </div>
 
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Счёт зачисления</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.toaccount || 'Счёт зачисления'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={sdaToAccountId}
                     onChange={(e) => setSdaToAccountId(Number(e.target.value))}
                     className="rounded-full bg-zinc-800/60 w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white"
                   >
-                    <option value={0} disabled>Выберите счёт...</option>
+                    <option value={0} disabled>{lang?.selectaccount || 'Выберите счёт...'}</option>
                     {accounts.filter(a => a.id !== sendSenderId).map(acc => (
                       <option key={acc.id} value={acc.id}>
                         {acc.name} ({acc.balance} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>) — ID: {acc.id}
@@ -1198,7 +1198,7 @@ export default function WalletContent() {
               </div>
 
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Сумма перевода (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="number"
@@ -1214,15 +1214,15 @@ export default function WalletContent() {
               {parseFloat(sdaAmount) > 0 && (
                 <div className="bg-zinc-800/35 border border-zinc-800 rounded-3xl p-3 text-sm text-zinc-400 flex flex-col gap-1">
                   <div className="flex justify-between">
-                    <span>Сумма к отправке:</span>
+                    <span>{lang?.amounttosend || 'Сумма к отправке:'}</span>
                     <span className="text-zinc-200">{sdaAmount} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Комиссия:</span>
+                    <span>{lang?.commission || 'Комиссия:'}</span>
                     <span className="text-zinc-200">{getCommissionInfo(sdaAmount).fees} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                   <div className="flex justify-between font-semibold text-white border-t border-zinc-800 pt-1 mt-1">
-                    <span>Получатель получит:</span>
+                    <span>{lang?.receiverwillget || 'Получатель получит:'}</span>
                     <span>{getCommissionInfo(sdaAmount).total} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                 </div>
@@ -1250,7 +1250,7 @@ export default function WalletContent() {
           {sendStep === 'stf' && (
             <form onSubmit={handleStfSubmit} className="flex flex-col gap-3">
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Счёт списания</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.fromaccount || 'Счёт списания'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={sendSenderId}
@@ -1267,13 +1267,13 @@ export default function WalletContent() {
               </div>
 
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Друг получатель</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.friendreceiver || 'Друг получатель'}</span>
                 {friendsLoading ? (
-                  <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30 items-center pl-3 text-zinc-400 text-sm">Загрузка друзей...</div>
+                  <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30 items-center pl-3 text-zinc-400 text-sm">{lang?.loadingfriends || 'Загрузка друзей...'}</div>
                 ) : friendsError ? (
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-red-500/35 items-center pl-3 text-red-400 text-sm">{friendsError}</div>
                 ) : friendsList.length === 0 ? (
-                  <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30 items-center pl-3 text-zinc-400 text-sm">У вас нет подтвержденных друзей</div>
+                  <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30 items-center pl-3 text-zinc-400 text-sm">{lang?.nofriends || 'У вас нет подтвержденных друзей'}</div>
                 ) : (
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <select
@@ -1292,7 +1292,7 @@ export default function WalletContent() {
               </div>
 
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Сумма перевода (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="number"
@@ -1306,13 +1306,13 @@ export default function WalletContent() {
               </div>
 
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-300 pl-4 z-20">Комментарий</span>
+                <span className="text-zinc-300 pl-4 z-20">{lang?.comment || 'Комментарий'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="text"
                     value={stfComment}
                     onChange={(e) => setStfComment(e.target.value)}
-                    placeholder={`Например: Перевод другу @${stfFriendUsername || ''}`}
+                    placeholder={`${lang?.for_example || 'Например:'} ${lang?.transfertofriend || 'Перевод другу @'}${stfFriendUsername || ''}`}
                     className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white"
                   />
                 </div>
@@ -1321,15 +1321,15 @@ export default function WalletContent() {
               {parseFloat(stfAmount) > 0 && (
                 <div className="bg-zinc-800/35 border border-zinc-800 rounded-3xl p-3 text-sm text-zinc-400 flex flex-col gap-1">
                   <div className="flex justify-between">
-                    <span>Сумма к отправке:</span>
+                    <span>{lang?.amounttosend || 'Сумма к отправке:'}</span>
                     <span className="text-zinc-200">{stfAmount} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Комиссия:</span>
+                    <span>{lang?.commission || 'Комиссия:'}</span>
                     <span className="text-zinc-200">{getCommissionInfo(stfAmount).fees} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                   <div className="flex justify-between font-semibold text-white border-t border-zinc-800 pt-1 mt-1">
-                    <span>Получатель получит:</span>
+                    <span>{lang?.receiverwillget || 'Получатель получит:'}</span>
                     <span>{getCommissionInfo(stfAmount).total} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                 </div>
@@ -1352,12 +1352,11 @@ export default function WalletContent() {
               </button>
             </form>
           )}
-
           {/* STEP: sdb */}
           {sendStep === 'sdb' && (
             <form onSubmit={handleSdbSubmit} className="flex flex-col gap-3">
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Счёт списания</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.fromaccount || 'Счёт списания'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={sendSenderId}
@@ -1383,7 +1382,7 @@ export default function WalletContent() {
                   }}
                   className={`flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'email' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
                 >
-                  Email
+                  {lang?.email || 'Email'}
                 </button>
                 <button
                   type="button"
@@ -1393,7 +1392,7 @@ export default function WalletContent() {
                   }}
                   className={`flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'phone' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
                 >
-                  Телефон
+                  {lang?.phone || 'Телефон'}
                 </button>
                 <button
                   type="button"
@@ -1403,13 +1402,13 @@ export default function WalletContent() {
                   }}
                   className={`flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'login' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
                 >
-                  Никнейм
+                  {lang?.nickname || 'Никнейм'}
                 </button>
               </div>
 
               {sdbDetailType === 'email' && (
                 <div className="flex flex-col w-full text-left">
-                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Электронная почта (Email)</span>
+                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.emailaddress || 'Электронная почта (Email)'}</span>
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <input
                       type="email"
@@ -1425,7 +1424,7 @@ export default function WalletContent() {
 
               {sdbDetailType === 'phone' && (
                 <div className="flex flex-col w-full text-left">
-                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Номер телефона</span>
+                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.phonenumber || 'Номер телефона'}</span>
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <input
                       type="tel"
@@ -1441,7 +1440,7 @@ export default function WalletContent() {
 
               {sdbDetailType === 'login' && (
                 <div className="flex flex-col w-full text-left">
-                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Никнейм пользователя</span>
+                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.nickname_format || 'Никнейм пользователя'}</span>
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <input
                       type="text"
@@ -1456,7 +1455,7 @@ export default function WalletContent() {
               )}
 
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">Сумма перевода (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
+                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="number"
@@ -1470,13 +1469,13 @@ export default function WalletContent() {
               </div>
 
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-300 pl-4 z-20">Комментарий</span>
+                <span className="text-zinc-300 pl-4 z-20">{lang?.comment || 'Комментарий'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="text"
                     value={sdbComment}
                     onChange={(e) => setSdbComment(e.target.value)}
-                    placeholder="Например: За перевод"
+                    placeholder={lang?.for_example_transfer || "Например: За перевод"}
                     className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white"
                   />
                 </div>
@@ -1485,15 +1484,15 @@ export default function WalletContent() {
               {parseFloat(sdbAmount) > 0 && (
                 <div className="bg-zinc-800/35 border border-zinc-800 rounded-3xl p-3 text-sm text-zinc-400 flex flex-col gap-1">
                   <div className="flex justify-between">
-                    <span>Сумма к отправке:</span>
+                    <span>{lang?.amounttosend || 'Сумма к отправке:'}</span>
                     <span className="text-zinc-200">{sdbAmount} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Комиссия:</span>
+                    <span>{lang?.commission || 'Комиссия:'}</span>
                     <span className="text-zinc-200">{getCommissionInfo(sdbAmount).fees} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                   <div className="flex justify-between font-semibold text-white border-t border-zinc-800 pt-1 mt-1">
-                    <span>Получатель получит:</span>
+                    <span>{lang?.receiverwillget || 'Получатель получит:'}</span>
                     <span>{getCommissionInfo(sdbAmount).total} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                   </div>
                 </div>
@@ -1528,29 +1527,29 @@ export default function WalletContent() {
               </div>
 
               <div className="flex flex-col items-center gap-1.5 w-full">
-                <span className="text-zinc-300 text-base">Перевод выполнен получателю:</span>
+                <span className="text-zinc-300 text-base">{lang?.transfercomplete || 'Перевод выполнен получателю:'}</span>
                 <span className="text-xl font-bold text-white">{successDetails.receiver}</span>
               </div>
 
               <div className="bg-zinc-800/60 rounded-3xl p-4 w-full text-sm space-y-2.5 text-left border border-zinc-600/30 mt-1">
                 <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                  <span className="text-zinc-400">Сумма перевода:</span>
+                  <span className="text-zinc-400">{lang?.amount || 'Сумма перевода:'}</span>
                   <span className="text-lg font-bold text-zinc-100">{successDetails.amount} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                 </div>
                 <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                  <span className="text-zinc-400">Комиссия ({successDetails.feePercent}%):</span>
+                  <span className="text-zinc-400">{lang?.commission || 'Комиссия'} ({successDetails.feePercent}%):</span>
                   <span className="text-zinc-300 font-semibold">{successDetails.fees} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                 </div>
                 <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                  <span className="text-zinc-400">Зачислено получателю:</span>
+                  <span className="text-zinc-400">{lang?.receiverwillget || 'Зачислено получателю:'}</span>
                   <span className="text-lg font-bold text-green-500">{successDetails.total} <svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
                 </div>
                 <div className="flex flex-col gap-1 border-b border-zinc-700 pb-2">
-                  <span className="text-zinc-400 text-xs">Комментарий:</span>
+                  <span className="text-zinc-400 text-xs">{lang?.comment || 'Комментарий:'}</span>
                   <span className="text-zinc-100">{successDetails.comment}</span>
                 </div>
                 <div className="flex justify-between items-center pt-0.5">
-                  <span className="text-zinc-400">Счёт списания:</span>
+                  <span className="text-zinc-400">{lang?.fromaccount || 'Счёт списания:'}</span>
                   <span className="text-zinc-400 text-xs">№{successDetails.sender}</span>
                 </div>
               </div>
@@ -1559,7 +1558,7 @@ export default function WalletContent() {
                 onClick={() => setIsSendMoneyModalOpen(false)}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-3"
               >
-                Закрыть
+                {lang?.close || 'Закрыть'}
               </button>
             </div>
           )}
@@ -1575,7 +1574,7 @@ export default function WalletContent() {
               </div>
 
               <div className="flex flex-col items-center gap-1.5 w-full">
-                <span className="text-zinc-300 text-base">Ошибка перевода</span>
+                <span className="text-zinc-300 text-base">{lang?.transfererror || 'Ошибка перевода'}</span>
               </div>
 
               <div className="bg-zinc-800/80 rounded-3xl p-4 w-full text-left border border-zinc-600/30 mt-1 flex gap-3">
@@ -1583,8 +1582,8 @@ export default function WalletContent() {
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 <div className="flex-1 flex flex-col">
-                  <span className="text-zinc-400 text-xs">Причина ошибки:</span>
-                  <span className="text-zinc-100 font-semibold text-base mt-0.5">{sendError || 'Неизвестная ошибка'}</span>
+                  <span className="text-zinc-400 text-xs">{lang?.reason || 'Причина ошибки:'}</span>
+                  <span className="text-zinc-100 font-semibold text-base mt-0.5">{sendError || (lang?.unknown_error || 'Неизвестная ошибка')}</span>
                 </div>
               </div>
 
@@ -1592,7 +1591,7 @@ export default function WalletContent() {
                 onClick={() => setSendStep('select')}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-3"
               >
-                Попробовать снова
+                {lang?.tryagain || 'Попробовать снова'}
               </button>
             </div>
           )}
@@ -1605,13 +1604,13 @@ export default function WalletContent() {
       <Modal isOpen={isCreateTopupModalOpen} onClose={() => setIsCreateTopupModalOpen(false)} title={lang?.deposit || 'Пополнить'} width="sm">
         <form onSubmit={handleCreateTopup} className="flex flex-col gap-0.5 text-zinc-100">
           <div className="p-3 mb-2.5 border border-zinc-600/30 bg-amber-500/25 text-amber-500 rounded-3xl shadow flex flex-col w-full text-left">
-            <span className="font-bold text-base">Внимание!</span>
-            <span className="text-sm">Функция находится на этапе тестирования. Если вы произвели платёж, но баланс не изменился, пожалуйста, свяжитесь с поддержкой.</span>
-            <span className="text-xs">Контакты находятся в Настройки &rarr; О Ancial &rarr; Контакты</span>
+            <span className="font-bold text-base">{lang?.attention || 'Внимание!'}</span>
+            <span className="text-sm">{lang?.testing_mode || 'Функция находится на этапе тестирования. Если вы произвели платёж, но баланс не изменился, пожалуйста, свяжитесь с поддержкой.'}</span>
+            <span className="text-xs">{lang?.contacts_hint || 'Контакты находятся в Настройки -> О Ancial -> Контакты'}</span>
           </div>
 
           <div className="flex flex-col w-full text-left">
-            <span className="text-zinc-400 pl-4 z-20 -mt-1.5">На какой счёт</span>
+            <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.whichaccount || 'На какой счёт'}</span>
             <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
               <select
                 value={topupAccountId}
@@ -1620,7 +1619,7 @@ export default function WalletContent() {
               >
                 {accounts.map(acc => (
                   <option key={acc.id} value={acc.id}>
-                    Счёт №{acc.id} ({acc.name})
+                    {lang?.account || 'Счёт'} №{acc.id} ({acc.name})
                   </option>
                 ))}
               </select>
@@ -1658,10 +1657,10 @@ export default function WalletContent() {
             {topupLoading ? (
               <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
             ) : (
-              'Пополнить'
+              lang?.topup_btn || 'Пополнить'
             )}
           </button>
-          <span className="text-xs text-zinc-300 pt-3 text-left">Платёж будет выполнен через Ancial Merchant. Совершая платёж, Вы принимаете условия Ancial Payments и Wallet.</span>
+          <span className="text-xs text-zinc-300 pt-3 text-left">{lang?.payment_notice || 'Платёж будет выполнен через Ancial Merchant. Совершая платёж, Вы принимаете условия Ancial Payments и Wallet.'}</span>
         </form>
       </Modal>
 
@@ -1675,7 +1674,7 @@ export default function WalletContent() {
               ) : receiveQrUrl ? (
                 <img src={receiveQrUrl} alt="Wallet QR" className="w-24 h-24" />
               ) : (
-                <span className="text-xs text-zinc-500 text-center px-2">QR недоступен</span>
+                <span className="text-xs text-zinc-500 text-center px-2">{lang?.qr_unavailable || 'QR недоступен'}</span>
               )}
             </div>
             {user && (
@@ -1705,7 +1704,7 @@ export default function WalletContent() {
       />
 
       {/* 5. MODAL: Withdrawal (Вывод средств) */}
-      <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`Вывод через ${gatewayConfig?.withdrawal_fields?.title || selectedGateway?.name || 'платёжную систему'}`} width="sm">
+      <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`${lang?.withdraw || 'Вывод'} ${gatewayConfig?.withdrawal_fields?.title || selectedGateway?.name || (lang?.payment_system || 'платёжную систему')}`} width="sm">
         <div className="flex flex-col gap-3 text-zinc-100">
           {selectedGateway && (
             <div className="flex items-center gap-3 border border-zinc-600/30 p-3 rounded-3xl bg-zinc-900/40">
@@ -1714,7 +1713,7 @@ export default function WalletContent() {
               </div>
               <div className="flex flex-col">
                 <span className="text-base font-semibold">{gatewayConfig?.withdrawal_fields?.title || selectedGateway.name}</span>
-                <span className="text-xs text-zinc-400">Комиссия системы: {gatewayConfig?.fee_percent ?? selectedGateway.fee_percent}%</span>
+                <span className="text-xs text-zinc-400">{lang?.commission_system || 'Комиссия системы'}: {gatewayConfig?.fee_percent ?? selectedGateway.fee_percent}%</span>
               </div>
             </div>
           )}
@@ -1738,14 +1737,14 @@ export default function WalletContent() {
                 onClick={() => setIsWithdrawModalOpen(false)}
                 className="w-full mt-2 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-3xl duration-300 font-medium"
               >
-                Отлично
+                {lang?.great || 'Отлично'}
               </button>
             </div>
           ) : (
             <form onSubmit={handleWithdrawSubmit} className="flex flex-col gap-1.5 text-left">
               {/* Select account */}
               <div className="flex flex-col w-full">
-                <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">Счёт списания</span>
+                <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">{lang?.debit_account || 'Счёт списания'}</span>
                 <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={withdrawAccountId}
@@ -1754,7 +1753,7 @@ export default function WalletContent() {
                   >
                     {accounts.map((acc) => (
                       <option key={acc.id} value={acc.id}>
-                        Счёт №{acc.id} ({acc.name}) — {acc.balance} ANCI
+                        {lang?.account_num || 'Счёт №'}{acc.id} ({acc.name}) — {acc.balance} ANCI
                       </option>
                     ))}
                   </select>
@@ -1781,7 +1780,7 @@ export default function WalletContent() {
                             onChange={(e) => setDynamicFieldsData(prev => ({ ...prev, [key]: e.target.value }))}
                             className="rounded-3xl bg-zinc-800/60 w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-zinc-200 text-sm"
                           >
-                            <option value="" disabled>Выберите...</option>
+                            <option value="" disabled>{lang?.choose || 'Выберите...'}</option>
                             {options.map((o: any, idx: number) => (
                               <option key={idx} value={o.value ?? ''}>
                                 {o.label ?? o.value}
@@ -1817,14 +1816,14 @@ export default function WalletContent() {
                 <div className="flex flex-col w-full">
                   <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">
                     {selectedGateway?.name.toLowerCase().includes('yoomoney')
-                      ? 'Номер кошелька YooMoney / телефона'
-                      : 'Реквизиты получателя (номер карты/счёта)'}
+                      ? (lang?.yoomoney_wallet_phone || 'Номер кошелька YooMoney / телефона')
+                      : (lang?.receiver_details_hint || 'Реквизиты получателя (номер карты/счёта)')}
                   </span>
                   <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
                     <input
                       autoComplete="off"
                       type="text"
-                      placeholder={selectedGateway?.name.toLowerCase().includes('yoomoney') ? '41001...' : 'Реквизиты'}
+                      placeholder={selectedGateway?.name.toLowerCase().includes('yoomoney') ? '41001...' : (lang?.details || 'Реквизиты')}
                       value={withdrawDetails}
                       onChange={(e) => setWithdrawDetails(e.target.value)}
                       className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
@@ -1836,7 +1835,7 @@ export default function WalletContent() {
 
               {/* Amount */}
               <div className="flex flex-col w-full">
-                <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">Сумма вывода</span>
+                <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">{lang?.withdraw_amount || 'Сумма вывода'}</span>
                 <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
                   <input
                     autoComplete="off"
@@ -1855,11 +1854,11 @@ export default function WalletContent() {
               {withdrawAmount && parseFloat(withdrawAmount) > 0 && selectedGateway && (
                 <div className="flex flex-col gap-1 p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-3xl text-xs text-zinc-300">
                   <div className="flex justify-between">
-                    <span>Комиссия ({gatewayConfig?.fee_percent ?? selectedGateway.fee_percent}%):</span>
+                    <span>{lang?.commission || 'Комиссия'} ({gatewayConfig?.fee_percent ?? selectedGateway.fee_percent}%):</span>
                     <span>{((parseFloat(withdrawAmount) * (gatewayConfig?.fee_percent ?? selectedGateway.fee_percent)) / 100).toFixed(2)} ANCI</span>
                   </div>
                   <div className="flex justify-between font-bold text-white pt-1.5 border-t border-zinc-800 text-sm">
-                    <span>К получению:</span>
+                    <span>{lang?.to_receive || 'К получению:'}</span>
                     <span className="text-emerald-400">
                       {Math.max(0, parseFloat(withdrawAmount) - (parseFloat(withdrawAmount) * (gatewayConfig?.fee_percent ?? selectedGateway.fee_percent)) / 100).toFixed(2)} ANCI
                     </span>
@@ -1879,7 +1878,7 @@ export default function WalletContent() {
                   onClick={() => setIsWithdrawModalOpen(false)}
                   className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-3xl duration-300 text-sm font-medium"
                 >
-                  Отмена
+                  {lang?.cancel || 'Отмена'}
                 </button>
                 <button
                   type="submit"
@@ -1889,7 +1888,7 @@ export default function WalletContent() {
                   {withdrawLoading ? (
                     <div className="w-4 h-4 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
                   ) : (
-                    'Вывести'
+                    lang?.withdraw || 'Вывести'
                   )}
                 </button>
               </div>

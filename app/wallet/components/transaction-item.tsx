@@ -2,6 +2,7 @@
 
 import Modal from '../../components/modal';
 import { type WalletTransaction } from '../../lib/api-v2';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Icon paths ─────────────────────────────────────────────────────────────
 
@@ -66,7 +67,7 @@ function getAmountPrefix(trans: WalletTransaction, kind: TransactionKind) {
   return '- ';
 }
 
-function resolveParty(id: number, name?: string, otherPartyName?: string, systemLabel = 'Система') {
+function resolveParty(id: number, name?: string, otherPartyName?: string, systemLabel = 'System') {
   if (id === -1) return systemLabel;
   return name || otherPartyName || String(id);
 }
@@ -83,10 +84,10 @@ function getDirectionLabel(trans: WalletTransaction, kind: TransactionKind, syst
   return `${trans.sender} \u2192 ${receiverParty}`;
 }
 
-function getKindLabel(kind: TransactionKind) {
-  if (kind === 'internal') return '\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 \u043f\u0435\u0440\u0435\u0432\u043e\u0434';
-  if (kind === 'in') return '\u0412\u0445\u043e\u0434\u044f\u0449\u0438\u0439 \u043f\u0435\u0440\u0435\u0432\u043e\u0434';
-  return '\u0418\u0441\u0445\u043e\u0434\u044f\u0449\u0438\u0439 \u043f\u0435\u0440\u0435\u0432\u043e\u0434';
+function getKindLabel(kind: TransactionKind, lang: any) {
+  if (kind === 'internal') return lang?.internal_transfer || 'Внутренний перевод';
+  if (kind === 'in') return lang?.incoming_transfer || 'Входящий перевод';
+  return lang?.outgoing_transfer || 'Исходящий перевод';
 }
 
 // ─── TransactionItem ────────────────────────────────────────────────────────
@@ -141,14 +142,15 @@ interface TransactionDetailsModalProps {
   systemLabel?: string;
 }
 
-export function TransactionDetailsModal({ transaction, isOpen, onClose, ownedIds, systemLabel = 'Система' }: TransactionDetailsModalProps) {
+export function TransactionDetailsModal({ transaction, isOpen, onClose, ownedIds, systemLabel = 'System' }: TransactionDetailsModalProps) {
+  const { lang } = useAuth();
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Детали операции" width="sm">
+    <Modal isOpen={isOpen} onClose={onClose} title={lang?.transaction_details || "Детали операции"} width="sm">
       {transaction && (() => {
         const kind = getTransactionKind(transaction, ownedIds);
         const senderDisplay = transaction.sender === -1
           ? systemLabel
-          : `Счёт №${transaction.sender}${kind !== 'internal' && kind === 'in' && transaction.other_party_name
+          : `${lang?.account_num || 'Счёт №'}${transaction.sender}${kind !== 'internal' && kind === 'in' && transaction.other_party_name
             ? ` (${transaction.other_party_name})`
             : transaction.sender_name
               ? ` (${transaction.sender_name})`
@@ -156,7 +158,7 @@ export function TransactionDetailsModal({ transaction, isOpen, onClose, ownedIds
           }`;
         const receiverDisplay = transaction.receiver === -1
           ? systemLabel
-          : `Счёт №${transaction.receiver}${kind !== 'internal' && kind === 'out' && transaction.other_party_name
+          : `${lang?.account_num || 'Счёт №'}${transaction.receiver}${kind !== 'internal' && kind === 'out' && transaction.other_party_name
             ? ` (${transaction.other_party_name})`
             : transaction.receiver_name
               ? ` (${transaction.receiver_name})`
@@ -167,43 +169,43 @@ export function TransactionDetailsModal({ transaction, isOpen, onClose, ownedIds
           <div className="flex flex-col gap-3 text-zinc-100 text-left">
             <div className="bg-zinc-800/60 rounded-3xl p-4 w-full text-sm space-y-2.5 border border-zinc-600/30">
               <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                <span className="text-zinc-400">ID Операции:</span>
+                <span className="text-zinc-400">{lang?.transaction_id || 'ID Операции:'}</span>
                 <span className="font-mono text-zinc-200">#{transaction.id}</span>
               </div>
               <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                <span className="text-zinc-400">Тип:</span>
-                <span className="font-semibold text-zinc-200">{getKindLabel(kind)}</span>
+                <span className="text-zinc-400">{lang?.type || 'Тип:'}</span>
+                <span className="font-semibold text-zinc-200">{getKindLabel(kind, lang)}</span>
               </div>
               <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                <span className="text-zinc-400">Сумма:</span>
+                <span className="text-zinc-400">{lang?.amount || 'Сумма:'}</span>
                 <span className="text-lg font-bold text-zinc-100">{transaction.amount} <AIcon /></span>
               </div>
               {transaction.fees > 0 && (
                 <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                  <span className="text-zinc-400">Комиссия:</span>
+                  <span className="text-zinc-400">{lang?.commission || 'Комиссия:'}</span>
                   <span className="text-zinc-300">{transaction.fees} <AIcon /></span>
                 </div>
               )}
               <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                <span className="text-zinc-400">Зачислено:</span>
+                <span className="text-zinc-400">{lang?.credited || 'Зачислено:'}</span>
                 <span className="text-lg font-bold text-green-500">{transaction.total} <AIcon /></span>
               </div>
               {transaction.comment && (
                 <div className="flex flex-col gap-1 border-b border-zinc-700 pb-2">
-                  <span className="text-zinc-400 text-xs">Комментарий:</span>
+                  <span className="text-zinc-400 text-xs">{lang?.comment || 'Комментарий:'}</span>
                   <span className="text-zinc-100">{transaction.comment}</span>
                 </div>
               )}
               <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                <span className="text-zinc-400">Отправитель:</span>
+                <span className="text-zinc-400">{lang?.sender || 'Отправитель:'}</span>
                 <span className="text-zinc-300">{senderDisplay}</span>
               </div>
               <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
-                <span className="text-zinc-400">Получатель:</span>
+                <span className="text-zinc-400">{lang?.receiver || 'Получатель:'}</span>
                 <span className="text-zinc-300">{receiverDisplay}</span>
               </div>
               <div className="flex justify-between items-center pt-0.5">
-                <span className="text-zinc-400">Дата:</span>
+                <span className="text-zinc-400">{lang?.date || 'Дата:'}</span>
                 <span className="text-zinc-400 text-xs">{transaction.date}</span>
               </div>
             </div>
@@ -212,13 +214,13 @@ export function TransactionDetailsModal({ transaction, isOpen, onClose, ownedIds
                 onClick={() => window.open(`https://ancial.ru/api/wallet/generate_receipt.php?id=${transaction.id}`, '_blank')}
                 className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
-                Чек
+                {lang?.receipt || 'Чек'}
               </button>
               <button
                 onClick={onClose}
                 className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-700"
               >
-                Закрыть
+                {lang?.close || 'Закрыть'}
               </button>
             </div>
           </div>

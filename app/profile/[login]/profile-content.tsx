@@ -311,7 +311,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       somethingwrong: lang?.somethingwrong || fallback.somethingwrong,
       spam: lang?.spam || fallback.spam,
       subscribers: lang?.subscribers || fallback.subscribers,
-      successProfileUpdate: fallback.successProfileUpdate,
+      successProfileUpdate: lang?.successProfileUpdate || fallback.successProfileUpdate,
       tbookmark: lang?.tobookmarks || fallback.tbookmark,
       updateprofilecover: lang?.updateprofilecover || fallback.updateprofilecover,
       updateprofilepicture: lang?.updateprofilepicture || fallback.updateprofilepicture,
@@ -773,7 +773,7 @@ export default function UserProfileContent({ login }: { login: string }) {
   const handleDeleteComment = async (comment: FeedComment) => {
     try {
       const response = await AncialAPI.deleteComment<{ message?: string }>(comment.id);
-      const text = response?.message || 'Удалено';
+      const text = response?.message || (lang?.deleted || 'Удалено');
 
       showNote({
         content: text,
@@ -866,7 +866,7 @@ export default function UserProfileContent({ login }: { login: string }) {
     if (service === 'vk') {
       window.open(
         `https://vk.com/share.php?url=${encodeURIComponent(shareUrl)}`,
-        'Поделиться',
+        lang?.share || 'Поделиться',
         'width=800, height=600',
       );
       return;
@@ -875,7 +875,7 @@ export default function UserProfileContent({ login }: { login: string }) {
     if (service === 'tg') {
       window.open(
         `https://telegram.me/share/url?url=${encodeURIComponent(shareUrl)}`,
-        'Поделиться',
+        lang?.share || 'Поделиться',
         'width=800, height=600',
       );
       return;
@@ -883,7 +883,7 @@ export default function UserProfileContent({ login }: { login: string }) {
 
     window.open(
       `http://twitter.com/share?url=${encodeURIComponent(shareUrl)}`,
-      'Поделиться',
+      lang?.share || 'Поделиться',
       'width=800, height=600',
     );
   };
@@ -1306,7 +1306,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       ) : null}
 
       <RelationGridModal
-        emptyText="Нет друзей..."
+        emptyText={lang?.no_friends || "Нет друзей..."}
         isOpen={isFriendsModalOpen}
         items={mappedFriends || []}
         onClose={() => setIsFriendsModalOpen(false)}
@@ -1319,7 +1319,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       />
 
       <RelationGridModal
-        emptyText="Нет подписчиков..."
+        emptyText={lang?.no_subscribers || "Нет подписчиков..."}
         isOpen={isSubscribersModalOpen}
         items={mappedSubscribers || []}
         onClose={() => setIsSubscribersModalOpen(false)}
@@ -1332,7 +1332,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       />
 
       <RelationGridModal
-        emptyText="Нет групп..."
+        emptyText={lang?.no_groups || "Нет групп..."}
         isOpen={isGroupsModalOpen}
         items={mappedGroups || []}
         onClose={() => setIsGroupsModalOpen(false)}
@@ -1414,12 +1414,12 @@ export default function UserProfileContent({ login }: { login: string }) {
       >
         <div className="flex flex-col justify-center rounded-3xl shadow overflow-hidden">
           {[
-            { label: strings.spam, value: 'Спам' },
-            { label: strings.prohibitedgood, value: 'Запрещённый товар' },
-            { label: strings.scam, value: 'Обман' },
-            { label: strings.violence, value: 'Насилие и вражда' },
-            { label: strings.candidimage, value: 'Откровенное изображение' },
-            { label: strings.propertyrights, value: 'Нарушение интеллектуальных прав' },
+            { label: strings.spam, value: strings.spam },
+            { label: strings.prohibitedgood, value: strings.prohibitedgood },
+            { label: strings.scam, value: strings.scam },
+            { label: strings.violence, value: strings.violence },
+            { label: strings.candidimage, value: strings.candidimage },
+            { label: strings.propertyrights, value: strings.propertyrights },
           ].map((reason) => (
             <button
               key={reason.value}

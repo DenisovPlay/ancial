@@ -81,11 +81,11 @@ function getPlaylistCover(playlistId: string, playlist: PulsePlaylistMeta | null
   return getImageUrl(playlist?.img, fallbackCover);
 }
 
-function getPlaylistTitle(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[]) {
+function getPlaylistTitle(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[], lang: any) {
   return decodeHtmlEntities(playlist?.name)
-    || getPulseBuiltinPlaylistTitle(playlistId)
+    || getPulseBuiltinPlaylistTitle(playlistId, lang)
     || decodeHtmlEntities(tracks[0]?.album)
-    || FALLBACK_PLAYLIST_NAME;
+    || (lang?.unknown_playlist || FALLBACK_PLAYLIST_NAME);
 }
 
 function getExternalPulseUrl(path: string) {
@@ -146,7 +146,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const playlistType = toNumber(playlist?.type);
   const playlistPlayTarget = getPulsePlaylistActionTarget(playlistId, playlist);
   const playlistActive = currentCollectionId === playlistPlayTarget.id && isPlaying;
-  const playlistTitle = getPlaylistTitle(playlistId, playlist, tracks);
+  const playlistTitle = getPlaylistTitle(playlistId, playlist, tracks, lang);
   const playlistArtist = decodeHtmlEntities(playlist?.artist);
   const playlistCover = getPlaylistCover(playlistId, playlist, tracks);
   const playlistDescription = decodeHtmlEntities(playlist?.desk);
@@ -182,11 +182,11 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       }
     };
     window.addEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
-    
+
     if (typeof window !== 'undefined' && Array.isArray(window._pulseLikedSongs)) {
       setFavoriteIds(window._pulseLikedSongs);
     }
-    
+
     return () => window.removeEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
   }, []);
 
@@ -360,12 +360,12 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     const legacyWindow = window as Window & { toast?: (message: string) => void };
 
     if (typeof legacyWindow.toast === 'function') {
-      legacyWindow.toast('Скоро!');
+      legacyWindow.toast(lang?.coming_soon || 'Скоро!');
       return;
     }
 
-    showPulseNote('Скоро!', 'info');
-  }, [showPulseNote]);
+    showPulseNote(lang?.coming_soon || 'Скоро!', 'info');
+  }, [lang, showPulseNote]);
 
   const openPlaylistEditor = useCallback(() => {
     setIsPlaylistEditorOpen(true);
@@ -375,16 +375,16 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     removePulseCache(getPulsePlaylistCacheKey(playlistId), 'pulse_library', 'pulse_library_big');
     setPlaylist((currentPlaylist) => currentPlaylist
       ? {
-          ...currentPlaylist,
-          img: nextPlaylist.img ?? currentPlaylist.img,
-          name: nextPlaylist.name,
-        }
+        ...currentPlaylist,
+        img: nextPlaylist.img ?? currentPlaylist.img,
+        name: nextPlaylist.name,
+      }
       : currentPlaylist);
   }, [playlistId]);
 
   const openUploadTrack = useCallback(() => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы загрузить трек', 'info');
+      showPulseNote(lang?.logintouploadtrack || 'Войдите, чтобы загрузить трек', 'info');
       return;
     }
 
@@ -398,7 +398,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
   const likeTrack = useCallback(async (track: PulseTrack) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в избранное', 'info');
+      showPulseNote(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное', 'info');
       return;
     }
 
@@ -434,14 +434,14 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
   const togglePlaylistLike = useCallback(async () => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавить плейлист в избранное', 'info');
+      showPulseNote(lang?.logintoaddplaylist || 'Войдите, чтобы добавить плейлист в избранное', 'info');
       return;
     }
 
     try {
       const action = playlistLiked ? 'unlike' : 'like';
       const response = await AncialAPI.pulsePlaylistAction<{ message?: string; likes?: number }>(action, { id: playlistId });
-      
+
       const liked = action === 'like';
       setPlaylistLiked(liked);
       setPlaylist((currentPlaylist) => {
@@ -452,7 +452,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
           likes: response.likes !== undefined ? String(response.likes) : String(Math.max(0, toNumber(currentPlaylist.likes) + (liked ? 1 : -1))),
         };
       });
-      showPulseNote(liked ? 'Плейлист добавлен' : 'Плейлист удалён', 'success');
+      showPulseNote(liked ? (lang?.playlistadded || 'Плейлист добавлен') : (lang?.playlistremoved || 'Плейлист удалён'), 'success');
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
@@ -495,7 +495,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
         writeFavoriteIds(nextIds);
         setFavoriteIds(nextIds);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [playlist, playlistId]);
 
   const queueTrackNext = useCallback(async (trackId: number | string) => {
@@ -504,7 +504,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в плейлисты', 'info');
+      showPulseNote(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты', 'info');
       return;
     }
 
@@ -513,7 +513,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
   const reportTrack = useCallback((track: PulseTrack) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы отправить жалобу', 'info');
+      showPulseNote(lang?.logintoreport || 'Войдите, чтобы отправить жалобу', 'info');
       return;
     }
 
@@ -647,7 +647,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                         >
                           <ActionIcon className="h-10 w-10" name="IC-edit" />
                         </button>
-                        <span className="text-sm text-content-500">Изменить</span>
+                        <span className="text-sm text-content-500">{lang?.edit || 'Изменить'}</span>
                       </>
                     ) : (
                       <>
@@ -696,7 +696,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                       >
                         <ActionIcon className="h-10 w-10 rotate-180" name="IC-plus" />
                       </button>
-                      <span className="text-sm text-content-500">Добавить</span>
+                      <span className="text-sm text-content-500">{lang?.addtrack || 'Добавить'}</span>
                     </div>
                   ) : playlistType === 2 ? (
                     <div className="flex flex-col items-center justify-center">
@@ -745,7 +745,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
             {!isLoading && isMissing ? (
               <div className="flex min-h-72 flex-col items-center justify-center gap-1 text-center">
                 <PulseLogo className="w-48" />
-                <span className="text-xl text-zinc-300">{lang?.emptytopic || FALLBACK_PLAYLIST_NAME}</span>
+                <span className="text-xl text-zinc-300">{lang?.emptytopic || (lang?.unknown_playlist || FALLBACK_PLAYLIST_NAME)}</span>
                 <span className="text-lg text-zinc-500">{lang?.nopostsdesc || 'Плейлист пуст или недоступен'}</span>
               </div>
             ) : null}

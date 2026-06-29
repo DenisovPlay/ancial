@@ -82,8 +82,8 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
 
   const trackNumericId = toNumber(track?.id ?? trackId);
   const available = isTrackAvailable(track, userCountry);
-  const title = decodeHtmlEntities(track?.name) || 'Неизвестный трек';
-  const artist = decodeHtmlEntities(track?.artist) || 'Неизвестный исполнитель';
+  const title = decodeHtmlEntities(track?.name) || (lang?.untitled || 'Неизвестный трек');
+  const artist = decodeHtmlEntities(track?.artist) || (lang?.unknown_artist || 'Неизвестный исполнитель');
   const image = getImageUrl(track?.img, DEFAULT_TRACK_IMAGE);
   const active = trackNumericId > 0 && currentSongId === trackNumericId && isPlaying;
 
@@ -114,7 +114,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
 
   const likeTrack = useCallback(async () => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавить трек в Избранное', 'info');
+      showPulseNote(lang?.logintoaddfavorites || 'Войдите, чтобы добавить трек в Избранное', 'info');
       return;
     }
 
@@ -126,13 +126,13 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
         setIsLiked(true);
-        showPulseNote(result === 'CREATED_ADDED' ? 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!' : 'Трек добавлен в ваш плейлист!', 'success');
+        showPulseNote(result === 'CREATED_ADDED' ? (lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!') : (lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!'), 'success');
         return;
       }
 
       if (result === 'REMOVED') {
         setIsLiked(false);
-        showPulseNote('Трек удалён из вашего плейлиста!', 'success');
+        showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
         return;
       }
 
@@ -144,7 +144,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
 
   const addToPlaylist = useCallback(() => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в плейлисты', 'info');
+      showPulseNote(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты', 'info');
       return;
     }
 
@@ -221,16 +221,16 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                   >
                     {isAuthenticated ? (
                       <DropdownItem icon="IC-plus" onClick={addToPlaylist}>
-                        В плейлист
+                        {lang?.add_to_playlist || 'В плейлист'}
                       </DropdownItem>
                     ) : null}
                     {track?.src ? (
                       <DropdownItem icon="IC-download" onClick={() => window.open(`${normalizeText(track.src)}?download=1`, '_blank', 'noopener,noreferrer')}>
-                        Скачать
+                        {lang?.download || 'Скачать'}
                       </DropdownItem>
                     ) : null}
                   </Dropdown>
-                  <span className="text-sm text-content-500">Сохранить</span>
+                  <span className="text-sm text-content-500">{lang?.save || 'Сохранить'}</span>
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
@@ -263,7 +263,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                   >
                     <ActionIcon className="h-10 w-10" name={isLiked ? 'IC-heart-filled' : 'IC-heart'} />
                   </button>
-                  <span className="text-sm text-content-500">Избранное</span>
+                  <span className="text-sm text-content-500">{lang?.favorites || 'Избранное'}</span>
                 </div>
               </div>
             </div>

@@ -109,7 +109,7 @@ export default function NotificationsSettingsContent() {
 
   const ensureServiceWorker = useCallback(async () => {
     if (!('serviceWorker' in navigator)) {
-      throw new Error('Service Worker не поддерживается в этом браузере');
+      throw new Error(lang?.service_worker_not_supported || 'Service Worker не поддерживается в этом браузере');
     }
     const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
       updateViaCache: 'none',
@@ -124,7 +124,7 @@ export default function NotificationsSettingsContent() {
     try {
       if (!messaging) {
         showNote({
-          content: 'Firebase ещё не инициализирован. Попробуйте перезагрузить страницу.',
+          content: lang?.firebase_not_initialized || 'Firebase ещё не инициализирован. Попробуйте перезагрузить страницу.',
           type: 'error',
           time: 5,
         });
@@ -161,7 +161,7 @@ export default function NotificationsSettingsContent() {
         // Firebase Admin SDK возвращает { name: 'projects/...' } при успехе
         if (result?.success || result?.message || result?.name) {
           showNote({
-            content: 'Подключено!',
+            content: lang?.connected || 'Подключено!',
             type: 'success',
             time: 3,
           });
@@ -169,7 +169,7 @@ export default function NotificationsSettingsContent() {
           setTimeout(() => router.push('/settings/notifications'), 1000);
         } else {
           showNote({
-            content: 'Ошибка при подключении',
+            content: lang?.connection_error || 'Ошибка при подключении',
             type: 'error',
             time: 5,
           });
@@ -178,7 +178,7 @@ export default function NotificationsSettingsContent() {
     } catch (err) {
       console.error('Ошибка:', err);
       showNote({
-        content: 'Ошибка при подключении уведомлений',
+        content: lang?.notification_connection_error || 'Ошибка при подключении уведомлений',
         type: 'error',
         time: 5,
       });
@@ -199,7 +199,7 @@ export default function NotificationsSettingsContent() {
       // Firebase Admin SDK возвращает { name: 'projects/...' } при успехе
       if (result?.success || result?.message || result?.name) {
         showNote({
-          content: 'Отключено',
+          content: lang?.disconnected || 'Отключено',
           type: 'success',
           time: 3,
         });
@@ -207,7 +207,7 @@ export default function NotificationsSettingsContent() {
         router.push('/settings/notifications');
       } else {
         showNote({
-          content: 'Ошибка при отключении',
+          content: lang?.disconnection_error || 'Ошибка при отключении',
           type: 'error',
           time: 5,
         });
@@ -215,7 +215,7 @@ export default function NotificationsSettingsContent() {
     } catch (err) {
       console.error('Ошибка:', err);
       showNote({
-        content: 'Ошибка при отключении уведомлений',
+        content: lang?.notification_disconnection_error || 'Ошибка при отключении уведомлений',
         type: 'error',
         time: 5,
       });
@@ -251,7 +251,7 @@ export default function NotificationsSettingsContent() {
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen">
-        <p className="text-zinc-300">Требуется авторизация...</p>
+        <p className="text-zinc-300">{lang?.auth_required || 'Требуется авторизация...'}</p>
       </div>
     );
   }
@@ -290,14 +290,14 @@ export default function NotificationsSettingsContent() {
           </div>
           <div className="flex items-center px-3 lg:px-0 w-full justify-center">
             <span className="w-full text-zinc-300 text-sm lg:text-base max-w-3xl">
-              Push-уведомления активированы для этого устройства.
+              {lang?.push_activated || 'Push-уведомления активированы для этого устройства.'}
             </span>
           </div>
         </>
       ) : (
         <div className="flex items-center px-3 lg:px-0 w-full justify-center">
           <span className="w-full text-zinc-300 text-sm lg:text-base max-w-3xl">
-            Включите push-уведомления, чтобы получать уведомления о новых сообщениях и активностях.
+            {lang?.enable_push_desc || 'Включите push-уведомления, чтобы получать уведомления о новых сообщениях и активностях.'}
           </span>
         </div>
       )}
@@ -314,10 +314,10 @@ export default function NotificationsSettingsContent() {
               {isDetecting ? (
                 <>
                   <SvgIcon className="w-5 h-5 fill-white animate-spin" id="IC-loader" viewBox="0 0 48 48" />
-                  Подключение...
+                  {lang?.connecting || 'Подключение...'}
                 </>
               ) : (
-                'Активировать уведомления'
+                lang?.activate_notifications || 'Активировать уведомления'
               )}
             </button>
           ) : (
@@ -326,14 +326,14 @@ export default function NotificationsSettingsContent() {
                 onClick={cancelNotifications}
                 className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-full w-full shadow"
               >
-                Отключить
+                {lang?.disable || 'Отключить'}
               </button>
               <button
                 onClick={setupNotifications}
                 disabled={isDetecting}
                 className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow disabled:opacity-50"
               >
-                {isDetecting ? 'Подключение...' : 'Сменить устройство'}
+                {isDetecting ? (lang?.connecting || 'Подключение...') : (lang?.change_device || 'Сменить устройство')}
               </button>
             </>
           )}

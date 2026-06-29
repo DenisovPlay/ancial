@@ -77,7 +77,7 @@ function GroupsContent() {
       }
     } catch (error) {
       console.error('Ошибка при загрузке сообществ:', error);
-      setErrorMsg('Ошибка загрузки');
+      setErrorMsg(lang?.loading_error || 'Ошибка загрузки');
     } finally {
       setIsLoading(false);
     }
@@ -122,7 +122,7 @@ function GroupsContent() {
   };
 
   if (authLoading || (!isAuthenticated && !authLoading)) {
-    return <div className="p-3 text-center text-zinc-400">Загрузка...</div>;
+    return <div className="p-3 text-center text-zinc-400">{lang?.['loading...'] || 'Загрузка...'}</div>;
   }
 
   return (

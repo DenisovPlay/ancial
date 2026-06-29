@@ -104,7 +104,7 @@ export default function NotificationsPage() {
   if (authLoading || (isAuthenticated && isLoading)) {
     return (
       <div className="flex flex-col justify-center items-center py-10 w-full">
-        <span className="text-zinc-400">Загрузка...</span>
+        <span className="text-zinc-400">{lang?.['loading...'] || 'Загрузка...'}</span>
       </div>
     );
   }

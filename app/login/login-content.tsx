@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { checkAuth, isAuthenticated } = useAuth();
+  const { checkAuth, isAuthenticated, lang } = useAuth();
 
   // Если пользователь уже авторизован - кидаем его на главную
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!data.success) {
-        setError(data.error || 'Ошибка авторизации');
+        setError(data.error || (lang?.login_error || 'Ошибка авторизации'));
       } else {
         localStorage.setItem('token', data.data?.token || '');
         
@@ -57,7 +57,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error(err);
-      setError('Ошибка соединения с сервером');
+      setError(lang?.server_connection_error || 'Ошибка соединения с сервером');
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +66,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-700/50 rounded-3xl p-3 shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">Авторизация</h1>
+        <h1 className="text-2xl font-bold text-white mb-6 text-center">{lang?.authorization || 'Авторизация'}</h1>
 
         {/* Вывод ошибки */}
         {error && (
@@ -78,7 +78,7 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="flex flex-col gap-3">
           <div>
             <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="login">
-              Логин
+              {lang?.login_field || 'Логин'}
             </label>
             <Input
               id="login"
@@ -86,14 +86,14 @@ export default function LoginPage() {
               value={login}
               onChange={(e) => setLogin(e.target.value)}
               disabled={isLoading}
-              placeholder="Ваш логин"
+              placeholder={lang?.your_login || "Ваш логин"}
               required
             />
           </div>
 
           <div>
             <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="password">
-              Пароль
+              {lang?.password_field || 'Пароль'}
             </label>
             <Input
               id="password"
@@ -112,13 +112,13 @@ export default function LoginPage() {
             fullWidth
             className="mt-2"
           >
-            {isLoading ? 'Вход...' : 'Войти'}
+            {isLoading ? (lang?.logging_in || 'Вход...') : (lang?.log_in || 'Войти')}
           </Button>
           
           <div className="text-center mt-4">
-            <span className="text-zinc-400 text-sm">Нет аккаунта? </span>
+            <span className="text-zinc-400 text-sm">{lang?.no_account || 'Нет аккаунта? '}</span>
             <Link href="/signup" className="text-purple-400 hover:text-purple-300 text-sm font-medium">
-              Зарегистрироваться
+              {lang?.register || 'Зарегистрироваться'}
             </Link>
           </div>
         </form>

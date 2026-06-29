@@ -72,10 +72,10 @@ export default function AccountContent({ accountId }: AccountContentProps) {
         setError(null);
         localStorage.setItem(`wallet_account_cache_${accountId}`, JSON.stringify(found));
       } else {
-        if (!currentAccount) setError('Счёт не найден или доступ ограничен');
+        if (!currentAccount) setError(lang?.account_not_found_or_restricted || 'Счёт не найден или доступ ограничен');
       }
     } catch (err: unknown) {
-      if (!currentAccount) setError(err instanceof Error ? err.message : 'Ошибка загрузки счёта');
+      if (!currentAccount) setError(err instanceof Error ? err.message : (lang?.error_loading_account || 'Ошибка загрузки счёта'));
     } finally {
       setLoading(false);
     }
@@ -145,7 +145,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
           const res = await AncialAPI.generateQRCode(accountId);
           setReceiveQrUrl(res.qr_url);
         } catch (err: unknown) {
-          setReceiveError(err instanceof Error ? err.message : 'Не удалось сгенерировать QR-код');
+          setReceiveError(err instanceof Error ? err.message : (lang?.failed_to_generate_qr || 'Не удалось сгенерировать QR-код'));
         } finally {
           setReceiveLoading(false);
         }
@@ -166,7 +166,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
     e.preventDefault();
     const parsedAmount = parseFloat(topupAmount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setTopupError('Укажите корректную сумму');
+      setTopupError(lang?.enter_correct_amount || 'Укажите корректную сумму');
       return;
     }
 
@@ -177,10 +177,10 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       if (res && res.payment_url) {
         window.location.href = res.payment_url;
       } else {
-        setTopupError('Не удалось создать счет для пополнения');
+        setTopupError(lang?.failed_to_create_topup_invoice || 'Не удалось создать счет для пополнения');
       }
     } catch (err: unknown) {
-      setTopupError(err instanceof Error ? err.message : 'Ошибка при создании пополнения');
+      setTopupError(err instanceof Error ? err.message : (lang?.error_creating_topup || 'Ошибка при создании пополнения'));
     } finally {
       setTopupLoading(false);
     }
@@ -196,7 +196,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       // Redirect back to wallet dashboard
       router.push('/wallet');
     } catch (err: unknown) {
-      setCloseError(err instanceof Error ? err.message : 'Не удалось закрыть счёт');
+      setCloseError(err instanceof Error ? err.message : (lang?.failed_to_close_account || 'Не удалось закрыть счёт'));
     } finally {
       setCloseLoading(false);
     }
@@ -267,9 +267,9 @@ export default function AccountContent({ accountId }: AccountContentProps) {
   if (error || !currentAccount) {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-zinc-300 gap-3">
-        <span className="text-xl font-bold text-red-500">{error || 'Ошибка загрузки счёта'}</span>
+        <span className="text-xl font-bold text-red-500">{error || (lang?.error_loading_account || 'Ошибка загрузки счёта')}</span>
         <button onClick={() => router.push('/wallet')} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition duration-300">
-          Назад в кошелёк
+          {lang?.back_to_wallet || 'Назад в кошелёк'}
         </button>
       </div>
     );
@@ -337,21 +337,24 @@ export default function AccountContent({ accountId }: AccountContentProps) {
           <div className="flex flex-col items-center justify-center w-full border border-zinc-600/30 bg-zinc-800/50 lg:bg-zinc-800/70 rounded-3xl overflow-hidden duration-300">
             {transactions.length > 0 ? (
               <div className="w-full">
-                {transactions.map((trans) => (
+                {transactions.map((trans, index) => (
                   <TransactionItem
                     key={trans.id}
                     trans={trans}
+                    onClick={(t) => {
+                      setSelectedTransaction(t);
+                      setIsTransactionDetailsModalOpen(true);
+                    }}
                     ownedIds={ownedAccountIds}
                     systemLabel={strings.system}
-                    onClick={(t) => { setSelectedTransaction(t); setIsTransactionDetailsModalOpen(true); }}
                   />
                 ))}
               </div>
             ) : (
               <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
                 <Image src="/img/status/nothingfound.webp" width={224} height={224} className="h-56 w-auto" alt="Empty" />
-                <span className="text-base text-zinc-100 w-full text-center font-black">Слишком пусто...</span>
-                <span className="text-sm text-zinc-300 w-full text-center font-medium">Может фильтры сломались или ты ничего не переводил...</span>
+                <span className="text-base text-zinc-100 w-full text-center font-black">{lang?.too_empty || 'Слишком пусто...'}</span>
+                <span className="text-sm text-zinc-300 w-full text-center font-medium">{lang?.maybe_filters_broken || 'Может фильтры сломались или ты ничего не переводил...'}</span>
               </div>
             )}
           </div>
@@ -359,17 +362,17 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       </div>
 
       {/* MODAL 1: Пополнение (Deposit) */}
-      <Modal isOpen={isTopupModalOpen} onClose={() => setIsTopupModalOpen(false)} title="Пополнение" width="sm">
+      <Modal isOpen={isTopupModalOpen} onClose={() => setIsTopupModalOpen(false)} title={lang?.deposit || "Пополнение"} width="sm">
         <form onSubmit={handleTopupSubmit} className="flex flex-col gap-3 text-zinc-100 text-left">
 
           <div className="flex flex-col w-full text-left">
-            <span className="text-zinc-400 pl-4 z-20">Сумма пополнения (₽)</span>
+            <span className="text-zinc-400 pl-4 z-20">{lang?.topup_amount_rub || 'Сумма пополнения (₽)'}</span>
             <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
               <input
                 type="number"
                 value={topupAmount}
                 onChange={(e) => setTopupAmount(e.target.value)}
-                placeholder="Сумма"
+                placeholder={lang?.t_amm || "Сумма"}
                 className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-4 text-white text-base"
                 required
                 min="10"
@@ -385,13 +388,13 @@ export default function AccountContent({ accountId }: AccountContentProps) {
             className={`border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow ${topupLoading ? 'opacity-50 cursor-not-allowed' : ''
               }`}
           >
-            {topupLoading ? 'Подождите...' : 'Пополнить'}
+            {topupLoading ? (lang?.wait_loading || 'Подождите...') : (lang?.deposit || 'Пополнить')}
           </button>
         </form>
       </Modal>
 
       {/* MODAL 2: Получить (Request / Receive) */}
-      <Modal isOpen={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)} title="Запросить перевод" width="sm">
+      <Modal isOpen={isReceiveModalOpen} onClose={() => setIsReceiveModalOpen(false)} title={lang?.request_transfer || "Запросить перевод"} width="sm">
         <div className="flex flex-col gap-3 text-zinc-100">
           <div className="flex items-center gap-3 w-full mt-1">
             <div className="flex items-center justify-center p-3 bg-white rounded-3xl flex-col shadow border border-zinc-600/30 min-h-30 min-w-30">
@@ -408,7 +411,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
                   alt="Account QR Code"
                 />
               ) : (
-                <span className="text-xs text-zinc-500 text-center px-2">QR недоступен</span>
+                <span className="text-xs text-zinc-500 text-center px-2">{lang?.qr_unavailable || 'QR недоступен'}</span>
               )}
             </div>
             {user && (
@@ -429,10 +432,10 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       </Modal>
 
       {/* MODAL 3: Закрытие счёта (Close account confirmation) */}
-      <Modal isOpen={isCloseConfirmModalOpen} onClose={() => setIsCloseConfirmModalOpen(false)} title="Закрытие счета" width="sm">
+      <Modal isOpen={isCloseConfirmModalOpen} onClose={() => setIsCloseConfirmModalOpen(false)} title={lang?.close_account_title || "Закрытие счета"} width="sm">
         <div className="flex flex-col gap-3 text-zinc-100 text-left">
           <span className="text-zinc-300 text-base leading-relaxed">
-            Вы действительно хотите закрыть этот счёт? Все средства должны быть выведены до закрытия счёта. Данное действие необратимо.
+            {lang?.are_you_sure_close_account || 'Вы действительно хотите закрыть этот счёт? Все средства должны быть выведены до закрытия счёта. Данное действие необратимо.'}
           </span>
 
           {closeError && <span className="text-red-500 text-sm font-medium text-center">{closeError}</span>}
@@ -443,13 +446,13 @@ export default function AccountContent({ accountId }: AccountContentProps) {
               disabled={closeLoading}
               className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-red-600 hover:bg-red-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold disabled:opacity-50"
             >
-              {closeLoading ? 'Закрытие...' : 'Да, закрыть'}
+              {closeLoading ? (lang?.closing || 'Закрытие...') : (lang?.yes_close || 'Да, закрыть')}
             </button>
             <button
               onClick={() => setIsCloseConfirmModalOpen(false)}
               className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-700"
             >
-              Отмена
+              {lang?.cancel || 'Отмена'}
             </button>
           </div>
         </div>

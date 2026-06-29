@@ -15,7 +15,7 @@ export default function SettingsPage() {
       const result = await AncialAPI.updateProfile<any>({ lang: selectedLang });
       
       showNote({
-        content: result?.message || (selectedLang === 'ru' ? 'Язык изменен' : 'Language changed'),
+        content: result?.message || (lang?.language_changed || 'Язык изменен'),
         html: true,
         type: 'success',
         time: 5
@@ -27,7 +27,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error(error);
       showNote({
-        content: lang?.langname === 'en' ? 'Error =(' : 'Произошла ошибка =(',
+        content: lang?.errorhappend || 'Произошла ошибка =(',
         type: 'error',
         time: 5
       });

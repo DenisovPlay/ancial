@@ -45,7 +45,7 @@ function AboutContentInner() {
 
   const loadData = async (showLoading = false) => {
     if (!merchantId) {
-      setError('Некорректный идентификатор мерчанта');
+      setError(lang?.invalid_merchant_id || 'Некорректный идентификатор мерчанта');
       setLoading(false);
       return;
     }
@@ -69,10 +69,10 @@ function AboutContentInner() {
 
         localStorage.setItem(`wallet_merchant_detail_cache_${merchantId}`, JSON.stringify(res));
       } else {
-        if (!merchant) setError('Мерчант не найден');
+        if (!merchant) setError(lang?.merchant_not_found || 'Мерчант не найден');
       }
     } catch (err: any) {
-      if (!merchant) setError(err.message || 'Ошибка загрузки настроек мерчанта');
+      if (!merchant) setError(err.message || (lang?.error_loading_merchant_settings || 'Ошибка загрузки настроек мерчанта'));
     } finally {
       setLoading(false);
     }
@@ -147,17 +147,17 @@ function AboutContentInner() {
           });
         }
       } else {
-        setSaveError(res.message || 'Не удалось обновить настройки');
+        setSaveError(res.message || (lang?.failed_to_update_settings || 'Не удалось обновить настройки'));
       }
     } catch (err: any) {
-      setSaveError(err.message || 'Ошибка обновления настроек');
+      setSaveError(err.message || (lang?.error_updating_settings || 'Ошибка обновления настроек'));
     } finally {
       setSaveLoading(false);
     }
   };
 
   const handleWithdrawClick = () => {
-    alert('Вывод средств находится в разработке. Обратитесь в техподдержку.');
+    alert(lang?.withdrawals_in_development || 'Вывод средств находится в разработке. Обратитесь в техподдержку.');
   };
 
   const getOrderStatusBadge = (status: string) => {
@@ -165,49 +165,49 @@ function AboutContentInner() {
       case 'paid':
         return (
           <span className="border border-zinc-700/30 bg-green-500/25 text-green-500 px-2 py-0.5 text-xs rounded-full w-fit">
-            Оплачен
+            {lang?.status_paid || 'Оплачен'}
           </span>
         );
       case 'created':
         return (
           <span className="border border-zinc-700/30 bg-amber-500/25 text-amber-500 px-2 py-0.5 text-xs rounded-full w-fit">
-            Создан
+            {lang?.status_created || 'Создан'}
           </span>
         );
       case 'pending':
         return (
           <span className="border border-zinc-700/30 bg-amber-500/25 text-amber-500 px-2 py-0.5 text-xs rounded-full w-fit">
-            Ожидание
+            {lang?.status_pending || 'Ожидание'}
           </span>
         );
       case 'finished':
         return (
           <span className="border border-zinc-700/30 bg-zinc-500/25 text-zinc-500 px-2 py-0.5 text-xs rounded-full w-fit">
-            Выплачен
+            {lang?.status_finished || 'Выплачен'}
           </span>
         );
       case 'cancelled':
         return (
           <span className="border border-zinc-700/30 bg-red-500/25 text-red-500 px-2 py-0.5 text-xs rounded-full w-fit">
-            Отменен
+            {lang?.status_cancelled || 'Отменен'}
           </span>
         );
       case 'failed':
         return (
           <span className="border border-zinc-700/30 bg-red-500/25 text-red-500 px-2 py-0.5 text-xs rounded-full w-fit">
-            Ошибка
+            {lang?.status_failed || 'Ошибка'}
           </span>
         );
       case 'refunded':
         return (
           <span className="border border-zinc-700/30 bg-blue-500/25 text-blue-500 px-2 py-0.5 text-xs rounded-full w-fit">
-            Возвращён
+            {lang?.status_refunded || 'Возвращён'}
           </span>
         );
       default:
         return (
           <span className="border border-zinc-700/30 bg-zinc-500/25 text-zinc-500 px-2 py-0.5 text-xs rounded-full w-fit">
-            Неизвестен
+            {lang?.status_unknown || 'Неизвестен'}
           </span>
         );
     }
@@ -230,15 +230,15 @@ function AboutContentInner() {
   if (error || !merchant) {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-zinc-350 gap-3 px-4">
-        <span className="text-xl font-bold text-red-500">{error || 'Ошибка загрузки мерчанта'}</span>
+        <span className="text-xl font-bold text-red-500">{error || (lang?.error_loading_merchant || 'Ошибка загрузки мерчанта')}</span>
         <button onClick={() => router.push('/wallet/merchant')} className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition duration-300">
-          Назад к мерчантам
+          {lang?.back_to_merchants || 'Назад к мерчантам'}
         </button>
       </div>
     );
   }
 
-  const callbackStatus = merchant.c_url ? 'Callback подключён' : '';
+  const callbackStatus = merchant.c_url ? (lang?.callback_connected || 'Callback подключён') : '';
 
   return (
     <div className="p-3 lg:px-0 flex flex-col items-center gap-6 bg-black min-h-screen text-zinc-100 pb-16">
@@ -253,7 +253,7 @@ function AboutContentInner() {
             <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
           </svg>
           <span style={{ marginTop: '0.1rem' }} className="shrink-0 text-3xl font-bold bg-gradient-to-br from-lime-500 to-emerald-500 text-transparent bg-clip-text cutetext">
-            Мерчант
+            {lang?.merchant || 'Мерчант'}
           </span>
         </span>
         <div className="flex-grow" />
@@ -283,11 +283,11 @@ function AboutContentInner() {
             <div className="shrink-0 flex items-start h-full">
               {merchant.status === 1 ? (
                 <span className="border border-zinc-700/30 bg-green-500/25 text-green-500 px-1.5 py-0.5 text-xs rounded-full w-fit">
-                  Активен
+                  {lang?.active || 'Активен'}
                 </span>
               ) : (
                 <span className="border border-zinc-700/30 bg-red-500/25 text-red-500 px-1.5 py-0.5 text-xs rounded-full w-fit">
-                  Неактивен
+                  {lang?.inactive || 'Неактивен'}
                 </span>
               )}
             </div>
@@ -296,19 +296,19 @@ function AboutContentInner() {
 
         <div className="bg-zinc-900/20 border border-zinc-600/30 shadow rounded-3xl p-4 duration-300 w-full text-left">
           <div className="text-3xl font-bold text-white">{totalPayments}</div>
-          <span className="text-zinc-400 text-sm">Всего платежей</span>
+          <span className="text-zinc-400 text-sm">{lang?.total_payments || 'Всего платежей'}</span>
         </div>
 
         <div className="bg-zinc-900/20 border border-zinc-600/30 shadow rounded-3xl p-4 duration-300 w-full flex items-center gap-3 text-left">
           <div className="flex flex-grow flex-col">
             <div className="text-3xl font-bold text-white">{totalEarned} ₽</div>
-            <span className="text-zinc-400 text-sm">Доступно для вывода</span>
+            <span className="text-zinc-400 text-sm">{lang?.available_for_withdrawal || 'Доступно для вывода'}</span>
           </div>
           <button
             onClick={handleWithdrawClick}
             className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full shadow font-semibold"
           >
-            Вывести
+            {lang?.withdraw || 'Вывести'}
           </button>
         </div>
       </div>
@@ -319,19 +319,19 @@ function AboutContentInner() {
         {/* Left Side: Settings Form */}
         <div className="flex flex-col gap-3 w-full">
           <div className="flex gap-3 items-center w-full duration-300">
-            <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">Настройки</span>
+            <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">{lang?.settings || 'Настройки'}</span>
           </div>
 
           <form onSubmit={handleSaveSettings} className="flex flex-col gap-3 w-full text-left bg-zinc-900/20 border border-zinc-800 p-5 rounded-3xl">
             {/* Input: Image */}
             <div className="flex flex-col w-full text-left">
-              <span className="text-zinc-400 pl-4 z-20">Изображение</span>
+              <span className="text-zinc-400 pl-4 z-20">{lang?.image_label || 'Изображение'}</span>
               <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
                   value={img}
                   onChange={(e) => setImg(e.target.value)}
-                  placeholder="URL аватара"
+                  placeholder={lang?.avatar_url_placeholder || "URL аватара"}
                   className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-4 text-white text-sm"
                 />
               </div>
@@ -339,13 +339,13 @@ function AboutContentInner() {
 
             {/* Input: Description */}
             <div className="flex flex-col w-full text-left">
-              <span className="text-zinc-400 pl-4 z-20">Описание</span>
+              <span className="text-zinc-400 pl-4 z-20">{lang?.description_label || 'Описание'}</span>
               <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Описание мерчанта"
+                  placeholder={lang?.merchant_description_placeholder || "Описание мерчанта"}
                   className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-4 text-white text-sm"
                 />
               </div>
@@ -353,7 +353,7 @@ function AboutContentInner() {
 
             {/* Input: Success URL */}
             <div className="flex flex-col w-full text-left">
-              <span className="text-zinc-400 pl-4 z-20">URL успешной оплаты</span>
+              <span className="text-zinc-400 pl-4 z-20">{lang?.success_url || 'URL успешной оплаты'}</span>
               <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
@@ -367,7 +367,7 @@ function AboutContentInner() {
 
             {/* Input: Error URL */}
             <div className="flex flex-col w-full text-left">
-              <span className="text-zinc-400 pl-4 z-20">URL неуспешной оплаты</span>
+              <span className="text-zinc-400 pl-4 z-20">{lang?.error_url || 'URL неуспешной оплаты'}</span>
               <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="text"
@@ -395,9 +395,9 @@ function AboutContentInner() {
 
             {/* Fee Paid Switcher */}
             <div className="cursor-pointer flex items-center justify-center gap-3 pt-2 text-sm">
-              <span className="text-zinc-400">Комиссию платит:</span>
+              <span className="text-zinc-400">{lang?.fee_paid_by || 'Комиссию платит:'}</span>
               <div className="flex-grow" />
-              <span className={feePaid === 'buyer' ? 'text-white font-bold' : 'text-zinc-500'}>Покупатель</span>
+              <span className={feePaid === 'buyer' ? 'text-white font-bold' : 'text-zinc-500'}>{lang?.buyer || 'Покупатель'}</span>
 
               <div className="flex items-center h-5">
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -411,12 +411,12 @@ function AboutContentInner() {
                 </label>
               </div>
 
-              <span className={feePaid === 'merchant' ? 'text-white font-bold' : 'text-zinc-500'}>Мерчант</span>
+              <span className={feePaid === 'merchant' ? 'text-white font-bold' : 'text-zinc-500'}>{lang?.merchant || 'Мерчант'}</span>
             </div>
 
             {saveSuccess && (
               <span className="text-green-500 text-sm font-bold text-center animate-pulse">
-                Настройки успешно сохранены!
+                {lang?.settings_saved_successfully || 'Настройки успешно сохранены!'}
               </span>
             )}
             {saveError && (
@@ -430,7 +430,7 @@ function AboutContentInner() {
               disabled={saveLoading}
               className="border border-zinc-600/30 cursor-pointer mt-2 flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full shadow disabled:opacity-50 font-bold"
             >
-              {saveLoading ? 'Сохранение...' : strings.save}
+              {saveLoading ? (lang?.saving || 'Сохранение...') : strings.save}
             </button>
           </form>
         </div>
@@ -438,7 +438,7 @@ function AboutContentInner() {
         {/* Right Side: Orders list table */}
         <div className="flex flex-col gap-3 w-full">
           <div className="flex gap-3 items-center w-full duration-300">
-            <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">Операции</span>
+            <span className="text-xl lg:text-3xl font-bold text-white flex-grow shrink-0 text-left">{lang?.operations || 'Операции'}</span>
           </div>
 
           <div className="flex flex-col justify-center w-full duration-300 shrink-0">
@@ -458,17 +458,17 @@ function AboutContentInner() {
 
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-zinc-400 text-xs mt-1">
                           <span>
-                            Сумма: <span className="text-zinc-200 font-medium">{order.amount} ₽</span>
+                            {lang?.amount || 'Сумма:'} <span className="text-zinc-200 font-medium">{order.amount} ₽</span>
                           </span>
                           <div className="rounded-full h-1 w-1 bg-zinc-650" />
                           <span className="truncate">
-                            Лейбл: <span className="text-zinc-200 font-medium">{order.label || '—'}</span>
+                            {lang?.label || 'Лейбл:'} <span className="text-zinc-200 font-medium">{order.label || '—'}</span>
                           </span>
                           {order.description && (
                             <>
                               <div className="rounded-full h-1 w-1 bg-zinc-650" />
                               <span className="truncate">
-                                Описание: <span className="text-zinc-200 font-medium">{order.description}</span>
+                                {lang?.description_table || 'Описание:'} <span className="text-zinc-200 font-medium">{order.description}</span>
                               </span>
                             </>
                           )}
@@ -481,7 +481,7 @@ function AboutContentInner() {
                 </div>
               ) : (
                 <div className="text-center w-full py-16 text-zinc-450">
-                  Нет зарегистрированных операций по этому мерчанту.
+                  {lang?.no_operations_for_merchant || 'Нет зарегистрированных операций по этому мерчанту.'}
                 </div>
               )}
 

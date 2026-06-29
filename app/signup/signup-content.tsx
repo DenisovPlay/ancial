@@ -19,7 +19,7 @@ export default function SignupContent() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { checkAuth, isAuthenticated } = useAuth();
+  const { checkAuth, isAuthenticated, lang } = useAuth();
 
   // Если пользователь уже авторизован - кидаем его на главную
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function SignupContent() {
       const data = await res.json();
 
       if (!data.success) {
-        setError(data.error || 'Ошибка регистрации');
+        setError(data.error || (lang?.signup_error || 'Ошибка регистрации'));
         setIsLoading(false);
         return;
       }
@@ -89,7 +89,7 @@ export default function SignupContent() {
       }
     } catch (err) {
       console.error(err);
-      setError('Ошибка соединения с сервером');
+      setError(lang?.server_connection_error || 'Ошибка соединения с сервером');
       setIsLoading(false);
     }
   };
@@ -97,7 +97,7 @@ export default function SignupContent() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
       <div className="w-full max-w-md bg-zinc-900 border border-zinc-700/50 rounded-3xl p-5 shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">Регистрация</h1>
+        <h1 className="text-2xl font-bold text-white mb-6 text-center">{lang?.signup || 'Регистрация'}</h1>
 
         {/* Вывод ошибки */}
         {error && (
@@ -109,7 +109,7 @@ export default function SignupContent() {
         <form onSubmit={handleRegister} className="flex flex-col gap-3">
           <div>
             <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="login">
-              Логин (только англ. буквы и цифры)
+              {lang?.login_hint || 'Логин (только англ. буквы и цифры)'}
             </label>
             <Input
               id="login"
@@ -124,7 +124,7 @@ export default function SignupContent() {
 
           <div>
             <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="email">
-              E-mail
+              {lang?.email || 'E-mail'}
             </label>
             <Input
               id="email"
@@ -140,7 +140,7 @@ export default function SignupContent() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="fname">
-                Имя
+                {lang?.first_name || 'Имя'}
               </label>
               <Input
                 id="fname"
@@ -148,13 +148,13 @@ export default function SignupContent() {
                 value={fname}
                 onChange={(e) => setFname(e.target.value)}
                 disabled={isLoading}
-                placeholder="Иван"
+                placeholder={lang?.ivan || "Иван"}
               />
             </div>
             
             <div>
               <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="lname">
-                Фамилия
+                {lang?.last_name || 'Фамилия'}
               </label>
               <Input
                 id="lname"
@@ -162,14 +162,14 @@ export default function SignupContent() {
                 value={lname}
                 onChange={(e) => setLname(e.target.value)}
                 disabled={isLoading}
-                placeholder="Иванов"
+                placeholder={lang?.ivanov || "Иванов"}
               />
             </div>
           </div>
           
           <div>
             <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="phone">
-              Номер телефона (опционально)
+              {lang?.phone_optional || 'Номер телефона (опционально)'}
             </label>
             <Input
               id="phone"
@@ -183,7 +183,7 @@ export default function SignupContent() {
 
           <div>
             <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="password">
-              Пароль
+              {lang?.password_field || 'Пароль'}
             </label>
             <Input
               id="password"
@@ -198,7 +198,7 @@ export default function SignupContent() {
           
           <div>
             <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="password_2">
-              Повторите пароль
+              {lang?.repeat_password || 'Повторите пароль'}
             </label>
             <Input
               id="password_2"
@@ -217,13 +217,13 @@ export default function SignupContent() {
             fullWidth
             className="mt-2"
           >
-            {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
+            {isLoading ? (lang?.signing_up || 'Регистрация...') : (lang?.register || 'Зарегистрироваться')}
           </Button>
           
           <div className="text-center mt-4">
-            <span className="text-zinc-400 text-sm">Уже есть аккаунт? </span>
+            <span className="text-zinc-400 text-sm">{lang?.already_have_account || 'Уже есть аккаунт? '}</span>
             <Link href="/login" className="text-purple-400 hover:text-purple-300 text-sm font-medium">
-              Войти
+              {lang?.log_in || 'Войти'}
             </Link>
           </div>
         </form>

@@ -58,11 +58,8 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
         const appData = Array.isArray(data.app) ? data.app[0] : data.app;
         setApp(appData ?? null);
       } catch (caughtError) {
-        if (!alive) {
-          return;
-        }
-
-        setError(caughtError instanceof Error ? caughtError.message : 'Ошибка загрузки');
+        if (!alive) return;
+        setError(caughtError instanceof Error ? caughtError.message : (lang?.loading_error || 'Ошибка загрузки'));
       } finally {
         if (alive) {
           setLoading(false);

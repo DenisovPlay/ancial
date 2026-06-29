@@ -72,16 +72,18 @@ function getCardPlayableId(card: PulsePlaylistCardData) {
 
 function PulseHistoryRow({
   item,
+  lang,
   onOpenPlaylist,
   onPlayTrack,
 }: {
   item: PulseHistoryItem;
+  lang: any;
   onOpenPlaylist: () => void;
   onPlayTrack: () => void;
 }) {
   const isTrack = String(item.HTYPE ?? '') === '1';
   const imageUrl = getImageUrl(item.img, DEFAULT_TRACK_IMAGE);
-  const title = decodeHtmlEntities(item.name) || 'Без названия';
+  const title = decodeHtmlEntities(item.name) || (lang?.untitled || 'Без названия');
   const artist = decodeHtmlEntities(item.artist) || 'Pulse';
   const explicit = item.explicit === true || String(item.explicit ?? '') === '1';
 
@@ -225,7 +227,7 @@ export default function PulseMyContent() {
       if (result === 'CL') {
         removePulseCache(HISTORY_CACHE_KEY);
         setHistory([]);
-        showPulseNote('История очищена!', 'success');
+        showPulseNote(lang?.history_cleared || 'История очищена!', 'success');
       }
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
@@ -347,12 +349,13 @@ export default function PulseMyContent() {
                 {history.map((item, index) => (
                   <PulseHistoryRow
                     item={item}
+                    lang={lang}
                     key={`history-${item.HTYPE}-${item.id}-${index}`}
                     onOpenPlaylist={() => router.push(`/pulse/playlist/${encodeURIComponent(normalizeText(String(item.id ?? '0')) || '0')}`)}
                     onPlayTrack={() => {
                       const trackId = toNumber(item.id);
                       if (!trackId) {
-                        showPulseNote('Неизвестная песня...', 'error');
+                        showPulseNote(lang?.pulse_unknown_song || 'Неизвестная песня...', 'error');
                         return;
                       }
                       void playTrack(trackId);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../../components/modal';
 import { AncialAPI, type WalletAccount } from '../../lib/api-v2';
+import { useAuth } from '../../context/AuthContext';
 
 export interface DonateModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export function DonateModal({
   recipientName,
   recipientImg,
 }: DonateModalProps) {
+  const { lang } = useAuth();
   const [step, setStep] = useState<'donate' | 'select' | 'success' | 'failed'>('donate');
   const [amount, setAmount] = useState<string>('');
   const [comment, setComment] = useState<string>('');
@@ -118,7 +120,7 @@ export function DonateModal({
   const handleNextToSelect = () => {
     const num = parseFloat(amount);
     if (isNaN(num) || num <= 0 || num > 150000) {
-      alert('Укажите корректную сумму пожертвования (от 1 до 150 000 ₽)');
+      alert(lang?.donate_amount_error || 'Укажите корректную сумму пожертвования (от 1 до 150 000 ₽)');
       return;
     }
     setStep('select');
@@ -126,14 +128,14 @@ export function DonateModal({
 
   const handleExecuteTransfer = async () => {
     if (!selectedSenderId) {
-      alert('Пожалуйста, выберите счет для отправки');
+      alert(lang?.select_account_error || 'Пожалуйста, выберите счет для отправки');
       return;
     }
 
     setSubmitLoading(true);
     setSubmitError(null);
 
-    const transferComment = comment.trim() || `Пожертвование для @${recipientUser?.username || recipientUsername}`;
+    const transferComment = comment.trim() || `${lang?.donation_for || 'Пожертвование для @'}${recipientUser?.username || recipientUsername}`;
     const transferAmount = parseFloat(amount);
 
     try {
@@ -151,11 +153,11 @@ export function DonateModal({
         });
         setStep('success');
       } else {
-        setSubmitError('Не удалось выполнить пожертвование');
+        setSubmitError(lang?.donation_failed || 'Не удалось выполнить пожертвование');
         setStep('failed');
       }
     } catch (err: any) {
-      setSubmitError(err.message || 'Ошибка выполнения пожертвования');
+      setSubmitError(err.message || (lang?.donation_error || 'Ошибка выполнения пожертвования'));
       setStep('failed');
     } finally {
       setSubmitLoading(false);
@@ -166,7 +168,7 @@ export function DonateModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Пожертвование"
+      title={lang?.donation || "Пожертвование"}
       width="sm"
       bodyClassName="!pb-0"
     >
@@ -235,7 +237,7 @@ export function DonateModal({
                 {/* Divider matching form.php */}
                 <div className="flex items-center justify-center gap-3 w-full my-1">
                   <div className="w-full flex-grow rounded-3xl bg-zinc-700/80 h-1" />
-                  <span className="font-bold text-zinc-300 text-center lowercase">или</span>
+                  <span className="font-bold text-zinc-300 text-center lowercase">{lang?.or || 'или'}</span>
                   <div className="w-full flex-grow rounded-3xl bg-zinc-700/80 h-1" />
                 </div>
 
@@ -251,7 +253,7 @@ export function DonateModal({
                     <input
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Сумма"
+                      placeholder={lang?.amount_placeholder || "Сумма"}
                       type="number"
                       min="1"
                       max="150000"
@@ -269,7 +271,7 @@ export function DonateModal({
                   onClick={handleNextToSelect}
                   className="cursor-pointer sticky bottom-0 flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 disabled:bg-zinc-700 disabled:cursor-not-allowed active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl border border-zinc-600/30 shadow w-full font-normal mt-1"
                 >
-                  Отправить
+                  {lang?.send || 'Отправить'}
                 </button>
               </>
             )}
@@ -327,7 +329,7 @@ export function DonateModal({
                 })
               ) : (
                 <div className="text-zinc-400 text-sm p-3 bg-zinc-800 rounded-2xl border border-zinc-700 text-center">
-                  У вас нет активных счетов
+                  {lang?.noactiveaccounts || 'У вас нет активных счетов'}
                 </div>
               )}
             </div>
@@ -337,7 +339,7 @@ export function DonateModal({
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Комментарий к пожертвованию"
+                    placeholder={lang?.donation_comment || "Комментарий к пожертвованию"}
                     rows={2}
                     className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white text-sm resize-none placeholder-zinc-500"
                   />
@@ -350,7 +352,7 @@ export function DonateModal({
                   onClick={() => setStep('donate')}
                   className="cursor-pointer px-5 py-2 text-lg rounded-3xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 duration-300 active:scale-95 border border-zinc-600/30"
                 >
-                  Назад
+                  {lang?.back || 'Назад'}
                 </button>
                 <button
                   type="button"
@@ -358,7 +360,7 @@ export function DonateModal({
                   onClick={handleExecuteTransfer}
                   className="flex-1 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 disabled:bg-zinc-700 disabled:cursor-not-allowed active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow border border-zinc-600/30"
                 >
-                  {submitLoading ? 'Отправка...' : 'Отправить'}
+                  {submitLoading ? (lang?.sending || 'Отправка...') : (lang?.send || 'Отправить')}
                 </button>
               </div>
             </div>
@@ -373,9 +375,9 @@ export function DonateModal({
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-green-400">Пожертвование отправлено!</span>
+            <span className="text-xl font-bold text-green-400">{lang?.donation_sent || 'Пожертвование отправлено!'}</span>
             <span className="text-zinc-300 text-sm">
-              Вы перевели <strong className="text-white">{successInfo?.amount} ₽</strong> пользователю{' '}
+              {lang?.you_transfered || 'Вы перевели '} <strong className="text-white">{successInfo?.amount} ₽</strong> {lang?.to_user || ' пользователю '}{' '}
               <strong className="text-purple-400">@{recipientUser?.username || recipientUsername}</strong>.
             </span>
             <button
@@ -383,7 +385,7 @@ export function DonateModal({
               onClick={onClose}
               className="mt-2 px-6 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-3xl duration-300 active:scale-95 border border-zinc-600/30 text-base"
             >
-              Закрыть
+              {lang?.close || 'Закрыть'}
             </button>
           </div>
         )}
@@ -392,13 +394,13 @@ export function DonateModal({
         {step === 'failed' && (
           <div className="flex flex-col items-center justify-center gap-3 py-4 text-center w-full">
             <span className="text-pink-500 text-6xl font-black">:(</span>
-            <span className="text-zinc-300 text-base font-medium">{submitError || 'Не удалось отправить пожертвование'}</span>
+            <span className="text-zinc-300 text-base font-medium">{submitError || (lang?.donation_failed || 'Не удалось отправить пожертвование')}</span>
             <button
               type="button"
               onClick={() => setStep('donate')}
               className="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-3xl duration-300 active:scale-95 border border-zinc-600/30 text-base"
             >
-              Попробуйте ещё раз
+              {lang?.tryagain || 'Попробуйте ещё раз'}
             </button>
           </div>
         )}

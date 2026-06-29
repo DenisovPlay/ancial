@@ -320,6 +320,7 @@ function PulseArtistCard({
   artist: PulseHomeArtist;
   onOpen: () => void;
 }) {
+  const { lang } = useAuth();
   const imageUrl = getImageUrl(artist.img, DEFAULT_TRACK_IMAGE);
 
   return (
@@ -337,7 +338,7 @@ function PulseArtistCard({
       </div>
 
       <span className="z-[1] flex max-w-32 items-center gap-1 truncate text-sm font-medium text-zinc-100 duration-300 lg:-translate-y-24 lg:group-hover:translate-y-0 lg:max-w-48">
-        <span className="truncate">{decodeHtmlEntities(artist.name) || 'Артист'}</span>
+        <span className="truncate">{decodeHtmlEntities(artist.name) || (lang?.artist || 'Артист')}</span>
       </span>
     </button>
   );
@@ -354,6 +355,7 @@ function RecentlyListenedPill({
   onOpen: () => void;
   onPlay: () => void;
 }) {
+  const { lang } = useAuth();
   return (
     <div className="flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95">
       <button type="button" onClick={onPlay} className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full xl:h-16 xl:w-16 2xl:h-20 2xl:w-20">
@@ -370,7 +372,7 @@ function RecentlyListenedPill({
 
       <button type="button" onClick={onOpen} className="min-w-0 flex-grow cursor-pointer text-left">
         <span className="block truncate text-base font-medium text-white lg:text-lg 2xl:text-xl">
-          {decodeHtmlEntities(card.name) || 'Без названия'}
+          {decodeHtmlEntities(card.name) || (lang?.untitled || 'Без названия')}
         </span>
       </button>
     </div>
@@ -395,6 +397,7 @@ function PulseTrackRow({
   user,
   userCountry,
 }: PulseTrackRowProps) {
+  const { lang } = useAuth();
   const trackId = toNumber(track.sid);
   const isCurrentSong = currentSongId > 0 && currentSongId === trackId;
   const isOwnTrack = canManagePulseTrack(track, user);
@@ -402,8 +405,8 @@ function PulseTrackRow({
   const isAvailable = isTrackAvailable(track, userCountry);
   const firstArtistId = getArtistIds(track)[0] ?? '';
   const coverUrl = getTrackArtwork(track);
-  const title = decodeHtmlEntities(track.title) || 'Без названия';
-  const artist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
+  const title = decodeHtmlEntities(track.title) || (lang?.untitled || 'Без названия');
+  const artist = decodeHtmlEntities(track.artist) || (lang?.unknown_artist || 'Неизвестный исполнитель');
   const [isTrackMenuOpen, setIsTrackMenuOpen] = useState(false);
   const trackMenuZIndex = getPulseTrackDropdownZIndex(trackIndex, isTrackMenuOpen);
   const manageActions = [
@@ -411,7 +414,7 @@ function PulseTrackRow({
       ? {
           icon: 'IC-edit',
           key: 'edit',
-          label: 'Изменить',
+          label: lang?.edit || 'Изменить',
           onClick: () => onEditTrack(track),
         }
       : null,
@@ -419,7 +422,7 @@ function PulseTrackRow({
       ? {
           icon: 'IC-trash',
           key: 'delete',
-          label: 'Удалить',
+          label: lang?.delete || 'Удалить',
           onClick: () => onDeleteTrack(track),
         }
       : null,
@@ -434,21 +437,21 @@ function PulseTrackRow({
       ? {
           icon: 'IC-user',
           key: 'artist',
-          label: 'Исполнитель',
+          label: lang?.artist || 'Исполнитель',
           onClick: () => onOpenArtist(firstArtistId),
         }
       : null,
     {
       icon: 'IC-share',
       key: 'share',
-      label: 'Поделиться',
+      label: lang?.share || 'Поделиться',
       onClick: () => void onCopyTrackLink(track.sid ?? 0),
     },
     onReportTrack
       ? {
           icon: 'IC-report',
           key: 'report',
-          label: 'Пожаловаться',
+          label: lang?.report || 'Пожаловаться',
           onClick: () => void onReportTrack(track),
         }
       : null,
@@ -493,7 +496,7 @@ function PulseTrackRow({
           {title}
         </span>
         <span className="block truncate text-xs text-zinc-300 lg:text-sm">
-          {isAvailable ? artist : 'Трек недоступен'}
+          {isAvailable ? artist : (lang?.track_unavailable || 'Трек недоступен')}
         </span>
       </button>
 
@@ -529,15 +532,15 @@ function PulseTrackRow({
           </div>
         ) : null}
         <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
-          Следующим
+          {lang?.play_next || 'Следующим'}
         </DropdownItem>
         {isAuthenticated ? (
           <DropdownItem icon="IC-plus" onClick={() => onAddToPlaylist(track.sid ?? 0)}>
-            В плейлист
+            {lang?.add_to_playlist || 'В плейлист'}
           </DropdownItem>
         ) : null}
         <DropdownItem icon="IC-download" onClick={() => window.open(normalizeText(track.src), '_blank', 'noopener,noreferrer')}>
-          Скачать
+          {lang?.download || 'Скачать'}
         </DropdownItem>
         <div className={cn('grid w-full gap-1.5', footerActions.length >= 3 ? 'grid-cols-3' : 'grid-cols-2')}>
           {footerActions.map((action) => (
@@ -582,6 +585,7 @@ function TrackCollectionPanel({
   title: React.ReactNode;
   tracks: PulseTrack[] | null;
 }) {
+  const { lang } = useAuth();
   const panelIsActive = currentCollectionId === collectionId && isPlaying;
 
   return (
@@ -619,7 +623,7 @@ function TrackCollectionPanel({
         {!isLoading && !tracks?.length ? (
           <div className="flex h-full min-h-72 flex-col items-center justify-center gap-3 text-center text-zinc-300">
             <ActionIcon className="h-12 w-12 fill-white" name="IC-music" />
-            <span className="text-sm text-zinc-400">Пока пусто</span>
+            <span className="text-sm text-zinc-400">{lang?.empty || 'Пока пусто'}</span>
           </div>
         ) : null}
       </div>
@@ -669,7 +673,7 @@ export default function PulseContent() {
   const [newTracks, setNewTracks] = useState<PulseTrack[] | null>(() => readJsonCache<PulseTrack[]>(TRACK_CACHE_KEYS.New));
   const [yourTracks, setYourTracks] = useState<PulseTrack[] | null>(() => readJsonCache<PulseTrack[]>(TRACK_CACHE_KEYS.Your));
 
-  const guestYourPulseMessage = 'Я не знаю кто ты... Создашь аккаунт?';
+  const guestYourPulseMessage = lang?.guestyourpulsemsg || 'Я не знаю кто ты... Создашь аккаунт?';
   const userCountry = useMemo(() => {
     const nextCountry = normalizeText(
       typeof window !== 'undefined'
@@ -748,7 +752,7 @@ export default function PulseContent() {
 
   const likeTrack = useCallback(async (track: PulseTrack) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в избранное', 'info');
+      showPulseNote(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное', 'info');
       return;
     }
 
@@ -794,7 +798,7 @@ export default function PulseContent() {
 
   const reportTrack = useCallback((track: PulseTrack) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы отправить жалобу', 'info');
+      showPulseNote(lang?.logintoreport || 'Войдите, чтобы отправить жалобу', 'info');
       return;
     }
 
@@ -827,7 +831,7 @@ export default function PulseContent() {
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в плейлисты', 'info');
+      showPulseNote(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты', 'info');
       return;
     }
 
@@ -1081,7 +1085,7 @@ export default function PulseContent() {
             {!isLoading && listened === 'empty' ? (
               <div className="col-span-2 flex w-full flex-col items-center justify-center gap-3 sm:col-span-3 lg:col-span-4 xl:col-span-5">
                 <img src={THINKING_IMAGE} alt="Nothing listened yet" className="w-32 opacity-90" />
-                <div className="text-center text-zinc-200">Начните уже что-нибудь слушать...</div>
+                <div className="text-center text-zinc-200">{lang?.startlistening || 'Начните уже что-нибудь слушать...'}</div>
               </div>
             ) : null}
 

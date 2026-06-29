@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 
 import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
-import type { User } from '../context/AuthContext';
+import { useAuth, type User } from '../context/AuthContext';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 
@@ -221,10 +221,11 @@ export function PulseEmptyState({
   description?: string;
   title?: string;
 }) {
+  const { lang } = useAuth();
   return (
     <div className="flex min-h-72 w-full flex-col items-center justify-center gap-1 text-center">
       <PulseLogo className="w-48" />
-      <span className="text-xl text-zinc-300">{title || 'Пусто'}</span>
+      <span className="text-xl text-zinc-300">{title || lang?.empty || 'Пусто'}</span>
       {description ? (
         <span className="text-lg text-zinc-500">{description}</span>
       ) : null}
@@ -245,8 +246,9 @@ export function PulsePlaylistTile({
   onPlay: () => void;
   variant?: 'big' | 'compact';
 }) {
+  const { lang } = useAuth();
   const coverUrl = getImageUrl(card.img, DEFAULT_TRACK_IMAGE);
-  const title = decodeHtmlEntities(card.name) || 'Без названия';
+  const title = decodeHtmlEntities(card.name) || lang?.untitled || 'Без названия';
   const description = decodeHtmlEntities(card.desk) || 'Pulse';
   const playButtonSize = variant === 'big' ? 'h-10 w-10 lg:h-14 lg:w-14' : 'h-10 w-10';
   const playIconSize = variant === 'big' ? 'h-6 w-6' : 'h-6 w-6';
@@ -296,8 +298,9 @@ export function PulseArtistTile({
   artist: PulseArtistCardData;
   onOpen: () => void;
 }) {
+  const { lang } = useAuth();
   const imageUrl = getImageUrl(artist.img, DEFAULT_TRACK_IMAGE);
-  const name = decodeHtmlEntities(artist.name) || 'Артист';
+  const name = decodeHtmlEntities(artist.name) || lang?.artist || 'Артист';
 
   return (
     <button
@@ -354,6 +357,7 @@ export function PulseTrackRow({
   user,
   userCountry,
 }: PulseTrackRowProps) {
+  const { lang } = useAuth();
   const trackId = toNumber(track.sid);
   const isCurrentSong = currentSongId > 0 && currentSongId === trackId;
   const isOwnTrack = canManagePulseTrack(track, user);
@@ -361,8 +365,8 @@ export function PulseTrackRow({
   const isAvailable = isTrackAvailable(track, userCountry);
   const firstArtistId = getArtistIds(track)[0] ?? '';
   const coverUrl = getTrackArtwork(track);
-  const title = decodeHtmlEntities(track.title) || 'Без названия';
-  const artist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
+  const title = decodeHtmlEntities(track.title) || lang?.untitled || 'Без названия';
+  const artist = decodeHtmlEntities(track.artist) || lang?.unknown_artist || 'Неизвестный исполнитель';
   const [isTrackMenuOpen, setIsTrackMenuOpen] = useState(false);
   const trackMenuZIndex = getPulseTrackDropdownZIndex(trackIndex, isTrackMenuOpen);
   const manageActions = [
@@ -370,7 +374,7 @@ export function PulseTrackRow({
       ? {
           icon: 'IC-edit',
           key: 'edit',
-          label: 'Изменить',
+          label: lang?.edit || 'Изменить',
           onClick: () => onEditTrack(track),
         }
       : null,
@@ -378,7 +382,7 @@ export function PulseTrackRow({
       ? {
           icon: 'IC-trash',
           key: 'delete',
-          label: 'Удалить',
+          label: lang?.delete || 'Удалить',
           onClick: () => onDeleteTrack(track),
         }
       : null,
@@ -393,21 +397,21 @@ export function PulseTrackRow({
       ? {
           icon: 'IC-user',
           key: 'artist',
-          label: 'Исполнитель',
+          label: lang?.artist || 'Исполнитель',
           onClick: () => onOpenArtist(firstArtistId),
         }
       : null,
     {
       icon: 'IC-share',
       key: 'share',
-      label: 'Поделиться',
+      label: lang?.share || 'Поделиться',
       onClick: () => void onCopyTrackLink(track.sid ?? 0),
     },
     onReportTrack
       ? {
           icon: 'IC-report',
           key: 'report',
-          label: 'Пожаловаться',
+          label: lang?.report || 'Пожаловаться',
           onClick: () => void onReportTrack(track),
         }
       : null,
@@ -453,7 +457,7 @@ export function PulseTrackRow({
           {isAvailable ? title : `${title} - ${artist}`}
         </span>
         <span className="block truncate text-xs text-zinc-300 lg:text-sm">
-          {isAvailable ? artist : 'Трек недоступен'}
+          {isAvailable ? artist : (lang?.track_unavailable || 'Трек недоступен')}
         </span>
       </button>
 
@@ -489,15 +493,15 @@ export function PulseTrackRow({
           </div>
         ) : null}
         <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
-          Следующим
+          {lang?.play_next || 'Следующим'}
         </DropdownItem>
         {isAuthenticated ? (
           <DropdownItem icon="IC-plus" onClick={() => onAddToPlaylist(track.sid ?? 0)}>
-            В плейлист
+            {lang?.add_to_playlist || 'В плейлист'}
           </DropdownItem>
         ) : null}
         <DropdownItem icon="IC-download" onClick={() => window.open(normalizeText(track.src), '_blank', 'noopener,noreferrer')}>
-          Скачать
+          {lang?.download || 'Скачать'}
         </DropdownItem>
         <div className={cn('grid w-full gap-1.5', footerActions.length >= 3 ? 'grid-cols-3' : 'grid-cols-2')}>
           {footerActions.map((action) => (
@@ -558,27 +562,28 @@ export function PulseReportModal({
   isOpen,
   onClose,
   onSelectReason,
-  title = 'Пожаловаться',
+  title,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSelectReason: (reason: string) => void | Promise<void>;
   title?: string;
 }) {
+  const { lang } = useAuth();
   const reasons = [
-    { label: 'Спам', value: 'Спам' },
-    { label: 'Запрещённый товар', value: 'Запрещённый товар' },
-    { label: 'Обман', value: 'Обман' },
-    { label: 'Насилие и вражда', value: 'Насилие и вражда' },
-    { label: 'Откровенное изображение', value: 'Откровенное изображение' },
-    { label: 'Нарушение интеллектуальных прав', value: 'Нарушение интеллектуальных прав' },
+    { label: lang?.report_spam || 'Спам', value: 'Спам' },
+    { label: lang?.report_illegal_item || 'Запрещённый товар', value: 'Запрещённый товар' },
+    { label: lang?.report_fraud || 'Обман', value: 'Обман' },
+    { label: lang?.report_violence || 'Насилие и вражда', value: 'Насилие и вражда' },
+    { label: lang?.report_explicit || 'Откровенное изображение', value: 'Откровенное изображение' },
+    { label: lang?.report_copyright || 'Нарушение интеллектуальных прав', value: 'Нарушение интеллектуальных прав' },
   ];
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={title}
+      title={title || lang?.report || 'Пожаловаться'}
       width="sm"
     >
       <div className="flex flex-col justify-center overflow-hidden rounded-3xl shadow">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 
+import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
 import { type PulsePlaylistMeta } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
@@ -41,6 +42,7 @@ export default function PulsePlaylistEditorModal({
   playlist = null,
   showNote,
 }: PulsePlaylistEditorModalProps) {
+  const { lang } = useAuth();
   const [coverUrl, setCoverUrl] = useState('');
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -68,10 +70,10 @@ export default function PulsePlaylistEditorModal({
       const nextCoverUrl = await uploadPlaylistCover(file);
       if (nextCoverUrl) {
         setCoverUrl(nextCoverUrl);
-        showNote('Обложка загружена', 'success', 3);
+        showNote(lang?.coveruploaded || 'Обложка загружена', 'success', 3);
       }
     } catch {
-      showNote('Не удалось загрузить обложку', 'error', 5);
+      showNote(lang?.failedtouploadcover || 'Не удалось загрузить обложку', 'error', 5);
     } finally {
       setIsCoverUploading(false);
     }
@@ -80,7 +82,7 @@ export default function PulsePlaylistEditorModal({
   const savePlaylist = useCallback(async () => {
     const nextName = normalizeText(name);
     if (!nextName) {
-      showNote('Введите название плейлиста', 'info', 3);
+      showNote(lang?.enterplaylistname || 'Введите название плейлиста', 'info', 3);
       return;
     }
 
@@ -102,11 +104,11 @@ export default function PulsePlaylistEditorModal({
         name: nextName,
       };
 
-      showNote(isEditing ? 'Плейлист обновлён!' : 'Плейлист создан!', 'success', 3);
+      showNote(isEditing ? (lang?.playlistupdated || 'Плейлист обновлён!') : (lang?.playlistcreated || 'Плейлист создан!'), 'success', 3);
       onSaved(nextPlaylist);
       onClose();
     } catch (error) {
-      showNote(`Ошибка: ${error instanceof Error ? error.message : '?'}`, 'error', 5);
+      showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : '?'}`, 'error', 5);
     } finally {
       setIsSaving(false);
     }
@@ -118,7 +120,7 @@ export default function PulsePlaylistEditorModal({
     <PulseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Редактировать плейлист' : 'Создать плейлист'}
+      title={isEditing ? (lang?.editplaylist || 'Редактировать плейлист') : (lang?.createplaylist || 'Создать плейлист')}
     >
       <div className="flex items-center gap-3">
         <label className="relative flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-zinc-600/30 bg-zinc-800 duration-300 hover:bg-zinc-700/80 active:scale-95">
@@ -131,7 +133,7 @@ export default function PulsePlaylistEditorModal({
           />
           {coverUrl ? (
             <PulseCoverImage
-              alt="Обложка плейлиста"
+              alt={lang?.playlistcover || "Обложка плейлиста"}
               className="rounded-xl"
               sizes={PULSE_COVER_IMAGE_SIZES.modal}
               src={coverUrl}
@@ -142,9 +144,9 @@ export default function PulsePlaylistEditorModal({
         </label>
 
         <div className="flex flex-grow flex-col gap-1">
-          <span className="text-sm text-zinc-500">Обложка плейлиста</span>
+          <span className="text-sm text-zinc-500">{lang?.playlistcover || 'Обложка плейлиста'}</span>
           <label className="cursor-pointer text-sm text-purple-400 duration-150 hover:text-purple-300">
-            Загрузить обложку
+            {lang?.uploadcover || 'Загрузить обложку'}
             <input
               accept="image/*"
               className="hidden"
@@ -158,7 +160,7 @@ export default function PulsePlaylistEditorModal({
 
       <PulseModalField
         autoComplete="off"
-        label="Название плейлиста"
+        label={lang?.playlistname || "Название плейлиста"}
         onChange={(event) => setName(event.target.value)}
         type="text"
         value={name}
@@ -174,7 +176,7 @@ export default function PulsePlaylistEditorModal({
         )}
       >
         <ActionIcon className={cn('h-4 w-4', isBusy && 'animate-spin')} name={isBusy ? 'IC-loader' : 'IC-check'} />
-        <span>{isEditing ? 'Сохранить изменения' : 'Сохранить'}</span>
+        <span>{isEditing ? (lang?.savechanges || 'Сохранить изменения') : (lang?.save || 'Сохранить')}</span>
       </button>
     </PulseModal>
   );

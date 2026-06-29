@@ -149,10 +149,10 @@ export default function CallClient() {
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
         setIsRtcConnected(true);
-        setCallStatus('Соединено');
+        setCallStatus(lang?.call_connected || 'Соединено');
       } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
         setIsRtcConnected(false);
-        setCallStatus('Соединение потеряно');
+        setCallStatus(lang?.call_connection_lost || 'Соединение потеряно');
       }
     };
   };
@@ -166,14 +166,14 @@ export default function CallClient() {
     window.GlobalWS.subscribeDialog(dialogInfo.id);
     
     if (window.GlobalWS.isReady()) {
-      setCallStatus('Ожидание ответа...');
+      setCallStatus(lang?.waiting_for_answer || 'Ожидание ответа...');
     }
     
     window.GlobalWS.addDialogListener('auth_ok', () => {
-      setCallStatus('Ожидание ответа...');
+      setCallStatus(lang?.waiting_for_answer || 'Ожидание ответа...');
     });
     window.GlobalWS.addDialogListener('subscribed', () => {
-      setCallStatus('Ожидание ответа...');
+      setCallStatus(lang?.waiting_for_answer || 'Ожидание ответа...');
       isSubscribedRef.current = true;
       // Flush the queue
       const queue = outgoingSignalQueueRef.current;
@@ -302,7 +302,15 @@ export default function CallClient() {
   }, [dialogInfo]);
 
   if (authLoading || (!isAuthenticated && !authLoading) || !dialogInfo) {
-    return <div className="h-screen w-full flex items-center justify-center bg-black"><span className="text-white">{errorMsg || 'Loading...'}</span></div>;
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-black gap-3">
+        {errorMsg ? (
+          <span className="text-white">{errorMsg}</span>
+        ) : (
+          <svg className="w-12 h-12 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 4 A 1.50015 1.50015 0 1 0 24 7 C 30.255882 7 35.765936 10.406785 38.703125 15.455078 A 1.5005776 1.5005776 0 1 0 41.296875 13.945312 C 37.834064 7.9936061 31.344118 4 24 4 z" /></svg>
+        )}
+      </div>
+    );
   }
 
   const fName = foreignUser ? `${foreignUser.fname || ''} ${foreignUser.lname || ''}`.trim() : '...';
@@ -321,7 +329,7 @@ export default function CallClient() {
             <div className="w-full max-w-screen-sm px-6 text-center">
               <img src={fAvatar} className="w-28 h-28 rounded-full shadow object-cover mx-auto" />
               <div className="mt-4 text-zinc-100 text-2xl font-semibold">{fName}</div>
-              <div className="mt-2 text-zinc-300">{remoteCamEnabled === false ? 'Камера выключена' : callStatus}</div>
+              <div className="mt-2 text-zinc-300">{remoteCamEnabled === false ? (lang?.camera_off || 'Камера выключена') : callStatus}</div>
             </div>
           </div>
         )}
@@ -363,15 +371,15 @@ export default function CallClient() {
         <Modal
           isOpen={permissionsModal}
           onClose={() => router.back()}
-          title="Доступ к медиа"
+          title={lang?.media_access || "Доступ к медиа"}
         >
           <div className="flex flex-col gap-3">
             <div className="text-zinc-300 text-sm">
-              Нажмите кнопку ниже и подтвердите разрешение в браузере.
+              {lang?.media_access_desc || "Нажмите кнопку ниже и подтвердите разрешение в браузере."}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={initCall} className="w-full rounded-3xl bg-purple-600 hover:bg-purple-500 duration-150 px-3 py-2 active:scale-95 border border-zinc-600/30" type="button">Разрешить</button>
-              <button onClick={() => router.back()} className="w-full rounded-3xl bg-zinc-700 hover:bg-zinc-600 duration-150 px-3 py-2 active:scale-95 border border-zinc-600/30" type="button">Отклонить</button>
+              <button onClick={initCall} className="w-full rounded-3xl bg-purple-600 hover:bg-purple-500 duration-150 px-3 py-2 active:scale-95 border border-zinc-600/30" type="button">{lang?.allow || "Разрешить"}</button>
+              <button onClick={() => router.back()} className="w-full rounded-3xl bg-zinc-700 hover:bg-zinc-600 duration-150 px-3 py-2 active:scale-95 border border-zinc-600/30" type="button">{lang?.decline || "Отклонить"}</button>
             </div>
           </div>
         </Modal>

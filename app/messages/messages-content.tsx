@@ -1127,6 +1127,7 @@ function StickerPickerDropdownContent({
   onSendNativeSticker: (stickerName: string) => void;
   onSendSevenTvSticker: (sticker: SevenTvSticker) => void;
 }) {
+  const { lang } = useAuth();
   const [tab, setTab] = useState<'native' | '7tv'>('native');
   const [searchInput, setSearchInput] = useState('');
   const [searchState, setSearchState] = useState<{
@@ -1293,15 +1294,15 @@ function StickerPickerDropdownContent({
               </div>
             ) : normalizedQuery && normalizedQuery.length < SEVEN_TV_MIN_QUERY_LENGTH ? (
               <div className="h-52 w-62 flex items-center justify-center text-center px-2 py-3 text-xs text-zinc-400">
-                Введите минимум {SEVEN_TV_MIN_QUERY_LENGTH} символа
+                {lang?.enter_min_chars?.replace('{min}', String(SEVEN_TV_MIN_QUERY_LENGTH)) || `Введите минимум ${SEVEN_TV_MIN_QUERY_LENGTH} символа`}
               </div>
             ) : normalizedQuery ? (
               <div className="h-52 w-62 flex items-center justify-center text-center px-2 py-3 text-xs text-zinc-400">
-                Ничего не найдено
+                {lang?.nothing_found || 'Ничего не найдено'}
               </div>
             ) : (
               <div className="h-52 w-62 flex items-center justify-center text-center px-2 py-3 text-xs text-zinc-500">
-                Популярные стикеры 7TV
+                {lang?.popular_7tv_stickers || 'Популярные стикеры 7TV'}
               </div>
             )}
           </div>
@@ -1318,7 +1319,7 @@ function StickerPickerDropdownContent({
                     event.preventDefault();
                   }
                 }}
-                placeholder="Поиск 7TV"
+                placeholder={lang?.search_7tv || "Поиск 7TV"}
                 autoComplete="off"
                 className="backdrop-blur-lg backdrop-saturate-200 h-10 w-full rounded-3xl border border-zinc-600/30 bg-zinc-950/80 px-3 text-sm text-white placeholder-zinc-500 outline-none duration-300 focus:border-zinc-500/50"
               />
@@ -1423,6 +1424,78 @@ function MessageBubble({
     >
       <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
         <div className="relative flex flex-col">
+          <Dropdown
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
+            renderTrigger={false}
+            position="top"
+            align={isOwn ? 'end' : 'start'}
+            width="auto"
+            wrapperClassName="pointer-events-none absolute left-0 right-0 top-0 z-30 h-0"
+            menuClassName="pointer-events-auto w-fit overflow-hidden rounded-2xl bg-zinc-900/85"
+          >
+            <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
+              {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => {
+                    onAddReaction(messageId, emoji);
+                  }}
+                  className="cursor-pointer duration-300 hover:scale-125 active:scale-95"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            <DropdownItem
+              icon="IC-reply"
+              className="h-8"
+              onClick={() => {
+                onReply(message);
+              }}
+            >
+              {lang?.reply || 'Ответить'}
+            </DropdownItem>
+
+            {canTranslateMessage && typeof translator === 'function' ? (
+              <DropdownItem
+                icon="IC-translate"
+                className="h-8"
+                onClick={() => {
+                  translator(`msg-body-${messageId}`);
+                }}
+              >
+                {lang?.translate || 'Перевести'}
+              </DropdownItem>
+            ) : null}
+
+            {isOwn ? (
+              <DropdownItem
+                icon="IC-times"
+                className="h-8"
+                onClick={() => {
+                  onDeleteMessage(message);
+                }}
+              >
+                {lang?.delete || 'Удалить'}
+              </DropdownItem>
+            ) : null}
+
+            {canEditMessage ? (
+              <DropdownItem
+                icon="IC-edit"
+                className="h-8"
+                onClick={() => {
+                  onEditMessage(message);
+                }}
+              >
+                {lang?.edit || 'Редактировать'}
+              </DropdownItem>
+            ) : null}
+          </Dropdown>
+
           <div
             id={`msg-${messageId}`}
             className={cn(
@@ -1449,10 +1522,10 @@ function MessageBubble({
                   )}
                 >
                   <span className="font-semibold text-purple-300 text-xs">
-                    {message.reply_author == currentUserId ? 'Вы' : (foreignUser?.fname || 'Собеседник')}
+                    {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
                   </span>
                   <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
-                    {message.reply_type == 1 ? 'Картинка/стикер' : message.reply_msg?.replace(/<[^>]*>?/gm, '') || 'Сообщение'}
+                    {message.reply_type == 1 ? (lang?.image_sticker || 'Картинка/стикер') : message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')}
                   </span>
                 </div>
               ) : null}
@@ -1568,78 +1641,6 @@ function MessageBubble({
           </div>
         </div>
       </div>
-
-      <Dropdown
-        open={menuOpen}
-        onOpenChange={setMenuOpen}
-        renderTrigger={false}
-        position="top"
-        align={isOwn ? 'end' : 'start'}
-        width="auto"
-        wrapperClassName="pointer-events-none absolute left-0 right-0 -top-12 z-30 h-0"
-        menuClassName="pointer-events-auto w-fit overflow-hidden rounded-2xl bg-zinc-900/85"
-      >
-        <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
-          {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => {
-                onAddReaction(messageId, emoji);
-              }}
-              className="cursor-pointer duration-300 hover:scale-125 active:scale-95"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-
-        <DropdownItem
-          icon="IC-reply"
-          className="h-8"
-          onClick={() => {
-            onReply(message);
-          }}
-        >
-          {lang?.reply || 'Ответить'}
-        </DropdownItem>
-
-        {canTranslateMessage && typeof translator === 'function' ? (
-          <DropdownItem
-            icon="IC-translate"
-            className="h-8"
-            onClick={() => {
-              translator(`msg-body-${messageId}`);
-            }}
-          >
-            {lang?.translate || 'Перевести'}
-          </DropdownItem>
-        ) : null}
-
-        {isOwn ? (
-          <DropdownItem
-            icon="IC-times"
-            className="h-8"
-            onClick={() => {
-              onDeleteMessage(message);
-            }}
-          >
-            {lang?.delete || 'Удалить'}
-          </DropdownItem>
-        ) : null}
-
-        {canEditMessage ? (
-          <DropdownItem
-            icon="IC-edit"
-            className="h-8"
-            onClick={() => {
-              onEditMessage(message);
-            }}
-          >
-            {lang?.edit || 'Редактировать'}
-          </DropdownItem>
-        ) : null}
-      </Dropdown>
     </div>
   );
 }
@@ -1748,7 +1749,7 @@ export default function MessagesContent() {
         : dialogPresenceOnline
       : wsPresenceLastOnline > 0 && isOnline(wsPresenceLastOnline);
   const dialogStatusLabel = blockedDialog
-    ? 'неизвестно'
+    ? (lang?.unknown || 'неизвестно')
     : dialogLoading || messagesLoading || loadingNewer
       ? lang?.['updating...'] || 'Обновление...'
       : dialogOnline
@@ -1944,7 +1945,7 @@ export default function MessagesContent() {
       console.error('Failed to load dialogs', error);
 
       if (!dialogs.length) {
-        setDialogsError(error instanceof Error ? error.message : 'Связь потеряна');
+        setDialogsError(error instanceof Error ? error.message : (lang?.connection_lost || 'Связь потеряна'));
         setDialogsLoading(false);
       }
     } finally {
@@ -2044,7 +2045,7 @@ export default function MessagesContent() {
       console.error('Failed to load messages', error);
 
       if (!cachedMessages.length) {
-        setDialogError(error instanceof Error ? error.message : 'Не удалось загрузить диалог');
+        setDialogError(error instanceof Error ? error.message : (lang?.failed_to_load_dialog || 'Не удалось загрузить диалог'));
       }
     } finally {
       if (session === dialogSessionRef.current) {
@@ -2241,7 +2242,7 @@ export default function MessagesContent() {
       const dialogMetaRaw = payload.dialog ?? null;
 
       if (!dialogMetaRaw?.id) {
-        throw new Error(payload.error ?? 'Диалог не найден');
+        throw new Error(payload.error ?? (lang?.dialog_not_found || 'Диалог не найден'));
       }
 
       const serverImg = (dialogMetaRaw as any).img || (dialogMetaRaw as any).bg || (cachedDialogMeta as any)?.img || '';
@@ -2272,7 +2273,7 @@ export default function MessagesContent() {
 
       if (session !== dialogSessionRef.current) return;
 
-      setDialogError(error instanceof Error ? error.message : 'Не удалось открыть диалог');
+      setDialogError(error instanceof Error ? error.message : (lang?.failed_to_open_dialog || 'Не удалось открыть диалог'));
       router.replace('/messages');
     } finally {
       if (session === dialogSessionRef.current) {
@@ -2812,7 +2813,7 @@ export default function MessagesContent() {
       const result = await AncialAPI.updateDialogBackground<{ success?: boolean; error?: string }>(dialogId, imageUrl);
       const isSuccess = (result as any).success !== false;
       if (!isSuccess) {
-        throw new Error((result as any).error || 'Не удалось обновить фон');
+        throw new Error((result as any).error || (lang?.failed_to_update_background || 'Не удалось обновить фон'));
       }
 
       setSelectedDialog((currentDialog) =>
@@ -3452,9 +3453,9 @@ export default function MessagesContent() {
                     )}
                   >
                     <div className="flex flex-col min-w-0 pr-1 rounded-full border-l-2 border-purple-500 pl-2">
-                      <span className="text-xs font-semibold text-purple-400">Ответ {replyingTo?.sender_id == currentUserId ? 'себе' : (foreignUser?.fname || 'собеседнику')}</span>
+                      <span className="text-xs font-semibold text-purple-400">{lang?.reply_to || 'Ответ'} {replyingTo?.sender_id == currentUserId ? (lang?.yourself || 'себе') : (foreignUser?.fname || (lang?.interlocutor?.toLowerCase() || 'собеседнику'))}</span>
                       <span className="text-sm text-zinc-300 truncate max-w-[200px] sm:max-w-xs md:max-w-md -mt-1">
-                        {replyingTo?.type == 1 ? 'Картинка/стикер' : replyingTo?.message?.replace(/<[^>]*>?/gm, '') || 'Сообщение'}
+                        {replyingTo?.type == 1 ? (lang?.image_sticker || 'Картинка/стикер') : replyingTo?.message?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')}
                       </span>
                     </div>
                     <button type="button" onClick={() => setReplyingTo(null)} className="shrink-0 p-1 rounded-full hover:bg-zinc-700/50 text-zinc-400 cursor-pointer active:scale-95 duration-300">

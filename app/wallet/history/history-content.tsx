@@ -277,9 +277,9 @@ export default function HistoryContent() {
           ) : (
             <div className={`text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3 transition-opacity duration-200 ${isRefreshing ? 'opacity-85' : 'opacity-100'}`}>
               <Image src="/img/status/nothingfound.webp" width={224} height={224} className="h-56 w-auto" alt="Empty" />
-              <span className="text-base text-zinc-100 w-full text-center font-black">Слишком пусто...</span>
+              <span className="text-base text-zinc-100 w-full text-center font-black">{lang?.too_empty || 'Слишком пусто...'}</span>
               <span className="text-sm text-zinc-300 w-full text-center font-medium">
-                Может фильтры сломались или ты ничего не переводил...
+                {lang?.maybe_filters_broken || 'Может фильтры сломались или ты ничего не переводил...'}
               </span>
             </div>
           )}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
 import {
   getPulseTrackEditInitialState,
@@ -132,6 +133,7 @@ export default function PulseUploadTrackModal({
   onUploaded,
   showNote,
 }: PulseUploadTrackModalProps) {
+  const { lang } = useAuth();
   const coverObjectUrlRef = useRef('');
   const [artist, setArtist] = useState('');
   const [coverPreview, setCoverPreview] = useState('');
@@ -142,7 +144,7 @@ export default function PulseUploadTrackModal({
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [lang, setLang] = useState('--');
+  const [trackLang, setTrackLang] = useState('--');
   const [name, setName] = useState('');
   const [statusText, setStatusText] = useState('');
   const [trackId, setTrackId] = useState('');
@@ -176,7 +178,7 @@ export default function PulseUploadTrackModal({
     setIsCoverUploading(false);
     setIsSaved(false);
     setIsSaving(false);
-    setLang('--');
+    setTrackLang('--');
     setName('');
     setStatusText('');
     setTrackId('');
@@ -205,9 +207,9 @@ export default function PulseUploadTrackModal({
     setIsCoverUploading(false);
     setIsSaved(true);
     setIsSaving(false);
-    setLang(initialState.lang);
+    setTrackLang(initialState.lang);
     setName(initialState.name);
-    setStatusText('Готово');
+    setStatusText(lang?.ready || 'Готово');
     setTrackId(initialState.trackId);
   }, [isOpen, reset, track]);
 
@@ -221,7 +223,7 @@ export default function PulseUploadTrackModal({
 
   const saveTrack = useCallback(async (nextTrackId: string, nextName: string, nextArtist: string, nextCoverUrl: string, nextLang: string, nextExplicit: string) => {
     setIsSaving(true);
-    setStatusText('Сохраняю трек...');
+    setStatusText(lang?.savingtrack || 'Сохраняю трек...');
 
     try {
       const payload = getPulseTrackUploadPayload({
@@ -242,12 +244,12 @@ export default function PulseUploadTrackModal({
       }
 
       setIsSaved(true);
-      setStatusText('Трек добавлен в Избранное');
-      showNote('Трек добавлен в Избранное!', 'success', 3);
+      setStatusText(lang?.trackaddedtofavorites || 'Трек добавлен в Избранное');
+      showNote(lang?.trackaddedtofavorites || 'Трек добавлен в Избранное!', 'success', 3);
       onUploaded();
     } catch (error) {
       setStatusText('');
-      showNote(`Ошибка: ${error instanceof Error ? error.message : 'не удалось сохранить трек'}`, 'error', 5);
+      showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : (lang?.failedtosavetrack || 'не удалось сохранить трек')}`, 'error', 5);
     } finally {
       setIsSaving(false);
     }
@@ -257,14 +259,14 @@ export default function PulseUploadTrackModal({
     if (!trackId) return;
 
     setIsSaving(true);
-    setStatusText('Сохраняю изменения...');
+    setStatusText(lang?.savingchanges || 'Сохраняю изменения...');
 
     try {
       const payload = getPulseTrackUploadPayload({
         artist,
         explicit,
         image: coverUrl,
-        lang,
+        lang: trackLang,
         name,
         trackId,
       });
@@ -277,18 +279,18 @@ export default function PulseUploadTrackModal({
         throw new Error(result || 'Unknown error');
       }
 
-      setStatusText('Изменения сохранены');
-      showNote('Изменения сохранены!', 'success', 3);
+      setStatusText(lang?.changessaved || 'Изменения сохранены');
+      showNote(lang?.changessaved || 'Изменения сохранены!', 'success', 3);
       onUploaded();
       if (isEditingExistingTrack) {
         onClose();
       }
     } catch (error) {
-      showNote(`Ошибка: ${error instanceof Error ? error.message : 'не удалось сохранить изменения'}`, 'error', 5);
+      showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : (lang?.failedtosavechanges || 'не удалось сохранить изменения')}`, 'error', 5);
     } finally {
       setIsSaving(false);
     }
-  }, [artist, coverUrl, explicit, isEditingExistingTrack, lang, name, onClose, onUploaded, showNote, trackId]);
+  }, [artist, coverUrl, explicit, isEditingExistingTrack, trackLang, name, onClose, onUploaded, showNote, trackId]);
 
   const handleAudioChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -296,7 +298,7 @@ export default function PulseUploadTrackModal({
 
     setIsAudioUploading(true);
     setIsSaved(false);
-    setStatusText('Загружаю трек...');
+    setStatusText(lang?.uploadingtrack || 'Загружаю трек...');
     setTrackId('');
 
     try {
@@ -325,22 +327,22 @@ export default function PulseUploadTrackModal({
             setPreviewUrl(nextCoverUrl);
           }
         } catch {
-          showNote('Не удалось загрузить обложку, трек сохранится без неё', 'info', 4);
+          showNote(lang?.failedtouploadcoverwithout || 'Не удалось загрузить обложку, трек сохранится без неё', 'info', 4);
         } finally {
           setIsCoverUploading(false);
         }
       }
 
-      setStatusText('Аудио загружено');
-      showNote('Аудио загружено!', 'success', 3);
-      await saveTrack(nextTrackId, nextName, nextArtist, nextCoverUrl, lang, explicit);
+      setStatusText(lang?.audiouploaded || 'Аудио загружено');
+      showNote(lang?.audiouploaded || 'Аудио загружено!', 'success', 3);
+      await saveTrack(nextTrackId, nextName, nextArtist, nextCoverUrl, trackLang, explicit);
     } catch {
       setStatusText('');
-      showNote('Ошибка загрузки аудио', 'error', 5);
+      showNote(lang?.audiouploaderror || 'Ошибка загрузки аудио', 'error', 5);
     } finally {
       setIsAudioUploading(false);
     }
-  }, [explicit, lang, saveTrack, setPreviewUrl, showNote]);
+  }, [explicit, trackLang, saveTrack, setPreviewUrl, showNote]);
 
   const handleCoverChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -355,18 +357,18 @@ export default function PulseUploadTrackModal({
       if (nextCoverUrl) {
         setCoverUrl(nextCoverUrl);
         setPreviewUrl(nextCoverUrl);
-        showNote('Обложка загружена', 'success', 3);
+        showNote(lang?.coveruploaded || 'Обложка загружена', 'success', 3);
 
         if (trackId && isSaved && !isEditingExistingTrack) {
           setIsSaving(true);
-          setStatusText('Сохраняю изменения...');
+          setStatusText(lang?.savingchanges || 'Сохраняю изменения...');
 
           try {
             const payload = getPulseTrackUploadPayload({
               artist,
               explicit,
               image: nextCoverUrl,
-              lang,
+              lang: trackLang,
               name,
               trackId,
             });
@@ -374,25 +376,25 @@ export default function PulseUploadTrackModal({
             const response = await AncialAPI.pulseManagement<{ message?: string }>('track', 'update', payloadObj);
             const result = response.message || 'SUCCESS';
             if (result === 'SUCCESS') {
-              setStatusText('Изменения сохранены');
-              showNote('Изменения сохранены!', 'success', 3);
+              setStatusText(lang?.changessaved || 'Изменения сохранены');
+              showNote(lang?.changessaved || 'Изменения сохранены!', 'success', 3);
               onUploaded();
             } else {
               throw new Error(result || 'Unknown error');
             }
           } catch (error) {
-            showNote(`Ошибка: ${error instanceof Error ? error.message : 'не удалось сохранить изменения'}`, 'error', 5);
+            showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : (lang?.failedtosavechanges || 'не удалось сохранить изменения')}`, 'error', 5);
           } finally {
             setIsSaving(false);
           }
         }
       }
     } catch {
-      showNote('Не удалось загрузить обложку', 'error', 5);
+      showNote(lang?.failedtouploadcover || 'Не удалось загрузить обложку', 'error', 5);
     } finally {
       setIsCoverUploading(false);
     }
-  }, [artist, explicit, isEditingExistingTrack, isSaved, lang, name, onUploaded, setPreviewUrl, showNote, trackId]);
+  }, [artist, explicit, isEditingExistingTrack, isSaved, trackLang, name, onUploaded, setPreviewUrl, showNote, trackId]);
 
   const canUpdate = Boolean(trackId) && isSaved && !isSaving && !isAudioUploading && !isCoverUploading;
   const cover = coverPreview || coverUrl;
@@ -407,7 +409,7 @@ export default function PulseUploadTrackModal({
     <PulseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditingExistingTrack ? 'Редактирование трека' : 'Загрузка трека'}
+      title={isEditingExistingTrack ? (lang?.edittrack || 'Редактирование трека') : (lang?.uploadtrack || 'Загрузка трека')}
     >
       {showUploadDropzone ? (
         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-600 p-4 duration-300 hover:bg-zinc-800/60 active:scale-95">
@@ -420,14 +422,14 @@ export default function PulseUploadTrackModal({
             type="file"
           />
           <ActionIcon className="h-8 w-8 fill-zinc-400" name="IC-download" />
-          <span className="text-sm text-zinc-400">Выбрать .mp3 файл (до 10 МБ)</span>
+          <span className="text-sm text-zinc-400">{lang?.uploadtrackdesc || 'Выберите .mp3 файл (до 10 МБ)'}</span>
         </label>
       ) : null}
 
       {isAudioUploading ? (
         <div className="flex flex-col items-center gap-2 py-4 text-sm text-zinc-400">
           <ActionIcon className="h-10 w-10 animate-spin fill-purple-400" name="IC-loader" />
-          <span>{statusText || 'Загружаю трек...'}</span>
+          <span>{statusText || (lang?.uploadingtrack || 'Загружаю трек...')}</span>
         </div>
       ) : null}
 
@@ -438,7 +440,7 @@ export default function PulseUploadTrackModal({
               <input accept="image/*" className="hidden" disabled={isBusy} onChange={handleCoverChange} type="file" />
               {cover ? (
                 <PulseCoverImage
-                  alt="Обложка трека"
+                  alt={lang?.trackcover || 'Обложка трека'}
                   className="rounded-xl"
                   sizes={PULSE_COVER_IMAGE_SIZES.modal}
                   src={cover}
@@ -450,10 +452,10 @@ export default function PulseUploadTrackModal({
 
             <div className="flex flex-grow flex-col gap-1">
               <span className={cn('text-zinc-500', isEditingExistingTrack ? 'text-sm' : 'text-xs')}>
-                {isEditingExistingTrack ? 'Обложка трека' : 'Обложка извлечена из тега. Можно заменить:'}
+                {isEditingExistingTrack ? (lang?.trackcover || 'Обложка трека') : (lang?.trackcoverextracted || 'Обложка извлечена из файла')}
               </span>
               <label className={cn('cursor-pointer text-purple-400 duration-300 hover:text-purple-300', isEditingExistingTrack ? 'text-sm' : 'text-xs')}>
-                {isEditingExistingTrack ? 'Заменить обложку' : 'Загрузить свою обложку'}
+                {isEditingExistingTrack ? (lang?.replacetrackcover || 'Заменить обложку') : (lang?.uploadtrackcover || 'Загрузить свою обложку')}
                 <input accept="image/*" className="hidden" disabled={isBusy} onChange={handleCoverChange} type="file" />
               </label>
             </div>
@@ -461,14 +463,14 @@ export default function PulseUploadTrackModal({
 
           <PulseModalField
             autoComplete="off"
-            label="Исполнитель"
+            label={lang?.albumartist || 'Исполнитель'}
             onChange={(event) => setArtist(event.target.value)}
             type="text"
             value={artist}
           />
           <PulseModalField
             autoComplete="off"
-            label="Название трека"
+            label={lang?.trackName || 'Название трека'}
             onChange={(event) => setName(event.target.value)}
             type="text"
             value={name}
@@ -476,39 +478,39 @@ export default function PulseUploadTrackModal({
 
           <div className="grid grid-cols-2 gap-3">
             <PulseModalSelectField
-              label="Язык трека"
-              onChange={(event) => setLang(event.target.value)}
-              value={lang}
+              label={lang?.tracklang || "Язык трека"}
+              onChange={(event) => setTrackLang(event.target.value)}
+              value={trackLang}
             >
-              <option value="" disabled>Выберите язык</option>
-              <option value="--">Не указан</option>
-              <option value="RU">Русский</option>
-              <option value="EN">Английский</option>
-              <option value="" disabled>Другой язык пока недоступен</option>
+              <option value="" disabled>{lang?.tracklang || 'Выберите язык'}</option>
+              <option value="--">{lang?.tracklangNo || 'Нет слов'}</option>
+              <option value="RU">{lang?.tracklangRu || 'Русский'}</option>
+              <option value="EN">{lang?.tracklangEn || 'Английский'}</option>
+              <option value="" disabled>{lang?.tracklangD || 'Несколько языков - выберите преобладающий. Нет языка - выберите английский.'}</option>
             </PulseModalSelectField>
             <PulseModalSelectField
-              label="Контент"
+              label={lang?.trackexp || 'Нецензурная лексика'}
               onChange={(event) => setExplicit(event.target.value)}
               value={explicit}
             >
-              <option value="" disabled>Возрастное ограничение</option>
-              <option value="0">Без 18+</option>
-              <option value="1">18+ / E</option>
-              <option value="" disabled>Выберите отметку</option>
+              <option value="" disabled>{lang?.trackexp || 'Возрастное ограничение'}</option>
+              <option value="0">{lang?.trackexpN || 'Отсутствует'}</option>
+              <option value="1">{lang?.trackexpY || 'Присутствует'}</option>
+              <option value="" disabled>{lang?.trackexpD || 'В том числе и на обложке альбома.'}</option>
             </PulseModalSelectField>
           </div>
 
           {isSaving && !isEditingExistingTrack ? (
             <div className="flex items-center justify-center gap-2 py-1 text-sm text-zinc-400">
               <ActionIcon className="h-4 w-4 animate-spin fill-purple-400" name="IC-loader" />
-              <span>{statusText || 'Сохраняю в Избранное...'}</span>
+              <span>{statusText || (lang?.savingtofavorites || 'Сохраняем в Избранное...')}</span>
             </div>
           ) : null}
 
           {isSaved && !isEditingExistingTrack ? (
             <div className="flex items-center gap-2 py-1 text-sm text-green-400">
               <ActionIcon className="h-4 w-4 shrink-0 fill-green-400" name="IC-check" />
-              <span>Сохранено в Избранное</span>
+              <span>{lang?.savedtofavorites || 'Сохранено в Избранное'}</span>
             </div>
           ) : null}
 
@@ -523,7 +525,7 @@ export default function PulseUploadTrackModal({
               )}
             >
               <ActionIcon className={cn('h-4 w-4', isBusy && 'animate-spin')} name={isBusy ? 'IC-loader' : 'IC-check'} />
-              <span>Сохранить изменения</span>
+              <span>{lang?.save || 'Сохранить'}</span>
             </button>
           ) : null}
         </div>
@@ -545,9 +547,10 @@ export function PulseDeleteTrackModal({
   showNote: (content: string, type?: 'error' | 'info' | 'success', time?: number) => void;
   track: PulseTrack | null;
 }) {
+  const { lang } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const trackId = normalizeText(String(track?.sid ?? ''));
-  const title = decodeHtmlEntities(track?.title) || 'трек';
+  const title = decodeHtmlEntities(track?.title) || (lang?.tracklcm || 'трек');
 
   const deleteTrack = useCallback(async () => {
     if (!trackId) return;
@@ -562,11 +565,11 @@ export function PulseDeleteTrackModal({
         throw new Error(result || 'Unknown error');
       }
 
-      showNote('Трек удалён', 'success', 3);
+      showNote(lang?.trackdeleted || 'Трек удалён', 'success', 3);
       onDeleted();
       onClose();
     } catch (error) {
-      showNote(`Ошибка: ${error instanceof Error ? error.message : 'не удалось удалить трек'}`, 'error', 5);
+      showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : (lang?.failedtodeletetrack || 'не удалось удалить трек')}`, 'error', 5);
     } finally {
       setIsDeleting(false);
     }
@@ -576,15 +579,15 @@ export function PulseDeleteTrackModal({
     <PulseModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Удалить трек"
+      title={lang?.deletetrack || "Удалить трек"}
     >
       <div className="flex flex-col items-center gap-4 py-4">
         <ActionIcon className="h-12 w-12 fill-red-500" name="IC-trash" />
         <div className="text-center">
-          <p className="text-sm text-zinc-300">Вы уверены, что хотите удалить трек?</p>
+          <p className="text-sm text-zinc-300">{lang?.areyousuredeletetrack || 'Вы уверены, что хотите удалить трек?'}</p>
           <p className="mt-1 font-medium text-white">{title}</p>
         </div>
-        <p className="text-center text-xs text-zinc-500">Это действие необратимо. Файл будет удалён с сервера.</p>
+        <p className="text-center text-xs text-zinc-500">{lang?.actionisirreversible || 'Это действие необратимо. Файл будет удалён с сервера.'}</p>
         <div className="grid w-full grid-cols-2 gap-3">
           <button
             type="button"
@@ -592,7 +595,7 @@ export function PulseDeleteTrackModal({
             disabled={isDeleting}
             className="cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-700 px-4 py-2.5 font-medium text-zinc-100 duration-300 hover:bg-zinc-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Отмена
+            {lang?.cancel || 'Отмена'}
           </button>
           <button
             type="button"
@@ -601,7 +604,7 @@ export function PulseDeleteTrackModal({
             className="flex cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-red-700 px-4 py-2.5 font-medium text-zinc-100 duration-300 hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDeleting ? <ActionIcon className="h-4 w-4 animate-spin" name="IC-loader" /> : <ActionIcon className="h-4 w-4" name="IC-trash" />}
-            <span>Удалить</span>
+            <span>{lang?.delete || 'Удалить'}</span>
           </button>
         </div>
       </div>

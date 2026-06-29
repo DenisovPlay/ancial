@@ -55,18 +55,6 @@ const GENERATED_PLAYLISTS: Record<string, string> = {
   '-5': 'Your',
 };
 
-const BUILTIN_PLAYLIST_TITLES: Record<string, string> = {
-  '-1': 'Топ',
-  '-2': 'Новинки',
-  '-5': 'Избранное',
-};
-
-const BUILTIN_PLAYLIST_DESCRIPTIONS: Record<string, string> = {
-  '-1': 'Самые популярные треки Ancial Pulse.',
-  '-2': 'Новые треки Ancial Pulse.',
-  '-5': 'Ваши избранные треки в Ancial Pulse.',
-};
-
 const BUILTIN_PLAYLIST_META: Record<string, PulsePlaylistMeta> = {
   '-1': {
     artist: '',
@@ -116,17 +104,38 @@ export function isPulseBuiltinGeneratedPlaylist(value: string | number | null | 
   return Object.prototype.hasOwnProperty.call(GENERATED_PLAYLISTS, normalizePulsePlaylistId(value));
 }
 
-export function getPulseBuiltinPlaylistTitle(value: string | number | null | undefined) {
-  return BUILTIN_PLAYLIST_TITLES[normalizePulsePlaylistId(value)] ?? '';
+export function getPulseBuiltinPlaylistTitle(value: string | number | null | undefined, lang?: Record<string, string>) {
+  const id = normalizePulsePlaylistId(value);
+  if (id === '-1') return lang?.playlist_top || 'Топ';
+  if (id === '-2') return lang?.playlist_new || 'Новинки';
+  if (id === '-5') return lang?.playlist_favorites || 'Избранное';
+  return '';
 }
 
-export function getPulseBuiltinPlaylistDescription(value: string | number | null | undefined) {
-  return BUILTIN_PLAYLIST_DESCRIPTIONS[normalizePulsePlaylistId(value)] ?? '';
+export function getPulseBuiltinPlaylistDescription(value: string | number | null | undefined, lang?: Record<string, string>) {
+  const id = normalizePulsePlaylistId(value);
+  if (id === '-1') return lang?.playlist_top_desc || 'Самые популярные треки Ancial Pulse.';
+  if (id === '-2') return lang?.playlist_new_desc || 'Новые треки Ancial Pulse.';
+  if (id === '-5') return lang?.playlist_favorites_desc || 'Ваши избранные треки в Ancial Pulse.';
+  return '';
 }
 
-export function getPulseBuiltinPlaylistMeta(value: string | number | null | undefined) {
-  const playlist = BUILTIN_PLAYLIST_META[normalizePulsePlaylistId(value)];
-  return playlist ? { ...playlist } : null;
+export function getPulseBuiltinPlaylistMeta(value: string | number | null | undefined, lang?: Record<string, string>) {
+  const id = normalizePulsePlaylistId(value);
+  const playlist = BUILTIN_PLAYLIST_META[id];
+  if (!playlist) return null;
+  const meta = { ...playlist };
+  if (id === '-1') {
+    meta.name = lang?.playlist_top || 'Топ';
+    meta.desk = lang?.playlist_top_meta_desc || 'Лучшие песни';
+  } else if (id === '-2') {
+    meta.name = lang?.playlist_new || 'Новое';
+    meta.desk = lang?.playlist_new_meta_desc || 'Громкие новинки';
+  } else if (id === '-5') {
+    meta.name = lang?.playlist_favorites || 'Избранное';
+    meta.desk = lang?.playlist_favorites_desc || 'Ваши избранные треки в Ancial Pulse.';
+  }
+  return meta;
 }
 
 export function getPulseBuiltinPlaylistCover(value: string | number | null | undefined) {
@@ -267,13 +276,13 @@ export type PulseTrackUploadPayloadInput = {
   trackId: string | number;
 };
 
-export function getPulseTrackUploadPayload(input: PulseTrackUploadPayloadInput) {
+export function getPulseTrackUploadPayload(input: PulseTrackUploadPayloadInput, langObj?: Record<string, string>) {
   const payload = new URLSearchParams();
   const explicit = String(input.explicit ?? '').trim();
   const lang = String(input.lang ?? '').trim();
 
-  payload.set('name', String(input.name ?? '').trim() || 'Неизвестный трек');
-  payload.set('artist', String(input.artist ?? '').trim() || 'Неизвестный исполнитель');
+  payload.set('name', String(input.name ?? '').trim() || (langObj?.untitled || 'Неизвестный трек'));
+  payload.set('artist', String(input.artist ?? '').trim() || (langObj?.unknown_artist || 'Неизвестный исполнитель'));
   payload.set('img', String(input.image ?? '').trim());
   payload.set('lang', lang || '--');
   payload.set('explicit', explicit === '' ? '0' : explicit);

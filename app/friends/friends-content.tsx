@@ -219,7 +219,7 @@ function FriendsContent() {
             </div>
           ) : (
             friends.map((friend, i) => {
-              const friendName = friend.name || `${friend.fname || ''} ${friend.lname || ''}`.trim() || 'Аноним';
+              const friendName = friend.name || `${friend.fname || ''} ${friend.lname || ''}`.trim() || (lang?.anonymous || 'Аноним');
               const isOnline = onlineUsers[friend.id] || friend.online || friend.isOnline;
               const isPending = friend.status === 0 || friend.isPending || friend.is_request;
               const isIncoming = friend.is_incoming || friend.isIncoming;

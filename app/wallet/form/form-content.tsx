@@ -99,7 +99,7 @@ function FormContentInner() {
       if (!resolvedReceiverId || !Number.isFinite(resolvedReceiverId)) return false;
       setRecipientType('account');
       setRecipientAccountId(resolvedReceiverId);
-      setRecipientValue(receiverNameParam?.trim() || `Счёт №${resolvedReceiverId}`);
+      setRecipientValue(receiverNameParam?.trim() || `${lang?.account_num || 'Счёт №'}${resolvedReceiverId}`);
       setRecipientUser(null);
       return true;
     };
@@ -181,7 +181,7 @@ function FormContentInner() {
       if (typeParam) setTransferType(typeParam);
     } else if (formParam === 'failed') {
       setStep('failed');
-      setSubmitError(searchParams.get('error') || 'Произошла ошибка при выполнении операции');
+      setSubmitError(searchParams.get('error') || (lang?.operation_error || 'Произошла ошибка при выполнении операции'));
     }
   }, [authLoading, isAuthenticated, searchParams]);
 
@@ -192,7 +192,7 @@ function FormContentInner() {
       const res = await AncialAPI.getProfile<any>(login);
       if (res && res.id) {
         if (user && res.id === user.id) {
-          setLookupError('Вы не можете отправить перевод самому себе');
+          setLookupError(lang?.cant_send_self || 'Вы не можете отправить перевод самому себе');
           setRecipientUser(null);
         } else {
           setRecipientUser({
@@ -202,11 +202,11 @@ function FormContentInner() {
           });
         }
       } else {
-        setLookupError('Пользователь не найден');
+        setLookupError(lang?.user_not_found || 'Пользователь не найден');
         setRecipientUser(null);
       }
     } catch (err: any) {
-      setLookupError('Пользователь не найден');
+      setLookupError(lang?.user_not_found || 'Пользователь не найден');
       setRecipientUser(null);
     } finally {
       setLookupLoading(false);
@@ -254,7 +254,7 @@ function FormContentInner() {
     e.preventDefault();
     const parsed = parseFloat(amount);
     if (isNaN(parsed) || parsed <= 0) {
-      alert('Укажите корректную сумму');
+      alert(lang?.enter_correct_amount || 'Укажите корректную сумму');
       return;
     }
     // Proceed to select sender account
@@ -266,18 +266,18 @@ function FormContentInner() {
   const handleSendToUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (recipientType !== 'account' && !recipientValue.trim()) {
-      alert('Укажите получателя');
+      alert(lang?.enter_recipient || 'Укажите получателя');
       return;
     }
     const parsed = parseFloat(amount);
     if (isNaN(parsed) || parsed <= 0 || parsed > 150000) {
-      alert('Укажите сумму перевода (от 1 до 150000 ₽)');
+      alert(lang?.enter_transfer_amount_range || 'Укажите сумму перевода (от 1 до 150000 ₽)');
       return;
     }
 
     if (recipientType === 'account') {
       if (!recipientAccountId) {
-        alert('Не удалось определить счёт получателя');
+        alert(lang?.cant_determine_recipient_account || 'Не удалось определить счёт получателя');
         return;
       }
       setStep('confirmsend');
@@ -290,7 +290,7 @@ function FormContentInner() {
         const res = await AncialAPI.getProfile<any>(recipientValue.trim());
         if (res && res.id) {
           if (user && res.id === user.id) {
-            alert('Вы не можете переводить деньги самому себе');
+            alert(lang?.cant_send_self || 'Вы не можете переводить деньги самому себе');
             setLookupLoading(false);
             return;
           }
@@ -301,10 +301,10 @@ function FormContentInner() {
           });
           setStep('confirmsend');
         } else {
-          alert('Пользователь с таким логином не найден');
+          alert(lang?.user_with_login_not_found || 'Пользователь с таким логином не найден');
         }
       } catch (err) {
-        alert('Пользователь с таким логином не найден');
+        alert(lang?.user_with_login_not_found || 'Пользователь с таким логином не найден');
       } finally {
         setLookupLoading(false);
       }
@@ -323,7 +323,7 @@ function FormContentInner() {
   // Execute transfer call
   const handleExecuteTransfer = async () => {
     if (!selectedSenderId) {
-      alert('Выберите счёт списания');
+      alert(lang?.choose_withdrawal_account || 'Выберите счёт списания');
       return;
     }
 
@@ -335,10 +335,10 @@ function FormContentInner() {
       amount: parseFloat(amount),
       comment: comment.trim() || (
         transferType === 'donate'
-          ? `Пожертвование для @${recipientValue}`
+          ? `${lang?.donation_for || 'Пожертвование для @'}${recipientValue}`
           : recipientType === 'account'
-            ? `Перевод для ${recipientValue}`
-            : `Перевод для @${recipientValue}`
+            ? `${lang?.transfer_for || 'Перевод для '}${recipientValue}`
+            : `${lang?.transfer_for || 'Перевод для @'}${recipientValue}`
       )
     };
 
@@ -362,11 +362,11 @@ function FormContentInner() {
         });
         setStep('success');
       } else {
-        setSubmitError('Не удалось выполнить перевод');
+        setSubmitError(lang?.transfer_failed || 'Не удалось выполнить перевод');
         setStep('failed');
       }
     } catch (err: any) {
-      setSubmitError(err.message || 'Ошибка выполнения перевода');
+      setSubmitError(err.message || (lang?.transfer_error || 'Ошибка выполнения перевода'));
       setStep('failed');
     } finally {
       setSubmitLoading(false);
@@ -396,7 +396,7 @@ function FormContentInner() {
             <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
               <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
             </svg>
-            Платёжная форма
+            {lang?.payment_form || 'Платёжная форма'}
           </span>
         </div>
       )}
@@ -410,20 +410,20 @@ function FormContentInner() {
               <span className="text-zinc-300 text-lg text-center font-medium">{lookupError}</span>
               {!embeded && (
                 <button onClick={() => router.push('/wallet')} className="px-6 py-2.5 bg-purple-700 hover:bg-purple-600 rounded-full font-bold active:scale-95 duration-300">
-                  В кошелёк
+                  {lang?.to_wallet || 'В кошелёк'}
                 </button>
               )}
             </div>
           ) : (
             <form onSubmit={handleDonateSubmit} className="flex flex-col gap-5 w-full">
-              {!embeded && <span className="text-xl font-bold text-left">Выберите сумму пожертвования:</span>}
+              {!embeded && <span className="text-xl font-bold text-left">{lang?.choose_donation_amount || 'Выберите сумму пожертвования:'}</span>}
 
               {/* Recipient User Profile Card */}
               {recipientUser && (
                 <div className="flex items-center gap-3 bg-zinc-900/60 p-4 rounded-3xl border border-zinc-800 text-left">
                   <img src={recipientUser.img} className="w-16 h-16 rounded-2xl object-cover border border-zinc-800" alt="Avatar" />
                   <div className="flex flex-col">
-                    <span className="text-zinc-400 text-xs uppercase tracking-wider font-bold">Получатель пожертвования:</span>
+                    <span className="text-zinc-400 text-xs uppercase tracking-wider font-bold">{lang?.donation_recipient || 'Получатель пожертвования:'}</span>
                     <span className="text-xl font-bold text-purple-400">@{recipientUser.username}</span>
                   </div>
                 </div>
@@ -454,13 +454,13 @@ function FormContentInner() {
 
               {/* Input for Amount with rounded-full container */}
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20">Сумма (₽)</span>
+                <span className="text-zinc-400 pl-4 z-20">{lang?.amount_rub || 'Сумма (₽)'}</span>
                 <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Введите сумму"
+                    placeholder={lang?.enter_amount || "Введите сумму"}
                     className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-4 text-white text-base"
                     required
                   />
@@ -473,7 +473,7 @@ function FormContentInner() {
                 disabled={!amount || parseFloat(amount) <= 0}
                 className="border border-zinc-700/40 cursor-pointer flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full shadow"
               >
-                Продолжить
+                {lang?.continue || 'Продолжить'}
               </button>
             </form>
           )}
@@ -484,7 +484,7 @@ function FormContentInner() {
       {step === 'sendtouser' && (
         <div className="w-full max-w-3xl flex flex-col gap-3 px-3">
           <form onSubmit={handleSendToUserSubmit} className="flex flex-col gap-3 w-full">
-            {!embeded && <span className="text-xl font-bold text-left">Перевод пользователю:</span>}
+            {!embeded && <span className="text-xl font-bold text-left">{lang?.transfer_to_user || 'Перевод пользователю:'}</span>}
 
             {/* Recipient Selector (Login, Email, Phone) */}
             {recipientType !== 'account' ? (
@@ -502,21 +502,21 @@ function FormContentInner() {
                       className={`flex-1 py-2 text-sm font-semibold rounded-xl duration-300 active:scale-95 capitalize ${recipientType === type ? 'bg-purple-700 text-white' : 'text-zinc-400 hover:text-zinc-200'
                         }`}
                     >
-                      {type === 'username' ? 'Логин' : type === 'email' ? 'Email' : 'Телефон'}
+                      {type === 'username' ? (lang?.login || 'Логин') : type === 'email' ? (lang?.email || 'Email') : (lang?.phone || 'Телефон')}
                     </button>
                   ))}
                 </div>
 
                 <div className="flex flex-col w-full text-left">
                   <span className="text-zinc-400 pl-4 z-20">
-                    {recipientType === 'username' ? 'Логин получателя' : recipientType === 'email' ? 'Email получателя' : 'Телефон получателя'}
+                    {recipientType === 'username' ? (lang?.recipient_login || 'Логин получателя') : recipientType === 'email' ? (lang?.recipient_email || 'Email получателя') : (lang?.recipient_phone || 'Телефон получателя')}
                   </span>
                   <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <input
                       type={recipientType === 'email' ? 'email' : recipientType === 'phone' ? 'tel' : 'text'}
                       value={recipientValue}
                       onChange={(e) => setRecipientValue(e.target.value)}
-                      placeholder={recipientType === 'username' ? 'Логин' : recipientType === 'email' ? 'Email' : 'Телефон'}
+                      placeholder={recipientType === 'username' ? (lang?.login || 'Логин') : recipientType === 'email' ? (lang?.email || 'Email') : (lang?.phone || 'Телефон')}
                       className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-4 text-white text-base"
                       required
                     />
@@ -525,11 +525,11 @@ function FormContentInner() {
               </>
             ) : (
               <div className="flex flex-col gap-2 rounded-3xl border border-zinc-800 bg-zinc-900/60 p-4">
-                <span className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Счёт получателя</span>
+                <span className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">{lang?.recipient_account || 'Счёт получателя'}</span>
                 <span className="text-lg font-bold text-white">{recipientValue}</span>
                 {recipientAccountId && (
                   <span className="w-fit rounded-full border border-zinc-700 bg-zinc-950/70 px-3 py-1 text-xs text-zinc-400">
-                    ID счёта: {recipientAccountId}
+                    {lang?.account_id_label || 'ID счёта:'} {recipientAccountId}
                   </span>
                 )}
               </div>
@@ -537,13 +537,13 @@ function FormContentInner() {
 
             {/* Amount Input */}
             <div className="flex flex-col w-full text-left">
-              <span className="text-zinc-400 pl-4 z-20">Сумма перевода (₽)</span>
+              <span className="text-zinc-400 pl-4 z-20">{lang?.transfer_amount_rub || 'Сумма перевода (₽)'}</span>
               <div className="flex bg-zinc-850 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Сумма"
+                  placeholder={lang?.t_amm || "Сумма"}
                   className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-4 text-white text-base"
                   required
                   min="1"
@@ -554,12 +554,12 @@ function FormContentInner() {
 
             {/* Comment Area */}
             <div className="flex flex-col w-full text-left">
-              <span className="text-zinc-400 pl-4 z-20">Комментарий (опционально)</span>
+              <span className="text-zinc-400 pl-4 z-20">{lang?.comment_optional || 'Комментарий (опционально)'}</span>
               <div className="flex bg-zinc-850 rounded-3xl w-full p-2 h-24 -mt-3 z-10 border border-zinc-600/30">
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Комментарий"
+                  placeholder={lang?.comment || "Комментарий"}
                   rows={3}
                   className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white text-base resize-none"
                 />
@@ -572,7 +572,7 @@ function FormContentInner() {
               disabled={lookupLoading}
               className="border border-zinc-700/40 cursor-pointer flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full shadow"
             >
-              {lookupLoading ? 'Проверка...' : 'Продолжить'}
+              {lookupLoading ? (lang?.checking || 'Проверка...') : (lang?.continue || 'Продолжить')}
             </button>
           </form>
         </div>
@@ -581,7 +581,7 @@ function FormContentInner() {
       {/* STEP 3: CONFIRM SEND */}
       {step === 'confirmsend' && (
         <div className="w-full max-w-3xl flex flex-col gap-3 px-3 text-left">
-          {!embeded && <span className="text-xl font-bold">Подтверждение перевода</span>}
+          {!embeded && <span className="text-xl font-bold">{lang?.transfer_confirmation || 'Подтверждение перевода'}</span>}
 
           <div className="bg-zinc-900/60 rounded-3xl p-5 space-y-4 border border-zinc-800">
 
@@ -590,21 +590,21 @@ function FormContentInner() {
               <div className="flex items-center gap-3 border-b border-zinc-800 pb-4">
                 <img src={recipientUser.img} className="w-16 h-16 rounded-2xl object-cover border border-zinc-800" alt="Avatar" />
                 <div className="flex flex-col">
-                  <span className="text-zinc-400 text-xs">Получатель:</span>
+                  <span className="text-zinc-400 text-xs">{lang?.recipient_label || 'Получатель:'}</span>
                   <span className="text-xl font-bold">@{recipientUser.username}</span>
                 </div>
               </div>
             ) : recipientType === 'account' ? (
               <div className="flex flex-col border-b border-zinc-800 pb-3 gap-1">
-                <span className="text-zinc-400 text-xs">Получатель:</span>
+                <span className="text-zinc-400 text-xs">{lang?.recipient_label || 'Получатель:'}</span>
                 <span className="text-lg font-bold truncate">{recipientValue}</span>
                 {recipientAccountId && (
-                  <span className="text-xs text-zinc-500">Счёт №{recipientAccountId}</span>
+                  <span className="text-xs text-zinc-500">{lang?.account_num || 'Счёт №'}{recipientAccountId}</span>
                 )}
               </div>
             ) : (
               <div className="flex flex-col border-b border-zinc-800 pb-3 gap-1">
-                <span className="text-zinc-400 text-xs">Получатель:</span>
+                <span className="text-zinc-400 text-xs">{lang?.recipient_label || 'Получатель:'}</span>
                 <span className="text-lg font-bold truncate">
                   {recipientType === 'email' ? `Email: ${recipientValue}` : `Телефон: ${recipientValue}`}
                 </span>
@@ -612,13 +612,13 @@ function FormContentInner() {
             )}
 
             <div className="flex justify-between items-center border-b border-zinc-800 pb-3">
-              <span className="text-zinc-400 text-sm">Сумма перевода:</span>
+              <span className="text-zinc-400 text-sm">{lang?.transfer_amount_label || 'Сумма перевода:'}</span>
               <span className="text-2xl font-black text-purple-400">{amount} ₽</span>
             </div>
 
             {comment && (
               <div className="flex flex-col gap-1">
-                <span className="text-zinc-400 text-sm">Комментарий:</span>
+                <span className="text-zinc-400 text-sm">{lang?.comment_label || 'Комментарий:'}</span>
                 <span className="text-zinc-100 text-sm bg-black/45 p-3 rounded-2xl border border-zinc-600/30">{comment}</span>
               </div>
             )}
@@ -628,7 +628,7 @@ function FormContentInner() {
             onClick={handleConfirmSubmit}
             className="border border-zinc-700/40 cursor-pointer flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full shadow"
           >
-            Продолжить
+            {lang?.continue || 'Продолжить'}
           </button>
         </div>
       )}
@@ -641,7 +641,7 @@ function FormContentInner() {
             <span className="text-3xl font-black text-purple-400">{amount} ₽</span>
           </div>
 
-          <span className="text-lg font-bold px-2">Выберите счёт списания:</span>
+          <span className="text-lg font-bold px-2">{lang?.choose_withdrawal_account || 'Выберите счёт списания:'}</span>
 
           <div className="flex flex-col gap-3 w-full max-h-80 overflow-y-auto">
             {accounts.map((acc) => {
@@ -669,7 +669,7 @@ function FormContentInner() {
             disabled={submitLoading || !selectedSenderId}
             className="border border-zinc-700/40 cursor-pointer flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full shadow font-bold"
           >
-            {submitLoading ? 'Выполнение перевода...' : 'Отправить перевод'}
+            {submitLoading ? (lang?.executing_transfer || 'Выполнение перевода...') : (lang?.send_transfer || 'Отправить перевод')}
           </button>
         </div>
       )}
@@ -686,33 +686,33 @@ function FormContentInner() {
             </svg>
           </div>
 
-          <span className="text-2xl font-black text-green-500">Успешный перевод</span>
+          <span className="text-2xl font-black text-green-500">{lang?.successful_transfer || 'Успешный перевод'}</span>
 
           {successInfo && (
             <div className="bg-zinc-900/60 rounded-3xl p-5 w-full text-sm space-y-2.5 border border-zinc-800 text-left">
               <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">ID Операции:</span>
+                <span className="text-zinc-400">{lang?.transaction_id || 'ID Операции:'}</span>
                 <span className="font-mono text-zinc-200">#{successInfo.transactionId}</span>
               </div>
               <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Сумма:</span>
+                <span className="text-zinc-400">{lang?.amount || 'Сумма:'}</span>
                 <span className="font-bold text-white text-base">{successInfo.amount} ₽</span>
               </div>
               <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Комиссия:</span>
+                <span className="text-zinc-400">{lang?.commission || 'Комиссия:'}</span>
                 <span className="text-zinc-300">{successInfo.fees} ₽</span>
               </div>
               <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Счёт списания:</span>
-                <span className="text-zinc-300">Счёт №{successInfo.sender}</span>
+                <span className="text-zinc-400">{lang?.debit_account || 'Счёт списания:'}</span>
+                <span className="text-zinc-300">{lang?.account_num || 'Счёт №'}{successInfo.sender}</span>
               </div>
               <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400">Получатель:</span>
+                <span className="text-zinc-400">{lang?.recipient_label || 'Получатель:'}</span>
                 <span className="text-zinc-300">{successInfo.receiverIsAccount ? successInfo.receiver : `@${successInfo.receiver}`}</span>
               </div>
               {successInfo.comment && (
                 <div className="flex flex-col gap-1 border-b border-zinc-800 pb-2">
-                  <span className="text-zinc-400 text-xs">Комментарий:</span>
+                  <span className="text-zinc-400 text-xs">{lang?.comment_label || 'Комментарий:'}</span>
                   <span className="text-zinc-200">{successInfo.comment}</span>
                 </div>
               )}
@@ -725,14 +725,14 @@ function FormContentInner() {
                 onClick={() => window.open(`https://ancial.ru/api/wallet/generate_receipt.php?id=${successInfo.transactionId}`, '_blank')}
                 className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
-                Чек
+                {lang?.receipt || 'Чек'}
               </button>
             )}
             <button
               onClick={() => router.push('/wallet')}
               className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-600/30"
             >
-              В кошелёк
+              {lang?.to_wallet || 'В кошелёк'}
             </button>
           </div>
         </div>
@@ -750,9 +750,9 @@ function FormContentInner() {
             </svg>
           </div>
 
-          <span className="text-2xl font-black text-red-500">Ошибка перевода</span>
+          <span className="text-2xl font-black text-red-500">{lang?.transfer_error || 'Ошибка перевода'}</span>
           <span className="text-zinc-300 text-center font-medium leading-relaxed max-w-md">
-            {submitError || 'Не удалось завершить операцию. Попробуйте еще раз.'}
+            {submitError || (lang?.operation_failed_try_again || 'Не удалось завершить операцию. Попробуйте еще раз.')}
           </span>
 
           <div className="flex gap-3 w-full mt-4">
@@ -760,13 +760,13 @@ function FormContentInner() {
               onClick={() => setStep('sendtouser')}
               className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
             >
-              Попробовать снова
+              {lang?.try_again || 'Попробовать снова'}
             </button>
             <button
               onClick={() => router.push('/wallet')}
               className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-600/30"
             >
-              В кошелёк
+              {lang?.to_wallet || 'В кошелёк'}
             </button>
           </div>
         </div>

@@ -126,7 +126,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     return nextCountry || 'RU';
   }, [user?.country]);
 
-  const artistName = decodeHtmlEntities(artist?.name) || 'Артист';
+  const artistName = decodeHtmlEntities(artist?.name) || (lang?.artist || 'Артист');
   const artistDescription = decodeHtmlEntities(artist?.desk);
   const artistImage = getImageUrl(artist?.img, DEFAULT_TRACK_IMAGE);
   const listensTotal = useMemo(() => tracks.reduce((sum, track) => sum + toNumber(track.listens), 0), [tracks]);
@@ -215,7 +215,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
 
   const likeTrack = useCallback(async (track: PulseTrack) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в избранное', 'info');
+      showPulseNote(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное', 'info');
       return;
     }
 
@@ -232,7 +232,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
           writeFavoriteIds(nextIds);
           return nextIds;
         });
-        showPulseNote(result === 'CREATED_ADDED' ? 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!' : 'Трек добавлен в ваш плейлист!', 'success');
+        showPulseNote(result === 'CREATED_ADDED' ? (lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!') : (lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!'), 'success');
         return;
       }
 
@@ -242,7 +242,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
           writeFavoriteIds(nextIds);
           return nextIds;
         });
-        showPulseNote('Трек удалён из вашего плейлиста!', 'success');
+        showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
         return;
       }
 
@@ -262,7 +262,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в плейлисты', 'info');
+      showPulseNote(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты', 'info');
       return;
     }
 
@@ -271,7 +271,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
 
   const reportTrack = useCallback((track: PulseTrack) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы отправить жалобу', 'info');
+      showPulseNote(lang?.logintoreport || 'Войдите, чтобы отправить жалобу', 'info');
       return;
     }
 
@@ -381,7 +381,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                     >
                       <span className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center" style={{ backgroundImage: `url(${getImageUrl(owner.img, DEFAULT_TRACK_IMAGE)})` }} />
                       <span className="text-left text-sm text-zinc-200 lg:text-base">
-                        {decodeHtmlEntities(`${owner.fname ?? ''} ${owner.lname ?? ''}`) || 'Пользователь'} управляет данной страницей
+                        {decodeHtmlEntities(`${owner.fname ?? ''} ${owner.lname ?? ''}`) || (lang?.user || 'Пользователь')} {lang?.manages_page || 'управляет данной страницей'}
                       </span>
                     </button>
                   ) : null}
@@ -477,7 +477,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
               </div>
             ) : null}
             {!loadingTracks && !tracks.length ? (
-              <PulseEmptyState description="Надеемся, что это не на долго" title="Здесь пока пусто" />
+              <PulseEmptyState description={lang?.hope_not_long || 'Надеемся, что это не на долго'} title={lang?.empty_here || 'Здесь пока пусто'} />
             ) : null}
           </div>
         </>

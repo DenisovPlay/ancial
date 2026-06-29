@@ -812,7 +812,7 @@ export default function FeedContent() {
       const response = await AncialAPI.deleteComment<{ message?: string }>(comment.id);
 
       showNote({
-        content: response?.message || 'Удалено',
+        content: response?.message || (lang?.deleted || 'Удалено'),
         html: true,
         type: 'success',
         time: 5,
@@ -845,7 +845,7 @@ export default function FeedContent() {
       const response = (await AncialAPI.reportAction({ id: currentTarget.id, type: currentTarget.type, comment: reason })) as { message: string };
 
       showNote({
-        content: response.message || 'Жалоба отправлена',
+        content: response.message || (lang?.report_sent || 'Жалоба отправлена'),
         html: true,
         type: 'success',
         time: 5,
@@ -870,7 +870,7 @@ export default function FeedContent() {
       const response = (await AncialAPI.deletePost(currentTarget.id)) as { message: string };
 
       showNote({
-        content: response.message || 'Пост удален',
+        content: response.message || (lang?.post_deleted || 'Пост удален'),
         html: true,
         type: 'success',
         time: 5,
@@ -882,7 +882,7 @@ export default function FeedContent() {
     } catch (error) {
       console.error('Delete post failed', error);
       showNote({
-        content: 'Произошла ошибка',
+        content: lang?.errorhappend || 'Произошла ошибка =(',
         type: 'error',
         time: 10,
       });
@@ -895,7 +895,7 @@ export default function FeedContent() {
     if (service === 'vk') {
       window.open(
         `https://vk.com/share.php?url=${encodeURIComponent(shareUrl)}`,
-        'Поделиться',
+        lang?.share || 'Поделиться',
         'width=800, height=600',
       );
       return;
@@ -904,7 +904,7 @@ export default function FeedContent() {
     if (service === 'tg') {
       window.open(
         `https://telegram.me/share/url?url=${encodeURIComponent(shareUrl)}`,
-        'Поделиться',
+        lang?.share || 'Поделиться',
         'width=800, height=600',
       );
       return;
@@ -912,7 +912,7 @@ export default function FeedContent() {
 
     window.open(
       `http://twitter.com/share?url=${encodeURIComponent(shareUrl)}`,
-      'Поделиться',
+      lang?.share || 'Поделиться',
       'width=800, height=600',
     );
   };
@@ -1217,42 +1217,42 @@ export default function FeedContent() {
         <div className="flex flex-col justify-center rounded-3xl shadow overflow-hidden">
           <button
             type="button"
-            onClick={() => void handleReport('Спам')}
+            onClick={() => void handleReport(strings.spam)}
             className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
           >
             {strings.spam}
           </button>
           <button
             type="button"
-            onClick={() => void handleReport('Запрещённый товар')}
+            onClick={() => void handleReport(strings.prohibitedgood)}
             className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
           >
             {strings.prohibitedgood}
           </button>
           <button
             type="button"
-            onClick={() => void handleReport('Обман')}
+            onClick={() => void handleReport(strings.scam)}
             className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
           >
             {strings.scam}
           </button>
           <button
             type="button"
-            onClick={() => void handleReport('Насилие и вражда')}
+            onClick={() => void handleReport(strings.violence)}
             className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
           >
             {strings.violence}
           </button>
           <button
             type="button"
-            onClick={() => void handleReport('Откровенное изображение')}
+            onClick={() => void handleReport(strings.candidimage)}
             className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
           >
             {strings.candidimage}
           </button>
           <button
             type="button"
-            onClick={() => void handleReport('Нарушение интеллектуальных прав')}
+            onClick={() => void handleReport(strings.propertyrights)}
             className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
           >
             {strings.propertyrights}

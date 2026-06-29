@@ -177,7 +177,7 @@ export default function PulseSearchContent() {
 
   const likeTrack = useCallback(async (track: PulseTrack) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в избранное', 'info');
+      showPulseNote(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное', 'info');
       return;
     }
 
@@ -194,7 +194,7 @@ export default function PulseSearchContent() {
           writePulseJsonCache(FAVORITES_CACHE_KEY, nextIds);
           return nextIds;
         });
-        showPulseNote(result === 'CREATED_ADDED' ? 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!' : 'Трек добавлен в ваш плейлист!', 'success');
+        showPulseNote(result === 'CREATED_ADDED' ? (lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!') : (lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!'), 'success');
         return;
       }
 
@@ -204,7 +204,7 @@ export default function PulseSearchContent() {
           writePulseJsonCache(FAVORITES_CACHE_KEY, nextIds);
           return nextIds;
         });
-        showPulseNote('Трек удалён из вашего плейлиста!', 'success');
+        showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
         return;
       }
 
@@ -224,7 +224,7 @@ export default function PulseSearchContent() {
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы добавлять треки в плейлисты', 'info');
+      showPulseNote(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты', 'info');
       return;
     }
 
@@ -242,7 +242,7 @@ export default function PulseSearchContent() {
 
   const reportTrack = useCallback((track: PulseTrack) => {
     if (!isAuthenticated) {
-      showPulseNote('Войдите, чтобы отправить жалобу', 'info');
+      showPulseNote(lang?.logintoreport || 'Войдите, чтобы отправить жалобу', 'info');
       return;
     }
 
