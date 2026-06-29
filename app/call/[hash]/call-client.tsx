@@ -234,7 +234,7 @@ export default function CallClient() {
         }
 
         if (msg.kind === 'offer') {
-          if (pc.signalingState === 'closed') return;
+          if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
           const offerCollision = makingOfferRef.current || pc.signalingState !== 'stable';
           ignoreOfferRef.current = !isPolite && offerCollision;
           if (ignoreOfferRef.current) return;
@@ -249,14 +249,14 @@ export default function CallClient() {
           }
           
           const answer = await pc.createAnswer();
-          if (pc.signalingState === 'closed') return;
+          if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
           await pc.setLocalDescription(answer);
           sendWsSignal({ kind: 'answer', sdp: pc.localDescription?.sdp });
         } else if (msg.kind === 'answer') {
-          if (pc.signalingState === 'closed') return;
+          if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
           await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
         } else if (msg.kind === 'candidate' || msg.kind === 'ice') {
-          if (pc.signalingState === 'closed') return;
+          if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
           try {
             await pc.addIceCandidate(msg.candidate);
           } catch (err) {
