@@ -976,7 +976,11 @@ function buildTimelineItems(messages: DialogMessage[], lang: LangMap) {
 }
 
 function getEditableMessageText(message: DialogMessage) {
-  return decodeHtml(stripHtml(message.message));
+  const raw = String(message.message ?? '');
+  const textWithNewlines = raw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '');
+  return decodeHtml(textWithNewlines);
 }
 
 function getPayloadMessageId(payload: unknown) {
@@ -1493,7 +1497,7 @@ function MessageBubble({
               ) : null}
 
               {hasMessageText ? (
-                <span dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
+                <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
               ) : null}
             </div>
 
@@ -1681,13 +1685,15 @@ export default function MessagesContent() {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [replyingTo, setReplyingTo] = useState<DialogMessage | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [composerHeight, setComposerHeight] = useState(60);
   const activeCallTimeoutRef = useRef<number | null>(null);
 
   const dialogsInFlightRef = useRef(false);
   const dialogsLastFetchAtRef = useRef(0);
   const dialogSessionRef = useRef(0);
   const messageScrollRef = useRef<HTMLDivElement | null>(null);
-  const messageInputRef = useRef<HTMLInputElement | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const composerPaneRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const wsRefreshTimerRef = useRef<number | null>(null);
@@ -1746,6 +1752,29 @@ export default function MessagesContent() {
       setActiveDialogImageKey(null);
     }
   }, [activeDialogImageKey, dialogImageSlides]);
+
+  useEffect(() => {
+    if (messageInputRef.current) {
+      messageInputRef.current.style.height = '40px';
+      if (composerText) {
+        const newHeight = Math.max(40, Math.min(messageInputRef.current.scrollHeight, 130));
+        messageInputRef.current.style.height = `${newHeight}px`;
+      }
+    }
+  }, [composerText]);
+
+  useEffect(() => {
+    if (!composerPaneRef.current) return;
+    const updateHeight = () => {
+      if (composerPaneRef.current) {
+        setComposerHeight(composerPaneRef.current.offsetHeight);
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(composerPaneRef.current);
+    return () => observer.disconnect();
+  }, [selectedDialog]);
 
   useEffect(() => {
     const scheduleMidnightRefresh = () => {
@@ -3161,7 +3190,10 @@ export default function MessagesContent() {
                       </div>
                     ) : (
                       <div id="msgbox" className="flex min-h-full flex-col">
-                        <div className={cn("mt-auto transition-all duration-300", replyingTo ? "pb-[130px]" : "pb-[72px]")}>
+                        <div
+                          className="mt-auto transition-all duration-200"
+                          style={{ paddingBottom: `${composerHeight + (replyingTo ? 54 : 12)}px` }}
+                        >
                           {loadingOlder ? (
                             <div className="mb-3 flex items-center justify-center">
                               <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-purple-500" />
@@ -3225,10 +3257,10 @@ export default function MessagesContent() {
                         messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
                       }
                     }}
+                    style={{ bottom: `${composerHeight + (replyingTo ? 54 : 12)}px` }}
                     className={cn(
                       "cursor-pointer absolute right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-800/70 backdrop-blur-lg backdrop-saturate-200 backdrop-hue-200 text-white shadow-lg border border-zinc-600/30 hover:bg-zinc-700/70 active:scale-95 duration-300 transition-all",
-                      !isAtBottom ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none",
-                      replyingTo ? "bottom-[110px]" : "bottom-18"
+                      !isAtBottom ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
                     )}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 fill-white" viewBox="0 0 24 24" fill="currentColor">
@@ -3242,8 +3274,9 @@ export default function MessagesContent() {
                   </button>
 
                   <div
+                    style={{ bottom: `${composerHeight + 4}px` }}
                     className={cn(
-                      "absolute bottom-16 inset-x-3 z-10 flex items-center justify-between rounded-3xl border-x border-t border-zinc-600/30 bg-zinc-800/70 backdrop-blur backdrop-saturate-200 backdrop-hue-200 p-1 shadow-lg transition-all duration-300",
+                      "absolute inset-x-3 z-10 flex items-center justify-between rounded-3xl border-x border-t border-zinc-600/30 bg-zinc-800/70 backdrop-blur backdrop-saturate-200 backdrop-hue-200 p-1 shadow-lg transition-all duration-300",
                       replyingTo ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
                     )}
                   >
@@ -3263,26 +3296,34 @@ export default function MessagesContent() {
                   {blockedDialog ? (
                     <div
                       id="blocked-pane"
-                      className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1.5 p-3 pt-0"
+                      className="absolute bottom-0 inset-x-0 z-20 flex items-center justify-center gap-1.5 p-3 pt-0"
                     >
                       <div className="bg-amber-500/25 text-amber-500 p-3 rounded-3xl shadow border border-zinc-600/30 text-center backdrop-blur-lg backdrop-saturate-200 backdrop-hue-200">Собеседник заблокирован</div>
                     </div>
                   ) : (
-                    <div className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1.5 p-3 pt-0">
+                    <div ref={composerPaneRef} className="absolute bottom-0 inset-x-0 z-20 flex items-center justify-center gap-1.5 p-3 pt-0">
                       <form
                         onSubmit={handleMessageSend}
-                        className="relative flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1"
+                        className="relative flex items-end min-h-[42px] w-full rounded-3xl border border-zinc-600/30 bg-zinc-900/20 p-1 transition-all duration-150"
                       >
-                        <div className="absolute inset-0 rounded-full backdrop-blur-md backdrop-saturate-200"></div>
+                        <div className="absolute inset-0 rounded-3xl backdrop-blur-md backdrop-saturate-200"></div>
 
-                        <input
+                        <textarea
                           ref={messageInputRef}
+                          rows={1}
                           value={composerText}
                           onChange={(event) => setComposerText(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' && !event.shiftKey) {
+                              event.preventDefault();
+                              if (composerText.trim() && selectedDialog && !sendingMessage) {
+                                void handleMessageSend(event);
+                              }
+                            }
+                          }}
                           placeholder={lang?.write_message || 'Напишите сообщение'}
-                          autoComplete="off"
                           disabled={!selectedDialog || sendingMessage}
-                          className="relative z-[1] w-full bg-transparent pl-2 text-white placeholder-zinc-600/80 focus:border-0 focus:outline-none focus:ring-0"
+                          className="relative z-[1] w-full h-[40px] max-h-32 min-h-[40px] resize-none bg-transparent py-2 pl-3 pr-1 text-white placeholder-zinc-600/80 focus:border-0 focus:outline-none focus:ring-0 leading-6 scrollbar-none"
                         />
 
                         <input
@@ -3297,7 +3338,7 @@ export default function MessagesContent() {
                           type="button"
                           onClick={() => imageInputRef.current?.click()}
                           disabled={!selectedDialog || uploadingMessageImage}
-                          className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                          className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 mb-[1px]"
                         >
                           {uploadingMessageImage ? (
                             <Icon name="IC-loader" className="h-6 w-6 animate-spin fill-zinc-500" />
@@ -3310,7 +3351,7 @@ export default function MessagesContent() {
                           <button
                             type="button"
                             disabled
-                            className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-not-allowed items-center justify-center rounded-full opacity-50"
+                            className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-not-allowed items-center justify-center rounded-full opacity-50 mb-[1px]"
                           >
                             <Icon name="IC-emoji" className="h-6 w-6 fill-zinc-400 group-hover:fill-zinc-300 duration-300" />
                           </button>
@@ -3325,7 +3366,7 @@ export default function MessagesContent() {
                             width="auto"
                             menuClassName="w-[17rem] overflow-hidden !p-0 text-zinc-300"
                             triggerAriaLabel={lang?.stickers || 'Стикеры'}
-                            triggerClassName="group relative z-[1] h-10 w-10 rounded-full hover:bg-zinc-700"
+                            triggerClassName="group relative z-[1] h-10 w-10 rounded-full hover:bg-zinc-700 mb-[1px]"
                             triggerNode={<Icon name="IC-emoji" className="h-6 w-6 fill-zinc-400 group-hover:fill-zinc-300 duration-300" />}
                           >
                             <StickerPickerDropdownContent
@@ -3344,7 +3385,7 @@ export default function MessagesContent() {
                         <button
                           type="submit"
                           disabled={!selectedDialog || sendingMessage}
-                          className="relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-purple-500 disabled:cursor-not-allowed disabled:bg-zinc-500/50 disabled:opacity-70 active:scale-95"
+                          className="relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-purple-500 disabled:cursor-not-allowed disabled:bg-zinc-500/50 disabled:opacity-70 active:scale-95 mb-[1px]"
                         >
                           {sendingMessage ? (
                             <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-white" />
@@ -3493,11 +3534,12 @@ export default function MessagesContent() {
         title={lang?.edit_message || 'Редактировать сообщение'}
       >
         <div className="flex flex-col gap-3">
-          <input
+          <textarea
+            rows={3}
             value={editingValue}
             onChange={(event) => setEditingValue(event.target.value)}
             placeholder={lang?.enter_new_message || 'Введите новый текст'}
-            className="focus:outline-0 focus:ring-0 h-12 w-full rounded-3xl border border-zinc-600/30 bg-zinc-800 px-4 text-zinc-100 placeholder-zinc-500"
+            className="focus:outline-0 focus:ring-0 min-h-[80px] max-h-40 w-full resize-none rounded-2xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 placeholder-zinc-500"
           />
           <button
             type="button"
