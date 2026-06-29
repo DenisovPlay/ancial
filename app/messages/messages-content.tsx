@@ -3473,9 +3473,7 @@ export default function MessagesContent() {
                                 }}
                                 onReply={(message) => {
                                   setReplyingTo(message);
-                                  setTimeout(() => {
-                                    messageInputRef.current?.focus();
-                                  }, 0);
+                                  messageInputRef.current?.focus();
                                 }}
                                 onDeleteMessage={(message) => {
                                   void handleMessageDelete(message);
