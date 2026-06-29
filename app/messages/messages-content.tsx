@@ -10,6 +10,7 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 
 import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
@@ -1357,7 +1358,14 @@ function MessageBubble({
   onOpenImage: (imageKey: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [transformY, setTransformY] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const longPressTimerRef = useRef<number | null>(null);
+  const dragX = useMotionValue(0);
+  const replyIconOpacity = useTransform(dragX, [0, -50], [0, 1]);
+  const replyIconScale = useTransform(dragX, [0, -50], [0.5, 1]);
+  const replyIconX = useTransform(dragX, [0, -50], [20, 0]);
+
   const messageId = getMessageId(message);
   const isOwn = toNumber(message.sender_id) === currentUserId;
   const isTextMessage = String(message.type ?? '0') === '0';
@@ -1377,6 +1385,24 @@ function MessageBubble({
   const translator = typeof window !== 'undefined'
     ? (window as Window & { translate?: (targetId: string) => void }).translate
     : undefined;
+
+  useEffect(() => {
+    if (menuOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = 350;
+      const minTopSpace = dropdownHeight + 12;
+
+      let newY = 0;
+      // Если сообщение слишком высоко и дропдаун не влезает
+      if (rect.top < minTopSpace) {
+        newY = minTopSpace - rect.top;
+      }
+
+      setTransformY(newY);
+    } else {
+      setTransformY(0);
+    }
+  }, [menuOpen]);
 
   useEffect(() => {
     return () => {
@@ -1401,247 +1427,289 @@ function MessageBubble({
   };
 
   return (
-    <div
-      className={cn('relative mb-2', menuOpen && 'z-20')}
-      onContextMenu={(event) => {
-        if (isMessageMenuIgnoredTarget(event.target)) return;
-        event.preventDefault();
-        setMenuOpen(true);
-      }}
-      onMouseDown={(event) => {
-        if (event.button !== 0) return;
-        if (isMessageMenuIgnoredTarget(event.target)) return;
-        startLongPress();
-      }}
-      onMouseLeave={stopLongPress}
-      onMouseUp={stopLongPress}
-      onTouchEnd={stopLongPress}
-      onTouchMove={stopLongPress}
-      onTouchStart={(event) => {
-        if (isMessageMenuIgnoredTarget(event.target)) return;
-        startLongPress();
-      }}
-    >
-      <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
-        <div className="relative flex flex-col">
-          <Dropdown
-            open={menuOpen}
-            onOpenChange={setMenuOpen}
-            renderTrigger={false}
-            position="top"
-            align={isOwn ? 'end' : 'start'}
-            width="auto"
-            wrapperClassName="pointer-events-none absolute left-0 right-0 top-0 z-30 h-0"
-            menuClassName="pointer-events-auto w-fit overflow-hidden rounded-2xl bg-zinc-900/85"
-          >
-            <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
-              {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => {
-                    onAddReaction(messageId, emoji);
-                  }}
-                  className="cursor-pointer duration-300 hover:scale-125 active:scale-95"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
+    <>
+      <AnimatePresence>
+        {menuOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-sm"
+            onClick={() => setMenuOpen(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+      <div
+        ref={containerRef}
+        className={cn('relative mb-2 transition-transform duration-300 ease-out', menuOpen && 'z-[50]')}
+        style={{ transform: `translateY(${transformY}px)` }}
+        onContextMenu={(event) => {
+          if (isMessageMenuIgnoredTarget(event.target)) return;
+          event.preventDefault();
+          setMenuOpen(true);
+        }}
+        onMouseDown={(event) => {
+          if (event.button !== 0) return;
+          if (isMessageMenuIgnoredTarget(event.target)) return;
+          startLongPress();
+        }}
+        onMouseLeave={stopLongPress}
+        onMouseUp={stopLongPress}
+        onTouchEnd={stopLongPress}
+        onTouchMove={stopLongPress}
+        onTouchStart={(event) => {
+          if (isMessageMenuIgnoredTarget(event.target)) return;
+          startLongPress();
+        }}
+      >
+        <div className={cn('flex w-full relative', isOwn ? 'justify-end' : 'justify-start')} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
 
-            <DropdownItem
-              icon="IC-reply"
-              className="h-8"
-              onClick={() => {
+          {/* Анимированная иконка ответа при свайпе */}
+          <motion.div
+            style={{ opacity: replyIconOpacity, scale: replyIconScale, x: replyIconX }}
+            className="absolute right-2 top-1/2 z-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-800/70 backdrop-blur backdrop-saturate-200 backdrop-hue-200 border border-zinc-600/30 text-zinc-200 pointer-events-none"
+          >
+            <Icon name="IC-reply" className="h-4 w-4 fill-current" />
+          </motion.div>
+
+          <motion.div
+            style={{ x: dragX }}
+            drag="x"
+            dragDirectionLock
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={{ left: 0.3, right: 0 }}
+            onDragStart={stopLongPress}
+            onDragEnd={(event, info) => {
+              if (info.offset.x < -50) {
                 onReply(message);
-              }}
-            >
-              {lang?.reply || 'Ответить'}
-            </DropdownItem>
-
-            {canTranslateMessage && typeof translator === 'function' ? (
-              <DropdownItem
-                icon="IC-translate"
-                className="h-8"
-                onClick={() => {
-                  translator(`msg-body-${messageId}`);
-                }}
-              >
-                {lang?.translate || 'Перевести'}
-              </DropdownItem>
-            ) : null}
-
-            {isOwn ? (
-              <DropdownItem
-                icon="IC-times"
-                className="h-8"
-                onClick={() => {
-                  onDeleteMessage(message);
-                }}
-              >
-                {lang?.delete || 'Удалить'}
-              </DropdownItem>
-            ) : null}
-
-            {canEditMessage ? (
-              <DropdownItem
-                icon="IC-edit"
-                className="h-8"
-                onClick={() => {
-                  onEditMessage(message);
-                }}
-              >
-                {lang?.edit || 'Редактировать'}
-              </DropdownItem>
-            ) : null}
-          </Dropdown>
-
-          <div
-            id={`msg-${messageId}`}
-            className={cn(
-              'flex max-w-[90vw] lg:max-w-[40vw] flex-col rounded-2xl p-1 text-left font-normal break-words lg:text-lg',
-              isOwn && isTextMessage && !isStickerOnlyMessage && 'rounded-br-lg bg-purple-700',
-              !isOwn && isTextMessage && !isStickerOnlyMessage && 'rounded-bl-lg bg-zinc-900',
-            )}
+                // Haptic feedback if supported
+                if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+                  window.navigator.vibrate(50);
+                }
+              }
+            }}
+            className="relative z-10 flex flex-col"
           >
-            <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
-              {message.reply_to ? (
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const el = document.getElementById(`msg-${message.reply_to}`);
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      el.classList.add('bg-purple-500/30', 'transition-colors', 'duration-500');
-                      setTimeout(() => el.classList.remove('bg-purple-500/30'), 1500);
-                    }
-                  }}
-                  className={cn(
-                    "flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-2xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 transition-colors max-w-full",
-                    !isOwn && isTextMessage && !isStickerOnlyMessage && "bg-zinc-800/50 hover:bg-zinc-700/50"
-                  )}
-                >
-                  <span className="font-semibold text-purple-300 text-xs">
-                    {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
-                  </span>
-                  <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
-                    {message.reply_type == 1 ? (lang?.image_sticker || 'Картинка/стикер') : message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')}
-                  </span>
-                </div>
-              ) : null}
-              {messageImages.length ? (
-                <div
-                  className={cn(
-                    'flex flex-col gap-2',
-                    messageImages.length > 1 && 'sm:grid sm:grid-cols-2',
-                  )}
-                >
-                  {messageImages.map((image, imageIndex) => (
-                    !image.isViewerImage ? (
-                      <div
-                        key={getDialogImageKey(messageId, imageIndex)}
-                        className="overflow-hidden rounded-lg"
-                      >
-                        <img
-                          src={image.src}
-                          alt={image.alt || `Sticker ${imageIndex + 1}`}
-                          className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
-                        />
-                      </div>
-                    ) : (
-                      <button
-                        key={getDialogImageKey(messageId, imageIndex)}
-                        type="button"
-                        onClick={() => {
-                          onOpenImage(getDialogImageKey(messageId, imageIndex));
-                        }}
-                        className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95"
-                      >
-                        <img
-                          src={image.src}
-                          alt={image.alt || `Message image ${imageIndex + 1}`}
-                          className="max-h-48 max-w-full rounded-lg object-cover shadow lg:max-h-64"
-                        />
-                      </button>
-                    )
-                  ))}
-                </div>
-              ) : null}
-
-              {sevenTvStickerName ? (
-                <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
-              ) : null}
-
-              {hasMessageText ? (
-                <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
-              ) : null}
-            </div>
-
-            <div className="mt-1 flex items-end justify-end gap-1">
-              <div className="flex flex-1 flex-wrap items-center gap-1">
-                {reactions.map((reaction, index) => {
-                  const ownReaction = reaction.userId === String(currentUserId);
-                  const avatar = ownReaction
-                    ? normalizeAssetUrl(authUserImage, FALLBACK_AVATAR)
-                    : normalizeAssetUrl(foreignUser?.img, FALLBACK_AVATAR);
-
-                  return (
-                    <button
-                      key={`${reaction.userId}:${reaction.emoji}:${index}`}
-                      type="button"
-                      onClick={() => {
-                        if (!ownReaction) return;
-                        onDeleteReaction(messageId, reaction.emoji);
-                      }}
-                      className={cn(
-                        'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
-                        ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
-                      )}
-                    >
-                      <img
-                        src={avatar}
-                        alt=""
-                        className="h-5 w-5 rounded-full object-cover shadow"
-                      />
-                      <span className="px-1 text-sm text-zinc-200">{reaction.emoji}</span>
-                    </button>
-                  );
-                })}
+            <Dropdown
+              open={menuOpen}
+              onOpenChange={setMenuOpen}
+              renderTrigger={false}
+              position="top"
+              align={isOwn ? 'end' : 'start'}
+              width="auto"
+              wrapperClassName="pointer-events-none absolute left-0 right-0 top-0 z-30 h-0"
+              menuClassName="pointer-events-auto w-fit overflow-hidden rounded-2xl bg-zinc-900/85"
+            >
+              <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
+                {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => {
+                      onAddReaction(messageId, emoji);
+                    }}
+                    className="cursor-pointer duration-300 hover:scale-125 active:scale-95"
+                  >
+                    {emoji}
+                  </button>
+                ))}
               </div>
 
-              {message.isSending ? (
-                <span className="select-none whitespace-nowrap text-[10px] flex items-center gap-1">
-                  <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
-                </span>
-              ) : (
-                <>
-                  {timeLabel ? (
-                    <span
-                      className={cn(
-                        'select-none whitespace-nowrap text-[10px]',
-                        isOwn ? 'text-zinc-300' : 'text-zinc-400',
-                      )}
-                    >
-                      {timeLabel}
-                    </span>
-                  ) : null}
+              <DropdownItem
+                icon="IC-reply"
+                className="h-8"
+                onClick={() => {
+                  onReply(message);
+                }}
+              >
+                {lang?.reply || 'Ответить'}
+              </DropdownItem>
 
-                  {isOwn ? (
-                    <Icon
-                      name={getMessageStatusIconName(message.status)}
-                      className={cn(
-                        'h-3 w-3',
-                        String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
-                      )}
-                    />
-                  ) : null}
-                </>
+              {canTranslateMessage && typeof translator === 'function' ? (
+                <DropdownItem
+                  icon="IC-translate"
+                  className="h-8"
+                  onClick={() => {
+                    translator(`msg-body-${messageId}`);
+                  }}
+                >
+                  {lang?.translate || 'Перевести'}
+                </DropdownItem>
+              ) : null}
+
+              {isOwn ? (
+                <DropdownItem
+                  icon="IC-times"
+                  className="h-8"
+                  onClick={() => {
+                    onDeleteMessage(message);
+                  }}
+                >
+                  {lang?.delete || 'Удалить'}
+                </DropdownItem>
+              ) : null}
+
+              {canEditMessage ? (
+                <DropdownItem
+                  icon="IC-edit"
+                  className="h-8"
+                  onClick={() => {
+                    onEditMessage(message);
+                  }}
+                >
+                  {lang?.edit || 'Редактировать'}
+                </DropdownItem>
+              ) : null}
+            </Dropdown>
+
+            <div
+              id={`msg-${messageId}`}
+              className={cn(
+                'flex max-w-[90vw] lg:max-w-[40vw] flex-col rounded-2xl p-1 text-left font-normal break-words lg:text-lg',
+                isOwn && isTextMessage && !isStickerOnlyMessage && 'rounded-br-lg bg-purple-700',
+                !isOwn && isTextMessage && !isStickerOnlyMessage && 'rounded-bl-lg bg-zinc-900',
               )}
+            >
+              <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
+                {message.reply_to ? (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const el = document.getElementById(`msg-${message.reply_to}`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('bg-purple-500/30', 'transition-colors', 'duration-500');
+                        setTimeout(() => el.classList.remove('bg-purple-500/30'), 1500);
+                      }
+                    }}
+                    className={cn(
+                      "flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-2xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 transition-colors max-w-full",
+                      !isOwn && isTextMessage && !isStickerOnlyMessage && "bg-zinc-800/50 hover:bg-zinc-700/50"
+                    )}
+                  >
+                    <span className="font-semibold text-purple-300 text-xs">
+                      {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
+                    </span>
+                    <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
+                      {message.reply_type == 1 ? (lang?.image_sticker || 'Картинка/стикер') : message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')}
+                    </span>
+                  </div>
+                ) : null}
+                {messageImages.length ? (
+                  <div
+                    className={cn(
+                      'flex flex-col gap-2',
+                      messageImages.length > 1 && 'sm:grid sm:grid-cols-2',
+                    )}
+                  >
+                    {messageImages.map((image, imageIndex) => (
+                      !image.isViewerImage ? (
+                        <div
+                          key={getDialogImageKey(messageId, imageIndex)}
+                          className="overflow-hidden rounded-lg"
+                        >
+                          <img
+                            src={image.src}
+                            alt={image.alt || `Sticker ${imageIndex + 1}`}
+                            className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          key={getDialogImageKey(messageId, imageIndex)}
+                          type="button"
+                          onClick={() => {
+                            onOpenImage(getDialogImageKey(messageId, imageIndex));
+                          }}
+                          className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95"
+                        >
+                          <img
+                            src={image.src}
+                            alt={image.alt || `Message image ${imageIndex + 1}`}
+                            className="max-h-48 max-w-full rounded-lg object-cover shadow lg:max-h-64"
+                          />
+                        </button>
+                      )
+                    ))}
+                  </div>
+                ) : null}
+
+                {sevenTvStickerName ? (
+                  <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
+                ) : null}
+
+                {hasMessageText ? (
+                  <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
+                ) : null}
+              </div>
+
+              <div className="mt-1 flex items-end justify-end gap-1">
+                <div className="flex flex-1 flex-wrap items-center gap-1">
+                  {reactions.map((reaction, index) => {
+                    const ownReaction = reaction.userId === String(currentUserId);
+                    const avatar = ownReaction
+                      ? normalizeAssetUrl(authUserImage, FALLBACK_AVATAR)
+                      : normalizeAssetUrl(foreignUser?.img, FALLBACK_AVATAR);
+
+                    return (
+                      <button
+                        key={`${reaction.userId}:${reaction.emoji}:${index}`}
+                        type="button"
+                        onClick={() => {
+                          if (!ownReaction) return;
+                          onDeleteReaction(messageId, reaction.emoji);
+                        }}
+                        className={cn(
+                          'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
+                          ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
+                        )}
+                      >
+                        <img
+                          src={avatar}
+                          alt=""
+                          className="h-5 w-5 rounded-full object-cover shadow"
+                        />
+                        <span className="px-1 text-sm text-zinc-200">{reaction.emoji}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {message.isSending ? (
+                  <span className="select-none whitespace-nowrap text-[10px] flex items-center gap-1">
+                    <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
+                  </span>
+                ) : (
+                  <>
+                    {timeLabel ? (
+                      <span
+                        className={cn(
+                          'select-none whitespace-nowrap text-[10px]',
+                          isOwn ? 'text-zinc-300' : 'text-zinc-400',
+                        )}
+                      >
+                        {timeLabel}
+                      </span>
+                    ) : null}
+
+                    {isOwn ? (
+                      <Icon
+                        name={getMessageStatusIconName(message.status)}
+                        className={cn(
+                          'h-3 w-3',
+                          String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
+                        )}
+                      />
+                    ) : null}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -2402,7 +2470,14 @@ export default function MessagesContent() {
           const currentReactions = parseReactions(msg.reactions);
           let nextReactions = [...currentReactions];
           if (action === 'add') {
-            if (!nextReactions.some((r) => r.userId === reactedByStr && r.emoji === reaction)) {
+            const existingIndex = nextReactions.findIndex((r) => r.userId === reactedByStr);
+            if (existingIndex !== -1) {
+              const oldReaction = nextReactions[existingIndex].emoji;
+              nextReactions.splice(existingIndex, 1);
+              if (oldReaction !== reaction) {
+                nextReactions.push({ userId: reactedByStr, emoji: reaction });
+              }
+            } else {
               nextReactions.push({ userId: reactedByStr, emoji: reaction });
             }
           } else {
@@ -2550,7 +2625,14 @@ export default function MessagesContent() {
         const currentReactions = parseReactions(msg.reactions);
         let nextReactions = [...currentReactions];
         if (action === 'add') {
-          if (!nextReactions.some((r) => r.userId === currentUserIdStr && r.emoji === reaction)) {
+          const existingIndex = nextReactions.findIndex((r) => r.userId === currentUserIdStr);
+          if (existingIndex !== -1) {
+            const oldReaction = nextReactions[existingIndex].emoji;
+            nextReactions.splice(existingIndex, 1);
+            if (oldReaction !== reaction) {
+              nextReactions.push({ userId: currentUserIdStr, emoji: reaction });
+            }
+          } else {
             nextReactions.push({ userId: currentUserIdStr, emoji: reaction });
           }
         } else {
