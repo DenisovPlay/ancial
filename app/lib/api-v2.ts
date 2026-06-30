@@ -180,6 +180,10 @@ export class AncialAPI {
     return this.request<T>(`/posts/GetPost.php?id=${postId}`, options);
   }
 
+  static async getTrack<T = unknown>(trackId: string | number, options?: RequestInit): Promise<T> {
+    return this.request<T>(`/pulse/GetTrack.php?id=${trackId}`, options);
+  }
+
   static async createPost<T = unknown>(params: Record<string, string | number>): Promise<T> {
     const query = new URLSearchParams();
     if (params.gid !== undefined) query.set('gid', String(params.gid));

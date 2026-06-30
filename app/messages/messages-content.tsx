@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
   useSyncExternalStore,
+  useMemo,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
@@ -21,7 +22,8 @@ import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { AncialAPI } from '../lib/api-v2';
 import { globalWS } from '../lib/global-ws';
 import DialogImageViewerModal, { type DialogImageSlide } from './dialog-image-viewer-modal';
-
+import PostPreview from './components/post-preview';
+import TrackPreview from './components/track-preview';
 type LangMap = Record<string, string> | null;
 
 type DialogListItem = {
@@ -1423,11 +1425,46 @@ function MessageBubble({
   const messageBodyRaw = messageImages.length
     ? getMessageBodyHtmlWithoutImages(message.message)
     : String(message.message ?? '');
-  const messageBodyHtml = parseMessageLinks(messageBodyRaw);
+    
+  const domain = process.env.NEXT_PUBLIC_SITE_DOMAIN || 'ancial.ru';
+  
+  const postIds = useMemo(() => {
+    const postRegex = new RegExp(`https?://${domain}/(?:feed/)?post/(\\d+)`, 'gi');
+    const ids = new Set<string>();
+    let m;
+    while ((m = postRegex.exec(messageBodyRaw)) !== null) ids.add(m[1]);
+    return Array.from(ids);
+  }, [messageBodyRaw, domain]);
+
+  const trackIds = useMemo(() => {
+    const trackRegex = new RegExp(`https?://${domain}/pulse/(?:playlist/\\d+\\?track=|track/)(\\d+)`, 'gi');
+    const ids = new Set<string>();
+    let m;
+    while ((m = trackRegex.exec(messageBodyRaw)) !== null) ids.add(m[1]);
+    return Array.from(ids);
+  }, [messageBodyRaw, domain]);
+
+  const [loadedPosts, setLoadedPosts] = useState<string[]>([]);
+  const [loadedTracks, setLoadedTracks] = useState<string[]>([]);
+
+  let messageBodyHtml = parseMessageLinks(messageBodyRaw);
+
+  // Скрываем ссылки, если превью успешно загрузилось
+  loadedPosts.forEach(id => {
+    const r = new RegExp(`<a href="[^"]*".*?>https?://${domain.replace(/\./g, '\\.')}/(?:feed/)?post/${id}</a>\\s*`, 'gi');
+    messageBodyHtml = messageBodyHtml.replace(r, '');
+  });
+  loadedTracks.forEach(id => {
+    const trackRegex1 = new RegExp(`<a href="[^"]*".*?>https?://${domain.replace(/\./g, '\\.')}/pulse/playlist/\\d+\\?track=${id}</a>\\s*`, 'gi');
+    const trackRegex2 = new RegExp(`<a href="[^"]*".*?>https?://${domain.replace(/\./g, '\\.')}/pulse/track/${id}</a>\\s*`, 'gi');
+    messageBodyHtml = messageBodyHtml.replace(trackRegex1, '');
+    messageBodyHtml = messageBodyHtml.replace(trackRegex2, '');
+  });
+
   const sevenTvStickerTokenData = messageImages.length ? null : getSevenTvStickerTokenData(messageBodyHtml);
   const sevenTvStickerName = sevenTvStickerTokenData?.name ?? '';
   const sevenTvStickerId = sevenTvStickerTokenData?.id ?? '';
-  const hasMessageText = !sevenTvStickerName && Boolean(stripHtml(messageBodyHtml));
+  const hasMessageText = !sevenTvStickerName && Boolean(stripHtml(messageBodyHtml).trim());
   const isStickerOnlyMessage = Boolean(sevenTvStickerName);
   const canTranslateMessage = !isOwn && isTextMessage && !isStickerOnlyMessage;
   const canEditMessage = isOwn && isTextMessage && !isStickerOnlyMessage;
@@ -1688,6 +1725,26 @@ function MessageBubble({
                 {sevenTvStickerName ? (
                   <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
                 ) : null}
+
+                {postIds.map((id: string, index: number) => (
+                  <PostPreview 
+                    key={`post-${id}-${index}`} 
+                    postId={id} 
+                    onLoadSuccess={() => {
+                      setLoadedPosts(prev => prev.includes(id) ? prev : [...prev, id]);
+                    }}
+                  />
+                ))}
+
+                {trackIds.map((id: string, index: number) => (
+                  <TrackPreview 
+                    key={`track-${id}-${index}`} 
+                    trackId={id} 
+                    onLoadSuccess={() => {
+                      setLoadedTracks(prev => prev.includes(id) ? prev : [...prev, id]);
+                    }}
+                  />
+                ))}
 
                 {hasMessageText ? (
                   <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
