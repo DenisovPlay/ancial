@@ -197,7 +197,7 @@ export default function FeedContent() {
         preserveExisting?: boolean;
       },
     ) => Promise<void>
-  >(async () => {});
+  >(async () => { });
   const requestCounterRef = useRef(0);
   const currentLastIdRef = useRef<Id>(0);
   const hasMorePagesRef = useRef(true);
@@ -452,12 +452,12 @@ export default function FeedContent() {
       currentPosts.map((currentPost) =>
         String(currentPost.id) === String(postId)
           ? {
-              ...currentPost,
-              comments_count: Math.max(
-                0,
-                toNumber(currentPost.comments_count) + delta,
-              ),
-            }
+            ...currentPost,
+            comments_count: Math.max(
+              0,
+              toNumber(currentPost.comments_count) + delta,
+            ),
+          }
           : currentPost,
       ),
     );
@@ -500,10 +500,10 @@ export default function FeedContent() {
         currentPosts.map((currentPost) =>
           String(currentPost.id) === String(post.id)
             ? {
-                ...currentPost,
-                title: translatedTitle,
-                content: translatedContent,
-              }
+              ...currentPost,
+              title: translatedTitle,
+              content: translatedContent,
+            }
             : currentPost,
         ),
       );
@@ -1121,9 +1121,9 @@ export default function FeedContent() {
         </div>
 
         {isLoadingMore && (
-          <div id="load-more-indicator" className="text-center py-6 pt-0 w-full max-w-3xl px-3 md:px-0 flex flex-col gap-3">
-            <FeedPostSkeleton/>
-            <FeedPostSkeleton/>
+          <div id="load-more-indicator" className="text-center py-6 pt-0 w-full max-w-3xl flex flex-col gap-3">
+            <FeedPostSkeleton />
+            <FeedPostSkeleton />
           </div>
         )}
 
@@ -1267,7 +1267,7 @@ export default function FeedContent() {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 justify-center items-center">
             <svg className="w-24 h-24 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-             <use href="#IC-trash"></use>
+              <use href="#IC-trash"></use>
             </svg>
             <span className="text-base text-zinc-200">{strings.reallywantdeletepost}</span>
           </div>

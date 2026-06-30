@@ -30,7 +30,7 @@ function FeedFallback() {
       </div>
 
       <div className="w-full flex flex-col gap-3 justify-center items-center -mt-3">
-        <div className="max-w-3xl w-full flex flex-col gap-3 px-3 md:px-0">
+        <div className="max-w-3xl w-full flex flex-col gap-3">
           <FeedPostSkeleton />
           <FeedPostSkeleton />
           <FeedPostSkeleton />
