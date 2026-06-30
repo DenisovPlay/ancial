@@ -35,16 +35,14 @@ export default function LegalPage() {
             <button
               id="allbutton"
               onClick={() => setLangFilter("ALL")}
-              className={`aspect-square h-12 w-12 p-2 lg:text-lg rounded-3xl duration-300 flex items-center justify-center active:scale-95 cursor-pointer ${
-                langFilter === "ALL"
-                  ? "bg-zinc-800 text-white border-r border-zinc-600/30"
-                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
-              }`}
+              className={`aspect-square h-12 w-12 p-2 lg:text-lg rounded-3xl duration-300 flex items-center justify-center active:scale-95 cursor-pointer ${langFilter === "ALL"
+                ? "bg-zinc-800 text-white border-r border-zinc-600/30"
+                : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
+                }`}
             >
               <svg
-                className={`w-6 h-6 inline duration-300 ${
-                  langFilter === "ALL" ? "fill-white" : "fill-zinc-400"
-                }`}
+                className={`w-6 h-6 inline duration-300 ${langFilter === "ALL" ? "fill-white" : "fill-zinc-400"
+                  }`}
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 48 48"
               >
@@ -54,22 +52,20 @@ export default function LegalPage() {
             <button
               id="rubutton"
               onClick={() => setLangFilter("RU")}
-              className={`p-2 px-4 lg:text-lg rounded-3xl duration-300 active:scale-95 cursor-pointer ${
-                langFilter === "RU"
-                  ? "bg-zinc-800 text-white border-x border-zinc-600/30"
-                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
-              }`}
+              className={`p-2 px-4 lg:text-lg rounded-3xl duration-300 active:scale-95 cursor-pointer ${langFilter === "RU"
+                ? "bg-zinc-800 text-white border-x border-zinc-600/30"
+                : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
+                }`}
             >
               Русский
             </button>
             <button
               id="enbutton"
               onClick={() => setLangFilter("EN")}
-              className={`p-2 px-4 lg:text-lg rounded-3xl duration-300 active:scale-95 cursor-pointer ${
-                langFilter === "EN"
-                  ? "bg-zinc-800 text-white border-l border-zinc-600/30"
-                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
-              }`}
+              className={`p-2 px-4 lg:text-lg rounded-3xl duration-300 active:scale-95 cursor-pointer ${langFilter === "EN"
+                ? "bg-zinc-800 text-white border-l border-zinc-600/30"
+                : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
+                }`}
             >
               English
             </button>
@@ -79,76 +75,61 @@ export default function LegalPage() {
         <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 lg:px-0 duration-300 transition-all">
           <div
             onClick={() => setActiveModal("bezopasnost")}
-            className={`RU  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${
-              isVisible("RU") ? "flex" : "hidden"
-            }`}
+            className={`RU  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${isVisible("RU") ? "flex" : "hidden"
+              }`}
           >
             <span className="text-sm px-2 py-1 font-medium bg-purple-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               Русский
             </span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0,0,256,256">
-              <use href="#IC-goverment-document"></use>
-            </svg>
+            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
             <span className="text-zinc-200 text-center">
               Политика обработки персональных данных
             </span>
           </div>
           <div
             onClick={() => setActiveModal("rules-ru")}
-            className={`RU  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${
-              isVisible("RU") ? "flex" : "hidden"
-            }`}
+            className={`RU  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${isVisible("RU") ? "flex" : "hidden"
+              }`}
           >
             <span className="text-sm px-2 py-1 font-medium bg-purple-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               Русский
             </span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0 0 32 32">
-              <use href="#IC-document"></use>
-            </svg>
+            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
             <span className="text-zinc-200 text-center">Правила</span>
           </div>
           <div
             onClick={() => setActiveModal("rules-pulse-ru")}
-            className={`RU  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${
-              isVisible("RU") ? "flex" : "hidden"
-            }`}
+            className={`RU  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${isVisible("RU") ? "flex" : "hidden"
+              }`}
           >
             <span className="text-sm px-2 py-1 font-medium bg-purple-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               Русский
             </span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0 0 32 32">
-              <use href="#IC-document"></use>
-            </svg>
+            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
             <span className="text-zinc-200 text-center">
               Правила публикации на Pulse
             </span>
           </div>
           <div
             onClick={() => setActiveModal("rules-en")}
-            className={`EN  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${
-              isVisible("EN") ? "flex" : "hidden"
-            }`}
+            className={`EN  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${isVisible("EN") ? "flex" : "hidden"
+              }`}
           >
             <span className="text-sm px-2 py-1 font-medium bg-amber-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               English
             </span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0 0 32 32">
-              <use href="#IC-document"></use>
-            </svg>
+            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
             <span className="text-zinc-200 text-center">Terms of Service</span>
           </div>
           <div
             onClick={() => setActiveModal("cookie")}
-            className={`RU  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${
-              isVisible("RU") ? "flex" : "hidden"
-            }`}
+            className={`RU  relative bg-zinc-900 rounded-3xl shadow p-3 lg:p-6 gap-3 flex flex-col items-center justify-center duration-300 hover:bg-zinc-800/70 cursor-pointer active:scale-95 border border-zinc-600/30 ${isVisible("RU") ? "flex" : "hidden"
+              }`}
           >
             <span className="text-sm px-2 py-1 font-medium bg-purple-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               Русский
             </span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" viewBox="0,0,256,256">
-              <use href="#IC-goverment-document"></use>
-            </svg>
+            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
             <span className="text-zinc-200 text-center">
               Политика использования файлов Cookie
             </span>
@@ -2355,7 +2336,7 @@ export default function LegalPage() {
         width="lg"
         isOpen={activeModal === "cookie"}
         onClose={() => setActiveModal(null)}
-        title="Документ"
+        title="Политика использования файлов Cookie"
         swipeable={true}
       >
         <div className="bg-zinc-900 text-zinc-100 rounded-3xl p-3" id="cookie">
