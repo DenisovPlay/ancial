@@ -120,23 +120,16 @@ function FriendsContent() {
 
   const handleCreateDialog = async (userId: string) => {
     try {
-      const response = await AncialAPI.createDialog<{ message?: string, dialog_id?: string }>(userId);
+      const response = await AncialAPI.createDialog<{ hash?: string, message?: string }>(userId);
       
-      if (response.message) {
+      if (response.hash) {
+        router.push(`/messages/${response.hash}`);
+      } else if (response.message) {
         alert(response.message);
-      } else if (response.dialog_id) {
-        router.push(`/messages/${response.dialog_id}`);
-      } else {
-        // Fallback if the API returns string directly
-        const rawRes = response as unknown as string;
-        if (rawRes === lang?.dialogcreated || rawRes === lang?.dialogblocked) {
-          alert(rawRes);
-        } else {
-          router.push(`/messages/${rawRes}`);
-        }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert(e?.message || 'Error occurred');
     }
   };
 

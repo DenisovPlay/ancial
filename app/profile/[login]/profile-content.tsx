@@ -909,24 +909,21 @@ export default function UserProfileContent({ login }: { login: string }) {
     if (!userData) return;
 
     try {
-      const response = await AncialAPI.createDialog<{ message?: string }>(userData.id);
-      const html = response.message || '';
+      const response = await AncialAPI.createDialog<{ hash?: string; message?: string }>(userData.id);
 
-      if (html === strings.dialogcreated || html === strings.dialogblocked) {
+      if (response.hash) {
+        router.push(`/messages/${response.hash}`);
+      } else if (response.message) {
         showNote({
-          content: html,
-          html: true,
-          type: 'success',
+          content: response.message,
+          type: 'error',
           time: 5,
         });
-        return;
       }
-
-      router.push(`/messages/${html}`);
-    } catch (nextError) {
+    } catch (nextError: any) {
       console.error('Create dialog failed', nextError);
       showNote({
-        content: strings.errorhappend,
+        content: nextError?.message || strings.errorhappend,
         type: 'error',
         time: 5,
       });
