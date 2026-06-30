@@ -1002,7 +1002,7 @@ export default function WalletContent() {
           )}
 
           {productsView === 'confirm_delete' && accountToDelete && (
-            <div className="flex flex-col gap-3 px-3 pt-14 text-zinc-100">
+            <div className="flex flex-col gap-3 text-zinc-100">
               <p className="text-base text-zinc-300">
                 {lang?.want_to_close_account || 'Вы хотите закрыть счет'} <span className="font-bold text-white">{accountToDelete.name}</span> <span className="font-mono text-zinc-400">({accountToDelete.id})</span>?
               </p>
@@ -1038,7 +1038,7 @@ export default function WalletContent() {
           )}
 
           {productsView === 'create' && (
-            <form onSubmit={handleCreateAccount} className="flex flex-col gap-3 px-3 pt-14 text-zinc-100">
+            <form onSubmit={handleCreateAccount} className="flex flex-col gap-3 text-zinc-100">
               <p className="text-sm text-zinc-400">
                 {lang?.account_desc || 'Счёт позволит вам отправлять переводы внутри системы, а также принимать пополнения и оплачивать услуги.'}
               </p>
@@ -1380,7 +1380,7 @@ export default function WalletContent() {
                     setSdbDetailType('email');
                     setSendError(null);
                   }}
-                  className={`flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'email' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
+                  className={`cursor-pointer active:scale-95 duration-300 flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'email' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
                 >
                   {lang?.email || 'Email'}
                 </button>
@@ -1390,7 +1390,7 @@ export default function WalletContent() {
                     setSdbDetailType('phone');
                     setSendError(null);
                   }}
-                  className={`flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'phone' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
+                  className={`cursor-pointer active:scale-95 duration-300 flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'phone' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
                 >
                   {lang?.phone || 'Телефон'}
                 </button>
@@ -1400,7 +1400,7 @@ export default function WalletContent() {
                     setSdbDetailType('login');
                     setSendError(null);
                   }}
-                  className={`flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'login' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
+                  className={`cursor-pointer active:scale-95 duration-300 flex-1 py-2 text-center text-sm font-semibold rounded-full duration-300 ${sdbDetailType === 'login' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-400 hover:text-zinc-200'}`}
                 >
                   {lang?.nickname || 'Никнейм'}
                 </button>

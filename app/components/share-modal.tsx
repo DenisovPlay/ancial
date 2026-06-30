@@ -153,7 +153,7 @@ export default function ShareModal({
                   onClick={() => setSelectedDialog(null)}
                   className="cursor-pointer ml-auto w-8 h-8 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 text-zinc-300 duration-300 active:scale-95"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current" viewBox="0 0 24 24"><use href="/icons.svg#IC-chevron-left"></use></svg>
                 </button>
               </div>
 
@@ -172,7 +172,7 @@ export default function ShareModal({
                 onClick={() => void handleSendToFriend()}
                 disabled={loading || sent}
                 className={cn(
-                  "w-full rounded-3xl flex items-center justify-center gap-2 px-4 py-3 font-medium duration-300 active:scale-95 text-sm",
+                  "border border-zinc-600/30 w-full rounded-3xl flex items-center justify-center gap-2 px-4 py-3 font-medium duration-300 active:scale-95 text-sm",
                   sent
                     ? "bg-green-500 text-white cursor-default"
                     : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-900/20"
