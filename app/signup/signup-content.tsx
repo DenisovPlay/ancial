@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/button';
-import { Input } from '../components/form';
 
 export default function SignupContent() {
   const [login, setLogin] = useState('');
@@ -15,22 +13,24 @@ export default function SignupContent() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [password_2, setPassword2] = useState('');
-  
+  const [showPassword, setShowPassword] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hostname, setHostname] = useState('ancial.vercel.app');
   const router = useRouter();
   const { checkAuth, isAuthenticated, lang } = useAuth();
 
-  // Если пользователь уже авторизован - кидаем его на главную
   useEffect(() => {
+    setHostname(window.location.host);
     if (isAuthenticated) {
       router.push('/');
     }
   }, [isAuthenticated, router]);
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleRegister = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
     setError(null);
     setIsLoading(true);
 
@@ -61,8 +61,7 @@ export default function SignupContent() {
         setIsLoading(false);
         return;
       }
-      
-      // Регистрация успешна, теперь логинимся чтобы получить токен
+
       const loginParams = new URLSearchParams();
       loginParams.append('do_login', 'True');
       loginParams.append('login', login);
@@ -76,11 +75,10 @@ export default function SignupContent() {
         },
         body: loginParams.toString(),
       });
-      
+
       const loginData = await loginRes.json();
-      
+
       if (!loginData.success) {
-        // Если логин не удался, отправляем на страницу логина
         router.push('/login');
       } else {
         localStorage.setItem('token', loginData.data?.token || '');
@@ -95,138 +93,197 @@ export default function SignupContent() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
-      <div className="w-full max-w-md bg-zinc-900 border border-zinc-700/50 rounded-3xl p-5 shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">{lang?.signup || 'Регистрация'}</h1>
+    <main className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-col w-full lg:w-fit">
+        <div className="bg-purple-600/25 duration-300 text-purple-600 rounded-3xl flex p-1 justify-center items-center pb-10 -mb-9 shadow">
+          <span>
+            <svg className="w-5 h-5 inline fill-purple-600 mr-1" viewBox="0 0 48 48">
+              <use href="#IC-lock"></use>
+            </svg>
+            <span>{lang?.checkdomain || 'Проверяйте домен'}</span>: <b>https://</b>{hostname}
+          </span>
+        </div>
 
-        {/* Вывод ошибки */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleRegister} className="flex flex-col gap-3">
-          <div>
-            <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="login">
-              {lang?.login_hint || 'Логин (только англ. буквы и цифры)'}
-            </label>
-            <Input
-              id="login"
-              type="text"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
-              disabled={isLoading}
-              placeholder="username123"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="email">
-              {lang?.email || 'E-mail'}
-            </label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              placeholder="example@mail.com"
-              required
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="fname">
-                {lang?.first_name || 'Имя'}
-              </label>
-              <Input
-                id="fname"
-                type="text"
-                value={fname}
-                onChange={(e) => setFname(e.target.value)}
-                disabled={isLoading}
-                placeholder={lang?.ivan || "Иван"}
-              />
+        <div className="flex flex-col lg:grid grid-cols-1 lg:grid-cols-2 rounded-3xl overflow-hidden shadow-xl">
+          <div className="bg-zinc-900 duration-300 flex flex-col lg:max-w-xs p-3 gap-3 shadow">
+            <div className="flex flex-row gap-3 items-center">
+              <img className="w-16 h-16 rounded-2xl inline" src="/includes/img/401anlogo.png" alt="Logo" />
+              <span className="text-zinc-200 text-lg">{lang?.reghello || 'Создайте аккаунт'}</span>
             </div>
-            
-            <div>
-              <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="lname">
-                {lang?.last_name || 'Фамилия'}
-              </label>
-              <Input
-                id="lname"
-                type="text"
-                value={lname}
-                onChange={(e) => setLname(e.target.value)}
-                disabled={isLoading}
-                placeholder={lang?.ivanov || "Иванов"}
-              />
+
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3 items-center">
+                <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                  <svg className="w-8 h-8 fill-white" viewBox="0 0 48 48">
+                    <use href="#IC-auth-feature-1"></use>
+                  </svg>
+                </div>
+                <span className="text-zinc-400 text-sm">{lang?.logfea1 || 'Безопасная авторизация'}</span>
+              </div>
+
+              <div className="flex gap-3 items-center">
+                <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                  <svg className="w-8 h-8 fill-white" viewBox="0 0 48 48">
+                    <use href="#IC-auth-feature-2"></use>
+                  </svg>
+                </div>
+                <span className="text-zinc-400 text-sm">{lang?.logfea2 || 'Быстрый доступ'}</span>
+              </div>
+
+              <div className="flex gap-3 items-center">
+                <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                  <svg className="w-8 h-8 fill-white" viewBox="0 0 48 48">
+                    <use href="#IC-auth-feature-3"></use>
+                  </svg>
+                </div>
+                <span className="text-zinc-400 text-sm">{lang?.logfea3 || 'Защита данных'}</span>
+              </div>
+            </div>
+
+            <div className="mt-auto pt-4 text-center">
+              <span className="text-zinc-400 text-sm">{lang?.already_have_account || 'Уже есть аккаунт? '}</span>
+              <Link href="/login" className="text-purple-400 hover:text-purple-300 text-sm font-medium">
+                {lang?.log_in || 'Войти'}
+              </Link>
             </div>
           </div>
-          
-          <div>
-            <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="phone">
-              {lang?.phone_optional || 'Номер телефона (опционально)'}
-            </label>
-            <Input
-              id="phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={isLoading}
-              placeholder="+7 (999) 000-00-00"
-            />
-          </div>
 
-          <div>
-            <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="password">
-              {lang?.password_field || 'Пароль'}
-            </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-zinc-400 text-sm mb-1 ml-1" htmlFor="password_2">
-              {lang?.repeat_password || 'Повторите пароль'}
-            </label>
-            <Input
-              id="password_2"
-              type="password"
-              value={password_2}
-              onChange={(e) => setPassword2(e.target.value)}
-              disabled={isLoading}
-              placeholder="••••••••"
-              required
-            />
-          </div>
+          <div className="bg-zinc-800 duration-300 flex flex-col gap-3 p-3 lg:max-w-xs justify-center items-center shadow">
+            <span className="text-zinc-200 text-lg font-bold w-full">{lang?.regcitata || 'Присоединяйся к нам'}</span>
 
-          <Button
-            type="submit"
-            disabled={isLoading}
-            fullWidth
-            className="mt-2"
-          >
-            {isLoading ? (lang?.signing_up || 'Регистрация...') : (lang?.register || 'Зарегистрироваться')}
-          </Button>
-          
-          <div className="text-center mt-4">
-            <span className="text-zinc-400 text-sm">{lang?.already_have_account || 'Уже есть аккаунт? '}</span>
-            <Link href="/login" className="text-purple-400 hover:text-purple-300 text-sm font-medium">
-              {lang?.log_in || 'Войти'}
-            </Link>
+            <form onSubmit={handleRegister} className="flex flex-col gap-3 justify-center items-center w-full">
+              <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
+                <input
+                  autoComplete="off"
+                  placeholder={lang?.username || "Имя пользователя"}
+                  type="text"
+                  maxLength={63}
+                  value={login}
+                  onChange={(e) => setLogin(e.target.value)}
+                  disabled={isLoading}
+                  className="px-3 py-2 bg-transparent w-full grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl"
+                  required
+                />
+              </div>
+
+              <span className="text-zinc-400 text-sm -my-1.5 w-full">{lang?.regname || 'Как вас зовут?'}</span>
+
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
+                  <input
+                    placeholder={lang?.name || "Имя"}
+                    maxLength={31}
+                    type="text"
+                    value={fname}
+                    onChange={(e) => setFname(e.target.value)}
+                    disabled={isLoading}
+                    className="px-3 py-2 bg-transparent w-full grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl"
+                  />
+                </div>
+                <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
+                  <input
+                    placeholder={lang?.lname || "Фамилия"}
+                    maxLength={31}
+                    type="text"
+                    value={lname}
+                    onChange={(e) => setLname(e.target.value)}
+                    disabled={isLoading}
+                    className="px-3 py-2 bg-transparent w-full grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl"
+                  />
+                </div>
+              </div>
+
+              <span className="text-zinc-400 text-sm -my-1.5 w-full">{lang?.regcont || 'Контактные данные'}</span>
+
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
+                  <input
+                    placeholder={lang?.email || "E-mail"}
+                    type="email"
+                    maxLength={254}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    className="px-3 py-2 bg-transparent w-full grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl"
+                    required
+                  />
+                </div>
+                <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
+                  <input
+                    placeholder={lang?.phone || "Телефон"}
+                    type="tel"
+                    maxLength={12}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    disabled={isLoading}
+                    className="px-3 py-2 bg-transparent w-full grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl"
+                  />
+                </div>
+              </div>
+
+              <span className="text-zinc-400 text-sm -my-1.5 w-full">{lang?.regpass || 'Придумайте пароль'}</span>
+
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
+                  <input
+                    placeholder={lang?.password || "Пароль"}
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    className="px-3 py-2 bg-transparent w-full grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl"
+                    required
+                  />
+                </div>
+                <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30 relative">
+                  <input
+                    placeholder={lang?.passwordrep || "Повторите пароль"}
+                    type={showPassword ? "text" : "password"}
+                    value={password_2}
+                    onChange={(e) => setPassword2(e.target.value)}
+                    disabled={isLoading}
+                    className="px-3 py-2 pr-10 bg-transparent w-full grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl"
+                    required
+                  />
+                  <span
+                    className="absolute right-0 cursor-pointer w-9 h-9 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 duration-300 active:scale-95 rounded-3xl text-zinc-400"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    <svg className="w-6 h-6 fill-white" viewBox="0 0 48 48">
+                      <use href={showPassword ? "#IC-auth-eye-off" : "#IC-auth-eye"}></use>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              {error && (
+                <div className="px-3 py-2 bg-red-500/25 text-red-500 shadow rounded-3xl w-full border border-zinc-600/30 mt-1">
+                  <div className="flex items-center w-full gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="w-6 h-6 shrink-0 stroke-current">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <label className="text-sm lg:text-base w-full break-words">{error}</label>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-3xl border border-zinc-600/30 shadow flex items-center justify-center bg-purple-500 hover:bg-purple-600 active:scale-95 disabled:opacity-50 duration-300 px-3 py-2 font-bold uppercase cursor-pointer text-white mt-1"
+              >
+                {isLoading ? (
+                  <svg className="w-6 h-6 inline animate-spin fill-white" viewBox="0 0 48 48">
+                    <use href="#IC-auth-loader"></use>
+                  </svg>
+                ) : (
+                  lang?.signup || 'Зарегистрироваться'
+                )}
+              </button>
+            </form>
           </div>
-        </form>
+        </div>
+        <div className="lg:hidden"><br /><br /><br /></div>
       </div>
     </main>
   );
