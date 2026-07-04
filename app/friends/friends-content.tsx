@@ -165,7 +165,7 @@ function FriendsContent() {
     <div className="flex flex-col justify-center items-center py-3 w-full">
 
       {!searchQuery ? (
-        <span className="w-full max-w-3xl text-3xl font-extralight px-3 md:px-0">
+        <span className="w-full max-w-3xl text-3xl font-extralight px-3 lg:px-0">
           <span>{lang?.friends}</span>
         </span>
       ) : (
@@ -175,7 +175,7 @@ function FriendsContent() {
               setSearchInput('');
               router.push('/friends');
             }}
-            className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 md:px-0 cursor-pointer"
+            className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"
           >
             <svg className="w-8 h-8 fill-white inline" viewBox="0 0 48 48">
               <use href="#IC-chevron-left"></use>
@@ -185,7 +185,7 @@ function FriendsContent() {
         </div>
       )}
 
-      <div className="flex gap-3 items-center relative w-full max-w-3xl p-3 md:px-0 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[90]">
+      <div className="flex gap-3 items-center relative w-full max-w-3xl p-3 lg:px-0 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[90]">
         <form onSubmit={handleSearch} className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
           <input
             value={searchInput}
@@ -217,83 +217,83 @@ function FriendsContent() {
           </div>
         ) : (
           friends.map((friend, i) => {
-              const friendName = friend.name || `${friend.fname || ''} ${friend.lname || ''}`.trim() || (lang?.anonymous || 'Аноним');
-              const isOnline = onlineUsers[friend.id] || friend.online || friend.isOnline;
-              const isPending = friend.status === 0 || friend.isPending || friend.is_request;
-              const isIncoming = friend.is_incoming || friend.isIncoming;
-              const actionId = friend.id || friend.friendId || friend.relation_id || '';
+            const friendName = friend.name || `${friend.fname || ''} ${friend.lname || ''}`.trim() || (lang?.anonymous || 'Аноним');
+            const isOnline = onlineUsers[friend.id] || friend.online || friend.isOnline;
+            const isPending = friend.status === 0 || friend.isPending || friend.is_request;
+            const isIncoming = friend.is_incoming || friend.isIncoming;
+            const actionId = friend.id || friend.friendId || friend.relation_id || '';
 
-              return (
-                <React.Fragment key={friend.id || i}>
-                  <div id={`friend_${friend.id}`} className="group relative flex items-center justify-between gap-3 p-3 hover:bg-zinc-800 duration-300 cursor-pointer active:scale-95 active:rounded-3xl">
+            return (
+              <React.Fragment key={friend.id || i}>
+                <div id={`friend_${friend.id}`} className="group relative flex items-center justify-between gap-3 p-3 hover:bg-zinc-800 duration-300 cursor-pointer active:scale-95 active:rounded-3xl">
+                  {friend.id === user?.id && (
+                    <div className="absolute inset-x-0 w-[50%] h-[50%] left-[25%] bottom-[0%] blur-3xl rounded-full bg-gradient-to-t from-lime-500/20 to-transparent z-[-1]"></div>
+                  )}
+
+                  {/* Аватарка */}
+                  <Link
+                    className="flex-shrink-0 relative cursor-pointer"
+                    href={`/@${friend.username || friend.login || friend.id}`}
+                  >
+                    <div
+                      className={`shadow w-16 h-16 rounded-full shrink-0 bg-cover bg-center border ${isOnline ? 'border-lime-500' : 'border-transparent'}`}
+                      style={{ backgroundImage: `url(${friend.img || '/includes/img/anlite/default_avatar.png'})` }}
+                    ></div>
+                  </Link>
+
+                  {/* Инфо */}
+                  <Link
+                    className="flex-grow flex flex-col justify-center overflow-hidden cursor-pointer"
+                    href={`/@${friend.username || friend.login || friend.id}`}
+                  >
+                    <div className="text-zinc-200 lg:text-lg font-medium cursor-pointer truncate">
+                      {friendName} <VerifyIcon verify={friend.verify} />
+                    </div>
                     {friend.id === user?.id && (
-                      <div className="absolute inset-x-0 w-[50%] h-[50%] left-[25%] bottom-[0%] blur-3xl rounded-full bg-gradient-to-t from-lime-500/20 to-transparent z-[-1]"></div>
+                      <div className="text-sm text-lime-500 font-medium">👆 {lang?.friends_your_account || 'Это ваш аккаунт'}</div>
+                    )}
+                  </Link>
+
+                  {/* Кнопки */}
+                  <div className="flex gap-1.5 shrink-0">
+                    {isPending && isIncoming && (
+                      <div
+                        onClick={() => handleAction('add.php', 'frid', String(actionId))}
+                        className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
+                      >
+                        <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
+                          <use href="#IC-plus"></use>
+                        </svg>
+                      </div>
                     )}
 
-                    {/* Аватарка */}
-                    <Link
-                      className="flex-shrink-0 relative cursor-pointer"
-                      href={`/@${friend.username || friend.login || friend.id}`}
-                    >
+                    {isPending && (
                       <div
-                        className={`shadow w-16 h-16 rounded-full shrink-0 bg-cover bg-center border ${isOnline ? 'border-lime-500' : 'border-transparent'}`}
-                        style={{ backgroundImage: `url(${friend.img || '/includes/img/anlite/default_avatar.png'})` }}
-                      ></div>
-                    </Link>
-
-                    {/* Инфо */}
-                    <Link
-                      className="flex-grow flex flex-col justify-center overflow-hidden cursor-pointer"
-                      href={`/@${friend.username || friend.login || friend.id}`}
-                    >
-                      <div className="text-zinc-200 lg:text-lg font-medium cursor-pointer truncate">
-                        {friendName} <VerifyIcon verify={friend.verify} />
+                        onClick={() => handleAction('delete.php', 'frid', String(actionId))}
+                        className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
+                      >
+                        <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
+                          <use href="#IC-times"></use>
+                        </svg>
                       </div>
-                      {friend.id === user?.id && (
-                        <div className="text-sm text-lime-500 font-medium">👆 {lang?.friends_your_account || 'Это ваш аккаунт'}</div>
-                      )}
-                    </Link>
+                    )}
 
-                    {/* Кнопки */}
-                    <div className="flex gap-1.5 shrink-0">
-                      {isPending && isIncoming && (
-                        <div
-                          onClick={() => handleAction('add.php', 'frid', String(actionId))}
-                          className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
-                        >
-                          <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                            <use href="#IC-plus"></use>
-                          </svg>
-                        </div>
-                      )}
+                    {!isPending && !searchQuery ? (
+                      <div
+                        onClick={() => handleCreateDialog(String(friend.id))}
+                        className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
+                      >
+                        <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
+                          <use href="#IC-chats"></use>
+                        </svg>
+                      </div>
+                    ) : null}
 
-                      {isPending && (
-                        <div
-                          onClick={() => handleAction('delete.php', 'frid', String(actionId))}
-                          className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
-                        >
-                          <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                            <use href="#IC-times"></use>
-                          </svg>
-                        </div>
-                      )}
-
-                      {!isPending && !searchQuery ? (
-                        <div
-                          onClick={() => handleCreateDialog(String(friend.id))}
-                          className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
-                        >
-                          <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                            <use href="#IC-chats"></use>
-                          </svg>
-                        </div>
-                      ) : null}
-
-                    </div>
                   </div>
-                </React.Fragment>
-              );
-            })
+                </div>
+              </React.Fragment>
+            );
+          })
         )}
       </div>
     </div>

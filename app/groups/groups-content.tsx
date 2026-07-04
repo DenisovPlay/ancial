@@ -128,11 +128,11 @@ function GroupsContent() {
   return (
     <div className="flex flex-col justify-center items-center py-3">
       {!qQuery ? (
-        <span className="w-full max-w-3xl text-3xl font-extralight px-3 md:px-0">
+        <span className="w-full max-w-3xl text-3xl font-extralight px-3 lg:px-0">
           <span>{lang?.groups || 'Сообщества'}</span>
         </span>
       ) : (
-        <div className="w-full max-w-3xl px-3 md:px-0">
+        <div className="w-full max-w-3xl px-3 lg:px-0">
           <span
             onClick={() => {
               setQuery('');
@@ -146,7 +146,7 @@ function GroupsContent() {
         </div>
       )}
 
-      <div className="flex gap-3 items-center relative w-full max-w-3xl p-3 md:px-0 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[99]">
+      <div className="flex gap-3 items-center relative w-full max-w-3xl p-3 lg:px-0 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[99]">
         <form onSubmit={handleSearch} className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
           <input
             value={query}
