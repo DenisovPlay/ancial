@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -251,14 +252,13 @@ export default function PulseMyContent() {
             <PulseLogo className="w-32 sm:w-48" />
           </button>
           <div className="flex-grow" />
-          <button
-            type="button"
-            onClick={() => router.push('/pulse/create/')}
-            className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900/20 p-1 duration-300 hover:bg-zinc-700 active:scale-95"
+          <Link
+            href="/pulse/create"
+            className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900/20 p-1 duration-300 hover:bg-zinc-700 active:scale-95 block"
             aria-label="Pulse Creators"
           >
             <PulseCreatorsLogo />
-          </button>
+          </Link>
         </div>
       </div>
 
