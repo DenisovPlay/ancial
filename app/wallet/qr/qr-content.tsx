@@ -688,7 +688,7 @@ export default function QRContent() {
                 ) : resolvedWallet ? (
                   <div className="flex flex-col gap-1">
                     <span className="text-purple-400 font-bold text-base">{resolvedWallet.owner_name}</span>
-                    <span className="text-zinc-400 text-xs font-mono">{lang?.account || 'Счёт'}: #{resolvedWallet.account_id} ({resolvedWallet.account_name})</span>
+                    <span className="text-zinc-400 text-xs font-mono">{lang?.walletAccount || 'Счёт'}: #{resolvedWallet.account_id} ({resolvedWallet.account_name})</span>
                   </div>
                 ) : (
                   <p className="text-zinc-100 font-mono text-sm break-all">{scannedData}</p>

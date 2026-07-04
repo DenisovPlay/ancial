@@ -91,7 +91,7 @@ export default function WalletContent() {
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
 
   // Form states - Create Account
-  const [createAccountTitle, setCreateAccountTitle] = useState(lang?.account || 'Счёт');
+  const [createAccountTitle, setCreateAccountTitle] = useState(lang?.walletAccount || 'Счёт');
   const [createAccountLoading, setCreateAccountLoading] = useState(false);
   const [createAccountError, setCreateAccountError] = useState<string | null>(null);
 
@@ -266,7 +266,7 @@ export default function WalletContent() {
       setProductsView('list');
       setAccountToDelete(null);
       setDeleteAccountError(null);
-      setCreateAccountTitle(lang?.account || 'Счёт');
+      setCreateAccountTitle(lang?.walletAccount || 'Счёт');
       setCreateAccountError(null);
     }
   }, [isProductsModalOpen]);
@@ -347,7 +347,7 @@ export default function WalletContent() {
     setCreateAccountError(null);
     try {
       await AncialAPI.createAccount(createAccountTitle);
-      setCreateAccountTitle(lang?.account || 'Счёт');
+      setCreateAccountTitle(lang?.walletAccount || 'Счёт');
       setProductsView('list');
       await fetchWallet();
     } catch (err: any) {
@@ -1619,7 +1619,7 @@ export default function WalletContent() {
               >
                 {accounts.map(acc => (
                   <option key={acc.id} value={acc.id}>
-                    {lang?.account || 'Счёт'} №{acc.id} ({acc.name})
+                    {lang?.walletAccount || 'Счёт'} №{acc.id} ({acc.name})
                   </option>
                 ))}
               </select>
