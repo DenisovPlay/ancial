@@ -294,8 +294,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
       {selectedScreenshot && (
         <ImageViewerModal
           activeImageIndex={selectedScreenshotIndex}
-          image={selectedScreenshot}
-          imagesLength={screenshotSlides.length}
+          images={screenshotSlides}
           isOpen={selectedScreenshotIndex !== null}
           onClose={closeScreenshot}
           onNext={handleNextScreenshot}

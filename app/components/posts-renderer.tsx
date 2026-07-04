@@ -702,8 +702,7 @@ function PostCardInner({
       {selectedImage && (
         <ImageViewerModal
           activeImageIndex={activeImageIndex}
-          image={selectedImage}
-          imagesLength={images.length}
+          images={images}
           isOpen={selectedImageIndex !== null}
           onClose={handleCloseImage}
           onPrev={handlePrevImage}

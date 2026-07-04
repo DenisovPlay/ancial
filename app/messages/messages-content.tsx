@@ -21,7 +21,9 @@ import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { AncialAPI } from '../lib/api-v2';
 import { globalWS } from '../lib/global-ws';
-import DialogImageViewerModal, { type DialogImageSlide } from './dialog-image-viewer-modal';
+import ImageViewerModal, { type ImageViewerSlide } from '../components/image-viewer-modal';
+
+type DialogImageSlide = ImageViewerSlide & { key: string };
 import PostPreview from './components/post-preview';
 import TrackPreview from './components/track-preview';
 type LangMap = Record<string, string> | null;
@@ -1425,9 +1427,9 @@ function MessageBubble({
   const messageBodyRaw = messageImages.length
     ? getMessageBodyHtmlWithoutImages(message.message)
     : String(message.message ?? '');
-    
+
   const domain = process.env.NEXT_PUBLIC_SITE_DOMAIN || 'ancial.ru';
-  
+
   const postIds = useMemo(() => {
     const postRegex = new RegExp(`https?://${domain}/(?:feed/)?post/(\\d+)`, 'gi');
     const ids = new Set<string>();
@@ -1523,7 +1525,7 @@ function MessageBubble({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[40] bg-black/60 backdrop-blur-lg"
             onClick={() => setMenuOpen(false)}
           />
         ) : null}
@@ -1727,9 +1729,9 @@ function MessageBubble({
                 ) : null}
 
                 {postIds.map((id: string, index: number) => (
-                  <PostPreview 
-                    key={`post-${id}-${index}`} 
-                    postId={id} 
+                  <PostPreview
+                    key={`post-${id}-${index}`}
+                    postId={id}
                     onLoadSuccess={() => {
                       setLoadedPosts(prev => prev.includes(id) ? prev : [...prev, id]);
                     }}
@@ -1737,9 +1739,9 @@ function MessageBubble({
                 ))}
 
                 {trackIds.map((id: string, index: number) => (
-                  <TrackPreview 
-                    key={`track-${id}-${index}`} 
-                    trackId={id} 
+                  <TrackPreview
+                    key={`track-${id}-${index}`}
+                    trackId={id}
                     onLoadSuccess={() => {
                       setLoadedTracks(prev => prev.includes(id) ? prev : [...prev, id]);
                     }}
@@ -3854,7 +3856,7 @@ export default function MessagesContent() {
         </div>
       </div>
 
-      <DialogImageViewerModal
+      <ImageViewerModal
         activeImageIndex={resolvedActiveDialogImageIndex}
         images={dialogImageSlides}
         isOpen={resolvedActiveDialogImageIndex !== null}
@@ -3876,9 +3878,6 @@ export default function MessagesContent() {
 
           const nextIndex =
             (resolvedActiveDialogImageIndex - 1 + dialogImageSlides.length) % dialogImageSlides.length;
-          setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
-        }}
-        onSelect={(nextIndex) => {
           setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
         }}
       />

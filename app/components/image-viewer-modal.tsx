@@ -21,8 +21,7 @@ export interface ImageViewerSlide {
 
 export interface ImageViewerModalProps {
   activeImageIndex: number | null;
-  image: ImageViewerSlide | null;
-  imagesLength: number;
+  images: ImageViewerSlide[];
   isOpen: boolean;
   onClose: () => void;
   onNext: () => void;
@@ -50,8 +49,7 @@ function distanceBetween(first: Point, second: Point) {
 
 export default function ImageViewerModal({
   activeImageIndex,
-  image,
-  imagesLength,
+  images,
   isOpen,
   onClose,
   onNext,
@@ -64,6 +62,13 @@ export default function ImageViewerModal({
   const [interactionMode, setInteractionMode] = useState<
     'idle' | 'swipe-x' | 'swipe-y' | 'pan' | 'pinch'
   >('idle');
+  const [internalIndex, setInternalIndex] = useState(activeImageIndex ?? 0);
+
+  useEffect(() => {
+    if (activeImageIndex !== null) {
+      setInternalIndex(activeImageIndex);
+    }
+  }, [activeImageIndex]);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -78,6 +83,7 @@ export default function ImageViewerModal({
   const pinchStartDistanceRef = useRef<number | null>(null);
   const pinchStartScaleRef = useRef(MIN_IMAGE_SCALE);
   const lastTapRef = useRef<{ position: Point; time: number } | null>(null);
+  const wasDraggedRef = useRef(false);
 
   const syncScale = (nextScale: number) => {
     scaleRef.current = nextScale;
@@ -151,13 +157,14 @@ export default function ImageViewerModal({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!image || activeImageIndex === null) return;
+    if (images.length === 0 || activeImageIndex === null) return;
 
     syncScale(MIN_IMAGE_SCALE);
     syncOffset({ x: 0, y: 0 });
     syncSwipeOffsetX(0);
     syncSwipeOffsetY(0);
     setInteractionMode('idle');
+
     activePointersRef.current.clear();
     pointerDownPositionsRef.current.clear();
     pointerStartRef.current = null;
@@ -165,7 +172,7 @@ export default function ImageViewerModal({
     pinchStartDistanceRef.current = null;
     pinchStartScaleRef.current = MIN_IMAGE_SCALE;
     lastTapRef.current = null;
-  }, [activeImageIndex, image]);
+  }, [activeImageIndex, images]);
 
   const handleDoubleTapZoom = (position: Point) => {
     const stage = stageRef.current;
@@ -259,6 +266,7 @@ export default function ImageViewerModal({
       return;
     }
 
+    wasDraggedRef.current = false;
     pointerStartRef.current = { x: event.clientX, y: event.clientY };
     pointerOffsetStartRef.current = offsetRef.current;
     setInteractionMode(scaleRef.current > MIN_IMAGE_SCALE ? 'pan' : 'idle');
@@ -379,6 +387,10 @@ export default function ImageViewerModal({
       pointerDownPosition !== null &&
       distanceBetween(pointerDownPosition, releasedPosition) <= TAP_MOVE_THRESHOLD;
 
+    if (!isTapCandidate) {
+      wasDraggedRef.current = true;
+    }
+
     if (activePointersRef.current.size === 0 && isTapCandidate && event.pointerType !== 'mouse') {
       const now = Date.now();
       const lastTap = lastTapRef.current;
@@ -435,16 +447,17 @@ export default function ImageViewerModal({
     setInteractionMode('idle');
   };
 
-  if (!image) return null;
+  if (images.length === 0) return null;
 
-  const frameStyle = {
-    transform: `translate3d(${swipeOffsetX}px, ${swipeOffsetY}px, 0)`,
+  const imagesLength = images.length;
+  const activeIdx = internalIndex;
+
+  const swipeStyle = {
+    transform: `translate3d(calc(-${activeIdx * 100}% + ${swipeOffsetX}px), ${swipeOffsetY}px, 0)`,
     opacity:
       swipeOffsetY > 0
         ? Math.max(0.35, 1 - swipeOffsetY / 320)
-        : swipeOffsetX !== 0
-          ? Math.max(0.7, 1 - Math.abs(swipeOffsetX) / 420)
-          : 1,
+        : 1,
     transition:
       interactionMode === 'idle'
         ? 'transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease-out'
@@ -483,12 +496,12 @@ export default function ImageViewerModal({
     >
       <div
         className="relative flex items-center justify-center w-full h-full"
-        onClick={onClose}
       >
         <div
           className="relative flex items-center justify-center w-full h-full"
-          style={frameStyle}
-          onClick={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !wasDraggedRef.current) onClose();
+          }}
         >
           {imagesLength > 1 && (
             <button
@@ -516,30 +529,53 @@ export default function ImageViewerModal({
             <SvgIcon className="w-6 h-6 fill-white" id="IC-times" />
           </button>
 
+          <a
+            href={images[activeIdx].url}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
+            className="hidden sm:flex cursor-pointer absolute top-3 right-16 z-10 w-12 h-12 items-center justify-center rounded-full bg-zinc-900/70 border border-zinc-700 text-white hover:bg-zinc-800/90 duration-300 active:scale-95"
+            aria-label="Download image"
+          >
+            <SvgIcon className="w-5 h-5 fill-white" id="IC-download" />
+          </a>
+
+          {imagesLength > 1 && (
+            <div className="pointer-events-none absolute bottom-6 w-full text-center text-sm text-zinc-300 z-10 font-medium">
+              {activeIdx + 1} / {imagesLength}
+            </div>
+          )}
+
           <div
             ref={stageRef}
-            className="max-h-full w-full h-full flex flex-col items-center justify-center gap-3 touch-none select-none"
-            onClick={(event) => event.stopPropagation()}
+            className="w-full h-full flex flex-row items-center touch-none select-none will-change-transform"
+            style={swipeStyle}
+            onClick={(event) => {
+              if (event.target === event.currentTarget && !wasDraggedRef.current) onClose();
+            }}
             onWheel={handleWheel}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerEnd}
             onPointerCancel={handlePointerEnd}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              ref={imageRef}
-              src={image.url}
-              alt={image.alt ?? `Image ${(activeImageIndex ?? 0) + 1}`}
-              className="max-w-full max-h-[80vh] object-contain rounded-3xl shadow-2xl"
-              style={imageStyle}
-              onDragStart={(event) => event.preventDefault()}
-            />
-            {imagesLength > 1 && (
-              <div className="text-sm text-zinc-300">
-                {(activeImageIndex ?? 0) + 1} / {imagesLength}
+            {images.map((img, idx) => (
+              <div
+                key={img.url + idx}
+                className="w-full h-full shrink-0 flex flex-col items-center justify-center relative"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  ref={idx === activeIdx ? imageRef : null}
+                  src={img.url}
+                  alt={img.alt ?? `Image ${idx + 1}`}
+                  className="max-w-full max-h-[80vh] object-contain rounded-3xl shadow-2xl"
+                  style={idx === activeIdx ? imageStyle : {}}
+                  onDragStart={(event) => event.preventDefault()}
+                />
               </div>
-            )}
+            ))}
           </div>
 
           {imagesLength > 1 && (
