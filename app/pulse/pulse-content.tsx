@@ -12,6 +12,7 @@ import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { AncialAPI } from '../lib/api-v2';
 import {
+  getPulseBackgroundColorByMood,
   PulseLegalFooter,
   PulsePlaylistTile,
   PulseReportModal,
@@ -55,6 +56,7 @@ type PulseTrack = {
   explicit?: boolean | number | string | null;
   lang?: string | null;
   listens?: number | string | null;
+  mood?: string | null;
   sid?: number | string | null;
   src?: string | null;
   status?: number | string | null;
@@ -638,6 +640,7 @@ export default function PulseContent() {
   const {
     currentCollectionId,
     currentSongId,
+    currentTrackObj,
     isPlaying,
     openAddToPlaylist,
     playGenlist,
@@ -1076,7 +1079,7 @@ export default function PulseContent() {
   ), [lang?.your]);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-28">
+    <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-40 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:pb-28 lg:before:from-black", getPulseBackgroundColorByMood(currentTrackObj?.mood))}>
       <PulseHeader
         isAuthenticated={isAuthenticated}
         lang={lang}

@@ -158,10 +158,10 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const canUploadTrack = canUploadToPulseFavoritesPlaylist(playlistId, playlist);
   const listensTotal = useMemo(() => getPulsePlaylistListenTotal(tracks), [tracks]);
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4) => {
     showNote({
       content,
-      time: 4,
+      time,
       type,
     });
   }, [showNote]);

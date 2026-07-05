@@ -138,8 +138,8 @@ export default function PulseMyContent() {
 
   const libraryItems = useMemo(() => getLibraryItems(library), [library]);
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
-    showNote({ content, time: 4, type });
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4) => {
+    showNote({ content, time, type });
   }, [showNote]);
 
   useEffect(() => {
@@ -246,10 +246,10 @@ export default function PulseMyContent() {
             onClick={() => router.push('/pulse')}
             className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
           >
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
               <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
             </div>
-            <PulseLogo className="w-32 sm:w-48" />
+            <PulseLogo className="w-32 md:w-48" />
           </button>
           <div className="flex-grow" />
           <Link

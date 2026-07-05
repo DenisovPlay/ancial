@@ -24,6 +24,7 @@ export type PulseTrack = {
   explicit?: boolean | number | string | null;
   lang?: string | null;
   listens?: number | string | null;
+  mood?: string | null;
   sid?: number | string | null;
   src?: string | null;
   status?: number | string | null;
@@ -337,6 +338,39 @@ export function TracksPanelSkeleton({ rows = 5 }: { rows?: number }) {
       ))}
     </div>
   );
+}
+
+export function getPulseBackgroundColorByMood(mood: string | null | undefined): string {
+  const normalizedMood = mood?.toLowerCase().trim() || '';
+
+  switch (normalizedMood) {
+    case 'happy':
+      return 'bg-amber-500/25';
+    case 'sad':
+      return 'bg-blue-500/25';
+    case 'funny':
+      return 'bg-orange-500/25';
+    case 'energetic':
+      return 'bg-red-500/25';
+    case 'calm':
+      return 'bg-teal-500/25';
+    case 'romantic':
+      return 'bg-rose-500/25';
+    case 'dark':
+      return 'bg-zinc-500/25';
+    case 'aggressive':
+      return 'bg-red-600/25';
+    case 'dreamy':
+      return 'bg-indigo-500/25';
+    case 'chill':
+      return 'bg-cyan-500/25';
+    case 'sexy':
+      return 'bg-fuchsia-500/25';
+    case 'scary':
+      return 'bg-stone-600/25';
+    default:
+      return 'bg-pink-500/25';
+  }
 }
 
 export function PulseTrackRow({

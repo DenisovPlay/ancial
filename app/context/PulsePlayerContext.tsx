@@ -38,6 +38,7 @@ type PulseTrack = {
   src?: string | null;
   status?: number | string | null;
   title?: string | null;
+  mood?: string | null;
 };
 
 type PulseCollectionKind = 'artist' | 'genlist' | 'playlist' | 'track';
@@ -76,6 +77,7 @@ type PulsePlayerContextValue = {
   closePlayer: () => void;
   currentCollectionId: string;
   currentSongId: number;
+  currentTrackObj: PulseTrack | null;
   isOpen: boolean;
   isPlaying: boolean;
   mode: PulsePlayerMode;
@@ -2211,6 +2213,7 @@ export function PulsePlayerProvider({
     closePlayer,
     currentCollectionId: playlistId,
     currentSongId,
+    currentTrackObj: currentTrack || null,
     isOpen: isVisible,
     isPlaying,
     mode,

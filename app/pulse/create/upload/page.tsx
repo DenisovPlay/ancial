@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter } from 'next/navigation';
+import { AncialAPI } from '../../../lib/api-v2';
 
 const MEDIA_TAGS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js';
 
@@ -76,7 +78,6 @@ export default function PulseCreateUploadPage() {
         exp: '',
         audioId: '',
         audioUrl: '',
-        id: 0,
         uploading: false
       }]);
     }

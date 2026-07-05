@@ -14,12 +14,17 @@ import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../pulse-upload-tr
 import { PulseHeader } from '../pulse-header';
 import { readPulseJsonCache, writePulseJsonCache } from '../pulse-cache';
 import {
+  getPulseBackgroundColorByMood,
+  getTrackArtwork,
+  getImageUrl,
+  decodeHtmlEntities,
   PulseArtistTile,
   PulsePlaylistTile,
   PulseReportModal,
   PulseTrackRow,
   normalizeText,
   toNumber,
+  cn,
   type PulseArtistCardData,
   type PulsePlaylistCardData,
   type PulseTrack,
@@ -60,6 +65,7 @@ export default function PulseSearchContent() {
   const {
     currentCollectionId,
     currentSongId,
+    currentTrackObj,
     isPlaying,
     openAddToPlaylist,
     playGenlist,
@@ -98,8 +104,8 @@ export default function PulseSearchContent() {
     return nextCountry || 'RU';
   }, [user?.country]);
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
-    showNote({ content, time: 4, type });
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4) => {
+    showNote({ content, time, type });
   }, [showNote]);
 
   useEffect(() => {
@@ -315,7 +321,7 @@ export default function PulseSearchContent() {
   ), []);
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-64 duration-300 lg:from-black">
+    <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black", getPulseBackgroundColorByMood(currentTrackObj?.mood))}>
       <PulseHeader
         isAuthenticated={isAuthenticated}
         lang={lang}

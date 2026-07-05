@@ -87,8 +87,8 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   const image = getImageUrl(track?.img, DEFAULT_TRACK_IMAGE);
   const active = trackNumericId > 0 && currentSongId === trackNumericId && isPlaying;
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
-    showNote({ content, time: 4, type });
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4) => {
+    showNote({ content, time, type });
   }, [showNote]);
 
   useEffect(() => {

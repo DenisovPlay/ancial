@@ -16,6 +16,8 @@ import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../..
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
+  getPulseBackgroundColorByMood,
+  getTrackArtwork,
   PulseEmptyState,
   PulseLegalFooter,
   PulsePageHeader,
@@ -89,6 +91,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const {
     currentCollectionId,
     currentSongId,
+    currentTrackObj,
     isPlaying,
     openAddToPlaylist,
     playArtistPlaylist,
@@ -118,7 +121,6 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
   const [loadingTracks, setLoadingTracks] = useState(!cachedTracks.length);
   const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>(() => readPulseJsonCache<PulseArtistPlaylistsResponse>(`artist_playlists_${cacheId}`)?.playlists ?? []);
-  const [shareUrl, setShareUrl] = useState('');
   const [tracks, setTracks] = useState<PulseTrack[]>(cachedTracks);
 
   const userCountry = useMemo(() => {
@@ -138,8 +140,8 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const verifyStatus = String(artist?.verify ?? '');
   const owner = artist?.owner ?? null;
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info') => {
-    showNote({ content, time: 4, type });
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4) => {
+    showNote({ content, time, type });
   }, [showNote]);
 
   useEffect(() => {
@@ -340,7 +342,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const artistCollectionActive = currentCollectionId === `artist_${cacheId}` && isPlaying;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-pink-500/25 via-black to-black pb-40 duration-300 lg:from-black lg:pb-64">
+    <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-40 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:pb-64 lg:before:from-black", getPulseBackgroundColorByMood(currentTrackObj?.mood))}>
       <PulsePageHeader onBack={() => router.push('/pulse')} />
 
       {!missing ? (
