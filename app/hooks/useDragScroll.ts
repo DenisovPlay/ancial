@@ -3,8 +3,8 @@
 import { useEffect, useRef } from 'react';
 
 interface UseDragScrollOptions {
-  speed?: number; // множитель скорости (по умолчанию 2)
-  enabled?: boolean; // можно отключить для мобильных
+  speed?: number;
+  enabled?: boolean;
 }
 
 export function useDragScroll(options: UseDragScrollOptions = {}) {
@@ -16,65 +16,53 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
     const el = ref.current;
     if (!el || !enabled) return;
 
-    // Отключаем на тач-устройствах
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (isTouchDevice) return;
+    if ('ontouchstart' in window && navigator.maxTouchPoints > 2) return;
 
     let isDown = false;
-    let startX: number;
-    let scrollLeft: number;
+    let startX = 0;
+    let scrollLeft = 0;
 
     const onMouseDown = (e: MouseEvent) => {
       isDown = true;
       didMoveRef.current = false;
       el.classList.add('dragging');
-      const rect = el.getBoundingClientRect();
-      startX = e.clientX - rect.left;
+      startX = e.clientX;
       scrollLeft = el.scrollLeft;
-    };
-
-    const onMouseLeave = () => {
-      isDown = false;
-      el.classList.remove('dragging');
+      e.preventDefault();
     };
 
     const onMouseUp = () => {
+      if (!isDown) return;
       isDown = false;
       el.classList.remove('dragging');
     };
 
     const onMouseMove = (e: MouseEvent) => {
       if (!isDown) return;
-      e.preventDefault();
-      const rect = el.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const walk = (x - startX) * speed;
-      el.scrollLeft = scrollLeft - walk;
-      
-      // Помечаем, что было перемещение
-      if (Math.abs(x - startX) > 3) {
+      const dx = e.clientX - startX;
+      el.scrollLeft = scrollLeft - dx * speed;
+      if (Math.abs(dx) > 3) {
         didMoveRef.current = true;
       }
     };
 
-    el.addEventListener('mousedown', onMouseDown);
-    el.addEventListener('mouseleave', onMouseLeave);
-    el.addEventListener('mouseup', onMouseUp);
-    el.addEventListener('mousemove', onMouseMove);
-
-    // Блокируем клики только если было перемещение
-    el.addEventListener('click', (e) => {
+    const onClickCapture = (e: MouseEvent) => {
       if (didMoveRef.current) {
         e.preventDefault();
         e.stopPropagation();
       }
-    }, true);
+    };
+
+    el.addEventListener('mousedown', onMouseDown);
+    el.addEventListener('click', onClickCapture, true);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', onMouseMove);
 
     return () => {
       el.removeEventListener('mousedown', onMouseDown);
-      el.removeEventListener('mouseleave', onMouseLeave);
-      el.removeEventListener('mouseup', onMouseUp);
-      el.removeEventListener('mousemove', onMouseMove);
+      el.removeEventListener('click', onClickCapture, true);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', onMouseMove);
     };
   }, [enabled, speed]);
 

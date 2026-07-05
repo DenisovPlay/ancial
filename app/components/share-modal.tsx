@@ -168,7 +168,7 @@ export default function ShareModal({
                 type="button"
                 onClick={() => setReplyTab('repost')}
                 className={cn(
-                  'flex-1 py-2 rounded-3xl text-sm font-medium transition-all duration-200 active:scale-95 cursor-pointer',
+                  'border border-zinc-600/30 flex-1 py-2 rounded-3xl font-medium transition-all duration-200 active:scale-95 cursor-pointer',
                   replyTab === 'repost'
                     ? 'bg-purple-600 text-white'
                     : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700',
@@ -180,7 +180,7 @@ export default function ShareModal({
                 type="button"
                 onClick={() => setReplyTab('reply')}
                 className={cn(
-                  'flex-1 py-2 rounded-3xl text-sm font-medium transition-all duration-200 active:scale-95 cursor-pointer',
+                  'border border-zinc-600/30 flex-1 py-2 rounded-3xl font-medium transition-all duration-200 active:scale-95 cursor-pointer',
                   replyTab === 'reply'
                     ? 'bg-purple-600 text-white'
                     : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700',
@@ -227,7 +227,7 @@ export default function ShareModal({
               onClick={() => void handleReply()}
               disabled={replyLoading || replySent || (replyTab === 'reply' && !replyText.trim())}
               className={cn(
-                'w-full rounded-3xl flex items-center justify-center gap-2 px-4 py-3 font-medium duration-300 active:scale-95 text-sm border border-zinc-600/30 cursor-pointer',
+                'w-full rounded-3xl flex items-center justify-center gap-2 px-4 py-3 font-medium duration-300 active:scale-95 border border-zinc-600/30 cursor-pointer',
                 replySent
                   ? 'bg-green-500 text-white cursor-default'
                   : 'bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100',
@@ -252,16 +252,22 @@ export default function ShareModal({
         )}
 
         {/* Список друзей (диалогов) */}
-        {!selectedDialog && dialogs.length > 0 && (
-          <div ref={dialogsScrollRef} className="w-full flex overflow-x-auto pb-2 pt-2 -mt-2 scrollbar-hide px-3 gap-3 dragscroll">
+        <div
+          ref={dialogsScrollRef}
+          className={cn(
+            "w-full overflow-x-auto pb-2 pt-2 -mt-2 scrollbar-hide px-3 drag-scroll",
+            (!selectedDialog && dialogs.length > 0) ? "flex flex-nowrap" : "hidden"
+          )}
+        >
+          <div className="flex flex-row flex-nowrap gap-3 flex-shrink-0">
             {dialogs.map((dialog) => (
               <div
                 key={dialog.id}
-                className="flex flex-col items-center gap-1 cursor-pointer active:scale-95 duration-300 snap-start"
+                className="flex flex-col items-center gap-1 cursor-pointer active:scale-95 duration-300 user-select-none shrink-0 w-[64px]"
                 onClick={() => setSelectedDialog(dialog)}
               >
                 <div className={cn(
-                  "w-16 h-16 rounded-full overflow-hidden ring-2 duration-300",
+                  "w-16 h-16 rounded-full overflow-hidden ring-2 duration-300 shrink-0",
                   isOnline(dialog.Ulastonline) ? "ring-green-500" : "ring-transparent hover:ring-purple-500"
                 )}>
                   <Image
@@ -269,16 +275,17 @@ export default function ShareModal({
                     alt={dialog.Uname}
                     width={56}
                     height={56}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover pointer-events-none"
+                    draggable={false}
                   />
                 </div>
-                <span className="text-xs text-zinc-300 text-center line-clamp-1 w-full px-1">
+                <span className="text-xs text-zinc-300 text-center truncate w-full px-1 pointer-events-none" title={dialog.Uname.split(' ')[0]}>
                   {dialog.Uname.split(' ')[0]}
                 </span>
               </div>
             ))}
           </div>
-        )}
+        </div>
 
         {/* Форма отправки другу */}
         {selectedDialog && (
@@ -351,21 +358,21 @@ export default function ShareModal({
               <button
                 type="button"
                 onClick={() => handleShareTo('vk')}
-                className="w-16 h-16 rounded-3xl bg-blue-500 hover:bg-blue-600 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
+                className="w-16 h-16 rounded-3xl bg-blue-500 hover:bg-blue-500/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
               >
                 <Image src="/img/socials/vk.png" alt="VK" width={48} height={48} className="w-12 h-12" />
               </button>
               <button
                 type="button"
                 onClick={() => handleShareTo('tg')}
-                className="w-16 h-16 rounded-3xl bg-sky-400 hover:bg-sky-500 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
+                className="w-16 h-16 rounded-3xl bg-sky-400 hover:bg-sky-400/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
               >
                 <Image src="/img/socials/tg.png" alt="Telegram" width={48} height={48} className="w-12 h-12" />
               </button>
               <button
                 type="button"
                 onClick={() => handleShareTo('x')}
-                className="w-16 h-16 rounded-3xl bg-slate-800 hover:bg-slate-900 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
+                className="w-16 h-16 rounded-3xl bg-slate-800 hover:bg-slate-800/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
               >
                 <Image src="/img/socials/x.png" alt="X" width={48} height={48} className="w-12 h-12" />
               </button>
