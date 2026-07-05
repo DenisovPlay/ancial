@@ -38,7 +38,8 @@ export default function PulseCreateUploadPage() {
   const [albumLang, setAlbumLang] = useState('');
 
   const [tracks, setTracks] = useState([{
-    id: 1,
+    localId: 'track_1',
+    id: '',
     artist: '',
     name: '',
     lang: '',
@@ -70,23 +71,31 @@ export default function PulseCreateUploadPage() {
 
   const addTrack = () => {
     if (tracks.length < 15) {
-      setTracks([...tracks, {
-        id: tracks.length + 1,
-        artist: '',
-        name: '',
-        lang: '',
-        exp: '',
-        audioId: '',
-        audioUrl: '',
-        uploading: false
-      }]);
+      setTracks((prevTracks) => [
+        ...prevTracks,
+        {
+          localId: `track_${Date.now()}_${Math.random()}`,
+          id: '',
+          artist: '',
+          name: '',
+          lang: '',
+          exp: '',
+          audioId: '',
+          audioUrl: '',
+          uploading: false
+        }
+      ]);
     }
   };
 
   const updateTrack = (index: number, field: string, value: any) => {
-    const newTracks = [...tracks];
-    newTracks[index] = { ...newTracks[index], [field]: value };
-    setTracks(newTracks);
+    setTracks((prevTracks) => {
+      const newTracks = [...prevTracks];
+      if (newTracks[index]) {
+        newTracks[index] = { ...newTracks[index], [field]: value };
+      }
+      return newTracks;
+    });
   };
 
   const handleAudioUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,10 +112,17 @@ export default function PulseCreateUploadPage() {
           onSuccess: (tag: any) => {
             const title = tag.tags?.title;
             const artist = tag.tags?.artist;
-            const newTracks = [...tracks];
-            if (title && !newTracks[index].name) newTracks[index].name = title;
-            if (artist && !newTracks[index].artist) newTracks[index].artist = artist;
-            if (title || artist) setTracks(newTracks);
+            setTracks((prevTracks) => {
+              const newTracks = [...prevTracks];
+              if (newTracks[index]) {
+                newTracks[index] = {
+                  ...newTracks[index],
+                  name: title && !newTracks[index].name ? title : newTracks[index].name,
+                  artist: artist && !newTracks[index].artist ? artist : newTracks[index].artist,
+                };
+              }
+              return newTracks;
+            });
           },
           onError: () => {}
         });
@@ -122,8 +138,17 @@ export default function PulseCreateUploadPage() {
     try {
       const res = await AncialAPI.pulseManagement<{ id?: string | number; src?: string; message?: string }>('file', 'upload', formData);
       if (res.src && res.src !== 'Failure') {
-        updateTrack(index, 'audioId', res.src);
-        if (res.id) updateTrack(index, 'id', res.id);
+        setTracks((prevTracks) => {
+          const newTracks = [...prevTracks];
+          if (newTracks[index]) {
+            newTracks[index] = {
+              ...newTracks[index],
+              audioId: res.src || '',
+              id: res.id ? String(res.id) : newTracks[index].id,
+            };
+          }
+          return newTracks;
+        });
         setStatusText('Трек загружен');
       } else {
         showNote({ content: 'Ошибка при загрузке аудио на сервер', type: 'error', time: 5 });
@@ -262,7 +287,7 @@ export default function PulseCreateUploadPage() {
         
         <div className="flex flex-col gap-2 border border-zinc-600/30 bg-zinc-800/50 rounded-3xl p-3">
           {tracks.map((t, idx) => (
-            <div key={t.id} className="flex flex-wrap items-center w-full gap-2 border-b border-zinc-700/40 pb-2 last:border-0 last:pb-0">
+            <div key={t.localId} className="flex flex-wrap items-center w-full gap-2 border-b border-zinc-700/40 pb-2 last:border-0 last:pb-0">
               <div className="text-lg text-zinc-400 w-8 text-center font-bold shrink-0">{idx + 1}</div>
               <input type="text" placeholder={lang?.trackArtists || 'Артист(ы) трека'} value={t.artist} onChange={e => updateTrack(idx, 'artist', e.target.value)} className="bg-zinc-800/60 border border-zinc-600/30 rounded-2xl text-zinc-200 p-2 placeholder-zinc-600 w-40 text-sm focus:outline-none" />
               <input type="text" placeholder={lang?.trackName || 'Название трека'} value={t.name} onChange={e => updateTrack(idx, 'name', e.target.value)} className="bg-zinc-800/60 border border-zinc-600/30 rounded-2xl text-zinc-200 p-2 placeholder-zinc-600 w-40 text-sm focus:outline-none" />
@@ -283,12 +308,12 @@ export default function PulseCreateUploadPage() {
               <div className="flex-grow flex items-center justify-end gap-2">
                 {t.uploading && <span className="text-xs text-purple-400 animate-pulse">Загрузка...</span>}
                 {t.audioId && <span className="text-xs text-green-400">✓ Загружено</span>}
-                <label htmlFor={`songupdI${t.id}`} className="cursor-pointer text-zinc-400 hover:text-zinc-200 duration-300 p-1.5 rounded-xl border border-zinc-600/30 bg-zinc-800/60 hover:bg-zinc-700">
+                <label htmlFor={`songupdI${t.localId}`} className="cursor-pointer text-zinc-400 hover:text-zinc-200 duration-300 p-1.5 rounded-xl border border-zinc-600/30 bg-zinc-800/60 hover:bg-zinc-700">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
                 </label>
-                <input type="file" id={`songupdI${t.id}`} accept=".mp3" onChange={(e) => handleAudioUpload(idx, e)} className="hidden" />
+                <input type="file" id={`songupdI${t.localId}`} accept=".mp3" onChange={(e) => handleAudioUpload(idx, e)} className="hidden" />
               </div>
               
               {t.audioUrl && (
@@ -312,9 +337,12 @@ export default function PulseCreateUploadPage() {
           </div>
         )}
         
-        <div className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-500 shadow rounded-3xl flex flex-col w-full text-sm">
-          {lang?.albumuploadWarn2 || 'Убедитесь, что все треки соответствуют правилам загрузки контента.'}
-        </div>
+        <div
+          className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-500 shadow rounded-3xl flex flex-col w-full text-sm gap-1.5"
+          dangerouslySetInnerHTML={{
+            __html: lang?.albumuploadWarn2 || 'Убедитесь, что все треки соответствуют правилам загрузки контента.'
+          }}
+        />
         
         <button onClick={handlePublish} disabled={loading} className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full disabled:opacity-50">
           Опубликовать альбом / треки
