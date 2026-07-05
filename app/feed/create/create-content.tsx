@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 
 import { Dropdown } from '../../components/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
 import CreatePostPreview from './create-post-preview';
+import PostWidgetPollModal, { type PollWidgetDraft } from '../../components/post-widget-poll-modal';
+import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/post-widget-music-modal';
+
 import {
   type DraftImage,
   MAX_IMAGES,
@@ -27,6 +31,31 @@ type AvailableAuthor = {
   name: string;
 };
 
+type TrackSearchResult = {
+  id: number;
+  name: string;
+  artist: string;
+  img: string;
+  src: string;
+};
+
+type PollWidget = {
+  type: 'poll';
+  question: string;
+  options: string[];
+};
+
+type MusicWidget = {
+  type: 'music';
+  track_id: number;
+  track_name: string;
+  artist_name: string;
+  track_img: string;
+};
+
+type PostWidget = PollWidget | MusicWidget;
+
+
 export default function CreatePostContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading, lang, user } = useAuth();
@@ -42,6 +71,12 @@ export default function CreatePostContent() {
   const [selectedAuthorId, setSelectedAuthorId] = useState('0');
   const [selectedTopic, setSelectedTopic] = useState('');
   const [title, setTitle] = useState('');
+
+  // Виджеты
+  const [widgets, setWidgets] = useState<PostWidget[]>([]);
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
+  const [isMusicModalOpen, setIsMusicModalOpen] = useState(false);
+
 
   const strings = useMemo(() => {
     const fb = {
@@ -297,6 +332,19 @@ export default function CreatePostContent() {
     }
   };
 
+  const handleAddMusicWidget = (draft: MusicWidgetDraft) => {
+    setWidgets(prev => [...prev.filter(w => w.type !== 'music'), draft]);
+  };
+
+  const handleAddPollWidget = (draft: PollWidgetDraft) => {
+    setWidgets(prev => [...prev.filter(w => w.type !== 'poll'), draft]);
+  };
+
+  const handleRemoveWidget = (index: number) => {
+    setWidgets(prev => prev.filter((_, i) => i !== index));
+  };
+
+
   const handleSubmit = async () => {
     if (isSubmitting || hasUploadingImages) return;
 
@@ -309,6 +357,15 @@ export default function CreatePostContent() {
         .map((image) => image.uploadedUrl as string)
         .join(',');
 
+      // Сериализуем виджеты
+      const serializedWidgets = JSON.stringify(
+        widgets.map((w) => {
+          if (w.type === 'poll') return { type: 'poll', question: w.question, options: w.options.filter(o => o.trim()) };
+          if (w.type === 'music') return { type: 'music', track_id: w.track_id };
+          return w;
+        })
+      );
+
       const response = await AncialAPI.createPost<{ message?: string }>({
         author_type: authorType,
         gid: selectedAuthorId,
@@ -316,6 +373,7 @@ export default function CreatePostContent() {
         contentext: content,
         new_post_title: title,
         photosurls: uploadedImages,
+        widgets: serializedWidgets,
       });
 
       if (!response || !response.message) {
@@ -345,6 +403,7 @@ export default function CreatePostContent() {
       setIsSubmitting(false);
     }
   };
+
 
   if (isLoading) {
     return (
@@ -480,6 +539,30 @@ export default function CreatePostContent() {
             </div>
           )}
 
+          {/* Прикреплённые виджеты */}
+          {widgets.length > 0 && (
+            <div className="px-3 pb-1 flex flex-col gap-2">
+              {widgets.map((w, i) => (
+                <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-2xl px-3 py-2 border border-zinc-700/40">
+                  {w.type === 'music' ? (
+                    <div
+                      className="w-6 h-6 rounded-md bg-cover bg-center shrink-0 bg-zinc-700"
+                      style={{ backgroundImage: `url(${w.track_img})` }}
+                    />
+                  ) : (
+                    <PollIcon className="w-5 h-5 fill-zinc-400 shrink-0" />
+                  )}
+                  <span className="text-sm text-zinc-200 truncate flex-1">
+                    {w.type === 'music' ? `${w.artist_name} — ${w.track_name}` : w.question}
+                  </span>
+                  <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95">
+                    <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="px-3 pb-3 flex items-center justify-center gap-3">
             <Dropdown
               triggerSize="sm"
@@ -503,15 +586,24 @@ export default function CreatePostContent() {
                 <SvgIcon className="inline w-6 h-6 fill-zinc-400 mr-1" id="IC-play" />
                 <span>{strings.video}</span>
               </div>
-              <div className="flex items-center hover:shadow rounded-2xl duration-150 px-1.5 py-0.5 font-medium bg-zinc-600/30 text-zinc-400 cursor-not-allowed w-full">
-                <PollIcon className="inline h-6 w-6 mr-1 fill-zinc-400" />
+              <button
+                type="button"
+                onClick={() => setIsPollModalOpen(true)}
+                className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+              >
+                <PollIcon className="inline h-6 w-6 mr-1 fill-white" />
                 <span>{strings.poll}</span>
-              </div>
-              <div className="flex items-center hover:shadow rounded-2xl duration-150 px-1.5 py-0.5 font-medium bg-zinc-600/30 text-zinc-400 cursor-not-allowed w-full">
-                <SvgIcon className="inline w-6 h-6 fill-zinc-400 mr-1" id="IC-music" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMusicModalOpen(true)}
+                className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+              >
+                <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-music" />
                 <span>{strings.music}</span>
-              </div>
+              </button>
             </Dropdown>
+
 
             <select
               name="new_post_topic"
@@ -600,6 +692,28 @@ export default function CreatePostContent() {
         <br />
         <br />
       </div>
+
+      {isPollModalOpen && (
+        <PostWidgetPollModal
+          isOpen={isPollModalOpen}
+          onClose={() => setIsPollModalOpen(false)}
+          onAdd={(poll) => {
+            setWidgets([...widgets, poll as PostWidget]);
+            setIsPollModalOpen(false);
+          }}
+        />
+      )}
+
+      {isMusicModalOpen && (
+        <PostWidgetMusicModal
+          isOpen={isMusicModalOpen}
+          onClose={() => setIsMusicModalOpen(false)}
+          onAdd={(music) => {
+            setWidgets([...widgets, music as PostWidget]);
+            setIsMusicModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

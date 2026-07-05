@@ -1109,7 +1109,6 @@ export default function FeedContent() {
               }}
               onNavigate={(href) => router.push(href)}
               onReport={(post) => openReportModal(post.id, 2)}
-              onShare={openShareModal}
               onTranslate={translatePost}
               onVote={handleVote}
               posts={posts}

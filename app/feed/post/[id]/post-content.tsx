@@ -686,15 +686,11 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                   setReportTarget({ id: targetPost.id, type: 2 });
                   setIsReportModalOpen(true);
                 }}
-                onShare={(url) => {
-                  setShareUrl(url);
-                  setIsShareModalOpen(true);
-                }}
                 onTranslate={translatePost}
                 onVote={handleVote}
                 post={post}
-                renderIndex={1}
                 shareBaseUrl="https://ancial.ru/feed/post"
+                renderIndex={1}
               />
 
               <div

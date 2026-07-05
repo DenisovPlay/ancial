@@ -1281,10 +1281,6 @@ export default function GroupProfileContent({ link }: { link: string }) {
                       setReportTarget({ id: post.id, type: 2 });
                       setIsReportModalOpen(true);
                     }}
-                    onShare={(url) => {
-                      setShareUrl(url);
-                      setIsShareModalOpen(true);
-                    }}
                     onTranslate={translatePost}
                     onVote={handleVote}
                     posts={posts}

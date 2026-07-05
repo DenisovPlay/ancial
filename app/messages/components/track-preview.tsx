@@ -7,13 +7,15 @@ import Link from 'next/link';
 import { AncialAPI } from '../../lib/api-v2';
 import type { PulseTrack } from '../../pulse/pulse-components';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
+import { cn } from '../../pulse/pulse-components';
 
 type TrackPreviewProps = {
   trackId: string | number;
   onLoadSuccess?: () => void;
+  className?: string;
 };
 
-export default function TrackPreview({ trackId, onLoadSuccess }: TrackPreviewProps) {
+export default function TrackPreview({ trackId, onLoadSuccess, className }: TrackPreviewProps) {
   const [track, setTrack] = useState<PulseTrack | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -98,13 +100,13 @@ export default function TrackPreview({ trackId, onLoadSuccess }: TrackPreviewPro
 
   if (loading) {
     return (
-      <div className="w-[300px] max-w-full rounded-3xl bg-zinc-900/40 border border-zinc-700/30 hover:bg-zinc-800/40 duration-300 flex items-center gap-3 shadow">
+      <div className={cn("w-[300px] max-w-full rounded-3xl bg-zinc-900/40 border border-zinc-700/30 hover:bg-zinc-800/40 duration-300 flex items-center gap-3 shadow", className)}>
         <div className="w-12 h-12 rounded-3xl bg-zinc-800 shrink-0" />
         <div className="flex flex-col gap-1 w-full">
           <div className="w-24 h-4 rounded bg-zinc-800" />
           <div className="w-16 h-3 rounded bg-zinc-800" />
         </div>
-        <div className="w-8 h-8 rounded-full bg-zinc-800 shrink-0 mr-2" />
+        <div className="w-8 h-8 rounded-full bg-zinc-800 shrink-0 mr-1" />
       </div>
     );
   }
@@ -112,7 +114,7 @@ export default function TrackPreview({ trackId, onLoadSuccess }: TrackPreviewPro
   if (!track) return null;
 
   return (
-    <Link href={`/pulse/track/${track.sid}`} className="w-[300px] max-w-full rounded-3xl bg-zinc-900/40 border border-zinc-700/30 hover:bg-zinc-800/40 duration-300 flex items-center gap-1.5 shadow">
+    <Link href={`/pulse/track/${track.sid}`} className={cn("w-[300px] max-w-full rounded-3xl bg-zinc-900/40 border border-zinc-700/30 hover:bg-zinc-800/40 duration-300 flex items-center gap-1.5 shadow", className)}>
       <div className="w-10 h-10 rounded-3xl overflow-hidden relative shrink-0">
         <Image
           src={coverSrc}
@@ -130,7 +132,7 @@ export default function TrackPreview({ trackId, onLoadSuccess }: TrackPreviewPro
       <button
         type="button"
         onClick={handlePlayPause}
-        className="cursor-pointer w-8 h-8 flex items-center justify-center rounded-full bg-purple-600 hover:bg-purple-500 text-white shadow shrink-0 mr-2 active:scale-95 duration-300"
+        className="cursor-pointer w-8 h-8 flex items-center justify-center rounded-full bg-purple-600 hover:bg-purple-500 text-white shadow shrink-0 mr-1 active:scale-95 duration-300"
       >
         {isThisTrackPlaying ? (
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current" viewBox="0 0 24 24"><use href="/icons.svg#IC-pause"></use></svg>

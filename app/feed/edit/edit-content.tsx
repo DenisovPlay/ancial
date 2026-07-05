@@ -8,6 +8,10 @@ import type { PostAuthor, PostData, PostImage } from '../../components/posts-ren
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
+import CreatePostPreview from '../create/create-post-preview';
+import PostWidgetPollModal, { type PollWidgetDraft } from '../../components/post-widget-poll-modal';
+import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/post-widget-music-modal';
+
 import {
   type DraftImage,
   MAX_IMAGES,
@@ -22,7 +26,7 @@ import {
   safeRevokeObjectUrl,
   uploadImageToImgbb,
 } from '../editor-shared';
-import CreatePostPreview from '../create/create-post-preview';
+
 
 type EditErrorState = 'error' | 'not_found' | 'permission_denied' | null;
 
@@ -85,6 +89,12 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
   const [selectedTopic, setSelectedTopic] = useState('');
   const [title, setTitle] = useState('');
 
+  // Виджеты
+  const [widgets, setWidgets] = useState<any[]>([]);
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
+  const [isMusicModalOpen, setIsMusicModalOpen] = useState(false);
+
+
   const strings = useMemo(() => {
     const fb = {
       choisetopic: 'Выберите тему',
@@ -125,6 +135,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       uploading: 'Загружается...',
       video: 'Видео',
       waituntillphotouploaded: 'Подождите, пока фотография загрузится',
+      reply_to_post: 'Ответ на запись',
     };
     return {
       choisetopic: lang?.choisetopic || fb.choisetopic,
@@ -165,6 +176,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       uploading: lang?.uploading || fb.uploading,
       video: lang?.video || fb.video,
       waituntillphotouploaded: lang?.waituntillphotouploaded || fb.waituntillphotouploaded,
+      reply_to_post: lang?.reply_to_post || fb.reply_to_post,
     };
   }, [lang]);
 
@@ -249,6 +261,10 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         );
         setSelectedTopic(normalizedPost.tags ?? '');
         setImages(toDraftImages(normalizedPost.images));
+        if (normalizedPost.widgets && Array.isArray(normalizedPost.widgets)) {
+          setWidgets(normalizedPost.widgets);
+        }
+
       } catch (nextError) {
         if (controller.signal.aborted) return;
         console.error('Failed to load post for editing', nextError);
@@ -290,6 +306,19 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       currentImages.filter((currentImage) => currentImage.id !== imageId),
     );
   };
+
+  const handleAddMusicWidget = (draft: MusicWidgetDraft) => {
+    setWidgets(prev => [...prev.filter(w => w.type !== 'music'), draft]);
+  };
+
+  const handleAddPollWidget = (draft: PollWidgetDraft) => {
+    setWidgets(prev => [...prev.filter(w => w.type !== 'poll'), draft]);
+  };
+
+  const handleRemoveWidget = (index: number) => {
+    setWidgets(prev => prev.filter((_, i) => i !== index));
+  };
+
 
   const handleStickerSelect = (stickerCode: string) => {
     setContent((currentContent) => `${currentContent}${stickerCode}`);
@@ -376,13 +405,24 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         .map((image) => image.uploadedUrl ?? image.previewUrl)
         .join(',');
 
+      // Сериализуем виджеты
+      const serializedWidgets = JSON.stringify(
+        widgets.map((w: any) => {
+          if (w.type === 'poll') return { type: 'poll', question: w.question, options: w.options.filter((o: string) => o.trim()) };
+          if (w.type === 'music') return { type: 'music', track_id: w.track_id };
+          return w;
+        })
+      );
+
       const response = await AncialAPI.editPost<{ message?: string }>({
         data: content,
         id: postId,
         photos,
         tags: selectedTopic,
         title,
+        widgets: serializedWidgets,
       });
+
 
       showNote({
         content: response?.message?.trim() || strings.saved,
@@ -549,6 +589,36 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
                 </div>
               )}
 
+              {/* Прикреплённые виджеты */}
+              {widgets.length > 0 && (
+                <div className="px-3 pb-1 flex flex-col gap-2">
+                  {widgets.map((w, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-2xl px-3 py-2 border border-zinc-700/40">
+                      {w.type === 'music' ? (
+                        <div
+                          className="w-6 h-6 rounded-md bg-cover bg-center shrink-0 bg-zinc-700"
+                          style={{ backgroundImage: `url(${w.track_img})` }}
+                        />
+                      ) : (
+                        <span className="shrink-0 flex items-center justify-center w-6 h-6">
+                          {w.type === 'quote' ? (
+                            <SvgIcon className="w-4 h-4 fill-zinc-400" id="IC-share" />
+                          ) : (
+                            <PollIcon className="w-4 h-4 fill-zinc-400" />
+                          )}
+                        </span>
+                      )}
+                      <span className="text-sm text-zinc-200 truncate flex-1">
+                        {w.type === 'music' ? `${w.artist_name} — ${w.track_name}` : w.type === 'poll' ? w.question : strings.reply_to_post}
+                      </span>
+                      <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95">
+                        <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="px-3 pb-3 flex items-center justify-center gap-3">
                 <Dropdown
                   triggerSize="sm"
@@ -572,14 +642,22 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
                     <SvgIcon className="inline w-6 h-6 fill-zinc-400 mr-1" id="IC-play" />
                     <span>{strings.video}</span>
                   </div>
-                  <div className="flex items-center hover:shadow rounded-2xl duration-150 px-1.5 py-0.5 font-medium bg-zinc-600/30 text-zinc-400 cursor-not-allowed w-full">
-                    <PollIcon className="inline h-6 w-6 mr-1 fill-zinc-400" />
+                  <button
+                    type="button"
+                    onClick={() => setIsPollModalOpen(true)}
+                    className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+                  >
+                    <PollIcon className="inline h-6 w-6 mr-1 fill-white" />
                     <span>{strings.poll}</span>
-                  </div>
-                  <div className="flex items-center hover:shadow rounded-2xl duration-150 px-1.5 py-0.5 font-medium bg-zinc-600/30 text-zinc-400 cursor-not-allowed w-full">
-                    <SvgIcon className="inline w-6 h-6 fill-zinc-400 mr-1" id="IC-music" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMusicModalOpen(true)}
+                    className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+                  >
+                    <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-music" />
                     <span>{strings.music}</span>
-                  </div>
+                  </button>
                 </Dropdown>
 
                 <select
@@ -702,6 +780,28 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         <br />
         <br />
       </div>
+
+      {isPollModalOpen && (
+        <PostWidgetPollModal
+          isOpen={isPollModalOpen}
+          onClose={() => setIsPollModalOpen(false)}
+          onAdd={(poll) => {
+            handleAddPollWidget(poll);
+            setIsPollModalOpen(false);
+          }}
+        />
+      )}
+
+      {isMusicModalOpen && (
+        <PostWidgetMusicModal
+          isOpen={isMusicModalOpen}
+          onClose={() => setIsMusicModalOpen(false)}
+          onAdd={(music) => {
+            handleAddMusicWidget(music);
+            setIsMusicModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

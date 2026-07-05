@@ -9,6 +9,12 @@ import { SvgIcon } from '../feed/editor-shared';
 import YandexRtb from './yandex-rtb';
 import Link from 'next/link';
 import { DonateModal } from '../wallet/components/donate-modal';
+import TrackPreview from '../messages/components/track-preview';
+import PostWidgetPoll, { type PollWidgetData } from './post-widget-poll';
+import PostWidgetQuote, { type QuoteWidgetData } from './post-widget-quote';
+import ShareModal from './share-modal';
+
+
 
 type Id = string | number;
 type VoteDirection = 'up' | 'down';
@@ -26,6 +32,11 @@ export interface PostAuthor {
 
 export type PostImage = ImageViewerSlide;
 
+export type PostWidget =
+  | PollWidgetData
+  | QuoteWidgetData
+  | { type: 'music'; track_id: number | string };
+
 export interface PostData {
   author: PostAuthor;
   bookmarked_amount?: number | string | null;
@@ -42,8 +53,10 @@ export interface PostData {
   title?: string | null;
   user_vote_down?: string | null;
   user_vote_up?: string | null;
+  widgets?: PostWidget[] | null;
   youtube_video_id?: string | null;
 }
+
 
 export interface PostCardLang {
   adultContentWarning: string;
@@ -69,7 +82,6 @@ export interface PostCardProps {
   onEdit?: (post: PostData) => void;
   onNavigate?: (href: string, post: PostData) => void;
   onReport?: (post: PostData) => void;
-  onShare?: (url: string, post: PostData) => void;
   onTranslate?: (post: PostData) => void;
   onVote?: (post: PostData, direction: VoteDirection) => void;
   post: PostData;
@@ -169,7 +181,6 @@ export function PostCard({
   onEdit,
   onNavigate,
   onReport,
-  onShare,
   onTranslate,
   onVote,
   post,
@@ -201,10 +212,10 @@ export function PostCard({
       onEdit={onEdit}
       onNavigate={onNavigate}
       onReport={onReport}
-      onShare={onShare}
       onTranslate={onTranslate}
       onVote={onVote}
       post={post}
+
       renderIndex={renderIndex}
       shareBaseUrl={shareBaseUrl}
     />
@@ -222,7 +233,6 @@ function PostCardInner({
   onEdit,
   onNavigate,
   onReport,
-  onShare,
   onTranslate,
   onVote,
   post,
@@ -241,6 +251,8 @@ function PostCardInner({
   const [userVote, setUserVote] = useState<UserVoteState>(getInitialVote(post));
   const [closingImageIndex, setClosingImageIndex] = useState<number | null>(null);
   const closingImageTimerRef = useRef<number | null>(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+
 
   const strings = { ...DEFAULT_LANG, ...lang };
   const images = post.images ?? [];
@@ -400,23 +412,8 @@ function PostCardInner({
     }
   };
 
-  const handleShare = async () => {
-    onShare?.(shareUrl, post);
-    if (onShare) return;
-    if (callLegacy('share_modal', shareUrl)) return;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({ url: shareUrl });
-        return;
-      }
-
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
-      }
-    } catch (error) {
-      console.error('Share failed', error);
-    }
+  const handleShare = () => {
+    setIsShareOpen(true);
   };
 
   const handleTranslate = () => {
@@ -614,13 +611,48 @@ function PostCardInner({
           />
         )}
 
+        {post.widgets && post.widgets.length > 0 && (
+          <div className="flex flex-col gap-3 mt-3 mb-2 w-full">
+            {post.widgets.map((widget, i) => {
+              if (widget.type === 'music') {
+                return <TrackPreview key={`w-music-${i}`} trackId={widget.track_id} className="w-full !max-w-none bg-zinc-800/40 border-zinc-700/60" />;
+              }
+              if (widget.type === 'poll') {
+                return (
+                  <PostWidgetPoll
+                    key={`w-poll-${i}`}
+                    postId={Number(post.id)}
+                    type="poll"
+                    question={widget.question}
+                    options={widget.options}
+                    votes={widget.votes}
+                    total_votes={widget.total_votes}
+                    user_vote_option={widget.user_vote_option}
+                  />
+                );
+              }
+              if (widget.type === 'quote') {
+                return (
+                  <PostWidgetQuote
+                    key={`w-quote-${i}`}
+                    type="quote"
+                    post_id={widget.post_id}
+                    quote_data={widget.quote_data}
+                  />
+                );
+              }
+              return null;
+            })}
+          </div>
+        )}
+
         <div className="text-base lg:text-lg text-zinc-400 font-medium flex items-center">
           <div className="flex-grow flex items-center fill-zinc-400">
             <button
               type="button"
               id={`vtu${post.id}`}
               onClick={() => handleVote('up')}
-              className="inline-flex items-center duration-300 active:scale-95"
+              className="mr-1 inline-flex items-center duration-300 active:scale-95"
               aria-label="Vote up"
             >
               <SvgIcon
@@ -636,7 +668,7 @@ function PostCardInner({
               type="button"
               id={`vtd${post.id}`}
               onClick={() => handleVote('down')}
-              className="inline-flex items-center duration-300 active:scale-95"
+              className="ml-1 inline-flex items-center duration-300 active:scale-95"
               aria-label="Vote down"
             >
               <SvgIcon
@@ -662,23 +694,8 @@ function PostCardInner({
               </>
             )}
 
-            <button
-              type="button"
-              onClick={handleBookmark}
-              className="ml-3 inline-flex items-center gap-1 active:scale-95"
-              aria-label="Bookmark post"
-            >
-              <SvgIcon
-                id={isBookmarked ? 'IC-bookmark-filled' : 'IC-bookmark'}
-                className={cn(
-                  'w-6 h-6 cursor-pointer inline duration-300',
-                  isBookmarked
-                    ? 'fill-amber-500 hover:fill-amber-600'
-                    : 'fill-zinc-400 hover:fill-white',
-                )}
-              />
-              <span id={`bookmarked_amount${post.id}`}>{bookmarkedAmount}</span>
-            </button>
+
+
           </div>
 
           {post.tags && post.tags !== 'null' && post.tags !== '' && (
@@ -709,6 +726,21 @@ function PostCardInner({
           onNext={handleNextImage}
         />
       )}
+
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        shareUrl={shareUrl}
+        title={lang?.share || strings.share}
+        copyLabel={lang?.share || strings.share}
+        replyPostId={Number(post.id)}
+        replyPostPreview={{
+          authorName: post.author.name,
+          authorImg: post.author.img,
+          contentSnippet: (post.content ?? '').replace(/<[^>]*>/g, '').slice(0, 120),
+          firstImage: images[0]?.url,
+        }}
+      />
     </>
   );
 }
@@ -725,10 +757,10 @@ export default function PostsRenderer({
   onEdit,
   onNavigate,
   onReport,
-  onShare,
   onTranslate,
   onVote,
   posts,
+
   shareBaseUrl,
 }: PostsRendererProps) {
   const [donatePost, setDonatePost] = useState<PostData | null>(null);
@@ -755,10 +787,10 @@ export default function PostsRenderer({
             onEdit={onEdit}
             onNavigate={onNavigate}
             onReport={onReport}
-            onShare={onShare}
             onTranslate={onTranslate}
             onVote={onVote}
             shareBaseUrl={shareBaseUrl}
+
           />
         ))}
       </div>

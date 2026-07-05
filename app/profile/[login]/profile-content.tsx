@@ -1167,10 +1167,6 @@ export default function UserProfileContent({ login }: { login: string }) {
                       setReportTarget({ id: post.id, type: 2 });
                       setIsReportModalOpen(true);
                     }}
-                    onShare={(url) => {
-                      setShareUrl(url);
-                      setIsShareModalOpen(true);
-                    }}
                     onTranslate={translatePost}
                     onVote={handleVote}
                     posts={posts}

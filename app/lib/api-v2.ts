@@ -218,6 +218,11 @@ export class AncialAPI {
     return this.request<T>(`/posts/Vote.php?pid=${postId}&vt=${vote}`);
   }
 
+  static async pollVote(postId: number, optionIndex: number): Promise<{ votes: number[]; total_votes: number; user_vote_option: number | null }> {
+    const body = new URLSearchParams({ pid: String(postId), option: String(optionIndex) });
+    return this.request<{ votes: number[]; total_votes: number; user_vote_option: number | null }>('/posts/PollVote.php', { method: 'POST', body });
+  }
+
   static async postAction<T = unknown>(action: 'vote' | 'bookmark' | 'delete', params: Record<string, string | number>): Promise<T> {
     let endpoint = '';
     if (action === 'vote') endpoint = '/posts/Vote.php';
