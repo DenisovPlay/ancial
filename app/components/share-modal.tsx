@@ -192,7 +192,7 @@ export default function ShareModal({
 
             {/* Превью цитируемого поста */}
             {replyPostPreview && (
-              <div className="border border-zinc-700/60 rounded-2xl p-1.5 bg-zinc-800/40 flex gap-1.5 items-start">
+              <div className="border border-zinc-600/30 rounded-2xl p-1.5 bg-zinc-800/40 flex gap-1.5 items-start">
                 <div
                   className="w-6 h-6 rounded-full bg-cover bg-center shrink-0 border border-zinc-600/30"
                   style={{ backgroundImage: `url(${replyPostPreview.authorImg || '/includes/img/anlite/default_avatar.png'})` }}

@@ -684,6 +684,7 @@ export default function CreatePostContent() {
           tag={selectedTopic}
           text={content}
           title={title}
+          widgets={widgets}
         />
       </div>
 

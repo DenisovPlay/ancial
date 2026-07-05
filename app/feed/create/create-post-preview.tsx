@@ -1,3 +1,6 @@
+import TrackPreview from '../../messages/components/track-preview';
+import PostWidgetPoll from '../../components/post-widget-poll';
+
 type PreviewImage = {
   id: string;
   status: 'error' | 'uploaded' | 'uploading';
@@ -13,6 +16,11 @@ type PreviewStrings = {
   uploading: string;
 };
 
+export type PreviewWidget = {
+  type: 'poll' | 'music' | string;
+  [key: string]: any;
+};
+
 type CreatePostPreviewProps = {
   authorImage?: string | null;
   authorName?: string;
@@ -21,6 +29,7 @@ type CreatePostPreviewProps = {
   tag?: string;
   text?: string;
   title?: string;
+  widgets?: PreviewWidget[];
 };
 
 function cn(...classes: Array<string | false | null | undefined>) {
@@ -64,29 +73,19 @@ function PreviewAvatar({
   );
 }
 
-function PreviewImageBlock({
-  images,
-  strings,
-}: {
-  images: PreviewImage[];
-  strings: Pick<PreviewStrings, 'uploading'>;
-}) {
-  if (!images.length) {
-    return null;
-  }
+function PreviewImageBlock({ images, strings }: { images: PreviewImage[]; strings: PreviewStrings }) {
+  if (images.length === 0) return null;
 
   if (images.length === 1) {
-    const image = images[0];
-
     return (
-      <div className="mb-3 relative w-full h-64 md:h-96 rounded-3xl shadow overflow-hidden bg-zinc-800">
+      <div className="relative group w-full">
         <div
-          className="w-full h-full bg-center bg-contain bg-no-repeat"
-          style={{ backgroundImage: `url(${image.url})` }}
+          className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0 bg-zinc-800 bg-center bg-contain bg-no-repeat"
+          style={{ backgroundImage: `url(${images[0].url})` }}
         />
-        {image.status === 'uploading' && (
-          <div className="absolute inset-0 bg-zinc-900/70 flex items-center justify-center text-sm font-medium text-white backdrop-blur-sm">
-            {strings.uploading}
+        {images[0].status === 'uploading' && (
+          <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center">
+            <span className="text-white font-medium">{strings.uploading}</span>
           </div>
         )}
       </div>
@@ -94,9 +93,9 @@ function PreviewImageBlock({
   }
 
   return (
-    <div className="-mx-3 mb-3">
+    <div className="-mx-3">
       <div className="relative">
-        <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-700/60 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
+        <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
           <span className="flex items-center gap-1.5">
             <SvgIcon className="w-4 h-4 fill-white" id="IC-photos" />
             <span>{images.length}</span>
@@ -104,18 +103,15 @@ function PreviewImageBlock({
         </div>
 
         <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth scroll-pl-3 scroll-pr-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden before:block before:w-3 before:shrink-0 before:content-[''] after:block after:w-3 after:shrink-0 after:content-['']">
-          {images.map((image) => (
-            <div
-              key={image.id}
-              className="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] h-64 md:h-96 rounded-3xl shadow overflow-hidden bg-zinc-800 relative"
-            >
+          {images.map((img) => (
+            <div key={`prev-${img.id}`} className="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] relative group">
               <div
-                className="w-full h-full bg-center bg-contain bg-no-repeat"
-                style={{ backgroundImage: `url(${image.url})` }}
+                className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0 bg-zinc-800 bg-center bg-contain bg-no-repeat"
+                style={{ backgroundImage: `url(${img.url})` }}
               />
-              {image.status === 'uploading' && (
-                <div className="absolute inset-0 bg-zinc-900/70 flex items-center justify-center text-sm font-medium text-white backdrop-blur-sm">
-                  {strings.uploading}
+              {img.status === 'uploading' && (
+                <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center">
+                  <span className="text-white font-medium">{strings.uploading}</span>
                 </div>
               )}
             </div>
@@ -134,6 +130,7 @@ export default function CreatePostPreview({
   tag,
   text,
   title,
+  widgets,
 }: CreatePostPreviewProps) {
   const safeAuthorName = authorName?.trim() || strings.placeholderAuthor;
   const safeTitle = title?.trim() || strings.placeholderTitle;
@@ -143,7 +140,7 @@ export default function CreatePostPreview({
   return (
     <div
       id="postdiv-preview"
-      className="p-3 rounded-3xl bg-zinc-900 flex flex-col w-full shadow text-zinc-100 border border-zinc-600/30"
+      className="p-3 rounded-3xl bg-zinc-900 flex flex-col gap-3 w-full shadow text-zinc-100 border border-zinc-600/30"
     >
       <div className="text-sm lg:text-base text-zinc-400 font-medium flex items-center gap-1.5">
         <PreviewAvatar authorImage={authorImage} authorName={safeAuthorName} />
@@ -176,6 +173,31 @@ export default function CreatePostPreview({
       </div>
 
       <PreviewImageBlock images={images} strings={strings} />
+
+      {widgets && widgets.length > 0 && (
+        <div className="flex flex-col gap-3 w-full pointer-events-none">
+          {widgets.map((widget, i) => {
+            if (widget.type === 'music') {
+              return <TrackPreview key={`w-music-${i}`} trackId={widget.track_id} className="w-full !max-w-none bg-zinc-800/40 border-zinc-600/30" />;
+            }
+            if (widget.type === 'poll') {
+              return (
+                <PostWidgetPoll
+                  key={`w-poll-${i}`}
+                  postId={0}
+                  type="poll"
+                  question={widget.question}
+                  options={widget.options}
+                  votes={widget.options.map(() => 0)}
+                  total_votes={0}
+                  user_vote_option={null}
+                />
+              );
+            }
+            return null;
+          })}
+        </div>
+      )}
 
       <div className="text-base lg:text-lg text-zinc-400 font-medium flex items-center">
         <div className="flex-grow flex items-center fill-zinc-400">

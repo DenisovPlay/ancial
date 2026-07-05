@@ -50,14 +50,14 @@ export default function PostWidgetQuote({ post_id, quote_data }: PostWidgetQuote
   return (
     <Link
       href={postHref}
-      className="block mt-3 border border-zinc-700/60 rounded-3xl overflow-hidden bg-zinc-800/40 hover:bg-zinc-800/70 hover:border-zinc-600 transition-all duration-200 active:scale-[0.99]"
+      className="block border border-zinc-600/30 rounded-3xl overflow-hidden bg-zinc-800/40 hover:bg-zinc-800/70 hover:border-zinc-600 transition-all duration-200 active:scale-[0.99]"
     >
       <div className="flex gap-3 p-2">
         <div className="flex-1 min-w-0">
           {/* Автор */}
           <div className="flex items-center gap-1.5 mb-1">
             <div
-              className="w-7 h-7 rounded-full bg-cover bg-center shrink-0 border border-zinc-700/50"
+              className="w-7 h-7 rounded-full bg-cover bg-center shrink-0 border border-zinc-600/30"
               style={{ backgroundImage: `url(${quote_data.author.img || '/includes/img/anlite/default_avatar.png'})` }}
             />
             <span className="text-zinc-300 text-xs font-semibold truncate">{quote_data.author.name}</span>

@@ -451,7 +451,7 @@ function PostCardInner({
     <>
       <div
         id={`postdiv${post.id}`}
-        className="p-3 duration-300 rounded-3xl border border-zinc-600/30 bg-zinc-900 flex flex-col w-full shadow text-zinc-100"
+        className="p-3 duration-300 rounded-3xl border border-zinc-600/30 bg-zinc-900 flex flex-col gap-3 w-full shadow text-zinc-100"
       >
         <div className="text-sm lg:text-base text-zinc-400 font-medium flex items-center gap-1.5">
           <Link
@@ -506,7 +506,7 @@ function PostCardInner({
             )}
             <DropdownItem
               onClick={handleBookmark}
-              icon={isBookmarked ? 'IC-bookmark-filled' : 'IC-bookmark'}
+              icon="IC-bookmark"
               iconClassName={isBookmarked ? 'fill-amber-500' : undefined}
             >
               {isBookmarked ? strings.bookmarked : strings.tobookmarks}
@@ -523,21 +523,25 @@ function PostCardInner({
           </Dropdown>
         </div>
 
-        <div
-          id={`titleblock${post.id}`}
-          className="text-lg lg:text-xl text-zinc-100 font-bold"
-          dangerouslySetInnerHTML={{ __html: post.title ?? '' }}
-        />
+        {post.title && (
+          <div
+            id={`titleblock${post.id}`}
+            className="text-lg lg:text-xl text-zinc-100 font-bold"
+            dangerouslySetInnerHTML={{ __html: post.title ?? '' }}
+          />
+        )}
 
-        <div
-          id={`textblock${post.id}`}
-          className={cn(
-            'text-base lg:text-lg text-zinc-200 font-medium break-words',
-            isLongContent && !isExpanded && 'hideTextBlock',
-          )}
-          style={{ userSelect: 'text' }}
-          dangerouslySetInnerHTML={{ __html: post.content ?? '' }}
-        />
+        {post.content && (
+          <div
+            id={`textblock${post.id}`}
+            className={cn(
+              'text-base lg:text-lg text-zinc-200 font-medium break-words',
+              isLongContent && !isExpanded && 'hideTextBlock',
+            )}
+            style={{ userSelect: 'text' }}
+            dangerouslySetInnerHTML={{ __html: post.content ?? '' }}
+          />
+        )}
 
         {isLongContent && (
           <button
@@ -553,7 +557,7 @@ function PostCardInner({
         {images.length > 0 && (
           <>
             {images.length === 1 && (
-              <div className="mb-3">
+              <div>
                 <ImageTile
                   image={images[0]}
                   blur={flag(images[0].blur)}
@@ -564,16 +568,16 @@ function PostCardInner({
             )}
 
             {images.length >= 2 && (
-              <div className="-mx-3 mb-3">
+              <div className="-mx-3">
                 <div className="relative">
-                  <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-700/60 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
+                  <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
                     <span className="flex items-center gap-1.5">
                       <SvgIcon className="w-4 h-4 fill-white" id="IC-photos" />
                       <span>{images.length}</span>
                     </span>
                   </div>
 
-                  <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth scroll-pl-3 scroll-pr-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden before:block before:w-3 before:shrink-0 before:content-[''] after:block /after:w-3 after:shrink-0 after:content-['']">
+                  <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth scroll-pl-3 scroll-pr-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden before:block before:w-3 before:shrink-0 before:content-[''] after:block after:w-3 after:shrink-0 after:content-['']">
                     {images.map((image, index) => (
                       <div
                         key={`${post.id}-image-${index}`}
@@ -602,7 +606,7 @@ function PostCardInner({
 
         {post.youtube_video_id && (
           <iframe
-            className="w-full h-48 sm:h-54 md:h-64 lg:h-96 rounded-3xl shadow mb-3"
+            className="w-full h-48 sm:h-54 md:h-64 lg:h-96 rounded-3xl shadow"
             src={`https://www.youtube.com/embed/${post.youtube_video_id}`}
             title="YouTube video player"
             frameBorder="0"
@@ -612,10 +616,10 @@ function PostCardInner({
         )}
 
         {post.widgets && post.widgets.length > 0 && (
-          <div className="flex flex-col gap-3 mt-3 mb-2 w-full">
+          <div className="flex flex-col gap-3 w-full">
             {post.widgets.map((widget, i) => {
               if (widget.type === 'music') {
-                return <TrackPreview key={`w-music-${i}`} trackId={widget.track_id} className="w-full !max-w-none bg-zinc-800/40 border-zinc-700/60" />;
+                return <TrackPreview key={`w-music-${i}`} trackId={widget.track_id} className="w-full !max-w-none bg-zinc-800/40 border-zinc-600/30" />;
               }
               if (widget.type === 'poll') {
                 return (

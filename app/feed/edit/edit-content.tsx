@@ -728,6 +728,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
               tag={selectedTopic}
               text={content}
               title={title}
+              widgets={widgets}
             />
           </div>
         </>

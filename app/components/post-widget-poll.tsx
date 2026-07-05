@@ -74,7 +74,7 @@ export default function PostWidgetPoll({
   }, [isAuthenticated, loading, votes, total, userVote, postId]);
 
   return (
-    <div className="w-full border border-zinc-700/60 rounded-3xl overflow-hidden bg-zinc-800/40">
+    <div className="w-full border border-zinc-600/30 rounded-3xl overflow-hidden bg-zinc-800/40">
       <div className="p-3">
         <p className="text-zinc-100 font-semibold text-base leading-snug mb-3">{question}</p>
         <div className="flex flex-col gap-1.5">
@@ -89,7 +89,7 @@ export default function PostWidgetPoll({
                 disabled={!isAuthenticated || loading}
                 className={`relative w-full text-left rounded-3xl overflow-hidden border transition-all duration-300 active:scale-[0.98] ${isChosen
                   ? 'border-purple-500/80 bg-purple-900/20'
-                  : 'border-zinc-700/50 bg-zinc-800/50 hover:border-zinc-600'
+                  : 'border-zinc-600/30 bg-zinc-800/50 hover:border-zinc-600'
                   } ${(!isAuthenticated || loading) ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
                 aria-pressed={isChosen}
               >
