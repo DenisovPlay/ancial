@@ -156,6 +156,8 @@ export default function ImageViewerModal({
     }
   }, [isOpen]);
 
+  const activeImageUrl = activeImageIndex !== null ? images[activeImageIndex]?.url : undefined;
+
   useEffect(() => {
     if (images.length === 0 || activeImageIndex === null) return;
 
@@ -172,7 +174,7 @@ export default function ImageViewerModal({
     pinchStartDistanceRef.current = null;
     pinchStartScaleRef.current = MIN_IMAGE_SCALE;
     lastTapRef.current = null;
-  }, [activeImageIndex, images]);
+  }, [activeImageIndex, activeImageUrl]);
 
   const handleDoubleTapZoom = (position: Point) => {
     const stage = stageRef.current;

@@ -1894,11 +1894,13 @@ export default function MessagesContent() {
   const currentForeignUserIdRef = useRef(0);
   const currentMessageCacheKeyRef = useRef('');
 
-  const timelineItems = buildTimelineItems(messages, lang);
-  const dialogImageSlides = buildDialogImageSlides(messages);
-  const activeDialogImageIndex = activeDialogImageKey
-    ? dialogImageSlides.findIndex((image) => image.key === activeDialogImageKey)
-    : -1;
+  const timelineItems = useMemo(() => buildTimelineItems(messages, lang), [messages, lang]);
+  const dialogImageSlides = useMemo(() => buildDialogImageSlides(messages), [messages]);
+  const activeDialogImageIndex = useMemo(() => {
+    return activeDialogImageKey
+      ? dialogImageSlides.findIndex((image) => image.key === activeDialogImageKey)
+      : -1;
+  }, [activeDialogImageKey, dialogImageSlides]);
   const resolvedActiveDialogImageIndex = activeDialogImageIndex >= 0 ? activeDialogImageIndex : null;
   void dayLabelTick;
 
@@ -3856,31 +3858,33 @@ export default function MessagesContent() {
         </div>
       </div>
 
-      <ImageViewerModal
-        activeImageIndex={resolvedActiveDialogImageIndex}
-        images={dialogImageSlides}
-        isOpen={resolvedActiveDialogImageIndex !== null}
-        onClose={() => {
-          setActiveDialogImageKey(null);
-        }}
-        onNext={() => {
-          if (resolvedActiveDialogImageIndex === null || dialogImageSlides.length < 2) {
-            return;
-          }
+      {resolvedActiveDialogImageIndex !== null && (
+        <ImageViewerModal
+          activeImageIndex={resolvedActiveDialogImageIndex}
+          images={dialogImageSlides}
+          isOpen={resolvedActiveDialogImageIndex !== null}
+          onClose={() => {
+            setActiveDialogImageKey(null);
+          }}
+          onNext={() => {
+            if (resolvedActiveDialogImageIndex === null || dialogImageSlides.length < 2) {
+              return;
+            }
 
-          const nextIndex = (resolvedActiveDialogImageIndex + 1) % dialogImageSlides.length;
-          setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
-        }}
-        onPrev={() => {
-          if (resolvedActiveDialogImageIndex === null || dialogImageSlides.length < 2) {
-            return;
-          }
+            const nextIndex = (resolvedActiveDialogImageIndex + 1) % dialogImageSlides.length;
+            setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
+          }}
+          onPrev={() => {
+            if (resolvedActiveDialogImageIndex === null || dialogImageSlides.length < 2) {
+              return;
+            }
 
-          const nextIndex =
-            (resolvedActiveDialogImageIndex - 1 + dialogImageSlides.length) % dialogImageSlides.length;
-          setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
-        }}
-      />
+            const nextIndex =
+              (resolvedActiveDialogImageIndex - 1 + dialogImageSlides.length) % dialogImageSlides.length;
+            setActiveDialogImageKey(dialogImageSlides[nextIndex]?.key ?? null);
+          }}
+        />
+      )}
 
       <Modal
         isOpen={settingsModalOpen}
