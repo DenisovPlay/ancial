@@ -157,9 +157,11 @@ export default function CreatePostPreview({
         </button>
       </div>
 
-      <div id="titleblock-preview" className="text-lg lg:text-xl text-zinc-100 font-bold">
-        {safeTitle}
-      </div>
+      {title?.trim() && (
+        <div id="titleblock-preview" className="text-lg lg:text-xl text-zinc-100 font-bold">
+          {title.trim()}
+        </div>
+      )}
 
       <div
         id="textblock-preview"
@@ -207,9 +209,11 @@ export default function CreatePostPreview({
           <SvgIcon className="ml-3 w-6 h-6 inline" id="IC-comments" />
           <span>2</span>
         </div>
-        <span className="bg-zinc-700 text-zinc-200 rounded-2xl px-2 py-1 text-sm font-medium shadow cursor-default">
-          {safeTag}
-        </span>
+        {tag?.trim() && tag.trim() !== 'null' && (
+          <span className="bg-zinc-700 text-zinc-200 rounded-2xl px-2 py-1 text-sm font-medium shadow cursor-default">
+            {tag.trim()}
+          </span>
+        )}
       </div>
     </div>
   );

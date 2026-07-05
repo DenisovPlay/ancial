@@ -259,10 +259,34 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         setContent(
           decodeHtmlToTextareaValue(normalizedPost.original_content ?? normalizedPost.content ?? ''),
         );
-        setSelectedTopic(normalizedPost.tags ?? '');
+        setSelectedTopic(normalizedPost.tags === 'null' ? '' : (normalizedPost.tags ?? ''));
         setImages(toDraftImages(normalizedPost.images));
+
+        // Enrich widgets
         if (normalizedPost.widgets && Array.isArray(normalizedPost.widgets)) {
-          setWidgets(normalizedPost.widgets);
+          const enrichedWidgets = await Promise.all(
+            normalizedPost.widgets.map(async (widget) => {
+              const wAny = widget as any;
+              if (widget.type === 'music' && (!wAny.track_name || !wAny.artist_name)) {
+                try {
+                  const res = await AncialAPI.getTrack<{ track?: any }>(wAny.track_id);
+                  const trackData = res?.track;
+                  if (trackData) {
+                    return {
+                      ...widget,
+                      track_name: trackData.title || trackData.name || '',
+                      artist_name: trackData.artist || '',
+                      track_img: trackData.artwork?.[0]?.src || trackData.img || '',
+                    };
+                  }
+                } catch (e) {
+                  console.error('Failed to enrich widget track', wAny.track_id, e);
+                }
+              }
+              return widget;
+            })
+          );
+          setWidgets(enrichedWidgets);
         }
 
       } catch (nextError) {
@@ -418,7 +442,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         data: content,
         id: postId,
         photos,
-        tags: selectedTopic,
+        tags: selectedTopic || 'null',
         title,
         widgets: serializedWidgets,
       });
@@ -591,12 +615,12 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
 
               {/* Прикреплённые виджеты */}
               {widgets.length > 0 && (
-                <div className="px-3 pb-1 flex flex-col gap-2">
+                <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto overflow-y-hidden">
                   {widgets.map((w, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-2xl px-3 py-2 border border-zinc-700/40">
+                    <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-3xl border border-zinc-700/40">
                       {w.type === 'music' ? (
                         <div
-                          className="w-6 h-6 rounded-md bg-cover bg-center shrink-0 bg-zinc-700"
+                          className="w-6 h-6 rounded-full bg-cover bg-center shrink-0 bg-zinc-700"
                           style={{ backgroundImage: `url(${w.track_img})` }}
                         />
                       ) : (
@@ -611,7 +635,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
                       <span className="text-sm text-zinc-200 truncate flex-1">
                         {w.type === 'music' ? `${w.artist_name} — ${w.track_name}` : w.type === 'poll' ? w.question : strings.reply_to_post}
                       </span>
-                      <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95">
+                      <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95 cursor-pointer">
                         <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />
                       </button>
                     </div>
@@ -667,7 +691,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
                   value={selectedTopic}
                   onChange={(event) => setSelectedTopic(event.target.value)}
                 >
-                  <option value="" disabled>
+                  <option value="">
                     {strings.choisetopic}
                   </option>
                   {topicOptions.map((topicOption) => (
