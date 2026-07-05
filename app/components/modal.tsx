@@ -201,7 +201,7 @@ export default function Modal({
         )}
         <div
           className={cn(
-            'overflow-y-auto',
+            'overflow-y-auto overflow-x-hidden',
             showHeader ? 'p-3 pt-[64px]' : 'p-0',
             bodyClassName,
           )}

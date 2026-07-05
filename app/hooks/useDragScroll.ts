@@ -13,56 +13,84 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
   const didMoveRef = useRef(false);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el || !enabled) return;
+    if (!enabled) return;
 
-    if ('ontouchstart' in window && navigator.maxTouchPoints > 2) return;
+    // Небольшая задержка чтобы Portal успел отрендериться (Modal.tsx использует rAF)
+    const timer = setTimeout(() => {
+      const el = ref.current;
+      if (!el) return;
 
-    let isDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
+      // На тач-устройствах нативный scroll работает лучше
+      if ('ontouchstart' in window && navigator.maxTouchPoints > 2) return;
 
-    const onMouseDown = (e: MouseEvent) => {
-      isDown = true;
-      didMoveRef.current = false;
-      el.classList.add('dragging');
-      startX = e.clientX;
-      scrollLeft = el.scrollLeft;
-      e.preventDefault();
-    };
+      let isDown = false;
+      let startX = 0;
+      let scrollLeft = 0;
 
-    const onMouseUp = () => {
-      if (!isDown) return;
-      isDown = false;
-      el.classList.remove('dragging');
-    };
+      const onMouseDown = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('button, a, input, select, textarea')) return;
 
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDown) return;
-      const dx = e.clientX - startX;
-      el.scrollLeft = scrollLeft - dx * speed;
-      if (Math.abs(dx) > 3) {
-        didMoveRef.current = true;
-      }
-    };
+        isDown = true;
+        didMoveRef.current = false;
+        startX = e.clientX;
+        scrollLeft = el.scrollLeft;
 
-    const onClickCapture = (e: MouseEvent) => {
-      if (didMoveRef.current) {
+        el.classList.add('dragging');
+        el.style.userSelect = 'none';
+        el.style.cursor = 'grabbing';
+
         e.preventDefault();
-        e.stopPropagation();
-      }
-    };
+      };
 
-    el.addEventListener('mousedown', onMouseDown);
-    el.addEventListener('click', onClickCapture, true);
-    window.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('mousemove', onMouseMove);
+      const onMouseUp = () => {
+        if (!isDown) return;
+        isDown = false;
+        el.classList.remove('dragging');
+        el.style.userSelect = '';
+        el.style.cursor = '';
+      };
+
+      const onMouseMove = (e: MouseEvent) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const dx = e.clientX - startX;
+        el.scrollLeft = scrollLeft - dx * speed;
+        if (Math.abs(dx) > 3) {
+          didMoveRef.current = true;
+        }
+      };
+
+      const onClickCapture = (e: MouseEvent) => {
+        if (didMoveRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+
+      el.addEventListener('mousedown', onMouseDown);
+      el.addEventListener('click', onClickCapture, true);
+      document.addEventListener('mouseup', onMouseUp);
+      document.addEventListener('mousemove', onMouseMove);
+
+      // Сохраняем cleanup на элементе чтобы вызвать его из внешнего return
+      type ElWithCleanup = HTMLDivElement & { _dragCleanup?: () => void };
+      (el as ElWithCleanup)._dragCleanup = () => {
+        el.removeEventListener('mousedown', onMouseDown);
+        el.removeEventListener('click', onClickCapture, true);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.removeEventListener('mousemove', onMouseMove);
+        delete (el as ElWithCleanup)._dragCleanup;
+      };
+    }, 50);
 
     return () => {
-      el.removeEventListener('mousedown', onMouseDown);
-      el.removeEventListener('click', onClickCapture, true);
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('mousemove', onMouseMove);
+      clearTimeout(timer);
+      const el = ref.current;
+      if (el) {
+        type ElWithCleanup = HTMLDivElement & { _dragCleanup?: () => void };
+        (el as ElWithCleanup)._dragCleanup?.();
+      }
     };
   }, [enabled, speed]);
 

@@ -56,7 +56,7 @@ export default function ShareModal({
   onReply,
 }: ShareModalProps) {
   const { lang } = useAuth();
-  const dialogsScrollRef = useDragScroll({ speed: 1.5 });
+  const dialogsScrollRef = useDragScroll({ speed: 1.5, enabled: isOpen });
   const [dialogs, setDialogs] = useState<DialogListItem[]>([]);
   const [selectedDialog, setSelectedDialog] = useState<DialogListItem | null>(null);
   const [comment, setComment] = useState('');
@@ -155,22 +155,22 @@ export default function ShareModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title || lang?.share || 'Поделиться'} width="md" bodyClassName="!px-0 !pb-0">
-      <div className="flex flex-col gap-3 justify-center items-center">
+      <div className="flex flex-col gap-3 w-full">
         <span className="hidden">{shareUrl}</span>
 
         {/* Список друзей (диалогов) */}
         <div
           ref={dialogsScrollRef}
           className={cn(
-            "w-full overflow-x-auto pb-2 pt-2 -mt-2 scrollbar-hide px-3 drag-scroll",
-            (!selectedDialog && !isReplying && dialogs.length > 0) ? "flex flex-nowrap" : "hidden"
+            "w-full overflow-x-auto pb-2 pt-2 -mt-2 scrollbar-hide px-3 drag-scroll cursor-grab",
+            (!selectedDialog && !isReplying && dialogs.length > 0) ? "block" : "hidden"
           )}
         >
           <div className="flex flex-row flex-nowrap gap-3 flex-shrink-0">
             {dialogs.map((dialog) => (
               <div
                 key={dialog.id}
-                className="flex flex-col items-center gap-1 cursor-pointer active:scale-95 duration-300 user-select-none shrink-0 w-[64px]"
+                className="flex flex-col items-center gap-1 cursor-pointer active:scale-95 duration-300 select-none shrink-0 w-[64px]"
                 onClick={() => setSelectedDialog(dialog)}
               >
                 <div className={cn(
