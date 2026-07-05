@@ -95,7 +95,7 @@ export default function PostWidgetPoll({
               >
                 {/* Progress bar */}
                 <div
-                  className={`absolute inset-y-0 left-0 transition-all duration-500 ease-out rounded-xl ${isChosen ? 'bg-purple-500/25' : 'bg-zinc-600/30'
+                  className={`absolute inset-y-0 left-0 transition-all duration-500 ease-out rounded-3xl ${isChosen ? 'bg-purple-500/25' : 'bg-zinc-600/30'
                     }`}
                   style={{ width: `${pct}%` }}
                 />
