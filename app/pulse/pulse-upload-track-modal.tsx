@@ -147,6 +147,8 @@ export default function PulseUploadTrackModal({
   const [name, setName] = useState('');
   const [statusText, setStatusText] = useState('');
   const [trackId, setTrackId] = useState('');
+  const [genre, setGenre] = useState('');
+  const [status, setStatus] = useState('1');
   const isEditingExistingTrack = Boolean(track);
 
   const setPreviewUrl = useCallback((url: string) => {
@@ -181,6 +183,8 @@ export default function PulseUploadTrackModal({
     setName('');
     setStatusText('');
     setTrackId('');
+    setGenre('');
+    setStatus('1');
   }, []);
 
   useEffect(() => {
@@ -210,6 +214,8 @@ export default function PulseUploadTrackModal({
     setName(initialState.name);
     setStatusText(lang?.ready || 'Готово');
     setTrackId(initialState.trackId);
+    setGenre(initialState.genre);
+    setStatus(initialState.status);
   }, [isOpen, reset, track]);
 
   useEffect(() => {
@@ -268,6 +274,8 @@ export default function PulseUploadTrackModal({
         lang: trackLang,
         name,
         trackId,
+        genre,
+        status,
       });
 
       const payloadObj = Object.fromEntries(payload.entries());
@@ -289,7 +297,7 @@ export default function PulseUploadTrackModal({
     } finally {
       setIsSaving(false);
     }
-  }, [artist, coverUrl, explicit, isEditingExistingTrack, trackLang, name, onClose, onUploaded, showNote, trackId]);
+  }, [artist, coverUrl, explicit, isEditingExistingTrack, trackLang, name, onClose, onUploaded, showNote, trackId, genre, status]);
 
   const handleAudioChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -370,6 +378,8 @@ export default function PulseUploadTrackModal({
               lang: trackLang,
               name,
               trackId,
+              genre,
+              status,
             });
             const payloadObj = Object.fromEntries(payload.entries());
             const response = await AncialAPI.pulseManagement<{ message?: string }>('track', 'update', payloadObj);
@@ -393,7 +403,7 @@ export default function PulseUploadTrackModal({
     } finally {
       setIsCoverUploading(false);
     }
-  }, [artist, explicit, isEditingExistingTrack, isSaved, trackLang, name, onUploaded, setPreviewUrl, showNote, trackId]);
+  }, [artist, explicit, isEditingExistingTrack, isSaved, trackLang, name, onUploaded, setPreviewUrl, showNote, trackId, genre, status]);
 
   const canUpdate = Boolean(trackId) && isSaved && !isSaving && !isAudioUploading && !isCoverUploading;
   const cover = coverPreview || coverUrl;

@@ -27,6 +27,8 @@ export type PulseTrackEditMeta = {
   lang?: string | null;
   sid?: number | string | null;
   title?: string | null;
+  genre?: string | null;
+  status?: number | string | null;
 };
 
 export type PulseTrackOwnerUserMeta = {
@@ -40,6 +42,8 @@ export type PulseTrackEditInitialState = {
   lang: string;
   name: string;
   trackId: string;
+  genre: string;
+  status: string;
 };
 
 export type PulsePlaylistActionTarget = {
@@ -264,6 +268,8 @@ export function getPulseTrackEditInitialState(track: PulseTrackEditMeta): PulseT
     lang: String(track.lang ?? '').trim() || '--',
     name: String(track.title ?? '').trim(),
     trackId: String(track.sid ?? '').trim(),
+    genre: String(track.genre ?? '').trim(),
+    status: String(track.status ?? '1').trim(),
   };
 }
 
@@ -274,6 +280,8 @@ export type PulseTrackUploadPayloadInput = {
   lang?: string | null;
   name?: string | null;
   trackId: string | number;
+  genre?: string | null;
+  status?: string | number | null;
 };
 
 export function getPulseTrackUploadPayload(input: PulseTrackUploadPayloadInput, langObj?: Record<string, string>) {
@@ -288,7 +296,8 @@ export function getPulseTrackUploadPayload(input: PulseTrackUploadPayloadInput, 
   payload.set('explicit', explicit === '' ? '0' : explicit);
   payload.set('id', String(input.trackId ?? '').trim());
   payload.set('src', String(input.trackId ?? '').trim());
-  payload.set('genre', '');
+  payload.set('genre', input.genre != null ? String(input.genre).trim() : '');
+  payload.set('status', input.status != null ? String(input.status).trim() : '1');
   payload.set('artists_ids', '');
   payload.set('duration', '0');
 

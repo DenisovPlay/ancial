@@ -23,6 +23,7 @@ export type PulseTrack = {
   blockedin?: string[] | string | null;
   explicit?: boolean | number | string | null;
   lang?: string | null;
+  genre?: string | null;
   listens?: number | string | null;
   mood?: string | null;
   sid?: number | string | null;

@@ -269,14 +269,16 @@ export default function PulseCreateUploadPage() {
 
           <div className="flex flex-col w-full -mt-1.5">
             <span className="text-zinc-400 pl-4 z-20 text-sm">{lang?.albumlang || 'Язык альбома (опц.)'}</span>
-            <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
-              <select value={albumLang} onChange={e => setAlbumLang(e.target.value)} className="bg-transparent w-full focus:ring-0 focus:outline-none pl-2 text-zinc-200 placeholder-zinc-600 cursor-pointer">
-                <option value="" disabled>{lang?.tracklang || 'Язык'}</option>
-                <option value="--">{lang?.tracklangNo || 'Без слов'}</option>
-                <option value="RU">{lang?.tracklangRu || 'Русский'}</option>
-                <option value="EN">{lang?.tracklangEn || 'Английский'}</option>
-              </select>
-            </div>
+            <select
+              value={albumLang}
+              onChange={e => setAlbumLang(e.target.value)}
+              className="flex bg-zinc-800/90 rounded-3xl w-full px-3 h-12 -mt-3 z-10 border border-zinc-600/30 focus:ring-0 focus:outline-none text-zinc-200 cursor-pointer"
+            >
+              <option value="" disabled className="bg-zinc-800 text-zinc-200">{lang?.tracklang || 'Язык'}</option>
+              <option value="--" className="bg-zinc-800 text-zinc-200">{lang?.tracklangNo || 'Без слов'}</option>
+              <option value="RU" className="bg-zinc-800 text-zinc-200">{lang?.tracklangRu || 'Русский'}</option>
+              <option value="EN" className="bg-zinc-800 text-zinc-200">{lang?.tracklangEn || 'Английский'}</option>
+            </select>
           </div>
         </div>
 
