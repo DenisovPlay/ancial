@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AncialAPI, type WalletMerchant, type WalletMerchantStats } from '../../lib/api-v2';
+import { cache } from '../../lib/cache.ts';
 
 export default function MerchantContent() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function MerchantContent() {
       setMerchants(fetchedMerchants);
       setStats(fetchedStats);
       setError(null);
-      localStorage.setItem('wallet_merchants_cache', JSON.stringify({ merchants: fetchedMerchants, stats: fetchedStats }));
+      cache.set('wallet_merchants_cache', { merchants: fetchedMerchants, stats: fetchedStats }, { category: 'wallet', subcategory: 'merchants' });
     } catch (err: any) {
       if (merchants.length === 0) setError(err.message || (lang?.error_loading_merchant_panel || 'Ошибка загрузки панели мерчанта'));
     } finally {
@@ -49,19 +50,14 @@ export default function MerchantContent() {
       return;
     }
 
-    const cached = localStorage.getItem('wallet_merchants_cache');
+    const parsed = cache.get<any>('wallet_merchants_cache', { category: 'wallet', subcategory: 'merchants' });
     let hasCache = false;
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed && Array.isArray(parsed.merchants)) {
-          setMerchants(parsed.merchants);
-          if (parsed.stats) setStats(parsed.stats);
-          hasCache = true;
-          setLoading(false);
-        }
-      } catch (e) {
-        console.error('Failed to parse merchants cache', e);
+    if (parsed) {
+      if (Array.isArray(parsed.merchants)) {
+        setMerchants(parsed.merchants);
+        if (parsed.stats) setStats(parsed.stats);
+        hasCache = true;
+        setLoading(false);
       }
     }
 

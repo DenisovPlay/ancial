@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { AncialAPI } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 
 interface Friend {
   id: string | number;
@@ -84,10 +85,9 @@ function FriendsContent() {
   const fetchFriends = useCallback(async () => {
     try {
       if (!searchQuery) {
-        const cached = localStorage.getItem('friends_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          setFriends(Array.isArray(parsed) ? parsed : []);
+        const parsed = cache.get<any[]>('friends_cache', { category: 'friends', subcategory: 'list' });
+        if (parsed) {
+          setFriends(parsed);
           setIsLoading(false);
         } else {
           setIsLoading(true);
@@ -102,7 +102,7 @@ function FriendsContent() {
       setFriends(fetchedFriends);
 
       if (!searchQuery && fetchedFriends.length > 0) {
-        localStorage.setItem('friends_cache', JSON.stringify(fetchedFriends));
+        cache.set('friends_cache', fetchedFriends, { category: 'friends', subcategory: 'list' });
       }
 
     } catch (error) {

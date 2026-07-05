@@ -8,6 +8,7 @@ import Modal from '../../components/modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
+import { cache } from '../../lib/cache.ts';
 import { SvgIcon } from '../../feed/editor-shared';
 
 function flag(value: boolean | number | string | null | undefined) {
@@ -165,7 +166,7 @@ export default function SecuritySettingsPage() {
     setIsSavingPassword(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = cache.get<string>('token');
       const params = new URLSearchParams();
 
       const responseText = await AncialAPI.securityAction<string>('change_password', {

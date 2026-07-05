@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useRef, useState, useEffect } from 'react';
 import { getLangFromCache, saveLangToCache } from '../lib/lang';
 import { restoreLegacyAuthSession } from '../lib/auth-fetch';
+import { cache } from '../lib/cache.ts';
 
 // Типизация пользователя на основе данных обоих методов (check.php и info.php)
 export interface User {
@@ -137,7 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         window.GlobalWS?.init();
       } else {
         // Разлогинило на сервере (или сессии нет). Пробуем войти по токену
-        const token = localStorage.getItem('token');
+        const token = cache.get<string>('token');
         if (token) {
           const restored = await restoreLegacyAuthSession(token);
 
@@ -169,13 +170,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 window.GlobalWS?.init();
               } else {
                 applyAuthState(false, null);
-                localStorage.removeItem('token');
+                cache.remove('token');
               }
             }
           } else {
             // Ошибка авторизации по токену (например, просрочен)
             applyAuthState(false, null);
-            localStorage.removeItem('token');
+            cache.remove('token');
           }
         } else {
           // Ни сессии, ни токена
@@ -231,8 +232,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [checkAuth]);
 
   const logout = async () => {
-    // Удаляем токен из локального хранилища
-    localStorage.removeItem('token');
+    // Удаляем токен и очищаем кэш
+    cache.remove('token');
+    cache.clear();
     
     try {
       // ОБЯЗАТЕЛЬНО убиваем сессию на сервере (PHP cookie), 

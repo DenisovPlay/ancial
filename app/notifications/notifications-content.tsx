@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 
 interface Notification {
   id: string;
@@ -26,9 +27,9 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
       try {
-        const cached = localStorage.getItem('notifications_cache');
-        if (cached) {
-          setNotifications(JSON.parse(cached));
+        const parsed = cache.get<any[]>('notifications_cache', { category: 'notifications', subcategory: 'list' });
+        if (parsed) {
+          setNotifications(parsed);
           setIsLoading(false);
         } else {
           setIsLoading(true);
@@ -39,7 +40,7 @@ export default function NotificationsPage() {
         if (data?.status === 'success' || data?.notifications || Array.isArray(data)) {
           const notifs = data.notifications || (Array.isArray(data) ? data : []);
           setNotifications(notifs);
-          localStorage.setItem('notifications_cache', JSON.stringify(notifs));
+          cache.set('notifications_cache', notifs, { category: 'notifications', subcategory: 'list' });
         }
       } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -58,7 +59,7 @@ export default function NotificationsPage() {
     try {
       await AncialAPI.clearNotifications();
       setNotifications([]);
-      localStorage.setItem('notifications_cache', JSON.stringify([]));
+      cache.set('notifications_cache', [], { category: 'notifications', subcategory: 'list' });
     } catch (error) {
       console.error('Error clearing notifications:', error);
     }

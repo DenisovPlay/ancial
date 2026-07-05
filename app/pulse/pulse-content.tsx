@@ -11,6 +11,7 @@ import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { AncialAPI } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 import {
   getPulseBackgroundColorByMood,
   PulseLegalFooter,
@@ -130,58 +131,21 @@ function decodeHtmlEntities(value: string | null | undefined) {
 }
 
 function readJsonCache<T>(key: string): T | null {
-  if (typeof window === 'undefined') return null;
-
-  const rawValue = window.localStorage.getItem(key);
-  if (!rawValue) return null;
-
-  try {
-    return JSON.parse(rawValue) as T;
-  } catch {
-    return null;
-  }
+  return cache.get<T>(key, { category: 'pulse' });
 }
 
 function writeJsonCache(key: string, value: unknown) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore storage issues
-  }
+  cache.set(key, value, { category: 'pulse' });
 }
 
 function readListenedCache(): RecentlyListenedState {
-  if (typeof window === 'undefined') return null;
-
-  const rawValue = window.localStorage.getItem(HOME_CACHE_KEYS.listened);
-  if (!rawValue) return null;
-  if (rawValue === 'empty') return 'empty';
-
-  try {
-    const parsed = JSON.parse(rawValue) as unknown;
-    return Array.isArray(parsed) ? parsed as PulseHomePlaylistCard[] : null;
-  } catch {
-    return null;
-  }
+  const cached = cache.get<unknown>(HOME_CACHE_KEYS.listened, { category: 'pulse', subcategory: 'listened' });
+  if (cached === 'empty') return 'empty';
+  return Array.isArray(cached) ? cached as PulseHomePlaylistCard[] : null;
 }
 
 function writeListenedCache(value: RecentlyListenedState) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    if (value === 'empty') {
-      window.localStorage.setItem(HOME_CACHE_KEYS.listened, 'empty');
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      window.localStorage.setItem(HOME_CACHE_KEYS.listened, JSON.stringify(value));
-    }
-  } catch {
-    // ignore storage issues
-  }
+  cache.set(HOME_CACHE_KEYS.listened, value, { category: 'pulse', subcategory: 'listened' });
 }
 
 
@@ -860,9 +824,7 @@ export default function PulseContent() {
   }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
 
   const refreshHomeTracksAfterMutation = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      Object.values(TRACK_CACHE_KEYS).forEach((key) => window.localStorage.removeItem(key));
-    }
+    Object.values(TRACK_CACHE_KEYS).forEach((key) => cache.remove(key, { category: 'pulse', subcategory: 'tracks' }));
 
     setTracksReloadToken((token) => token + 1);
   }, []);

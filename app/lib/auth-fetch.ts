@@ -1,3 +1,5 @@
+import { cache } from './cache.ts';
+
 const FALLBACK_ORIGIN = 'https://ancial.local';
 export const AUTH_SESSION_RESTORED_EVENT = 'ancial-auth-session-restored';
 
@@ -59,10 +61,8 @@ export function isLegacyNotLoggedInResponseText(value: string) {
 }
 
 export function getStoredAuthToken() {
-  if (typeof window === 'undefined') return '';
-
   try {
-    return (window.localStorage.getItem('token') || '').trim();
+    return (cache.get<string>('token') || '').trim();
   } catch {
     return '';
   }

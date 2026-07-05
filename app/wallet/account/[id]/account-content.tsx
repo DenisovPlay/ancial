@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { AncialAPI, type WalletAccount, type WalletTransaction } from '../../../lib/api-v2';
+import { cache } from '../../../lib/cache.ts';
 import Modal from '../../../components/modal';
 import { TransactionItem, TransactionDetailsModal } from '../../components/transaction-item';
 
@@ -70,7 +71,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       if (found) {
         setCurrentAccount(found);
         setError(null);
-        localStorage.setItem(`wallet_account_cache_${accountId}`, JSON.stringify(found));
+        cache.set(`wallet_account_cache_${accountId}`, found, { category: 'wallet', subcategory: 'accounts' });
       } else {
         if (!currentAccount) setError(lang?.account_not_found_or_restricted || 'Счёт не найден или доступ ограничен');
       }
@@ -89,7 +90,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       });
       const fetchedTrans = response.transactions || [];
       setTransactions(fetchedTrans);
-      localStorage.setItem(`wallet_account_trans_cache_${accountId}`, JSON.stringify(fetchedTrans));
+      cache.set(`wallet_account_trans_cache_${accountId}`, fetchedTrans, { category: 'wallet', subcategory: 'transactions' });
     } catch (err: unknown) {
       console.error('Failed to load account transactions:', err);
     }
@@ -103,32 +104,18 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       return;
     }
 
-    const cachedAccount = localStorage.getItem(`wallet_account_cache_${accountId}`);
-    const cachedTrans = localStorage.getItem(`wallet_account_trans_cache_${accountId}`);
+    const parsedAccount = cache.get<WalletAccount>(`wallet_account_cache_${accountId}`, { category: 'wallet', subcategory: 'accounts' });
+    const parsedTrans = cache.get<WalletTransaction[]>(`wallet_account_trans_cache_${accountId}`, { category: 'wallet', subcategory: 'transactions' });
     let hasCache = false;
 
-    if (cachedAccount) {
-      try {
-        const parsedAccount = JSON.parse(cachedAccount);
-        if (parsedAccount && parsedAccount.id) {
-          setCurrentAccount(parsedAccount);
-          hasCache = true;
-          setLoading(false);
-        }
-      } catch (e) {
-        console.error('Failed to parse cached account:', e);
-      }
+    if (parsedAccount && parsedAccount.id) {
+      setCurrentAccount(parsedAccount);
+      hasCache = true;
+      setLoading(false);
     }
 
-    if (cachedTrans) {
-      try {
-        const parsedTrans = JSON.parse(cachedTrans);
-        if (Array.isArray(parsedTrans)) {
-          setTransactions(parsedTrans);
-        }
-      } catch (e) {
-        console.error('Failed to parse cached account transactions:', e);
-      }
+    if (Array.isArray(parsedTrans)) {
+      setTransactions(parsedTrans);
     }
 
     loadData(!hasCache);

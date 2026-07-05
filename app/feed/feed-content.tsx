@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { AncialAPI } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 import { cn, SvgIcon } from './editor-shared';
 import FeedPostSkeleton from './feed-post-skeleton';
 
@@ -66,34 +67,18 @@ function getFeedCacheKey(
 }
 
 function readFeedCache(key: string): FeedCacheEntry | null {
-  if (typeof window === 'undefined') return null;
+  const parsed = cache.get<FeedCacheEntry>(key, { category: 'feed', subcategory: 'posts' });
+  if (!parsed || !Array.isArray(parsed.posts)) return null;
 
-  try {
-    const cached = window.localStorage.getItem(key);
-    if (!cached) return null;
-
-    const parsed = JSON.parse(cached) as Partial<FeedCacheEntry>;
-    if (!Array.isArray(parsed.posts)) return null;
-
-    return {
-      currentLastId: parsed.currentLastId ?? 0,
-      hasMorePages: typeof parsed.hasMorePages === 'boolean' ? parsed.hasMorePages : true,
-      posts: parsed.posts,
-    };
-  } catch (error) {
-    console.error('Failed to read feed cache', error);
-    return null;
-  }
+  return {
+    currentLastId: parsed.currentLastId ?? 0,
+    hasMorePages: typeof parsed.hasMorePages === 'boolean' ? parsed.hasMorePages : true,
+    posts: parsed.posts,
+  };
 }
 
 function writeFeedCache(key: string, value: FeedCacheEntry) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error('Failed to write feed cache', error);
-  }
+  cache.set(key, value, { category: 'feed', subcategory: 'posts', ttl: 5 * 60 * 1000 });
 }
 
 // Removed local api helpers

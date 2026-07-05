@@ -88,6 +88,15 @@ export default function SettingsPage() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-amber-500" viewBox="0 0 48 48"><use href={`#IC-notification`}></use></svg>
               }
             />
+
+            <SettingsItem 
+              href="/settings/cache"
+              title={lang?.cache_settings || 'Память'}
+              iconBgClass="bg-purple-500/10"
+              icon={
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-purple-500" viewBox="0 0 48 48"><use href={`#IC-database`}></use></svg>
+              }
+            />
           </>
         )}
 

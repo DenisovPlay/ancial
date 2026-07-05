@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import { cache } from '../lib/cache.ts';
 
 export default function SignupContent() {
   const [login, setLogin] = useState('');
@@ -81,7 +82,7 @@ export default function SignupContent() {
       if (!loginData.success) {
         router.push('/login');
       } else {
-        localStorage.setItem('token', loginData.data?.token || '');
+        cache.set('token', loginData.data?.token || '', { category: 'profile' });
         await checkAuth();
         router.push('/');
       }

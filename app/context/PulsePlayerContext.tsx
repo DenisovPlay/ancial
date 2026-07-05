@@ -12,6 +12,7 @@ import React, {
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse/pulse-image';
 import PulsePlaylistEditorModal from '../pulse/pulse-playlist-editor-modal';
 import { PulseModal } from '../pulse/pulse-modal';
@@ -254,7 +255,7 @@ function buildMediaArtwork(track: PulseTrack | null) {
 function readSavedVolume() {
   if (typeof window === 'undefined') return 0.7;
 
-  const savedVolume = Number.parseFloat(window.localStorage.getItem('pulse-volume') || '');
+  const savedVolume = Number.parseFloat(cache.get<string>('pulse-volume') || '');
   if (!Number.isFinite(savedVolume)) return 0.7;
   return clamp(savedVolume, 0, 1);
 }
@@ -760,11 +761,8 @@ function shouldDisableWebAudioForDevice() {
 function readSavedEqGains() {
   if (typeof window === 'undefined') return [0, 0, 0, 0, 0];
   try {
-    const saved = window.localStorage.getItem('pulse-eq-bands');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length === 5) return parsed;
-    }
+    const parsed = cache.get<number[]>('pulse-eq-bands');
+    if (Array.isArray(parsed) && parsed.length === 5) return parsed;
   } catch { }
   return [0, 0, 0, 0, 0];
 }
@@ -909,9 +907,7 @@ export function PulsePlayerProvider({
       const newGains = [...prev];
       newGains[index] = nextGain;
 
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('pulse-eq-bands', JSON.stringify(newGains));
-      }
+      cache.set('pulse-eq-bands', newGains, { category: 'pulse' });
       return newGains;
     });
 
@@ -923,9 +919,7 @@ export function PulsePlayerProvider({
   const resetEqGains = useCallback(() => {
     const newGains = [0, 0, 0, 0, 0];
     setEqGains(newGains);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('pulse-eq-bands', JSON.stringify(newGains));
-    }
+    cache.set('pulse-eq-bands', newGains, { category: 'pulse' });
     eqFiltersRef.current.forEach((filter) => {
       filter.gain.value = 0;
     });
@@ -1831,9 +1825,7 @@ export function PulsePlayerProvider({
       audioRef.current.volume = resolvedVolume;
     }
 
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('pulse-volume', String(resolvedVolume));
-    }
+    cache.set('pulse-volume', String(resolvedVolume), { category: 'pulse' });
   }, []);
 
   useEffect(() => {

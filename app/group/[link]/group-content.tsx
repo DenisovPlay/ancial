@@ -25,6 +25,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useDragScroll } from '../../hooks/useDragScroll';
 import { AncialAPI } from '../../lib/api-v2';
+import { cache } from '../../lib/cache.ts';
 import {
   cn,
   SvgIcon,
@@ -102,45 +103,23 @@ function getGroupProfileCacheKey(
 }
 
 function readGroupProfileCache(key: string): GroupProfileCacheEntry | null {
-  if (typeof window === 'undefined') return null;
+  const parsed = cache.get<GroupProfileCacheEntry>(key, { category: 'groups', subcategory: 'profile' });
+  if (!parsed || !parsed.groupData || !Array.isArray(parsed.posts)) return null;
 
-  try {
-    const cached = window.localStorage.getItem(key);
-    if (!cached) return null;
-
-    const parsed = JSON.parse(cached) as Partial<GroupProfileCacheEntry>;
-    if (!parsed.groupData || !Array.isArray(parsed.posts)) return null;
-
-    return {
-      currentLastId: parsed.currentLastId ?? 0,
-      groupData: parsed.groupData,
-      hasMorePages: typeof parsed.hasMorePages === 'boolean' ? parsed.hasMorePages : true,
-      posts: parsed.posts,
-    };
-  } catch (error) {
-    console.error('Failed to read group profile cache', error);
-    return null;
-  }
+  return {
+    currentLastId: parsed.currentLastId ?? 0,
+    groupData: parsed.groupData,
+    hasMorePages: typeof parsed.hasMorePages === 'boolean' ? parsed.hasMorePages : true,
+    posts: parsed.posts,
+  };
 }
 
 function writeGroupProfileCache(key: string, value: GroupProfileCacheEntry) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error('Failed to write group profile cache', error);
-  }
+  cache.set(key, value, { category: 'groups', subcategory: 'profile' });
 }
 
 function clearGroupProfileCache(key: string) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.removeItem(key);
-  } catch (error) {
-    console.error('Failed to clear group profile cache', error);
-  }
+  cache.remove(key, { category: 'groups', subcategory: 'profile' });
 }
 
 function sanitizeGroupLink(value: string) {

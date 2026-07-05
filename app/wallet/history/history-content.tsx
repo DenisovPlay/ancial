@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AncialAPI, type WalletAccount, type WalletTransaction } from '../../lib/api-v2';
+import { cache } from '../../lib/cache.ts';
 import Modal from '../../components/modal';
 import { TransactionItem, TransactionDetailsModal } from '../components/transaction-item';
 
@@ -81,18 +82,11 @@ export default function HistoryContent() {
     latestTransactionsRequest.current = requestId;
 
     const cacheKey = `wallet_history_cache_${activeFilter}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) {
-          setTransactions(parsed);
-          hasLoadedTransactions.current = true;
-          setInitialLoading(false);
-        }
-      } catch (e) {
-        console.error('Failed to parse history cache:', e);
-      }
+    const parsed = cache.get<any[]>(cacheKey, { category: 'wallet', subcategory: 'history' });
+    if (Array.isArray(parsed)) {
+      setTransactions(parsed);
+      hasLoadedTransactions.current = true;
+      setInitialLoading(false);
     }
 
     const loadTransactions = async () => {
@@ -112,7 +106,7 @@ export default function HistoryContent() {
         const fetchedTransactions = response.transactions || [];
         setTransactions(fetchedTransactions);
         hasLoadedTransactions.current = true;
-        localStorage.setItem(cacheKey, JSON.stringify(fetchedTransactions));
+        cache.set(cacheKey, fetchedTransactions, { category: 'wallet', subcategory: 'history' });
       } catch (err) {
         if (latestTransactionsRequest.current !== requestId) {
           return;

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import { cache } from '../lib/cache.ts';
 import { Button } from '../components/button';
 import { Input } from '../components/form';
 
@@ -73,7 +74,7 @@ export default function LoginPage() {
       if (!data.success) {
         setError(data.error || (lang?.login_error || 'Ошибка авторизации'));
       } else {
-        localStorage.setItem('token', data.data?.token || '');
+        cache.set('token', data.data?.token || '', { category: 'profile' });
         await checkAuth();
         router.push('/');
       }

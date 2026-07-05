@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { AncialAPI } from '../../../lib/api-v2';
+import { cache } from '../../../lib/cache.ts';
 import { SITE_CONFIG } from '../../../seo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
@@ -54,24 +55,12 @@ const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
 const FALLBACK_PLAYLIST_NAME = 'Неизвестный плейлист';
 
 function readFavoriteIds() {
-  if (typeof window === 'undefined') return [];
-
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(FAVORITES_CACHE_KEY) || '[]') as unknown;
-    return Array.isArray(parsed) ? parsed.map((id) => toNumber(id)).filter(Boolean) : [];
-  } catch {
-    return [];
-  }
+  const parsed = cache.get<unknown>(FAVORITES_CACHE_KEY, { category: 'pulse', subcategory: 'favorites' });
+  return Array.isArray(parsed) ? parsed.map((id) => toNumber(id)).filter(Boolean) : [];
 }
 
 function writeFavoriteIds(ids: number[]) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(ids));
-  } catch {
-    // ignore storage failures
-  }
+  cache.set(FAVORITES_CACHE_KEY, ids, { category: 'pulse', subcategory: 'favorites' });
 }
 
 function getPlaylistCover(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[]) {

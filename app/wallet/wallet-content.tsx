@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI, type WalletOverview, type WalletAccount, type WalletGateway, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 import Modal from '../components/modal';
 import WalletLogo from './wallet-logo';
 import { TransactionItem, TransactionDetailsModal } from './components/transaction-item';
@@ -195,7 +196,7 @@ export default function WalletContent() {
         setReceiveAccountId((prev) => (prev && loadedAccounts.some(a => a.id === prev) ? prev : loadedAccounts[0].id));
       }
       setError(null);
-      localStorage.setItem('wallet_overview_cache', JSON.stringify(overview));
+      cache.set('wallet_overview_cache', overview, { category: 'wallet', subcategory: 'overview' });
     } catch (err: any) {
       if (accounts.length === 0) {
         setError(err.message || (lang?.walletloaderror || 'Ошибка загрузки кошелька'));
@@ -214,13 +215,11 @@ export default function WalletContent() {
       return;
     }
 
-    const cached = localStorage.getItem('wallet_overview_cache');
+    const parsed = cache.get<any>('wallet_overview_cache', { category: 'wallet', subcategory: 'overview' });
     let hasCachedData = false;
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed && Array.isArray(parsed.accounts)) {
-          const loadedAccounts = parsed.accounts || [];
+    if (parsed) {
+      if (Array.isArray(parsed.accounts)) {
+        const loadedAccounts = parsed.accounts || [];
           setAccounts(loadedAccounts);
           setGateways(parsed.gateways || []);
           setTopupOrders(parsed.topupOrders || []);
@@ -233,9 +232,6 @@ export default function WalletContent() {
           }
           hasCachedData = true;
           setLoading(false);
-        }
-      } catch (e) {
-        console.error('Failed to parse wallet cache', e);
       }
     }
 

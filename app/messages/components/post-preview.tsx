@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { AncialAPI } from '../../lib/api-v2';
+import { cache } from '../../lib/cache.ts';
 import type { PostData } from '../../components/posts-renderer';
 
 type PostPreviewProps = {
@@ -20,17 +21,12 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
   useEffect(() => {
     let isMounted = true;
 
-    const cached = localStorage.getItem(`preview_post_${postId}`);
+    const cached = cache.get<PostData>(`preview_post_${postId}`, { category: 'chats', subcategory: 'previews' });
     if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (isMounted) {
-          setPost(parsed);
-          setLoading(false);
-          onLoadSuccess?.();
-        }
-      } catch (e) {
-        // ignore
+      if (isMounted) {
+        setPost(cached);
+        setLoading(false);
+        onLoadSuccess?.();
       }
     }
 
@@ -39,7 +35,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
         if (isMounted) {
           if (data && data.id) {
             setPost(data);
-            localStorage.setItem(`preview_post_${postId}`, JSON.stringify(data));
+            cache.set(`preview_post_${postId}`, data, { category: 'chats', subcategory: 'previews', ttl: 24 * 60 * 60 * 1000 });
             if (!cached) {
               onLoadSuccess?.();
             }

@@ -1,4 +1,5 @@
 import { AncialAPI } from './api-v2';
+import { cache } from './cache.ts';
 
 export type NetStatusState = 'hidden' | 'reconnecting';
 
@@ -77,8 +78,7 @@ function normalizeUserId(value: number | string) {
 }
 
 function getStoredToken() {
-  if (typeof window === 'undefined') return '';
-  return (window.localStorage.getItem('token') || '').trim();
+  return (cache.get<string>('token') || '').trim();
 }
 
 function hasBrowserWebSocket() {

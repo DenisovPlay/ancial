@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { AncialAPI } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
 import ImageViewerModal, { type ImageViewerSlide } from '../components/image-viewer-modal';
 
@@ -749,44 +750,25 @@ function parseReactions(reactions: string | null | undefined) {
 }
 
 function getDialogsCache() {
-  if (typeof window === 'undefined') return null;
-
-  try {
-    const raw = window.localStorage.getItem(DIALOGS_CACHE_KEY);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as {
-      dialogs?: DialogListItem[];
-      time?: number;
-    };
-
-    if (!Array.isArray(parsed.dialogs) || typeof parsed.time !== 'number') {
-      return null;
-    }
-
-    return {
-      dialogs: parsed.dialogs,
-      time: parsed.time,
-    };
-  } catch {
+  const parsed = cache.get<{ dialogs?: DialogListItem[]; time?: number }>(DIALOGS_CACHE_KEY, { category: 'chats', subcategory: 'dialogs' });
+  if (!parsed || !Array.isArray(parsed.dialogs) || typeof parsed.time !== 'number') {
     return null;
   }
+  return {
+    dialogs: parsed.dialogs,
+    time: parsed.time,
+  };
 }
 
 function writeDialogsCache(dialogs: DialogListItem[]) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(
-      DIALOGS_CACHE_KEY,
-      JSON.stringify({
-        dialogs,
-        time: Date.now(),
-      }),
-    );
-  } catch {
-    // ignore cache write failures
-  }
+  cache.set(
+    DIALOGS_CACHE_KEY,
+    {
+      dialogs,
+      time: Date.now(),
+    },
+    { category: 'chats', subcategory: 'dialogs' }
+  );
 }
 
 function applyCachedDialogs(dialogs: DialogListItem[]) {
@@ -802,29 +784,20 @@ function getMessageHashCacheKey(userId: number, dialogHash: string) {
 }
 
 function readMessageCache(cacheKey: string) {
-  if (typeof window === 'undefined' || !cacheKey) return null;
+  if (!cacheKey) return null;
+  const parsed = cache.get<{
+    dialog_hash?: string;
+    dialog_id?: number | string;
+    foreignUser?: DialogUser | null;
+    dialogMeta?: DialogMeta | null;
+    messages?: DialogMessage[];
+    time?: number;
+  }>(cacheKey, { category: 'chats', subcategory: 'messages' });
 
-  try {
-    const raw = window.localStorage.getItem(cacheKey);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as {
-      dialog_hash?: string;
-      dialog_id?: number | string;
-      foreignUser?: DialogUser | null;
-      dialogMeta?: DialogMeta | null;
-      messages?: DialogMessage[];
-      time?: number;
-    };
-
-    if (!Array.isArray(parsed.messages)) {
-      return null;
-    }
-
-    return parsed;
-  } catch {
+  if (!parsed || !Array.isArray(parsed.messages)) {
     return null;
   }
+  return parsed;
 }
 
 function readMessageCacheByHash(userId: number, dialogHash: string) {
@@ -898,28 +871,22 @@ function writeMessageCache({
   messages: DialogMessage[];
   userId?: number;
 }) {
-  if (typeof window === 'undefined') return;
+  const payload = {
+    dialog_hash: dialogHash,
+    dialog_id: dialogId,
+    foreignUser: foreignUser ?? null,
+    dialogMeta: dialogMeta ?? null,
+    messages: trimMessageCache(sortMessages(messages), keepSide),
+    time: Date.now(),
+  };
 
-  try {
-    const payload = JSON.stringify({
-      dialog_hash: dialogHash,
-      dialog_id: dialogId,
-      foreignUser: foreignUser ?? null,
-      dialogMeta: dialogMeta ?? null,
-      messages: trimMessageCache(sortMessages(messages), keepSide),
-      time: Date.now(),
-    });
+  if (cacheKey) {
+    cache.set(cacheKey, payload, { category: 'chats', subcategory: 'messages' });
+  }
 
-    if (cacheKey) {
-      window.localStorage.setItem(cacheKey, payload);
-    }
-
-    if (userId && dialogHash) {
-      const hashKey = getMessageHashCacheKey(userId, dialogHash);
-      window.localStorage.setItem(hashKey, payload);
-    }
-  } catch {
-    // ignore cache write failures
+  if (userId && dialogHash) {
+    const hashKey = getMessageHashCacheKey(userId, dialogHash);
+    cache.set(hashKey, payload, { category: 'chats', subcategory: 'messages_hash' });
   }
 }
 
@@ -2959,11 +2926,7 @@ export default function MessagesContent() {
       const response = await AncialAPI.dialogAction<{ message?: string }>('delete', dialogId);
       const text = response.message || '';
 
-      try {
-        window.localStorage.removeItem(DIALOGS_CACHE_KEY);
-      } catch {
-        // ignore cache removal failures
-      }
+      cache.remove(DIALOGS_CACHE_KEY, { category: 'chats', subcategory: 'dialogs' });
 
       setDeleteDialogModalOpen(false);
       handleDialogClose();

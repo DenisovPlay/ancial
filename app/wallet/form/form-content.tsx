@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AncialAPI, type WalletAccount } from '../../lib/api-v2';
+import { cache } from '../../lib/cache.ts';
 
 function FormContentInner() {
   const router = useRouter();
@@ -214,20 +215,13 @@ function FormContentInner() {
   };
 
   const loadAccounts = async (senderIdOverride?: number) => {
-    const cached = localStorage.getItem('wallet_overview_cache');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed && Array.isArray(parsed.accounts)) {
-          setAccounts(parsed.accounts);
-          if (parsed.accounts.length > 0) {
-            const preferredId = senderIdOverride ?? selectedSenderId ?? preferredSenderId;
-            const matched = preferredId ? parsed.accounts.find((account: any) => account.id === preferredId) : null;
-            setSelectedSenderId(matched ? matched.id : parsed.accounts[0].id);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse cached overview in form:', e);
+    const parsed = cache.get<any>('wallet_overview_cache', { category: 'wallet', subcategory: 'overview' });
+    if (parsed && Array.isArray(parsed.accounts)) {
+      setAccounts(parsed.accounts);
+      if (parsed.accounts.length > 0) {
+        const preferredId = senderIdOverride ?? selectedSenderId ?? preferredSenderId;
+        const matched = preferredId ? parsed.accounts.find((account: any) => account.id === preferredId) : null;
+        setSelectedSenderId(matched ? matched.id : parsed.accounts[0].id);
       }
     }
 
@@ -239,7 +233,7 @@ function FormContentInner() {
         const matched = preferredId ? overview.accounts.find((account) => account.id === preferredId) : null;
         setSelectedSenderId(matched ? matched.id : overview.accounts[0].id);
       }
-      localStorage.setItem('wallet_overview_cache', JSON.stringify(overview));
+      cache.set('wallet_overview_cache', overview, { category: 'wallet', subcategory: 'overview' });
     } catch (err: any) {
       console.error('Failed to load user accounts:', err);
     }

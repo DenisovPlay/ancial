@@ -7,6 +7,7 @@ import YandexRtb from '../components/yandex-rtb';
 import Modal from '../components/modal';
 import Link from 'next/link';
 import { AncialAPI } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 
 interface Group {
   id: string | number;
@@ -52,9 +53,9 @@ function GroupsContent() {
   const loadGroups = async (searchQuery: string) => {
     try {
       if (!searchQuery) {
-        const cached = localStorage.getItem('groups_cache');
-        if (cached) {
-          setGroups(JSON.parse(cached));
+        const parsed = cache.get<any[]>('groups_cache', { category: 'groups', subcategory: 'list' });
+        if (parsed) {
+          setGroups(parsed);
           setIsSearch(false);
           setIsLoading(false);
         } else {
@@ -73,7 +74,7 @@ function GroupsContent() {
       setIsSearch(response?.isSearch ?? !!searchQuery);
 
       if (!searchQuery && fetchedGroups.length > 0) {
-        localStorage.setItem('groups_cache', JSON.stringify(fetchedGroups));
+        cache.set('groups_cache', fetchedGroups, { category: 'groups', subcategory: 'list' });
       }
     } catch (error) {
       console.error('Ошибка при загрузке сообществ:', error);

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { AncialAPI } from '../../lib/api-v2';
+import { cache } from '../../lib/cache.ts';
 import type { PulseTrack } from '../../pulse/pulse-components';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { cn } from '../../pulse/pulse-components';
@@ -24,17 +25,12 @@ export default function TrackPreview({ trackId, onLoadSuccess, className }: Trac
   useEffect(() => {
     let isMounted = true;
 
-    const cached = localStorage.getItem(`preview_track_${trackId}`);
+    const cached = cache.get<PulseTrack>(`preview_track_${trackId}`, { category: 'chats', subcategory: 'previews' });
     if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (isMounted) {
-          setTrack(parsed);
-          setLoading(false);
-          onLoadSuccess?.();
-        }
-      } catch (e) {
-        // ignore
+      if (isMounted) {
+        setTrack(cached);
+        setLoading(false);
+        onLoadSuccess?.();
       }
     }
 
@@ -50,7 +46,7 @@ export default function TrackPreview({ trackId, onLoadSuccess, className }: Trac
               artwork: trackData.artwork || (trackData.img ? [{ src: trackData.img }] : [])
             };
             setTrack(mapped);
-            localStorage.setItem(`preview_track_${trackId}`, JSON.stringify(mapped));
+            cache.set(`preview_track_${trackId}`, mapped, { category: 'chats', subcategory: 'previews', ttl: 24 * 60 * 60 * 1000 });
             if (!cached) {
               onLoadSuccess?.();
             }

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { AncialAPI, type WalletMerchantDetails, type WalletMerchantOrder } from '../../../lib/api-v2';
+import { cache } from '../../../lib/cache.ts';
 
 function AboutContentInner() {
   const router = useRouter();
@@ -67,7 +68,7 @@ function AboutContentInner() {
         setFeePaid(res.merchant.fee_paid || 'buyer');
         setError(null);
 
-        localStorage.setItem(`wallet_merchant_detail_cache_${merchantId}`, JSON.stringify(res));
+        cache.set(`wallet_merchant_detail_cache_${merchantId}`, res, { category: 'wallet', subcategory: 'merchant_details' });
       } else {
         if (!merchant) setError(lang?.merchant_not_found || 'Мерчант не найден');
       }
@@ -86,29 +87,24 @@ function AboutContentInner() {
     }
 
     const cacheKey = `wallet_merchant_detail_cache_${merchantId}`;
-    const cached = localStorage.getItem(cacheKey);
+    const parsed = cache.get<any>(cacheKey, { category: 'wallet', subcategory: 'merchant_details' });
     let hasCache = false;
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed && parsed.merchant) {
-          setMerchant(parsed.merchant);
-          if (parsed.stats) {
-            setTotalPayments(parsed.stats.total_payments || 0);
-            setTotalEarned(parsed.stats.total_earned || 0);
-          }
-          if (parsed.orders) setOrders(parsed.orders);
-          setImg(parsed.merchant.img || '');
-          setDescription(parsed.merchant.description || '');
-          setSUrl(parsed.merchant.s_url || '');
-          setEUrl(parsed.merchant.e_url || '');
-          setCUrl(parsed.merchant.c_url || '');
-          setFeePaid(parsed.merchant.fee_paid || 'buyer');
-          hasCache = true;
-          setLoading(false);
+    if (parsed) {
+      if (parsed.merchant) {
+        setMerchant(parsed.merchant);
+        if (parsed.stats) {
+          setTotalPayments(parsed.stats.total_payments || 0);
+          setTotalEarned(parsed.stats.total_earned || 0);
         }
-      } catch (e) {
-        console.error('Failed to parse merchant detail cache', e);
+        if (parsed.orders) setOrders(parsed.orders);
+        setImg(parsed.merchant.img || '');
+        setDescription(parsed.merchant.description || '');
+        setSUrl(parsed.merchant.s_url || '');
+        setEUrl(parsed.merchant.e_url || '');
+        setCUrl(parsed.merchant.c_url || '');
+        setFeePaid(parsed.merchant.fee_paid || 'buyer');
+        hasCache = true;
+        setLoading(false);
       }
     }
 

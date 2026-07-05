@@ -28,6 +28,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { AncialAPI } from '../../lib/api-v2';
+import { cache } from '../../lib/cache.ts';
 import {
   cn,
   SvgIcon,
@@ -115,45 +116,24 @@ function getUserProfileCacheKey(
 }
 
 function readUserProfileCache(key: string): UserProfileCacheEntry | null {
-  if (typeof window === 'undefined') return null;
+  const parsed = cache.get<UserProfileCacheEntry>(key, { category: 'profile', subcategory: 'profile_data' });
+  if (!parsed || !parsed.userData || !Array.isArray(parsed.posts)) return null;
 
-  try {
-    const cached = window.localStorage.getItem(key);
-    if (!cached) return null;
-
-    const parsed = JSON.parse(cached) as Partial<UserProfileCacheEntry>;
-    if (!parsed.userData || !Array.isArray(parsed.posts)) return null;
-
-    return {
-      currentLastId: parsed.currentLastId ?? 0,
-      hasMorePages: typeof parsed.hasMorePages === 'boolean' ? parsed.hasMorePages : true,
-      posts: parsed.posts,
-      userData: parsed.userData,
-    };
-  } catch (error) {
-    console.error('Failed to read user profile cache', error);
-    return null;
-  }
+  return {
+    currentLastId: parsed.currentLastId ?? 0,
+    hasMorePages: typeof parsed.hasMorePages === 'boolean' ? parsed.hasMorePages : true,
+    posts: parsed.posts,
+    userData: parsed.userData,
+  };
 }
 
+// Keep it valid for 5 minutes
 function writeUserProfileCache(key: string, value: UserProfileCacheEntry) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error('Failed to write user profile cache', error);
-  }
+  cache.set(key, value, { category: 'profile', subcategory: 'profile_data', ttl: 5 * 60 * 1000 });
 }
 
 function clearUserProfileCache(key: string) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.removeItem(key);
-  } catch (error) {
-    console.error('Failed to clear user profile cache', error);
-  }
+  cache.remove(key, { category: 'profile', subcategory: 'profile_data' });
 }
 
 
