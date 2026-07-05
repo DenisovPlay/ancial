@@ -656,7 +656,7 @@ function PostCardInner({
               type="button"
               id={`vtu${post.id}`}
               onClick={() => handleVote('up')}
-              className="mr-1 inline-flex items-center duration-300 active:scale-95"
+              className="inline-flex items-center duration-300 active:scale-95"
               aria-label="Vote up"
             >
               <SvgIcon
@@ -667,12 +667,12 @@ function PostCardInner({
                 id="IC-vote-up"
               />
             </button>
-            <span id={`rat${post.id}`}>{rating}</span>
+            <span className="mx-1" id={`rat${post.id}`}>{rating}</span>
             <button
               type="button"
               id={`vtd${post.id}`}
               onClick={() => handleVote('down')}
-              className="ml-1 inline-flex items-center duration-300 active:scale-95"
+              className="inline-flex items-center duration-300 active:scale-95"
               aria-label="Vote down"
             >
               <SvgIcon
@@ -689,16 +689,36 @@ function PostCardInner({
                 <button
                   type="button"
                   onClick={handleComment}
-                  className="ml-3 inline-flex items-center gap-1 duration-300 hover:fill-white active:scale-95"
+                  className="ml-3 inline-flex items-center gap-1 duration-300 hover:fill-white hover:text-white active:scale-95"
                   aria-label="Comments"
                 >
                   <SvgIcon className="w-6 h-6 cursor-pointer inline" id="IC-comments" />
-                  <span>{post.comments_count ?? 0}</span>
+                  {Number(post.comments_count) > 0 && (
+                    <span>{post.comments_count}</span>
+                  )}
                 </button>
               </>
             )}
 
-
+            <button
+              type="button"
+              onClick={handleBookmark}
+              className="ml-3 inline-flex items-center gap-1 active:scale-95 duration-300 hover:text-white"
+              aria-label="Bookmark post"
+            >
+              <SvgIcon
+                id={isBookmarked ? 'IC-bookmark-filled' : 'IC-bookmark'}
+                className={cn(
+                  'w-6 h-6 cursor-pointer inline duration-300',
+                  isBookmarked
+                    ? 'fill-amber-500 hover:fill-amber-600'
+                    : 'fill-zinc-400 hover:fill-white',
+                )}
+              />
+              {Number(post.bookmarked_amount) > 0 && (
+                <span>{post.bookmarked_amount}</span>
+              )}
+            </button>
 
           </div>
 
