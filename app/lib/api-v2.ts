@@ -399,6 +399,14 @@ export class AncialAPI {
     return this.request<T>('/user/SecurityAction.php', { method: 'POST', body });
   }
 
+  static async disconnectTelegram(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/oauth/Telegram.php?action=disconnect', { method: 'POST' });
+  }
+
+  static async disconnectYandex(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/oauth/Yandex.php?action=disconnect', { method: 'POST' });
+  }
+
   static async getNotifications<T = unknown>(): Promise<T> {
     return this.request<T>('/user/Notifications.php');
   }

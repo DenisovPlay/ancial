@@ -79,9 +79,9 @@ export default function Home() {
             <span className="w-full max-w-3xl text-3xl font-extralight px-3 lg:px-0" x-text="lang?.technical_specs"></span>
             <div className="w-full max-w-3xl flex flex-col px-3 lg:px-0">
                 <span className="text-xl font-bold text-zinc-100">Внутреннее ПО</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">ZeniUI v2.3.10</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">LiteAPI v2.0.9</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">GG-Connect v3.1</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">ZeniUI v2.4.2</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">LiteAPI v2.1.2</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">GG-Connect v3.1 (V2-API implementation)</span>
                 <span className="text-xl font-bold text-zinc-100 mt-1.5">Стороннее ПО</span>
                 <div className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-500 shadow rounded-3xl flex items-center w-full gap-3">
                     <svg className="w-8 h-8 fill-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-warning`}></use></svg>
