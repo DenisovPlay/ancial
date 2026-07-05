@@ -2,10 +2,27 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
 import { useRouter } from 'next/navigation';
+
+const MEDIA_TAGS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js';
+
+function loadMediaTags(): Promise<any> {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if ((window as any).jsmediatags) return Promise.resolve((window as any).jsmediatags);
+
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = MEDIA_TAGS_SRC;
+    script.onload = () => resolve((window as any).jsmediatags ?? null);
+    script.onerror = () => resolve(null);
+    document.body.appendChild(script);
+  });
+}
 
 export default function PulseCreateUploadPage() {
   const { lang, isAuthenticated } = useAuth();
+  const { showNote } = useNotification();
   const router = useRouter();
   
   const [loading, setLoading] = useState(false);
@@ -25,6 +42,7 @@ export default function PulseCreateUploadPage() {
     lang: '',
     exp: '',
     audioId: '',
+    audioUrl: '',
     uploading: false
   }]);
 
@@ -57,6 +75,8 @@ export default function PulseCreateUploadPage() {
         lang: '',
         exp: '',
         audioId: '',
+        audioUrl: '',
+        id: 0,
         uploading: false
       }]);
     }
@@ -72,7 +92,26 @@ export default function PulseCreateUploadPage() {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
 
-    // Read tags could be added here later with jsmediatags, skipping for now
+    const audioUrl = URL.createObjectURL(file);
+    updateTrack(index, 'audioUrl', audioUrl);
+
+    try {
+      const mediaTags = await loadMediaTags();
+      if (mediaTags) {
+        mediaTags.read(file, {
+          onSuccess: (tag: any) => {
+            const title = tag.tags?.title;
+            const artist = tag.tags?.artist;
+            const newTracks = [...tracks];
+            if (title && !newTracks[index].name) newTracks[index].name = title;
+            if (artist && !newTracks[index].artist) newTracks[index].artist = artist;
+            if (title || artist) setTracks(newTracks);
+          },
+          onError: () => {}
+        });
+      }
+    } catch (err) {}
+
     updateTrack(index, 'uploading', true);
     setStatusText('Загрузка аудио...');
 
@@ -80,21 +119,18 @@ export default function PulseCreateUploadPage() {
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/pulse/awsuploadtrack.php', {
-        method: 'POST',
-        body: formData
-      });
-      const text = await res.text();
-      if (text !== 'Failure') {
-        updateTrack(index, 'audioId', text);
+      const res = await AncialAPI.pulseManagement<{ id?: string | number; src?: string; message?: string }>('file', 'upload', formData);
+      if (res.src && res.src !== 'Failure') {
+        updateTrack(index, 'audioId', res.src);
+        if (res.id) updateTrack(index, 'id', res.id);
         setStatusText('Трек загружен');
       } else {
-        alert('Ошибка при загрузке аудио на S3');
+        showNote({ content: 'Ошибка при загрузке аудио на сервер', type: 'error', time: 5 });
         setStatusText('Ошибка');
       }
     } catch (error) {
       console.error(error);
-      alert('Ошибка при загрузке аудио на S3');
+      showNote({ content: 'Ошибка при загрузке аудио', type: 'error', time: 5 });
       setStatusText('Ошибка');
     } finally {
       updateTrack(index, 'uploading', false);
@@ -103,7 +139,7 @@ export default function PulseCreateUploadPage() {
 
   const handlePublish = async () => {
     if (!img) {
-      alert(lang?.albumcoverupload || 'Загрузите обложку альбома!');
+      showNote({ content: lang?.albumcoverupload || 'Загрузите обложку альбома!', type: 'error', time: 5 });
       return;
     }
     
@@ -116,41 +152,36 @@ export default function PulseCreateUploadPage() {
     }
 
     if (!allUploaded) {
-      alert(lang?.albumUploadNT || 'Не все аудиофайлы загружены');
+      showNote({ content: lang?.albumUploadNT || 'Не все аудиофайлы загружены', type: 'error', time: 5 });
       return;
     }
 
-    const songsdata = tracks.map(t => [t.name, t.artist, t.lang, t.exp, t.audioId]);
+    const tracksData = tracks.map(t => ({
+      id: t.id,
+      name: t.name,
+      artist: t.artist,
+      lang: t.lang,
+      explicit: t.exp
+    }));
 
     setLoading(true);
     setStatusText('Создание альбома...');
     
     try {
-      const res = await fetch('/api/pulse/upload_album.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          albumname: albumName,
-          artistname: albumArtist,
-          albumcover: img,
-          albumdesc: albumDesc,
-          albumgenre: albumGenre,
-          albumlang: albumLang,
-          trackscount: tracks.length.toString(),
-          songsdata: JSON.stringify(songsdata),
-        })
+      await AncialAPI.pulseManagement('album', 'create', {
+        name: albumName,
+        artist: albumArtist,
+        img,
+        desk: albumDesc,
+        genre: albumGenre,
+        lang: albumLang,
+        artists_ids: '',
+        tracks_data: JSON.stringify(tracksData)
       });
       
-      const msg = await res.text();
-      if (msg === 'SUCCESS') {
-        router.push('/pulse/create/albums');
-      } else {
-        alert(msg === 'NOTRACKS' ? (lang?.albumUploadNT || 'Нет треков') : (lang?.albumUploadNA || 'Заполните все поля'));
-      }
-    } catch (err) {
-      alert('Ошибка сохранения');
+      router.push('/pulse/create/albums');
+    } catch (err: any) {
+      showNote({ content: err?.error || 'Ошибка сохранения', type: 'error', time: 5 });
     } finally {
       setLoading(false);
     }
@@ -258,6 +289,12 @@ export default function PulseCreateUploadPage() {
                 </label>
                 <input type="file" id={`songupdI${t.id}`} accept=".mp3" onChange={(e) => handleAudioUpload(idx, e)} className="hidden" />
               </div>
+              
+              {t.audioUrl && (
+                <div className="w-full mt-2">
+                  <audio controls src={t.audioUrl} className="w-full h-10" />
+                </div>
+              )}
             </div>
           ))}
         </div>

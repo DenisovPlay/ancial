@@ -79,6 +79,10 @@ export default function PulseSearchContent() {
   const [searchReloadToken, setSearchReloadToken] = useState(0);
   const [searchValue, setSearchValue] = useState(query);
   const [shareUrl, setShareUrl] = useState('');
+  const [shareAttachment, setShareAttachment] = useState<{
+    widgets: any[];
+    preview: { authorName: string; authorImg: string; contentSnippet: string; firstImage?: string };
+  } | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [reportTrackTarget, setReportTrackTarget] = useState<PulseTrack | null>(null);
@@ -214,13 +218,25 @@ export default function PulseSearchContent() {
     }
   }, [isAuthenticated, lang, showPulseNote]);
 
-  const copyTrackLink = useCallback(async (trackId: number | string) => {
+  const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
     const resolvedTrackId = toNumber(trackId);
     if (!resolvedTrackId) return;
 
     setShareUrl(getExternalPulseUrl(`/pulse/track/${resolvedTrackId}`));
+    if (track) {
+      setShareAttachment({
+        widgets: [{ type: 'music', track_id: resolvedTrackId.toString() }],
+        preview: {
+          authorName: decodeHtmlEntities(track.artist) || lang?.artist || 'Исполнитель',
+          authorImg: getImageUrl(getTrackArtwork(track), '/img/noimg.png'),
+          contentSnippet: decodeHtmlEntities(track.title) || lang?.untitled || 'Без названия',
+        }
+      });
+    } else {
+      setShareAttachment(null);
+    }
     setIsShareModalOpen(true);
-  }, []);
+  }, [lang]);
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
     if (!isAuthenticated) {
@@ -406,10 +422,12 @@ export default function PulseSearchContent() {
         copyLabel={lang?.copylink || 'Скопировать ссылку'}
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
-        onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success')}
-        onCopyFailed={() => showPulseNote(shareUrl, 'info')}
+        onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success', 3)}
+        onCopyFailed={() => showPulseNote(shareUrl, 'info', 5)}
         shareUrl={shareUrl}
         title={lang?.share || 'Поделиться'}
+        attachmentWidgets={shareAttachment?.widgets}
+        attachmentPreview={shareAttachment?.preview}
       />
       <PulseReportModal
         isOpen={isReportModalOpen}

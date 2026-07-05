@@ -210,12 +210,7 @@ function getTrackArtwork(track: PulseTrack | null) {
 }
 
 function normalizeTrackSource(trackSource: string | null | undefined) {
-  const nextSource = normalizeText(trackSource);
-  if (!nextSource) return '';
-
-  return nextSource
-    .replace('hb.ru-msk.vkcs.cloud', 'hb.bizmrg.com')
-    .replace('https://anci.hb.bizmrg.com/music/', 'https://pulse.ancial.ru/track/');
+  return normalizeText(trackSource) || '';
 }
 
 function isTrackPlayable(track: PulseTrack | null, userCountry: string) {

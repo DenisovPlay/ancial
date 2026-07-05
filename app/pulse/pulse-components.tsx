@@ -54,7 +54,7 @@ export type PulseTrackRowProps = {
   favoriteIds: number[];
   isAuthenticated: boolean;
   onAddToPlaylist: (trackId: number | string) => void;
-  onCopyTrackLink: (trackId: number | string) => Promise<void>;
+  onCopyTrackLink: (trackId: number | string, track?: PulseTrack) => Promise<void>;
   onDeleteTrack?: (track: PulseTrack) => void;
   onEditTrack?: (track: PulseTrack) => void;
   onLikeTrack: (track: PulseTrack) => Promise<void>;
@@ -405,7 +405,7 @@ export function PulseTrackRow({
       icon: 'IC-share',
       key: 'share',
       label: lang?.share || 'Поделиться',
-      onClick: () => void onCopyTrackLink(track.sid ?? 0),
+      onClick: () => onCopyTrackLink(trackId, track),
     },
     onReportTrack
       ? {

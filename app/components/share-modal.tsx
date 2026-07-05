@@ -8,6 +8,7 @@ import { getShareServiceUrl, type ShareService } from './share-modal-model';
 import { AncialAPI } from '../lib/api-v2';
 import { cn } from '../pulse/pulse-components';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { SvgIcon } from '../feed/editor-shared';
 import { useDragScroll } from '../hooks/useDragScroll';
 
@@ -28,6 +29,14 @@ type ShareModalProps = {
     firstImage?: string;
   } | null;
   onReply?: () => void;
+  // Для репоста произвольных вложений (например, треков)
+  attachmentWidgets?: any[];
+  attachmentPreview?: {
+    authorName: string;
+    authorImg: string;
+    contentSnippet: string;
+    firstImage?: string;
+  } | null;
 };
 
 type DialogListItem = {
@@ -54,6 +63,8 @@ export default function ShareModal({
   replyPostId = null,
   replyPostPreview = null,
   onReply,
+  attachmentWidgets,
+  attachmentPreview,
 }: ShareModalProps) {
   const { lang } = useAuth();
   const dialogsScrollRef = useDragScroll({ speed: 1.5, enabled: isOpen });
@@ -65,6 +76,8 @@ export default function ShareModal({
 
   // Состояние ответа на пост
   const [isReplying, setIsReplying] = useState(false);
+  const { showNote } = useNotification();
+
   const [replyText, setReplyText] = useState('');
   const [replySent, setReplySent] = useState(false);
   const [replyLoading, setReplyLoading] = useState(false);
@@ -127,12 +140,17 @@ export default function ShareModal({
   };
 
   const handleReply = async () => {
-    if (!replyPostId || replyLoading || replySent) return;
+    const hasAttachments = attachmentWidgets && attachmentWidgets.length > 0;
+    if ((!replyPostId && !hasAttachments) || replyLoading || replySent) return;
     setReplyLoading(true);
     try {
-      const widgets = JSON.stringify([{ type: 'quote', post_id: Number(replyPostId) }]);
-      // Если текст пустой — используем точку, так как для поста нужен хоть какой-то текст
-      const textContent = replyText.trim() ? replyText.trim() : '.';
+      const widgetsStr = hasAttachments
+        ? JSON.stringify(attachmentWidgets)
+        : JSON.stringify([{ type: 'quote', post_id: Number(replyPostId) }]);
+
+      // Используем пустую строку, так как бэкенд ругается на слишком короткий текст (например '.') 
+      // если есть виджеты, пустой текст должен проходить валидацию
+      const textContent = replyText.trim();
 
       await AncialAPI.createPost<{ message?: string }>({
         author_type: '1',
@@ -141,13 +159,19 @@ export default function ShareModal({
         contentext: textContent,
         new_post_title: '',
         photosurls: '',
-        widgets,
+        widgets: widgetsStr,
       });
       setReplySent(true);
       onReply?.();
       setTimeout(() => onClose(), 1500);
     } catch (e) {
       console.error('Reply failed', e);
+      showNote({
+        content: e instanceof Error ? e.message : 'Произошла ошибка при публикации',
+        type: 'error',
+        time: 5,
+        html: true,
+      });
     } finally {
       setReplyLoading(false);
     }
@@ -196,7 +220,7 @@ export default function ShareModal({
 
         {/* Форма отправки другу */}
         {selectedDialog && (
-          <div className="w-full flex flex-col gap-3 bg-zinc-800/50 p-4 rounded-3xl border border-zinc-600/30">
+          <div className="w-full flex flex-col gap-3 bg-zinc-800/50 p-3 rounded-3xl border border-zinc-600/30">
             <div className="flex items-center gap-3">
               <Image
                 src={selectedDialog.Uimg || '/img/noimg.png'}
@@ -257,16 +281,16 @@ export default function ShareModal({
         )}
 
         {/* Форма ответа/репоста */}
-        {isReplying && replyPostPreview && (
-          <div className="w-full flex flex-col gap-3 bg-zinc-800/50 p-4 rounded-3xl border border-zinc-600/30">
+        {isReplying && (replyPostPreview || attachmentPreview) && (
+          <div className="w-full flex flex-col gap-3 bg-zinc-800/50 p-3 rounded-3xl border border-zinc-600/30">
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-full bg-cover bg-center shrink-0 border border-zinc-600/30"
-                style={{ backgroundImage: `url(${replyPostPreview.authorImg || '/includes/img/anlite/default_avatar.png'})` }}
+                style={{ backgroundImage: `url(${(replyPostPreview || attachmentPreview)?.authorImg || '/includes/img/anlite/default_avatar.png'})` }}
               />
               <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-sm font-medium text-white truncate">{replyPostPreview.authorName}</span>
-                <span className="text-xs text-zinc-400 truncate">{replyPostPreview.contentSnippet || (lang?.share || 'Поделиться')}</span>
+                <span className="text-sm font-medium text-white truncate">{(replyPostPreview || attachmentPreview)?.authorName}</span>
+                <span className="text-xs text-zinc-400 truncate">{(replyPostPreview || attachmentPreview)?.contentSnippet || (lang?.share || 'Поделиться')}</span>
               </div>
               <button
                 type="button"
@@ -319,7 +343,7 @@ export default function ShareModal({
         {!selectedDialog && !isReplying && (
           <div className="w-full px-3 flex flex-col gap-3 pb-3">
             <div className="flex gap-3 w-full">
-              {replyPostId && (
+              {(replyPostId || (attachmentWidgets && attachmentWidgets.length > 0)) && (
                 <button
                   type="button"
                   onClick={() => setIsReplying(true)}

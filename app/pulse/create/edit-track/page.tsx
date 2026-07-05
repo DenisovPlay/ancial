@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AncialAPI } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function PulseCreateEditTrackPage() {
@@ -11,6 +12,7 @@ export default function PulseCreateEditTrackPage() {
   const searchParams = useSearchParams();
   const idParam = searchParams.get('id');
   const id = idParam ? parseInt(idParam, 10) : 0;
+  const { showNote } = useNotification();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +27,7 @@ export default function PulseCreateEditTrackPage() {
   const [trackLang, setTrackLang] = useState('');
   const [explicit, setExplicit] = useState('0');
   const [status, setStatus] = useState('1');
+  const [src, setSrc] = useState('');
   
   const [allArtists, setAllArtists] = useState<any[]>([]);
 
@@ -49,6 +52,7 @@ export default function PulseCreateEditTrackPage() {
               setExplicit(track.explicit ? String(track.explicit) : '0');
               setStatus(track.status !== undefined ? String(track.status) : '1');
               setArtistsIds((track.artists_ids || '').split(',').filter(Boolean));
+              setSrc(track.src || '');
             }
           }
         })
@@ -100,7 +104,7 @@ export default function PulseCreateEditTrackPage() {
         router.push('/pulse/create/tracks');
       })
       .catch((err: any) => {
-        alert(err.error || 'Произошла ошибка');
+        showNote({ content: err?.error || 'Произошла ошибка', type: 'error', time: 5 });
         setSaving(false);
       });
   };
@@ -134,6 +138,12 @@ export default function PulseCreateEditTrackPage() {
                 <span className="text-white text-sm font-medium">Нажмите, чтобы обновить обложку</span>
               </div>
             </label>
+            
+            {src && (
+              <div className="w-full max-w-md mt-4">
+                <audio controls src={src} className="w-full" />
+              </div>
+            )}
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

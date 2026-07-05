@@ -107,13 +107,12 @@ async function uploadAudioFile(file: File) {
   formData.append('file', file);
 
   const response = await AncialAPI.pulseManagement<{ id?: string | number; src?: string; message?: string }>('file', 'upload', formData);
-  const result = String(response.src || response.message || '');
-
-  if (!result || result === 'Failure') {
+  
+  if (response.message === 'Failure' || !response.id) {
     throw new Error('Upload failed');
   }
 
-  return result;
+  return String(response.id);
 }
 
 function getPictureBlob(picture: JsMediaTagsPicture | null | undefined) {

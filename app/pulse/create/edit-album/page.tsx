@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AncialAPI } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function PulseCreateEditAlbumPage() {
@@ -11,6 +12,7 @@ export default function PulseCreateEditAlbumPage() {
   const searchParams = useSearchParams();
   const idParam = searchParams.get('id');
   const id = idParam ? parseInt(idParam, 10) : 0;
+  const { showNote } = useNotification();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -117,7 +119,7 @@ export default function PulseCreateEditAlbumPage() {
         router.push('/pulse/create/albums');
       })
       .catch((err: any) => {
-        alert(err.error || 'Произошла ошибка');
+        showNote({ content: err?.error || 'Произошла ошибка', type: 'error', time: 5 });
         setSaving(false);
       });
   };
