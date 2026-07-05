@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import Modal from '../components/modal';
+import DeletePostModal from '../components/delete-post-modal';
+import ReportModal from '../components/report-modal';
 import ShareModal from '../components/share-modal';
 import { CommentsModal, type FeedComment } from '../components/comments-modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
@@ -1160,57 +1162,12 @@ export default function FeedContent() {
         </div>
       </Modal>
 
-      <Modal
+      <ReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
-        title={strings.report}
-        width="sm"
-      >
-        <div className="flex flex-col justify-center rounded-3xl shadow overflow-hidden">
-          <button
-            type="button"
-            onClick={() => void handleReport(strings.spam)}
-            className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
-          >
-            {strings.spam}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleReport(strings.prohibitedgood)}
-            className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
-          >
-            {strings.prohibitedgood}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleReport(strings.scam)}
-            className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
-          >
-            {strings.scam}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleReport(strings.violence)}
-            className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
-          >
-            {strings.violence}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleReport(strings.candidimage)}
-            className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
-          >
-            {strings.candidimage}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleReport(strings.propertyrights)}
-            className="text-left p-1.5 bg-zinc-800 text-lg cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
-          >
-            {strings.propertyrights}
-          </button>
-        </div>
-      </Modal>
+        onReport={(reason) => void handleReport(reason)}
+        strings={strings}
+      />
 
       <CommentsModal
         isOpen={isCommentsModalOpen}
@@ -1257,37 +1214,12 @@ export default function FeedContent() {
         }}
       />
 
-      <Modal
+      <DeletePostModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title={strings.deletepost}
-        width="sm"
-      >
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3 justify-center items-center">
-            <svg className="w-24 h-24 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="#IC-trash"></use>
-            </svg>
-            <span className="text-base text-zinc-200">{strings.reallywantdeletepost}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => void handleDeletePost()}
-              className="flex items-center justify-center gap-3 px-4 py-2 duration-300 active:scale-95 bg-red-600 hover:bg-red-700 text-white rounded-2xl w-full shadow"
-            >
-              {strings.yes}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="flex items-center justify-center gap-3 px-4 py-2 duration-300 active:scale-95 bg-zinc-700 hover:bg-zinc-600 text-zinc-100 rounded-2xl w-full shadow"
-            >
-              {strings.no}
-            </button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={() => void handleDeletePost()}
+        strings={strings}
+      />
     </div>
   );
 }

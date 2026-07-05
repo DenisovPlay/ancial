@@ -62,14 +62,14 @@ export default function ShareModal({
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+
   // Состояние ответа на пост
-  const [replyTab, setReplyTab] = useState<'repost' | 'reply'>('repost');
+  const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [replySent, setReplySent] = useState(false);
   const [replyLoading, setReplyLoading] = useState(false);
 
   const [copied, setCopied] = useState(false);
-
 
   useEffect(() => {
     if (isOpen) {
@@ -82,10 +82,9 @@ export default function ShareModal({
       setSent(false);
       setReplyText('');
       setReplySent(false);
-      setReplyTab('repost');
+      setIsReplying(false);
     }
   }, [isOpen]);
-
 
   const handleShareTo = (service: ShareService) => {
     if (!shareUrl) return;
@@ -132,14 +131,14 @@ export default function ShareModal({
     setReplyLoading(true);
     try {
       const widgets = JSON.stringify([{ type: 'quote', post_id: Number(replyPostId) }]);
-      const textContent = replyTab === 'reply' ? replyText.trim() : '.';
-      // Для репоста без текста — используем точку как контент (валидация требует >10 символов для создания поста)
-      // Поэтому в виде репоста — пустой текст не пройдёт; используем специальный маркер
+      // Если текст пустой — используем точку, так как для поста нужен хоть какой-то текст
+      const textContent = replyText.trim() ? replyText.trim() : '.';
+
       await AncialAPI.createPost<{ message?: string }>({
         author_type: '1',
         gid: '0',
         tags: 'null',
-        contentext: replyTab === 'reply' ? textContent : '.',
+        contentext: textContent,
         new_post_title: '',
         photosurls: '',
         widgets,
@@ -159,104 +158,12 @@ export default function ShareModal({
       <div className="flex flex-col gap-3 justify-center items-center">
         <span className="hidden">{shareUrl}</span>
 
-        {/* Секция ответа на пост */}
-        {replyPostId && !selectedDialog && (
-          <div className="w-full px-3 flex flex-col gap-3">
-            {/* Вкладки */}
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setReplyTab('repost')}
-                className={cn(
-                  'border border-zinc-600/30 flex-1 py-2 rounded-3xl font-medium transition-all duration-200 active:scale-95 cursor-pointer',
-                  replyTab === 'repost'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700',
-                )}
-              >
-                {lang?.repost || 'Репост'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setReplyTab('reply')}
-                className={cn(
-                  'border border-zinc-600/30 flex-1 py-2 rounded-3xl font-medium transition-all duration-200 active:scale-95 cursor-pointer',
-                  replyTab === 'reply'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700',
-                )}
-              >
-                {lang?.reply || 'Ответить'}
-              </button>
-            </div>
-
-            {/* Превью цитируемого поста */}
-            {replyPostPreview && (
-              <div className="border border-zinc-600/30 rounded-2xl p-1.5 bg-zinc-800/40 flex gap-1.5 items-start">
-                <div
-                  className="w-6 h-6 rounded-full bg-cover bg-center shrink-0 border border-zinc-600/30"
-                  style={{ backgroundImage: `url(${replyPostPreview.authorImg || '/includes/img/anlite/default_avatar.png'})` }}
-                />
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-semibold text-zinc-300">{replyPostPreview.authorName}</span>
-                  <p className="text-xs text-zinc-500 line-clamp-2 mt-0.5">{replyPostPreview.contentSnippet}</p>
-                </div>
-                {replyPostPreview.firstImage && (
-                  <div
-                    className="w-10 h-10 rounded-xl shrink-0 bg-cover bg-center bg-zinc-700"
-                    style={{ backgroundImage: `url(${replyPostPreview.firstImage})` }}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Поле текста для ответа */}
-            {replyTab === 'reply' && !replySent && (
-              <input
-                type="text"
-                placeholder={lang?.your_reply || "Ваш ответ..."}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="w-full bg-zinc-900/50 text-white text-sm rounded-3xl px-4 py-3 outline-none border border-zinc-600/30 focus:border-purple-500 duration-300"
-              />
-            )}
-
-            {/* Кнопка публикации */}
-            <button
-              type="button"
-              onClick={() => void handleReply()}
-              disabled={replyLoading || replySent || (replyTab === 'reply' && !replyText.trim())}
-              className={cn(
-                'w-full rounded-3xl flex items-center justify-center gap-2 px-4 py-3 font-medium duration-300 active:scale-95 border border-zinc-600/30 cursor-pointer',
-                replySent
-                  ? 'bg-green-500 text-white cursor-default'
-                  : 'bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100',
-              )}
-            >
-              {replySent ? (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
-                  {lang?.published || 'Опубликовано!'}
-                </>
-              ) : replyLoading ? (
-                <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              ) : (
-                <>
-                  <SvgIcon className="w-5 h-5 fill-current" id="IC-share" />
-                  {replyTab === 'repost' ? (lang?.do_repost || 'Репостнуть') : (lang?.publish_reply || 'Опубликовать ответ')}
-                </>
-              )}
-            </button>
-            <div className="w-full h-px bg-zinc-700/50 mt-1" />
-          </div>
-        )}
-
         {/* Список друзей (диалогов) */}
         <div
           ref={dialogsScrollRef}
           className={cn(
             "w-full overflow-x-auto pb-2 pt-2 -mt-2 scrollbar-hide px-3 drag-scroll",
-            (!selectedDialog && dialogs.length > 0) ? "flex flex-nowrap" : "hidden"
+            (!selectedDialog && !isReplying && dialogs.length > 0) ? "flex flex-nowrap" : "hidden"
           )}
         >
           <div className="flex flex-row flex-nowrap gap-3 flex-shrink-0">
@@ -289,104 +196,170 @@ export default function ShareModal({
 
         {/* Форма отправки другу */}
         {selectedDialog && (
-          <div className="w-full">
-            <div className="w-full flex flex-col gap-3 bg-zinc-800/50 p-4 rounded-3xl border border-zinc-600/30">
-              <div className="flex items-center gap-3">
-                <Image
-                  src={selectedDialog.Uimg || '/img/noimg.png'}
-                  alt={selectedDialog.Uname}
-                  width={40}
-                  height={40}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-white">{selectedDialog.Uname}</span>
-                  <span className="text-xs text-zinc-400">{lang?.send_message || 'Отправить сообщение'}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDialog(null)}
-                  className="cursor-pointer ml-auto w-8 h-8 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 text-zinc-300 duration-300 active:scale-95"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current" viewBox="0 0 24 24"><use href="/icons.svg#IC-chevron-left"></use></svg>
-                </button>
+          <div className="w-full flex flex-col gap-3 bg-zinc-800/50 p-4 rounded-3xl border border-zinc-600/30">
+            <div className="flex items-center gap-3">
+              <Image
+                src={selectedDialog.Uimg || '/img/noimg.png'}
+                alt={selectedDialog.Uname}
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-white">{selectedDialog.Uname}</span>
+                <span className="text-xs text-zinc-400">{lang?.send_message || 'Отправить сообщение'}</span>
               </div>
-
-              {!sent && (
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder={lang?.comment || 'Ваш комментарий (необязательно)'}
-                  className="w-full bg-zinc-900/50 text-white text-sm rounded-3xl px-4 py-3 outline-none resize-none border border-zinc-600/30 focus:border-purple-500 duration-300"
-                  rows={2}
-                />
-              )}
-
               <button
                 type="button"
-                onClick={() => void handleSendToFriend()}
-                disabled={loading || sent}
-                className={cn(
-                  "border border-zinc-600/30 w-full rounded-3xl flex items-center justify-center gap-2 px-4 py-3 font-medium duration-300 active:scale-95 text-sm",
-                  sent
-                    ? "bg-green-500 text-white cursor-default"
-                    : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-900/20"
-                )}
+                onClick={() => setSelectedDialog(null)}
+                className="cursor-pointer ml-auto w-8 h-8 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 text-zinc-300 duration-300 active:scale-95 shrink-0"
               >
-                {sent ? (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
-                    {lang?.sent || 'Отправлено!'}
-                  </>
-                ) : loading ? (
-                  <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
-                    {lang?.send || 'Отправить'}
-                  </>
-                )}
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current" viewBox="0 0 24 24"><use href="/icons.svg#IC-chevron-left"></use></svg>
               </button>
             </div>
+
+            {!sent && (
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder={lang?.comment || 'Ваш комментарий (необязательно)'}
+                className="w-full bg-zinc-900/50 text-white text-sm rounded-3xl px-4 py-3 outline-none resize-none border border-zinc-600/30 focus:border-purple-500 duration-300"
+                rows={2}
+              />
+            )}
+
+            <button
+              type="button"
+              onClick={() => void handleSendToFriend()}
+              disabled={loading || sent}
+              className={cn(
+                "cursor-pointer border border-zinc-600/30 w-full rounded-3xl flex items-center justify-center gap-2 px-4 py-3 font-medium duration-300 active:scale-95 text-sm",
+                sent
+                  ? "bg-green-500 text-white cursor-default"
+                  : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-900/20"
+              )}
+            >
+              {sent ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+                  {lang?.sent || 'Отправлено!'}
+                </>
+              ) : loading ? (
+                <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
+                  {lang?.send || 'Отправить'}
+                </>
+              )}
+            </button>
           </div>
         )}
 
-        {/* Социальные сети (скрываем, если выбран друг) */}
-        {!selectedDialog && (
+        {/* Форма ответа/репоста */}
+        {isReplying && replyPostPreview && (
+          <div className="w-full flex flex-col gap-3 bg-zinc-800/50 p-4 rounded-3xl border border-zinc-600/30">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-full bg-cover bg-center shrink-0 border border-zinc-600/30"
+                style={{ backgroundImage: `url(${replyPostPreview.authorImg || '/includes/img/anlite/default_avatar.png'})` }}
+              />
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-sm font-medium text-white truncate">{replyPostPreview.authorName}</span>
+                <span className="text-xs text-zinc-400 truncate">{replyPostPreview.contentSnippet || (lang?.share || 'Поделиться')}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReplying(false)}
+                className="cursor-pointer ml-auto shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 text-zinc-300 duration-300 active:scale-95"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current" viewBox="0 0 24 24"><use href="/icons.svg#IC-chevron-left"></use></svg>
+              </button>
+            </div>
+
+            {!replySent && (
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={lang?.comment || 'Ваш комментарий (необязательно)'}
+                className="w-full bg-zinc-900/50 text-white text-sm rounded-3xl px-4 py-3 outline-none resize-none border border-zinc-600/30 focus:border-purple-500 duration-300"
+                rows={2}
+              />
+            )}
+
+            <button
+              type="button"
+              onClick={() => void handleReply()}
+              disabled={replyLoading || replySent}
+              className={cn(
+                "cursor-pointer border border-zinc-600/30 w-full rounded-3xl flex items-center justify-center gap-2 px-4 py-3 font-medium duration-300 active:scale-95 text-sm",
+                replySent
+                  ? "bg-green-500 text-white cursor-default"
+                  : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-900/20"
+              )}
+            >
+              {replySent ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+                  {lang?.published || 'Опубликовано!'}
+                </>
+              ) : replyLoading ? (
+                <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <>
+                  <SvgIcon className="w-5 h-5 fill-current" id="IC-share" />
+                  {lang?.do_repost || 'Поделиться на своей стене'}
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Социальные сети и прочие кнопки (скрываем, если выбран друг или пишем репост) */}
+        {!selectedDialog && !isReplying && (
           <div className="w-full px-3 flex flex-col gap-3 pb-3">
             <div className="flex gap-3 w-full">
+              {replyPostId && (
+                <button
+                  type="button"
+                  onClick={() => setIsReplying(true)}
+                  className="w-16 h-16 shrink-0 rounded-3xl bg-purple-500 hover:bg-purple-500/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow border border-zinc-600/30"
+                >
+                  <SvgIcon id="IC-reply" className="w-10 h-10 fill-white" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void handleCopyShareLink()}
+                className={cn(
+                  "w-16 h-16 shrink-0 rounded-3xl cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow border border-zinc-600/30",
+                  copied ? "bg-lime-600 hover:bg-lime-600/80" : "bg-amber-600 hover:bg-amber-600/80"
+                )}
+              >
+                <SvgIcon id="IC-copy-file" className="w-10 h-10 fill-white" />
+              </button>
               <button
                 type="button"
                 onClick={() => handleShareTo('vk')}
-                className="w-16 h-16 rounded-3xl bg-blue-500 hover:bg-blue-500/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
+                className="w-16 h-16 shrink-0 rounded-3xl bg-blue-500 hover:bg-blue-500/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow border border-zinc-600/30"
               >
                 <Image src="/img/socials/vk.png" alt="VK" width={48} height={48} className="w-12 h-12" />
               </button>
               <button
                 type="button"
                 onClick={() => handleShareTo('tg')}
-                className="w-16 h-16 rounded-3xl bg-sky-400 hover:bg-sky-400/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
+                className="w-16 h-16 shrink-0 rounded-3xl bg-sky-400 hover:bg-sky-400/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow border border-zinc-600/30"
               >
                 <Image src="/img/socials/tg.png" alt="Telegram" width={48} height={48} className="w-12 h-12" />
               </button>
               <button
                 type="button"
                 onClick={() => handleShareTo('x')}
-                className="w-16 h-16 rounded-3xl bg-slate-800 hover:bg-slate-800/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow"
+                className="w-16 h-16 shrink-0 rounded-3xl bg-slate-800 hover:bg-slate-800/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow border border-zinc-600/30"
               >
                 <Image src="/img/socials/x.png" alt="X" width={48} height={48} className="w-12 h-12" />
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => void handleCopyShareLink()}
-              className={cn(
-                "cursor-pointer w-full border border-zinc-600/30 rounded-3xl flex items-center justify-center gap-3 px-4 py-2 duration-300 active:scale-95",
-                copied ? "bg-green-500 text-white border-green-500" : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
-              )}
-            >
-              {copied ? (lang?.copied || 'Скопировано!') : (lang?.copy_link || copyLabel || 'Скопировать ссылку')}
-            </button>
           </div>
         )}
       </div>

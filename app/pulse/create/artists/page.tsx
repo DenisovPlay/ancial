@@ -5,7 +5,7 @@ import { AncialAPI } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Modal from '../../../components/modal';
+import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 
 export default function PulseCreateArtistsPage() {
   const { lang, isAuthenticated } = useAuth();
@@ -108,27 +108,13 @@ export default function PulseCreateArtistsPage() {
         )}
       </div>
 
-      <Modal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} title="Удалить артиста?">
-        <div className="flex flex-col gap-4 text-center">
-          <span className="text-sm text-zinc-400">
-            Удаление профиля артиста необратимо удалит его с серверов Ancial Pulse. Привязанные треки и альбомы останутся.
-          </span>
-          <div className="flex gap-3 w-full mt-2">
-            <button
-              onClick={() => setDeleteModalOpen(false)}
-              className="cursor-pointer flex-1 py-2 rounded-3xl bg-zinc-800/80 hover:bg-zinc-700/80 text-white duration-300 active:scale-95 border border-zinc-600/30"
-            >
-              Отмена
-            </button>
-            <button
-              onClick={confirmDelete}
-              className="cursor-pointer flex-1 py-2 rounded-3xl bg-red-600/80 hover:bg-red-500/80 text-white duration-300 active:scale-95 border border-red-500/30"
-            >
-              Удалить
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <ConfirmDeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Удалить артиста?"
+        description="Удаление профиля артиста необратимо удалит его с серверов Ancial Pulse. Привязанные треки и альбомы останутся."
+      />
     </div>
   );
 }
