@@ -379,13 +379,13 @@ function renderLyricWords(text: string, progress: number, isActive: boolean) {
     const isCurrentWordFill = isActive && fill > 0 && fill < 100;
     const style = isActive
       ? ({
-          transition: isCurrentWordFill ? `--pulse-lyric-fill ${PLAYER_LYRIC_FILL_TRANSITION_MS}ms linear` : 'none',
-          '--pulse-lyric-fill': `${fill}%`,
-          backgroundImage: 'linear-gradient(90deg, #ffffff var(--pulse-lyric-fill), rgba(255,255,255,0.4) var(--pulse-lyric-fill))',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          color: 'transparent',
-        } as CSSProperties)
+        transition: isCurrentWordFill ? `--pulse-lyric-fill ${PLAYER_LYRIC_FILL_TRANSITION_MS}ms linear` : 'none',
+        '--pulse-lyric-fill': `${fill}%`,
+        backgroundImage: 'linear-gradient(90deg, #ffffff var(--pulse-lyric-fill), rgba(255,255,255,0.4) var(--pulse-lyric-fill))',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        color: 'transparent',
+      } as CSSProperties)
       : undefined;
 
     return (
@@ -432,12 +432,12 @@ function PulseLyricsMobile({
   useEffect(() => {
     latestEntryRef.current = activeIndex >= 0
       ? {
-          activeIndex,
-          backText,
-          key: motionKeyRef.current,
-          mainText,
-          progress,
-        }
+        activeIndex,
+        backText,
+        key: motionKeyRef.current,
+        mainText,
+        progress,
+      }
       : null;
   }, [activeIndex, backText, mainText, progress]);
 
@@ -768,7 +768,7 @@ function readSavedEqGains() {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length === 5) return parsed;
     }
-  } catch {}
+  } catch { }
   return [0, 0, 0, 0, 0];
 }
 
@@ -786,35 +786,35 @@ const PulseEqualizerModal = ({ isOpen, onClose, eqGains, onGainChange, onReset }
       title="Эквалайзер"
     >
       <div className="flex flex-col gap-4 py-4 px-2">
-          <div className="flex justify-around items-center h-48 w-full">
-              {EQ_BANDS.map((freq, index) => (
-                  <div key={freq} className="flex flex-col items-center justify-between h-full w-10">
-                      <span className="text-xs text-zinc-400 font-medium h-4">
-                          {eqGains[index] > 0 ? '+' : ''}{eqGains[index]}
-                      </span>
-                      <div className="flex-grow flex items-center justify-center w-full relative my-2">
-                          <input
-                              type="range"
-                              min="-12"
-                              max="12"
-                              step="1"
-                              value={eqGains[index]}
-                              onChange={(e) => onGainChange(index, Number(e.target.value))}
-                              className="w-40 appearance-none h-1.5 rounded-full bg-zinc-800 accent-purple-500 absolute origin-center -rotate-90"
-                          />
-                      </div>
-                      <span className="text-xs text-zinc-400 font-medium h-4">
-                         {freq >= 1000 ? `${(freq / 1000).toFixed(1).replace('.0', '')}k` : freq}
-                      </span>
-                  </div>
-              ))}
-          </div>
-          <button
-              onClick={onReset}
-              className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2.5 text-zinc-300 duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
-          >
-              <span>Сбросить настройки</span>
-          </button>
+        <div className="flex justify-around items-center h-48 w-full">
+          {EQ_BANDS.map((freq, index) => (
+            <div key={freq} className="flex flex-col items-center justify-between h-full w-10">
+              <span className="text-xs text-zinc-400 font-medium h-4">
+                {eqGains[index] > 0 ? '+' : ''}{eqGains[index]}
+              </span>
+              <div className="flex-grow flex items-center justify-center w-full relative my-2">
+                <input
+                  type="range"
+                  min="-12"
+                  max="12"
+                  step="1"
+                  value={eqGains[index]}
+                  onChange={(e) => onGainChange(index, Number(e.target.value))}
+                  className="w-40 appearance-none h-1.5 rounded-full bg-zinc-800 accent-purple-500 absolute origin-center -rotate-90"
+                />
+              </div>
+              <span className="text-xs text-zinc-400 font-medium h-4">
+                {freq >= 1000 ? `${(freq / 1000).toFixed(1).replace('.0', '')}k` : freq}
+              </span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onReset}
+          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2.5 text-zinc-300 duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
+        >
+          <span>Сбросить настройки</span>
+        </button>
       </div>
     </PulseModal>
   );
@@ -911,7 +911,7 @@ export function PulsePlayerProvider({
     setEqGains(prev => {
       const newGains = [...prev];
       newGains[index] = nextGain;
-      
+
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('pulse-eq-bands', JSON.stringify(newGains));
       }
@@ -984,9 +984,9 @@ export function PulsePlayerProvider({
   const [swipeX, setSwipeX] = useState(0);
 
   const touchStartXRef = useRef<number | null>(null);
-  const touchStartFullRef = useRef<{x: number, y: number} | null>(null);
-  const touchStartMiniRef = useRef<{x: number, y: number} | null>(null);
-  
+  const touchStartFullRef = useRef<{ x: number, y: number } | null>(null);
+  const touchStartMiniRef = useRef<{ x: number, y: number } | null>(null);
+
   const currentTrack = playlist[index] ?? null;
   const prevTrackObj = playlist[index - 1] ?? null;
   const nextTrackObj = playlist[index + 1] ?? null;
@@ -1095,11 +1095,11 @@ export function PulsePlayerProvider({
 
     try {
       navigator.mediaSession.playbackState = 'none';
-    } catch {}
+    } catch { }
 
     try {
       navigator.mediaSession.metadata = null;
-    } catch {}
+    } catch { }
 
     const actions = [
       'play',
@@ -1132,31 +1132,31 @@ export function PulsePlayerProvider({
           // ignore blocked playback
         }
       });
-    } catch {}
+    } catch { }
 
     try {
       navigator.mediaSession.setActionHandler('pause', () => {
         audioRef.current?.pause();
       });
-    } catch {}
+    } catch { }
 
     try {
       navigator.mediaSession.setActionHandler('previoustrack', () => {
         window.prevplaylisttrack?.();
       });
-    } catch {}
+    } catch { }
 
     try {
       navigator.mediaSession.setActionHandler('nexttrack', () => {
         window.nextplaylisttrack?.();
       });
-    } catch {}
+    } catch { }
 
     try {
       navigator.mediaSession.setActionHandler('stop', () => {
         window.PlayerClose?.();
       });
-    } catch {}
+    } catch { }
 
     try {
       navigator.mediaSession.setActionHandler('seekto', (event) => {
@@ -1169,7 +1169,7 @@ export function PulsePlayerProvider({
         syncVisualProgress();
         forceUpdateMediaPositionState();
       });
-    } catch {}
+    } catch { }
   };
 
   const syncTrackProgress = (options: SyncTrackProgressOptions = {}) => {
@@ -1340,7 +1340,7 @@ export function PulsePlayerProvider({
     setLyricsLines([]);
     setLyricsSource('');
     setIsPlaying(false);
-    
+
     setIsVisible(false);
     setTimeout(() => {
       setIsMounted(false);
@@ -1375,14 +1375,14 @@ export function PulsePlayerProvider({
           ? result.data.map((item) => {
             const parsedSongs = parsePlaylistSongs(item.songs);
             const playlistId = normalizeText(String(item.id ?? ''));
-              return {
-                hasSong: parsedSongs.includes(resolvedSongId),
-                id: playlistId,
-                image: normalizeText(item.img),
-                name: normalizeText(item.name) || (lang?.pulse_unknown_playlist || 'Без названия'),
-                songs: parsedSongs,
-              } satisfies PulsePlaylistOption;
-            }).filter((item) => item.id)
+            return {
+              hasSong: parsedSongs.includes(resolvedSongId),
+              id: playlistId,
+              image: normalizeText(item.img),
+              name: normalizeText(item.name) || (lang?.pulse_unknown_playlist || 'Без названия'),
+              songs: parsedSongs,
+            } satisfies PulsePlaylistOption;
+          }).filter((item) => item.id)
           : [];
 
         setPlaylistOptions(nextOptions);
@@ -1420,12 +1420,12 @@ export function PulsePlayerProvider({
 
       setPlaylistOptions((currentOptions) =>
         currentOptions.map((item) =>
-              item.id === playlistId
+          item.id === playlistId
             ? {
-                ...item,
-                hasSong: !hasSong,
-                songs: updatedSongs,
-              }
+              ...item,
+              hasSong: !hasSong,
+              songs: updatedSongs,
+            }
             : item,
         ),
       );
@@ -2013,7 +2013,7 @@ export function PulsePlayerProvider({
       if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
         try {
           navigator.mediaSession.playbackState = 'playing';
-        } catch {}
+        } catch { }
       }
       startProgressLoop();
       startVisualProgressLoop();
@@ -2025,7 +2025,7 @@ export function PulsePlayerProvider({
       if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
         try {
           navigator.mediaSession.playbackState = 'paused';
-        } catch {}
+        } catch { }
       }
       stopProgressLoop();
       stopVisualProgressLoop();
@@ -2063,9 +2063,9 @@ export function PulsePlayerProvider({
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  // We intentionally keep this subscription stable and read live player state from refs/events,
-  // otherwise adding every helper here would re-bind audio listeners on frequent progress updates.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // We intentionally keep this subscription stable and read live player state from refs/events,
+    // otherwise adding every helper here would re-bind audio listeners on frequent progress updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextTrack, userCountry]);
 
   useEffect(() => {
@@ -2103,14 +2103,14 @@ export function PulsePlayerProvider({
     return () => {
       cancelled = true;
     };
-  // syncWindowState is intentionally omitted here so lyric loading only reacts to real track changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // syncWindowState is intentionally omitted here so lyric loading only reacts to real track changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTrack, playerArtist, playerTitle]);
 
   useEffect(() => {
     syncWindowState();
-  // syncWindowState closes over live refs/state; depending on it would make this fire every render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // syncWindowState closes over live refs/state; depending on it would make this fire every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTrack, isPlaying, isVisible, listenCounted, mode, playlistId, statusAudio]);
 
   useEffect(() => {
@@ -2208,8 +2208,8 @@ export function PulsePlayerProvider({
       delete compatWindow.trackP;
       delete compatWindow.updatePlayerLikeBtn;
     };
-  // Global bridge methods are reinstalled only when their public behavior changes, not on every syncWindowState update.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Global bridge methods are reinstalled only when their public behavior changes, not on every syncWindowState update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [changeVolume, closePlayer, ensureLikedSongsLoaded, likeCurrentSong, nextTrack, openAddToPlaylist, playArtistPlaylist, playGenlist, playPlaylist, playTrack, prevTrack, queueTrackNext, showPlayer, togglePlay, togglePlaylistLike, toggleSongLike]);
 
   const contextValue: PulsePlayerContextValue = {
@@ -2709,45 +2709,45 @@ export function PulsePlayerProvider({
 
           {!playlistOptionsLoading
             ? playlistOptions.map((playlistOption) => (
-                <button
-                  key={playlistOption.id}
-                  type="button"
-                  onClick={() => {
-                    void toggleSongInPlaylist(playlistOption.id, playlistOption.hasSong);
-                  }}
-                  className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left duration-300 hover:bg-zinc-800/60 hover:pr-3 active:scale-95"
+              <button
+                key={playlistOption.id}
+                type="button"
+                onClick={() => {
+                  void toggleSongInPlaylist(playlistOption.id, playlistOption.hasSong);
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left duration-300 hover:bg-zinc-800/60 hover:pr-3 active:scale-95"
+              >
+                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800">
+                  {playlistOption.image ? (
+                    <PulseCoverImage
+                      alt={playlistOption.name}
+                      className="rounded-xl"
+                      sizes={PULSE_COVER_IMAGE_SIZES.modal}
+                      src={playlistOption.image}
+                    />
+                  ) : (
+                    <PlayerIcon name="IC-music" className="h-7 w-7 fill-zinc-600" />
+                  )}
+                </div>
+
+                <span className="flex-grow text-sm font-medium text-zinc-100">
+                  {playlistOption.name}
+                </span>
+
+                <span
+                  className={cn(
+                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 duration-300',
+                    playlistOption.hasSong
+                      ? 'border-purple-500 bg-purple-500'
+                      : 'border-zinc-600',
+                  )}
                 >
-                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800">
-                    {playlistOption.image ? (
-                      <PulseCoverImage
-                        alt={playlistOption.name}
-                        className="rounded-xl"
-                        sizes={PULSE_COVER_IMAGE_SIZES.modal}
-                        src={playlistOption.image}
-                      />
-                    ) : (
-                      <PlayerIcon name="IC-music" className="h-7 w-7 fill-zinc-600" />
-                    )}
-                  </div>
-
-                  <span className="flex-grow text-sm font-medium text-zinc-100">
-                    {playlistOption.name}
-                  </span>
-
-                  <span
-                    className={cn(
-                      'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 duration-300',
-                      playlistOption.hasSong
-                        ? 'border-purple-500 bg-purple-500'
-                        : 'border-zinc-600',
-                    )}
-                  >
-                    {playlistOption.hasSong ? (
-                      <PlayerIcon name="IC-check" className="h-3 w-3 fill-white" />
-                    ) : null}
-                  </span>
-                </button>
-              ))
+                  {playlistOption.hasSong ? (
+                    <PlayerIcon name="IC-check" className="h-3 w-3 fill-white" />
+                  ) : null}
+                </span>
+              </button>
+            ))
             : null}
 
           <button
