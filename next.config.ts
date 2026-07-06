@@ -62,6 +62,10 @@ const nextConfig: NextConfig = {
           source: '/apps/included/:path*',
           destination: `${API_BASE}/apps/included/:path*`,
         },
+        { // Proxy for payments
+          source: '/pay/:path*',
+          destination: `${API_BASE}/pay/:path*`,
+        },
       ],
     };
   },

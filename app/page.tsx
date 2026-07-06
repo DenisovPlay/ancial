@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
+import { Suspense } from 'react';
 import { createPageMetadata } from './seo';
+import HomeContent from './home-content';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Ancial - Социальная сеть для общения и развлечений',
@@ -11,44 +12,8 @@ export const metadata: Metadata = createPageMetadata({
 
 export default function Home() {
   return (
-    <div className="home-route relative isolate flex h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden overscroll-none no-mobile-nav-padding p-3 duration-300 md:p-0">
-      <video
-        id="videobackground"
-        autoPlay
-        muted
-        loop
-        preload="none"
-        playsInline
-        className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-0 lg:opacity-50 duration-300"
-        src="/img/backgrounds/ygX.mp4"
-      />
-      <Image
-        src="/img/backgrounds/bg.webp"
-        fill
-        alt="Background"
-        className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 lg:opacity-0 duration-300"
-      />
-      <div className="bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-3xl w-full max-w-screen-md p-3 flex items-center gap-3 shadow -mb-10">
-        <div className="flex flex-col w-full">
-          <span className="text-lg lg:text-2xl font-bold">Свершилось! Ancial теперь на React!</span>
-          <span className="text-sm lg:text-base text-zinc-300">
-            Мы всё ещё продолжаем разработку, поэтому вы можете встречать баги и недоработки.
-          </span>
-          <span className="text-xs lg:text-sm text-zinc-400">
-            Совсем скоро мы вернём привычный функционал, а пока наслаждайтесь обновлённым интерфейсом!
-          </span>
-          <div className="flex items-center justify-end gap-3 mt-1.5">
-            <a
-              href="https://t.me/ancialru"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-400 hover:bg-blue-500 duration-300 active:scale-95 shadow border border-zinc-600/30"
-            >
-              <img className="w-3.5 h-3.5" src="/img/socials/tg.png" alt="Telegram" />
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Suspense fallback={<div className="h-screen w-full bg-[#09090b]" />}>
+      <HomeContent />
+    </Suspense>
   );
 }

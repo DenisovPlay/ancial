@@ -1,6 +1,7 @@
 'use client';
 
 export type CacheCategory =
+  | 'home'
   | 'feed'
   | 'chats'
   | 'wallet'
@@ -11,7 +12,9 @@ export type CacheCategory =
   | 'notifications';
 
 export type CacheSubcategory<C extends CacheCategory> =
-  C extends 'pulse'
+  C extends 'home'
+    ? 'currency' | 'weather'
+    : C extends 'pulse'
     ? 'artists' | 'from_pulse' | 'listened' | 'now_listen' | 'we_like' | 'tracks' | 'favorites' | 'playlists' | 'artist_playlists'
     : C extends 'wallet'
     ? 'overview' | 'merchants' | 'merchant_details' | 'accounts' | 'transactions' | 'history'

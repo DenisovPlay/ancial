@@ -220,18 +220,18 @@ export default function WalletContent() {
     if (parsed) {
       if (Array.isArray(parsed.accounts)) {
         const loadedAccounts = parsed.accounts || [];
-          setAccounts(loadedAccounts);
-          setGateways(parsed.gateways || []);
-          setTopupOrders(parsed.topupOrders || []);
-          setTransactions(parsed.transactions || []);
+        setAccounts(loadedAccounts);
+        setGateways(parsed.gateways || []);
+        setTopupOrders(parsed.topupOrders || []);
+        setTransactions(parsed.transactions || []);
 
-          if (loadedAccounts.length > 0) {
-            setSendSenderId(loadedAccounts[0].id);
-            setTopupAccountId(loadedAccounts[0].id);
-            setReceiveAccountId(loadedAccounts[0].id);
-          }
-          hasCachedData = true;
-          setLoading(false);
+        if (loadedAccounts.length > 0) {
+          setSendSenderId(loadedAccounts[0].id);
+          setTopupAccountId(loadedAccounts[0].id);
+          setReceiveAccountId(loadedAccounts[0].id);
+        }
+        hasCachedData = true;
+        setLoading(false);
       }
     }
 
@@ -1700,7 +1700,7 @@ export default function WalletContent() {
       />
 
       {/* 5. MODAL: Withdrawal (Вывод средств) */}
-      <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`${lang?.withdraw || 'Вывод'} ${gatewayConfig?.withdrawal_fields?.title || selectedGateway?.name || (lang?.payment_system || 'платёжную систему')}`} width="sm">
+      <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`${gatewayConfig?.withdrawal_fields?.title || selectedGateway?.name || (lang?.payment_system || 'платёжную систему')}`} width="sm">
         <div className="flex flex-col gap-3 text-zinc-100">
           {selectedGateway && (
             <div className="flex items-center gap-3 border border-zinc-600/30 p-3 rounded-3xl bg-zinc-900/40">
@@ -1872,14 +1872,14 @@ export default function WalletContent() {
                 <button
                   type="button"
                   onClick={() => setIsWithdrawModalOpen(false)}
-                  className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-3xl duration-300 text-sm font-medium"
+                  className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-3xl duration-300 text-sm font-medium border border-zinc-600/30 cursor-pointer"
                 >
                   {lang?.cancel || 'Отмена'}
                 </button>
                 <button
                   type="submit"
                   disabled={withdrawLoading || !withdrawAmount}
-                  className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-3xl duration-300 text-sm font-semibold flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-3xl duration-300 text-sm font-semibold flex items-center justify-center gap-2 border border-zinc-600/30 cursor-pointer"
                 >
                   {withdrawLoading ? (
                     <div className="w-4 h-4 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
