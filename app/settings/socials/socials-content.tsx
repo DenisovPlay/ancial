@@ -47,6 +47,27 @@ export default function SocialsContent() {
     tgInitializedRef.current = false;
   }, [tgWidgetKey]);
 
+  // Listen for postMessage from the popup windows (OAuth success)
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      // Validate origin to ensure it's from our API server
+      if (event.origin !== 'https://api.ancial.ru') return;
+
+      if (event.data && event.data.type === 'oauth_success') {
+        const token = event.data.token;
+        if (token) {
+          localStorage.setItem('token', token);
+          checkAuth();
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [isMounted, checkAuth]);
+
   // Redirect if not authenticated (client-side only)
   useEffect(() => {
     if (!isMounted || authLoading) return;
@@ -63,6 +84,11 @@ export default function SocialsContent() {
       if (container) {
         tgInitializedRef.current = true;
         container.innerHTML = '';
+
+        const token = localStorage.getItem('token') || '';
+        const origin = window.location.origin;
+        const authUrl = `https://api.ancial.ru/api/V2/oauth/Telegram.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
+
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
         script.async = true;
@@ -70,7 +96,7 @@ export default function SocialsContent() {
         script.setAttribute('data-size', 'large');
         script.setAttribute('data-userpic', 'false');
         script.setAttribute('data-radius', '30');
-        script.setAttribute('data-auth-url', 'https://ancial.ru/api/V2/oauth/Telegram.php?action=connect');
+        script.setAttribute('data-auth-url', authUrl);
         script.setAttribute('data-request-access', 'write');
         container.appendChild(script);
       }
@@ -93,15 +119,19 @@ export default function SocialsContent() {
           yandexBtn.innerHTML = '';
           setYandexLoading(false);
 
+          const token = localStorage.getItem('token') || '';
+          const origin = window.location.origin;
+          const redirectUri = `https://api.ancial.ru/api/V2/oauth/Yandex.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
+
           const YaAuthSuggest = (window as any).YaAuthSuggest;
           if (YaAuthSuggest) {
             YaAuthSuggest.init(
               {
                 client_id: 'b9cad7a054c14c518c94de0183c3f000',
                 response_type: 'token',
-                redirect_uri: 'https://ancial.ru/api/V2/oauth/Yandex.php?action=connect'
+                redirect_uri: redirectUri
               },
-              'https://ancial.ru/api/V2/oauth/Yandex.php',
+              'https://api.ancial.ru/api/V2/oauth/Yandex.php',
               {
                 view: 'button',
                 parentId: 'yandexbutton',

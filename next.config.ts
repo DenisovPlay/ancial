@@ -1,4 +1,10 @@
 import type { NextConfig } from "next";
+
+// Disable TLS validation errors in local development for the misconfigured api.ancial.ru SSL certificate
+if (process.env.NODE_ENV === 'development') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://api.ancial.ru';
 
 const nextConfig: NextConfig = {
@@ -47,6 +53,14 @@ const nextConfig: NextConfig = {
         { // Proxy for static assets like images, CSS, etc. that are served from the API server
           source: '/includes/:path*',
           destination: `${API_BASE}/includes/:path*`,
+        },
+        { // Proxy for legacy redirect handler
+          source: '/redirect',
+          destination: `${API_BASE}/redirect`,
+        },
+        { // Proxy for weather app and other included legacy apps
+          source: '/apps/included/:path*',
+          destination: `${API_BASE}/apps/included/:path*`,
         },
       ],
     };
