@@ -52,8 +52,8 @@ export default function SocialsContent() {
     if (!isMounted) return;
 
     const handleMessage = (event: MessageEvent) => {
-      // Validate origin to ensure it's from our API server
-      if (event.origin !== 'https://api.ancial.ru') return;
+      // Validate origin to ensure it's from our frontend server (since oauth page is proxied)
+      if (event.origin !== 'https://ancial.ru') return;
 
       if (event.data && event.data.type === 'oauth_success') {
         const token = event.data.token;
@@ -87,7 +87,7 @@ export default function SocialsContent() {
 
         const token = localStorage.getItem('token') || '';
         const origin = window.location.origin;
-        const authUrl = `https://api.ancial.ru/api/V2/oauth/Telegram.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
+        const authUrl = `https://ancial.ru/api/V2/oauth/Telegram.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
 
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -121,7 +121,7 @@ export default function SocialsContent() {
 
           const token = localStorage.getItem('token') || '';
           const origin = window.location.origin;
-          const redirectUri = `https://api.ancial.ru/api/V2/oauth/Yandex.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
+          const redirectUri = `https://ancial.ru/api/V2/oauth/Yandex.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
 
           const YaAuthSuggest = (window as any).YaAuthSuggest;
           if (YaAuthSuggest) {
@@ -131,7 +131,7 @@ export default function SocialsContent() {
                 response_type: 'token',
                 redirect_uri: redirectUri
               },
-              'https://api.ancial.ru/api/V2/oauth/Yandex.php',
+              'https://ancial.ru/api/V2/oauth/Yandex.php',
               {
                 view: 'button',
                 parentId: 'yandexbutton',
