@@ -90,7 +90,7 @@ function resolveWebSocketUrl() {
   if (explicitUrl) return explicitUrl;
 
   const apiBase = process.env.NEXT_PUBLIC_API_BASE?.trim();
-  const base = apiBase || 'https://ancial.ru';
+  const base = apiBase || 'https://api.ancial.ru';
 
   if (!base) return '';
 
