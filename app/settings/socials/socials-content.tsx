@@ -364,6 +364,24 @@ export default function SocialsContent() {
         </div>
       </div>
 
+      <div className="w-full max-w-3xl px-3 lg:px-0">
+        <div className="bg-amber-500/10 text-amber-500 rounded-3xl w-full p-4 border border-zinc-600/30 flex flex-col justify-center gap-2">
+          <span className="font-semibold text-lg">Важная информация для пользователей из России</span>
+
+          <span className="font-light">
+            В соответствии с требованиями Федерального закона № 149-ФЗ, вход на сайт через иностранные мессенджеры и сервисы <b>(в частности, через Telegram)</b> больше не поддерживается.
+          </span>
+
+          <span className="font-light">
+            <b className="font-semibold">Обращаем ваше внимание:</b> вы по-прежнему можете привязать ваш Telegram-аккаунт в настройках профиля, однако использовать его для авторизации на сайте больше нельзя.
+          </span>
+
+          <span className="font-light">
+            Поскольку регистрация аккаунтов всегда осуществлялась иными способами, ваши данные в полной безопасности. Для входа, пожалуйста, используйте ваш <b>номер телефона, почту или логин</b> (подтверждение номера, как и прежде, осуществляется через сервисы Яндекса).
+          </span>
+        </div>
+      </div>
+
       <div className="lg:hidden"><br /><br /><br /><br /></div>
     </div>
   );
