@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const LEGACY_ORIGIN = process.env.NEXT_PUBLIC_API_BASE || 'https://ancial.ru';
+const LEGACY_ORIGIN = process.env.NEXT_PUBLIC_API_BASE || 'https://api.ancial.ru';
 
 export async function proxyLegacyJson(path: string, searchParams?: URLSearchParams) {
   const url = new URL(path, LEGACY_ORIGIN);
