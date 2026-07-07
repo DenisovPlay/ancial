@@ -23,6 +23,7 @@ import {
   cn,
   decodeHtmlEntities,
   getImageUrl,
+  getTrackArtwork,
   normalizeText,
   toNumber,
 } from '../../pulse-components';
@@ -206,7 +207,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
         widgets: [{ type: 'music', track_id: resolvedTrackId.toString() }],
         preview: {
           authorName: decodeHtmlEntities(t.artist) || lang?.artist || 'Исполнитель',
-          authorImg: getImageUrl(t.img, '/img/noimg.png'),
+          authorImg: getImageUrl(getTrackArtwork(t), '/img/noimg.png'),
           contentSnippet: decodeHtmlEntities(t.title) || lang?.untitled || 'Без названия',
         }
       });
@@ -382,6 +383,10 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
       ) : null}
 
       <ShareModal
+        copyLabel={lang?.copylink || 'Скопировать ссылку'}
+        title={lang?.share || 'Поделиться'}
+        onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success', 3)}
+        onCopyFailed={() => showPulseNote(shareUrl, 'info', 5)}
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         shareUrl={shareUrl}
