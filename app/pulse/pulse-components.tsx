@@ -161,12 +161,14 @@ export function ActionIcon({ name, className }: { className?: string; name: stri
 }
 
 export function PulsePageHeader({
+  className,
   onBack,
 }: {
+  className?: string;
   onBack: () => void;
 }) {
   return (
-    <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
+    <div className={cn("sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3", className)}>
       <div className="w-full max-w-screen-2xl px-3 lg:px-0">
         <button
           type="button"
@@ -407,19 +409,19 @@ export function PulseTrackRow({
   const manageActions = [
     isAuthenticated && isOwnTrack && onEditTrack
       ? {
-          icon: 'IC-edit',
-          key: 'edit',
-          label: lang?.edit || 'Изменить',
-          onClick: () => onEditTrack(track),
-        }
+        icon: 'IC-edit',
+        key: 'edit',
+        label: lang?.edit || 'Изменить',
+        onClick: () => onEditTrack(track),
+      }
       : null,
     isAuthenticated && isOwnTrack && onDeleteTrack
       ? {
-          icon: 'IC-trash',
-          key: 'delete',
-          label: lang?.delete || 'Удалить',
-          onClick: () => onDeleteTrack(track),
-        }
+        icon: 'IC-trash',
+        key: 'delete',
+        label: lang?.delete || 'Удалить',
+        onClick: () => onDeleteTrack(track),
+      }
       : null,
   ].filter(Boolean) as Array<{
     icon: string;
@@ -430,11 +432,11 @@ export function PulseTrackRow({
   const footerActions = [
     firstArtistId
       ? {
-          icon: 'IC-user',
-          key: 'artist',
-          label: lang?.artist || 'Исполнитель',
-          onClick: () => onOpenArtist(firstArtistId),
-        }
+        icon: 'IC-user',
+        key: 'artist',
+        label: lang?.artist || 'Исполнитель',
+        onClick: () => onOpenArtist(firstArtistId),
+      }
       : null,
     {
       icon: 'IC-share',
@@ -444,11 +446,11 @@ export function PulseTrackRow({
     },
     onReportTrack
       ? {
-          icon: 'IC-report',
-          key: 'report',
-          label: lang?.report || 'Пожаловаться',
-          onClick: () => void onReportTrack(track),
-        }
+        icon: 'IC-report',
+        key: 'report',
+        label: lang?.report || 'Пожаловаться',
+        onClick: () => void onReportTrack(track),
+      }
       : null,
   ].filter(Boolean) as Array<{
     icon: string;
@@ -562,7 +564,7 @@ export function PulseLegalFooter({ className }: { className?: string }) {
       <div className="flex w-full flex-col items-center justify-center gap-1.5 lg:flex-row">
         <span className="cutetext text-4xl font-bold text-white">18+</span>
         <span className="text-center text-sm text-zinc-400">
-          <span className="font-bold text-purple-500">Pulse</span> - информационный посредник (ст. 15.1 Федерального закона № 149-ФЗ), платформа для загрузки и прослушивания аудиофайлов пользователями. Может содержаться контент с возрастным ограничением 18+, отмечен символом &quot;E&quot;.
+          <span className="font-bold text-purple-500">Pulse </span> - информационный посредник (ст. 15.1 Федерального закона № 149-ФЗ), платформа для загрузки и прослушивания аудиофайлов пользователями. Может содержаться контент с возрастным ограничением 18+, отмечен символом &quot;E&quot;.
           <br />
           Администрация не размещает контент самостоятельно, не модерирует его заранее и не несёт ответственности за правомерность материалов.
           <br />
@@ -636,5 +638,76 @@ export function PulseReportModal({
         ))}
       </div>
     </Modal>
+  );
+}
+
+export function TrackCollectionPanel({
+  buttonVisible = true,
+  collectionId,
+  currentCollectionId,
+  isAuthenticated,
+  isLoading,
+  isPlaying,
+  onOpenCollection,
+  onPlayCollection,
+  onRenderTrack,
+  title,
+  tracks,
+}: {
+  buttonVisible?: boolean;
+  collectionId: string;
+  currentCollectionId: string;
+  isAuthenticated?: boolean;
+  isLoading: boolean;
+  isPlaying: boolean;
+  onOpenCollection: () => void;
+  onPlayCollection: () => void;
+  onRenderTrack: (track: PulseTrack, index: number) => React.ReactNode;
+  title: React.ReactNode;
+  tracks: PulseTrack[] | null;
+}) {
+  const { lang } = useAuth();
+  const panelIsActive = currentCollectionId === collectionId && isPlaying;
+
+  return (
+    <div className="flex flex-col justify-center gap-3 rounded-2xl shadow">
+      <div className="flex items-center gap-3 px-3 lg:px-0">
+        <button type="button" onClick={onOpenCollection} className="flex-grow cursor-pointer text-left text-2xl font-black cutetext duration-300 hover:text-zinc-300 active:scale-95 lg:text-3xl xl:text-4xl">
+          {title}
+        </button>
+        {buttonVisible && isAuthenticated !== false ? (
+          <button
+            type="button"
+            onClick={onPlayCollection}
+            className={cn(
+              'shrink-0 cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500 p-3 shadow duration-300 hover:bg-purple-600 active:scale-95',
+              panelIsActive && 'bg-purple-600',
+            )}
+            aria-label={panelIsActive ? `Pause ${collectionId}` : `Play ${collectionId}`}
+          >
+            <ActionIcon className="h-6 w-6" name={panelIsActive ? 'IC-pause' : 'IC-play'} />
+          </button>
+        ) : null}
+      </div>
+
+      <div className="relative h-full rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 duration-300">
+        {isLoading ? <TracksPanelSkeleton /> : null}
+        {!isLoading && tracks?.length ? (
+          <div className="flex flex-col gap-3">
+            {tracks.slice(0, 5).map((track, index) => (
+              <React.Fragment key={`${collectionId}-${track.sid ?? index}`}>
+                {onRenderTrack(track, index)}
+              </React.Fragment>
+            ))}
+          </div>
+        ) : null}
+        {!isLoading && !tracks?.length ? (
+          <div className="flex h-full min-h-72 flex-col items-center justify-center gap-3 text-center text-zinc-300">
+            <ActionIcon className="h-12 w-12 fill-white" name="IC-music" />
+            <span className="text-sm text-zinc-400">{lang?.empty || 'Пока пусто'}</span>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }

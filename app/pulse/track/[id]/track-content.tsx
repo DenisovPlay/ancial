@@ -4,10 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Dropdown, DropdownItem } from '../../../components/navigation';
+import ShareModal from '../../../components/share-modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { AncialAPI } from '../../../lib/api-v2';
+import { cache } from '../../../lib/cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
 import {
   ActionIcon,
@@ -15,12 +17,17 @@ import {
   PulseEmptyState,
   PulseLegalFooter,
   PulsePageHeader,
+  PulseTrack,
+  PulseTrackRow,
+  TrackCollectionPanel,
   cn,
   decodeHtmlEntities,
   getImageUrl,
   normalizeText,
   toNumber,
 } from '../../pulse-components';
+import { getPulseExternalUrl } from '../../pulse-navigation';
+import { PulseHeader } from '../../pulse-header';
 
 type PulseTrackPageTrack = {
   artist?: string | null;
@@ -70,6 +77,23 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   const [loading, setLoading] = useState(true);
   const [track, setTrack] = useState<PulseTrackPageTrack | null>(null);
 
+  const [searchValue, setSearchValue] = useState('');
+  const [similarTracks, setSimilarTracks] = useState<PulseTrack[] | null>(() => {
+    const cached = cache.get<PulseTrack[]>(`similar_tracks_${trackId}`, { category: 'pulse' });
+    return Array.isArray(cached) ? cached : null;
+  });
+  const [isSimilarLoading, setIsSimilarLoading] = useState(!similarTracks);
+
+  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => {
+    const cachedFavoriteIds = cache.get<number[]>('pulse_fav_ids', { category: 'pulse' });
+    return Array.isArray(cachedFavoriteIds)
+      ? cachedFavoriteIds.map((id) => toNumber(id)).filter(Boolean)
+      : [];
+  });
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [shareAttachment, setShareAttachment] = useState<any>(null);
+
   const userCountry = useMemo(() => {
     const nextCountry = normalizeText(
       typeof window !== 'undefined'
@@ -107,10 +131,28 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
         if (!cancelled) setLoading(false);
       });
 
+    void AncialAPI.pulseGetPlaylist<PulseTrack[]>({ gid: `Track_${trackId}` })
+      .then((result) => {
+        if (cancelled) return;
+        setSimilarTracks(result || []);
+        cache.set(`similar_tracks_${trackId}`, result || [], { category: 'pulse' });
+      })
+      .catch(() => {
+        if (!cancelled) setSimilarTracks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsSimilarLoading(false);
+      });
+
     return () => {
       cancelled = true;
     };
   }, [trackId]);
+
+  const handleSearchSubmit = useCallback((event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    router.push(`/pulse/search?q=${encodeURIComponent(searchValue)}`);
+  }, [router, searchValue]);
 
   const likeTrack = useCallback(async () => {
     if (!isAuthenticated) {
@@ -153,9 +195,43 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
     }
   }, [isAuthenticated, openAddToPlaylist, showPulseNote, trackNumericId]);
 
+  const copyTrackLink = useCallback(async (tid: number | string, t?: PulseTrack) => {
+    const resolvedTrackId = toNumber(tid);
+    if (!resolvedTrackId) return;
+
+    setShareUrl(getPulseExternalUrl(`/pulse/track/${resolvedTrackId}`));
+
+    if (t) {
+      setShareAttachment({
+        widgets: [{ type: 'music', track_id: resolvedTrackId.toString() }],
+        preview: {
+          authorName: decodeHtmlEntities(t.artist) || lang?.artist || 'Исполнитель',
+          authorImg: getImageUrl(t.img, '/img/noimg.png'),
+          contentSnippet: decodeHtmlEntities(t.title) || lang?.untitled || 'Без названия',
+        }
+      });
+    } else {
+      setShareAttachment(null);
+    }
+
+    setIsShareModalOpen(true);
+  }, [lang]);
+
   return (
     <div className="flex flex-col items-center justify-center gap-3 pb-0 duration-300 lg:pb-64">
-      <PulsePageHeader onBack={() => router.push('/pulse')} />
+      <PulseHeader
+        className="hidden md:flex"
+        isAuthenticated={isAuthenticated}
+        lang={lang}
+        onLogoClick={() => router.push('/pulse')}
+        onOpenMyPulse={() => router.push('/pulse/my')}
+        onSubmitSearch={handleSearchSubmit}
+        searchValue={searchValue}
+        setSearchValue={setSearchValue}
+        hideSearchOnMobile={true}
+        hideProfileOnMobile={true}
+      />
+      <PulsePageHeader className="block md:hidden" onBack={() => router.push('/pulse')} />
 
       {loading ? (
         <div className="flex w-full max-w-screen-2xl flex-col items-center justify-center gap-6 lg:flex-row lg:justify-start">
@@ -269,8 +345,49 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
             </div>
           </div>
 
+          <div className="w-full max-w-screen-2xl mt-6">
+            <TrackCollectionPanel
+              collectionId={`Track_${trackId}`}
+              currentCollectionId={currentSongId ? `Track_${trackId}` : ''}
+              isAuthenticated={isAuthenticated}
+              isLoading={isSimilarLoading}
+              isPlaying={isPlaying && Boolean(currentSongId)}
+              onOpenCollection={() => { }}
+              onPlayCollection={() => { }}
+              buttonVisible={false}
+              title={lang?.similar || 'Похожее'}
+              tracks={similarTracks}
+              onRenderTrack={(t, index) => (
+                <PulseTrackRow
+                  currentSongId={currentSongId}
+                  favoriteIds={favoriteIds}
+                  isAuthenticated={isAuthenticated}
+                  onAddToPlaylist={(id) => openAddToPlaylist(toNumber(id))}
+                  onCopyTrackLink={copyTrackLink}
+                  onLikeTrack={async () => { }}
+                  onOpenArtist={(id) => router.push(`/pulse/artist/${id}`)}
+                  onPlayTrack={(clickedTrack) => {
+                    if (clickedTrack.sid) void playTrack(toNumber(clickedTrack.sid));
+                  }}
+                  onQueueTrackNext={async () => { }}
+                  track={t}
+                  trackIndex={index}
+                  user={user}
+                  userCountry={userCountry}
+                />
+              )}
+            />
+          </div>
         </>
       ) : null}
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        shareUrl={shareUrl}
+        attachmentWidgets={shareAttachment?.widgets}
+        attachmentPreview={shareAttachment?.preview}
+      />
 
       <PulseLegalFooter className="mt-3" />
     </div>

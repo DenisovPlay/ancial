@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ActionIcon, PulseLogo, cn } from './pulse-components';
 
 export function PulseHeader({
+  className,
   isAuthenticated,
   lang,
   onLogoClick,
@@ -16,6 +17,7 @@ export function PulseHeader({
   hideProfileOnMobile,
   centerLogoOnMobile,
 }: {
+  className?: string;
   isAuthenticated: boolean;
   lang?: Record<string, string> | null;
   onLogoClick: () => void;
@@ -32,21 +34,22 @@ export function PulseHeader({
 
   return (
     <div
-      className="sticky top-0 flex min-h-[60px] w-full max-w-screen-2xl items-center justify-between bg-gradient-to-b from-black via-black/90 to-transparent px-3 pt-3 lg:px-0"
+      className={cn("sticky top-0 flex w-full justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3", className)}
       style={{ zIndex: 1300 }}
     >
-      <button
-        type="button"
-        onClick={onLogoClick}
-        className={cn(
-          'shrink-0 overflow-hidden duration-300 active:scale-95',
-          isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100 mr-3',
-          centerLogoOnMobile && "absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 lg:left-auto"
-        )}
-        aria-label="Pulse home"
-      >
-        <PulseLogo className="w-32 sm:w-48 hover:opacity-80 duration-300 cursor-pointer" />
-      </button>
+      <div className="flex min-h-[60px] w-full max-w-screen-2xl items-center justify-between px-3 lg:px-0">
+        <button
+          type="button"
+          onClick={onLogoClick}
+          className={cn(
+            'shrink-0 overflow-hidden duration-300 active:scale-95',
+            isSearchFocused ? 'w-0 opacity-0 scale-95' : 'w-32 sm:w-48 opacity-100 scale-100 mr-3',
+            centerLogoOnMobile && "absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 lg:left-auto"
+          )}
+          aria-label="Pulse home"
+        >
+          <PulseLogo className="w-32 sm:w-48 hover:opacity-80 duration-300 cursor-pointer" />
+        </button>
 
       <form
         onSubmit={onSubmitSearch}
@@ -83,6 +86,7 @@ export function PulseHeader({
           <ActionIcon className="h-8 w-8" name="IC-me" />
         </button>
       ) : null}
+      </div>
     </div>
   );
 }

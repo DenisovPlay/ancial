@@ -18,6 +18,7 @@ import {
   PulsePlaylistTile,
   PulseReportModal,
   PulsePlaylistTileSkeleton,
+  TrackCollectionPanel,
 } from './pulse-components';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
@@ -522,77 +523,6 @@ function PulseTrackRow({
           ))}
         </div>
       </Dropdown>
-    </div>
-  );
-}
-
-function TrackCollectionPanel({
-  buttonVisible = true,
-  collectionId,
-  currentCollectionId,
-  isAuthenticated,
-  isLoading,
-  isPlaying,
-  onOpenCollection,
-  onPlayCollection,
-  onRenderTrack,
-  title,
-  tracks,
-}: {
-  buttonVisible?: boolean;
-  collectionId: HomeTrackCollectionId;
-  currentCollectionId: string;
-  isAuthenticated?: boolean;
-  isLoading: boolean;
-  isPlaying: boolean;
-  onOpenCollection: () => void;
-  onPlayCollection: () => void;
-  onRenderTrack: (track: PulseTrack, index: number) => React.ReactNode;
-  title: React.ReactNode;
-  tracks: PulseTrack[] | null;
-}) {
-  const { lang } = useAuth();
-  const panelIsActive = currentCollectionId === collectionId && isPlaying;
-
-  return (
-    <div className="flex flex-col justify-center gap-3 rounded-2xl shadow">
-      <div className="flex items-center gap-3 px-3 lg:px-0">
-        <button type="button" onClick={onOpenCollection} className="flex-grow cursor-pointer text-left text-2xl font-black cutetext duration-300 hover:text-zinc-300 active:scale-95 lg:text-3xl xl:text-4xl">
-          {title}
-        </button>
-        {buttonVisible && isAuthenticated !== false ? (
-          <button
-            type="button"
-            onClick={onPlayCollection}
-            className={cn(
-              'shrink-0 cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500 p-3 shadow duration-300 hover:bg-purple-600 active:scale-95',
-              panelIsActive && 'bg-purple-600',
-            )}
-            aria-label={panelIsActive ? `Pause ${collectionId}` : `Play ${collectionId}`}
-          >
-            <ActionIcon className="h-6 w-6" name={panelIsActive ? 'IC-pause' : 'IC-play'} />
-          </button>
-        ) : null}
-      </div>
-
-      <div className="relative h-full rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 duration-300">
-        {isLoading ? <TracksPanelSkeleton /> : null}
-        {!isLoading && tracks?.length ? (
-          <div className="flex flex-col gap-3">
-            {tracks.slice(0, 5).map((track, index) => (
-              <React.Fragment key={`${collectionId}-${track.sid ?? index}`}>
-                {onRenderTrack(track, index)}
-              </React.Fragment>
-            ))}
-          </div>
-        ) : null}
-        {!isLoading && !tracks?.length ? (
-          <div className="flex h-full min-h-72 flex-col items-center justify-center gap-3 text-center text-zinc-300">
-            <ActionIcon className="h-12 w-12 fill-white" name="IC-music" />
-            <span className="text-sm text-zinc-400">{lang?.empty || 'Пока пусто'}</span>
-          </div>
-        ) : null}
-      </div>
     </div>
   );
 }

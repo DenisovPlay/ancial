@@ -29,6 +29,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/legal',
+        destination: '/about/legal',
+        permanent: true, // or false if it's temporary
+      },
+    ];
+  },
   async rewrites() {
     return {
       afterFiles: [
