@@ -285,7 +285,8 @@ body:has(.apps-overlay-route) {
   overflow: hidden;
 }
 
-body:has(.apps-overlay-route) [data-app-nav] {
+body:has(.apps-overlay-route) [data-app-nav],
+body:has(.apps-overlay-route) div:has(> .pulse-player-mini-shell) {
   display: none !important;
 }
 

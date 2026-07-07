@@ -853,10 +853,13 @@ export function PulsePlayerProvider({
   const [eqGains, setEqGains] = useState<number[]>(() => readSavedEqGains());
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [canUseEqualizer, setCanUseEqualizer] = useState(false);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
-      setIsMobileDevice(shouldDisableWebAudioForDevice());
+      const isMobile = shouldDisableWebAudioForDevice();
+      setIsMobileDevice(isMobile);
+      setCanUseEqualizer(!isMobile);
     }
   }, []);
   const eqGainsRef = useRef<number[]>(eqGains);
@@ -2488,15 +2491,17 @@ export function PulsePlayerProvider({
                             <DropdownItem onClick={() => openAddToPlaylist(currentSongId)} icon="IC-plus">
                               В плейлист
                             </DropdownItem>
-                            <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
-                              Эквалайзер
-                            </DropdownItem>
+                            {canUseEqualizer && (
+                              <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
+                                Эквалайзер
+                              </DropdownItem>
+                            )}
                           </Dropdown>
                         ) : isAuthenticated && isMobileDevice ? (
                           <button title="В плейлист" type="button" onClick={() => openAddToPlaylist(currentSongId)} className="cursor-pointer duration-300 active:scale-95 block group">
                             <PlayerIcon name="IC-plus" className="h-9 w-9 fill-white duration-300 group-hover:fill-zinc-300" />
                           </button>
-                        ) : !isAuthenticated && !isMobileDevice ? (
+                        ) : !isAuthenticated && !isMobileDevice && canUseEqualizer ? (
                           <button title="Эквалайзер" type="button" onClick={() => setIsEqualizerOpen(true)} className="cursor-pointer duration-300 active:scale-95 block group">
                             <PlayerIcon name="IC-equalizer" className="h-9 w-9 fill-white duration-300 group-hover:fill-zinc-300" />
                           </button>
@@ -2777,13 +2782,15 @@ export function PulsePlayerProvider({
           notify({ content, type, time });
         }}
       />
-      <PulseEqualizerModal
-        isOpen={isEqualizerOpen}
-        onClose={() => setIsEqualizerOpen(false)}
-        eqGains={eqGains}
-        onGainChange={changeEqGain}
-        onReset={resetEqGains}
-      />
+      {canUseEqualizer && (
+        <PulseEqualizerModal
+          isOpen={isEqualizerOpen}
+          onClose={() => setIsEqualizerOpen(false)}
+          eqGains={eqGains}
+          onGainChange={changeEqGain}
+          onReset={resetEqGains}
+        />
+      )}
     </PulsePlayerContext.Provider>
   );
 }
