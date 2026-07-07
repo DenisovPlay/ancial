@@ -90,17 +90,27 @@ function resolveWebSocketUrl() {
   if (explicitUrl) return explicitUrl;
 
   const apiBase = process.env.NEXT_PUBLIC_API_BASE?.trim();
-  const base = apiBase || 'https://api.ancial.ru';
+  let base = apiBase || 'https://api.ancial.ru';
 
   if (!base) return '';
 
   try {
-    const url = new URL('/ws', base);
+    if (typeof window !== 'undefined') {
+      if (base.startsWith('/')) {
+        base = window.location.origin + base;
+      } else if (!/^https?:\/\//i.test(base)) {
+        base = window.location.protocol + '//' + base;
+      }
+    }
+
+    const wsPath = base.endsWith('/') ? base + 'ws' : base + '/ws';
+    const url = new URL(wsPath);
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     url.search = '';
     url.hash = '';
     return url.toString();
-  } catch {
+  } catch (err) {
+    console.error('[GlobalWS] Failed to construct WS URL', err);
     return '';
   }
 }
