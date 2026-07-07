@@ -58,6 +58,9 @@ export const PERSISTENT_KEYS = new Set([
   'pulse-eq-bands'
 ]);
 
+export const SETTING_KEY_CACHE_TTL = 'ancial:cache_ttl_setting';
+export const DEFAULT_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 // Map legacy keys to their categories and subcategories
 export const LEGACY_KEY_MAPPINGS: Record<string, { category: CacheCategory; subcategory?: string }> = {
   'friends_cache': { category: 'friends', subcategory: 'list' },
@@ -355,7 +358,20 @@ export const cache = {
     };
 
     if (options.ttl !== undefined) {
-      envelope.expiresAt = Date.now() + options.ttl;
+      if (options.ttl > 0) {
+        envelope.expiresAt = Date.now() + options.ttl;
+      }
+    } else {
+      let userTtl = DEFAULT_CACHE_TTL;
+      try {
+        const raw = window.localStorage.getItem(SETTING_KEY_CACHE_TTL);
+        if (raw) {
+          userTtl = parseInt(raw, 10);
+        }
+      } catch {}
+      if (userTtl > 0) {
+        envelope.expiresAt = Date.now() + userTtl;
+      }
     }
     if (options.isPersistent) {
       envelope.isPersistent = true;

@@ -94,8 +94,8 @@ export default function SignupContent() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center">
-      <div className="flex flex-col w-full lg:w-fit">
+    <main className="md:min-h-screen flex items-center justify-center">
+      <div className="flex flex-col w-full md:w-fit">
         <div className="bg-purple-600/25 duration-300 text-purple-600 rounded-3xl flex p-1 justify-center items-center pb-10 -mb-9 shadow">
           <span>
             <svg className="w-5 h-5 inline fill-purple-600 mr-1" viewBox="0 0 48 48">

@@ -4,7 +4,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { cache, PERSISTENT_KEYS, resolveKeyInfo } from '../../lib/cache';
+import { cache, PERSISTENT_KEYS, resolveKeyInfo, DEFAULT_CACHE_TTL, SETTING_KEY_CACHE_TTL } from '../../lib/cache';
+import { motion, AnimatePresence } from 'framer-motion';
+import Modal from '../../components/modal';
 
 // Helper for formatting sizes
 const formatSize = (bytes: number) => {
@@ -82,6 +84,9 @@ export default function CacheSettingsPage() {
   const [selectedCats, setSelectedCats] = useState<Set<string>>(new Set());
   const [selectedSubs, setSelectedSubs] = useState<Set<string>>(new Set()); // "category:subcategory"
 
+  const [isTtlModalOpen, setIsTtlModalOpen] = useState(false);
+  const [currentTtl, setCurrentTtl] = useState<number>(DEFAULT_CACHE_TTL);
+
   const [cacheData, setCacheData] = useState<{
     totalSize: number;
     categories: Record<
@@ -105,6 +110,7 @@ export default function CacheSettingsPage() {
       profile: { label: lang?.category_profile || 'Профиль', color: '#06b6d4' }, // cyan
       pulse: { label: lang?.category_pulse || 'Pulse', color: '#ef4444' }, // red
       notifications: { label: lang?.category_notifications || 'Уведомления', color: '#eab308' }, // yellow
+      home: { label: lang?.category_home || 'Главная', color: '#71717a' }, // zinc
       other: { label: lang?.category_other || 'Другое', color: '#71717a' }, // zinc/grey
     };
   }, [lang]);
@@ -126,6 +132,9 @@ export default function CacheSettingsPage() {
       list: lang?.subcategory_friends_list || 'Список друзей',
       groups_list: lang?.subcategory_groups_list || 'Мои сообщества',
       profile_data: lang?.subcategory_profile_data || 'Данные профилей',
+      general: lang?.subcategory_general || 'Общие данные',
+      weather: lang?.subcategory_weather || 'Погода',
+      currency: lang?.subcategory_currency || 'Курсы валют',
       artists: lang?.subcategory_artists || 'Артисты',
       from_pulse: lang?.subcategory_from_pulse || 'Из Pulse',
       listened: lang?.subcategory_listened || 'Прослушано',
@@ -187,6 +196,22 @@ export default function CacheSettingsPage() {
     }
 
     setCacheData({ totalSize: total, categories: cats });
+
+    try {
+      const savedTtl = window.localStorage.getItem(SETTING_KEY_CACHE_TTL);
+      if (savedTtl) {
+        setCurrentTtl(parseInt(savedTtl, 10));
+      }
+    } catch { }
+  };
+
+  const handleSaveTtl = (ttl: number) => {
+    setCurrentTtl(ttl);
+    try {
+      window.localStorage.setItem(SETTING_KEY_CACHE_TTL, ttl.toString());
+    } catch { }
+    setIsTtlModalOpen(false);
+    showNote({ content: lang?.settings_saved || 'Настройки сохранены', type: 'success', time: 3 });
   };
 
   useEffect(() => {
@@ -329,13 +354,21 @@ export default function CacheSettingsPage() {
     <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-purple-400/25 md:from-transparent via-transparent to-transparent">
       {/* Sticky Header */}
       <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent" style={{ zIndex: 99 }}>
-        <div className="w-full max-w-3xl flex items-center gap-3">
+        <div className="w-full max-w-3xl flex items-center justify-between gap-3">
           <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-3 cursor-pointer">
             <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
               <use href={`#IC-chevron-left`}></use>
             </svg>
             {lang?.cache_settings || 'Память'}
           </span>
+          <button
+            onClick={() => setIsTtlModalOpen(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-zinc-800/50 hover:bg-zinc-700/50 duration-300 active:scale-95 cursor-pointer text-zinc-300 border border-zinc-600/30"
+          >
+            <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+              <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -433,42 +466,50 @@ export default function CacheSettingsPage() {
                   </div>
 
                   {/* Subcategories Accordion Panel */}
-                  {isExpanded && subKeys.length > 0 && (
-                    <div className="flex flex-col border-t border-zinc-800/60 bg-zinc-950/40 divide-y divide-zinc-900/50">
-                      {subKeys.map((subId) => {
-                        const subLabel = (subcategoryMeta as any)[subId] || subId;
-                        const subData = catData.subcategories[subId];
-                        const isSubSelected = selectedSubs.has(`${catId}:${subId}`);
+                  <AnimatePresence initial={false}>
+                    {isExpanded && subKeys.length > 0 && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="flex flex-col border-t border-zinc-800/60 bg-zinc-950/40 divide-y divide-zinc-900/50 overflow-hidden"
+                      >
+                        {subKeys.map((subId) => {
+                          const subLabel = (subcategoryMeta as any)[subId] || subId;
+                          const subData = catData.subcategories[subId];
+                          const isSubSelected = selectedSubs.has(`${catId}:${subId}`);
 
-                        return (
-                          <div
-                            key={subId}
-                            onClick={() => toggleSelectSub(catId, subId)}
-                            className="flex items-center justify-between p-3 pl-9 gap-3 hover:bg-zinc-900/30 duration-300 cursor-pointer select-none"
-                          >
-                            <div className="flex items-center gap-3">
-                              {/* Subcategory checkbox merged with dot outline */}
-                              <div
-                                className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-300 active:scale-95"
-                                style={{
-                                  borderColor: meta.color,
-                                  backgroundColor: isSubSelected ? meta.color : 'transparent'
-                                }}
-                              >
-                                {isSubSelected && (
-                                  <svg className="w-2.5 h-2.5 fill-black" viewBox="0 0 24 24">
-                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                  </svg>
-                                )}
+                          return (
+                            <div
+                              key={subId}
+                              onClick={() => toggleSelectSub(catId, subId)}
+                              className="flex items-center justify-between p-3 pl-9 gap-3 hover:bg-zinc-900/30 duration-300 cursor-pointer select-none"
+                            >
+                              <div className="flex items-center gap-3">
+                                {/* Subcategory checkbox merged with dot outline */}
+                                <div
+                                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-300 active:scale-95"
+                                  style={{
+                                    borderColor: meta.color,
+                                    backgroundColor: isSubSelected ? meta.color : 'transparent'
+                                  }}
+                                >
+                                  {isSubSelected && (
+                                    <svg className="w-2.5 h-2.5 fill-black" viewBox="0 0 24 24">
+                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <span className="text-zinc-300 text-sm">{subLabel}</span>
                               </div>
-                              <span className="text-zinc-300 text-sm">{subLabel}</span>
+                              <span className="text-zinc-500 font-mono text-xs">{formatSize(subData.size)}</span>
                             </div>
-                            <span className="text-zinc-500 font-mono text-xs">{formatSize(subData.size)}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })
@@ -476,6 +517,40 @@ export default function CacheSettingsPage() {
       </div>
 
       <div className="lg:hidden"><br /><br /><br /><br /></div>
+
+      <Modal isOpen={isTtlModalOpen} onClose={() => setIsTtlModalOpen(false)} title={lang?.cache_settings_ttl || 'Срок хранения кеша'}>
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-zinc-400">
+            {lang?.cache_ttl_desc || 'Выберите, как долго приложение должно хранить данные в кеше.'}
+          </p>
+          <div className="flex flex-col gap-2 mt-2">
+            {[
+              { value: 1 * 24 * 60 * 60 * 1000, label: lang?.cache_ttl_1d || '1 день' },
+              { value: 3 * 24 * 60 * 60 * 1000, label: lang?.cache_ttl_3d || '3 дня' },
+              { value: 7 * 24 * 60 * 60 * 1000, label: lang?.cache_ttl_7d || '7 дней' },
+              { value: 14 * 24 * 60 * 60 * 1000, label: lang?.cache_ttl_14d || '14 дней' },
+              { value: 30 * 24 * 60 * 60 * 1000, label: lang?.cache_ttl_30d || '30 дней' },
+              { value: 0, label: lang?.cache_ttl_inf || 'Бессрочно' },
+            ].map((opt) => (
+              <div
+                key={opt.value}
+                onClick={() => handleSaveTtl(opt.value)}
+                className={`p-3 rounded-3xl border cursor-pointer duration-300 active:scale-95 flex items-center justify-between ${currentTtl === opt.value
+                  ? 'border-purple-500 bg-purple-500/10'
+                  : 'border-zinc-700/50 bg-zinc-800/30 hover:bg-zinc-800/60'
+                  }`}
+              >
+                <span className="text-white font-medium">{opt.label}</span>
+                {currentTtl === opt.value && (
+                  <svg className="w-5 h-5 fill-purple-500" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                  </svg>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

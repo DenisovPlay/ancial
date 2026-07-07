@@ -952,6 +952,9 @@ export function PulsePlayerProvider({
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [mode, setMode] = useState<PulsePlayerMode>('mini');
+  const modeRef = useRef<PulsePlayerMode>('mini');
+  if (modeRef.current !== mode) modeRef.current = mode;
+
   const [playlist, setPlaylist] = useState<PulseTrack[]>([]);
   const [index, setIndex] = useState(0);
   const [isPlaylist, setIsPlaylist] = useState(false);
@@ -1170,11 +1173,14 @@ export function PulsePlayerProvider({
     const { forceProgressUpdate = false } = options;
     const nextCurrentTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
     const nextDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
-    setCurrentTime(nextCurrentTime);
-    setDuration(nextDuration);
 
-    if (!seekingSliderRef.current) {
-      setSeekValue(nextCurrentTime);
+    if (modeRef.current === 'full' || forceProgressUpdate) {
+      setCurrentTime(nextCurrentTime);
+      setDuration(nextDuration);
+
+      if (!seekingSliderRef.current) {
+        setSeekValue(nextCurrentTime);
+      }
     }
 
     if (

@@ -56,7 +56,7 @@ export default function PostWidgetPollModal({ isOpen, onClose, onAdd }: PostWidg
   const isValid = question.trim().length > 0 && validOptionsCount >= 2;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={lang?.create_poll || "Создать опрос"} width="md" bodyClassName="!px-4 !pb-4">
+    <Modal isOpen={isOpen} onClose={onClose} title={lang?.create_poll || "Создать опрос"} width="md" bodyClassName="">
       <div className="flex flex-col gap-3">
         <input
           type="text"
