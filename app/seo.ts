@@ -106,3 +106,18 @@ export function createPageMetadata(options: {
     },
   };
 }
+
+// Server-side safe HTML entities decoder
+export function decodeHtmlEntities(str: string | null | undefined): string {
+  if (!str) return '';
+  return str
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&#039;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec))
+    .trim();
+}

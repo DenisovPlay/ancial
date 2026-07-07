@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 
-import { createPageMetadata } from '../../../seo';
+import { createPageMetadata, decodeHtmlEntities } from '../../../seo';
 import {
   getPulseBuiltinPlaylistDescription,
   getPulseBuiltinPlaylistTitle,
   normalizePulsePlaylistId,
 } from '../playlist-model';
 import PulsePlaylistContent from './playlist-content';
-import { decodeHtmlEntities } from '../../pulse-components';
+import { httpsGetJson } from '../../../lib/https-get';
 
 type PulsePlaylistPageProps = {
   params: Promise<{
@@ -30,24 +30,21 @@ export async function generateMetadata({ params }: PulsePlaylistPageProps): Prom
   // If not a built-in playlist, fetch its meta from the DB
   if (!title) {
     try {
-      const res = await fetch(`${API_BASE}/api/V2/pulse/GetPlaylist.php?pid=${playlistId}`, { next: { revalidate: 3600 } });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.success && data?.data?.playlist) {
-          const playlist = data.data.playlist;
-          const pTitle = decodeHtmlEntities(playlist.name) || FALLBACK_TITLE;
-          
-          title = pTitle;
-          description = decodeHtmlEntities(playlist.desk) || `Слушайте плейлист «${pTitle}» в Ancial Pulse. Бесплатно и без рекламы.`;
-          
-          const src = playlist.img;
-          if (src && typeof src === 'string') {
-            ogImage = src.startsWith('http') ? src : `${API_BASE}${src}`;
-          }
+      const data = await httpsGetJson<any>(`${API_BASE}/api/V2/pulse/GetPlaylist.php?pid=${playlistId}`);
+      if (data?.success && data?.data?.playlist) {
+        const playlist = data.data.playlist;
+        const pTitle = decodeHtmlEntities(playlist.name) || FALLBACK_TITLE;
+        
+        title = pTitle;
+        description = decodeHtmlEntities(playlist.desk) || `Слушайте плейлист «${pTitle}» в Ancial Pulse. Бесплатно и без рекламы.`;
+        
+        const src = playlist.img;
+        if (src && typeof src === 'string') {
+          ogImage = src.startsWith('http') ? src : `${API_BASE}${src}`;
         }
       }
     } catch (e) {
-      // ignore
+      console.error('Pulse SEO Playlist generateMetadata fetch error:', e);
     }
   }
 

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
-import { createPageMetadata } from '../../../seo';
+import { createPageMetadata, decodeHtmlEntities } from '../../../seo';
 import PulseArtistContent from './artist-content';
-import { decodeHtmlEntities } from '../../pulse-components';
+import { httpsGetJson } from '../../../lib/https-get';
 
 type PulseArtistPageProps = {
   params: Promise<{
@@ -20,24 +20,21 @@ export async function generateMetadata({ params }: PulseArtistPageProps): Promis
   let ogImage: string | undefined = undefined;
 
   try {
-    const res = await fetch(`${API_BASE}/api/V2/pulse/GetArtist.php?id=${id}`, { next: { revalidate: 3600 } });
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.success && data?.data?.artist) {
-        const artist = data.data.artist;
-        const artistName = decodeHtmlEntities(artist.name) || 'Артист Pulse';
-        
-        title = artistName;
-        description = decodeHtmlEntities(artist.desk) || `Слушайте треки и плейлисты исполнителя ${artistName} в Ancial Pulse.`;
-        
-        const src = artist.img;
-        if (src && typeof src === 'string') {
-          ogImage = src.startsWith('http') ? src : `${API_BASE}${src}`;
-        }
+    const data = await httpsGetJson<any>(`${API_BASE}/api/V2/pulse/GetArtist.php?id=${id}`);
+    if (data?.success && data?.data?.artist) {
+      const artist = data.data.artist;
+      const artistName = decodeHtmlEntities(artist.name) || 'Артист Pulse';
+      
+      title = artistName;
+      description = decodeHtmlEntities(artist.desk) || `Слушайте треки и плейлисты исполнителя ${artistName} в Ancial Pulse.`;
+      
+      const src = artist.img;
+      if (src && typeof src === 'string') {
+        ogImage = src.startsWith('http') ? src : `${API_BASE}${src}`;
       }
     }
   } catch (e) {
-    // ignore
+    console.error('Pulse SEO Artist generateMetadata fetch error:', e);
   }
 
   return createPageMetadata({

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
-import { createPageMetadata } from '../../../seo';
+import { createPageMetadata, decodeHtmlEntities } from '../../../seo';
 import PulseTrackContent from './track-content';
-import { decodeHtmlEntities } from '../../pulse-components';
+import { httpsGetJson } from '../../../lib/https-get';
 
 type PulseTrackPageProps = {
   params: Promise<{
@@ -20,28 +20,25 @@ export async function generateMetadata({ params }: PulseTrackPageProps): Promise
   let ogImage: string | undefined = undefined;
 
   try {
-    const res = await fetch(`${API_BASE}/api/V2/pulse/GetTrack.php?id=${id}`, { next: { revalidate: 3600 } });
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.success && data?.data?.track) {
-        const track = data.data.track;
-        const trackTitle = decodeHtmlEntities(track.name) || 'Неизвестный трек';
-        const trackArtist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
-        
-        title = `${trackArtist} — ${trackTitle}`;
-        description = `Слушайте трек «${trackTitle}» от ${trackArtist} в Ancial Pulse. Бесплатно и без рекламы.`;
-        
-        const artworkArray = Array.isArray(track.artwork) ? track.artwork : [];
-        const cover = artworkArray.find((item: any) => item?.src);
-        const src = cover?.src || track.img;
-        
-        if (src && typeof src === 'string') {
-          ogImage = src.startsWith('http') ? src : `${API_BASE}${src}`;
-        }
+    const data = await httpsGetJson<any>(`${API_BASE}/api/V2/pulse/GetTrack.php?id=${id}`);
+    if (data?.success && data?.data?.track) {
+      const track = data.data.track;
+      const trackTitle = decodeHtmlEntities(track.name) || 'Неизвестный трек';
+      const trackArtist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
+      
+      title = `${trackArtist} — ${trackTitle}`;
+      description = `Слушайте трек «${trackTitle}» от ${trackArtist} в Ancial Pulse. Бесплатно и без рекламы.`;
+      
+      const artworkArray = Array.isArray(track.artwork) ? track.artwork : [];
+      const cover = artworkArray.find((item: any) => item?.src);
+      const src = cover?.src || track.img;
+      
+      if (src && typeof src === 'string') {
+        ogImage = src.startsWith('http') ? src : `${API_BASE}${src}`;
       }
     }
   } catch (e) {
-    // ignore
+    console.error('Pulse SEO Track generateMetadata fetch error:', e);
   }
 
   return createPageMetadata({
