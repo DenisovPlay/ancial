@@ -133,6 +133,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       let checkData = await readSessionUser();
 
       if (checkData.auth === true && checkData.user) {
+        if (checkData.token) {
+          cache.set('token', checkData.token, { category: 'profile' });
+        }
         // Пользователь авторизован на сервере
         applyAuthState(true, checkData.user);
         window.GlobalWS?.init();
@@ -150,6 +153,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             checkData = await readSessionUser();
 
             if (checkData.auth === true && checkData.user) {
+              if (checkData.token) {
+                cache.set('token', checkData.token, { category: 'profile' });
+              }
               applyAuthState(true, checkData.user);
               window.GlobalWS?.init();
             } else {
