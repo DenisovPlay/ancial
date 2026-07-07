@@ -371,22 +371,36 @@ function handleMessage(payload: WsPayload) {
 }
 
 function connect() {
-  if (!hasBrowserWebSocket()) return;
+  console.log('[GlobalWS] connect() called');
+  if (!hasBrowserWebSocket()) {
+    console.log('[GlobalWS] connect aborted: Browser does not support WebSocket');
+    return;
+  }
 
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    console.log('[GlobalWS] connect aborted: socket already open or connecting, state:', ws.readyState);
     return;
   }
 
   token = getStoredToken();
-  if (token.length < MIN_TOKEN_LENGTH) return;
+  console.log('[GlobalWS] Token length:', token.length);
+  if (token.length < MIN_TOKEN_LENGTH) {
+    console.log('[GlobalWS] connect aborted: Token too short');
+    return;
+  }
 
   const socketUrl = resolveWebSocketUrl();
-  if (!socketUrl) return;
+  console.log('[GlobalWS] Resolved socket URL:', socketUrl);
+  if (!socketUrl) {
+    console.log('[GlobalWS] connect aborted: Resolved URL is empty');
+    return;
+  }
 
   isAuthed = false;
   authSent = false;
 
   try {
+    console.log('[GlobalWS] Instantiating WebSocket on:', socketUrl);
     ws = new WebSocket(socketUrl);
   } catch (error) {
     console.error('[GlobalWS] Failed to create socket', error);
@@ -395,6 +409,7 @@ function connect() {
   }
 
   ws.onopen = () => {
+    console.log('[GlobalWS] Socket opened successfully');
     reconnectAttempt = 0;
     stopReconnect();
     startHealth();
@@ -414,9 +429,12 @@ function connect() {
     }
   };
 
-  ws.onerror = () => {};
+  ws.onerror = (err) => {
+    console.error('[GlobalWS] Socket error event:', err);
+  };
 
-  ws.onclose = () => {
+  ws.onclose = (event) => {
+    console.log('[GlobalWS] Socket closed event:', event.code, event.reason);
     ws = null;
     isAuthed = false;
     authSent = false;
@@ -445,8 +463,10 @@ function connect() {
 export const globalWS: GlobalWSClient = {
   init() {
     const nextToken = getStoredToken();
+    console.log('[GlobalWS] init() called. Token length:', nextToken.length, 'hasBrowserWebSocket:', hasBrowserWebSocket());
 
     if (nextToken.length < MIN_TOKEN_LENGTH || !hasBrowserWebSocket()) {
+      console.log('[GlobalWS] init aborted: Token too short or no WS support');
       token = nextToken;
       closeSocket({ suppressReconnect: true });
       ws = null;
@@ -457,6 +477,7 @@ export const globalWS: GlobalWSClient = {
     }
 
     if (token && token !== nextToken) {
+      console.log('[GlobalWS] init: Token changed, reconnecting...');
       token = nextToken;
       pendingSubscriptions.clear();
       pendingPresence.clear();
@@ -474,6 +495,7 @@ export const globalWS: GlobalWSClient = {
     }
 
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      console.log('[GlobalWS] init aborted: WS already open or connecting, state:', ws.readyState);
       return;
     }
 
