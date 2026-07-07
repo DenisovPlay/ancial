@@ -846,6 +846,7 @@ export function PulsePlayerProvider({
   const mobileCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
   const desktopCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
   const volumeSliderRef = useRef<HTMLInputElement | null>(null);
+  const activeBlobUrlRef = useRef<string | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -1320,6 +1321,15 @@ export function PulsePlayerProvider({
       audio.load();
     }
 
+    if (activeBlobUrlRef.current) {
+      try {
+        URL.revokeObjectURL(activeBlobUrlRef.current);
+      } catch (e) {
+        console.error('Failed to revoke object URL on player close', e);
+      }
+      activeBlobUrlRef.current = null;
+    }
+
     stopProgressLoop();
     stopVisualProgressLoop();
     setStatusAudio('');
@@ -1617,7 +1627,35 @@ export function PulsePlayerProvider({
       return;
     }
 
-    currentSongIdRef.current = toNumber(track.sid);
+    // Освобождаем память от старого Blob URL перед загрузкой нового трека
+    if (activeBlobUrlRef.current) {
+      try {
+        URL.revokeObjectURL(activeBlobUrlRef.current);
+      } catch (e) {
+        console.error('Failed to revoke object URL before new track load', e);
+      }
+      activeBlobUrlRef.current = null;
+    }
+
+    const trackId = toNumber(track.sid);
+    let finalSource = trackSource;
+    let isFromCache = false;
+
+    if (trackId > 0) {
+      try {
+        const cachedBlob = await cache.audio.get(trackId);
+        if (cachedBlob) {
+          const localBlobUrl = URL.createObjectURL(cachedBlob);
+          activeBlobUrlRef.current = localBlobUrl;
+          finalSource = localBlobUrl;
+          isFromCache = true;
+        }
+      } catch (e) {
+        console.error('Failed to check audio cache', e);
+      }
+    }
+
+    currentSongIdRef.current = trackId;
     if (retryCount === 0) {
       playbackSessionRef.current += 1;
       listenReportedSessionRef.current = null;
@@ -1632,9 +1670,16 @@ export function PulsePlayerProvider({
       void ensureLikedSongsLoaded();
     }
 
-    if (audio.src !== trackSource) {
-      audio.src = trackSource;
+    if (audio.src !== finalSource) {
+      audio.src = finalSource;
       audio.load();
+    }
+
+    // Если трек играет из сети, запускаем фоновое асинхронное кэширование
+    if (!isFromCache && trackId > 0) {
+      cache.audio.save(trackId, trackSource).catch((err) => {
+        console.error('Failed to auto-cache audio file in background', err);
+      });
     }
 
     showPlayer();

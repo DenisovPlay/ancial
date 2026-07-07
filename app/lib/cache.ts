@@ -15,7 +15,7 @@ export type CacheSubcategory<C extends CacheCategory> =
   C extends 'home'
     ? 'currency' | 'weather'
     : C extends 'pulse'
-    ? 'artists' | 'from_pulse' | 'listened' | 'now_listen' | 'we_like' | 'tracks' | 'favorites' | 'playlists' | 'artist_playlists'
+    ? 'artists' | 'from_pulse' | 'listened' | 'now_listen' | 'we_like' | 'tracks' | 'favorites' | 'playlists' | 'artist_playlists' | 'offline_audio'
     : C extends 'wallet'
     ? 'overview' | 'merchants' | 'merchant_details' | 'accounts' | 'transactions' | 'history'
     : C extends 'chats'
@@ -295,7 +295,159 @@ function trySetItemWithEviction(key: string, valueStr: string): boolean {
   return false;
 }
 
+const DB_NAME = 'ancial-offline-audio';
+const STORE_NAME = 'tracks';
+const DB_VERSION = 1;
+
+function getDB(): Promise<IDBDatabase | null> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !window.indexedDB) {
+      resolve(null);
+      return;
+    }
+    try {
+      const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+      request.onerror = () => resolve(null);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 export const cache = {
+  audio: {
+    async has(trackId: number | string): Promise<boolean> {
+      const db = await getDB();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        try {
+          const transaction = db.transaction(STORE_NAME, 'readonly');
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.getKey(String(trackId));
+          request.onsuccess = () => resolve(request.result !== undefined);
+          request.onerror = () => resolve(false);
+        } catch {
+          resolve(false);
+        }
+      });
+    },
+
+    async get(trackId: number | string): Promise<Blob | null> {
+      const db = await getDB();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        try {
+          const transaction = db.transaction(STORE_NAME, 'readonly');
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.get(String(trackId));
+          request.onsuccess = () => {
+            const data = request.result;
+            resolve(data && data.blob instanceof Blob ? data.blob : null);
+          };
+          request.onerror = () => resolve(null);
+        } catch {
+          resolve(null);
+        }
+      });
+    },
+
+    async save(trackId: number | string, url: string): Promise<void> {
+      if (await this.has(trackId)) {
+        return; // Already cached
+      }
+      const db = await getDB();
+      if (!db) return;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) return;
+        const blob = await response.blob();
+        
+        await new Promise<void>((resolve, reject) => {
+          try {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put({
+              id: String(trackId),
+              blob,
+              savedAt: Date.now(),
+            });
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      } catch (err) {
+        console.error('Failed to cache audio file', err);
+      }
+    },
+
+    async remove(trackId: number | string): Promise<void> {
+      const db = await getDB();
+      if (!db) return;
+      return new Promise((resolve) => {
+        try {
+          const transaction = db.transaction(STORE_NAME, 'readwrite');
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.delete(String(trackId));
+          request.onsuccess = () => resolve();
+          request.onerror = () => resolve();
+        } catch {
+          resolve();
+        }
+      });
+    },
+
+    async clear(): Promise<void> {
+      const db = await getDB();
+      if (!db) return;
+      return new Promise((resolve) => {
+        try {
+          const transaction = db.transaction(STORE_NAME, 'readwrite');
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.clear();
+          request.onsuccess = () => resolve();
+          request.onerror = () => resolve();
+        } catch {
+          resolve();
+        }
+      });
+    },
+
+    async getCacheSize(): Promise<number> {
+      const db = await getDB();
+      if (!db) return 0;
+      return new Promise((resolve) => {
+        try {
+          const transaction = db.transaction(STORE_NAME, 'readonly');
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.getAll();
+          request.onsuccess = () => {
+            const records = request.result || [];
+            let totalBytes = 0;
+            for (const record of records) {
+              if (record && record.blob instanceof Blob) {
+                totalBytes += record.blob.size;
+              }
+            }
+            resolve(totalBytes);
+          };
+          request.onerror = () => resolve(0);
+        } catch {
+          resolve(0);
+        }
+      });
+    }
+  },
+
   /**
    * Retrieves a typed value from the cache. Handles backward compatibility.
    */
@@ -458,6 +610,12 @@ export const cache = {
         // Ignore
       }
     });
+
+    if (!category || category === 'pulse') {
+      this.audio.clear().catch((err) => {
+        console.error('Failed to clear audio cache in IndexedDB:', err);
+      });
+    }
   },
 
   /**

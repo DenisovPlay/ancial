@@ -144,11 +144,12 @@ export default function CacheSettingsPage() {
       favorites: lang?.subcategory_favorites || 'Избранное',
       playlists: lang?.subcategory_playlists || 'Плейлисты',
       artist_playlists: lang?.subcategory_artist_playlists || 'Плейлисты артистов',
+      offline_audio: lang?.subcategory_offline_audio || 'Скачанные треки (офлайн)',
       notifications_list: lang?.subcategory_notifications_list || 'Список уведомлений',
     };
   }, [lang]);
 
-  const loadCacheData = () => {
+  const loadCacheData = async () => {
     if (typeof window === 'undefined') return;
 
     let total = 0;
@@ -195,6 +196,24 @@ export default function CacheSettingsPage() {
       total += size;
     }
 
+    // Загружаем и добавляем размер IndexedDB кэша аудио
+    try {
+      const audioSize = await cache.audio.getCacheSize();
+      if (audioSize > 0) {
+        if (!cats['pulse']) {
+          cats['pulse'] = { size: 0, keys: [], subcategories: {} };
+        }
+        cats['pulse'].size += audioSize;
+        cats['pulse'].subcategories['offline_audio'] = {
+          size: audioSize,
+          keys: ['__indexeddb_offline_audio__']
+        };
+        total += audioSize;
+      }
+    } catch (err) {
+      console.error('Failed to load audio cache size', err);
+    }
+
     setCacheData({ totalSize: total, categories: cats });
 
     try {
@@ -220,7 +239,7 @@ export default function CacheSettingsPage() {
       router.push('/login?backurl=/settings/cache');
       return;
     }
-    loadCacheData();
+    void loadCacheData();
   }, [authLoading, isAuthenticated]);
 
   // Toggle category expansion
@@ -288,8 +307,9 @@ export default function CacheSettingsPage() {
   };
 
   // Clear selected keys
-  const handleClear = () => {
+  const handleClear = async () => {
     const keysToDelete: string[] = [];
+    let shouldClearAudio = false;
 
     Object.keys(cacheData.categories).forEach((catId) => {
       const catData = cacheData.categories[catId];
@@ -297,12 +317,16 @@ export default function CacheSettingsPage() {
 
       Object.keys(catData.subcategories).forEach((subId) => {
         if (selectedSubs.has(`${catId}:${subId}`)) {
-          keysToDelete.push(...catData.subcategories[subId].keys);
+          const keys = catData.subcategories[subId].keys;
+          if (keys.includes('__indexeddb_offline_audio__')) {
+            shouldClearAudio = true;
+          }
+          keysToDelete.push(...keys.filter(k => k !== '__indexeddb_offline_audio__'));
         }
       });
     });
 
-    if (keysToDelete.length === 0) return;
+    if (keysToDelete.length === 0 && !shouldClearAudio) return;
 
     keysToDelete.forEach((k) => {
       try {
@@ -312,6 +336,14 @@ export default function CacheSettingsPage() {
       }
     });
 
+    if (shouldClearAudio) {
+      try {
+        await cache.audio.clear();
+      } catch (err) {
+        console.error('Failed to clear IndexedDB audio cache', err);
+      }
+    }
+
     showNote({
       content: lang?.cache_cleared_success || 'Кэш успешно очищен',
       type: 'success',
@@ -320,7 +352,7 @@ export default function CacheSettingsPage() {
 
     setSelectedCats(new Set());
     setSelectedSubs(new Set());
-    loadCacheData();
+    void loadCacheData();
   };
 
   // Compute selected size
