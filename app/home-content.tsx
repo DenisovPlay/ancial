@@ -474,7 +474,7 @@ export default function HomeContent() {
 
         {/* Search Input Container */}
         {!queryParam && (
-          <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 500, damping: 30 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
+          <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
             {searchBarContent}
           </motion.div>
         )}
@@ -846,7 +846,7 @@ export default function HomeContent() {
           </motion.div>
 
           {queryParam && (
-            <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 500, damping: 30 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
+            <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
               {searchBarContent}
             </motion.div>
           )}
