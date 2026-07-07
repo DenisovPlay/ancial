@@ -346,39 +346,41 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
             </div>
           </div>
 
-          <div className="w-full max-w-screen-2xl mt-6">
-            <TrackCollectionPanel
-              collectionId={`Track_${trackId}`}
-              currentCollectionId={currentSongId ? `Track_${trackId}` : ''}
-              isAuthenticated={isAuthenticated}
-              isLoading={isSimilarLoading}
-              isPlaying={isPlaying && Boolean(currentSongId)}
-              onOpenCollection={() => { }}
-              onPlayCollection={() => { }}
-              buttonVisible={false}
-              title={lang?.similar || 'Похожее'}
-              tracks={similarTracks}
-              onRenderTrack={(t, index) => (
-                <PulseTrackRow
-                  currentSongId={currentSongId}
-                  favoriteIds={favoriteIds}
-                  isAuthenticated={isAuthenticated}
-                  onAddToPlaylist={(id) => openAddToPlaylist(toNumber(id))}
-                  onCopyTrackLink={copyTrackLink}
-                  onLikeTrack={async () => { }}
-                  onOpenArtist={(id) => router.push(`/pulse/artist/${id}`)}
-                  onPlayTrack={(clickedTrack) => {
-                    if (clickedTrack.sid) void playTrack(toNumber(clickedTrack.sid));
-                  }}
-                  onQueueTrackNext={async () => { }}
-                  track={t}
-                  trackIndex={index}
-                  user={user}
-                  userCountry={userCountry}
-                />
-              )}
-            />
-          </div>
+          {isSimilarLoading || (similarTracks && similarTracks.length > 0) ? (
+            <div className="w-full max-w-screen-2xl mt-6">
+              <TrackCollectionPanel
+                collectionId={`Track_${trackId}`}
+                currentCollectionId={currentSongId ? `Track_${trackId}` : ''}
+                isAuthenticated={isAuthenticated}
+                isLoading={isSimilarLoading}
+                isPlaying={isPlaying && Boolean(currentSongId)}
+                onOpenCollection={() => { }}
+                onPlayCollection={() => { }}
+                buttonVisible={false}
+                title={lang?.similar || 'Похожее'}
+                tracks={similarTracks}
+                onRenderTrack={(t, index) => (
+                  <PulseTrackRow
+                    currentSongId={currentSongId}
+                    favoriteIds={favoriteIds}
+                    isAuthenticated={isAuthenticated}
+                    onAddToPlaylist={(id) => openAddToPlaylist(toNumber(id))}
+                    onCopyTrackLink={copyTrackLink}
+                    onLikeTrack={async () => { }}
+                    onOpenArtist={(id) => router.push(`/pulse/artist/${id}`)}
+                    onPlayTrack={(clickedTrack) => {
+                      if (clickedTrack.sid) void playTrack(toNumber(clickedTrack.sid));
+                    }}
+                    onQueueTrackNext={async () => { }}
+                    track={t}
+                    trackIndex={index}
+                    user={user}
+                    userCountry={userCountry}
+                  />
+                )}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
 
