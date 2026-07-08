@@ -118,10 +118,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Strategy: HTML Documents (Pages) and Next.js RSC payloads -> Network First
+  // 4. Strategy: HTML Documents (Pages) and Next.js RSC/data payloads -> Network First
   const isHtml = request.mode === 'navigate' || (request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
+  // RSC payloads: клиентская навигация Next.js App Router (_rsc param или заголовок RSC)
   const isRsc = url.searchParams.has('_rsc') || request.headers.get('RSC') === '1';
-  if (isHtml || isRsc) {
+  // Next.js Pages Router data files (dynamic routes like /messages)
+  const isNextData = url.pathname.startsWith('/_next/data/');
+
+  if (isHtml || isRsc || isNextData) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -138,7 +142,11 @@ self.addEventListener('fetch', (event) => {
             if (cachedResponse) {
               return cachedResponse;
             }
-            return caches.match('/');
+            // Для навигационных запросов — отдаём корень (shell)
+            if (isHtml) {
+              return caches.match('/');
+            }
+            return new Response('', { status: 503, statusText: 'Offline' });
           });
         })
     );

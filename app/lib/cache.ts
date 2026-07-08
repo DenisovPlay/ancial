@@ -159,6 +159,9 @@ export function resolveKeyInfo(
   if (key.startsWith('playlist_tracks_gid_')) {
     return { storageKey: key, category: 'pulse', subcategory: 'tracks' };
   }
+  if (key.startsWith('pulse_collection_')) {
+    return { storageKey: key, category: 'pulse', subcategory: 'tracks' };
+  }
   if (key.startsWith('group_cache_')) {
     return { storageKey: key, category: 'groups', subcategory: 'profile' };
   }

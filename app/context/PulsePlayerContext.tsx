@@ -1712,6 +1712,9 @@ export function PulsePlayerProvider({
     const resolvedId = normalizeText(String(id));
     if (!resolvedId) return [];
 
+    // Ключ для кэша треков коллекции
+    const collectionCacheKey = `pulse_collection_${kind}_${resolvedId}`;
+
     try {
       const result = await AncialAPI.pulseGetPlaylist<PulseTrack[]>({
         id: kind === 'playlist' ? resolvedId : undefined,
@@ -1719,8 +1722,31 @@ export function PulsePlayerProvider({
         aid: kind === 'artist' ? String(resolvedId) : undefined,
         tid: kind === 'track' ? String(resolvedId) : undefined,
       });
-      return Array.isArray(result) ? result : [];
+      const tracks = Array.isArray(result) ? result : [];
+
+      // Сохраняем треки плейлиста в localStorage для офлайн-воспроизведения
+      if (tracks.length > 0 && (kind === 'playlist' || kind === 'genlist' || kind === 'artist')) {
+        try {
+          cache.set(collectionCacheKey, tracks, { category: 'pulse', subcategory: 'tracks' });
+        } catch (e) {
+          console.error('Failed to cache collection tracks', e);
+        }
+      }
+
+      return tracks;
     } catch {
+      // При сетевой ошибке (офлайн) — пробуем прочитать кэш
+      if (kind === 'playlist' || kind === 'genlist' || kind === 'artist') {
+        try {
+          const cached = cache.get<PulseTrack[]>(collectionCacheKey, { category: 'pulse', subcategory: 'tracks' });
+          if (cached && cached.length > 0) {
+            console.log(`[Pulse] Offline: playing collection from cache (${kind}:${resolvedId})`);
+            return cached;
+          }
+        } catch (e) {
+          console.error('Failed to read collection cache', e);
+        }
+      }
       return [];
     }
   };
