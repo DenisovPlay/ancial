@@ -1,4 +1,4 @@
-const SW_VERSION = '1.2';
+const SW_VERSION = '2.1';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -24,15 +24,12 @@ messaging.onBackgroundMessage((payload) => {
       url: payload.data?.click_action || 'https://ancial.ru/'
     }
   };
-  
   self.registration.showNotification(title, options);
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
   const urlToOpen = event.notification.data?.url || 'https://ancial.ru/';
-  
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (let i = 0; i < clientList.length; i++) {
@@ -41,7 +38,6 @@ self.addEventListener('notificationclick', (event) => {
           return client.focus().then(() => client.navigate(urlToOpen));
         }
       }
-      // Если не нашли — открываем новое окно
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -49,173 +45,197 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// --- OFFLINE CACHING IMPLEMENTATION ---
+// ─── OFFLINE CACHING ────────────────────────────────────────────────────────
 
-const CACHE_NAME_STATIC = 'ancial-static-v1';
-const CACHE_NAME_PAGES = 'ancial-pages-v1';
-const CACHE_NAME_IMAGES = 'ancial-images-v1';
+const CACHE_STATIC  = 'ancial-static-v2';
+const CACHE_PAGES   = 'ancial-pages-v2';
+const CACHE_IMAGES  = 'ancial-images-v1';
+// Кэш для API-ответов, которые нужны офлайн (языки, справочники)
+const CACHE_API     = 'ancial-api-v1';
 
-// Critical assets to cache on install (precaching)
-const PRECACHE_ASSETS = [
+// Список API-эндпоинтов V2 которые кэшируются SW (Stale-While-Revalidate)
+// Остальные /api/V2/* запросы SW не трогает — данные живут в localStorage
+const CACHEABLE_API_PATHS = [
+  '/api/V2/info/GetLang.php',
+];
+
+// App shell — критические файлы, кэшируются при установке
+const PRECACHE_STATIC = [
   '/',
   '/manifest.webmanifest',
   '/icons.svg',
-  '/img/branding/pulse.svg'
+  '/img/branding/pulse.svg',
 ];
 
-// Install Event: cache static resources
+// Страницы для предварительного кэширования при установке SW
+const PRECACHE_PAGES = [
+  '/pulse',
+  '/messages',
+  '/apps',
+  '/feed',
+  '/friends',
+  '/notifications',
+  '/settings',
+  '/settings/cache',
+  '/wallet',
+];
+
+// ─── Install ─────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME_STATIC).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
-    }).then(() => self.skipWaiting())
+    Promise.all([
+      caches.open(CACHE_STATIC).then((c) => c.addAll(PRECACHE_STATIC).catch(() => {})),
+      caches.open(CACHE_PAGES).then((c) =>
+        Promise.allSettled(PRECACHE_PAGES.map((url) => c.add(url).catch(() => {})))
+      ),
+    ]).then(() => self.skipWaiting())
   );
 });
 
-// Activate Event: clean up old caches
+// ─── Activate ────────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-  const allowedCaches = [CACHE_NAME_STATIC, CACHE_NAME_PAGES, CACHE_NAME_IMAGES];
+  const allowed = [CACHE_STATIC, CACHE_PAGES, CACHE_IMAGES, CACHE_API];
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (!allowedCaches.includes(cacheName) && cacheName.startsWith('ancial-')) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys()
+      .then((names) =>
+        Promise.all(
+          names.map((n) => (!allowed.includes(n) && n.startsWith('ancial-')) ? caches.delete(n) : undefined)
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch Event: handle caching strategies
-self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  // 1. Bypass check: Only cache GET requests
-  if (request.method !== 'GET') {
-    return;
+function saveToCache(cacheName, request, response) {
+  if (response && (response.status === 200 || response.status === 0)) {
+    caches.open(cacheName)
+      .then((c) => c.put(request, response.clone()))
+      .catch(() => {});
   }
+}
 
-  // Bypass check: Do not cache in development mode (localhost/127.0.0.1) to avoid HMR code caching
-  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-    return;
-  }
-
-  // 2. Bypass check: Exclude firebase/dynamic API calls
-  if (
-    url.pathname.startsWith('/api/') || 
-    url.pathname.includes('/V2/') ||
-    url.hostname.includes('firebase') ||
-    url.hostname.includes('googleapis')
-  ) {
-    return;
-  }
-
-  // 3. Bypass check: Exclude media files (.mp3) - handled by custom player via IndexedDB
-  if (request.destination === 'audio' || url.pathname.endsWith('.mp3')) {
-    return;
-  }
-
-  // 4. Strategy: HTML Documents (Pages) and Next.js RSC/data payloads -> Network First
-  const isHtml = request.mode === 'navigate' || (request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
-  // RSC payloads: клиентская навигация Next.js App Router (_rsc param или заголовок RSC)
-  const isRsc = url.searchParams.has('_rsc') || request.headers.get('RSC') === '1';
-  // Next.js Pages Router data files (dynamic routes like /messages)
-  const isNextData = url.pathname.startsWith('/_next/data/');
-
-  if (isHtml || isRsc || isNextData) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.status === 200) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME_PAGES).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
+/** Network First: сеть → кэш → fallback */
+function networkFirst(event, cacheName, offlineFallback) {
+  event.respondWith(
+    fetch(event.request)
+      .then((res) => { saveToCache(cacheName, event.request, res); return res; })
+      .catch(() =>
+        caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          return offlineFallback
+            ? offlineFallback()
+            : new Response('', { status: 503, statusText: 'Offline' });
         })
-        .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // Для навигационных запросов — отдаём корень (shell)
-            if (isHtml) {
-              return caches.match('/');
-            }
-            return new Response('', { status: 503, statusText: 'Offline' });
-          });
-        })
-    );
-    return;
-  }
+      )
+  );
+}
 
-  // 5. Strategy: Images (covers, avatars, stickers including AVIF) -> Cache First (in CACHE_NAME_IMAGES)
-  const isImage =
-    request.destination === 'image' ||
-    url.pathname.includes('/includes/img/') ||
-    url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.jpg') ||
-    url.pathname.endsWith('.jpeg') ||
-    url.pathname.endsWith('.webp') ||
-    url.pathname.endsWith('.avif') ||
-    url.pathname.endsWith('.gif') ||
-    url.pathname.endsWith('.svg');
+/** Cache First: кэш → сеть → кэш */
+function cacheFirst(event, cacheName) {
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request)
+        .then((res) => { saveToCache(cacheName, event.request, res); return res; })
+        .catch(() => new Response('', { status: 503, statusText: 'Offline' }));
+    })
+  );
+}
 
-  if (isImage) {
-    event.respondWith(
-      caches.open(CACHE_NAME_IMAGES).then((cache) => {
-        return cache.match(request).then((cachedResponse) => {
-          const fetchPromise = fetch(request).then((networkResponse) => {
-            if (networkResponse.status === 200 || networkResponse.status === 0) {
-              cache.put(request, networkResponse.clone());
-            }
-            return networkResponse;
-          }).catch((err) => {
-            // Игнорируем сетевые ошибки, так как мы можем быть в офлайне
-          });
-          return cachedResponse || fetchPromise;
-        });
+/** Stale-While-Revalidate: мгновенно из кэша + фоновое обновление */
+function staleWhileRevalidate(event, cacheName) {
+  event.respondWith(
+    caches.open(cacheName).then((cache) =>
+      cache.match(event.request).then((cached) => {
+        const networkFetch = fetch(event.request)
+          .then((res) => {
+            if (res.status === 200 || res.status === 0) cache.put(event.request, res.clone());
+            return res;
+          })
+          .catch(() => undefined);
+        return cached || networkFetch;
       })
-    );
+    )
+  );
+}
+
+// ─── Fetch ───────────────────────────────────────────────────────────────────
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+
+  // Только GET
+  if (req.method !== 'GET') return;
+
+  // Разработка (localhost/127.0.0.1) — не кэшируем, чтобы HMR работал
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
+
+  // Firebase, Google APIs — пропускаем без кэша
+  if (
+    url.hostname.includes('firebase') ||
+    url.hostname.includes('googleapis') ||
+    url.hostname.includes('firebaseio') ||
+    url.hostname.includes('gstatic.com')
+  ) return;
+
+  // ── 0. Избранные API-эндпоинты → Stale-While-Revalidate ─────────────────
+  // Эти ответы нужны офлайн (локализация и т.п.) и не меняются часто.
+  // Загружаются мгновенно из кэша, в фоне обновляются при наличии сети.
+  if (CACHEABLE_API_PATHS.some((p) => url.pathname === p || url.pathname.endsWith(p))) {
+    staleWhileRevalidate(event, CACHE_API);
     return;
   }
 
-  // 6. Strategy: Static Assets (JS, CSS, Fonts, Icons) -> Cache First
+  // Бэкенд PHP/V2 API (динамические данные — кэшируются в localStorage)
+  if (url.pathname.includes('/V2/') || url.pathname.includes('/api/V2/')) return;
+
+  // Аудио .mp3 — обрабатывается IndexedDB-плеером, HTTP Range не поддерживает кэш
+  if (req.destination === 'audio' || url.pathname.endsWith('.mp3')) return;
+
+  // ── 1. Изображения (обложки, аватарки, стикеры AVIF) → Stale-While-Revalidate
+  const isImage =
+    req.destination === 'image' ||
+    url.pathname.includes('/includes/img/') ||
+    /\.(png|jpe?g|webp|avif|gif|svg)(\?|$)/.test(url.pathname);
+
+  if (isImage) { staleWhileRevalidate(event, CACHE_IMAGES); return; }
+
+  // ── 2. Статические ресурсы Next.js (JS/CSS/шрифты) → Cache First
   const isStaticAsset =
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/img/') ||
     url.pathname.startsWith('/includes/') ||
-    url.pathname.endsWith('.js') ||
-    url.pathname.endsWith('.css') ||
-    url.pathname.endsWith('.woff') ||
-    url.pathname.endsWith('.woff2') ||
-    url.pathname.endsWith('.json') ||
+    /\.(js|css|woff2?|ico)(\?|$)/.test(url.pathname) ||
     url.hostname.includes('fonts.gstatic.com') ||
     url.hostname.includes('fonts.googleapis.com');
 
-  if (isStaticAsset) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(request).then((response) => {
-          if (response.status === 200 || response.status === 0) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME_STATIC).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        }).catch((err) => {
-          console.error('Failed to fetch asset:', request.url, err);
-        });
-      })
+  if (isStaticAsset) { cacheFirst(event, CACHE_STATIC); return; }
+
+  // ── 3. Next.js RSC/data payloads → Network First
+  // Клиентские переходы App Router: _rsc=... параметр или RSC заголовок
+  // /_next/data/ — Pages Router data
+  const isRsc =
+    url.searchParams.has('_rsc') ||
+    req.headers.get('RSC') === '1' ||
+    url.pathname.startsWith('/_next/data/');
+
+  if (isRsc) { networkFirst(event, CACHE_PAGES, null); return; }
+
+  // ── 4. HTML-навигация (любой маршрут) → Network First + shell fallback
+  // Охватывает: /, /messages, /apps, /pulse, /feed, /friends и любой другой маршрут
+  const isNavigation =
+    req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').includes('text/html');
+
+  if (isNavigation) {
+    networkFirst(event, CACHE_PAGES, () =>
+      caches.match('/').then((shell) => shell || new Response('', { status: 503 }))
     );
     return;
   }
+
+  // ── 5. Next.js API Route Handlers (/apps/api/*, /api/*) → без кэша
+  // Данные API-хэндлеров хранятся приложением в localStorage через cache.ts
 });

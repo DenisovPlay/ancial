@@ -65,9 +65,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `/_next/data/` payloads | **Network First** | `ancial-pages-v2` |
 | JS/CSS/шрифты `/_next/static/` | **Cache First** | `ancial-static-v2` |
 | Изображения (PNG, AVIF, WEBP, SVG, ...) | **Stale-While-Revalidate** | `ancial-images-v1` |
-| `/api/V2/info/GetLang.php` (языки UI) | **Stale-While-Revalidate** | `ancial-api-v1` |
 | Audio (.mp3) | **Bypass** — IndexedDB плеер | — |
-| `/api/V2/` PHP API (остальное) | **Bypass** — localStorage кэш | — |
+| `/api/V2/` PHP API | **Bypass** — localStorage кэш | — |
 | Firebase/Google | **Bypass** | — |
 
 ### Предварительное кэширование (при установке SW)
