@@ -14,6 +14,7 @@ import {
   toBooleanFlag,
 } from './apps-model';
 import { AncialAPI } from '../lib/api-v2';
+import { cache } from '../lib/cache.ts';
 import AppInfoModal from './app-info-modal';
 import {
   CategoryIcon,
@@ -108,7 +109,26 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
   const [query, setQuery] = useState(initialQuery);
 
   const loadApps = useCallback(async () => {
-    setLoading(true);
+    // Формируем ключ кэша в зависимости от режима
+    const cacheKey =
+      mode === 'search'
+        ? `apps_cache_search_${initialQuery}`
+        : mode === 'category' && category
+          ? `apps_cache_category_${category}`
+          : 'apps_cache_home';
+
+    const subcategoryId: 'home' | 'category' | 'search' =
+      mode === 'search' ? 'search' : mode === 'category' ? 'category' : 'home';
+
+    // Немедленно показываем данные из кэша (Stale-While-Revalidate)
+    const cachedApps = cache.get<{ apps?: { id: unknown; name?: string; desk?: string; cover?: string; red_chois?: unknown }[] }>(cacheKey, { category: 'apps', subcategory: subcategoryId });
+    if (cachedApps?.apps && cachedApps.apps.length > 0) {
+      setApps(cachedApps.apps as typeof apps);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     setError('');
 
     try {
@@ -121,10 +141,19 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
         data = await AncialAPI.getAppsHomePage<{ apps?: LegacyAppSummary[] }>();
       }
 
-      setApps(data.apps ?? []);
+      const freshApps = data.apps ?? [];
+      setApps(freshApps);
+
+      // Сохраняем свежие данные в кэш
+      if (freshApps.length > 0) {
+        cache.set(cacheKey, data, { category: 'apps', subcategory: subcategoryId });
+      }
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : (lang?.loading_error || 'Ошибка загрузки'));
-      setApps([]);
+      // Если кэш уже показан — не обнуляем список, просто убираем спиннер
+      if (!cachedApps?.apps?.length) {
+        setError(caughtError instanceof Error ? caughtError.message : (lang?.loading_error || 'Ошибка загрузки'));
+        setApps([]);
+      }
     } finally {
       setLoading(false);
     }

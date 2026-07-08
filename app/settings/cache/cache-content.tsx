@@ -113,6 +113,7 @@ export default function CacheSettingsPage() {
       pulse: { label: lang?.category_pulse || 'Pulse', color: '#ef4444' }, // red
       notifications: { label: lang?.category_notifications || 'Уведомления', color: '#eab308' }, // yellow
       home: { label: lang?.category_home || 'Главная', color: '#71717a' }, // zinc
+      apps: { label: lang?.category_apps || 'Игры (Zynt)', color: '#22c55e' }, // green
       other: { label: lang?.category_other || 'Другое', color: '#71717a' }, // zinc/grey
     };
   }, [lang]);
@@ -151,6 +152,10 @@ export default function CacheSettingsPage() {
       pwa_cache: lang?.subcategory_pwa_cache || 'Файлы сайта (офлайн-доступ)',
       images_cache: lang?.subcategory_images_cache || 'Изображения и обложки',
       notifications_list: lang?.subcategory_notifications_list || 'Список уведомлений',
+      // Apps (Zynt)
+      home: lang?.subcategory_apps_home || 'Главная страница',
+      category: lang?.subcategory_apps_category || 'Игры по категориям',
+      search: lang?.subcategory_apps_search || 'Результаты поиска',
     };
   }, [lang]);
 
@@ -161,7 +166,7 @@ export default function CacheSettingsPage() {
     const cats: typeof cacheData.categories = {};
 
     // Initialize default categories
-    const defaultCategories: string[] = ['feed', 'chats', 'wallet', 'friends', 'groups', 'profile', 'pulse', 'notifications', 'other'];
+    const defaultCategories: string[] = ['feed', 'chats', 'wallet', 'friends', 'groups', 'profile', 'pulse', 'notifications', 'apps', 'other'];
     defaultCategories.forEach((c) => {
       cats[c] = { size: 0, keys: [], subcategories: {} };
     });
@@ -248,7 +253,11 @@ export default function CacheSettingsPage() {
           }
           if (cacheKey === 'ancial-images-v1') {
             imagesSize += currentSize;
-          } else if (cacheKey === 'ancial-static-v1' || cacheKey === 'ancial-pages-v1') {
+          } else if (
+            cacheKey === 'ancial-static-v1' || cacheKey === 'ancial-pages-v1' ||
+            cacheKey === 'ancial-static-v2' || cacheKey === 'ancial-pages-v2' ||
+            cacheKey === 'ancial-api-v1'
+          ) {
             pwaSize += currentSize;
           }
         }

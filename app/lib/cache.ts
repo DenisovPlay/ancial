@@ -9,7 +9,8 @@ export type CacheCategory =
   | 'groups'
   | 'profile'
   | 'pulse'
-  | 'notifications';
+  | 'notifications'
+  | 'apps';
 
 export type CacheSubcategory<C extends CacheCategory> =
   C extends 'home'
@@ -30,6 +31,8 @@ export type CacheSubcategory<C extends CacheCategory> =
     ? 'profile_data'
     : C extends 'notifications'
     ? 'list'
+    : C extends 'apps'
+    ? 'home' | 'category' | 'search'
     : never;
 
 export interface CacheOptions<C extends CacheCategory> {
@@ -161,6 +164,9 @@ export function resolveKeyInfo(
   }
   if (key.startsWith('pulse_collection_')) {
     return { storageKey: key, category: 'pulse', subcategory: 'tracks' };
+  }
+  if (key.startsWith('apps_cache_')) {
+    return { storageKey: key, category: 'apps', subcategory: key.startsWith('apps_cache_home') ? 'home' : key.startsWith('apps_cache_category_') ? 'category' : 'search' };
   }
   if (key.startsWith('group_cache_')) {
     return { storageKey: key, category: 'groups', subcategory: 'profile' };
