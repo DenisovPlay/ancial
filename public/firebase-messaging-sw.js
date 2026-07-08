@@ -48,3 +48,165 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+// --- OFFLINE CACHING IMPLEMENTATION ---
+
+const CACHE_NAME_STATIC = 'ancial-static-v1';
+const CACHE_NAME_PAGES = 'ancial-pages-v1';
+const CACHE_NAME_IMAGES = 'ancial-images-v1';
+
+// Critical assets to cache on install (precaching)
+const PRECACHE_ASSETS = [
+  '/',
+  '/manifest.webmanifest',
+  '/icons.svg',
+  '/img/branding/pulse.svg'
+];
+
+// Install Event: cache static resources
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME_STATIC).then((cache) => {
+      return cache.addAll(PRECACHE_ASSETS);
+    }).then(() => self.skipWaiting())
+  );
+});
+
+// Activate Event: clean up old caches
+self.addEventListener('activate', (event) => {
+  const allowedCaches = [CACHE_NAME_STATIC, CACHE_NAME_PAGES, CACHE_NAME_IMAGES];
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (!allowedCaches.includes(cacheName) && cacheName.startsWith('ancial-')) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch Event: handle caching strategies
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  // 1. Bypass check: Only cache GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // Bypass check: Do not cache in development mode (localhost/127.0.0.1) to avoid HMR code caching
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    return;
+  }
+
+  // 2. Bypass check: Exclude firebase/dynamic API calls
+  if (
+    url.pathname.startsWith('/api/') || 
+    url.pathname.includes('/V2/') ||
+    url.hostname.includes('firebase') ||
+    url.hostname.includes('googleapis')
+  ) {
+    return;
+  }
+
+  // 3. Bypass check: Exclude media files (.mp3) - handled by custom player via IndexedDB
+  if (request.destination === 'audio' || url.pathname.endsWith('.mp3')) {
+    return;
+  }
+
+  // 4. Strategy: HTML Documents (Pages) -> Network First
+  const isHtml = request.mode === 'navigate' || (request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
+  if (isHtml) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME_PAGES).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            return caches.match('/');
+          });
+        })
+    );
+    return;
+  }
+
+  // 5. Strategy: Images (covers, avatars, stickers including AVIF) -> Cache First (in CACHE_NAME_IMAGES)
+  const isImage =
+    request.destination === 'image' ||
+    url.pathname.includes('/includes/img/') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.jpeg') ||
+    url.pathname.endsWith('.webp') ||
+    url.pathname.endsWith('.avif') ||
+    url.pathname.endsWith('.gif') ||
+    url.pathname.endsWith('.svg');
+
+  if (isImage) {
+    event.respondWith(
+      caches.open(CACHE_NAME_IMAGES).then((cache) => {
+        return cache.match(request).then((cachedResponse) => {
+          const fetchPromise = fetch(request).then((networkResponse) => {
+            if (networkResponse.status === 200 || networkResponse.status === 0) {
+              cache.put(request, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch((err) => {
+            // Игнорируем сетевые ошибки, так как мы можем быть в офлайне
+          });
+          return cachedResponse || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  // 6. Strategy: Static Assets (JS, CSS, Fonts, Icons) -> Cache First
+  const isStaticAsset =
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/img/') ||
+    url.pathname.startsWith('/includes/') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.woff') ||
+    url.pathname.endsWith('.woff2') ||
+    url.pathname.endsWith('.json') ||
+    url.hostname.includes('fonts.gstatic.com') ||
+    url.hostname.includes('fonts.googleapis.com');
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(request).then((response) => {
+          if (response.status === 200 || response.status === 0) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME_STATIC).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        }).catch((err) => {
+          console.error('Failed to fetch asset:', request.url, err);
+        });
+      })
+    );
+    return;
+  }
+});

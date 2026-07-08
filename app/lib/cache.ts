@@ -15,7 +15,7 @@ export type CacheSubcategory<C extends CacheCategory> =
   C extends 'home'
     ? 'currency' | 'weather'
     : C extends 'pulse'
-    ? 'artists' | 'from_pulse' | 'listened' | 'now_listen' | 'we_like' | 'tracks' | 'favorites' | 'playlists' | 'artist_playlists' | 'offline_audio'
+    ? 'artists' | 'from_pulse' | 'listened' | 'now_listen' | 'we_like' | 'tracks' | 'favorites' | 'playlists' | 'artist_playlists' | 'offline_audio' | 'lyrics'
     : C extends 'wallet'
     ? 'overview' | 'merchants' | 'merchant_details' | 'accounts' | 'transactions' | 'history'
     : C extends 'chats'
@@ -129,6 +129,9 @@ export function resolveKeyInfo(
   }
 
   // Check dynamic key patterns
+  if (key.startsWith('lyrics:')) {
+    return { storageKey: key, category: 'pulse', subcategory: 'lyrics' };
+  }
   if (key.startsWith('msg-cache-hash:')) {
     return { storageKey: key, category: 'chats', subcategory: 'messages_hash' };
   }
@@ -358,7 +361,11 @@ export const cache = {
       });
     },
 
-    async save(trackId: number | string, url: string): Promise<void> {
+    async save(
+      trackId: number | string,
+      url: string,
+      metadata?: { title?: string; artist?: string }
+    ): Promise<void> {
       if (await this.has(trackId)) {
         return; // Already cached
       }
@@ -377,6 +384,8 @@ export const cache = {
             const request = store.put({
               id: String(trackId),
               blob,
+              title: metadata?.title,
+              artist: metadata?.artist,
               savedAt: Date.now(),
             });
             request.onsuccess = () => resolve();
@@ -388,6 +397,32 @@ export const cache = {
       } catch (err) {
         console.error('Failed to cache audio file', err);
       }
+    },
+
+    async getDownloadedList(): Promise<Array<{ id: string; title?: string; artist?: string; size: number; savedAt: number }>> {
+      const db = await getDB();
+      if (!db) return [];
+      return new Promise((resolve) => {
+        try {
+          const transaction = db.transaction(STORE_NAME, 'readonly');
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.getAll();
+          request.onsuccess = () => {
+            const records = request.result || [];
+            const list = records.map((record) => ({
+              id: record.id,
+              title: record.title,
+              artist: record.artist,
+              size: record.blob instanceof Blob ? record.blob.size : 0,
+              savedAt: record.savedAt || 0,
+            }));
+            resolve(list);
+          };
+          request.onerror = () => resolve([]);
+        } catch {
+          resolve([]);
+        }
+      });
     },
 
     async remove(trackId: number | string): Promise<void> {

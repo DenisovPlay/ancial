@@ -4,6 +4,7 @@ import "./globals.css";
 import IconSprite from './components/icon-sprite';
 import MainContent from './components/main-content';
 import Navigation from './components/navigation';
+import SWRegister from './components/sw-register';
 import { AuthProvider } from './context/AuthContext';
 import { GlobalWSProvider } from './context/GlobalWSProvider';
 import { NotificationProvider } from './context/NotificationContext';
@@ -56,6 +57,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-black text-white">
         <IconSprite />
+        <SWRegister />
         <NotificationProvider>
           <AuthProvider>
             <GlobalWSProvider>

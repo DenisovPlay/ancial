@@ -99,6 +99,8 @@ export default function CacheSettingsPage() {
     >;
   }>({ totalSize: 0, categories: {} });
 
+  const [downloadedTracks, setDownloadedTracks] = useState<Array<{ id: string; title?: string; artist?: string; size: number; savedAt: number }>>([]);
+
   // Map category ID to its visual properties & translations
   const categoryMeta = useMemo(() => {
     return {
@@ -145,6 +147,9 @@ export default function CacheSettingsPage() {
       playlists: lang?.subcategory_playlists || 'Плейлисты',
       artist_playlists: lang?.subcategory_artist_playlists || 'Плейлисты артистов',
       offline_audio: lang?.subcategory_offline_audio || 'Скачанные треки (офлайн)',
+      lyrics: lang?.subcategory_lyrics || 'Тексты песен (лирика)',
+      pwa_cache: lang?.subcategory_pwa_cache || 'Файлы сайта (офлайн-доступ)',
+      images_cache: lang?.subcategory_images_cache || 'Изображения и обложки',
       notifications_list: lang?.subcategory_notifications_list || 'Список уведомлений',
     };
   }, [lang]);
@@ -198,7 +203,9 @@ export default function CacheSettingsPage() {
 
     // Загружаем и добавляем размер IndexedDB кэша аудио
     try {
-      const audioSize = await cache.audio.getCacheSize();
+      const audioTracks = await cache.audio.getDownloadedList();
+      setDownloadedTracks(audioTracks);
+      const audioSize = audioTracks.reduce((acc, t) => acc + t.size, 0);
       if (audioSize > 0) {
         if (!cats['pulse']) {
           cats['pulse'] = { size: 0, keys: [], subcategories: {} };
@@ -209,9 +216,77 @@ export default function CacheSettingsPage() {
           keys: ['__indexeddb_offline_audio__']
         };
         total += audioSize;
+      } else {
+        if (cats['pulse'] && cats['pulse'].subcategories['offline_audio']) {
+          delete cats['pulse'].subcategories['offline_audio'];
+        }
       }
     } catch (err) {
       console.error('Failed to load audio cache size', err);
+    }
+
+    // Загружаем и добавляем размер Cache Storage (Service Worker PWA & Images cache)
+    try {
+      let pwaSize = 0;
+      let imagesSize = 0;
+      if (typeof window !== 'undefined' && 'caches' in window) {
+        const cacheKeys = await window.caches.keys();
+        for (const cacheKey of cacheKeys) {
+          const swCache = await window.caches.open(cacheKey);
+          const requests = await swCache.keys();
+          let currentSize = 0;
+          for (const req of requests) {
+            const res = await swCache.match(req);
+            if (res) {
+              const len = res.headers.get('content-length');
+              if (len) {
+                currentSize += parseInt(len, 10);
+              } else {
+                currentSize += 5120; // 5KB fallback
+              }
+            }
+          }
+          if (cacheKey === 'ancial-images-v1') {
+            imagesSize += currentSize;
+          } else if (cacheKey === 'ancial-static-v1' || cacheKey === 'ancial-pages-v1') {
+            pwaSize += currentSize;
+          }
+        }
+      }
+
+      if (pwaSize > 0) {
+        if (!cats['other']) {
+          cats['other'] = { size: 0, keys: [], subcategories: {} };
+        }
+        cats['other'].size += pwaSize;
+        cats['other'].subcategories['pwa_cache'] = {
+          size: pwaSize,
+          keys: ['__sw_pwa_cache__']
+        };
+        total += pwaSize;
+      } else {
+        if (cats['other'] && cats['other'].subcategories['pwa_cache']) {
+          delete cats['other'].subcategories['pwa_cache'];
+        }
+      }
+
+      if (imagesSize > 0) {
+        if (!cats['other']) {
+          cats['other'] = { size: 0, keys: [], subcategories: {} };
+        }
+        cats['other'].size += imagesSize;
+        cats['other'].subcategories['images_cache'] = {
+          size: imagesSize,
+          keys: ['__sw_images_cache__']
+        };
+        total += imagesSize;
+      } else {
+        if (cats['other'] && cats['other'].subcategories['images_cache']) {
+          delete cats['other'].subcategories['images_cache'];
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load Service Worker cache size', err);
     }
 
     setCacheData({ totalSize: total, categories: cats });
@@ -310,6 +385,8 @@ export default function CacheSettingsPage() {
   const handleClear = async () => {
     const keysToDelete: string[] = [];
     let shouldClearAudio = false;
+    let shouldClearPwa = false;
+    let shouldClearImages = false;
 
     Object.keys(cacheData.categories).forEach((catId) => {
       const catData = cacheData.categories[catId];
@@ -321,12 +398,18 @@ export default function CacheSettingsPage() {
           if (keys.includes('__indexeddb_offline_audio__')) {
             shouldClearAudio = true;
           }
-          keysToDelete.push(...keys.filter(k => k !== '__indexeddb_offline_audio__'));
+          if (keys.includes('__sw_pwa_cache__')) {
+            shouldClearPwa = true;
+          }
+          if (keys.includes('__sw_images_cache__')) {
+            shouldClearImages = true;
+          }
+          keysToDelete.push(...keys.filter(k => k !== '__indexeddb_offline_audio__' && k !== '__sw_pwa_cache__' && k !== '__sw_images_cache__'));
         }
       });
     });
 
-    if (keysToDelete.length === 0 && !shouldClearAudio) return;
+    if (keysToDelete.length === 0 && !shouldClearAudio && !shouldClearPwa && !shouldClearImages) return;
 
     keysToDelete.forEach((k) => {
       try {
@@ -341,6 +424,33 @@ export default function CacheSettingsPage() {
         await cache.audio.clear();
       } catch (err) {
         console.error('Failed to clear IndexedDB audio cache', err);
+      }
+    }
+
+    if (shouldClearPwa) {
+      try {
+        if (typeof window !== 'undefined' && 'caches' in window) {
+          const cacheKeys = await window.caches.keys();
+          await Promise.all(cacheKeys.map(key => window.caches.delete(key)));
+        }
+        if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const reg of regs) {
+            await reg.unregister();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to clear Service Worker cache', err);
+      }
+    }
+
+    if (shouldClearImages) {
+      try {
+        if (typeof window !== 'undefined' && 'caches' in window) {
+          await window.caches.delete('ancial-images-v1');
+        }
+      } catch (err) {
+        console.error('Failed to clear Service Worker images cache', err);
       }
     }
 
@@ -434,6 +544,37 @@ export default function CacheSettingsPage() {
 
       {/* Category List */}
       <div className="flex flex-col gap-3 w-full max-w-3xl px-3 lg:px-0">
+        {!Object.keys(cacheData.categories).every(catId => cacheData.categories[catId].size === 0) && (
+          <div className="flex justify-end mb-1">
+            <button
+              onClick={() => {
+                const allCats = Object.keys(cacheData.categories).filter(catId => cacheData.categories[catId].size > 0);
+                const areAllSelected = allCats.every(catId => selectedCats.has(catId));
+                
+                const nextCats = new Set<string>();
+                const nextSubs = new Set<string>();
+                
+                if (!areAllSelected) {
+                  allCats.forEach(catId => {
+                    nextCats.add(catId);
+                    Object.keys(cacheData.categories[catId].subcategories).forEach(subId => {
+                      nextSubs.add(`${catId}:${subId}`);
+                    });
+                  });
+                }
+                
+                setSelectedCats(nextCats);
+                setSelectedSubs(nextSubs);
+              }}
+              className="text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-300 px-3 py-1 rounded-full bg-zinc-800/40 border border-zinc-700/30"
+            >
+              {Object.keys(cacheData.categories).filter(catId => cacheData.categories[catId].size > 0).every(catId => selectedCats.has(catId))
+                ? (lang?.cache_deselect_all || 'Снять выделение')
+                : (lang?.cache_select_all || 'Выбрать всё')}
+            </button>
+          </div>
+        )}
+
         {Object.keys(cacheData.categories).every(catId => cacheData.categories[catId].size === 0) ? (
           <div className="text-zinc-500 text-center py-10">
             {lang?.cache_empty || 'Кэш пуст'}
@@ -511,31 +652,76 @@ export default function CacheSettingsPage() {
                           const subLabel = (subcategoryMeta as any)[subId] || subId;
                           const subData = catData.subcategories[subId];
                           const isSubSelected = selectedSubs.has(`${catId}:${subId}`);
+                          const isOfflineAudio = subId === 'offline_audio';
 
                           return (
-                            <div
-                              key={subId}
-                              onClick={() => toggleSelectSub(catId, subId)}
-                              className="flex items-center justify-between p-3 pl-9 gap-3 hover:bg-zinc-900/30 duration-300 cursor-pointer select-none"
-                            >
-                              <div className="flex items-center gap-3">
-                                {/* Subcategory checkbox merged with dot outline */}
-                                <div
-                                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-300 active:scale-95"
-                                  style={{
-                                    borderColor: meta.color,
-                                    backgroundColor: isSubSelected ? meta.color : 'transparent'
-                                  }}
-                                >
-                                  {isSubSelected && (
-                                    <svg className="w-2.5 h-2.5 fill-black" viewBox="0 0 24 24">
-                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                    </svg>
-                                  )}
+                            <div key={subId} className="flex flex-col">
+                              <div
+                                onClick={() => toggleSelectSub(catId, subId)}
+                                className="flex items-center justify-between p-3 pl-9 gap-3 hover:bg-zinc-900/30 duration-300 cursor-pointer select-none"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {/* Subcategory checkbox merged with dot outline */}
+                                  <div
+                                    className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-300 active:scale-95"
+                                    style={{
+                                      borderColor: meta.color,
+                                      backgroundColor: isSubSelected ? meta.color : 'transparent'
+                                    }}
+                                  >
+                                    {isSubSelected && (
+                                      <svg className="w-2.5 h-2.5 fill-black" viewBox="0 0 24 24">
+                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <span className="text-zinc-300 text-sm">{subLabel}</span>
                                 </div>
-                                <span className="text-zinc-300 text-sm">{subLabel}</span>
+                                <span className="text-zinc-500 font-mono text-xs">{formatSize(subData.size)}</span>
                               </div>
-                              <span className="text-zinc-500 font-mono text-xs">{formatSize(subData.size)}</span>
+
+                              {isOfflineAudio && downloadedTracks.length > 0 && (
+                                <div className="flex flex-col pl-14 pr-3 pb-3 gap-2 bg-zinc-950/20 divide-y divide-zinc-900/30">
+                                  {downloadedTracks.map((track) => {
+                                    const trackTitle = track.title || `Трек #${track.id}`;
+                                    const trackArtist = track.artist || 'Неизвестный исполнитель';
+                                    return (
+                                      <div key={track.id} className="flex items-center justify-between py-2 gap-3 text-sm">
+                                        <div className="flex flex-col min-w-0">
+                                          <span className="text-zinc-300 truncate font-medium">{trackTitle}</span>
+                                          <span className="text-zinc-500 text-xs truncate">{trackArtist}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                          <span className="text-zinc-400 font-mono text-xs">{formatSize(track.size)}</span>
+                                          <button
+                                            type="button"
+                                            onClick={async (e) => {
+                                              e.stopPropagation();
+                                              try {
+                                                await cache.audio.remove(track.id);
+                                                showNote({
+                                                  content: `Трек «${trackTitle}» удален из кэша`,
+                                                  type: 'success',
+                                                  time: 3
+                                                });
+                                                void loadCacheData();
+                                              } catch (err) {
+                                                console.error('Failed to delete single track', err);
+                                              }
+                                            }}
+                                            className="p-1 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-red-400 duration-300 active:scale-90 cursor-pointer"
+                                            title="Удалить из устройства"
+                                          >
+                                            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                           );
                         })}

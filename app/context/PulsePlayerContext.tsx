@@ -1675,9 +1675,12 @@ export function PulsePlayerProvider({
       audio.load();
     }
 
-    // Если трек играет из сети, запускаем фоновое асинхронное кэширование
+    // Если трек играет из сети, запускаем фоновое асинхронное кэширование с передачей метаданных
     if (!isFromCache && trackId > 0) {
-      cache.audio.save(trackId, trackSource).catch((err) => {
+      cache.audio.save(trackId, trackSource, {
+        title: track.title || undefined,
+        artist: track.artist || undefined
+      }).catch((err) => {
         console.error('Failed to auto-cache audio file in background', err);
       });
     }
@@ -1946,6 +1949,16 @@ export function PulsePlayerProvider({
       };
     }
 
+    const cacheKey = `lyrics:${track.sid}`;
+    try {
+      const cached = cache.get<{ lines: PulseLyricsLine[]; source: string }>(cacheKey);
+      if (cached && Array.isArray(cached.lines) && cached.lines.length > 0) {
+        return cached;
+      }
+    } catch (e) {
+      console.error('Failed to get cached lyrics', e);
+    }
+
     try {
       const response = await fetch(
         `https://pulse-lyrics.ancial.ru/UniLyrics.php?a=${encodeURIComponent(artist)}&t=${encodeURIComponent(title)}&d=0&type=alternative`,
@@ -1963,10 +1976,18 @@ export function PulsePlayerProvider({
         };
       }
 
-      return {
+      const lyricsData = {
         lines: nextLyrics,
         source: 'Pulse',
       };
+
+      try {
+        cache.set(cacheKey, lyricsData, { category: 'pulse', subcategory: 'lyrics' });
+      } catch (e) {
+        console.error('Failed to cache lyrics', e);
+      }
+
+      return lyricsData;
     } catch {
       return {
         lines: [] as PulseLyricsLine[],
