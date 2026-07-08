@@ -123,20 +123,52 @@ export default function RichTextEditor({ value, onChange, placeholder, className
 
   const handleLink = () => {
     const selection = window.getSelection();
+    let parentA: HTMLAnchorElement | null = null;
+    let initialUrl = '';
+    let initialText = '';
+    let targetRange: Range | null = null;
+
     if (selection && selection.rangeCount > 0) {
-      // Ensure the selection is inside the editor
       if (editorRef.current?.contains(selection.anchorNode)) {
-        setSavedRange(selection.getRangeAt(0));
-        setLinkText(selection.toString());
-      } else {
-        setSavedRange(null);
-        setLinkText('');
+        targetRange = selection.getRangeAt(0);
+        
+        let node: Node | null = selection.anchorNode;
+        while (node && node !== editorRef.current) {
+          if (node.nodeName === 'A') {
+            parentA = node as HTMLAnchorElement;
+            break;
+          }
+          node = node.parentNode;
+        }
+
+        if (parentA) {
+          initialText = parentA.textContent || '';
+          
+          let href = parentA.getAttribute('href') || '';
+          if (href.includes('redirect?link=')) {
+            try {
+              const urlObj = new URL(href);
+              const linkParam = urlObj.searchParams.get('link');
+              if (linkParam) {
+                href = linkParam;
+              }
+            } catch (e) {
+              // Ignore invalid url
+            }
+          }
+          initialUrl = href;
+          
+          targetRange = document.createRange();
+          targetRange.selectNode(parentA);
+        } else {
+          initialText = selection.toString();
+        }
       }
-    } else {
-      setSavedRange(null);
-      setLinkText('');
     }
-    setLinkUrl('');
+    
+    setSavedRange(targetRange);
+    setLinkText(initialText);
+    setLinkUrl(initialUrl);
     setIsLinkModalOpen(true);
   };
 

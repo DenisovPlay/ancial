@@ -250,11 +250,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     window.addEventListener('focus', refreshAuth);
     window.addEventListener('online', refreshAuth);
     window.addEventListener('storage', refreshAuth);
+    window.addEventListener('ancial-auth-session-restored', refreshAuth);
+    window.addEventListener('ancial-auth-session-failed', refreshAuth);
 
     return () => {
       window.removeEventListener('focus', refreshAuth);
       window.removeEventListener('online', refreshAuth);
       window.removeEventListener('storage', refreshAuth);
+      window.removeEventListener('ancial-auth-session-restored', refreshAuth);
+      window.removeEventListener('ancial-auth-session-failed', refreshAuth);
     };
   }, [checkAuth]);
 

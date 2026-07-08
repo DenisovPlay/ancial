@@ -2,6 +2,7 @@ import { cache } from './cache.ts';
 
 const FALLBACK_ORIGIN = 'https://ancial.local';
 export const AUTH_SESSION_RESTORED_EVENT = 'ancial-auth-session-restored';
+export const AUTH_SESSION_FAILED_EVENT = 'ancial-auth-session-failed';
 
 let authSessionRefreshPromise: Promise<boolean> | null = null;
 
@@ -57,7 +58,10 @@ export function isLegacyNotLoggedInResponseText(value: string) {
     || text.includes("'not logged in'")
     || text.includes('not logged in')
     || text.includes('auth required')
-    || text.includes('"auth required"');
+    || text.includes('"auth required"')
+    || text.includes('войдите в аккаунт')
+    || text.includes('необходима авторизация')
+    || text.includes('пожалуйста, авторизуйтесь');
 }
 
 export function getStoredAuthToken() {
@@ -92,12 +96,19 @@ export async function restoreLegacyAuthSession(token = getStoredAuthToken()) {
       const data = await response.json().catch(() => null) as { success?: boolean } | null;
       const restored = data?.success === true;
 
-      if (restored && typeof window !== 'undefined') {
-        window.dispatchEvent(new Event(AUTH_SESSION_RESTORED_EVENT));
+      if (typeof window !== 'undefined') {
+        if (restored) {
+          window.dispatchEvent(new Event(AUTH_SESSION_RESTORED_EVENT));
+        } else {
+          window.dispatchEvent(new Event(AUTH_SESSION_FAILED_EVENT));
+        }
       }
 
       return restored;
     } catch {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event(AUTH_SESSION_FAILED_EVENT));
+      }
       return false;
     } finally {
       authSessionRefreshPromise = null;
