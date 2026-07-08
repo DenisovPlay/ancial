@@ -1,20 +1,31 @@
-export function parsePostContentToHtml(content: string | null | undefined): string {
+export function parsePostContentToHtml(content: string | null | undefined, isPreview: boolean = false): string {
     if (!content) return '';
-    let html = content
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    let html = content;
+    
+    // Если это превью или редактор, экранируем HTML, так как текст сырой.
+    // Если это отрендеренный сервером пост, он УЖЕ экранирован сервером (htmlspecialchars), 
+    // и сервер УЖЕ добавил туда безопасные HTML-теги для стикеров и упоминаний, поэтому мы не экранируем.
+    if (isPreview) {
+        html = html
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
     
     // 1. Форматирование текста (BBCode)
     html = html.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, '<strong>$1</strong>');
     html = html.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, '<em>$1</em>');
     html = html.replace(/\[s\]([\s\S]*?)\[\/s\]/gi, '<s>$1</s>');
-    // 2. Обработка ссылок: кастомные [url|text] и обычные сырые ссылки
-    // Регулярка скопирована с серверной логики PHP, но адаптирована под JS.
-    const linkRegex = /\[([^\]|]+)\|([^\]]+)\]|((?:https?:\/\/)?(?:[a-zA-Z0-9\-а-яА-ЯёЁ]+\.)+[a-zA-Zа-яА-ЯёЁ]{2,20}(?:\/[^\s<]*[^<.,:;"')\]\s])?)/giu;
-    html = html.replace(linkRegex, (match, customUrl, customText, rawUrl) => {
+    // Регулярка для HTML-тегов, чтобы пропускать их
+    // И для кастомных [url|text], и сырых ссылок
+    const linkRegex = /(<[^>]+>)|\[([^\]|]+)\|([^\]]+)\]|((?:https?:\/\/)?(?:[a-zA-Z0-9\-а-яА-ЯёЁ]+\.)+[a-zA-Zа-яА-ЯёЁ]{2,20}(?:\/(?:[^\s<]*[^<.,:;"')\]\s])?)?)/giu;
+    html = html.replace(linkRegex, (match, htmlTag, customUrl, customText, rawUrl) => {
+        if (htmlTag) {
+            return htmlTag;
+        }
+        
         if (customUrl && customText) {
             let url = customUrl.trim();
             if (!/^https?:\/\//i.test(url)) {
@@ -38,9 +49,11 @@ export function parsePostContentToHtml(content: string | null | undefined): stri
 
         return match;
     });
-    // 3. Переносы строк -> <br>
-    // Обрабатываем как \r\n так и \n
-    html = html.replace(/\r\n/g, '<br>');
-    html = html.replace(/\n/g, '<br>');
+
+    if (isPreview) {
+        // 3. Переносы строк -> <br> (только для превью, так как сервер уже делает nl2br)
+        html = html.replace(/\r\n/g, '<br>');
+        html = html.replace(/\n/g, '<br>');
+    }
     return html;
 }

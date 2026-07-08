@@ -216,7 +216,7 @@ export function FeedEditorUI({
                                     ))}
                                 </div>
                             )}
-                            <div className="px-3 pb-3 flex items-center justify-center gap-3">
+                            <div className="px-1.5 pb-1.5 flex items-center justify-center gap-1.5">
                                 <Dropdown
                                     triggerSize="sm"
                                     width="auto"
