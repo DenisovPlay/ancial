@@ -13,6 +13,7 @@ import TrackPreview from '../messages/components/track-preview';
 import PostWidgetPoll, { type PollWidgetData } from './post-widget-poll';
 import PostWidgetQuote, { type QuoteWidgetData } from './post-widget-quote';
 import ShareModal from './share-modal';
+import { parsePostContentToHtml } from './post-parser';
 
 
 
@@ -539,7 +540,7 @@ function PostCardInner({
               isLongContent && !isExpanded && 'hideTextBlock',
             )}
             style={{ userSelect: 'text' }}
-            dangerouslySetInnerHTML={{ __html: post.content ?? '' }}
+            dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(post.content) }}
           />
         )}
 

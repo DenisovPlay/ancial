@@ -3,23 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Dropdown } from '../../components/navigation';
 import type { PostAuthor, PostData, PostImage } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
-import CreatePostPreview from '../create/create-post-preview';
 import PostWidgetPollModal, { type PollWidgetDraft } from '../../components/post-widget-poll-modal';
 import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/post-widget-music-modal';
+import { FeedEditorUI } from '../editor-ui';
 
 import {
   type DraftImage,
   MAX_IMAGES,
-  STICKERS,
-  StickersIcon,
-  PollIcon,
   SvgIcon,
-  cn,
   decodeHtmlEntities,
   decodeHtmlToTextareaValue,
   makeId,
@@ -490,8 +485,89 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     );
   }
 
+  let loadingOrErrorComponent: React.ReactNode | undefined;
+  if (isPostLoading) {
+    loadingOrErrorComponent = (
+      <div className="flex justify-center items-center w-full py-10">
+        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+          <use href="#IC-loader"></use>
+        </svg>
+      </div>
+    );
+  } else if (error === 'not_found') {
+    loadingOrErrorComponent = (
+      <div className="w-full max-w-3xl px-3 lg:px-0">
+        <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-1 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
+          <span className="text-base text-zinc-200 w-full text-center font-black">
+            {strings.nopost}
+          </span>
+          <span className="text-sm text-zinc-400 w-full text-center font-medium">
+            {strings.nopostdesc}
+          </span>
+        </div>
+      </div>
+    );
+  } else if (error === 'permission_denied') {
+    loadingOrErrorComponent = (
+      <div className="w-full max-w-3xl px-3 lg:px-0">
+        <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-3 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
+          <div className="rounded-2xl bg-red-500/25 shadow h-16 w-16 flex items-center justify-center duration-300">
+            <SvgIcon className="w-8 h-8 inline fill-white" id="IC-times" />
+          </div>
+          <span className="text-base text-zinc-200 w-full text-center font-black">
+            {strings.notyourpost}
+          </span>
+          <span className="text-sm text-zinc-400 w-full text-center font-medium">
+            {strings.notyourpostdesc}
+          </span>
+        </div>
+      </div>
+    );
+  } else if (error === 'error') {
+    loadingOrErrorComponent = (
+      <div className="w-full max-w-3xl px-3 lg:px-0">
+        <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-1 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
+          <span className="text-base text-zinc-200 w-full text-center font-black">
+            {strings.somethingwrong}
+          </span>
+          <span className="text-sm text-zinc-400 w-full text-center font-medium">
+            {strings.errorDescription}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col jusitify-center items-center gap-3 py-3">
+    <FeedEditorUI
+      mode="edit"
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      title={title}
+      setTitle={setTitle}
+      content={content}
+      setContent={setContent}
+      images={images}
+      handleDeleteImage={handleDeleteImage}
+      widgets={widgets}
+      handleRemoveWidget={handleRemoveWidget}
+      topicOptions={topicOptions}
+      selectedTopic={selectedTopic}
+      setSelectedTopic={setSelectedTopic}
+      authorName={post?.author?.name}
+      strings={strings}
+      isSubmitting={isSubmitting}
+      hasUploadingImages={hasUploadingImages}
+      handleSubmit={handleSubmit}
+      handleOpenFilePicker={handleOpenFilePicker}
+      setIsPollModalOpen={setIsPollModalOpen}
+      setIsMusicModalOpen={setIsMusicModalOpen}
+      handleStickerSelect={handleStickerSelect}
+      previewAuthorName={previewAuthorName}
+      previewAuthorImage={previewAuthorImage}
+      onBack={() => router.back()}
+      loadingOrErrorComponent={loadingOrErrorComponent}
+    >
       <input
         ref={fileInputRef}
         type="file"
@@ -499,312 +575,6 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         className="hidden"
         onChange={handleFileChange}
       />
-
-      <div className="w-full max-w-3xl">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"
-        >
-          <SvgIcon className="w-8 h-8 fill-white inline" id="IC-chevron-left" />
-          <span>{strings.edit}</span>
-          <span className="lowercase">{strings.post}</span>
-        </button>
-      </div>
-
-      {isPostLoading && (
-        <div className="flex justify-center items-center w-full py-10">
-          <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <use href="#IC-loader"></use>
-          </svg>
-        </div>
-      )}
-
-      {!isPostLoading && !error && post && (
-        <>
-          <div className="flex gap-3 w-full px-3 lg:px-0 max-w-3xl">
-            <button
-              type="button"
-              onClick={() => setActiveTab('write')}
-              className={cn(
-                'border border-zinc-600/30 hover:bg-zinc-600 duration-300 active:scale-95 px-3 py-1 shadow rounded-3xl shrink-0 cursor-pointer',
-                activeTab === 'write' && 'bg-zinc-700 hover:bg-zinc-600',
-              )}
-            >
-              {strings.post}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('preview')}
-              className={cn(
-                'border border-zinc-600/30 hover:bg-zinc-600 duration-300 active:scale-95 px-3 py-1 shadow rounded-3xl shrink-0 cursor-pointer',
-                activeTab === 'preview' && 'bg-zinc-700 hover:bg-zinc-600',
-              )}
-            >
-              {strings.preview}
-            </button>
-            <div className="flex-grow"></div>
-            <button
-              id="publicpost"
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={isSubmitting || hasUploadingImages}
-              className="border border-zinc-600/30 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 px-3 py-1 shadow rounded-3xl shrink-0 text-sm cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
-            >
-              <svg className="fill-white w-6 h-6 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                <use href="#IC-send"></use>
-              </svg>
-              <span>{strings.save}</span>
-            </button>
-          </div>
-
-          <div className={cn('flex flex-col w-full max-w-3xl', activeTab !== 'write' && 'hidden')}>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-              }}
-              className="border border-zinc-600/30 duration-300 bg-zinc-900 shadow rounded-3xl text-zinc-700 flex flex-col"
-            >
-              <input
-                className="bg-transparent p-3 w-full placeholder-zinc-500 text-zinc-100 text-lg font-bold border-b border-zinc-800 duration-300 focus:ring-0 focus:outline-none"
-                autoComplete="off"
-                type="text"
-                name="edit_post_title"
-                id="edit_post_title"
-                maxLength={64}
-                placeholder={strings.title}
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-              />
-              <textarea
-                className="bg-transparent p-3 w-full placeholder-zinc-500 text-white h-72 min-h-32 max-h-96 focus:ring-0 focus:outline-none duration-300"
-                autoComplete="off"
-                name="edit_content"
-                id="edit_content"
-                maxLength={1000}
-                placeholder={strings.postcontent}
-                value={content}
-                onChange={(event) => setContent(event.target.value)}
-              />
-
-              {images.length > 0 && (
-                <div className="p-3 flex gap-3 overflow-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  {images.map((image) => (
-                    <button
-                      key={image.id}
-                      type="button"
-                      onClick={() => handleDeleteImage(image.id)}
-                      className="h-32 w-32 rounded-2xl shadow bg-center bg-cover shrink-0 cursor-pointer relative overflow-hidden"
-                      style={{ backgroundImage: `url(${image.previewUrl})` }}
-                    >
-                      {image.status === 'uploading' ? (
-                        <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full text-5xl font-bold duration-300">
-                          <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                            <use href="#IC-loader"></use>
-                          </svg>
-                        </div>
-                      ) : (
-                        <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full opacity-0 hover:opacity-90 text-5xl font-bold duration-300">
-                          <SvgIcon className="w-8 h-8 inline fill-white" id="IC-times" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Прикреплённые виджеты */}
-              {widgets.length > 0 && (
-                <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto overflow-y-hidden">
-                  {widgets.map((w, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-3xl border border-zinc-700/40">
-                      {w.type === 'music' ? (
-                        <div
-                          className="w-6 h-6 rounded-full bg-cover bg-center shrink-0 bg-zinc-700"
-                          style={{ backgroundImage: `url(${w.track_img})` }}
-                        />
-                      ) : (
-                        <span className="shrink-0 flex items-center justify-center w-6 h-6">
-                          {w.type === 'quote' ? (
-                            <SvgIcon className="w-4 h-4 fill-zinc-400" id="IC-share" />
-                          ) : (
-                            <PollIcon className="w-4 h-4 fill-zinc-400" />
-                          )}
-                        </span>
-                      )}
-                      <span className="text-sm text-zinc-200 truncate flex-1">
-                        {w.type === 'music' ? `${w.artist_name} — ${w.track_name}` : w.type === 'poll' ? w.question : strings.reply_to_post}
-                      </span>
-                      <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95 cursor-pointer">
-                        <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="px-3 pb-3 flex items-center justify-center gap-3">
-                <Dropdown
-                  triggerSize="sm"
-                  width="auto"
-                  triggerIcon="IC-plus"
-                  triggerAriaLabel="Add content"
-                  position="top"
-                  align="start"
-                  triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-white"
-                  menuClassName="min-w-32 !gap-1.5 !p-2"
-                >
-                  <button
-                    type="button"
-                    onClick={handleOpenFilePicker}
-                    className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 bg-zinc-700/0 hover:bg-zinc-700/95 font-medium text-white w-full"
-                  >
-                    <SvgIcon className="w-6 h-6 inline fill-white mr-1" id="IC-photos" />
-                    <span>{strings.photo}</span>
-                  </button>
-                  <div className="flex items-center hover:shadow rounded-2xl duration-150 px-1.5 py-0.5 font-medium bg-zinc-600/30 text-zinc-400 cursor-not-allowed w-full">
-                    <SvgIcon className="inline w-6 h-6 fill-zinc-400 mr-1" id="IC-play" />
-                    <span>{strings.video}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsPollModalOpen(true)}
-                    className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
-                  >
-                    <PollIcon className="inline h-6 w-6 mr-1 fill-white" />
-                    <span>{strings.poll}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsMusicModalOpen(true)}
-                    className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
-                  >
-                    <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-music" />
-                    <span>{strings.music}</span>
-                  </button>
-                </Dropdown>
-
-                <select
-                  name="edit_post_topic"
-                  className="p-0.5 h-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-xs lg:text-sm cursor-pointer duration-300 text-zinc-100 focus:ring-0 focus:outline-none"
-                  id="edit_post_topic"
-                  value={selectedTopic}
-                  onChange={(event) => setSelectedTopic(event.target.value)}
-                >
-                  <option value="">
-                    {strings.choisetopic}
-                  </option>
-                  {topicOptions.map((topicOption) => (
-                    <option key={topicOption} value={topicOption}>
-                      {topicOption}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="p-0.5 h-7 border border-zinc-600/30 bg-zinc-900 rounded-3xl shadow text-xs lg:text-sm duration-300 text-zinc-400 flex items-center px-2 cursor-default max-w-[12rem]">
-                  <span className="truncate">{post.author.name}</span>
-                </div>
-
-                <div className="flex-grow"></div>
-
-                <Dropdown
-                  triggerSize="sm"
-                  triggerAriaLabel="Insert sticker"
-                  position="top"
-                  align="end"
-                  triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-2xl shadow text-white"
-                  menuClassName="!grid !grid-cols-6 !w-[15rem] !rounded-3xl !p-1.5 h-32 overflow-auto"
-                  triggerNode={<StickersIcon className="w-5 h-5 fill-white" />}
-                >
-                  {STICKERS.map((sticker) => (
-                    <button
-                      key={`${sticker.code}-${sticker.src}`}
-                      type="button"
-                      onClick={() => handleStickerSelect(sticker.code)}
-                      className="inline cursor-pointer active:scale-95 duration-300"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={sticker.src} alt={sticker.code.trim()} className="w-8 h-8 object-contain" />
-                    </button>
-                  ))}
-                </Dropdown>
-              </div>
-            </form>
-          </div>
-
-          <div className={cn('flex flex-col w-full max-w-3xl', activeTab !== 'preview' && 'hidden')}>
-            <CreatePostPreview
-              authorImage={previewAuthorImage}
-              authorName={previewAuthorName}
-              images={images.map((image) => ({
-                id: image.id,
-                status: image.status,
-                url: image.previewUrl,
-              }))}
-              strings={{
-                nowTyping: strings.nowTyping,
-                placeholderAuthor: strings.placeholderAuthor,
-                placeholderContent: strings.placeholderContent,
-                placeholderTag: strings.placeholderTag,
-                placeholderTitle: strings.placeholderTitle,
-                uploading: strings.uploading,
-              }}
-              tag={selectedTopic}
-              text={content}
-              title={title}
-              widgets={widgets}
-            />
-          </div>
-        </>
-      )}
-
-      {!isPostLoading && error === 'not_found' && (
-        <div className="w-full max-w-3xl px-3 lg:px-0">
-          <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-1 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
-            <span className="text-base text-zinc-200 w-full text-center font-black">
-              {strings.nopost}
-            </span>
-            <span className="text-sm text-zinc-400 w-full text-center font-medium">
-              {strings.nopostdesc}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {!isPostLoading && error === 'permission_denied' && (
-        <div className="w-full max-w-3xl px-3 lg:px-0">
-          <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-3 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
-            <div className="rounded-2xl bg-red-500/25 shadow h-16 w-16 flex items-center justify-center duration-300">
-              <SvgIcon className="w-8 h-8 inline fill-white" id="IC-times" />
-            </div>
-            <span className="text-base text-zinc-200 w-full text-center font-black">
-              {strings.notyourpost}
-            </span>
-            <span className="text-sm text-zinc-400 w-full text-center font-medium">
-              {strings.notyourpostdesc}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {!isPostLoading && error === 'error' && (
-        <div className="w-full max-w-3xl px-3 lg:px-0">
-          <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-1 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
-            <span className="text-base text-zinc-200 w-full text-center font-black">
-              {strings.somethingwrong}
-            </span>
-            <span className="text-sm text-zinc-400 w-full text-center font-medium">
-              {strings.errorDescription}
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="lg:hidden">
-        <br />
-        <br />
-        <br />
-      </div>
 
       {isPollModalOpen && (
         <PostWidgetPollModal
@@ -827,6 +597,6 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
           }}
         />
       )}
-    </div>
+    </FeedEditorUI>
   );
 }
