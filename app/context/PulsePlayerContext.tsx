@@ -229,7 +229,19 @@ function isTrackPlayable(track: PulseTrack | null, userCountry: string) {
   return blockedCountries ? !blockedCountries.includes(userCountry) : true;
 }
 
+function isAndroidBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent);
+}
+
 function buildMediaArtwork(track: PulseTrack | null) {
+  // On Android, Chrome's PlaybackListenerService crashes with
+  // "cannot use a recycled source in createBitmap" when artwork URLs are set.
+  // Chrome asynchronously downloads the bitmap and a race condition causes it
+  // to be recycled before the notification draws — this is an internal Chrome bug.
+  // Returning an empty array prevents any bitmap creation and eliminates the crash.
+  if (isAndroidBrowser()) return [];
+
   const trackImage = getTrackArtwork(track);
   const artwork = Array.isArray(track?.artwork) ? track.artwork : [];
   const validArtwork = artwork.filter((item) => normalizeText(item?.src));
@@ -251,6 +263,7 @@ function buildMediaArtwork(track: PulseTrack | null) {
     { src: trackImage, sizes: '512x512', type: 'image/png' },
   ];
 }
+
 
 function readSavedVolume() {
   if (typeof window === 'undefined') return 0.7;
