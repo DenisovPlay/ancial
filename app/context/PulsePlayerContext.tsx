@@ -1738,13 +1738,45 @@ export function PulsePlayerProvider({
       // При сетевой ошибке (офлайн) — пробуем прочитать кэш
       if (kind === 'playlist' || kind === 'genlist' || kind === 'artist') {
         try {
-          const cached = cache.get<PulseTrack[]>(collectionCacheKey, { category: 'pulse', subcategory: 'tracks' });
+          // 1. Сначала пытаемся прочитать кэш самого плеера
+          let cached = cache.get<PulseTrack[]>(collectionCacheKey, { category: 'pulse', subcategory: 'tracks' });
+          
+          // 2. Если его нет — пытаемся прочитать UI-кэш страницы плейлиста (сохраняется при открытии страницы)
+          if (!cached || cached.length === 0) {
+            const uiCacheKey = kind === 'playlist' 
+              ? `playlist_tracks_${resolvedId}` 
+              : kind === 'genlist' 
+                ? `playlist_tracks_gid_${resolvedId}` 
+                : `playlist_tracks_aid_${resolvedId}`;
+            cached = cache.get<PulseTrack[]>(uiCacheKey, { category: 'pulse' });
+          }
+
           if (cached && cached.length > 0) {
             console.log(`[Pulse] Offline: playing collection from cache (${kind}:${resolvedId})`);
             return cached;
           }
         } catch (e) {
           console.error('Failed to read collection cache', e);
+        }
+      } else if (kind === 'track') {
+        // Если это одиночный трек — попробуем проверить метаданные в IndexedDB
+        try {
+          const downloadedTracks = await cache.audio.getDownloadedList();
+          const offlineTrack = downloadedTracks.find(t => String(t.id) === resolvedId);
+          if (offlineTrack) {
+            console.log(`[Pulse] Offline: playing single track from IndexedDB cache (${resolvedId})`);
+            return [{
+              sid: resolvedId,
+              title: offlineTrack.title || '',
+              artist: offlineTrack.artist || '',
+              src: 'offline-indexeddb', // fake source, will be overridden by ObjectURL
+              status: '1', // mark as playable
+              explicit: false,
+              artwork: [],
+            } as unknown as PulseTrack];
+          }
+        } catch (e) {
+          console.error('Failed to read audio cache metadata for single track', e);
         }
       }
       return [];
