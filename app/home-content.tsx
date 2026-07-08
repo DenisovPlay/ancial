@@ -17,6 +17,7 @@ import {
   writeCachedWeather,
 } from './lib/home-info-cache';
 import { safeFetchJson } from './lib/safe-fetch-json';
+import { cache } from './lib/cache';
 
 interface HomeApiResponse<T> {
   success: boolean;
@@ -152,7 +153,12 @@ export default function HomeContent() {
   // Fetch exchange rates and weather info
 
   useEffect(() => {
-    const cachedCurrency = readCachedCurrency();
+    let cachedCurrency = readCachedCurrency();
+    if (!cachedCurrency) {
+      try {
+        cachedCurrency = cache.get<HomeCurrencyCacheData>('rates_backup');
+      } catch {}
+    }
     if (cachedCurrency) {
       setCurrencies(cachedCurrency);
     }
@@ -165,57 +171,103 @@ export default function HomeContent() {
           if (!currencyRes) {
             console.info('[Currency] Legacy endpoint returned an empty or non-JSON response');
           } else if (currencyRes.success && currencyRes.data) {
-            setCurrencies({
+            const ratesData = {
               usd: currencyRes.data.usd,
               eur: currencyRes.data.eur,
-            });
-            writeCachedCurrency(currencyRes.data);
+            };
+            setCurrencies(ratesData);
+            writeCachedCurrency(ratesData);
+            try {
+              cache.set('rates_backup', ratesData, { category: 'home' }); // Сохраняем бессрочный бэкап
+            } catch {}
           }
         }
       } catch (currencyErr) {
         console.error('[Currency] Fetch failed', currencyErr);
+        // При ошибке сети пробуем достать резервные курсы
+        if (!currencies) {
+          try {
+            const backup = cache.get<HomeCurrencyCacheData>('rates_backup');
+            if (backup) setCurrencies(backup);
+          } catch {}
+        }
       }
 
       try {
-        const locationRes = await safeFetchJson<HomeApiResponse<LocationData>>('/api/V2/info/GetLocation.php');
-
-        if (!locationRes) {
-          console.info('[Location] Legacy endpoint returned an empty or non-JSON response');
-          setWeatherLoading(false);
-          return;
+        let city = '';
+        try {
+          const locationRes = await safeFetchJson<HomeApiResponse<LocationData>>('/api/V2/info/GetLocation.php');
+          if (locationRes && locationRes.success && locationRes.data?.city) {
+            city = locationRes.data.city;
+            try {
+              cache.set('last_city', city, { category: 'home' }); // Запоминаем последний город
+            } catch {}
+          }
+        } catch (locationErr) {
+          console.error('[Location] Fetch failed', locationErr);
         }
 
-        if (!locationRes.success || !locationRes.data?.city) {
-          setWeatherLoading(false);
-          return;
+        // Если не смогли определить город (офлайн), берем последний успешный
+        if (!city) {
+          try {
+            const lastCity = cache.get<string>('last_city');
+            if (lastCity) city = lastCity;
+          } catch {}
         }
 
-        const cachedWeather = readCachedWeather(locationRes.data.city);
-        if (cachedWeather) {
-          setWeather(cachedWeather);
-          setWeatherLoading(false);
-          return;
-        }
+        if (city) {
+          let cachedWeather = readCachedWeather(city);
+          if (!cachedWeather) {
+            try {
+              cachedWeather = cache.get<HomeWeatherCacheData>('weather_backup');
+            } catch {}
+          }
+          if (cachedWeather) {
+            setWeather(cachedWeather);
+            setWeatherLoading(false);
 
-        const weatherRes = await safeFetchJson<HomeApiResponse<HomeWeatherCacheData>>(
-          `/api/V2/info/Weather.php?city=${encodeURIComponent(locationRes.data.city)}`
-        );
+            // Если оффлайн, прерываем запрос к серверу погоды
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+              return;
+            }
+          }
 
-        if (!weatherRes) {
-          console.info('[Weather] Legacy endpoint returned an empty or non-JSON response');
-          setWeatherLoading(false);
-          return;
-        }
+          try {
+            const weatherRes = await safeFetchJson<HomeApiResponse<HomeWeatherCacheData>>(
+              `/api/V2/info/Weather.php?city=${encodeURIComponent(city)}`
+            );
 
-        if (weatherRes.success && weatherRes.data) {
-          setWeather({
-            temp: weatherRes.data.temp,
-            wfont: weatherRes.data.wfont,
-          });
-          writeCachedWeather(locationRes.data.city, weatherRes.data);
+            if (weatherRes && weatherRes.success && weatherRes.data) {
+              setWeather({
+                temp: weatherRes.data.temp,
+                wfont: weatherRes.data.wfont,
+              });
+              writeCachedWeather(city, weatherRes.data);
+              try {
+                cache.set('weather_backup', weatherRes.data, { category: 'home' }); // Сохраняем бессрочный бэкап
+              } catch {}
+            } else if (!weather) {
+              const backup = cache.get<HomeWeatherCacheData>('weather_backup');
+              if (backup) setWeather(backup);
+            }
+          } catch (weatherErr) {
+            console.error('[Weather] Fetch failed', weatherErr);
+            if (!weather) {
+              try {
+                const backup = cache.get<HomeWeatherCacheData>('weather_backup');
+                if (backup) setWeather(backup);
+              } catch {}
+            }
+          }
+        } else {
+          // Город не определен вообще (первый запуск в офлайне). Показываем бэкап погоды
+          try {
+            const backup = cache.get<HomeWeatherCacheData>('weather_backup');
+            if (backup) setWeather(backup);
+          } catch {}
         }
-      } catch (locationErr) {
-        console.error('[Location] Fetch failed', locationErr);
+      } catch (err) {
+        console.error('[Weather/Location] Process failed', err);
       } finally {
         setWeatherLoading(false);
       }

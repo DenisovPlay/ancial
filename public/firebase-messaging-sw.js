@@ -118,9 +118,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Strategy: HTML Documents (Pages) -> Network First
+  // 4. Strategy: HTML Documents (Pages) and Next.js RSC payloads -> Network First
   const isHtml = request.mode === 'navigate' || (request.headers.get('accept') && request.headers.get('accept').includes('text/html'));
-  if (isHtml) {
+  const isRsc = url.searchParams.has('_rsc') || request.headers.get('RSC') === '1';
+  if (isHtml || isRsc) {
     event.respondWith(
       fetch(request)
         .then((response) => {

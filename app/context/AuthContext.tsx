@@ -105,6 +105,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(nextUser);
       setIsAuthenticated(auth);
       publishAuthState(auth, nextUser, false);
+
+      if (auth && nextUser) {
+        try {
+          cache.set('user_profile', nextUser, { category: 'profile' });
+        } catch (e) {
+          console.error('[Auth] Failed to cache user profile', e);
+        }
+      }
     };
 
     if (!silent) {
@@ -191,6 +199,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('Ошибка при проверке авторизации:', error);
+      
+      try {
+        const cachedUser = cache.get<User>('user_profile');
+        const token = cache.get<string>('token');
+        if (cachedUser && token) {
+          console.log('[Auth] Восстановление авторизации из локального кэша в офлайне.');
+          applyAuthState(true, cachedUser);
+          return;
+        }
+      } catch (e) {
+        console.error('[Auth] Не удалось прочитать локальный кэш пользователя', e);
+      }
+
       if (!silent) {
         applyAuthState(false, null);
       }
@@ -238,8 +259,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [checkAuth]);
 
   const logout = async () => {
-    // Удаляем токен и очищаем кэш
     cache.remove('token');
+    cache.remove('user_profile');
     cache.clear();
     
     try {
