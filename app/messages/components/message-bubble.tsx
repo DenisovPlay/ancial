@@ -468,7 +468,7 @@ export default function MessageBubble({
                                   <img
                                     src={image.src}
                                     alt={image.alt || `Sticker ${imageIndex + 1}`}
-                                    className="max-h-48 min-h-[100px] min-w-[100px] max-w-full rounded-lg object-contain shadow lg:max-h-64 bg-zinc-800/20"
+                                    className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
                                   />
                                 </div>
                               ) : (
@@ -478,12 +478,12 @@ export default function MessageBubble({
                                   onClick={() => {
                                     onOpenImage(getDialogImageKey(messageId, imageIndex));
                                   }}
-                                  className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95 bg-zinc-800/50"
+                                  className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95"
                                 >
                                   <img
                                     src={image.src}
                                     alt={image.alt || `Message image ${imageIndex + 1}`}
-                                    className="h-56 lg:h-72 w-[70vw] sm:w-[300px] lg:w-[400px] max-w-full rounded-lg object-cover shadow"
+                                    className="max-h-48 max-w-full rounded-lg object-cover shadow lg:max-h-64"
                                   />
                                 </button>
                               )
