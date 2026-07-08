@@ -847,6 +847,7 @@ export function PulsePlayerProvider({
   const desktopCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
   const volumeSliderRef = useRef<HTMLInputElement | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
+  const mediaSessionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -1089,6 +1090,12 @@ export function PulsePlayerProvider({
   };
 
   const clearMediaSession = () => {
+    // Cancel any pending debounced metadata update first
+    if (mediaSessionDebounceRef.current !== null) {
+      clearTimeout(mediaSessionDebounceRef.current);
+      mediaSessionDebounceRef.current = null;
+    }
+
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
 
     try {
@@ -2198,16 +2205,31 @@ export function PulsePlayerProvider({
     }
 
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
-      try {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          album: normalizeText(currentTrack.album) || 'Ancial',
-          artist: playerArtist,
-          artwork: buildMediaArtwork(currentTrack),
-          title: playerTitle,
-        });
-      } catch {
-        // ignore MediaMetadata errors
+      // Debounce MediaSession metadata updates to avoid a race condition in Chrome for Android:
+      // rapid consecutive setMetadata() calls cause Chrome to recycle bitmaps mid-flight,
+      // resulting in a fatal native crash ("cannot use a recycled source in createBitmap").
+      // This is especially triggered when the equalizer restarts the AudioContext on track change.
+      if (mediaSessionDebounceRef.current !== null) {
+        clearTimeout(mediaSessionDebounceRef.current);
       }
+      const capturedTrack = currentTrack;
+      const capturedArtist = playerArtist;
+      const capturedTitle = playerTitle;
+      mediaSessionDebounceRef.current = setTimeout(() => {
+        mediaSessionDebounceRef.current = null;
+        try {
+          if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
+            navigator.mediaSession.metadata = new MediaMetadata({
+              album: normalizeText(capturedTrack.album) || 'Ancial',
+              artist: capturedArtist,
+              artwork: buildMediaArtwork(capturedTrack),
+              title: capturedTitle,
+            });
+          }
+        } catch {
+          // ignore MediaMetadata errors
+        }
+      }, 300);
     }
 
     let cancelled = false;
@@ -2224,6 +2246,12 @@ export function PulsePlayerProvider({
 
     return () => {
       cancelled = true;
+      // Also cancel any pending debounced metadata update so stale artwork
+      // from the previous track is never applied after the track changes.
+      if (mediaSessionDebounceRef.current !== null) {
+        clearTimeout(mediaSessionDebounceRef.current);
+        mediaSessionDebounceRef.current = null;
+      }
     };
     // syncWindowState is intentionally omitted here so lyric loading only reacts to real track changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
