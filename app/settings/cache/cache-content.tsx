@@ -534,35 +534,30 @@ export default function CacheSettingsPage() {
         </div>
 
         {/* Clear Button - placed under the circle, visible always */}
-        <div className="w-full max-w-sm px-3 flex flex-col gap-3">
+        <div className="w-full max-w-sm px-3 flex flex-row items-center gap-3">
           <button
             onClick={handleClear}
             disabled={selectedSize === 0}
-            className={`border border-zinc-600/30 w-full h-12 rounded-3xl font-semibold text-white shadow-xl flex items-center justify-center gap-2 duration-300 active:scale-95 cursor-pointer ${selectedSize > 0
+            className={`h-[48px] grow border border-zinc-600/30 w-full h-12 rounded-3xl font-semibold text-white shadow-xl flex items-center justify-center gap-2 duration-300 active:scale-95 cursor-pointer ${selectedSize > 0
               ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-900/20'
               : 'bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none opacity-50'
               }`}
           >
-            <span>{lang?.cache_clear_selected || 'Очистить выбранное'}</span>
+            <span className={selectedSize > 0 ? 'text-xs' : 'text-md'}>{lang?.cache_clear_selected || 'Очистить выбранное'}</span>
             {selectedSize > 0 && (
-              <span className="font-mono text-purple-200">({formatSize(selectedSize)})</span>
+              <span className="font-mono text-purple-200 text-sm">({formatSize(selectedSize)})</span>
             )}
           </button>
-        </div>
-      </div>
 
-      {/* Category List */}
-      <div className="flex flex-col gap-3 w-full max-w-3xl px-3 lg:px-0">
-        {!Object.keys(cacheData.categories).every(catId => cacheData.categories[catId].size === 0) && (
-          <div className="flex justify-end mb-1">
+          {!Object.keys(cacheData.categories).every(catId => cacheData.categories[catId].size === 0) && (
             <button
               onClick={() => {
                 const allCats = Object.keys(cacheData.categories).filter(catId => cacheData.categories[catId].size > 0);
                 const areAllSelected = allCats.every(catId => selectedCats.has(catId));
-                
+
                 const nextCats = new Set<string>();
                 const nextSubs = new Set<string>();
-                
+
                 if (!areAllSelected) {
                   allCats.forEach(catId => {
                     nextCats.add(catId);
@@ -571,19 +566,23 @@ export default function CacheSettingsPage() {
                     });
                   });
                 }
-                
+
                 setSelectedCats(nextCats);
                 setSelectedSubs(nextSubs);
               }}
-              className="text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-300 px-3 py-1 rounded-full bg-zinc-800/40 border border-zinc-700/30"
+              className="h-[48px] text-sm text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-300 px-3 py-1 rounded-full bg-zinc-800/40 border border-zinc-700/30"
             >
               {Object.keys(cacheData.categories).filter(catId => cacheData.categories[catId].size > 0).every(catId => selectedCats.has(catId))
                 ? (lang?.cache_deselect_all || 'Снять выделение')
                 : (lang?.cache_select_all || 'Выбрать всё')}
             </button>
-          </div>
-        )}
+          )}
 
+        </div>
+      </div>
+
+      {/* Category List */}
+      <div className="flex flex-col gap-3 w-full max-w-3xl px-3 lg:px-0">
         {Object.keys(cacheData.categories).every(catId => cacheData.categories[catId].size === 0) ? (
           <div className="text-zinc-500 text-center py-10">
             {lang?.cache_empty || 'Кэш пуст'}

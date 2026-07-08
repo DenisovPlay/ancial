@@ -238,6 +238,17 @@ export default function MessageBubble({
     }, 500);
   };
 
+  const hasMainContent = messageImages.length > 0 || !!sevenTvStickerName || hasMessageText;
+  const blocks: Array<{ type: 'reply' | 'post' | 'track' | 'main'; id: string }> = [];
+  if (message.reply_to) {
+    blocks.push({ type: 'reply', id: 'reply' });
+  }
+  postIds.forEach((id) => blocks.push({ type: 'post', id }));
+  trackIds.forEach((id) => blocks.push({ type: 'track', id }));
+  if (hasMainContent || blocks.length === 0) {
+    blocks.push({ type: 'main', id: 'main' });
+  }
+
   return (
     <>
       <AnimatePresence>
@@ -299,7 +310,7 @@ export default function MessageBubble({
             }
           }}
         >
-          <div className="relative flex flex-col">
+          <div className={cn("relative flex flex-col w-full", isOwn ? "items-end" : "items-start")}>
             <Dropdown
               open={menuOpen}
               onOpenChange={setMenuOpen}
@@ -372,168 +383,190 @@ export default function MessageBubble({
               ) : null}
             </Dropdown>
 
-            <div
-              id={`msg-${messageId}`}
-              className={cn(
-                'flex max-w-[90vw] lg:max-w-[40vw] flex-col rounded-2xl p-1 text-left font-normal break-words lg:text-lg',
-                isOwn && isTextMessage && !isStickerOnlyMessage && 'rounded-br-lg bg-purple-700',
-                !isOwn && isTextMessage && !isStickerOnlyMessage && 'rounded-bl-lg bg-zinc-900',
-              )}
-            >
-              <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
-                {message.reply_to ? (
+            <div id={`msg-${messageId}`} className={cn("flex flex-col gap-1 max-w-[90vw] lg:max-w-[40vw]", isOwn ? "items-end" : "items-start")}>
+              {blocks.map((block, index) => {
+                const isLast = index === blocks.length - 1;
+
+                const blockBg = isTextMessage && !(block.type === 'main' && isStickerOnlyMessage)
+                  ? (isOwn ? 'bg-purple-700' : 'bg-zinc-900')
+                  : '';
+
+                const blockRadius = isTextMessage && !(block.type === 'main' && isStickerOnlyMessage)
+                  ? (isOwn && isLast ? 'rounded-br-lg' : (!isOwn && isLast ? 'rounded-bl-lg' : ''))
+                  : '';
+
+                const blockPadding = block.type === 'main' ? 'p-1 rounded-2xl' : 'rounded-3xl';
+
+                return (
                   <div
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onReplyClick(message.reply_to!);
-                    }}
+                    key={`${block.type}-${block.id}`}
                     className={cn(
-                      'flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-2xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 max-w-full shadow active:scale-95 duration-300',
-                      !isOwn && isTextMessage && !isStickerOnlyMessage && 'bg-zinc-800/50 hover:bg-zinc-700/50',
+                      'flex flex-col text-left font-normal break-words lg:text-lg w-fit max-w-full',
+                      blockPadding,
+                      blockBg,
+                      blockRadius
                     )}
                   >
-                    <span className="font-semibold text-purple-300 text-xs">
-                      {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
-                    </span>
-                    <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
-                      {message.reply_type == 1
-                        ? (lang?.image_sticker || 'Картинка/стикер')
-                        : (getSevenTvStickerTokenData(message.reply_msg)
-                          ? (lang?.image_sticker || 'Картинка/стикер')
-                          : (message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')))
-                      }
-                    </span>
-                  </div>
-                ) : null}
-                {messageImages.length ? (
-                  <div
-                    className={cn(
-                      'flex flex-col gap-2',
-                      messageImages.length > 1 && 'sm:grid sm:grid-cols-2',
-                    )}
-                  >
-                    {messageImages.map((image, imageIndex) => (
-                      !image.isViewerImage ? (
-                        <div
-                          key={getDialogImageKey(messageId, imageIndex)}
-                          className="overflow-hidden rounded-lg"
-                        >
-                          <img
-                            src={image.src}
-                            alt={image.alt || `Sticker ${imageIndex + 1}`}
-                            className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
-                          />
-                        </div>
-                      ) : (
-                        <button
-                          key={getDialogImageKey(messageId, imageIndex)}
-                          type="button"
-                          onClick={() => {
-                            onOpenImage(getDialogImageKey(messageId, imageIndex));
-                          }}
-                          className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95"
-                        >
-                          <img
-                            src={image.src}
-                            alt={image.alt || `Message image ${imageIndex + 1}`}
-                            className="max-h-48 max-w-full rounded-lg object-cover shadow lg:max-h-64"
-                          />
-                        </button>
-                      )
-                    ))}
-                  </div>
-                ) : null}
-
-                {sevenTvStickerName ? (
-                  <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
-                ) : null}
-
-                {postIds.map((id: string, index: number) => (
-                  <PostPreview
-                    key={`post-${id}-${index}`}
-                    postId={id}
-                    onLoadSuccess={() => {
-                      setLoadedPosts((prev) => prev.includes(id) ? prev : [...prev, id]);
-                    }}
-                  />
-                ))}
-
-                {trackIds.map((id: string, index: number) => (
-                  <TrackPreview
-                    key={`track-${id}-${index}`}
-                    trackId={id}
-                    onLoadSuccess={() => {
-                      setLoadedTracks((prev) => prev.includes(id) ? prev : [...prev, id]);
-                    }}
-                  />
-                ))}
-
-                {hasMessageText ? (
-                  <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
-                ) : null}
-              </div>
-
-              <div className="mt-1 flex items-end justify-end gap-1">
-                <div className="flex flex-1 flex-wrap items-center gap-1">
-                  {reactions.map((reaction, index) => {
-                    const ownReaction = reaction.userId === String(currentUserId);
-                    const avatar = ownReaction
-                      ? normalizeAssetUrl(authUserImage, FALLBACK_AVATAR)
-                      : normalizeAssetUrl(foreignUser?.img, FALLBACK_AVATAR);
-
-                    return (
-                      <button
-                        key={`${reaction.userId}:${reaction.emoji}:${index}`}
-                        type="button"
-                        onClick={() => {
-                          if (!ownReaction) return;
-                          onDeleteReaction(messageId, reaction.emoji);
+                    {block.type === 'reply' && (
+                      <div
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onReplyClick(message.reply_to!);
                         }}
                         className={cn(
-                          'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
-                          ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
+                          'flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-3xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 max-w-full shadow active:scale-95 duration-300',
+                          !isOwn && isTextMessage && !isStickerOnlyMessage && 'bg-zinc-800/50 hover:bg-zinc-700/50',
                         )}
                       >
-                        <img
-                          src={avatar}
-                          alt=""
-                          className="h-5 w-5 rounded-full object-cover shadow"
-                        />
-                        <span className="px-1 text-sm text-zinc-200">{reaction.emoji}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                        <span className="font-semibold text-purple-300 text-xs">
+                          {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
+                        </span>
+                        <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
+                          {message.reply_type == 1
+                            ? (lang?.image_sticker || 'Картинка/стикер')
+                            : (getSevenTvStickerTokenData(message.reply_msg)
+                              ? (lang?.image_sticker || 'Картинка/стикер')
+                              : (message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')))
+                          }
+                        </span>
+                      </div>
+                    )}
 
-                {message.isSending ? (
-                  <span className="select-none whitespace-nowrap text-[10px] flex items-center gap-1">
-                    <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
-                  </span>
-                ) : (
-                  <>
-                    {timeLabel ? (
-                      <span
-                        className={cn(
-                          'select-none whitespace-nowrap text-[10px]',
-                          isOwn ? 'text-zinc-300' : 'text-zinc-400',
-                        )}
-                      >
-                        {timeLabel}
-                      </span>
-                    ) : null}
-
-                    {isOwn ? (
-                      <Icon
-                        name={getMessageStatusIconName(message.status)}
-                        className={cn(
-                          'h-3 w-3',
-                          String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
-                        )}
+                    {block.type === 'post' && (
+                      <PostPreview
+                        postId={block.id}
+                        onLoadSuccess={() => {
+                          setLoadedPosts((prev) => prev.includes(block.id) ? prev : [...prev, block.id]);
+                        }}
                       />
+                    )}
+
+                    {block.type === 'track' && (
+                      <TrackPreview
+                        trackId={block.id}
+                        onLoadSuccess={() => {
+                          setLoadedTracks((prev) => prev.includes(block.id) ? prev : [...prev, block.id]);
+                        }}
+                      />
+                    )}
+
+                    {block.type === 'main' && (
+                      <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
+                        {messageImages.length ? (
+                          <div
+                            className={cn(
+                              'flex flex-col gap-2',
+                              messageImages.length > 1 && 'sm:grid sm:grid-cols-2',
+                            )}
+                          >
+                            {messageImages.map((image, imageIndex) => (
+                              !image.isViewerImage ? (
+                                <div
+                                  key={getDialogImageKey(messageId, imageIndex)}
+                                  className="overflow-hidden rounded-lg"
+                                >
+                                  <img
+                                    src={image.src}
+                                    alt={image.alt || `Sticker ${imageIndex + 1}`}
+                                    className="max-h-48 min-h-[100px] min-w-[100px] max-w-full rounded-lg object-contain shadow lg:max-h-64 bg-zinc-800/20"
+                                  />
+                                </div>
+                              ) : (
+                                <button
+                                  key={getDialogImageKey(messageId, imageIndex)}
+                                  type="button"
+                                  onClick={() => {
+                                    onOpenImage(getDialogImageKey(messageId, imageIndex));
+                                  }}
+                                  className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95 bg-zinc-800/50"
+                                >
+                                  <img
+                                    src={image.src}
+                                    alt={image.alt || `Message image ${imageIndex + 1}`}
+                                    className="h-56 lg:h-72 w-[70vw] sm:w-[300px] lg:w-[400px] max-w-full rounded-lg object-cover shadow"
+                                  />
+                                </button>
+                              )
+                            ))}
+                          </div>
+                        ) : null}
+
+                        {sevenTvStickerName ? (
+                          <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
+                        ) : null}
+
+                        {hasMessageText ? (
+                          <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
+                        ) : null}
+                      </div>
+                    )}
+
+                    {isLast ? (
+                      <div className={cn("mt-1 flex items-end justify-end gap-1", block.type !== 'main' && "px-1 pb-1")}>
+                        <div className="flex flex-1 flex-wrap items-center gap-1">
+                          {reactions.map((reaction, index) => {
+                            const ownReaction = reaction.userId === String(currentUserId);
+                            const avatar = ownReaction
+                              ? normalizeAssetUrl(authUserImage, FALLBACK_AVATAR)
+                              : normalizeAssetUrl(foreignUser?.img, FALLBACK_AVATAR);
+
+                            return (
+                              <button
+                                key={`${reaction.userId}:${reaction.emoji}:${index}`}
+                                type="button"
+                                onClick={() => {
+                                  if (!ownReaction) return;
+                                  onDeleteReaction(messageId, reaction.emoji);
+                                }}
+                                className={cn(
+                                  'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
+                                  ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
+                                )}
+                              >
+                                <img
+                                  src={avatar}
+                                  alt=""
+                                  className="h-5 w-5 rounded-full object-cover shadow"
+                                />
+                                <span className="px-1 text-sm text-zinc-200">{reaction.emoji}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {message.isSending ? (
+                          <span className="select-none whitespace-nowrap text-[10px] flex items-center gap-1">
+                            <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
+                          </span>
+                        ) : (
+                          <>
+                            {timeLabel ? (
+                              <span
+                                className={cn(
+                                  'select-none whitespace-nowrap text-[10px]',
+                                  isOwn ? 'text-zinc-300' : 'text-zinc-400',
+                                )}
+                              >
+                                {timeLabel}
+                              </span>
+                            ) : null}
+
+                            {isOwn ? (
+                              <Icon
+                                name={getMessageStatusIconName(message.status)}
+                                className={cn(
+                                  'h-3 w-3',
+                                  String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
+                                )}
+                              />
+                            ) : null}
+                          </>
+                        )}
+                      </div>
                     ) : null}
-                  </>
-                )}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </motion.div>

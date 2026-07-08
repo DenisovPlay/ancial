@@ -76,7 +76,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
   if (!post) return null;
 
   return (
-    <Link href={`/feed/post/${post.id}`} className="block w-[300px] max-w-full rounded-2xl bg-zinc-900/40 border border-zinc-700/30 p-1.5 hover:bg-zinc-800/40 duration-300 shadow">
+    <Link href={`/feed/post/${post.id}`} className="block w-[300px] max-w-full rounded-3xl bg-zinc-900/40 border border-zinc-700/30 p-1.5 hover:bg-zinc-800/40 duration-300 shadow">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <Image
