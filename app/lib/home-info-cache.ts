@@ -10,7 +10,11 @@ export interface HomeWeatherCacheData {
   wfont: string | null;
 }
 
-export const HOME_INFO_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+export function getMsUntilMidnight(): number {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  return midnight.getTime() - now.getTime();
+}
 
 const CURRENCY_CACHE_KEY = 'rates';
 
@@ -29,7 +33,7 @@ export function writeCachedCurrency(value: HomeCurrencyCacheData) {
   cache.set(CURRENCY_CACHE_KEY, value, {
     category: 'home',
     subcategory: 'currency',
-    ttl: HOME_INFO_CACHE_TTL_MS,
+    ttl: getMsUntilMidnight(),
   });
 }
 
@@ -44,6 +48,6 @@ export function writeCachedWeather(city: string, value: HomeWeatherCacheData) {
   cache.set(getWeatherCacheKey(city), value, {
     category: 'home',
     subcategory: 'weather',
-    ttl: HOME_INFO_CACHE_TTL_MS,
+    ttl: getMsUntilMidnight(),
   });
 }
