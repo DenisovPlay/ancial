@@ -149,17 +149,9 @@ function FriendsContent() {
     }
   };
 
-  if (authLoading || (isAuthenticated && isLoading && friends.length === 0)) {
-    return (
-      <div className="w-full flex items-center justify-center py-12">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
-      </div>
-    );
+  if (authLoading || (!isAuthenticated && !authLoading)) {
+    return <div className="p-3 text-center text-zinc-400">{lang?.['loading...'] || 'Загрузка...'}</div>;
   }
-
-  if (!isAuthenticated) return null;
 
   return (
     <div className="flex flex-col justify-center items-center py-3 w-full">
@@ -204,10 +196,18 @@ function FriendsContent() {
 
       <div className="flex flex-col overflow-hidden border border-transparent md:border-zinc-600/30 md:bg-zinc-900 md:rounded-3xl md:shadow w-full max-w-3xl duration-300">
         {isLoading ? (
-          <div className="w-full flex items-center justify-center py-12">
-            <svg className="w-16 h-16 inline animate-spin fill-purple-500" viewBox="0 0 48 48">
-              <use href="#IC-loader"></use>
-            </svg>
+          <div className="w-full flex flex-col">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between gap-3 p-3">
+                <div className="w-16 h-16 rounded-full shrink-0 bg-zinc-800 animate-pulse"></div>
+                <div className="flex-grow flex flex-col justify-center gap-2">
+                  <div className="h-4 w-32 bg-zinc-800 rounded-full animate-pulse"></div>
+                </div>
+                <div className="flex gap-1.5 shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-zinc-800 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : friends.length === 0 ? (
           <div className="w-full flex flex-col gap-0.5 justify-center items-center py-10 duration-300">
@@ -303,10 +303,18 @@ function FriendsContent() {
 export default function FriendsPage() {
   return (
     <Suspense fallback={
-      <div className="w-full flex items-center justify-center py-12">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+      <div className="w-full max-w-3xl mx-auto flex flex-col md:mt-3 border border-transparent md:border-zinc-600/30 md:bg-zinc-900 md:rounded-3xl">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center justify-between gap-3 p-3">
+            <div className="w-16 h-16 rounded-full shrink-0 bg-zinc-800 animate-pulse"></div>
+            <div className="flex-grow flex flex-col justify-center gap-2">
+              <div className="h-4 w-32 bg-zinc-800 rounded-full animate-pulse"></div>
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 animate-pulse"></div>
+            </div>
+          </div>
+        ))}
       </div>
     }>
       <FriendsContent />

@@ -256,10 +256,15 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
       </span>
 
       {loading && (
-        <div className="flex justify-center items-center w-full max-w-screen-2xl py-20">
-          <div className="w-full flex items-center justify-center py-12">
-            <SpinnerIcon className="w-16 h-16 inline animate-spin fill-purple-500" />
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full px-3 lg:px-0 max-w-screen-2xl">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={i}
+              className="border border-zinc-600/30 bg-zinc-900/20 w-full rounded-3xl overflow-hidden relative aspect-square animate-pulse"
+            >
+              <div className="w-full h-full bg-zinc-800"></div>
+            </div>
+          ))}
         </div>
       )}
 

@@ -61,7 +61,7 @@ export default function HomeContent() {
 
   const [currencies, setCurrencies] = useState<HomeCurrencyCacheData | null>(null);
   const [weather, setWeather] = useState<HomeWeatherCacheData | null>(null);
-  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
 
   const activeScriptIdRef = useRef<string | null>(null);
   const activeCallbackRef = useRef<string | null>(null);
@@ -194,6 +194,27 @@ export default function HomeContent() {
       }
 
       try {
+        // QUICK CACHE CHECK FOR WEATHER TO AVOID LOADER
+        try {
+          const lastCity = cache.get<string>('last_city');
+          let cachedWeather = null;
+          if (lastCity) {
+            cachedWeather = readCachedWeather(lastCity);
+          }
+          if (!cachedWeather) {
+            cachedWeather = cache.get<HomeWeatherCacheData>('weather_backup');
+          }
+          
+          if (cachedWeather) {
+            setWeather(cachedWeather);
+            setWeatherLoading(false);
+          } else {
+            setWeatherLoading(true);
+          }
+        } catch {
+          setWeatherLoading(true);
+        }
+
         let city = '';
         try {
           const locationRes = await safeFetchJson<HomeApiResponse<LocationData>>('/api/V2/info/GetLocation.php');
@@ -540,6 +561,7 @@ export default function HomeContent() {
         >
           {/* Weather Widget */}
           <div
+            suppressHydrationWarning
             onClick={() => router.push('/apps/overlay/weather')}
             className="flex items-center justify-center gap-1.5 cursor-pointer duration-300 active:scale-95 hover:bg-zinc-800/70 hover:px-2 py-0.5 rounded-full border border-transparent hover:border-zinc-600/30 transition-all"
           >
@@ -549,15 +571,16 @@ export default function HomeContent() {
               </svg>
             ) : weather && weather.wfont ? (
               <span
+                suppressHydrationWarning
                 className="flex items-center justify-center w-5 h-5 shrink-0 animate-fade-in"
                 dangerouslySetInnerHTML={{ __html: weather.wfont }}
               />
             ) : (
-              <svg className="w-5 h-5 fill-white inline animate-fade-in" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+              <svg suppressHydrationWarning className="w-5 h-5 fill-white inline animate-fade-in" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                 <use href="/icons.svg#IC-weather-default"></use>
               </svg>
             )}
-            <span className="text-white font-medium">
+            <span suppressHydrationWarning className="text-white font-medium">
               {weatherLoading ? '' : (weather?.temp !== null && weather?.temp !== undefined ? `${weather.temp}°C` : '')}
             </span>
           </div>

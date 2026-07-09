@@ -102,16 +102,12 @@ export default function NotificationsPage() {
     return null;
   };
 
-  if (authLoading || (isAuthenticated && isLoading)) {
+  if (authLoading || (!isAuthenticated && !authLoading)) {
     return (
       <div className="flex flex-col justify-center items-center py-10 w-full">
         <span className="text-zinc-400">{lang?.['loading...'] || 'Загрузка...'}</span>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (
@@ -135,7 +131,17 @@ export default function NotificationsPage() {
       </div>
       
       <div className="w-full flex flex-col gap-3 max-w-3xl px-3 lg:px-0">
-        {notifications.length > 0 ? (
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-zinc-900/70 rounded-3xl p-1.5 flex items-center gap-3 w-full shadow duration-300 border border-zinc-600/30">
+              <div className="w-12 h-12 rounded-3xl bg-zinc-800 shrink-0 animate-pulse"></div>
+              <div className="flex flex-col gap-2 w-full">
+                <div className="h-4 w-1/2 bg-zinc-800 rounded-full animate-pulse"></div>
+                <div className="h-3 w-24 bg-zinc-800 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          ))
+        ) : notifications.length > 0 ? (
           notifications.map((notif) => (
             <div key={notif.id} className="bg-zinc-900/70 rounded-3xl p-1.5 flex items-center gap-3 w-full shadow duration-300 border border-zinc-600/30">
               {renderIcon(notif.type)}

@@ -488,10 +488,16 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
   let loadingOrErrorComponent: React.ReactNode | undefined;
   if (isPostLoading) {
     loadingOrErrorComponent = (
-      <div className="flex justify-center items-center w-full py-10">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+      <div className="w-full flex flex-col gap-3 max-w-3xl px-3 lg:px-0 animate-pulse mt-3">
+        {/* Скелет вкладок и кнопок */}
+        <div className="flex gap-3 w-full">
+          <div className="h-8 w-24 bg-zinc-800 rounded-3xl" />
+          <div className="h-8 w-32 bg-zinc-800 rounded-3xl" />
+          <div className="flex-grow" />
+          <div className="h-8 w-32 bg-zinc-800 rounded-3xl" />
+        </div>
+        {/* Скелет поля ввода */}
+        <div className="w-full h-96 bg-zinc-800 rounded-3xl" />
       </div>
     );
   } else if (error === 'not_found') {

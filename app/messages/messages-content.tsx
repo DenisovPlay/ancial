@@ -1656,8 +1656,20 @@ export default function MessagesContent() {
                 <div className="relative flex h-full flex-col">
                   <div className="flex h-full flex-col">
                     {dialogsLoading && dialogs.length === 0 ? (
-                      <div className="flex h-full items-center justify-center">
-                        <Icon name="IC-loader" className="h-16 w-16 animate-spin fill-purple-500" />
+                      <div className="flex flex-col w-full">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <div key={i} className="flex items-center gap-3 p-3 w-full animate-pulse">
+                            <div className="h-16 w-16 shrink-0 rounded-full bg-zinc-800 shadow" />
+                            <div className="flex min-w-0 flex-1 flex-col gap-2 justify-center">
+                              <div className="h-4 w-1/2 rounded-full bg-zinc-800" />
+                              <div className="h-3 w-3/4 rounded-full bg-zinc-800" />
+                            </div>
+                            <div className="flex shrink-0 flex-col items-end gap-2 justify-center">
+                              <div className="h-3 w-10 rounded-full bg-zinc-800" />
+                              <div className="h-5 w-5 rounded-full bg-zinc-800" />
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ) : dialogsError && dialogs.length === 0 ? (
                       <div className="flex h-full flex-col items-center justify-center px-4 text-center">

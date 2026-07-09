@@ -170,8 +170,15 @@ function GroupsContent() {
 
       <div className="overflow-hidden border border-transparent md:border-zinc-600/30 md:bg-zinc-900 md:rounded-3xl md:shadow w-full max-w-3xl duration-300">
         {isLoading ? (
-          <div className="w-full flex items-center justify-center py-12">
-            <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-loader"></use></svg>
+          <div className="w-full flex flex-col">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 p-3">
+                <div className="w-16 h-16 rounded-full shrink-0 bg-zinc-800 animate-pulse"></div>
+                <div className="flex flex-col flex-grow justify-center gap-2">
+                  <div className="h-4 w-40 bg-zinc-800 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : errorMsg ? (
           <div className="p-3 text-center text-zinc-400">{errorMsg}</div>
@@ -239,8 +246,15 @@ function GroupsContent() {
 export default function GroupsPage() {
   return (
     <Suspense fallback={
-      <div className="w-full flex items-center justify-center py-12">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-loader"></use></svg>
+      <div className="w-full max-w-3xl mx-auto flex flex-col md:mt-3 border border-transparent md:border-zinc-600/30 md:bg-zinc-900 md:rounded-3xl">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-3">
+            <div className="w-16 h-16 rounded-full shrink-0 bg-zinc-800 animate-pulse"></div>
+            <div className="flex flex-col flex-grow justify-center gap-2">
+              <div className="h-4 w-40 bg-zinc-800 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        ))}
       </div>
     }>
       <GroupsContent />
