@@ -43,12 +43,16 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   lang: Record<string, string> | null;
-  checkAuth: (options?: { silent?: boolean }) => Promise<void>;
-  logout: () => void;
+  checkAuth: (options?: { silent?: boolean; force?: boolean }) => Promise<void>;
+  logout: () => Promise<void>;
   updateLang: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Canonical localStorage key for user_profile — must match cache.set() output.
+// cache.set('user_profile', val, { category: 'profile' }) → key = 'ancial:profile:user_profile'
+const USER_PROFILE_STORAGE_KEY = 'ancial:profile:user_profile';
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -60,7 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isAuthenticated: false,
     user: null,
   });
-  // Флаг: идёт процесс выхода — блокирует любые повторные checkAuth
+  // Флаг: идёт процесс выхода — блокирует любые повторные checkAuth до явного сброса
   const isLoggingOutRef = useRef(false);
 
   const publishLangState = useCallback((nextLang: Record<string, string> | null) => {
@@ -94,7 +98,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [publishLangState]);
 
-  const checkAuth = useCallback(async (options: { silent?: boolean } = {}) => {
+  const checkAuth = useCallback(async (options: { silent?: boolean; force?: boolean } = {}) => {
+    // force=true сбрасывает флаг выхода (используется при новом логине)
+    if (options.force) {
+      isLoggingOutRef.current = false;
+    }
     // Если идёт выход — не авторизовываем заново
     if (isLoggingOutRef.current) return;
     const silent = options.silent === true;
@@ -205,7 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('Ошибка при проверке авторизации:', error);
-      
+
       try {
         const cachedUser = cache.get<User>('user_profile');
         const token = cache.get<string>('token');
@@ -269,7 +277,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [checkAuth]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     // Блокируем любые checkAuth во время и после выхода
     isLoggingOutRef.current = true;
 
@@ -279,21 +287,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     authStateRef.current = { isAuthenticated: false, user: null };
     publishAuthState(false, null, false);
 
+    // Удаляем токен и профиль ДО остальных операций
+    // cache.remove('token') удаляет сырой ключ 'token' (persistent, без namespace)
+    cache.remove('token');
+    // user_profile хранится с namespace: ancial:profile:user_profile — удаляем напрямую
+    try {
+      window.localStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+    } catch (e) {
+      console.error('[Auth] Failed to remove user_profile from localStorage', e);
+    }
+
     // Отключаем WebSocket, чтобы не было reconnect-попыток после выхода
     try {
       if (window.GlobalWS) {
-        // Убираем токен ДО вызова init(), чтобы WS закрылся без реконнекта
-        cache.remove('token');
-        window.GlobalWS.init(); // init с пустым токеном закроет сокет
-      } else {
-        cache.remove('token');
+        // init() с пустым токеном закроет сокет без реконнекта
+        window.GlobalWS.init();
       }
     } catch (e) {
       console.error('[Auth] Ошибка при отключении WS', e);
-      cache.remove('token');
     }
 
-    cache.remove('user_profile');
+    // Чистим всё остальное (cache.clear() скипает PERSISTENT_KEYS, т.е. 'token' уже удалён выше)
     cache.clear();
 
     try {
@@ -312,7 +326,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // router.replace вместо push, чтобы /login не попал в историю браузера
     // (нельзя вернуться назад на защищённую страницу).
     router.replace('/login');
-  };
+  }, [publishAuthState, router]);
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated, isLoading, lang, checkAuth, logout, updateLang }}>

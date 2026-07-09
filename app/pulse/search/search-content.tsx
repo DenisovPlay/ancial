@@ -14,6 +14,7 @@ import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../pulse-upload-tr
 import { PulseHeader } from '../pulse-header';
 import { readPulseJsonCache, writePulseJsonCache } from '../pulse-cache';
 import {
+  ActionIcon,
   getPulseBackgroundColorByMood,
   getTrackArtwork,
   getImageUrl,
@@ -314,11 +315,21 @@ export default function PulseSearchContent() {
     router.push(`/pulse/search?q=${encodeURIComponent(searchValue)}`);
   }, [router, searchValue]);
 
-  const label = useCallback((text: string) => (
-    <span className="cutetext w-full px-3 text-2xl font-black lg:px-0 lg:text-3xl xl:text-4xl">
-      {text}
-    </span>
-  ), []);
+  const sectionHeader = useCallback((text: string, href: string) => (
+    <div className="flex w-full items-center justify-between gap-3 px-3 lg:px-0">
+      <span className="cutetext text-2xl font-black lg:text-3xl xl:text-4xl">
+        {text}
+      </span>
+      <button
+        type="button"
+        onClick={() => router.push(href)}
+        className="flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/20 px-3 py-1.5 text-zinc-300 shadow duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
+      >
+        <ActionIcon className="h-5 w-5" name="IC-chevron-right" />
+        <span>{lang?.all || 'Все'}</span>
+      </button>
+    </div>
+  ), [lang, router]);
 
   return (
     <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black", getPulseBackgroundColorByMood(currentTrackObj?.mood))}>
@@ -351,7 +362,7 @@ export default function PulseSearchContent() {
 
         {!loading && artists.length ? (
           <>
-            {label(lang?.artists || 'Артисты')}
+            {sectionHeader(lang?.artists || 'Артисты', `/pulse/search/artists?q=${encodeURIComponent(query)}`)}
             <div className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
               {artists.map((artist) => (
                 <PulseArtistTile
@@ -366,7 +377,7 @@ export default function PulseSearchContent() {
 
         {!loading && playlists.length ? (
           <>
-            {label(lang?.playlists || 'Плейлисты')}
+            {sectionHeader(lang?.playlists || 'Плейлисты', `/pulse/search/playlists?q=${encodeURIComponent(query)}`)}
             <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
               {playlists.map((card) => {
                 const playableId = getCardPlayableId(card);
@@ -386,7 +397,7 @@ export default function PulseSearchContent() {
 
         {!loading && tracks.length ? (
           <>
-            {label(lang?.tracks || 'Треки')}
+            {sectionHeader(lang?.tracks || 'Треки', `/pulse/search/tracks?q=${encodeURIComponent(query)}`)}
             <div className="flex h-full w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
               {tracks.map((track, index) => (
                 <PulseTrackRow

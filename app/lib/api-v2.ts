@@ -461,8 +461,10 @@ export class AncialAPI {
     return this.request<T>(`/pulse/GetTrack.php?id=${id}`);
   }
 
-  static async pulseSearch<T = unknown>(query: string): Promise<T> {
-    return this.request<T>(`/pulse/Search.php?q=${encodeURIComponent(query)}`);
+  static async pulseSearch<T = unknown>(query: string, type?: 'artists' | 'playlists' | 'tracks'): Promise<T> {
+    const params = new URLSearchParams({ q: query });
+    if (type) params.set('type', type);
+    return this.request<T>(`/pulse/Search.php?${params.toString()}`);
   }
 
   static async pulseGetLibrary<T = unknown>(type: string): Promise<T> {

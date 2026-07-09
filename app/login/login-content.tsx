@@ -75,7 +75,7 @@ export default function LoginPage() {
         setError(data.error || (lang?.login_error || 'Ошибка авторизации'));
       } else {
         cache.set('token', data.data?.token || '', { category: 'profile' });
-        await checkAuth();
+        await checkAuth({ force: true });
         router.push('/');
       }
     } catch (err) {

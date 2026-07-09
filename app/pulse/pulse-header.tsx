@@ -37,7 +37,7 @@ export function PulseHeader({
       className={cn("sticky top-0 flex w-full justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3", className)}
       style={{ zIndex: 1300 }}
     >
-      <div className="flex min-h-[60px] w-full max-w-screen-2xl items-center justify-between px-3 lg:px-0">
+      <div className="flex min-h-[48px] w-full max-w-screen-2xl items-center justify-between px-3 lg:px-0">
         <button
           type="button"
           onClick={onLogoClick}
@@ -51,41 +51,41 @@ export function PulseHeader({
           <PulseLogo className="w-32 sm:w-48 hover:opacity-80 duration-300 cursor-pointer" />
         </button>
 
-      <form
-        onSubmit={onSubmitSearch}
-        className={cn(
-          "h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200",
-          hideSearchOnMobile ? "hidden lg:flex" : "flex"
-        )}
-        style={{ zIndex: 11 }}
-      >
-        <input
-          value={searchValue}
-          onBlur={() => setIsSearchFocused(false)}
-          onChange={(event) => setSearchValue(event.target.value)}
-          onFocus={() => setIsSearchFocused(true)}
-          className="w-full bg-transparent pl-2 text-white placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
-          placeholder={placeholder || lang?.pulse_search || 'Поиск по Pulse'}
-          autoComplete="off"
-        />
-        <button className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95" type="submit">
-          <ActionIcon className="h-8 w-8 cursor-pointer" name="IC-search" />
-        </button>
-      </form>
-
-      {isAuthenticated ? (
-        <button
-          type="button"
-          onClick={onOpenMyPulse}
+        <form
+          onSubmit={onSubmitSearch}
           className={cn(
-            "ml-3 h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95",
-            hideProfileOnMobile ? "hidden lg:flex" : "flex"
+            "h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200",
+            hideSearchOnMobile ? "hidden lg:flex" : "flex"
           )}
-          aria-label="My Pulse"
+          style={{ zIndex: 11 }}
         >
-          <ActionIcon className="h-8 w-8" name="IC-me" />
-        </button>
-      ) : null}
+          <input
+            value={searchValue}
+            onBlur={() => setIsSearchFocused(false)}
+            onChange={(event) => setSearchValue(event.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            className="w-full bg-transparent pl-2 text-white placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
+            placeholder={placeholder || lang?.pulse_search || 'Поиск по Pulse'}
+            autoComplete="off"
+          />
+          <button className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95" type="submit">
+            <ActionIcon className="h-8 w-8 cursor-pointer" name="IC-search" />
+          </button>
+        </form>
+
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={onOpenMyPulse}
+            className={cn(
+              "ml-3 h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-zinc-700 active:scale-95",
+              hideProfileOnMobile ? "hidden lg:flex" : "flex"
+            )}
+            aria-label="My Pulse"
+          >
+            <ActionIcon className="h-8 w-8" name="IC-me" />
+          </button>
+        ) : null}
       </div>
     </div>
   );
