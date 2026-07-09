@@ -187,12 +187,12 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
   return (
     <div className="flex flex-col jusitify-center items-center gap-3 pb-64 duration-300">
       <div
-        className="w-full max-w-screen-2xl flex items-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent"
+        className="w-full max-w-screen-2xl flex items-center px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent"
         style={{ zIndex: 99 }}
       >
         <button
           aria-label="Zynt"
-          className={`shrink-0 overflow-hidden duration-300 active:scale-95 ${focused ? 'w-0 opacity-0 scale-95' : 'w-28 opacity-100 scale-100'}`}
+          className={`shrink-0 overflow-hidden duration-300 active:scale-95 ${focused ? 'w-0 opacity-0 scale-95' : 'mr-3 w-28 opacity-100 scale-100'}`}
           onClick={() => router.push('/apps')}
           type="button"
         >
@@ -218,7 +218,7 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
           </button>
         </form>
         <button
-          className="cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full"
+          className="ml-3 cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full"
           onClick={() => router.push('/settings/account')}
           type="button"
         >

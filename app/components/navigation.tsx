@@ -15,17 +15,16 @@ const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, ico
   const active = isActive !== undefined
     ? isActive
     : Boolean(
-        href && (
-          pathname === href ||
-          (href !== '/' && pathname?.startsWith(`${href}/`))
-        ),
-      );
-  
-  const className = `w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 active:scale-95 ${
-    active
-      ? "bg-zinc-700/90 border-zinc-600/30"
-      : "hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30"
-  }`;
+      href && (
+        pathname === href ||
+        (href !== '/' && pathname?.startsWith(`${href}/`))
+      ),
+    );
+
+  const className = `w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 active:scale-95 ${active
+    ? "bg-zinc-700/90 border-zinc-600/30"
+    : "hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30"
+    }`;
 
   const innerContent = imgSrc ? (
     <>
@@ -37,7 +36,7 @@ const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, ico
       <use href={`#${icon}`}></use>
     </svg>
   ) : null;
-  
+
   if (href) {
     return (
       <Link href={href} className={className} onClick={onClick}>
@@ -204,14 +203,14 @@ export const Dropdown = ({
         </button>
       ) : null}
       {renderTrigger && !isCompactTrigger ? (
-        <NavItem 
-          icon={icon} 
+        <NavItem
+          icon={icon}
           imgSrc={imgSrc}
-          onClick={handleTriggerClick} 
+          onClick={handleTriggerClick}
           isActive={isActive}
         />
       ) : null}
-      <div 
+      <div
         className={`${cn(
           'absolute',
           getPositionClasses(),
@@ -227,7 +226,7 @@ export const Dropdown = ({
       >
         {/* Клонируем элементы и добавляем закрытие дропдауна при клике на любой элемент внутри */}
         {React.Children.map(children, (child) => {
-          if (React.isValidElement<{onClick?: () => void}>(child)) {
+          if (React.isValidElement<{ onClick?: () => void }>(child)) {
             return React.cloneElement(child, {
               onClick: () => {
                 if (child.props.onClick) child.props.onClick();
@@ -265,7 +264,7 @@ export const DropdownItem = ({
 }: DropdownItemProps) => {
   const pathname = usePathname();
   const isActive = href ? pathname === href : false;
-  
+
   const itemClassName = cn(
     'w-full text-left font-medium hover:shadow cursor-pointer rounded-3xl duration-150 p-2 text-white flex items-center gap-2 border hover:border-zinc-600/30',
     isActive ? 'bg-zinc-700/80 border-zinc-600/30' : 'bg-zinc-700/0 hover:bg-zinc-700/95 border-transparent',
@@ -299,22 +298,22 @@ export const DropdownItem = ({
 };
 
 const MotionNavItem = ({ children, isVisible, id }: { children: React.ReactNode, isVisible: boolean | undefined | null | "", id: string }) => {
-    return (
-        <AnimatePresence mode="popLayout">
-            {isVisible ? (
-                <motion.div
-                    layout
-                    key={id}
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                    transition={{ duration: 0.25, ease: "easeInOut" }}
-                >
-                    {children}
-                </motion.div>
-            ) : null}
-        </AnimatePresence>
-    );
+  return (
+    <AnimatePresence mode="popLayout">
+      {isVisible ? (
+        <motion.div
+          layout
+          key={id}
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+        >
+          {children}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
 };
 
 export default function Navigation() {
@@ -324,162 +323,163 @@ export default function Navigation() {
 
   return (
     <>
-        <motion.nav layoutRoot layout data-app-nav="desktop" className="hidden lg:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
-            <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
-            
-            <MotionNavItem id="desktop-home" isVisible={true}>
-                <NavItem href="/" icon="IC-home" />
-            </MotionNavItem>
-            
-            <MotionNavItem id="desktop-feed" isVisible={true}>
-                <NavItem href="/feed" icon="IC-feed" />
-            </MotionNavItem>
+      <motion.nav layoutRoot layout data-app-nav="desktop" className="hidden lg:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
+        <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
 
-            <MotionNavItem id="desktop-messages" isVisible={isAuthenticated && user ? true : false}>
-                <NavItem href="/messages" icon="IC-chats" />
-            </MotionNavItem>
+        <MotionNavItem id="desktop-home" isVisible={true}>
+          <NavItem href="/" icon="IC-home" />
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-friends" isVisible={isAuthenticated && user ? true : false}>
-                <NavItem href="/friends" icon="IC-friends" />
-            </MotionNavItem>
+        <MotionNavItem id="desktop-feed" isVisible={true}>
+          <NavItem href="/feed" icon="IC-feed" />
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-groups" isVisible={isAuthenticated && user ? true : false}>
-                <NavItem href="/groups" icon="IC-groups" />
-            </MotionNavItem>
+        <MotionNavItem id="desktop-messages" isVisible={isAuthenticated && user ? true : false}>
+          <NavItem href="/messages" icon="IC-chats" />
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-compass" isVisible={isAuthenticated && user ? true : false}>
-                <Dropdown icon="IC-compass" position="right" activePaths={['/pulse', '/wallet', '/apps', '/games']}>
-                    <DropdownItem href="/pulse" icon="IC-music">
-                        Pulse
-                    </DropdownItem>
-                    <DropdownItem href="/wallet" icon="IC-wallet">
-                        Wallet
-                    </DropdownItem>
-                    <DropdownItem href="/apps" icon="IC-games">
-                        ZYNT
-                    </DropdownItem>
-                </Dropdown>
-            </MotionNavItem>
+        <MotionNavItem id="desktop-friends" isVisible={isAuthenticated && user ? true : false}>
+          <NavItem href="/friends" icon="IC-friends" />
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-user" isVisible={isAuthenticated && user ? true : false}>
-                <Dropdown imgSrc={user?.img} position="right" activePaths={[`/@${user?.username}`, '/settings']}>
-                    <DropdownItem href={`/@${user?.username}`} icon="IC-user">
-                        {lang?.myaccount}
-                    </DropdownItem>
-                    <DropdownItem href="/notifications" icon="IC-notification">
-                        {lang?.notif}
-                    </DropdownItem>
-                    <DropdownItem href="/settings" icon="IC-settings">
-                        {lang?.settings}
-                    </DropdownItem>
-                    <DropdownItem onClick={logout} icon="IC-exit">
-                        {lang?.logout}
-                    </DropdownItem>
-                </Dropdown>
-            </MotionNavItem>
+        <MotionNavItem id="desktop-groups" isVisible={isAuthenticated && user ? true : false}>
+          <NavItem href="/groups" icon="IC-groups" />
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-games-unauth" isVisible={!isAuthenticated}>
-                <NavItem href="/apps" icon="IC-games" />
-            </MotionNavItem>
+        <MotionNavItem id="desktop-compass" isVisible={isAuthenticated && user ? true : false}>
+          <Dropdown icon="IC-compass" position="right" activePaths={['/pulse', '/wallet', '/apps', '/games']}>
+            <DropdownItem href="/pulse" icon="IC-music">
+              Pulse
+            </DropdownItem>
+            <DropdownItem href="/wallet" icon="IC-wallet">
+              Wallet
+            </DropdownItem>
+            <DropdownItem href="/apps" icon="IC-games">
+              ZYNT
+            </DropdownItem>
+          </Dropdown>
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-pulse-unauth" isVisible={!isAuthenticated}>
-                <NavItem href="/pulse" icon="IC-music" />
-            </MotionNavItem>
+        <MotionNavItem id="desktop-user" isVisible={isAuthenticated && user ? true : false}>
+          <Dropdown imgSrc={user?.img} position="right" activePaths={[`/@${user?.username}`, '/settings']}>
+            <DropdownItem href={`/@${user?.username}`} icon="IC-user">
+              {lang?.myaccount}
+            </DropdownItem>
+            <DropdownItem href="/notifications" icon="IC-notification">
+              {lang?.notif}
+            </DropdownItem>
+            <DropdownItem href="/settings" icon="IC-settings">
+              {lang?.settings}
+            </DropdownItem>
+            <DropdownItem onClick={logout} icon="IC-exit">
+              {lang?.logout}
+            </DropdownItem>
+          </Dropdown>
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-login-unauth" isVisible={!isAuthenticated}>
-                <NavItem href="/login" icon="IC-login" />
-            </MotionNavItem>
+        <MotionNavItem id="desktop-games-unauth" isVisible={!isAuthenticated}>
+          <NavItem href="/apps" icon="IC-games" />
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-signup-unauth" isVisible={!isAuthenticated}>
-                <NavItem href="/signup" icon="IC-signup" />
-            </MotionNavItem>
+        <MotionNavItem id="desktop-pulse-unauth" isVisible={!isAuthenticated}>
+          <NavItem href="/pulse" icon="IC-music" />
+        </MotionNavItem>
 
-            <MotionNavItem id="desktop-settings-unauth" isVisible={!isAuthenticated}>
-                <NavItem href="/settings" icon="IC-settings" />
-            </MotionNavItem>
-        </motion.nav>
+        <MotionNavItem id="desktop-login-unauth" isVisible={!isAuthenticated}>
+          <NavItem href="/login" icon="IC-login" />
+        </MotionNavItem>
+
+        <MotionNavItem id="desktop-signup-unauth" isVisible={!isAuthenticated}>
+          <NavItem href="/signup" icon="IC-signup" />
+        </MotionNavItem>
+
+        <MotionNavItem id="desktop-settings-unauth" isVisible={!isAuthenticated}>
+          <NavItem href="/settings" icon="IC-settings" />
+        </MotionNavItem>
+      </motion.nav>
 
 
-        <nav data-app-nav="mobile" className="lg:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
-            <motion.div layoutRoot layout className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1 relative overflow-hidden">
-                <MotionNavItem id="pulse" isVisible={isPulseContext}>
-                    <NavItem href="/pulse" icon="IC-home" isActive={pathname === '/pulse'} />
-                </MotionNavItem>
-                <MotionNavItem id="pulse-search" isVisible={isPulseContext}>
-                    <NavItem href="/pulse/search" icon="IC-search" />
-                </MotionNavItem>
-                <MotionNavItem id="pulse-my" isVisible={isPulseContext && isAuthenticated && user ? true : false}>
-                    <NavItem href="/pulse/my" icon="IC-book" />
-                </MotionNavItem>
-                
-                <MotionNavItem id="feed" isVisible={!isPulseContext}>
-                    <NavItem href="/feed" icon="IC-feed" />
-                </MotionNavItem>
-                <MotionNavItem id="general-pulse" isVisible={!isPulseContext && !isAuthenticated}>
-                    <NavItem href="/pulse" icon="IC-music" />
-                </MotionNavItem>
-                <MotionNavItem id="messages" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
-                    <NavItem href="/messages" icon="IC-chats" />
-                </MotionNavItem>
-                <MotionNavItem id="friends" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
-                    <NavItem href="/friends" icon="IC-friends" />
-                </MotionNavItem>
-                <MotionNavItem id="groups" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
-                    <NavItem href="/groups" icon="IC-groups" />
-                </MotionNavItem>
-            </motion.div>
-            <div className='flex-grow'></div>
-            <motion.div layoutRoot layout className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30 gap-1">
-                <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
-                
-                <MotionNavItem id="mobile-login" isVisible={!isAuthenticated}>
-                    <NavItem href="/login" icon="IC-login" />
-                </MotionNavItem>
-                <MotionNavItem id="mobile-signup" isVisible={!isAuthenticated}>
-                    <NavItem href="/signup" icon="IC-signup" />
-                </MotionNavItem>
-                
-                <MotionNavItem id="mobile-user" isVisible={isAuthenticated && user ? true : false}>
-                    <Dropdown imgSrc={user?.img} position="top" align="end" activePaths={[`/@${user?.username}`, '/settings']}>
-                        <DropdownItem href={`/@${user?.username}`} icon="IC-user">
-                            {lang?.myaccount}
-                        </DropdownItem>
-                        <DropdownItem href="/notifications" icon="IC-notification">
-                            {lang?.notif}
-                        </DropdownItem>
-                        <DropdownItem href="/settings" icon="IC-settings">
-                            {lang?.settings}
-                        </DropdownItem>
-                        <DropdownItem onClick={logout} icon="IC-exit">
-                            {lang?.logout}
-                        </DropdownItem>
-                    </Dropdown>
-                </MotionNavItem>
-                
-                <MotionNavItem id="mobile-compass" isVisible={true}>
-                    <Dropdown 
-                      icon="IC-compass" 
-                      position="top" 
-                      align="end" 
-                      direction="row" 
-                      menuClassName={cn(
-                        "justify-center",
-                        isPulseContext ? "flex-wrap !w-[16.5rem] !rounded-[2rem]" : "flex-nowrap !w-max !rounded-full"
-                      )}
-                      activePaths={isPulseContext ? ['/wallet', '/apps', '/games'] : ['/pulse', '/wallet', '/apps', '/games']}
-                    >
-                        {isPulseContext && <NavItem href="/feed" icon="IC-feed" />}
-                        {isPulseContext && isAuthenticated && user && <NavItem href="/messages" icon="IC-chats" />}
-                        {isPulseContext && isAuthenticated && user && <NavItem href="/friends" icon="IC-friends" />}
-                        {isPulseContext && isAuthenticated && user && <NavItem href="/groups" icon="IC-groups" />}
-                        {!isPulseContext && <NavItem href="/pulse" icon="IC-music" />}
-                        <NavItem href="/wallet" icon="IC-wallet" />
-                        <NavItem href="/apps" icon="IC-games" />
-                        <NavItem href="/" icon="IC-search" />
-                    </Dropdown>
-                </MotionNavItem>
-            </motion.div>
-        </nav>
+      <nav data-app-nav="mobile" className="lg:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
+        <motion.div layoutRoot layout className="flex p-1 bg-zinc-900/50 backdrop-blur-lg rounded-full border border-zinc-600/30 gap-1 relative overflow-hidden">
+          <MotionNavItem id="pulse" isVisible={isPulseContext}>
+            <NavItem href="/pulse" icon="IC-home" isActive={pathname === '/pulse'} />
+          </MotionNavItem>
+          <MotionNavItem id="pulse-search" isVisible={isPulseContext}>
+            <NavItem href="/pulse/search" icon="IC-search" />
+          </MotionNavItem>
+          <MotionNavItem id="pulse-my" isVisible={isPulseContext && isAuthenticated && user ? true : false}>
+            <NavItem href="/pulse/my" icon="IC-book" />
+          </MotionNavItem>
+
+          <MotionNavItem id="feed" isVisible={!isPulseContext}>
+            <NavItem href="/feed" icon="IC-feed" />
+          </MotionNavItem>
+          <MotionNavItem id="general-pulse" isVisible={!isPulseContext && !isAuthenticated}>
+            <NavItem href="/pulse" icon="IC-music" />
+          </MotionNavItem>
+          <MotionNavItem id="messages" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
+            <NavItem href="/messages" icon="IC-chats" />
+          </MotionNavItem>
+          <MotionNavItem id="friends" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
+            <NavItem href="/friends" icon="IC-friends" />
+          </MotionNavItem>
+          <MotionNavItem id="groups" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
+            <NavItem href="/groups" icon="IC-groups" />
+          </MotionNavItem>
+        </motion.div>
+        <div className='flex-grow'></div>
+        <motion.div layoutRoot layout className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30 gap-1">
+          <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+
+          <MotionNavItem id="mobile-login" isVisible={!isAuthenticated}>
+            <NavItem href="/login" icon="IC-login" />
+          </MotionNavItem>
+          <MotionNavItem id="mobile-signup" isVisible={!isAuthenticated}>
+            <NavItem href="/signup" icon="IC-signup" />
+          </MotionNavItem>
+
+          <MotionNavItem id="mobile-user" isVisible={isAuthenticated && user ? true : false}>
+            <Dropdown imgSrc={user?.img} position="top" align="end" activePaths={[`/@${user?.username}`, '/settings']}>
+              <DropdownItem href={`/@${user?.username}`} icon="IC-user">
+                {lang?.myaccount}
+              </DropdownItem>
+              <DropdownItem href="/notifications" icon="IC-notification">
+                {lang?.notif}
+              </DropdownItem>
+              <DropdownItem href="/settings" icon="IC-settings">
+                {lang?.settings}
+              </DropdownItem>
+              <DropdownItem onClick={logout} icon="IC-exit">
+                {lang?.logout}
+              </DropdownItem>
+            </Dropdown>
+          </MotionNavItem>
+
+          <MotionNavItem id="mobile-compass" isVisible={true}>
+            <Dropdown
+              icon="IC-compass"
+              position="top"
+              align="end"
+              direction="row"
+              menuClassName={cn(
+                "justify-center",
+                (isPulseContext && isAuthenticated && user) ? "flex-wrap !w-[15.5rem] !rounded-[2rem]" : "flex-nowrap !w-max !rounded-full"
+              )}
+              activePaths={isPulseContext ? ['/wallet', '/apps', '/games'] : ['/pulse', '/wallet', '/apps', '/games']}
+            >
+              {isPulseContext && <NavItem href="/feed" icon="IC-feed" />}
+              {isPulseContext && isAuthenticated && user && <NavItem href="/messages" icon="IC-chats" />}
+              {isPulseContext && isAuthenticated && user && <NavItem href="/friends" icon="IC-friends" />}
+              {isPulseContext && isAuthenticated && user && <NavItem href="/groups" icon="IC-groups" />}
+              {!isPulseContext && <NavItem href="/pulse" icon="IC-music" />}
+              <NavItem href="/wallet" icon="IC-wallet" />
+              <NavItem href="/apps" icon="IC-games" />
+              <NavItem href="/" icon="IC-search" />
+              {!isAuthenticated && <NavItem href="/settings" icon="IC-settings" />}
+            </Dropdown>
+          </MotionNavItem>
+        </motion.div>
+      </nav>
     </>
   );
 }

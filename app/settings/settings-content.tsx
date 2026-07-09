@@ -12,14 +12,23 @@ export default function SettingsPage() {
   const selectLanguage = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedLang = e.target.value;
     try {
-      const result = await AncialAPI.updateProfile<any>({ lang: selectedLang });
-      
-      showNote({
-        content: result?.message || (lang?.language_changed || 'Язык изменен'),
-        html: true,
-        type: 'success',
-        time: 5
-      });
+      if (isAuthenticated) {
+        const result = await AncialAPI.updateProfile<any>({ lang: selectedLang });
+        showNote({
+          content: result?.message || (lang?.language_changed || 'Язык изменен'),
+          html: true,
+          type: 'success',
+          time: 5
+        });
+      } else {
+        document.cookie = `lang=${selectedLang}; path=/; max-age=31536000`;
+        showNote({
+          content: lang?.language_changed || 'Язык изменен',
+          html: true,
+          type: 'success',
+          time: 5
+        });
+      }
       
       if (updateLang) {
         await updateLang();
