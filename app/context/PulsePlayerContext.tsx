@@ -2536,7 +2536,7 @@ export function PulsePlayerProvider({
     <PulsePlayerContext.Provider value={contextValue}>
       {children}
 
-      <audio ref={audioRef} id="htmlaudio" className="hidden" />
+      <audio ref={audioRef} id="htmlaudio" className="hidden" crossOrigin="anonymous" />
 
       {effectivePlayerVisible ? (
         <div
