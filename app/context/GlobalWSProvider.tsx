@@ -49,14 +49,14 @@ export function GlobalWSProvider({ children }: { children: React.ReactNode }) {
       globalWS.init();
     };
 
+    // 'storage' намеренно исключён: cache.set() внутри checkAuth генерирует
+    // storage-события → бесконечный спам globalWS.init() вызовов.
     window.addEventListener('focus', syncConnection);
     window.addEventListener('online', syncConnection);
-    window.addEventListener('storage', syncConnection);
 
     return () => {
       window.removeEventListener('focus', syncConnection);
       window.removeEventListener('online', syncConnection);
-      window.removeEventListener('storage', syncConnection);
 
       if (window.GlobalWS === globalWS) {
         delete window.GlobalWS;
@@ -65,6 +65,9 @@ export function GlobalWSProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Вызываем init() только при смене состояния авторизации.
+    // Если пользователь вышел (isAuthenticated=false), init() с пустым токеном
+    // закроет WS без reconnect — это корректное поведение.
     globalWS.init();
   }, [isAuthenticated, user?.id]);
 

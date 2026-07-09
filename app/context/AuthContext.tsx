@@ -58,6 +58,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isAuthenticated: false,
     user: null,
   });
+  // Флаг: идёт процесс выхода — блокирует любые повторные checkAuth
+  const isLoggingOutRef = useRef(false);
 
   const publishLangState = useCallback((nextLang: Record<string, string> | null) => {
     if (typeof window === 'undefined') return;
@@ -91,6 +93,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [publishLangState]);
 
   const checkAuth = useCallback(async (options: { silent?: boolean } = {}) => {
+    // Если идёт выход — не авторизовываем заново
+    if (isLoggingOutRef.current) return;
     const silent = options.silent === true;
     let nextPublishedAuth = authStateRef.current.isAuthenticated;
     let nextPublishedUser = authStateRef.current.user;
@@ -240,6 +244,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const refreshAuth = () => {
+      if (isLoggingOutRef.current) return;
       if (window.location.pathname === '/login' || window.location.pathname === '/signup') {
         return;
       }
@@ -247,29 +252,51 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       void checkAuth({ silent: true });
     };
 
+    // 'storage' намеренно исключён: cache.set() внутри checkAuth сам генерирует
+    // storage-события, что создаёт рекурсивный цикл CheckStatus запросов.
     window.addEventListener('focus', refreshAuth);
     window.addEventListener('online', refreshAuth);
-    window.addEventListener('storage', refreshAuth);
     window.addEventListener('ancial-auth-session-restored', refreshAuth);
     window.addEventListener('ancial-auth-session-failed', refreshAuth);
 
     return () => {
       window.removeEventListener('focus', refreshAuth);
       window.removeEventListener('online', refreshAuth);
-      window.removeEventListener('storage', refreshAuth);
       window.removeEventListener('ancial-auth-session-restored', refreshAuth);
       window.removeEventListener('ancial-auth-session-failed', refreshAuth);
     };
   }, [checkAuth]);
 
   const logout = async () => {
-    cache.remove('token');
+    // Блокируем любые checkAuth во время и после выхода
+    isLoggingOutRef.current = true;
+
+    // Сначала обновляем React-состояние, чтобы UI мгновенно отреагировал
+    setUser(null);
+    setIsAuthenticated(false);
+    authStateRef.current = { isAuthenticated: false, user: null };
+    publishAuthState(false, null, false);
+
+    // Отключаем WebSocket, чтобы не было reconnect-попыток после выхода
+    try {
+      if (window.GlobalWS) {
+        // Убираем токен ДО вызова init(), чтобы WS закрылся без реконнекта
+        cache.remove('token');
+        window.GlobalWS.init(); // init с пустым токеном закроет сокет
+      } else {
+        cache.remove('token');
+      }
+    } catch (e) {
+      console.error('[Auth] Ошибка при отключении WS', e);
+      cache.remove('token');
+    }
+
     cache.remove('user_profile');
     cache.clear();
-    
+
     try {
-      // ОБЯЗАТЕЛЬНО убиваем сессию на сервере (PHP cookie), 
-      // иначе check.php будет продолжать возвращать auth: true
+      // ОБЯЗАТЕЛЬНО убиваем сессию на сервере (PHP cookie),
+      // иначе CheckStatus.php будет продолжать возвращать auth: true
       await fetch(`/api/V2/auth/LogOut.php`, {
         credentials: 'include',
       });
@@ -277,16 +304,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Ошибка при логауте на сервере', e);
     }
 
-    setUser(null);
-    setIsAuthenticated(false);
-    authStateRef.current = {
-      isAuthenticated: false,
-      user: null,
-    };
-    publishAuthState(false, null, false);
     window.PlayerClose?.();
-    
-    // Перенаправляем на окно логина
+
+    // Перенаправляем на страницу логина
     window.location.href = '/login';
   };
 
