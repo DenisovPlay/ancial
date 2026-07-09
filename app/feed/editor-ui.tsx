@@ -161,6 +161,7 @@ export function FeedEditorUI({
                                 value={content}
                                 onChange={setContent}
                                 placeholder={strings.postcontent}
+                                strings={strings}
                             />
                             <input type="hidden" name={mode === 'create' ? 'contentext' : 'edit_content'} value={content} />
                             {images.length > 0 && (

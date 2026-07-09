@@ -9,6 +9,7 @@ type RichTextEditorProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  strings?: Record<string, string>;
 };
 
 function htmlToBBCode(html: string): string {
@@ -61,7 +62,7 @@ function htmlToBBCode(html: string): string {
   return result.replace(/^[\n\r]+|[\n\r]+$/g, '');
 }
 
-export default function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder, className, strings }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const isUpdatingRef = useRef(false);
   const [isEmpty, setIsEmpty] = useState(!value);
@@ -275,7 +276,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
               ? "bg-zinc-200 text-zinc-900 border-zinc-300" 
               : "bg-zinc-900 hover:bg-zinc-700 text-white border-zinc-600/30 text-zinc-400"
           )}
-          title="Жирный"
+          title={strings?.editor_bold || 'Жирный'}
         >
           B
         </button>
@@ -288,7 +289,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
               ? "bg-zinc-200 text-zinc-900 border-zinc-300" 
               : "bg-zinc-900 hover:bg-zinc-700 text-white border-zinc-600/30 text-zinc-400"
           )}
-          title="Курсив"
+          title={strings?.editor_italic || 'Курсив'}
         >
           I
         </button>
@@ -301,7 +302,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
               ? "bg-zinc-200 text-zinc-900 border-zinc-300" 
               : "bg-zinc-900 hover:bg-zinc-700 text-white border-zinc-600/30 text-zinc-400"
           )}
-          title="Зачёркнутый"
+          title={strings?.editor_strikethrough || 'Зачёркнутый'}
         >
           S
         </button>
@@ -315,7 +316,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
               ? "bg-zinc-200 text-zinc-900 border-zinc-300" 
               : "bg-zinc-900 hover:bg-zinc-700 text-white border-zinc-600/30 text-zinc-400"
           )}
-          title="Вставить ссылку"
+          title={strings?.editor_link_insert || 'Вставить ссылку'}
         >
           <SvgIcon className="w-5 h-5 fill-current" id="IC-link" />
         </button>
@@ -343,17 +344,17 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       <Modal
         isOpen={isLinkModalOpen}
         onClose={() => setIsLinkModalOpen(false)}
-        title="Вставить ссылку"
+        title={strings?.editor_link_insert || 'Вставить ссылку'}
       >
         <form onSubmit={handleSubmitLink} className="flex flex-col gap-3">
           <div className="flex flex-col w-full text-left">
-            <span className="text-zinc-400 pl-4 z-20 -mt-1.5 text-sm">Текст ссылки (если пусто — сама ссылка)</span>
+            <span className="text-zinc-400 pl-4 z-20 -mt-1.5 text-sm">{strings?.editor_link_text || 'Текст ссылки (если пусто — сама ссылка)'}</span>
             <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
               <input
                 type="text"
                 autoFocus
                 className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white"
-                placeholder="Текст для отображения"
+                placeholder={strings?.editor_link_text_placeholder || 'Текст для отображения'}
                 value={linkText}
                 onChange={(e) => setLinkText(e.target.value)}
               />
@@ -378,7 +379,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
             type="submit"
             className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-2"
           >
-            Вставить
+            {strings?.editor_link_insert_btn || 'Вставить'}
           </button>
         </form>
       </Modal>

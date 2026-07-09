@@ -994,10 +994,19 @@ export function PulsePlayerProvider({
   const [playlistOptions, setPlaylistOptions] = useState<PulsePlaylistOption[]>([]);
   const [playlistOptionsLoading, setPlaylistOptionsLoading] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
+  const [isRadioMode, setIsRadioMode] = useState(false);
+  const [radioSeedName, setRadioSeedName] = useState('');
 
   const touchStartXRef = useRef<number | null>(null);
   const touchStartFullRef = useRef<{ x: number, y: number } | null>(null);
   const touchStartMiniRef = useRef<{ x: number, y: number } | null>(null);
+  // Радио: трек-источник, набор уже воспроизведённых ID, флаг загрузки
+  const radioSeedTrackIdRef = useRef<number>(0);
+  const radioPlayedIdsRef = useRef<Set<number>>(new Set());
+  const radioLoadingRef = useRef(false);
+  const isRadioModeRef = useRef(false);
+  const radioSeedNameRef = useRef('');
+  const audioCacheAbortControllerRef = useRef<AbortController | null>(null);
 
   const currentTrack = playlist[index] ?? null;
   const prevTrackObj = playlist[index - 1] ?? null;
@@ -1079,6 +1088,14 @@ export function PulsePlayerProvider({
     currentCollectionIdRef.current = nextPlaylistId;
     setIsPlaylist(nextIsPlaylist);
     setPlaylistId(nextPlaylistId);
+
+    // Сбрасываем режим радио при ручном запуске нового плейлиста/трека
+    if (!nextPlaylistId.startsWith('radio_')) {
+      isRadioModeRef.current = false;
+      setIsRadioMode(false);
+      setRadioSeedName('');
+      radioSeedNameRef.current = '';
+    }
   };
 
   const updateMediaPositionState = () => {
@@ -1697,11 +1714,17 @@ export function PulsePlayerProvider({
 
     // Если трек играет из сети, запускаем фоновое асинхронное кэширование с передачей метаданных
     if (!isFromCache && trackId > 0) {
+      if (audioCacheAbortControllerRef.current) {
+        audioCacheAbortControllerRef.current.abort();
+      }
+      audioCacheAbortControllerRef.current = new AbortController();
       cache.audio.save(trackId, trackSource, {
         title: track.title || undefined,
         artist: track.artist || undefined
-      }).catch((err) => {
-        console.error('Failed to auto-cache audio file in background', err);
+      }, audioCacheAbortControllerRef.current.signal).catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to auto-cache audio file in background', err);
+        }
       });
     }
 
@@ -1760,13 +1783,13 @@ export function PulsePlayerProvider({
         try {
           // 1. Сначала пытаемся прочитать кэш самого плеера
           let cached = cache.get<PulseTrack[]>(collectionCacheKey, { category: 'pulse', subcategory: 'tracks' });
-          
+
           // 2. Если его нет — пытаемся прочитать UI-кэш страницы плейлиста (сохраняется при открытии страницы)
           if (!cached || cached.length === 0) {
-            const uiCacheKey = kind === 'playlist' 
-              ? `playlist_tracks_${resolvedId}` 
-              : kind === 'genlist' 
-                ? `playlist_tracks_gid_${resolvedId}` 
+            const uiCacheKey = kind === 'playlist'
+              ? `playlist_tracks_${resolvedId}`
+              : kind === 'genlist'
+                ? `playlist_tracks_gid_${resolvedId}`
                 : `playlist_tracks_aid_${resolvedId}`;
             cached = cache.get<PulseTrack[]>(uiCacheKey, { category: 'pulse' });
           }
@@ -1918,20 +1941,114 @@ export function PulsePlayerProvider({
     await playLoadedTrack(playlistRef.current[nextIndex] ?? null);
   };
 
+  /**
+   * Загружает следующую порцию похожих треков для режима радио
+   * и добавляет их в конец текущего плейлиста.
+   */
+  const fillRadioWave = async () => {
+    if (radioLoadingRef.current) return;
+    radioLoadingRef.current = true;
+
+    const seedId = radioSeedTrackIdRef.current;
+    if (!seedId) {
+      radioLoadingRef.current = false;
+      return;
+    }
+
+    try {
+      // Передаём уже воспроизведённые треки, чтобы сервер их исключил
+      const excludeIds = Array.from(radioPlayedIdsRef.current);
+      const wave = await AncialAPI.pulseGetRadioWave<PulseTrack[]>(seedId, excludeIds);
+
+      if (!Array.isArray(wave) || wave.length === 0) {
+        // Если похожих больше нет — сбрасываем список исключений и пробуем снова
+        radioPlayedIdsRef.current.clear();
+        radioPlayedIdsRef.current.add(seedId);
+        const waveRetry = await AncialAPI.pulseGetRadioWave<PulseTrack[]>(seedId, [seedId]);
+        if (!Array.isArray(waveRetry) || waveRetry.length === 0) {
+          radioLoadingRef.current = false;
+          return;
+        }
+        const updated = [...playlistRef.current, ...waveRetry];
+        setPlaylistState(updated);
+        const nextIndex = indexRef.current + 1;
+        setPlaylistIndex(nextIndex);
+        await playLoadedTrack(updated[nextIndex] ?? null);
+      } else {
+        const updated = [...playlistRef.current, ...wave];
+        setPlaylistState(updated);
+        const nextIndex = indexRef.current + 1;
+        setPlaylistIndex(nextIndex);
+        await playLoadedTrack(updated[nextIndex] ?? null);
+      }
+    } catch (e) {
+      console.error('[Radio] Failed to fetch wave', e);
+    } finally {
+      radioLoadingRef.current = false;
+    }
+  };
+
   const nextTrack = async () => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) {
-      audio.currentTime = 0;
-      audio.pause();
+      // Одиночный трек — запускаем радио на его основе
+      const sid = currentSongIdRef.current;
+      if (sid > 0) {
+        isRadioModeRef.current = true;
+        setIsRadioMode(true);
+        setRadioSeedName(playerTitle);
+        radioSeedNameRef.current = playerTitle;
+        radioSeedTrackIdRef.current = sid;
+        radioPlayedIdsRef.current = new Set([sid]);
+        // Переводим плеер в playlist-режим, чтобы очередь работала
+        setPlaylistMode(true, `radio_${sid}`);
+        await fillRadioWave();
+      } else {
+        audio.currentTime = 0;
+        audio.pause();
+      }
       return;
     }
 
     if (indexRef.current < playlistRef.current.length - 1) {
       const nextIndex = indexRef.current + 1;
+      // Запоминаем воспроизведённый трек для радио
+      if (isRadioModeRef.current) {
+        const playedSid = toNumber(playlistRef.current[indexRef.current]?.sid);
+        if (playedSid) radioPlayedIdsRef.current.add(playedSid);
+      }
       setPlaylistIndex(nextIndex);
       await playLoadedTrack(playlistRef.current[nextIndex] ?? null);
+      return;
+    }
+
+    // Конец плейлиста
+    const lastSid = toNumber(playlistRef.current[indexRef.current]?.sid);
+    if (lastSid) radioPlayedIdsRef.current.add(lastSid);
+
+    if (isRadioModeRef.current) {
+      // В режиме радио — подгружаем следующую волну
+      await fillRadioWave();
+      return;
+    }
+
+    // Плейлист кончился — автоматически включаем радио на основе последнего трека
+    if (lastSid > 0) {
+      isRadioModeRef.current = true;
+      setIsRadioMode(true);
+
+      const lastTrack = playlistRef.current[indexRef.current];
+      const seedName = lastTrack ? getTrackDisplayTitle(lastTrack, lang) : playerTitle;
+      setRadioSeedName(seedName);
+      radioSeedNameRef.current = seedName;
+
+      radioSeedTrackIdRef.current = lastSid;
+      radioPlayedIdsRef.current = new Set(
+        playlistRef.current.map(t => toNumber(t.sid)).filter(Boolean) as number[]
+      );
+      await fillRadioWave();
       return;
     }
 
@@ -2007,7 +2124,7 @@ export function PulsePlayerProvider({
     });
   };
 
-  const fetchLyricsData = async (track: PulseTrack | null) => {
+  const fetchLyricsData = async (track: PulseTrack | null, signal?: AbortSignal) => {
     if (!track) {
       return {
         lines: [] as PulseLyricsLine[],
@@ -2042,6 +2159,7 @@ export function PulsePlayerProvider({
         `https://pulse-lyrics.ancial.ru/UniLyrics.php?a=${encodeURIComponent(artist)}&t=${encodeURIComponent(title)}&d=0&type=alternative`,
         {
           cache: 'no-store',
+          signal,
         },
       );
       const result = await response.text();
@@ -2246,19 +2364,27 @@ export function PulsePlayerProvider({
     }
 
     let cancelled = false;
+    const controller = new AbortController();
 
     void (async () => {
-      const lyricsData = await fetchLyricsData(currentTrack);
-      if (cancelled) return;
+      try {
+        const lyricsData = await fetchLyricsData(currentTrack, controller.signal);
+        if (cancelled) return;
 
-      setLyricsLines(lyricsData.lines);
-      setLyricsSource(lyricsData.source);
+        setLyricsLines(lyricsData.lines);
+        setLyricsSource(lyricsData.source);
+      } catch (e: any) {
+        if (e.name !== 'AbortError') {
+          console.error('Failed to load lyrics', e);
+        }
+      }
     })();
 
     syncWindowState();
 
     return () => {
       cancelled = true;
+      controller.abort();
       // Also cancel any pending debounced metadata update so stale artwork
       // from the previous track is never applied after the track changes.
       if (mediaSessionDebounceRef.current !== null) {
@@ -2410,7 +2536,7 @@ export function PulsePlayerProvider({
     <PulsePlayerContext.Provider value={contextValue}>
       {children}
 
-      <audio ref={audioRef} id="htmlaudio" className="hidden" crossOrigin="anonymous" />
+      <audio ref={audioRef} id="htmlaudio" className="hidden" />
 
       {effectivePlayerVisible ? (
         <div
@@ -2492,7 +2618,9 @@ export function PulsePlayerProvider({
                       normalizeText(String(currentTrack?.albumid ?? '')) && 'cursor-pointer active:scale-95 hover:text-zinc-300',
                     )}
                   >
-                    {normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
+                    {isRadioMode && radioSeedName
+                      ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
+                      : normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
                   </button>
                   <img alt="Pulse Logo" className="w-24 shrink-0 backdrop-shadow-lg" src="/img/branding/pulse.svg"></img>
                 </div>
@@ -2654,7 +2782,7 @@ export function PulsePlayerProvider({
                             triggerClassName="cursor-pointer duration-300 active:scale-95 block !w-auto !h-auto !p-0 !bg-transparent hover:!bg-transparent"
                           >
                             <DropdownItem onClick={() => openAddToPlaylist(currentSongId)} icon="IC-plus">
-                              В плейлист
+                              {lang?.add_to_playlist || 'В плейлист'}
                             </DropdownItem>
                             {canUseEqualizer && (
                               <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
@@ -2663,7 +2791,7 @@ export function PulsePlayerProvider({
                             )}
                           </Dropdown>
                         ) : isAuthenticated && isMobileDevice ? (
-                          <button title="В плейлист" type="button" onClick={() => openAddToPlaylist(currentSongId)} className="cursor-pointer duration-300 active:scale-95 block group">
+                          <button title={lang?.add_to_playlist || "В плейлист"} type="button" onClick={() => openAddToPlaylist(currentSongId)} className="cursor-pointer duration-300 active:scale-95 block group">
                             <PlayerIcon name="IC-plus" className="h-9 w-9 fill-white duration-300 group-hover:fill-zinc-300" />
                           </button>
                         ) : !isAuthenticated && !isMobileDevice && canUseEqualizer ? (
@@ -2858,7 +2986,7 @@ export function PulsePlayerProvider({
           setIsAddToPlaylistOpen(false);
         }}
         scrollable
-        title={lang?.pulse_add_to_playlist || 'В плейлист'}
+        title={lang?.add_to_playlist || 'В плейлист'}
       >
         <div className="flex flex-col gap-1">
           {playlistOptionsLoading ? (

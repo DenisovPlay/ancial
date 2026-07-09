@@ -461,6 +461,25 @@ export class AncialAPI {
     return this.request<T>(`/pulse/GetTrack.php?id=${id}`);
   }
 
+  /**
+   * Получить следующую порцию треков для режима радио.
+   * @param seedTrackId - ID трека-источника (на основе которого строится волна)
+   * @param excludeIds  - ID уже воспроизведённых треков (не повторять)
+   */
+  static async pulseGetRadioWave<T = unknown>(
+    seedTrackId: number | string,
+    excludeIds: (number | string)[] = [],
+  ): Promise<T> {
+    const query = new URLSearchParams();
+    query.set('gid', `Radio_${seedTrackId}`);
+    if (excludeIds.length > 0) {
+      query.set('exclude', excludeIds.join(','));
+    }
+    const response = await this.request<any>(`/pulse/GetPlaylist.php?${query.toString()}`);
+    return (response && typeof response === 'object' && 'tracks' in response) ? response.tracks : response;
+  }
+
+
   static async pulseSearch<T = unknown>(query: string, type?: 'artists' | 'playlists' | 'tracks'): Promise<T> {
     const params = new URLSearchParams({ q: query });
     if (type) params.set('type', type);

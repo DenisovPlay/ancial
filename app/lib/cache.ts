@@ -373,7 +373,8 @@ export const cache = {
     async save(
       trackId: number | string,
       url: string,
-      metadata?: { title?: string; artist?: string }
+      metadata?: { title?: string; artist?: string },
+      signal?: AbortSignal
     ): Promise<void> {
       if (await this.has(trackId)) {
         return; // Already cached
@@ -382,7 +383,7 @@ export const cache = {
       if (!db) return;
 
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, { signal });
         if (!response.ok) return;
         const blob = await response.blob();
         
@@ -403,8 +404,10 @@ export const cache = {
             reject(e);
           }
         });
-      } catch (err) {
-        console.error('Failed to cache audio file', err);
+      } catch (err: any) {
+        if (err.name !== 'AbortError' && err.message !== 'Failed to fetch') {
+          console.error('Failed to cache audio file', err);
+        }
       }
     },
 
