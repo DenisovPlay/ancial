@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useRef, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getLangFromCache, saveLangToCache } from '../lib/lang';
 import { restoreLegacyAuthSession } from '../lib/auth-fetch';
 import { cache } from '../lib/cache.ts';
@@ -50,6 +51,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lang, setLang] = useState<Record<string, string> | null>(null);
@@ -306,8 +308,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     window.PlayerClose?.();
 
-    // Перенаправляем на страницу логина
-    window.location.href = '/login';
+    // Мягкая навигация — без перезагрузки страницы.
+    // router.replace вместо push, чтобы /login не попал в историю браузера
+    // (нельзя вернуться назад на защищённую страницу).
+    router.replace('/login');
   };
 
   return (
