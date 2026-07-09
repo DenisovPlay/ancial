@@ -471,11 +471,11 @@ export default function Navigation() {
               {isPulseContext && isAuthenticated && user && <NavItem href="/messages" icon="IC-chats" />}
               {isPulseContext && isAuthenticated && user && <NavItem href="/friends" icon="IC-friends" />}
               {isPulseContext && isAuthenticated && user && <NavItem href="/groups" icon="IC-groups" />}
-              {!isPulseContext && <NavItem href="/pulse" icon="IC-music" />}
-              <NavItem href="/wallet" icon="IC-wallet" />
+              {!isPulseContext && isAuthenticated && user && <NavItem href="/pulse" icon="IC-music" />}
+              {isAuthenticated && user && <NavItem href="/wallet" icon="IC-wallet" />}
               <NavItem href="/apps" icon="IC-games" />
-              <NavItem href="/" icon="IC-search" />
               {!isAuthenticated && <NavItem href="/settings" icon="IC-settings" />}
+              <NavItem href="/" icon="IC-search" />
             </Dropdown>
           </MotionNavItem>
         </motion.div>
