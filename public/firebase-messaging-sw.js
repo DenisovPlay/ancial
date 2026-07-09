@@ -1,4 +1,4 @@
-const SW_VERSION = '2.1';
+const SW_VERSION = '2.2';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -55,9 +55,7 @@ const CACHE_API     = 'ancial-api-v1';
 
 // Список API-эндпоинтов V2 которые кэшируются SW (Stale-While-Revalidate)
 // Остальные /api/V2/* запросы SW не трогает — данные живут в localStorage
-const CACHEABLE_API_PATHS = [
-  '/api/V2/info/GetLang.php',
-];
+const CACHEABLE_API_PATHS = [];
 
 // App shell — критические файлы, кэшируются при установке
 const PRECACHE_STATIC = [
