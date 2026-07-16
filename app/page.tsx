@@ -12,7 +12,7 @@ export const metadata: Metadata = createPageMetadata({
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="h-screen w-full bg-[#09090b]" />}>
+    <Suspense fallback={<div className="h-screen w-full" />}>
       <HomeContent />
     </Suspense>
   );
