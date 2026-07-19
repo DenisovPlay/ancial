@@ -533,9 +533,19 @@ function PostCardInner({
     if (target.tagName.toLowerCase() === 'img') {
       const imgEl = target as HTMLImageElement;
       
+      const isPostImage = (img: HTMLImageElement) => {
+        const src = img.src || '';
+        if (src.includes('betterttv.net') || src.includes('7tv.app') || src.includes('/api/7tv/')) {
+          return false;
+        }
+        return img.classList.contains('object-cover');
+      };
+
+      if (!isPostImage(imgEl)) return;
+
       const container = document.getElementById(`textblock${post.id}`);
       if (container) {
-        const allImgs = Array.from(container.getElementsByTagName('img'));
+        const allImgs = Array.from(container.getElementsByTagName('img')).filter(isPostImage);
         const clickedIndex = allImgs.indexOf(imgEl);
         if (clickedIndex !== -1) {
           const inlineSlides = allImgs.map(img => ({ url: img.src }));
