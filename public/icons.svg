@@ -335,4 +335,85 @@
     <symbol id="IC-modal-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
     </symbol>
+
+    <!-- Карусель: горизонтальный слайдер с стрелками -->
+    <symbol id="IC-carousel" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <rect x="1" y="8" width="3" height="8" rx="1" opacity="0.4"/>
+        <rect x="20" y="8" width="3" height="8" rx="1" opacity="0.4"/>
+        <circle cx="9" cy="18.5" r="0.9"/>
+        <circle cx="12" cy="18.5" r="0.9"/>
+        <circle cx="15" cy="18.5" r="0.9"/>
+    </symbol>
+
+    <!-- Коллаж: сетка фотографий -->
+    <symbol id="IC-collage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="9" height="9" rx="1.5"/>
+        <rect x="13" y="2" width="9" height="9" rx="1.5"/>
+        <rect x="2" y="13" width="9" height="9" rx="1.5"/>
+        <rect x="13" y="13" width="9" height="9" rx="1.5"/>
+    </symbol>
+
+    <!-- Таблица -->
+    <symbol id="IC-table" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+    </symbol>
+
+    <!-- Спойлер / Details -->
+    <symbol id="IC-spoiler" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+        <rect x="3" y="4" width="18" height="16" rx="2"/>
+        <path d="M3 9h18"/>
+    </symbol>
+
+    <!-- Сноска / Footnote: sup с [1] -->
+    <symbol id="IC-footnote" viewBox="0 0 24 24" fill="currentColor">
+        <text x="2" y="16" font-size="13" font-family="sans-serif" font-weight="700">[1]</text>
+        <text x="16" y="10" font-size="9" font-family="sans-serif" font-weight="700">n</text>
+    </symbol>
+
+    <!-- Заголовок H1 -->
+    <symbol id="IC-heading-1" viewBox="0 0 24 24" fill="currentColor">
+        <text x="1" y="18" font-size="15" font-family="sans-serif" font-weight="700">H</text>
+        <text x="13" y="18" font-size="15" font-family="sans-serif" font-weight="700">1</text>
+    </symbol>
+
+    <!-- Заголовок H2 -->
+    <symbol id="IC-heading-2" viewBox="0 0 24 24" fill="currentColor">
+        <text x="1" y="18" font-size="15" font-family="sans-serif" font-weight="700">H</text>
+        <text x="13" y="18" font-size="15" font-family="sans-serif" font-weight="700">2</text>
+    </symbol>
+
+    <!-- Заголовок H3 -->
+    <symbol id="IC-heading-3" viewBox="0 0 24 24" fill="currentColor">
+        <text x="1" y="18" font-size="15" font-family="sans-serif" font-weight="700">H</text>
+        <text x="13" y="18" font-size="15" font-family="sans-serif" font-weight="700">3</text>
+    </symbol>
+
+    <!-- Маркированный список -->
+    <symbol id="IC-list-ul" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+        <line x1="8" y1="6" x2="21" y2="6"/>
+        <line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/>
+    </symbol>
+
+    <!-- Нумерованный список -->
+    <symbol id="IC-list-ol" viewBox="0 0 24 24" fill="currentColor">
+        <text x="1" y="9" font-size="8" font-family="sans-serif" font-weight="700">1.</text>
+        <text x="1" y="15" font-size="8" font-family="sans-serif" font-weight="700">2.</text>
+        <text x="1" y="21" font-size="8" font-family="sans-serif" font-weight="700">3.</text>
+        <rect x="9" y="5.5" width="13" height="1.8" rx="0.9"/>
+        <rect x="9" y="11.5" width="13" height="1.8" rx="0.9"/>
+        <rect x="9" y="17.5" width="13" height="1.8" rx="0.9"/>
+    </symbol>
+
+    <!-- Цитата -->
+    <symbol id="IC-quote" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
+        <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>
+    </symbol>
 </svg>

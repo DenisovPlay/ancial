@@ -253,10 +253,12 @@ function PostCardInner({
   const [closingImageIndex, setClosingImageIndex] = useState<number | null>(null);
   const closingImageTimerRef = useRef<number | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [customImages, setCustomImages] = useState<ImageViewerSlide[]>([]);
 
 
   const strings = { ...DEFAULT_LANG, ...lang };
   const images = post.images ?? [];
+  const activeImages = customImages.length > 0 ? customImages : images;
   const hasBlurredImages = images.some((image) => flag(image.blur));
   const showAd = renderIndex === 6;
   const authorHref =
@@ -280,6 +282,7 @@ function PostCardInner({
 
     closingImageTimerRef.current = window.setTimeout(() => {
       setClosingImageIndex(null);
+      setCustomImages([]);
       closingImageTimerRef.current = null;
     }, 300);
   }
@@ -300,20 +303,21 @@ function PostCardInner({
 
         closingImageTimerRef.current = window.setTimeout(() => {
           setClosingImageIndex(null);
+          setCustomImages([]);
           closingImageTimerRef.current = null;
         }, 300);
         return;
       }
 
-      if (images.length <= 1) return;
+      if (activeImages.length <= 1) return;
       if (event.key === 'ArrowRight') {
         setSelectedImageIndex((current) =>
-          current === null ? 0 : (current + 1) % images.length,
+          current === null ? 0 : (current + 1) % activeImages.length,
         );
       }
       if (event.key === 'ArrowLeft') {
         setSelectedImageIndex((current) =>
-          current === null ? 0 : (current - 1 + images.length) % images.length,
+          current === null ? 0 : (current - 1 + activeImages.length) % activeImages.length,
         );
       }
     };
@@ -322,7 +326,7 @@ function PostCardInner({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [images.length, selectedImageIndex]);
+  }, [activeImages.length, selectedImageIndex]);
 
   useEffect(() => {
     return () => {
@@ -331,6 +335,82 @@ function PostCardInner({
       }
     };
   }, []);
+
+  useEffect(() => {
+    const postEl = document.getElementById(`postdiv${post.id}`);
+    if (!postEl) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let activeContainer: HTMLElement | null = null;
+    let hasMoved = false;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const container = target.closest('.overflow-x-auto') as HTMLElement;
+      if (!container || container.querySelector('table')) return;
+
+      isDragging = true;
+      activeContainer = container;
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      hasMoved = false;
+
+      container.style.scrollSnapType = 'none';
+      container.style.scrollBehavior = 'auto';
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !activeContainer) return;
+      e.preventDefault();
+      const x = e.pageX - activeContainer.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      activeContainer.scrollLeft = scrollLeft - walk;
+      if (Math.abs(walk) > 5) {
+        hasMoved = true;
+      }
+    };
+
+    const handleMouseUpOrLeave = (e: MouseEvent) => {
+      if (!isDragging || !activeContainer) return;
+
+      activeContainer.style.scrollSnapType = '';
+      activeContainer.style.scrollBehavior = '';
+
+      isDragging = false;
+      activeContainer = null;
+    };
+
+    const handleClickCapture = (e: MouseEvent) => {
+      if (hasMoved) {
+        e.stopPropagation();
+        e.preventDefault();
+        hasMoved = false;
+      }
+    };
+
+    const handleDragStart = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName.toLowerCase() === 'img') {
+        e.preventDefault();
+      }
+    };
+
+    postEl.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUpOrLeave);
+    postEl.addEventListener('click', handleClickCapture, true);
+    postEl.addEventListener('dragstart', handleDragStart);
+
+    return () => {
+      postEl.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUpOrLeave);
+      postEl.removeEventListener('click', handleClickCapture, true);
+      postEl.removeEventListener('dragstart', handleDragStart);
+    };
+  }, [post.id]);
 
   const navigateTo = (href: string) => {
     onNavigate?.(href, post);
@@ -434,18 +514,36 @@ function PostCardInner({
   };
 
   const activeImageIndex = selectedImageIndex ?? closingImageIndex;
-  const selectedImage = activeImageIndex === null ? null : images[activeImageIndex];
+  const selectedImage = activeImageIndex === null ? null : activeImages[activeImageIndex];
 
   const handlePrevImage = () => {
     setSelectedImageIndex((current) =>
-      current === null ? 0 : (current - 1 + images.length) % images.length,
+      current === null ? 0 : (current - 1 + activeImages.length) % activeImages.length,
     );
   };
 
   const handleNextImage = () => {
     setSelectedImageIndex((current) =>
-      current === null ? 0 : (current + 1) % images.length,
+      current === null ? 0 : (current + 1) % activeImages.length,
     );
+  };
+
+  const handlePostContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName.toLowerCase() === 'img') {
+      const imgEl = target as HTMLImageElement;
+      
+      const container = document.getElementById(`textblock${post.id}`);
+      if (container) {
+        const allImgs = Array.from(container.getElementsByTagName('img'));
+        const clickedIndex = allImgs.indexOf(imgEl);
+        if (clickedIndex !== -1) {
+          const inlineSlides = allImgs.map(img => ({ url: img.src }));
+          setCustomImages(inlineSlides);
+          setSelectedImageIndex(clickedIndex);
+        }
+      }
+    }
   };
 
   return (
@@ -541,6 +639,7 @@ function PostCardInner({
             )}
             style={{ userSelect: 'text' }}
             dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(post.content) }}
+            onClick={handlePostContentClick}
           />
         )}
 
@@ -563,14 +662,44 @@ function PostCardInner({
                   image={images[0]}
                   blur={flag(images[0].blur)}
                   onClick={() => handleOpenImage(0)}
-                  className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0"
+                  className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0 cursor-pointer active:scale-95 duration-300"
                 />
               </div>
             )}
 
             {images.length >= 2 && (
               <div className="-mx-3">
-                <div className="relative">
+                <div className="relative group/carousel">
+                  {/* Left Arrow */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const container = e.currentTarget.parentElement?.querySelector('.overflow-x-auto');
+                      if (container) {
+                        container.scrollBy({ left: -container.clientWidth * 0.7, behavior: 'smooth' });
+                      }
+                    }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                  >
+                    <SvgIcon className="w-6 h-6 fill-white" id="IC-chevron-left" />
+                  </button>
+
+                  {/* Right Arrow */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const container = e.currentTarget.parentElement?.querySelector('.overflow-x-auto');
+                      if (container) {
+                        container.scrollBy({ left: container.clientWidth * 0.7, behavior: 'smooth' });
+                      }
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                  >
+                    <SvgIcon className="w-6 h-6 fill-white" id="IC-chevron-right" />
+                  </button>
+
                   <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
                     <span className="flex items-center gap-1.5">
                       <SvgIcon className="w-4 h-4 fill-white" id="IC-photos" />
@@ -582,7 +711,7 @@ function PostCardInner({
                     {images.map((image, index) => (
                       <div
                         key={`${post.id}-image-${index}`}
-                        className="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%]"
+                        className="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] cursor-pointer active:scale-95 duration-300"
                       >
                         <ImageTile
                           image={image}
@@ -744,7 +873,7 @@ function PostCardInner({
       {selectedImage && (
         <ImageViewerModal
           activeImageIndex={activeImageIndex}
-          images={images}
+          images={activeImages}
           isOpen={selectedImageIndex !== null}
           onClose={handleCloseImage}
           onPrev={handlePrevImage}

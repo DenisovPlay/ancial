@@ -154,7 +154,7 @@ export default function CreatePostPreview({
                     'text-base lg:text-lg text-zinc-200 font-medium break-words',
                 )}
                 style={{ userSelect: 'text' }}
-                dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(safeText, true) }}
+                dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(safeText, false) }}
             />
             <PreviewImageBlock images={images} strings={strings} />
             {widgets && widgets.length > 0 && (

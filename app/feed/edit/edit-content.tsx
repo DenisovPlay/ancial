@@ -9,7 +9,10 @@ import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
 import PostWidgetPollModal, { type PollWidgetDraft } from '../../components/post-widget-poll-modal';
 import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/post-widget-music-modal';
+import PostBlockMediaModal from '../../components/post-block-media-modal';
+import PostBlockTableModal from '../../components/post-block-table-modal';
 import { FeedEditorUI } from '../editor-ui';
+import { getVisibleLength, VISIBLE_CHAR_LIMIT } from '../../components/rich-text-editor';
 
 import {
   type DraftImage,
@@ -88,6 +91,11 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
   const [widgets, setWidgets] = useState<any[]>([]);
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
   const [isMusicModalOpen, setIsMusicModalOpen] = useState(false);
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+
+  const visibleContentLength = getVisibleLength(content);
+  const isContentOverLimit = visibleContentLength > VISIBLE_CHAR_LIMIT;
 
 
   const strings = useMemo(() => {
@@ -172,6 +180,19 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       video: lang?.video || fb.video,
       waituntillphotouploaded: lang?.waituntillphotouploaded || fb.waituntillphotouploaded,
       reply_to_post: lang?.reply_to_post || fb.reply_to_post,
+      editor_carousel: lang?.editor_carousel || 'Карусель',
+      editor_collage: lang?.editor_collage || 'Коллаж',
+      editor_table: lang?.editor_table || 'Таблица',
+      editor_chars: lang?.editor_chars || 'симв.',
+      editor_chars_limit: lang?.editor_chars_limit || 'Превышен лимит',
+      editor_h1: lang?.editor_h1 || 'Заголовок H1',
+      editor_h2: lang?.editor_h2 || 'Заголовок H2',
+      editor_h3: lang?.editor_h3 || 'Заголовок H3',
+      editor_list_ul: lang?.editor_list_ul || 'Список',
+      editor_list_ol: lang?.editor_list_ol || 'Нумерованный список',
+      editor_quote: lang?.editor_quote || 'Цитата',
+      editor_spoiler: lang?.editor_spoiler || 'Спойлер',
+      editor_footnote: lang?.editor_footnote || 'Сноска',
     };
   }, [lang]);
 
@@ -338,8 +359,22 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     setWidgets(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleInsertBlock = (bbcode: string) => {
+    setContent((prev) => prev + bbcode);
+  };
+
 
   const handleStickerSelect = (stickerCode: string) => {
+    const sel = window.getSelection();
+    const editor = document.querySelector('.rich-editor') as HTMLElement;
+    if (editor && sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (editor.contains(range.startContainer)) {
+        editor.focus();
+        document.execCommand('insertText', false, stickerCode);
+        return;
+      }
+    }
     setContent((currentContent) => `${currentContent}${stickerCode}`);
   };
 
@@ -564,10 +599,13 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       strings={strings}
       isSubmitting={isSubmitting}
       hasUploadingImages={hasUploadingImages}
+      isContentOverLimit={isContentOverLimit}
       handleSubmit={handleSubmit}
       handleOpenFilePicker={handleOpenFilePicker}
       setIsPollModalOpen={setIsPollModalOpen}
       setIsMusicModalOpen={setIsMusicModalOpen}
+      setIsMediaModalOpen={setIsMediaModalOpen}
+      setIsTableModalOpen={setIsTableModalOpen}
       handleStickerSelect={handleStickerSelect}
       previewAuthorName={previewAuthorName}
       previewAuthorImage={previewAuthorImage}
@@ -601,6 +639,24 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
             handleAddMusicWidget(music);
             setIsMusicModalOpen(false);
           }}
+        />
+      )}
+
+      {isMediaModalOpen && (
+        <PostBlockMediaModal
+          isOpen={isMediaModalOpen}
+          onClose={() => setIsMediaModalOpen(false)}
+          onInsert={handleInsertBlock}
+          strings={strings}
+        />
+      )}
+
+      {isTableModalOpen && (
+        <PostBlockTableModal
+          isOpen={isTableModalOpen}
+          onClose={() => setIsTableModalOpen(false)}
+          onInsert={handleInsertBlock}
+          strings={strings}
         />
       )}
     </FeedEditorUI>

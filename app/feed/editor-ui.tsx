@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Dropdown } from '../components/navigation';
 import CreatePostPreview from './create/create-post-preview';
 import RichTextEditor from '../components/rich-text-editor';
+import { getVisibleLength } from '../components/post-parser';
 import {
     type DraftImage,
     STICKERS,
@@ -36,10 +37,13 @@ export type FeedEditorUIProps = {
     strings: Record<string, string>;
     isSubmitting: boolean;
     hasUploadingImages: boolean;
+    isContentOverLimit?: boolean;
     handleSubmit: () => void;
     handleOpenFilePicker: () => void;
     setIsPollModalOpen: (open: boolean) => void;
     setIsMusicModalOpen: (open: boolean) => void;
+    setIsMediaModalOpen: (open: boolean) => void;
+    setIsTableModalOpen: (open: boolean) => void;
     handleStickerSelect: (code: string) => void;
     previewAuthorName: string;
     previewAuthorImage: string | null;
@@ -69,10 +73,13 @@ export function FeedEditorUI({
     strings,
     isSubmitting,
     hasUploadingImages,
+    isContentOverLimit = false,
     handleSubmit,
     handleOpenFilePicker,
     setIsPollModalOpen,
     setIsMusicModalOpen,
+    setIsMediaModalOpen,
+    setIsTableModalOpen,
     handleStickerSelect,
     previewAuthorName,
     previewAuthorImage,
@@ -80,6 +87,11 @@ export function FeedEditorUI({
     loadingOrErrorComponent,
     children,
 }: FeedEditorUIProps) {
+    const VISIBLE_CHAR_LIMIT = 3000;
+    const visibleLength = getVisibleLength(content);
+    const isOverLimit = visibleLength > VISIBLE_CHAR_LIMIT;
+    const isNearLimit = visibleLength > VISIBLE_CHAR_LIMIT - 300;
+
     return (
         <div className="flex flex-col jusitify-center items-center gap-3 py-3">
             {children}
@@ -130,7 +142,7 @@ export function FeedEditorUI({
                             id="publicpost"
                             type="button"
                             onClick={() => void handleSubmit()}
-                            disabled={isSubmitting || hasUploadingImages}
+                            disabled={isSubmitting || hasUploadingImages || isContentOverLimit}
                             className="border border-zinc-600/30 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 px-3 py-1 shadow rounded-3xl shrink-0 text-sm cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
                         >
                             <svg className="fill-white w-6 h-6 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -144,7 +156,7 @@ export function FeedEditorUI({
                             onSubmit={(event) => {
                                 event.preventDefault();
                             }}
-                            className="border border-zinc-600/30 duration-300 bg-zinc-900 shadow rounded-3xl text-zinc-700 flex flex-col"
+                            className="border border-zinc-600/30 duration-300 bg-zinc-900 shadow rounded-3xl text-zinc-700 flex flex-col relative overflow-hidden"
                         >
                             <input
                                 className="bg-transparent p-3 w-full placeholder-zinc-500 text-zinc-100 text-lg font-bold border-b border-zinc-800 duration-300 focus:ring-0 focus:outline-none"
@@ -162,159 +174,205 @@ export function FeedEditorUI({
                                 onChange={setContent}
                                 placeholder={strings.postcontent}
                                 strings={strings}
+                                editorClassName={
+                                    images.length > 0 && widgets.length > 0
+                                        ? 'pb-[13.5rem]'
+                                        : images.length > 0
+                                            ? 'pb-[11rem]'
+                                            : widgets.length > 0
+                                                ? 'pb-[6rem]'
+                                                : 'pb-[3.5rem]'
+                                }
                             />
                             <input type="hidden" name={mode === 'create' ? 'contentext' : 'edit_content'} value={content} />
-                            {images.length > 0 && (
-                                <div className="p-3 flex gap-3 overflow-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                    {images.map((image) => (
-                                        <button
-                                            key={image.id}
-                                            type="button"
-                                            onClick={() => handleDeleteImage(image.id)}
-                                            className="h-32 w-32 rounded-2xl shadow bg-center bg-cover shrink-0 cursor-pointer relative overflow-hidden"
-                                            style={{ backgroundImage: `url(${image.previewUrl})` }}
-                                        >
-                                            {image.status === 'uploading' ? (
-                                                <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full text-5xl font-bold duration-300">
-                                                    <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                                                        <use href="#IC-loader"></use>
-                                                    </svg>
-                                                </div>
-                                            ) : (
-                                                <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full opacity-0 hover:opacity-90 text-5xl font-bold duration-300">
-                                                    <SvgIcon className="w-8 h-8 inline fill-white" id="IC-times" />
-                                                </div>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            {widgets.length > 0 && (
-                                <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto overflow-y-hidden">
-                                    {widgets.map((w, i) => (
-                                        <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-3xl border border-zinc-700/40">
-                                            {w.type === 'music' ? (
-                                                <div
-                                                    className="w-6 h-6 rounded-full bg-cover bg-center shrink-0 bg-zinc-700"
-                                                    style={{ backgroundImage: `url(${w.track_img})` }}
-                                                />
-                                            ) : (
-                                                <span className="shrink-0 flex items-center justify-center w-6 h-6">
-                                                    {w.type === 'quote' ? (
-                                                        <SvgIcon className="w-4 h-4 fill-zinc-400" id="IC-share" />
-                                                    ) : (
-                                                        <PollIcon className="w-4 h-4 fill-zinc-400" />
-                                                    )}
-                                                </span>
-                                            )}
-                                            <span className="text-xs text-zinc-200 truncate flex-1">
-                                                {w.type === 'music' ? `${w.artist_name} — ${w.track_name}` : w.type === 'poll' ? w.question : (strings.reply_to_post || 'Ответ')}
-                                            </span>
-                                            <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95 cursor-pointer">
-                                                <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />
+
+                            {/* ── Нижняя парящая панель (виджеты + управление) ── */}
+                            <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-zinc-900 via-zinc-900/90 to-transparent rounded-b-3xl flex flex-col gap-1.5 pt-1.5 pb-1">
+                                {images.length > 0 && (
+                                    <div className="p-3 flex gap-3 overflow-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                                        {images.map((image) => (
+                                            <button
+                                                key={image.id}
+                                                type="button"
+                                                onClick={() => handleDeleteImage(image.id)}
+                                                className="h-32 w-32 rounded-2xl shadow bg-center bg-cover shrink-0 cursor-pointer relative overflow-hidden"
+                                                style={{ backgroundImage: `url(${image.previewUrl})` }}
+                                            >
+                                                {image.status === 'uploading' ? (
+                                                    <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full text-5xl font-bold duration-300">
+                                                        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                                                            <use href="#IC-loader"></use>
+                                                        </svg>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full opacity-0 hover:opacity-90 text-5xl font-bold duration-300">
+                                                        <SvgIcon className="w-8 h-8 inline fill-white" id="IC-times" />
+                                                    </div>
+                                                )}
                                             </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            <div className="px-1.5 pb-1.5 flex items-center justify-center gap-1.5">
-                                <Dropdown
-                                    triggerSize="sm"
-                                    width="auto"
-                                    triggerIcon="IC-plus"
-                                    triggerAriaLabel="Add content"
-                                    position="top"
-                                    align="start"
-                                    triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-white"
-                                    menuClassName="min-w-32 !gap-1.5 !p-2"
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={handleOpenFilePicker}
-                                        className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 bg-zinc-700/0 hover:bg-zinc-700/95 font-medium text-white w-full"
-                                    >
-                                        <SvgIcon className="w-6 h-6 inline fill-white mr-1" id="IC-photos" />
-                                        <span>{strings.photo}</span>
-                                    </button>
-                                    <div className="flex items-center hover:shadow rounded-2xl duration-150 px-1.5 py-0.5 font-medium bg-zinc-600/30 text-zinc-400 cursor-not-allowed w-full">
-                                        <SvgIcon className="inline w-6 h-6 fill-zinc-400 mr-1" id="IC-play" />
-                                        <span>{strings.video}</span>
+                                        ))}
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsPollModalOpen(true)}
-                                        className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+                                )}
+                                {widgets.length > 0 && (
+                                    <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto overflow-y-hidden">
+                                        {widgets.map((w, i) => (
+                                            <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-3xl border border-zinc-700/40">
+                                                {w.type === 'music' ? (
+                                                    <div
+                                                        className="w-6 h-6 rounded-full bg-cover bg-center shrink-0 bg-zinc-700"
+                                                        style={{ backgroundImage: `url(${w.track_img})` }}
+                                                    />
+                                                ) : (
+                                                    <span className="shrink-0 flex items-center justify-center w-6 h-6">
+                                                        {w.type === 'quote' ? (
+                                                            <SvgIcon className="w-4 h-4 fill-zinc-400" id="IC-share" />
+                                                        ) : (
+                                                            <PollIcon className="w-4 h-4 fill-zinc-400" />
+                                                        )}
+                                                    </span>
+                                                )}
+                                                <span className="text-xs text-zinc-200 truncate flex-1">
+                                                    {w.type === 'music' ? `${w.artist_name} — ${w.track_name}` : w.type === 'poll' ? w.question : (strings.reply_to_post || 'Ответ')}
+                                                </span>
+                                                <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95 cursor-pointer">
+                                                    <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="px-1.5 pb-1.5 flex items-center justify-center gap-1.5">
+                                    <Dropdown
+                                        triggerSize="sm"
+                                        width="auto"
+                                        triggerIcon="IC-plus"
+                                        triggerAriaLabel="Add content"
+                                        position="top"
+                                        align="start"
+                                        triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-white"
+                                        menuClassName="min-w-32 !gap-1.5 !p-2"
                                     >
-                                        <PollIcon className="inline h-6 w-6 mr-1 fill-white" />
-                                        <span>{strings.poll}</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsMusicModalOpen(true)}
-                                        className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
-                                    >
-                                        <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-music" />
-                                        <span>{strings.music}</span>
-                                    </button>
-                                </Dropdown>
-                                <select
-                                    name={mode === 'create' ? 'new_post_topic' : 'edit_post_topic'}
-                                    className="p-0.5 h-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-xs lg:text-sm cursor-pointer duration-300 text-zinc-100 focus:ring-0 focus:outline-none"
-                                    id={mode === 'create' ? 'new_post_topic' : 'edit_post_topic'}
-                                    value={selectedTopic}
-                                    onChange={(event) => setSelectedTopic(event.target.value)}
-                                >
-                                    <option value="" disabled={mode === 'create'}>
-                                        {strings.choisetopic}
-                                    </option>
-                                    {topicOptions.map((topicOption) => (
-                                        <option key={topicOption} value={topicOption}>
-                                            {topicOption}
-                                        </option>
-                                    ))}
-                                </select>
-                                {mode === 'create' && authors && setSelectedAuthorId ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenFilePicker}
+                                            className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 bg-zinc-700/0 hover:bg-zinc-700/95 font-medium text-white w-full"
+                                        >
+                                            <SvgIcon className="w-6 h-6 inline fill-white mr-1" id="IC-photos" />
+                                            <span>{strings.photo}</span>
+                                        </button>
+                                        <div className="flex items-center hover:shadow rounded-2xl duration-150 px-1.5 py-0.5 font-medium bg-zinc-600/30 text-zinc-400 cursor-not-allowed w-full">
+                                            <SvgIcon className="inline w-6 h-6 fill-zinc-400 mr-1" id="IC-play" />
+                                            <span>{strings.video}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPollModalOpen(true)}
+                                            className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+                                        >
+                                            <PollIcon className="inline h-6 w-6 mr-1 fill-white" />
+                                            <span>{strings.poll}</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsMusicModalOpen(true)}
+                                            className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+                                        >
+                                            <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-music" />
+                                            <span>{strings.music}</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsMediaModalOpen(true)}
+                                            className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+                                        >
+                                            <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-photos" />
+                                            <span>{strings.editor_carousel || 'Карусель / Коллаж'}</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsTableModalOpen(true)}
+                                            className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
+                                        >
+                                            <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-poll" />
+                                            <span>{strings.editor_table || 'Таблица'}</span>
+                                        </button>
+                                    </Dropdown>
                                     <select
-                                        name="new_post_cr"
+                                        name={mode === 'create' ? 'new_post_topic' : 'edit_post_topic'}
                                         className="p-0.5 h-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-xs lg:text-sm cursor-pointer duration-300 text-zinc-100 focus:ring-0 focus:outline-none"
-                                        id="new_post_cr"
-                                        value={selectedAuthorId}
-                                        onChange={(event) => setSelectedAuthorId(event.target.value)}
+                                        id={mode === 'create' ? 'new_post_topic' : 'edit_post_topic'}
+                                        value={selectedTopic}
+                                        onChange={(event) => setSelectedTopic(event.target.value)}
                                     >
-                                        <option value="0">{strings.frommyname}</option>
-                                        {authors.map((author) => (
-                                            <option key={author.id} value={author.id}>
-                                                {author.name}
+                                        <option value="" disabled={mode === 'create'}>
+                                            {strings.choisetopic}
+                                        </option>
+                                        {topicOptions.map((topicOption) => (
+                                            <option key={topicOption} value={topicOption}>
+                                                {topicOption}
                                             </option>
                                         ))}
                                     </select>
-                                ) : mode === 'edit' ? (
-                                    <div className="p-0.5 h-7 border border-zinc-600/30 bg-zinc-900 rounded-3xl shadow text-xs lg:text-sm duration-300 text-zinc-400 flex items-center px-2 cursor-default max-w-[12rem]">
-                                        <span className="truncate">{authorName}</span>
-                                    </div>
-                                ) : null}
-                                <div className="flex-grow"></div>
-                                <Dropdown
-                                    triggerSize="sm"
-                                    triggerAriaLabel="Insert sticker"
-                                    position="top"
-                                    align="end"
-                                    triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-2xl shadow text-white"
-                                    menuClassName="!grid !grid-cols-6 !w-[15rem] !rounded-3xl !p-1.5 h-32 overflow-auto"
-                                    triggerNode={<StickersIcon className="w-5 h-5 fill-white" />}
-                                >
-                                    {STICKERS.map((sticker) => (
-                                        <button
-                                            key={`${sticker.code}-${sticker.src}`}
-                                            type="button"
-                                            onClick={() => handleStickerSelect(sticker.code)}
-                                            className="inline cursor-pointer active:scale-95 duration-300"
+                                    {mode === 'create' && authors && setSelectedAuthorId ? (
+                                        <select
+                                            name="new_post_cr"
+                                            className="p-0.5 h-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-xs lg:text-sm cursor-pointer duration-300 text-zinc-100 focus:ring-0 focus:outline-none"
+                                            id="new_post_cr"
+                                            value={selectedAuthorId}
+                                            onChange={(event) => setSelectedAuthorId(event.target.value)}
                                         >
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={sticker.src} alt={sticker.code.trim()} className="w-8 h-8 object-contain" />
-                                        </button>
-                                    ))}
-                                </Dropdown>
+                                            <option value="0">{strings.frommyname}</option>
+                                            {authors.map((author) => (
+                                                <option key={author.id} value={author.id}>
+                                                    {author.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : mode === 'edit' ? (
+                                        <div className="p-0.5 h-7 border border-zinc-600/30 bg-zinc-900 rounded-3xl shadow text-xs lg:text-sm duration-300 text-zinc-400 flex items-center px-2 cursor-default max-w-[12rem]">
+                                            <span className="truncate">{authorName}</span>
+                                        </div>
+                                    ) : null}
+                                    <div className="flex-grow"></div>
+                                    
+                                    {/* ── Счётчик символов (теперь в нижней панели управления) ── */}
+                                    <div className="flex items-center gap-1.5 mr-2 select-none">
+                                        {isOverLimit && (
+                                            <span className="text-xs text-red-400 font-medium">
+                                                {strings?.editor_chars_limit || 'Превышен лимит'}
+                                            </span>
+                                        )}
+                                        <span className={cn(
+                                            'text-xs tabular-nums',
+                                            isOverLimit ? 'text-red-400 font-semibold' : isNearLimit ? 'text-amber-400' : 'text-zinc-500'
+                                        )}>
+                                            {visibleLength} / {VISIBLE_CHAR_LIMIT}
+                                        </span>
+                                    </div>
+
+                                    <Dropdown
+                                        triggerSize="sm"
+                                        triggerAriaLabel="Insert sticker"
+                                        position="top"
+                                        align="end"
+                                        triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-2xl shadow text-white"
+                                        menuClassName="!grid !grid-cols-6 !w-[15rem] !rounded-3xl !p-1.5 h-32 overflow-auto"
+                                        triggerNode={<StickersIcon className="w-5 h-5 fill-white" />}
+                                    >
+                                        {STICKERS.map((sticker) => (
+                                            <button
+                                                key={`${sticker.code}-${sticker.src}`}
+                                                type="button"
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => handleStickerSelect(sticker.code)}
+                                                className="inline cursor-pointer active:scale-95 duration-300"
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={sticker.src} alt={sticker.code.trim()} className="w-8 h-8 object-contain" />
+                                            </button>
+                                        ))}
+                                    </Dropdown>
+                                </div>
                             </div>
                         </form>
                     </div>
