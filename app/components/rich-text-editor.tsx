@@ -672,10 +672,10 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         // 3. Спойлер (details)
         const detailsBlock = focusEl?.closest('details');
         if (detailsBlock) {
-          const summary = detailsBlock.querySelector('summary');
+          const summary = detailsBlock.querySelector('summary') as HTMLElement | null;
           const isAtSummaryStart = summary && focusEl?.closest('summary') && isAtStartOfBlock(summary);
 
-          const bodyContent = detailsBlock.querySelector('p:not(summary p)') || detailsBlock.querySelector('div') || detailsBlock;
+          const bodyContent = (detailsBlock.querySelector('p:not(summary p)') || detailsBlock.querySelector('div') || detailsBlock) as HTMLElement;
           const isAtBodyStart = !focusEl?.closest('summary') && isAtStartOfBlock(bodyContent);
 
           const isEmpty = detailsBlock.textContent?.replace(/[\u200B\s]/g, '') === '';
