@@ -221,6 +221,40 @@ export default function RichTextEditor({ value, onChange, placeholder, className
   const isOverLimit = visibleLength > VISIBLE_CHAR_LIMIT;
   const isNearLimit = !isOverLimit && visibleLength > VISIBLE_CHAR_LIMIT * 0.85;
 
+  const getBottomOffset = () => {
+    if (!editorClassName) return '3.5rem';
+    if (editorClassName.includes('pb-[13.5rem]')) return '13.5rem';
+    if (editorClassName.includes('pb-[11rem]')) return '11rem';
+    if (editorClassName.includes('pb-[6rem]')) return '6rem';
+    if (editorClassName.includes('pb-[3.5rem]')) return '3.5rem';
+    return '3.5rem';
+  };
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = editorRef.current?.offsetHeight || 0;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (editorRef.current) {
+        const deltaY = moveEvent.clientY - startY;
+        const newHeight = startHeight + deltaY;
+        if (newHeight > 180 && newHeight < window.innerHeight - 150) {
+          editorRef.current.style.maxHeight = 'none';
+          editorRef.current.style.height = `${newHeight}px`;
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
   // Устанавливаем <br> как разделитель параграфов по умолчанию
   useEffect(() => {
     document.execCommand('defaultParagraphSeparator', false, 'br');
@@ -1061,7 +1095,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       {/* ── Редактируемая область ── */}
       <div className="relative">
         {isEmpty && placeholder && (
-          <div className="absolute top-[4rem] left-3 text-zinc-500 pointer-events-none whitespace-pre-wrap select-none z-10">
+          <div className="absolute top-[3.25rem] left-3 text-zinc-500 pointer-events-none whitespace-pre-wrap select-none z-10">
             {placeholder}
           </div>
         )}
@@ -1075,13 +1109,26 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           onMouseUp={updateActiveFormats}
           onKeyUp={updateActiveFormats}
           className={cn(
-            'rich-editor bg-transparent px-3 pt-[3.25rem] w-full text-white min-h-[16rem] max-h-[calc(100vh-14rem)] md:max-h-[calc(100vh-20rem)] overflow-y-auto',
+            'rich-editor bg-transparent px-3 pt-[3.25rem] w-full text-white max-h-[calc(100vh-14rem)] md:max-h-[calc(100vh-20rem)] overflow-y-auto',
             'focus:outline-none duration-300 whitespace-pre-wrap break-words',
             '[&_a]:text-purple-500 [&_a]:hover:text-purple-400 [&_a]:duration-300',
-            editorClassName || 'pb-24'
+            editorClassName || 'pb-24 min-h-[16rem]'
           )}
           style={{ userSelect: 'text' }}
         />
+
+        {/* ── Тянулка (Resizer Handle) ── */}
+        <div
+          onMouseDown={handleResizeMouseDown}
+          className="absolute right-3 z-20 cursor-ns-resize flex items-center justify-center w-6 h-6 text-zinc-500 hover:text-zinc-300 active:scale-95 duration-150 select-none bg-zinc-950/40 hover:bg-zinc-950/80 rounded-3xl border border-zinc-600/30"
+          style={{ bottom: `calc(${getBottomOffset()} + 6px)` }}
+          title={strings?.editor_resize || 'Растянуть поле ввода'}
+        >
+          <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+            <path d="M20 20H4v-2h16v2zm0-8H4v-2h16v2zM4 4h16v2H4V4z" opacity="0.3" />
+            <path d="M8 9h8v2H8V9zm0 6h8v2H8v-2z" />
+          </svg>
+        </div>
       </div>
 
       {/* ── Модальное окно вставки ссылки ── */}

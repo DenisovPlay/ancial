@@ -176,12 +176,12 @@ export function FeedEditorUI({
                                 strings={strings}
                                 editorClassName={
                                     images.length > 0 && widgets.length > 0
-                                        ? 'pb-[13.5rem]'
+                                        ? 'pb-[13.5rem] min-h-[25rem]'
                                         : images.length > 0
-                                            ? 'pb-[11rem]'
+                                            ? 'pb-[11rem] min-h-[22rem]'
                                             : widgets.length > 0
-                                                ? 'pb-[6rem]'
-                                                : 'pb-[3.5rem]'
+                                                ? 'pb-[6rem] min-h-[18rem]'
+                                                : 'pb-[3.5rem] min-h-[15rem]'
                                 }
                             />
                             <input type="hidden" name={mode === 'create' ? 'contentext' : 'edit_content'} value={content} />
