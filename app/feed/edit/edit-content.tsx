@@ -430,12 +430,10 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     } catch (nextError) {
       console.error('Image upload failed during edit', nextError);
 
+      URL.revokeObjectURL(previewUrl);
+
       setImages((currentImages) =>
-        currentImages.map((currentImage) =>
-          currentImage.id === draftId
-            ? { ...currentImage, status: 'error' }
-            : currentImage,
-        ),
+        currentImages.filter((currentImage) => currentImage.id !== draftId),
       );
 
       showNote({

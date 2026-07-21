@@ -83,17 +83,29 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             }
             rows += `<tr class="even:bg-zinc-800/30">${cells}</tr>`;
         }
-        
+
         const dataAttr = isPreview ? ` data-bbcode="${encodeURIComponent(match)}" contenteditable="false"` : '';
         return `<div class="overflow-x-auto my-2 rounded-2xl border border-zinc-700/50"${dataAttr}><table class="w-full border-collapse">${rows}</table></div>`;
     });
 
-    // Спойлер / Details — в редакторе всегда открыт (open), чтобы можно было редактировать содержимое
-    html = html.replace(/\[details=([^\]]{1,200})\]([\s\S]*?)\[\/details\]/gi, (_, title, body) => {
-        const safeTitle = title.trim().replace(/"/g, '&quot;');
-        const openAttr = isPreview ? ' open' : '';
-        // span с иконкой вырезан, теперь используется CSS ::before для summary
-        return `<details class="my-2 rounded-3xl border border-zinc-700/50 bg-zinc-800/40 overflow-hidden"${openAttr}><summary class="px-3 py-2 cursor-pointer font-semibold text-zinc-300 flex items-center gap-2 hover:bg-zinc-700/40 duration-300">${safeTitle}</summary><div class="px-3 pb-3 pt-1 text-zinc-300">${body.trim()}</div></details>`;
+    // Спойлер — инлайновый Telegram-style
+    // В редакторе (isPreview=true): серая подложка без блюра для редактирования
+    // В постах (isPreview=false): блюр, снимается кликом через CSS+JS
+    html = html.replace(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi, (_, body) => {
+        const content = body.trim();
+        if (isPreview) {
+            return `<span class="ancial-spoiler-editor">${content}</span>`;
+        }
+        return `<span class="ancial-spoiler">${content}</span>`;
+    });
+
+    // Обратная совместимость: старые посты с [details=title]body[/details]
+    html = html.replace(/\[details=([^\]]{1,200})\]([\s\S]*?)\[\/details\]/gi, (_, _title, body) => {
+        const content = body.trim();
+        if (isPreview) {
+            return `<span class="ancial-spoiler-editor">${content}</span>`;
+        }
+        return `<span class="ancial-spoiler">${content}</span>`;
     });
 
     // Сноска

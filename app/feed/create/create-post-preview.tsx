@@ -154,6 +154,12 @@ export default function CreatePostPreview({
                     'text-base lg:text-lg text-zinc-200 font-medium break-words',
                 )}
                 style={{ userSelect: 'text' }}
+                onClick={(e) => {
+                    const spoilerEl = (e.target as HTMLElement).closest('.ancial-spoiler') as HTMLElement | null;
+                    if (spoilerEl && !spoilerEl.classList.contains('revealed')) {
+                        spoilerEl.classList.add('revealed');
+                    }
+                }}
                 dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(safeText, false) }}
             />
             <PreviewImageBlock images={images} strings={strings} />

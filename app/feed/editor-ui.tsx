@@ -335,20 +335,17 @@ export function FeedEditorUI({
                                     ) : null}
                                     <div className="flex-grow"></div>
                                     
-                                    {/* ── Счётчик символов (теперь в нижней панели управления) ── */}
-                                    <div className="flex items-center gap-1.5 mr-2 select-none">
-                                        {isOverLimit && (
-                                            <span className="text-xs text-red-400 font-medium">
-                                                {strings?.editor_chars_limit || 'Превышен лимит'}
+                                    {/* ── Счётчик символов ── */}
+                                    {(isNearLimit || isOverLimit) && (
+                                        <div className="flex items-center gap-1.5 mr-2 select-none">
+                                            <span className={cn(
+                                                'text-xs tabular-nums',
+                                                isOverLimit ? 'text-red-400 font-semibold' : 'text-amber-400'
+                                            )}>
+                                                {VISIBLE_CHAR_LIMIT - visibleLength}
                                             </span>
-                                        )}
-                                        <span className={cn(
-                                            'text-xs tabular-nums',
-                                            isOverLimit ? 'text-red-400 font-semibold' : isNearLimit ? 'text-amber-400' : 'text-zinc-500'
-                                        )}>
-                                            {visibleLength} / {VISIBLE_CHAR_LIMIT}
-                                        </span>
-                                    </div>
+                                        </div>
+                                    )}
 
                                     <Dropdown
                                         triggerSize="sm"

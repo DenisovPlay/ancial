@@ -27,7 +27,7 @@ type ActiveFormats = {
   ul: boolean;
   ol: boolean;
   quote: boolean;
-  details: boolean;
+  spoiler: boolean;
   fn: boolean;
 };
 
@@ -36,8 +36,11 @@ type ActiveFormats = {
 function htmlToBBCode(html: string): string {
   if (typeof window === 'undefined') return html;
 
+  // Очищаем мусорные инлайновые стили фонов, которые плодит Chrome в contentEditable
+  const cleanHtml = html.replace(/style="background-color:\s*rgba\(255,\s*255,\s*255,\s*0\.15\);?"/gi, '');
+
   const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const doc = parser.parseFromString(cleanHtml, 'text/html');
 
   function buildTableBBCode(tableEl: HTMLTableElement): string {
     let result = '[table]\n';
@@ -140,7 +143,12 @@ function htmlToBBCode(html: string): string {
         : `[quote]${inner.trim()}[/quote]\n`;
     }
 
-    // ── Блочные: спойлер / details ────────────────────────────────────────
+    // ── Инлайн: спойлер (новый формат) ─────────────────────────────────────
+    if (tagName === 'span' && el.classList.contains('ancial-spoiler-editor')) {
+      return `[spoiler]${inner}[/spoiler]`;
+    }
+
+    // ── Блочные: спойлер / details (обратная совместимость старых постов) ────
     if (tagName === 'details') {
       const summaryEl = el.querySelector(':scope > summary');
       const summaryTitle = summaryEl?.textContent?.trim() || 'Спойлер';
@@ -150,7 +158,7 @@ function htmlToBBCode(html: string): string {
           body += processNode(child);
         }
       });
-      return `[details=${summaryTitle}]${body.trim()}[/details]\n`;
+      return `[spoiler]${body.trim()}[/spoiler]`;
     }
 
     // ── Блочные: таблица ──────────────────────────────────────────────────
@@ -209,7 +217,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
   const [activeFormats, setActiveFormats] = useState<ActiveFormats>({
     bold: false, italic: false, strikeThrough: false, link: false,
     h1: false, h2: false, h3: false, ul: false, ol: false, quote: false,
-    details: false, fn: false,
+    spoiler: false, fn: false,
   });
 
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -293,7 +301,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       ul: !!focusEl?.closest('ul'),
       ol: !!focusEl?.closest('ol'),
       quote: !!focusEl?.closest('blockquote'),
-      details: !!focusEl?.closest('details'),
+      spoiler: !!focusEl?.closest('.ancial-spoiler-editor'),
       fn: !!focusEl?.closest('sup'),
     });
   }, []);
@@ -394,44 +402,17 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       case 'quote':
         document.execCommand('formatBlock', false, activeFormats.quote ? 'p' : 'blockquote');
         break;
-      case 'details': {
-        const detailsNode = focusEl?.closest('details');
-        if (detailsNode) {
-          // Тоггл OFF: удаляем спойлер, оставляя содержимое и заголовка, и тела
-          const parent = detailsNode.parentNode;
+      case 'spoiler': {
+        const spoilerNode = focusEl?.closest('.ancial-spoiler-editor') as HTMLElement | null;
+        if (spoilerNode) {
+          const parent = spoilerNode.parentNode;
           if (parent) {
             const frag = document.createDocumentFragment();
-
-            // 1. Вытаскиваем заголовок спойлера
-            const summary = detailsNode.querySelector('summary');
-            let pSummary: HTMLParagraphElement | null = null;
-            if (summary) {
-              pSummary = document.createElement('p');
-              while (summary.firstChild) {
-                pSummary.appendChild(summary.firstChild);
-              }
-              frag.appendChild(pSummary);
+            while (spoilerNode.firstChild) {
+              frag.appendChild(spoilerNode.firstChild);
             }
-
-            // 2. Вытаскиваем тело спойлера
-            const bodyContent = detailsNode.querySelector('p:not(summary p)') || detailsNode.querySelector('div') || detailsNode;
-            if (bodyContent === detailsNode) {
-              Array.from(detailsNode.childNodes).forEach(child => {
-                if (child.nodeName !== 'SUMMARY') {
-                  frag.appendChild(child);
-                }
-              });
-            } else {
-              const pBody = document.createElement('p');
-              while (bodyContent.firstChild) {
-                pBody.appendChild(bodyContent.firstChild);
-              }
-              frag.appendChild(pBody);
-            }
-
-            const firstChild = pSummary || frag.firstChild;
-            parent.replaceChild(frag, detailsNode);
-
+            const firstChild = frag.firstChild;
+            parent.replaceChild(frag, spoilerNode);
             if (sel && firstChild) {
               const newRange = document.createRange();
               newRange.selectNodeContents(firstChild);
@@ -439,38 +420,24 @@ export default function RichTextEditor({ value, onChange, placeholder, className
               sel.addRange(newRange);
             }
           }
-        } else {
-          // Тоггл ON: создаем спойлер
-          const bodyHtml = selectedHtml.trim() || 'Текст спойлера';
-
-          if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            range.deleteContents();
-
-            const detailsElem = document.createElement('details');
-            detailsElem.open = true;
-
-            const summaryElem = document.createElement('summary');
-            summaryElem.textContent = 'Нажмите чтобы раскрыть';
-
-            const pElem = document.createElement('p');
-            pElem.innerHTML = bodyHtml;
-
-            detailsElem.appendChild(summaryElem);
-            detailsElem.appendChild(pElem);
-
-            range.insertNode(detailsElem);
-
-            range.setStartAfter(detailsElem);
-            range.setEndAfter(detailsElem);
-
-            const br = document.createElement('br');
-            range.insertNode(br);
-            range.setStartAfter(br);
-
-            sel.removeAllRanges();
-            sel.addRange(range);
+        } else if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          const spoilerSpan = document.createElement('span');
+          spoilerSpan.className = 'ancial-spoiler-editor';
+          const hasSelection = !range.collapsed;
+          if (hasSelection) {
+            const extracted = range.extractContents();
+            spoilerSpan.appendChild(extracted);
+          } else {
+            spoilerSpan.textContent = 'Текст спойлера';
           }
+          range.insertNode(spoilerSpan);
+          // Ставим курсор внутрь
+          const newRange = document.createRange();
+          newRange.selectNodeContents(spoilerSpan);
+          newRange.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(newRange);
         }
         break;
       }
@@ -703,63 +670,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           }
         }
 
-        // 3. Спойлер (details)
-        const detailsBlock = focusEl?.closest('details');
-        if (detailsBlock) {
-          const summary = detailsBlock.querySelector('summary') as HTMLElement | null;
-          const isAtSummaryStart = summary && focusEl?.closest('summary') && isAtStartOfBlock(summary);
-
-          const bodyContent = (detailsBlock.querySelector('p:not(summary p)') || detailsBlock.querySelector('div') || detailsBlock) as HTMLElement;
-          const isAtBodyStart = !focusEl?.closest('summary') && isAtStartOfBlock(bodyContent);
-
-          const isEmpty = detailsBlock.textContent?.replace(/[\u200B\s]/g, '') === '';
-
-          if (isEmpty || isAtSummaryStart || isAtBodyStart) {
-            e.preventDefault();
-            const parent = detailsBlock.parentNode;
-            if (parent) {
-              const frag = document.createDocumentFragment();
-
-              // Сохраняем заголовок спойлера
-              let pSummary: HTMLParagraphElement | null = null;
-              if (summary) {
-                pSummary = document.createElement('p');
-                while (summary.firstChild) {
-                  pSummary.appendChild(summary.firstChild);
-                }
-                frag.appendChild(pSummary);
-              }
-
-              // Сохраняем тело спойлера
-              if (bodyContent === detailsBlock) {
-                Array.from(detailsBlock.childNodes).forEach(child => {
-                  if (child.nodeName !== 'SUMMARY') {
-                    frag.appendChild(child);
-                  }
-                });
-              } else {
-                const pBody = document.createElement('p');
-                while (bodyContent.firstChild) {
-                  pBody.appendChild(bodyContent.firstChild);
-                }
-                frag.appendChild(pBody);
-              }
-
-              const firstChild = pSummary || frag.firstChild;
-              parent.replaceChild(frag, detailsBlock);
-
-              if (firstChild) {
-                const newRange = document.createRange();
-                newRange.setStart(firstChild.firstChild || firstChild, 0);
-                newRange.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
-              }
-            }
-            handleInput();
-            return;
-          }
-        }
+        // 3. Спойлер (span.ancial-spoiler-editor) — инлайновый, браузер сам обрабатывает Backspace
       }
     }
 
@@ -773,12 +684,9 @@ export default function RichTextEditor({ value, onChange, placeholder, className
 
         const supBlock = focusEl?.closest('sup');
         const quoteBlock = focusEl?.closest('blockquote');
-        const detailsBlock = focusEl?.closest('details');
-        const summaryBlock = focusEl?.closest('summary');
-
         // --- SHIFT + ENTER (Перенос строки ВНУТРИ блока) ---
         if (e.shiftKey) {
-          if (supBlock || quoteBlock || (detailsBlock && !summaryBlock)) {
+          if (supBlock || quoteBlock) {
             e.preventDefault();
             const range = sel.getRangeAt(0);
             const br = document.createElement('br');
@@ -802,21 +710,6 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         }
 
         // --- ОБЫЧНЫЙ ENTER (Выход из блока наружу) ---
-
-        // 1. Заголовок спойлера (summary) -> прыгаем в тело спойлера
-        if (summaryBlock) {
-          e.preventDefault();
-          const details = summaryBlock.closest('details');
-          const p = details?.querySelector('p') || details?.querySelector('div');
-          if (p) {
-            const newRange = document.createRange();
-            newRange.setStart(p, 0);
-            newRange.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(newRange);
-          }
-          return;
-        }
 
         // 2. Сноска (sup) -> Выходим наружу
         if (supBlock) {
@@ -882,29 +775,17 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           return;
         }
 
-        // 4. Спойлер (details) -> Выходим наружу
-        if (detailsBlock) {
+        // 4. Спойлер (span.ancial-spoiler-editor) — инлайновый, Enter выходит после span
+        const spoilerBlock = focusEl?.closest('.ancial-spoiler-editor') as HTMLElement | null;
+        if (spoilerBlock) {
           e.preventDefault();
-          const range = sel.getRangeAt(0);
-
-          const bodyContent = detailsBlock.querySelector('p') || detailsBlock.querySelector('div') || detailsBlock;
-          const postRange = range.cloneRange();
-          postRange.selectNodeContents(bodyContent);
-          postRange.setStart(range.endContainer, range.endOffset);
-          const postContent = postRange.cloneContents();
-          postRange.deleteContents();
-
-          const p = document.createElement('p');
-          p.innerHTML = '<br>';
-          detailsBlock.insertAdjacentElement('afterend', p);
-
-          if (postContent.textContent?.trim()) {
-            p.innerHTML = '';
-            p.appendChild(postContent);
-          }
-
+          // Вставляем <br> после span и переносим туда курсор
+          const br = document.createElement('br');
+          const textAfter = document.createTextNode('\u200B');
+          spoilerBlock.insertAdjacentElement('afterend', br);
+          br.parentNode?.insertBefore(textAfter, br.nextSibling);
           const newRange = document.createRange();
-          newRange.setStart(p, 0);
+          newRange.setStart(textAfter, 1);
           newRange.collapse(true);
           sel.removeAllRanges();
           sel.addRange(newRange);
@@ -1038,9 +919,9 @@ export default function RichTextEditor({ value, onChange, placeholder, className
   }
 
   return (
-    <div className={cn('flex flex-col w-full relative rounded-3xl overflow-hidden', className)}>
+    <div className={cn('flex flex-col w-full relative overflow-hidden', className)}>
       {/* ── Тулбар (парит сверху, скроллится по горизонтали) ── */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent rounded-t-3xl flex items-center gap-1.5 p-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
+      <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent flex items-center gap-1.5 p-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
         {/* Инлайн форматирование */}
         <InlineBtn onClick={() => execCmd('bold')} active={activeFormats.bold} title={strings?.editor_bold || 'Жирный'}>
           <strong>B</strong>
@@ -1084,7 +965,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         <BlockBtn onClick={() => insertBlock('quote')} active={activeFormats.quote} title={strings?.editor_quote || 'Цитата'}>
           <SvgIcon className="w-5 h-5 fill-current" id="IC-quote" />
         </BlockBtn>
-        <BlockBtn onClick={() => insertBlock('details')} active={activeFormats.details} title={strings?.editor_spoiler || 'Спойлер'}>
+        <BlockBtn onClick={() => insertBlock('spoiler')} active={activeFormats.spoiler} title={strings?.editor_spoiler || 'Спойлер'}>
           <SvgIcon className="w-5 h-5 fill-current" id="IC-spoiler" />
         </BlockBtn>
         <BlockBtn onClick={() => insertBlock('fn')} active={activeFormats.fn} title={strings?.editor_footnote || 'Сноска'}>
@@ -1095,7 +976,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       {/* ── Редактируемая область ── */}
       <div className="relative">
         {isEmpty && placeholder && (
-          <div className="absolute top-[3.25rem] left-3 text-zinc-500 pointer-events-none whitespace-pre-wrap select-none z-10">
+          <div className="absolute top-[2.5rem] left-3 text-zinc-500 pointer-events-none whitespace-pre-wrap select-none z-10">
             {placeholder}
           </div>
         )}
@@ -1109,7 +990,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           onMouseUp={updateActiveFormats}
           onKeyUp={updateActiveFormats}
           className={cn(
-            'rich-editor bg-transparent px-3 pt-[3.25rem] w-full text-white max-h-[calc(100vh-14rem)] md:max-h-[calc(100vh-20rem)] overflow-y-auto',
+            'rich-editor bg-transparent px-3 pt-[2.5rem] w-full text-white max-h-[calc(100vh-14rem)] md:max-h-[calc(100vh-20rem)] overflow-y-auto',
             'focus:outline-none duration-300 whitespace-pre-wrap break-words',
             '[&_a]:text-purple-500 [&_a]:hover:text-purple-400 [&_a]:duration-300',
             editorClassName || 'pb-24 min-h-[16rem]'
@@ -1120,7 +1001,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         {/* ── Тянулка (Resizer Handle) ── */}
         <div
           onMouseDown={handleResizeMouseDown}
-          className="absolute right-3 z-20 cursor-ns-resize flex items-center justify-center w-6 h-6 text-zinc-500 hover:text-zinc-300 active:scale-95 duration-150 select-none bg-zinc-950/40 hover:bg-zinc-950/80 rounded-3xl border border-zinc-600/30"
+          className="hidden lg:absolute right-3 z-20 cursor-ns-resize flex items-center justify-center w-6 h-6 text-zinc-500 hover:text-zinc-300 active:scale-95 duration-150 select-none bg-zinc-950/40 hover:bg-zinc-950/80 rounded-3xl border border-zinc-600/30"
           style={{ bottom: `calc(${getBottomOffset()} + 6px)` }}
           title={strings?.editor_resize || 'Растянуть поле ввода'}
         >

@@ -271,10 +271,12 @@ export const DropdownItem = ({
     className,
   );
 
+  const hasCustomFill = iconClassName && /\bfill-/.test(iconClassName);
+
   const content = (
     <>
       {iconNode ?? (
-        <svg className={cn('inline w-6 h-6 fill-white', iconClassName)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+        <svg className={cn('inline w-6 h-6', !hasCustomFill && 'fill-white', iconClassName)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
           <use href={`#${icon}`}></use>
         </svg>
       )}

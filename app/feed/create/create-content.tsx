@@ -341,12 +341,10 @@ export default function CreatePostContent() {
     } catch (error) {
       console.error('Image upload failed', error);
 
+      URL.revokeObjectURL(previewUrl);
+
       setImages((currentImages) =>
-        currentImages.map((currentImage) =>
-          currentImage.id === draftId
-            ? { ...currentImage, status: 'error' }
-            : currentImage,
-        ),
+        currentImages.filter((currentImage) => currentImage.id !== draftId),
       );
 
       showNote({

@@ -530,6 +530,14 @@ function PostCardInner({
 
   const handlePostContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
+
+    // Telegram-style спойлер: клик снимает блюр
+    const spoilerEl = target.closest('.ancial-spoiler') as HTMLElement | null;
+    if (spoilerEl && !spoilerEl.classList.contains('revealed')) {
+      spoilerEl.classList.add('revealed');
+      return;
+    }
+
     if (target.tagName.toLowerCase() === 'img') {
       const imgEl = target as HTMLImageElement;
       
@@ -615,7 +623,7 @@ function PostCardInner({
             )}
             <DropdownItem
               onClick={handleBookmark}
-              icon="IC-bookmark"
+              icon={isBookmarked ? 'IC-bookmark-filled' : 'IC-bookmark'}
               iconClassName={isBookmarked ? 'fill-amber-500' : undefined}
             >
               {isBookmarked ? strings.bookmarked : strings.tobookmarks}
