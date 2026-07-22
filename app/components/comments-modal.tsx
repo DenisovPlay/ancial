@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { cn, SvgIcon } from '../feed/editor-shared';
 import Modal from './modal';
 import { Dropdown, DropdownItem } from './navigation';
+import AccountName from './account-name';
 
 export interface FeedComment {
   content: string;
@@ -155,15 +156,9 @@ function CommentCard({
           <button
             type="button"
             onClick={() => onNavigateToUser(comment.user.username)}
-            className="cursor-pointer hover:text-zinc-100 duration-300 font-meduim w-fit text-left flex items-center gap-1.5"
+            className="cursor-pointer hover:text-zinc-100 duration-300 font-medium w-fit text-left flex items-center gap-1.5"
           >
-            <span>{comment.user.name}</span>
-            {comment.user.is_verified === true ||
-            comment.user.is_verified === 1 ||
-            comment.user.is_verified === '1' ||
-            comment.user.is_verified === 'true' ? (
-              <SvgIcon className="w-5 h-5 inline fill-blue-500" id="IC-verify" viewBox="0 0 48 48" />
-            ) : null}
+            <AccountName user={comment.user} nameClassName="font-medium" />
           </button>
           <span className="text-zinc-300 text-xs">{comment.date}</span>
         </div>

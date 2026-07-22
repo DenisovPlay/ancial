@@ -118,6 +118,8 @@ export default function MessageBubble({
   onEditMessage,
   onOpenImage,
   onReplyClick,
+  senderName,
+  senderAvatarUrl,
 }: {
   authUserImage: string;
   currentUserId: number;
@@ -131,6 +133,8 @@ export default function MessageBubble({
   onEditMessage: (message: DialogMessage) => void;
   onOpenImage: (imageKey: string) => void;
   onReplyClick: (replyToId: string | number) => void;
+  senderName?: string;
+  senderAvatarUrl?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [transformY, setTransformY] = useState(0);
@@ -310,263 +314,275 @@ export default function MessageBubble({
             }
           }}
         >
-          <div className={cn("relative flex flex-col w-full", isOwn ? "items-end" : "items-start")}>
-            <Dropdown
-              open={menuOpen}
-              onOpenChange={setMenuOpen}
-              renderTrigger={false}
-              position="top"
-              align={isOwn ? 'end' : 'start'}
-              width="auto"
-              wrapperClassName="pointer-events-none absolute left-0 right-0 top-0 z-30 h-0"
-              menuClassName="pointer-events-auto w-fit overflow-hidden rounded-2xl bg-zinc-900/85"
-            >
-              <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
-                {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => {
-                      onAddReaction(messageId, emoji);
-                    }}
-                    className="cursor-pointer duration-300 hover:scale-125 active:scale-95"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-
-              <DropdownItem
-                icon="IC-reply"
-                className="h-8"
-                onClick={() => {
-                  onReply(message);
-                }}
+          <div className={cn("relative flex w-full gap-2 items-end", isOwn ? "justify-end" : "justify-start")}>
+            {!isOwn && senderAvatarUrl ? (
+              <img
+                src={normalizeAssetUrl(senderAvatarUrl, FALLBACK_AVATAR)}
+                alt={senderName || ''}
+                className="w-7 h-7 rounded-full object-cover shrink-0 mb-1 border border-zinc-600/30 shadow"
+              />
+            ) : null}
+            <div className={cn("relative flex flex-col min-w-0 max-w-[90vw] lg:max-w-[40vw]", isOwn ? "items-end" : "items-start")}>
+              <Dropdown
+                open={menuOpen}
+                onOpenChange={setMenuOpen}
+                renderTrigger={false}
+                position="top"
+                align={isOwn ? 'end' : 'start'}
+                width="auto"
+                wrapperClassName="pointer-events-none absolute left-0 right-0 top-0 z-30 h-0"
+                menuClassName="pointer-events-auto w-fit overflow-hidden rounded-2xl bg-zinc-900/85"
               >
-                {lang?.reply || 'Ответить'}
-              </DropdownItem>
+                <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
+                  {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        onAddReaction(messageId, emoji);
+                      }}
+                      className="cursor-pointer duration-300 hover:scale-125 active:scale-95"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
 
-              {canTranslateMessage && typeof translator === 'function' ? (
                 <DropdownItem
-                  icon="IC-translate"
+                  icon="IC-reply"
                   className="h-8"
                   onClick={() => {
-                    translator(`msg-body-${messageId}`);
+                    onReply(message);
                   }}
                 >
-                  {lang?.translate || 'Перевести'}
+                  {lang?.reply || 'Ответить'}
                 </DropdownItem>
-              ) : null}
 
-              {isOwn ? (
-                <DropdownItem
-                  icon="IC-times"
-                  className="h-8"
-                  onClick={() => {
-                    onDeleteMessage(message);
-                  }}
-                >
-                  {lang?.delete || 'Удалить'}
-                </DropdownItem>
-              ) : null}
-
-              {canEditMessage ? (
-                <DropdownItem
-                  icon="IC-edit"
-                  className="h-8"
-                  onClick={() => {
-                    onEditMessage(message);
-                  }}
-                >
-                  {lang?.edit || 'Редактировать'}
-                </DropdownItem>
-              ) : null}
-            </Dropdown>
-
-            <div id={`msg-${messageId}`} className={cn("flex flex-col gap-1 max-w-[90vw] lg:max-w-[40vw]", isOwn ? "items-end" : "items-start")}>
-              {blocks.map((block, index) => {
-                const isLast = index === blocks.length - 1;
-
-                const blockBg = isTextMessage && !(block.type === 'main' && isStickerOnlyMessage)
-                  ? (isOwn ? 'bg-purple-700' : 'bg-zinc-900')
-                  : '';
-
-                const blockRadius = isTextMessage && !(block.type === 'main' && isStickerOnlyMessage)
-                  ? (isOwn && isLast ? 'rounded-br-lg' : (!isOwn && isLast ? 'rounded-bl-lg' : ''))
-                  : '';
-
-                const blockPadding = block.type === 'main' ? 'p-1 rounded-2xl' : 'rounded-3xl';
-
-                return (
-                  <div
-                    key={`${block.type}-${block.id}`}
-                    className={cn(
-                      'flex flex-col text-left font-normal break-words lg:text-lg w-fit max-w-full',
-                      blockPadding,
-                      blockBg,
-                      blockRadius
-                    )}
+                {canTranslateMessage && typeof translator === 'function' ? (
+                  <DropdownItem
+                    icon="IC-translate"
+                    className="h-8"
+                    onClick={() => {
+                      translator(`msg-body-${messageId}`);
+                    }}
                   >
-                    {block.type === 'reply' && (
-                      <div
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onReplyClick(message.reply_to!);
-                        }}
-                        className={cn(
-                          'flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-3xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 max-w-full shadow active:scale-95 duration-300',
-                          !isOwn && isTextMessage && !isStickerOnlyMessage && 'bg-zinc-800/50 hover:bg-zinc-700/50',
-                        )}
-                      >
-                        <span className="font-semibold text-purple-300 text-xs">
-                          {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
-                        </span>
-                        <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
-                          {message.reply_type == 1
-                            ? (lang?.image_sticker || 'Картинка/стикер')
-                            : (getSevenTvStickerTokenData(message.reply_msg)
+                    {lang?.translate || 'Перевести'}
+                  </DropdownItem>
+                ) : null}
+
+                {isOwn ? (
+                  <DropdownItem
+                    icon="IC-times"
+                    className="h-8"
+                    onClick={() => {
+                      onDeleteMessage(message);
+                    }}
+                  >
+                    {lang?.delete || 'Удалить'}
+                  </DropdownItem>
+                ) : null}
+
+                {canEditMessage ? (
+                  <DropdownItem
+                    icon="IC-edit"
+                    className="h-8"
+                    onClick={() => {
+                      onEditMessage(message);
+                    }}
+                  >
+                    {lang?.edit || 'Редактировать'}
+                  </DropdownItem>
+                ) : null}
+              </Dropdown>
+
+              <div id={`msg-${messageId}`} className={cn("flex flex-col gap-1 max-w-[90vw] lg:max-w-[40vw]", isOwn ? "items-end" : "items-start")}>
+                {blocks.map((block, index) => {
+                  const isLast = index === blocks.length - 1;
+
+                  const blockBg = isTextMessage && !(block.type === 'main' && isStickerOnlyMessage)
+                    ? (isOwn ? 'bg-purple-700' : 'bg-zinc-900')
+                    : '';
+
+                  const blockRadius = isTextMessage && !(block.type === 'main' && isStickerOnlyMessage)
+                    ? (isOwn && isLast ? 'rounded-br-lg' : (!isOwn && isLast ? 'rounded-bl-lg' : ''))
+                    : '';
+
+                  const blockPadding = block.type === 'main' ? 'p-1 rounded-2xl' : 'rounded-3xl';
+
+                  return (
+                    <div
+                      key={`${block.type}-${block.id}`}
+                      className={cn(
+                        'flex flex-col text-left font-normal break-words lg:text-lg w-fit max-w-full',
+                        blockPadding,
+                        blockBg,
+                        blockRadius
+                      )}
+                    >
+                      {block.type === 'reply' && (
+                        <div
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onReplyClick(message.reply_to!);
+                          }}
+                          className={cn(
+                            'flex flex-col cursor-pointer border-l-2 border-purple-400 bg-zinc-900/40 rounded-3xl p-1 px-1.5 text-sm hover:bg-zinc-800/50 max-w-full shadow active:scale-95 duration-300',
+                            !isOwn && isTextMessage && !isStickerOnlyMessage && 'bg-zinc-800/50 hover:bg-zinc-700/50',
+                          )}
+                        >
+                          <span className="font-semibold text-purple-300 text-xs">
+                            {message.reply_author == currentUserId ? (lang?.you || 'Вы') : (foreignUser?.fname || (lang?.interlocutor || 'Собеседник'))}
+                          </span>
+                          <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
+                            {message.reply_type == 1
                               ? (lang?.image_sticker || 'Картинка/стикер')
-                              : (message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')))
-                          }
-                        </span>
-                      </div>
-                    )}
+                              : (getSevenTvStickerTokenData(message.reply_msg)
+                                ? (lang?.image_sticker || 'Картинка/стикер')
+                                : (message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')))
+                            }
+                          </span>
+                        </div>
+                      )}
 
-                    {block.type === 'post' && (
-                      <PostPreview
-                        postId={block.id}
-                        onLoadSuccess={() => {
-                          setLoadedPosts((prev) => prev.includes(block.id) ? prev : [...prev, block.id]);
-                        }}
-                      />
-                    )}
+                      {block.type === 'post' && (
+                        <PostPreview
+                          postId={block.id}
+                          onLoadSuccess={() => {
+                            setLoadedPosts((prev) => prev.includes(block.id) ? prev : [...prev, block.id]);
+                          }}
+                        />
+                      )}
 
-                    {block.type === 'track' && (
-                      <TrackPreview
-                        trackId={block.id}
-                        onLoadSuccess={() => {
-                          setLoadedTracks((prev) => prev.includes(block.id) ? prev : [...prev, block.id]);
-                        }}
-                      />
-                    )}
+                      {block.type === 'track' && (
+                        <TrackPreview
+                          trackId={block.id}
+                          onLoadSuccess={() => {
+                            setLoadedTracks((prev) => prev.includes(block.id) ? prev : [...prev, block.id]);
+                          }}
+                        />
+                      )}
 
-                    {block.type === 'main' && (
-                      <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
-                        {messageImages.length ? (
-                          <div
-                            className={cn(
-                              'flex flex-col gap-2',
-                              messageImages.length > 1 && 'sm:grid sm:grid-cols-2',
-                            )}
-                          >
-                            {messageImages.map((image, imageIndex) => (
-                              !image.isViewerImage ? (
-                                <div
-                                  key={getDialogImageKey(messageId, imageIndex)}
-                                  className="overflow-hidden rounded-lg"
-                                >
-                                  <img
-                                    src={image.src}
-                                    alt={image.alt || `Sticker ${imageIndex + 1}`}
-                                    className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
-                                  />
-                                </div>
-                              ) : (
+                      {block.type === 'main' && (
+                        <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
+                          {!isOwn && senderName && (
+                            <span className="text-[10px] -mb-2 font-bold text-purple-400 select-none">{senderName}</span>
+                          )}
+                          {messageImages.length ? (
+                            <div
+                              className={cn(
+                                'flex flex-col gap-2',
+                                messageImages.length > 1 && 'sm:grid sm:grid-cols-2',
+                              )}
+                            >
+                              {messageImages.map((image, imageIndex) => (
+                                !image.isViewerImage ? (
+                                  <div
+                                    key={getDialogImageKey(messageId, imageIndex)}
+                                    className="overflow-hidden rounded-lg"
+                                  >
+                                    <img
+                                      src={image.src}
+                                      alt={image.alt || `Sticker ${imageIndex + 1}`}
+                                      className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
+                                    />
+                                  </div>
+                                ) : (
+                                  <button
+                                    key={getDialogImageKey(messageId, imageIndex)}
+                                    type="button"
+                                    onClick={() => {
+                                      onOpenImage(getDialogImageKey(messageId, imageIndex));
+                                    }}
+                                    className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95"
+                                  >
+                                    <img
+                                      src={image.src}
+                                      alt={image.alt || `Message image ${imageIndex + 1}`}
+                                      className="max-h-48 max-w-full rounded-lg object-cover shadow lg:max-h-64"
+                                    />
+                                  </button>
+                                )
+                              ))}
+                            </div>
+                          ) : null}
+
+                          {sevenTvStickerName ? (
+                            <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
+                          ) : null}
+
+                          {hasMessageText ? (
+                            <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
+                          ) : null}
+                        </div>
+                      )}
+
+                      {isLast ? (
+                        <div className={cn("mt-1 flex items-end justify-end gap-1", block.type !== 'main' && "px-1 pb-1")}>
+                          <div className="flex flex-1 flex-wrap items-center gap-1">
+                            {reactions.map((reaction, index) => {
+                              const ownReaction = reaction.userId === String(currentUserId);
+                              const avatar = ownReaction
+                                ? normalizeAssetUrl(authUserImage, FALLBACK_AVATAR)
+                                : normalizeAssetUrl(foreignUser?.img, FALLBACK_AVATAR);
+
+                              return (
                                 <button
-                                  key={getDialogImageKey(messageId, imageIndex)}
+                                  key={`${reaction.userId}:${reaction.emoji}:${index}`}
                                   type="button"
                                   onClick={() => {
-                                    onOpenImage(getDialogImageKey(messageId, imageIndex));
+                                    if (!ownReaction) return;
+                                    onDeleteReaction(messageId, reaction.emoji);
                                   }}
-                                  className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95"
+                                  className={cn(
+                                    'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
+                                    ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
+                                  )}
                                 >
                                   <img
-                                    src={image.src}
-                                    alt={image.alt || `Message image ${imageIndex + 1}`}
-                                    className="max-h-48 max-w-full rounded-lg object-cover shadow lg:max-h-64"
+                                    src={avatar}
+                                    alt=""
+                                    className="h-5 w-5 rounded-full object-cover shadow"
                                   />
+                                  <span className="px-1 text-sm text-zinc-200">{reaction.emoji}</span>
                                 </button>
-                              )
-                            ))}
+                              );
+                            })}
                           </div>
-                        ) : null}
 
-                        {sevenTvStickerName ? (
-                          <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
-                        ) : null}
+                          {message.isSending ? (
+                            <span className="select-none whitespace-nowrap text-[10px] flex items-center gap-1">
+                              <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
+                            </span>
+                          ) : (
+                            <>
+                              {timeLabel ? (
+                                <span
+                                  className={cn(
+                                    'select-none whitespace-nowrap text-[10px]',
+                                    isOwn ? 'text-zinc-300' : 'text-zinc-400',
+                                  )}
+                                >
+                                  {timeLabel}
+                                </span>
+                              ) : null}
 
-                        {hasMessageText ? (
-                          <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
-                        ) : null}
-                      </div>
-                    )}
-
-                    {isLast ? (
-                      <div className={cn("mt-1 flex items-end justify-end gap-1", block.type !== 'main' && "px-1 pb-1")}>
-                        <div className="flex flex-1 flex-wrap items-center gap-1">
-                          {reactions.map((reaction, index) => {
-                            const ownReaction = reaction.userId === String(currentUserId);
-                            const avatar = ownReaction
-                              ? normalizeAssetUrl(authUserImage, FALLBACK_AVATAR)
-                              : normalizeAssetUrl(foreignUser?.img, FALLBACK_AVATAR);
-
-                            return (
-                              <button
-                                key={`${reaction.userId}:${reaction.emoji}:${index}`}
-                                type="button"
-                                onClick={() => {
-                                  if (!ownReaction) return;
-                                  onDeleteReaction(messageId, reaction.emoji);
-                                }}
-                                className={cn(
-                                  'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
-                                  ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
-                                )}
-                              >
-                                <img
-                                  src={avatar}
-                                  alt=""
-                                  className="h-5 w-5 rounded-full object-cover shadow"
+                              {isOwn ? (
+                                <Icon
+                                  name={getMessageStatusIconName(message.status)}
+                                  className={cn(
+                                    'h-3 w-3',
+                                    String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
+                                  )}
                                 />
-                                <span className="px-1 text-sm text-zinc-200">{reaction.emoji}</span>
-                              </button>
-                            );
-                          })}
+                              ) : null}
+                            </>
+                          )}
                         </div>
-
-                        {message.isSending ? (
-                          <span className="select-none whitespace-nowrap text-[10px] flex items-center gap-1">
-                            <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
-                          </span>
-                        ) : (
-                          <>
-                            {timeLabel ? (
-                              <span
-                                className={cn(
-                                  'select-none whitespace-nowrap text-[10px]',
-                                  isOwn ? 'text-zinc-300' : 'text-zinc-400',
-                                )}
-                              >
-                                {timeLabel}
-                              </span>
-                            ) : null}
-
-                            {isOwn ? (
-                              <Icon
-                                name={getMessageStatusIconName(message.status)}
-                                className={cn(
-                                  'h-3 w-3',
-                                  String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
-                                )}
-                              />
-                            ) : null}
-                          </>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </motion.div>

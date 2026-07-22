@@ -58,11 +58,17 @@ export interface CacheEnvelope<T> {
 export const PERSISTENT_KEYS = new Set([
   'token',
   'pulse-volume',
-  'pulse-eq-bands'
+  'pulse-eq-bands',
+  'ancial:cache_played_tracks_setting',
+  'ancial:max_audio_cache_size_setting',
 ]);
 
 export const SETTING_KEY_CACHE_TTL = 'ancial:cache_ttl_setting';
 export const DEFAULT_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export const SETTING_KEY_CACHE_PLAYED_TRACKS = 'ancial:cache_played_tracks_setting';
+export const SETTING_KEY_MAX_AUDIO_CACHE_SIZE = 'ancial:max_audio_cache_size_setting';
+export const DEFAULT_MAX_AUDIO_CACHE_SIZE = -1; // -1 = unlimited
 
 // Map legacy keys to their categories and subcategories
 export const LEGACY_KEY_MAPPINGS: Record<string, { category: CacheCategory; subcategory?: string }> = {
@@ -335,6 +341,87 @@ function getDB(): Promise<IDBDatabase | null> {
 
 export const cache = {
   audio: {
+    isPlayedTracksCachingEnabled(): boolean {
+      if (typeof window === 'undefined') return true;
+      try {
+        const val = window.localStorage.getItem(SETTING_KEY_CACHE_PLAYED_TRACKS);
+        return val === null ? true : val === 'true';
+      } catch {
+        return true;
+      }
+    },
+
+    setPlayedTracksCachingEnabled(enabled: boolean): void {
+      if (typeof window === 'undefined') return;
+      try {
+        window.localStorage.setItem(SETTING_KEY_CACHE_PLAYED_TRACKS, String(enabled));
+      } catch {}
+    },
+
+    getMaxCacheSizeMB(): number {
+      if (typeof window === 'undefined') return DEFAULT_MAX_AUDIO_CACHE_SIZE;
+      try {
+        const val = window.localStorage.getItem(SETTING_KEY_MAX_AUDIO_CACHE_SIZE);
+        return val !== null ? parseInt(val, 10) : DEFAULT_MAX_AUDIO_CACHE_SIZE;
+      } catch {
+        return DEFAULT_MAX_AUDIO_CACHE_SIZE;
+      }
+    },
+
+    setMaxCacheSizeMB(sizeMB: number): void {
+      if (typeof window === 'undefined') return;
+      try {
+        window.localStorage.setItem(SETTING_KEY_MAX_AUDIO_CACHE_SIZE, String(sizeMB));
+      } catch {}
+      if (sizeMB > 0) {
+        void this.trimToMaxSize(sizeMB * 1024 * 1024);
+      } else if (sizeMB === 0) {
+        void this.clear();
+      }
+    },
+
+    async trimToMaxSize(maxSizeBytes?: number): Promise<void> {
+      const limitBytes = maxSizeBytes ?? (this.getMaxCacheSizeMB() > 0 ? this.getMaxCacheSizeMB() * 1024 * 1024 : -1);
+      if (limitBytes <= 0) return;
+
+      const db = await getDB();
+      if (!db) return;
+
+      try {
+        const records = await new Promise<Array<any>>((resolve) => {
+          const transaction = db.transaction(STORE_NAME, 'readonly');
+          const store = transaction.objectStore(STORE_NAME);
+          const request = store.getAll();
+          request.onsuccess = () => resolve(request.result || []);
+          request.onerror = () => resolve([]);
+        });
+
+        let totalBytes = 0;
+        for (const record of records) {
+          if (record && record.blob instanceof Blob) {
+            totalBytes += record.blob.size;
+          }
+        }
+
+        if (totalBytes <= limitBytes) return;
+
+        // Sort by savedAt ascending (oldest first)
+        records.sort((a, b) => (a.savedAt || 0) - (b.savedAt || 0));
+
+        for (const record of records) {
+          if (totalBytes <= limitBytes) break;
+          if (record && record.id) {
+            await this.remove(record.id);
+            if (record.blob instanceof Blob) {
+              totalBytes -= record.blob.size;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to trim audio cache', err);
+      }
+    },
+
     async has(trackId: number | string): Promise<boolean> {
       const db = await getDB();
       if (!db) return false;
@@ -376,6 +463,13 @@ export const cache = {
       metadata?: { title?: string; artist?: string },
       signal?: AbortSignal
     ): Promise<void> {
+      if (!this.isPlayedTracksCachingEnabled()) {
+        return; // Caching played tracks is disabled by user
+      }
+      const maxMB = this.getMaxCacheSizeMB();
+      if (maxMB === 0) {
+        return; // Cache size limit is 0 (disabled)
+      }
       if (await this.has(trackId)) {
         return; // Already cached
       }
@@ -404,8 +498,12 @@ export const cache = {
             reject(e);
           }
         });
+
+        if (maxMB > 0) {
+          await this.trimToMaxSize(maxMB * 1024 * 1024);
+        }
       } catch (err: any) {
-        if (err.name !== 'AbortError' && err.message !== 'Failed to fetch') {
+        if (err?.name !== 'AbortError' && err?.message !== 'Failed to fetch') {
           console.error('Failed to cache audio file', err);
         }
       }

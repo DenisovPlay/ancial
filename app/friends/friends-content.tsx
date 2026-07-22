@@ -32,17 +32,7 @@ interface Friend {
   isCurrentUser?: boolean;
 }
 
-// Рендер галки верификации
-const VerifyIcon = ({ verify }: { verify?: string | number }) => {
-  if (verify == 1) {
-    return (
-      <svg className="w-5 h-5 inline fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <use href="#IC-verify"></use>
-      </svg>
-    );
-  }
-  return null;
-};
+import AccountName from '../components/account-name';
 
 // Отдельный компонент для контента, чтобы использовать useSearchParams безопасно
 function FriendsContent() {
@@ -248,9 +238,12 @@ function FriendsContent() {
                     className="flex-grow flex flex-col justify-center overflow-hidden cursor-pointer"
                     href={`/@${friend.username || friend.login || friend.id}`}
                   >
-                    <div className="text-zinc-200 lg:text-lg font-medium cursor-pointer truncate">
-                      {friendName} <VerifyIcon verify={friend.verify} />
-                    </div>
+                    <AccountName
+                      user={friend}
+                      fallback={lang?.anonymous || 'Аноним'}
+                      className="text-zinc-200 lg:text-lg font-medium cursor-pointer truncate"
+                      nameClassName="text-zinc-200 lg:text-lg font-medium truncate"
+                    />
                     {friend.id === user?.id && (
                       <div className="text-sm text-lime-500 font-medium">👆 {lang?.friends_your_account || 'Это ваш аккаунт'}</div>
                     )}

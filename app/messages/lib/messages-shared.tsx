@@ -5,9 +5,23 @@ import { cache } from '../../lib/cache.ts';
 export type DialogImageSlide = ImageViewerSlide & { key: string };
 export type LangMap = Record<string, string> | null;
 
+export type GroupMember = {
+  id: number;
+  username?: string;
+  fname: string;
+  lname: string;
+  img: string;
+  verify: number;
+  role: 'owner' | 'admin' | 'member';
+};
+
 export type DialogListItem = {
   hash?: string | null;
   id?: number | string | null;
+  type?: 'direct' | 'group' | string | null;
+  title?: string | null;
+  avatar?: string | null;
+  invite_code?: string | null;
   Mmessage?: string | null;
   Mstatus?: number | string | null;
   Mtime?: string | null;
@@ -20,6 +34,13 @@ export type DialogListItem = {
 export type DialogMeta = {
   hash?: string | null;
   id?: number | string | null;
+  type?: 'direct' | 'group' | string | null;
+  title?: string | null;
+  avatar?: string | null;
+  invite_code?: string | null;
+  owner_id?: number | string | null;
+  my_role?: 'owner' | 'admin' | 'member' | string | null;
+  members?: GroupMember[] | null;
   img?: string | null;
   blocked?: boolean | number | string | null;
 };

@@ -17,6 +17,8 @@ import { parsePostContentToHtml } from './post-parser';
 
 
 
+import AccountName from './account-name';
+
 type Id = string | number;
 type VoteDirection = 'up' | 'down';
 type UserVoteState = VoteDirection | null;
@@ -682,10 +684,7 @@ function PostCardInner({
               href={authorHref}
               className="cursor-pointer text-zinc-200 hover:text-zinc-100 active:scale-95 duration-300 font-medium w-fit flex items-center gap-1.5 text-left"
             >
-              <span>{post.author.name}</span>
-              {flag(post.author.verify) && (
-                <SvgIcon className="w-5 h-5 inline fill-blue-500" id="IC-verify" viewBox="0 0 48 48" />
-              )}
+              <AccountName user={post.author} nameClassName="font-medium" />
             </Link>
             <span className="text-zinc-400 text-xs lg:text-sm">{post.time_elapsed}</span>
           </div>

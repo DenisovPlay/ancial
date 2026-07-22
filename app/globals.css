@@ -747,6 +747,16 @@ body:has(.apps-overlay-route) #main-content {
   padding-right: 0 !important;
 }
 
+.post-content-container>ul {
+  padding-left: 1rem !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>ol {
+  padding-left: 1rem !important;
+  padding-right: 0 !important;
+}
+
 /* Для таблиц внешнее выравнивание по сетке поста, а внутри контейнера таблицы px-3 не нужен */
 .post-content-container>div:has(> table),
 .post-content-container>table {

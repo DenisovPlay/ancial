@@ -1229,5 +1229,11 @@ export const en: Record<string, string> = {
   "create_table": "Create table",
   "edit_table": "Edit table",
   "add_row": "Row",
-  "add_column": "Column"
+  "add_column": "Column",
+  "cache_played_tracks": "Cache played tracks",
+  "cache_played_tracks_desc": "Automatically save listened audio tracks for offline playback",
+  "max_audio_cache_size": "Max audio cache size",
+  "max_audio_cache_size_desc": "When the limit is reached, oldest listened tracks will be evicted automatically",
+  "cache_size_unlimited": "Unlimited",
+  "cache_size_disabled": "Disabled (0 MB)"
 };

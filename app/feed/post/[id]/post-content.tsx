@@ -15,6 +15,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 import { AncialAPI } from '../../../lib/api-v2';
 import { SvgIcon } from '../../editor-shared';
+import AccountName from '../../../components/account-name';
 import FeedPostSkeleton from '../../feed-post-skeleton';
 
 type Id = string | number;
@@ -160,12 +161,9 @@ function FeedCommentCard({
           <button
             type="button"
             onClick={() => onNavigateToUser(comment.user.username)}
-            className="cursor-pointer hover:text-zinc-100 duration-300 font-meduim w-fit text-left flex items-center gap-1.5"
+            className="cursor-pointer hover:text-zinc-100 duration-300 font-medium w-fit text-left flex items-center gap-1.5"
           >
-            <span>{comment.user.name}</span>
-            {flag(comment.user.is_verified) && (
-              <SvgIcon className="w-5 h-5 inline fill-blue-500" id="IC-verify" viewBox="0 0 48 48" />
-            )}
+            <AccountName user={comment.user} nameClassName="font-medium" />
           </button>
           <span className="text-zinc-300 text-xs">{comment.date}</span>
         </div>

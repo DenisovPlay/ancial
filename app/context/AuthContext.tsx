@@ -31,6 +31,7 @@ export interface User {
   connected_telegram?: string;
   searchshow?: string;
   msgopen?: string;
+  group_add_privacy?: number | string;
   pushsid?: string;
   pushdevice?: string;
   numberverif?: boolean | string;

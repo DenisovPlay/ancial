@@ -5,6 +5,7 @@ import Modal from '../../components/modal';
 import { AncialAPI, type WalletAccount } from '../../lib/api-v2';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import AccountName from '../../components/account-name';
 
 export interface DonateModalProps {
   isOpen: boolean;
@@ -202,9 +203,14 @@ export function DonateModal({
                       alt="Avatar"
                     />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-base font-bold text-purple-400 truncate">
-                        {recipientUser?.name || recipientName || `@${recipientUser?.username || recipientUsername}`}
-                      </span>
+                      <AccountName
+                        user={recipientUser}
+                        name={recipientName}
+                        showBadges={false}
+                        fallback={`@${recipientUser?.username || recipientUsername}`}
+                        className="text-base font-bold text-purple-400 truncate"
+                        nameClassName="text-base font-bold text-purple-400 truncate"
+                      />
                       <span className="text-zinc-400 text-xs">
                         @{recipientUser?.username || recipientUsername}
                       </span>

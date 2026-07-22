@@ -89,6 +89,7 @@ export default function SecuritySettingsPage() {
   const [changePhone, setChangePhone] = useState('');
   const [searchShow, setSearchShow] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
+  const [groupAddPrivacy, setGroupAddPrivacy] = useState<number>(0);
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isSavingContacts, setIsSavingContacts] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
@@ -100,6 +101,7 @@ export default function SecuritySettingsPage() {
       setChangePhone(user.phone || '');
       setSearchShow(flag(user.searchshow));
       setMessagesOpen(flag(user.msgopen));
+      setGroupAddPrivacy(user.group_add_privacy !== undefined ? Number(user.group_add_privacy) : 0);
     }
   }, [user]);
 
@@ -260,6 +262,7 @@ export default function SecuritySettingsPage() {
       await AncialAPI.updateProfile({
         searchshow: searchShow ? '1' : '2',
         msgopen: messagesOpen ? '1' : '2',
+        group_add_privacy: String(groupAddPrivacy),
       });
 
       showNote({
@@ -510,6 +513,38 @@ export default function SecuritySettingsPage() {
             <span className="w-full">{lang?.openmessages || 'Открытые сообщения'}</span>
             <div className="flex items-center h-5">
               <LegacySwitch checked={messagesOpen} onChange={setMessagesOpen} />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 p-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 mt-1">
+            <span className="text-sm font-bold text-white">
+              {lang?.group_add_privacy_title || 'Кто может добавлять меня в групповые чаты'}
+            </span>
+            <p className="text-xs text-zinc-400">
+              {lang?.group_add_privacy_desc || 'Выберите, кто имеет право приглашать вас в групповые чаты напрямую'}
+            </p>
+            <div className="flex flex-col gap-3 mt-1">
+              {[
+                { value: 0, label: lang?.privacy_everyone || 'Все пользователи' },
+                { value: 1, label: lang?.privacy_friends || 'Только друзья' },
+                { value: 2, label: lang?.privacy_nobody || 'Никто' },
+              ].map((opt) => (
+                <div
+                  key={opt.value}
+                  onClick={() => setGroupAddPrivacy(opt.value)}
+                  className={`p-3 rounded-3xl border border-zinc-600/30 cursor-pointer duration-300 active:scale-95 flex items-center justify-between ${groupAddPrivacy === opt.value
+                    ? 'border-purple-500 bg-purple-500/10'
+                    : 'bg-zinc-800/30 hover:bg-zinc-800/60'
+                    }`}
+                >
+                  <span className="text-white font-medium text-sm">{opt.label}</span>
+                  {groupAddPrivacy === opt.value && (
+                    <svg className="w-5 h-5 fill-purple-500" viewBox="0 0 24 24">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    </svg>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 

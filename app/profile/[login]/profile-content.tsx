@@ -34,6 +34,7 @@ import {
   SvgIcon,
   uploadImageToImgbb,
 } from '../../feed/editor-shared';
+import AccountName from '../../components/account-name';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
 
 type Id = string | number;
@@ -1057,12 +1058,11 @@ export default function UserProfileContent({ login }: { login: string }) {
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="text-xl font-bold text-zinc-100 flex items-center gap-1.5">
-                    <span>{`${userData.fname || ''} ${userData.lname || ''}`.trim()}</span>
-                    {isAuthenticated && flag(userData.verify) ? (
-                      <SvgIcon className="w-5 h-5 inline fill-blue-500" id="IC-verify" viewBox="0 0 48 48" />
-                    ) : null}
-                  </span>
+                  <AccountName
+                    user={userData}
+                    className="text-xl font-bold text-zinc-100"
+                    nameClassName="text-xl font-bold text-zinc-100"
+                  />
                   {userData.description?.trim() ? (
                     <span className="text-xs md:text-sm text-zinc-300 lg:truncate lg:w-96">
                       {userData.description}

@@ -17,16 +17,7 @@ interface Group {
   verify?: string | number;
 }
 
-const VerifyIcon = ({ verify }: { verify?: string | number }) => {
-  if (verify == 1) {
-    return (
-      <svg className="w-5 h-5 inline fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <use href="#IC-verify"></use>
-      </svg>
-    );
-  }
-  return null;
-};
+import AccountName from '../components/account-name';
 
 function GroupsContent() {
   const router = useRouter();
@@ -203,9 +194,11 @@ function GroupsContent() {
                   style={{ backgroundImage: `url(${group.img})` }}
                 ></div>
                 <div className="flex flex-col flex-grow justify-center">
-                  <span className="text-zinc-200 lg:text-lg font-medium cursor-pointer">
-                    {group.name} <VerifyIcon verify={group.verify} />
-                  </span>
+                  <AccountName
+                    user={group}
+                    className="text-zinc-200 lg:text-lg font-medium cursor-pointer"
+                    nameClassName="text-zinc-200 lg:text-lg font-medium cursor-pointer"
+                  />
                 </div>
               </Link>
             </React.Fragment>

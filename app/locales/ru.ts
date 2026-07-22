@@ -1229,5 +1229,11 @@ export const ru: Record<string, string> = {
     "create_table": "Создать таблицу",
     "edit_table": "Редактировать таблицу",
     "add_row": "Строка",
-    "add_column": "Столбец"
+    "add_column": "Столбец",
+    "cache_played_tracks": "Кэшировать воспроизводимые треки",
+    "cache_played_tracks_desc": "Автоматически сохранять прослушиваемые аудиозаписи для офлайн-доступа",
+    "max_audio_cache_size": "Максимальный размер аудиокэша",
+    "max_audio_cache_size_desc": "При превышении лимита старые прослушанные треки автоматически удаляются",
+    "cache_size_unlimited": "Без ограничений",
+    "cache_size_disabled": "Отключено (0 МБ)"
 };

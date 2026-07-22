@@ -21,6 +21,8 @@ import ImageViewerModal from '../components/image-viewer-modal';
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
+import CreateGroupModal from './components/create-group-modal';
+import GroupInfoModal from './components/group-info-modal';
 import MessageBubble from './components/message-bubble';
 import StickerPickerDropdownContent from './components/sticker-picker-dropdown-content';
 import {
@@ -84,7 +86,8 @@ export default function MessagesContent() {
   const pathname = usePathname();
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const { showNote } = useNotification();
-  const { isPlaying, togglePlay } = usePulsePlayer();
+  const { currentSongId, currentTrackObj, isPlaying, togglePlay } = usePulsePlayer();
+  const isPulsePlayerActive = Boolean(currentSongId || currentTrackObj);
 
   // Next.js useParams in a layout might not see child segment params.
   // So we extract it from the pathname directly.
@@ -117,6 +120,8 @@ export default function MessagesContent() {
   const [composerText, setComposerText] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
+  const [groupInfoModalOpen, setGroupInfoModalOpen] = useState(false);
   const [deleteDialogModalOpen, setDeleteDialogModalOpen] = useState(false);
   const [editMessageModalOpen, setEditMessageModalOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState<DialogMessage | null>(null);
@@ -164,7 +169,17 @@ export default function MessagesContent() {
   const dialogListItem = dialogs.find((dialog) => normalizeHash(dialog.hash) === routeHash) ?? null;
   const fallbackForeignUser = mapDialogListItemToUser(dialogListItem);
   const effectiveForeignUser = mergeDialogUser(fallbackForeignUser, foreignUser);
-  const dialogTitle = getDialogTitle(effectiveForeignUser);
+  const isGroupDialog = selectedDialog?.type === 'group' || dialogListItem?.type === 'group';
+  const groupMembersCount = selectedDialog?.members?.length || (selectedDialog as any)?.members_count || (dialogListItem as any)?.members_count || 0;
+
+  const dialogTitle = isGroupDialog
+    ? (selectedDialog?.title || dialogListItem?.title || 'Групповой чат')
+    : getDialogTitle(effectiveForeignUser);
+
+  const dialogAvatarUrl = isGroupDialog
+    ? normalizeAssetUrl(selectedDialog?.avatar || (dialogListItem as any)?.avatar, FALLBACK_AVATAR)
+    : normalizeAssetUrl(effectiveForeignUser?.img, FALLBACK_AVATAR);
+
   const dialogBackgroundUrl = normalizeAssetUrl(selectedDialog?.img, '');
   const selectedDialogId = toNumber(selectedDialog?.id);
   const wsPresencePayload = useSyncExternalStore<WsPayload | null>(
@@ -184,13 +199,16 @@ export default function MessagesContent() {
         ? isOnline(effectiveForeignUser?.lastonlinetime)
         : dialogPresenceOnline
       : wsPresenceLastOnline > 0 && isOnline(wsPresenceLastOnline);
-  const dialogStatusLabel = blockedDialog
-    ? (lang?.unknown || 'неизвестно')
-    : dialogLoading || messagesLoading || loadingNewer
-      ? lang?.['updating...'] || 'Обновление...'
-      : dialogOnline
-        ? lang?.online || 'В сети'
-        : lang?.offline || 'Не в сети';
+
+  const dialogStatusLabel = isGroupDialog
+    ? (groupMembersCount > 0 ? `${groupMembersCount} ${groupMembersCount === 1 ? 'участник' : groupMembersCount > 1 && groupMembersCount < 5 ? 'участника' : 'участников'}` : 'Групповой чат')
+    : blockedDialog
+      ? (lang?.unknown || 'неизвестно')
+      : dialogLoading || messagesLoading || loadingNewer
+        ? lang?.['updating...'] || 'Обновление...'
+        : dialogOnline
+          ? lang?.online || 'В сети'
+          : lang?.offline || 'Не в сети';
 
   useEffect(() => {
     if (!activeDialogImageKey) return;
@@ -1763,10 +1781,22 @@ export default function MessagesContent() {
                               </button>
                             );
                           })}
-                          <div className="lg:hidden pb-64">
-
-                          </div>
+                          <div className={cn('lg:pb-20', isPulsePlayerActive ? 'pb-48' : 'pb-28')} />
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setCreateGroupModalOpen(true)}
+                          className={cn(
+                            'fixed right-3 lg:absolute lg:bottom-3 lg:right-3 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-500 active:scale-95 duration-300 border border-zinc-600/30 cursor-pointer',
+                            isPulsePlayerActive ? 'bottom-36' : 'bottom-21',
+                          )}
+                          title={lang?.create_group || 'Создать групповой чат'}
+                        >
+                          <svg className="w-7 h-7 fill-white" viewBox="0 0 24 24">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                          </svg>
+                        </button>
                         <YandexRtb
                           blockId="R-A-3636730-16"
                           className="hidden w-full max-h-24 items-center justify-center lg:flex"
@@ -1821,26 +1851,39 @@ export default function MessagesContent() {
                     </div>
 
                     <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
-                      <span className="lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:rounded-3xl lg:px-3 lg:py-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isGroupDialog) {
+                            setGroupInfoModalOpen(true);
+                          }
+                        }}
+                        className={cn(
+                          'lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:rounded-3xl lg:px-3 lg:py-1.5 duration-300',
+                          isGroupDialog && 'cursor-pointer active:scale-95 hover:text-purple-300'
+                        )}
+                      >
                         <span className="max-w-full truncate text-base font-bold">
                           {dialogTitle || '...'}
                         </span>
                         <span className="max-w-full truncate text-xs text-zinc-300 lg:text-sm">{dialogStatusLabel}</span>
-                      </span>
+                      </button>
                     </div>
 
                     <div className="flex w-23 shrink-0 items-center justify-end gap-3">
-                      <button
-                        id="call-button"
-                        type="button"
-                        onClick={handleStartCall}
-                        className={cn(
-                          'lg:shadow flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95',
-                          hasActiveCall ? 'bg-lime-500 hover:bg-lime-400 animate-pulse' : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:border lg:border-zinc-600/30 hover:bg-zinc-700'
-                        )}
-                      >
-                        <Icon name="IC-call" className="h-7 w-7 fill-white" />
-                      </button>
+                      {!isGroupDialog && (
+                        <button
+                          id="call-button"
+                          type="button"
+                          onClick={handleStartCall}
+                          className={cn(
+                            'lg:shadow flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95',
+                            hasActiveCall ? 'bg-lime-500 hover:bg-lime-400 animate-pulse' : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:border lg:border-zinc-600/30 hover:bg-zinc-700'
+                          )}
+                        >
+                          <Icon name="IC-call" className="h-7 w-7 fill-white" />
+                        </button>
+                      )}
 
                       <Dropdown
                         position="bottom"
@@ -1853,40 +1896,48 @@ export default function MessagesContent() {
                         triggerNode={
                           <img
                             id="dialog-avatar"
-                            src={normalizeAssetUrl(effectiveForeignUser?.img, FALLBACK_AVATAR)}
+                            src={dialogAvatarUrl}
                             alt={dialogTitle || 'Dialog avatar'}
                             className="lg:shadow h-10 w-10 rounded-full object-cover"
                           />
                         }
                       >
-                        <DropdownItem
-                          icon="IC-user"
-                          onClick={() => {
-                            const username = normalizeText(currentForeignUserRef.current?.username);
-                            if (!hasMeaningfulValue(username)) {
-                              return;
-                            }
+                        {!isGroupDialog && (
+                          <DropdownItem
+                            icon="IC-user"
+                            onClick={() => {
+                              const username = normalizeText(currentForeignUserRef.current?.username);
+                              if (!hasMeaningfulValue(username)) {
+                                return;
+                              }
 
-                            router.push(`/@${username}`);
-                          }}
-                        >
-                          {lang?.userpage || 'Страница'}
-                        </DropdownItem>
-                        {!blockedDialog && (<DropdownItem
-                          icon="IC-settings"
-                          onClick={() => {
-                            setSettingsModalOpen(true);
-                          }}
-                        >
-                          {lang?.chat_settings || 'Настройки чата'}
-                        </DropdownItem>)}
+                              router.push(`/@${username}`);
+                            }}
+                          >
+                            {lang?.userpage || 'Страница'}
+                          </DropdownItem>
+                        )}
+                        {!blockedDialog && (
+                          <DropdownItem
+                            icon="IC-settings"
+                            onClick={() => {
+                              if (isGroupDialog) {
+                                setGroupInfoModalOpen(true);
+                              } else {
+                                setSettingsModalOpen(true);
+                              }
+                            }}
+                          >
+                            {isGroupDialog ? 'Настройки беседы' : (lang?.chat_settings || 'Настройки чата')}
+                          </DropdownItem>
+                        )}
                         <DropdownItem
                           icon="IC-trash"
                           onClick={() => {
                             setDeleteDialogModalOpen(true);
                           }}
                         >
-                          {lang?.dialogdelete || 'Удалить диалог'}
+                          {isGroupDialog ? 'Покинуть/Удалить' : (lang?.dialogdelete || 'Удалить диалог')}
                         </DropdownItem>
                       </Dropdown>
                     </div>
@@ -1926,30 +1977,50 @@ export default function MessagesContent() {
                                 </span>
                               </div>
                             ) : (
-                              <MessageBubble
-                                key={`msg:${getMessageId(item.message)}`}
-                                authUserImage={authUserImage}
-                                currentUserId={currentUserId}
-                                foreignUser={foreignUser}
-                                lang={lang}
-                                message={item.message}
-                                onAddReaction={(messageId, reaction) => {
-                                  void sendReaction(messageId, reaction, 'add');
-                                }}
-                                onReply={(message) => {
-                                  setReplyingTo(message);
-                                  messageInputRef.current?.focus();
-                                }}
-                                onDeleteMessage={(message) => {
-                                  void handleMessageDelete(message);
-                                }}
-                                onDeleteReaction={(messageId, reaction) => {
-                                  void sendReaction(messageId, reaction, 'delete');
-                                }}
-                                onEditMessage={handleMessageEditOpen}
-                                onOpenImage={setActiveDialogImageKey}
-                                onReplyClick={seekToMessage}
-                              />
+                              (() => {
+                                const senderMember = isGroupDialog
+                                  ? selectedDialog?.members?.find((m) => Number(m.id) === Number(item.message.sender_id))
+                                  : null;
+
+                                const groupSenderName = isGroupDialog
+                                  ? (senderMember
+                                      ? ((senderMember as any).name || `${senderMember.fname || ''} ${senderMember.lname || ''}`.trim() || senderMember.username || 'Участник')
+                                      : 'Участник')
+                                  : undefined;
+
+                                const groupSenderAvatarUrl = isGroupDialog
+                                  ? (senderMember?.img || FALLBACK_AVATAR)
+                                  : undefined;
+
+                                return (
+                                  <MessageBubble
+                                    key={`msg:${getMessageId(item.message)}`}
+                                    authUserImage={authUserImage}
+                                    currentUserId={currentUserId}
+                                    foreignUser={foreignUser}
+                                    lang={lang}
+                                    message={item.message}
+                                    senderName={groupSenderName}
+                                    senderAvatarUrl={groupSenderAvatarUrl}
+                                    onAddReaction={(messageId, reaction) => {
+                                      void sendReaction(messageId, reaction, 'add');
+                                    }}
+                                    onReply={(message) => {
+                                      setReplyingTo(message);
+                                      messageInputRef.current?.focus();
+                                    }}
+                                    onDeleteMessage={(message) => {
+                                      void handleMessageDelete(message);
+                                    }}
+                                    onDeleteReaction={(messageId, reaction) => {
+                                      void sendReaction(messageId, reaction, 'delete');
+                                    }}
+                                    onEditMessage={handleMessageEditOpen}
+                                    onOpenImage={setActiveDialogImageKey}
+                                    onReplyClick={seekToMessage}
+                                  />
+                                );
+                              })()
                             ),
                           )}
 
@@ -2271,6 +2342,33 @@ export default function MessagesContent() {
           </button>
         </div>
       </Modal>
+
+      <CreateGroupModal
+        isOpen={createGroupModalOpen}
+        onClose={() => setCreateGroupModalOpen(false)}
+        onGroupCreated={(groupData) => {
+          setRouteHash(groupData.hash);
+          router.push(`/messages/${groupData.hash}`);
+          void loadDialogs({ force: true });
+        }}
+      />
+
+      {selectedDialog && selectedDialog.type === 'group' && (
+        <GroupInfoModal
+          isOpen={groupInfoModalOpen}
+          onClose={() => setGroupInfoModalOpen(false)}
+          dialogId={Number(selectedDialog.id)}
+          title={selectedDialog.title || 'Групповой чат'}
+          avatar={selectedDialog.avatar || ''}
+          inviteCode={selectedDialog.invite_code || ''}
+          myRole={(selectedDialog.my_role as any) || 'member'}
+          members={selectedDialog.members || []}
+          onGroupUpdated={() => {
+            void loadDialogs({ force: true });
+            void loadMessagesNewer(dialogSessionRef.current);
+          }}
+        />
+      )}
     </>
   );
 }
