@@ -7,32 +7,21 @@ import { AncialAPI } from '../lib/api-v2';
 
 export default function SettingsPage() {
   const { showNote } = useNotification();
-  const { user, isAuthenticated, lang, updateLang } = useAuth();
+  const { user, isAuthenticated, lang, langCode, setLanguage } = useAuth();
 
   const selectLanguage = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedLang = e.target.value;
+    const selectedLang = e.target.value as 'ru' | 'en';
+    setLanguage(selectedLang);
     try {
       if (isAuthenticated) {
-        const result = await AncialAPI.updateProfile<any>({ lang: selectedLang });
-        showNote({
-          content: result?.message || (lang?.language_changed || 'Язык изменен'),
-          html: true,
-          type: 'success',
-          time: 5
-        });
-      } else {
-        document.cookie = `lang=${selectedLang}; path=/; max-age=31536000`;
-        showNote({
-          content: lang?.language_changed || 'Язык изменен',
-          html: true,
-          type: 'success',
-          time: 5
-        });
+        await AncialAPI.updateProfile<any>({ lang: selectedLang });
       }
-      
-      if (updateLang) {
-        await updateLang();
-      }
+      showNote({
+        content: lang?.language_changed || 'Язык изменен',
+        html: true,
+        type: 'success',
+        time: 5
+      });
     } catch (error) {
       console.error(error);
       showNote({
@@ -118,7 +107,7 @@ export default function SettingsPage() {
           rightContent={
             <select
               onChange={selectLanguage}
-              value={lang?.langname === 'en' ? 'en' : 'ru'}
+              value={langCode}
               className="focus:outline-0 focus:ring-0 bg-zinc-700/70 hover:bg-zinc-700/60 duration-300 p-1 rounded-2xl mr-2 shadow cursor-pointer text-white border-0 focus:ring-0"
             >
               <option value="ru">Русский</option>

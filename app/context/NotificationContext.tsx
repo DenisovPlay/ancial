@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-type NoteType = 'success' | 'error' | 'info';
+type NoteType = 'success' | 'error' | 'warning' | 'info';
 const NOTE_STACK_GAP_PX = 8;
 const NOTE_ENTER_ANIMATION_MS = 280;
 const NOTE_EXIT_ANIMATION_MS = 260;
@@ -130,6 +130,7 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
   const toneClassName =
     note.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-100' :
     note.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-100' :
+    note.type === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-100' :
     'bg-zinc-800/80 border-zinc-600/50 text-zinc-100';
 
   const shellStyle: React.CSSProperties = {

@@ -244,7 +244,7 @@ export default function ImageViewerModal({
 
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {}
+    } catch { }
 
     activePointersRef.current.set(event.pointerId, {
       x: event.clientX,
@@ -362,7 +362,7 @@ export default function ImageViewerModal({
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
-    } catch {}
+    } catch { }
 
     const pointerDownPosition = pointerDownPositionsRef.current.get(event.pointerId) ?? null;
     const releasedPosition = { x: event.clientX, y: event.clientY };
@@ -572,7 +572,7 @@ export default function ImageViewerModal({
                   ref={idx === activeIdx ? imageRef : null}
                   src={img.url}
                   alt={img.alt ?? `Image ${idx + 1}`}
-                  className="max-w-full max-h-[80vh] object-contain rounded-3xl shadow-2xl"
+                  className="max-w-full max-h-[80vh] object-contain shadow-2xl"
                   style={idx === activeIdx ? imageStyle : {}}
                   onDragStart={(event) => event.preventDefault()}
                 />

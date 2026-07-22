@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { AncialAPI } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 
 export default function PulseCreateArtistsPage() {
   const { lang, isAuthenticated } = useAuth();
+  const { showNote } = useNotification();
   const router = useRouter();
   const [artists, setArtists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function PulseCreateArtistsPage() {
     if (artistToDelete !== null) {
       AncialAPI.pulseManagement('artist', 'delete', { id: artistToDelete })
         .then(() => fetchArtists())
-        .catch((err) => alert(err.error || 'Ошибка удаления'))
+        .catch((err) => showNote({ content: err.error || lang?.errorhappend || 'Ошибка удаления', type: 'error', time: 5 }))
         .finally(() => {
           setDeleteModalOpen(false);
           setArtistToDelete(null);

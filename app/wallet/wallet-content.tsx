@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { AncialAPI, type WalletOverview, type WalletAccount, type WalletGateway, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import Modal from '../components/modal';
@@ -67,6 +68,7 @@ export default function WalletContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lang, isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { showNote } = useNotification();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -516,7 +518,11 @@ export default function WalletContent() {
       await AncialAPI.cancelTopup(orderHash);
       await fetchWallet();
     } catch (err: any) {
-      alert(err.message || (lang?.failedtocanceltopup || 'Не удалось отменить пополнение'));
+      showNote({
+        content: err.message || (lang?.failedtocanceltopup || 'Не удалось отменить пополнение'),
+        type: 'error',
+        time: 5
+      });
     }
   };
 

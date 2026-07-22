@@ -14,7 +14,7 @@ type StatsData = {
 };
 
 export default function PulseCreateOverviewPage() {
-  const { isAuthenticated } = useAuth();
+  const { lang, isAuthenticated } = useAuth();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +39,7 @@ export default function PulseCreateOverviewPage() {
   return (
     <div className="w-full flex flex-col gap-3">
       <div className="w-full flex items-center gap-3">
-        <h5 className="text-2xl text-zinc-200 flex-grow">Статистика</h5>
+        <h5 className="text-2xl text-zinc-200 flex-grow">{lang?.stats_title || 'Статистика'}</h5>
       </div>
       
       {loading ? (
@@ -52,19 +52,19 @@ export default function PulseCreateOverviewPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
           <div className="border border-zinc-600/30 p-5 bg-zinc-800/50 rounded-3xl flex flex-col items-center justify-center">
-            <span className="text-zinc-400 text-sm mb-1">Прослушивания</span>
+            <span className="text-zinc-400 text-sm mb-1">{lang?.total_plays || 'Прослушивания'}</span>
             <span className="text-4xl font-bold text-white">{formatNumber(stats?.total_listens || 0)}</span>
           </div>
           <div className="border border-zinc-600/30 p-5 bg-zinc-800/50 rounded-3xl flex flex-col items-center justify-center">
-            <span className="text-zinc-400 text-sm mb-1">Всего треков</span>
+            <span className="text-zinc-400 text-sm mb-1">{lang?.total_tracks || 'Всего треков'}</span>
             <span className="text-4xl font-bold text-white">{formatNumber(stats?.total_tracks || 0)}</span>
           </div>
           <Link href="/pulse/create/artists" className="border border-zinc-600/30 p-5 bg-zinc-800/50 rounded-3xl flex flex-col items-center justify-center hover:bg-zinc-700/50 duration-300 cursor-pointer active:scale-[0.98]">
-            <span className="text-zinc-400 text-sm mb-1">Ваши артисты</span>
+            <span className="text-zinc-400 text-sm mb-1">{lang?.your_artists || 'Ваши артисты'}</span>
             <span className="text-4xl font-bold text-white">{formatNumber(stats?.total_artists || 0)}</span>
           </Link>
           <Link href="/pulse/create/albums" className="border border-zinc-600/30 p-5 bg-zinc-800/50 rounded-3xl flex flex-col items-center justify-center hover:bg-zinc-700/50 duration-300 cursor-pointer active:scale-[0.98]">
-            <span className="text-zinc-400 text-sm mb-1">Лайки на альбомах</span>
+            <span className="text-zinc-400 text-sm mb-1">{lang?.album_likes || 'Лайки на альбомах'}</span>
             <span className="text-4xl font-bold text-white">{formatNumber(stats?.total_album_likes || 0)}</span>
           </Link>
         </div>

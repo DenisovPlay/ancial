@@ -229,11 +229,11 @@ export default function PulseCreateUploadPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
-              <span className="text-zinc-500 text-sm">Загрузить обложку</span>
+              <span className="text-zinc-500 text-sm">{lang?.upload_cover_btn || 'Загрузить обложку'}</span>
             </div>
 
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300">
-              <span className="text-white text-sm font-medium">Нажмите, чтобы обновить обложку</span>
+              <span className="text-white text-sm font-medium">{lang?.click_to_update_cover || 'Нажмите, чтобы обновить обложку'}</span>
             </div>
           </label>
         </div>
@@ -283,7 +283,7 @@ export default function PulseCreateUploadPage() {
         </div>
 
         <div className="w-full flex items-center gap-3">
-          <h5 className="text-xl text-zinc-200 flex-grow">Треки</h5>
+          <h5 className="text-xl text-zinc-200 flex-grow">{lang?.tracks_title || 'Треки'}</h5>
           <span className="text-zinc-400 text-sm">{statusText}</span>
         </div>
         
@@ -308,7 +308,7 @@ export default function PulseCreateUploadPage() {
               </select>
               
               <div className="flex-grow flex items-center justify-end gap-2">
-                {t.uploading && <span className="text-xs text-purple-400 animate-pulse">Загрузка...</span>}
+                {t.uploading && <span className="text-xs text-purple-400 animate-pulse">{lang?.uploading || 'Загрузка...'}</span>}
                 {t.audioId && <span className="text-xs text-green-400">✓ Загружено</span>}
                 <label htmlFor={`songupdI${t.localId}`} className="cursor-pointer text-zinc-400 hover:text-zinc-200 duration-300 p-1.5 rounded-xl border border-zinc-600/30 bg-zinc-800/60 hover:bg-zinc-700">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../../components/modal';
 import { AncialAPI, type WalletAccount } from '../../lib/api-v2';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 
 export interface DonateModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export function DonateModal({
   recipientImg,
 }: DonateModalProps) {
   const { lang } = useAuth();
+  const { showNote } = useNotification();
   const [step, setStep] = useState<'donate' | 'select' | 'success' | 'failed'>('donate');
   const [amount, setAmount] = useState<string>('');
   const [comment, setComment] = useState<string>('');
@@ -120,7 +122,11 @@ export function DonateModal({
   const handleNextToSelect = () => {
     const num = parseFloat(amount);
     if (isNaN(num) || num <= 0 || num > 150000) {
-      alert(lang?.donate_amount_error || 'Укажите корректную сумму пожертвования (от 1 до 150 000 ₽)');
+      showNote({
+        content: lang?.donate_amount_error || 'Укажите корректную сумму пожертвования (от 1 до 150 000 ₽)',
+        type: 'warning',
+        time: 5
+      });
       return;
     }
     setStep('select');
@@ -128,7 +134,11 @@ export function DonateModal({
 
   const handleExecuteTransfer = async () => {
     if (!selectedSenderId) {
-      alert(lang?.select_account_error || 'Пожалуйста, выберите счет для отправки');
+      showNote({
+        content: lang?.select_account_error || 'Пожалуйста, выберите счет для отправки',
+        type: 'warning',
+        time: 5
+      });
       return;
     }
 

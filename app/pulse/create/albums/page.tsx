@@ -71,7 +71,7 @@ export default function PulseCreateAlbumsPage() {
 
       <div className="flex flex-col items-center justify-center w-full border border-zinc-600/30 bg-zinc-800/50 lg:bg-zinc-800/70 rounded-3xl overflow-hidden duration-300">
         {loading ? (
-          <div className="p-5 text-center text-zinc-500">Загрузка...</div>
+          <div className="p-5 text-center text-zinc-500">{lang?.loading || 'Загрузка...'}</div>
         ) : albums.length > 0 ? (
           albums.map(album => (
             <div

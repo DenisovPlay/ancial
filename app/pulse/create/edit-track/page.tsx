@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AncialAPI } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -30,6 +30,20 @@ export default function PulseCreateEditTrackPage() {
   const [src, setSrc] = useState('');
   
   const [allArtists, setAllArtists] = useState<any[]>([]);
+  const blobUrlRef = useRef<string | null>(null);
+
+  const cleanupBlobUrl = () => {
+    if (blobUrlRef.current && blobUrlRef.current.startsWith('blob:')) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      cleanupBlobUrl();
+    };
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && id > 0) {
@@ -65,7 +79,9 @@ export default function PulseCreateEditTrackPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
+    cleanupBlobUrl();
     const tempUrl = URL.createObjectURL(file);
+    blobUrlRef.current = tempUrl;
     setImg(tempUrl);
 
     const formData = new FormData();
@@ -77,7 +93,10 @@ export default function PulseCreateEditTrackPage() {
     })
       .then(res => res.json())
       .then(res => {
-        if (res?.data?.url) setImg(res.data.url);
+        if (res?.data?.url) {
+          cleanupBlobUrl();
+          setImg(res.data.url);
+        }
       })
       .catch(console.error);
   };

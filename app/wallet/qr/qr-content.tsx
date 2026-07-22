@@ -3,11 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
 
 export default function QRContent() {
   const router = useRouter();
   const { lang, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { showNote } = useNotification();
 
   const [scriptLoaded, setScriptLoaded] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -565,7 +567,11 @@ export default function QRContent() {
           <button
             key="show-wifi"
             onClick={() =>
-              alert(`${lang?.network || 'Сеть:'} ${wifi.ssid}\n${lang?.password || 'Пароль:'} ${wifi.password}`)
+              showNote({
+                content: `${lang?.network || 'Сеть:'} ${wifi.ssid} | ${lang?.password || 'Пароль:'} ${wifi.password}`,
+                type: 'info',
+                time: 10
+              })
             }
             className="flex items-center justify-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-3xl duration-300 active:scale-95 border border-zinc-600/30"
           >

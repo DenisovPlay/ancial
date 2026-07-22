@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI, type WalletAccount } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 
@@ -10,6 +11,7 @@ function FormContentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lang, isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { showNote } = useNotification();
 
   // Wizard state
   const [step, setStep] = useState<'donate' | 'sendtouser' | 'confirmsend' | 'select' | 'success' | 'failed'>('sendtouser');
@@ -248,7 +250,7 @@ function FormContentInner() {
     e.preventDefault();
     const parsed = parseFloat(amount);
     if (isNaN(parsed) || parsed <= 0) {
-      alert(lang?.enter_correct_amount || 'Укажите корректную сумму');
+      showNote({ content: lang?.enter_correct_amount || 'Укажите корректную сумму', type: 'warning', time: 5 });
       return;
     }
     // Proceed to select sender account
@@ -260,18 +262,18 @@ function FormContentInner() {
   const handleSendToUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (recipientType !== 'account' && !recipientValue.trim()) {
-      alert(lang?.enter_recipient || 'Укажите получателя');
+      showNote({ content: lang?.enter_recipient || 'Укажите получателя', type: 'warning', time: 5 });
       return;
     }
     const parsed = parseFloat(amount);
     if (isNaN(parsed) || parsed <= 0 || parsed > 150000) {
-      alert(lang?.enter_transfer_amount_range || 'Укажите сумму перевода (от 1 до 150000 ₽)');
+      showNote({ content: lang?.enter_transfer_amount_range || 'Укажите сумму перевода (от 1 до 150000 ₽)', type: 'warning', time: 5 });
       return;
     }
 
     if (recipientType === 'account') {
       if (!recipientAccountId) {
-        alert(lang?.cant_determine_recipient_account || 'Не удалось определить счёт получателя');
+        showNote({ content: lang?.cant_determine_recipient_account || 'Не удалось определить счёт получателя', type: 'warning', time: 5 });
         return;
       }
       setStep('confirmsend');
@@ -284,7 +286,7 @@ function FormContentInner() {
         const res = await AncialAPI.getProfile<any>(recipientValue.trim());
         if (res && res.id) {
           if (user && res.id === user.id) {
-            alert(lang?.cant_send_self || 'Вы не можете переводить деньги самому себе');
+            showNote({ content: lang?.cant_send_self || 'Вы не можете переводить деньги самому себе', type: 'warning', time: 5 });
             setLookupLoading(false);
             return;
           }
@@ -295,10 +297,10 @@ function FormContentInner() {
           });
           setStep('confirmsend');
         } else {
-          alert(lang?.user_with_login_not_found || 'Пользователь с таким логином не найден');
+          showNote({ content: lang?.user_with_login_not_found || 'Пользователь с таким логином не найден', type: 'error', time: 5 });
         }
       } catch (err) {
-        alert(lang?.user_with_login_not_found || 'Пользователь с таким логином не найден');
+        showNote({ content: lang?.user_with_login_not_found || 'Пользователь с таким логином не найден', type: 'error', time: 5 });
       } finally {
         setLookupLoading(false);
       }
@@ -317,7 +319,7 @@ function FormContentInner() {
   // Execute transfer call
   const handleExecuteTransfer = async () => {
     if (!selectedSenderId) {
-      alert(lang?.choose_withdrawal_account || 'Выберите счёт списания');
+      showNote({ content: lang?.choose_withdrawal_account || 'Выберите счёт списания', type: 'warning', time: 5 });
       return;
     }
 

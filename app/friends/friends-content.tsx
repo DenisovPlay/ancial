@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -48,6 +49,7 @@ function FriendsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
+  const { showNote } = useNotification();
 
   const [friends, setFriends] = useState<Friend[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,11 +127,11 @@ function FriendsContent() {
       if (response.hash) {
         router.push(`/messages/${response.hash}`);
       } else if (response.message) {
-        alert(response.message);
+        showNote({ content: response.message, type: 'info', time: 5 });
       }
     } catch (e: any) {
       console.error(e);
-      alert(e?.message || 'Error occurred');
+      showNote({ content: e?.message || lang?.errorhappend || 'Произошла ошибка', type: 'error', time: 5 });
     }
   };
 

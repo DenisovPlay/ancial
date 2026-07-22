@@ -7,7 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # Архитектура и инициализация Ancial
 
 ## 1. Локализация и переводы (lang)
-- **Инициализация:** Объект словаря переводов `lang` подгружается и инициализируется глобально через контекст авторизации.
+- **Инициализация:** Объект словаря переводов `lang` подгружается и инициализируется глобально на клиенте из `app/locales/` через контекст авторизации `AuthContext` без сетевых запросов к бэкенду.
 - **Использование:** Чтобы получить переводы в компоненте, ВСЕГДА используй хук `useAuth`:
   ```tsx
   import { useAuth } from '../context/AuthContext';
@@ -18,7 +18,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## 2. Локализация (файлы переводов)
 - **Запрет на инлайн-тернарники:** Категорически запрещено использовать конструкции вида `{lang?.langname === 'en' ? 'English text' : 'Русский текст'}` непосредственно в компонентах.
-- **Добавление переводов:** Все новые текстовые строки должны добавляться в файлы локализации бэкенда: `php-v2-api/lang/ru.php` и `php-v2-api/lang/en.php`. Затем на клиенте они используются через объект `lang` (например, `lang?.my_new_key`).
+- **Добавление переводов:** Все новые текстовые строки добавляются в клиентские файлы локализации: `app/locales/ru.ts` и `app/locales/en.ts`. Затем на клиенте они используются через объект `lang` (например, `lang?.my_new_key`).
 
 ## 3. Toast-уведомления (нотификации)
 - **Использование:** Для показа всплывающих уведомлений (Toast) используй хук `useNotification`:
@@ -65,7 +65,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 | `/_next/data/` payloads | **Network First** | `ancial-pages-v2` |
 | JS/CSS/шрифты `/_next/static/` | **Cache First** | `ancial-static-v2` |
 | Изображения (PNG, AVIF, WEBP, SVG, ...) | **Stale-While-Revalidate** | `ancial-images-v1` |
-| `/api/V2/info/GetLang.php` (языки UI) | **Stale-While-Revalidate** | `ancial-api-v1` |
 | Audio (.mp3) | **Bypass** — IndexedDB плеер | — |
 | `/api/V2/` PHP API (остальное) | **Bypass** — localStorage кэш | — |
 | Firebase/Google | **Bypass** | — |

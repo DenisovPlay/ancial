@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, type WalletMerchantDetails, type WalletMerchantOrder } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache.ts';
 
@@ -10,6 +11,7 @@ function AboutContentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lang, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { showNote } = useNotification();
 
   const merchantId = useMemo(() => {
     const id = searchParams.get('id');
@@ -153,7 +155,11 @@ function AboutContentInner() {
   };
 
   const handleWithdrawClick = () => {
-    alert(lang?.withdrawals_in_development || 'Вывод средств находится в разработке. Обратитесь в техподдержку.');
+    showNote({
+      content: lang?.withdrawals_in_development || 'Вывод средств находится в разработке. Обратитесь в техподдержку.',
+      type: 'info',
+      time: 5
+    });
   };
 
   const getOrderStatusBadge = (status: string) => {

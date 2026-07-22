@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getLangFromCache, saveLangToCache } from '../lib/lang';
+import { getLangFromCache, saveLangToCache, locales, getStoredLangCode, saveStoredLangCode, SupportedLang } from '../lib/lang';
 import { restoreLegacyAuthSession } from '../lib/auth-fetch';
 import { cache } from '../lib/cache.ts';
 
@@ -36,6 +36,8 @@ export interface User {
   numberverif?: boolean | string;
   emailverif?: boolean | string;
   veriflevel?: number | string;
+  language?: string;
+  lang?: string;
 }
 
 interface AuthContextType {
@@ -43,9 +45,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   lang: Record<string, string> | null;
+  langCode: SupportedLang;
+  setLanguage: (code: SupportedLang) => void;
   checkAuth: (options?: { silent?: boolean; force?: boolean }) => Promise<void>;
   logout: () => Promise<void>;
-  updateLang: () => Promise<void>;
+  updateLang: (targetCode?: SupportedLang) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,7 +62,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [lang, setLang] = useState<Record<string, string> | null>(null);
+  const [langCode, setLangCode] = useState<SupportedLang>(() => getStoredLangCode());
+  const [lang, setLang] = useState<Record<string, string>>(() => locales[langCode] || locales['ru']);
   const [isLoading, setIsLoading] = useState(true);
   const authStateRef = useRef<{ isAuthenticated: boolean; user: User | null }>({
     isAuthenticated: false,
@@ -85,18 +90,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     legacyWindow.authChecking = authChecking;
   }, []);
 
-  const updateLang = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/V2/info/GetLang.php`);
-      const payload = await res.json();
-      const data = payload.success ? payload.data : payload;
-      setLang(data);
-      publishLangState(data);
-      saveLangToCache(data);
-    } catch (error) {
-      console.error('Ошибка при загрузке языка:', error);
-    }
+  const setLanguage = useCallback((code: SupportedLang) => {
+    const validCode: SupportedLang = code === 'en' ? 'en' : 'ru';
+    saveStoredLangCode(validCode);
+    const dict = locales[validCode] || locales['ru'];
+    setLangCode(validCode);
+    setLang(dict);
+    publishLangState(dict);
+    saveLangToCache(dict);
   }, [publishLangState]);
+
+  const updateLang = useCallback(async (targetCode?: SupportedLang) => {
+    const code = targetCode || getStoredLangCode();
+    setLanguage(code);
+  }, [setLanguage]);
 
   const checkAuth = useCallback(async (options: { silent?: boolean; force?: boolean } = {}) => {
     // force=true сбрасывает флаг выхода (используется при новом логине)
@@ -125,6 +132,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           cache.set('user_profile', nextUser, { category: 'profile' });
         } catch (e) {
           console.error('[Auth] Failed to cache user profile', e);
+        }
+
+        const userLang = (nextUser.language || nextUser.lang) as string | undefined;
+        if (userLang && (userLang === 'ru' || userLang === 'en')) {
+          setLanguage(userLang as SupportedLang);
         }
       }
     };
@@ -242,15 +254,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Проверяем авторизацию при первой загрузке приложения
   useEffect(() => {
     checkAuth();
-    // Сначала пробуем загрузить из кэша
-    const cachedLang = getLangFromCache();
-    if (cachedLang) {
-      setLang(cachedLang);
-      publishLangState(cachedLang);
-    }
-    // Затем обновляем в фоне
-    updateLang();
-  }, [checkAuth, publishLangState, updateLang]);
+    const initialCode = getStoredLangCode();
+    setLanguage(initialCode);
+  }, [checkAuth, setLanguage]);
 
   useEffect(() => {
     const refreshAuth = () => {
@@ -329,7 +335,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [publishAuthState, router]);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, lang, checkAuth, logout, updateLang }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, lang, langCode, setLanguage, checkAuth, logout, updateLang }}>
       {children}
     </AuthContext.Provider>
   );
