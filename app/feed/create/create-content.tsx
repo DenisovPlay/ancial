@@ -167,6 +167,10 @@ export default function CreatePostContent() {
       reply_to_post: lang?.reply_to_post || 'Ответ',
       save: lang?.save || 'Сохранить',
       edit: lang?.edit || 'Редактировать',
+      create_table: lang?.create_table || 'Создать таблицу',
+      edit_table: lang?.edit_table || 'Редактировать таблицу',
+      add_row: lang?.add_row || '+ Строка',
+      add_column: lang?.add_column || '+ Столбец',
     };
   }, [lang]);
 

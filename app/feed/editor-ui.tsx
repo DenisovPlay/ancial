@@ -176,13 +176,23 @@ export function FeedEditorUI({
                                 strings={strings}
                                 editorClassName={
                                     images.length > 0 && widgets.length > 0
-                                        ? 'pb-[13.5rem] min-h-[25rem]'
+                                        ? 'pb-[16rem] min-h-[25rem]'
                                         : images.length > 0
-                                            ? 'pb-[11rem] min-h-[22rem]'
+                                            ? 'pb-[13rem] min-h-[22rem]'
                                             : widgets.length > 0
-                                                ? 'pb-[6rem] min-h-[18rem]'
-                                                : 'pb-[3.5rem] min-h-[15rem]'
+                                                ? 'pb-[6.5rem] min-h-[18rem]'
+                                                : 'pb-[4.5rem] min-h-[15rem]'
                                 }
+                                scrollPaddingBottom={
+                                    images.length > 0 && widgets.length > 0
+                                        ? '16rem'
+                                        : images.length > 0
+                                            ? '13rem'
+                                            : widgets.length > 0
+                                                ? '6.5rem'
+                                                : '4.5rem'
+                                }
+                                onCarouselOpen={() => setIsMediaModalOpen(true)}
                             />
                             <input type="hidden" name={mode === 'create' ? 'contentext' : 'edit_content'} value={content} />
 
@@ -280,22 +290,7 @@ export function FeedEditorUI({
                                             <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-music" />
                                             <span>{strings.music}</span>
                                         </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsMediaModalOpen(true)}
-                                            className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
-                                        >
-                                            <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-photos" />
-                                            <span>{strings.editor_carousel || 'Карусель / Коллаж'}</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsTableModalOpen(true)}
-                                            className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
-                                        >
-                                            <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-poll" />
-                                            <span>{strings.editor_table || 'Таблица'}</span>
-                                        </button>
+
                                     </Dropdown>
                                     <select
                                         name={mode === 'create' ? 'new_post_topic' : 'edit_post_topic'}

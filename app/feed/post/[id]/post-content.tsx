@@ -676,6 +676,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
               <PostCard
                 currentUserId={user?.id ?? null}
                 hideComments={true}
+                noCollapse={true}
                 lang={postCardLang}
                 onBookmark={handleBookmark}
                 onComment={scrollToComments}

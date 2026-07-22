@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 
 import ImageViewerModal, { type ImageViewerSlide } from './image-viewer-modal';
 import { Dropdown, DropdownItem } from './navigation';
@@ -76,6 +76,7 @@ export interface PostCardProps {
   currentUserId?: Id | null;
   hideComments?: boolean;
   lang?: Partial<PostCardLang>;
+  noCollapse?: boolean;
   onBookmark?: (post: PostData, nextValue: boolean) => void;
   onComment?: (post: PostData) => void;
   onDelete?: (post: PostData) => void;
@@ -171,10 +172,111 @@ function ImageTile({
   );
 }
 
+function ExpandablePostContent({
+  content,
+  postId,
+  onClick,
+  strings,
+  initiallyOverflowing,
+  noCollapse,
+}: {
+  content: string;
+  postId: Id;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  strings: Record<string, string>;
+  initiallyOverflowing?: boolean;
+  noCollapse?: boolean;
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  // Инициализация из бэкенда — благодаря этому SSR сразу рендерит сжатый пост
+  const [isOverflowing, setIsOverflowing] = useState(initiallyOverflowing ?? false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [animate, setAnimate] = useState(false);
+
+  useLayoutEffect(() => {
+    if (noCollapse) return;
+    const el = contentRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const fullHeight = el.scrollHeight;
+      const MAX_HEIGHT = 260;
+      if (fullHeight > MAX_HEIGHT + 24) {
+        setIsOverflowing(true);
+      }
+    };
+
+    measure();
+
+    const observer = new ResizeObserver(() => {
+      measure();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [content, noCollapse]);
+
+  useEffect(() => {
+    if (!noCollapse) setAnimate(true);
+  }, [noCollapse]);
+
+  const parsedHtml = parsePostContentToHtml(content);
+
+  if (noCollapse) {
+    return (
+      <div
+        id={`textblock${postId}`}
+        style={{ userSelect: 'text' }}
+        className="-mx-3 px-3 w-[calc(100%+1.5rem)] text-base lg:text-lg text-zinc-200 font-medium break-words relative post-content-container my-1"
+        dangerouslySetInnerHTML={{ __html: parsedHtml }}
+        onClick={onClick}
+      />
+    );
+  }
+
+  return (
+    <div className="relative flex flex-col w-full my-1">
+      <div
+        ref={contentRef}
+        id={`textblock${postId}`}
+        style={{
+          maxHeight: !isExpanded && isOverflowing ? '260px' : '3000px',
+          userSelect: 'text',
+        }}
+        className={cn(
+          '-mx-3 px-3 w-[calc(100%+1.5rem)] text-base lg:text-lg text-zinc-200 font-medium break-words overflow-hidden relative post-content-container',
+          animate && 'transition-[max-height] duration-500 ease-in-out',
+        )}
+        dangerouslySetInnerHTML={{ __html: parsedHtml }}
+        onClick={onClick}
+      />
+
+      {!isExpanded && isOverflowing && (
+        <div className="absolute bottom-0 -left-3 -right-3 h-16 bg-gradient-to-t from-zinc-900 via-zinc-900/80 to-transparent pointer-events-none z-10" />
+      )}
+
+      {isOverflowing && (
+        <button
+          type="button"
+          id={`moretext${postId}`}
+          onClick={() => setIsExpanded((prev) => !prev)}
+          className="text-center text-purple-400 hover:text-purple-300 font-semibold cursor-pointer duration-200 py-1.5 mt-1 z-20 flex items-center justify-center gap-1 self-center text-sm"
+        >
+          <span>{isExpanded ? strings.less : strings.more}</span>
+          <SvgIcon
+            className={cn('w-4 h-4 fill-current transition-transform duration-300', isExpanded && 'rotate-180')}
+            id="IC-chevron-down"
+          />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function PostCard({
   currentUserId,
   hideComments,
   lang,
+  noCollapse,
   onBookmark,
   onComment,
   onDelete,
@@ -206,6 +308,7 @@ export function PostCard({
       currentUserId={currentUserId}
       hideComments={hideComments}
       lang={lang}
+      noCollapse={noCollapse}
       onBookmark={onBookmark}
       onComment={onComment}
       onDelete={onDelete}
@@ -216,7 +319,6 @@ export function PostCard({
       onTranslate={onTranslate}
       onVote={onVote}
       post={post}
-
       renderIndex={renderIndex}
       shareBaseUrl={shareBaseUrl}
     />
@@ -239,12 +341,11 @@ function PostCardInner({
   post,
   renderIndex = 1,
   shareBaseUrl = 'https://ancial.ru/feed/post',
+  noCollapse = false,
 }: PostCardProps) {
   const router = useRouter();
-  const isLongContent = flag(post.is_long_content);
   const canEdit = flag(post.can_edit);
   const initialBookmarked = flag(post.is_bookmarked);
-  const [isExpanded, setIsExpanded] = useState(!isLongContent);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [bookmarkedAmount, setBookmarkedAmount] = useState(toNumber(post.bookmarked_amount));
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
@@ -540,13 +641,13 @@ function PostCardInner({
 
     if (target.tagName.toLowerCase() === 'img') {
       const imgEl = target as HTMLImageElement;
-      
+
       const isPostImage = (img: HTMLImageElement) => {
         const src = img.src || '';
         if (src.includes('betterttv.net') || src.includes('7tv.app') || src.includes('/api/7tv/')) {
           return false;
         }
-        return img.classList.contains('object-cover');
+        return img.classList.contains('object-cover') || img.classList.contains('object-contain');
       };
 
       if (!isPostImage(imgEl)) return;
@@ -649,27 +750,14 @@ function PostCardInner({
         )}
 
         {post.content && (
-          <div
-            id={`textblock${post.id}`}
-            className={cn(
-              'text-base lg:text-lg text-zinc-200 font-medium break-words',
-              isLongContent && !isExpanded && 'hideTextBlock',
-            )}
-            style={{ userSelect: 'text' }}
-            dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(post.content) }}
+          <ExpandablePostContent
+            content={post.content}
+            postId={post.id}
             onClick={handlePostContentClick}
+            strings={strings}
+            initiallyOverflowing={!!post.is_long_content}
+            noCollapse={noCollapse}
           />
-        )}
-
-        {isLongContent && (
-          <button
-            type="button"
-            id={`moretext${post.id}`}
-            onClick={() => setIsExpanded((current) => !current)}
-            className="text-center text-zinc-300 hover:text-zinc-200 cursor-pointer duration-150 py-1.5"
-          >
-            {isExpanded ? strings.less : strings.more}
-          </button>
         )}
 
         {images.length > 0 && (

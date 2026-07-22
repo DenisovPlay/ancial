@@ -4,6 +4,8 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn, SvgIcon } from '../feed/editor-shared';
 import { parsePostContentToHtml, getVisibleLength } from './post-parser';
 import Modal from './modal';
+import PostBlockTableModal from './post-block-table-modal';
+import PostBlockMediaModal from './post-block-media-modal';
 
 const VISIBLE_CHAR_LIMIT = 3000;
 
@@ -14,6 +16,8 @@ type RichTextEditorProps = {
   className?: string;
   strings?: Record<string, string>;
   editorClassName?: string;
+  scrollPaddingBottom?: string;
+  onCarouselOpen?: () => void;
 };
 
 type ActiveFormats = {
@@ -210,9 +214,11 @@ function htmlToBBCode(html: string): string {
 export { getVisibleLength, VISIBLE_CHAR_LIMIT };
 
 // ─── RichTextEditor ───────────────────────────────────────────────────────────
-export default function RichTextEditor({ value, onChange, placeholder, className, strings, editorClassName }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder, className, strings, editorClassName, scrollPaddingBottom, onCarouselOpen }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const isUpdatingRef = useRef(false);
+  // Undo-стек для операций удаления блоков через Notion-тулбар
+  const blockUndoStackRef = useRef<string[]>([]);
   const [isEmpty, setIsEmpty] = useState(!value);
   const [activeFormats, setActiveFormats] = useState<ActiveFormats>({
     bold: false, italic: false, strikeThrough: false, link: false,
@@ -225,9 +231,99 @@ export default function RichTextEditor({ value, onChange, placeholder, className
   const [linkText, setLinkText] = useState('');
   const [savedRange, setSavedRange] = useState<Range | null>(null);
 
+  const [editingBlockElement, setEditingBlockElement] = useState<HTMLElement | null>(null);
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [tableModalBBCode, setTableModalBBCode] = useState('');
+
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [mediaModalUrls, setMediaModalUrls] = useState<string[]>([]);
+  const [mediaModalMode, setMediaModalMode] = useState<'carousel' | 'collage'>('carousel');
+
   const visibleLength = getVisibleLength(value);
   const isOverLimit = visibleLength > VISIBLE_CHAR_LIMIT;
   const isNearLimit = !isOverLimit && visibleLength > VISIBLE_CHAR_LIMIT * 0.85;
+
+  const checkEditorEmpty = useCallback((el: HTMLDivElement | null, val: string): boolean => {
+    if (!val || !val.trim()) return true;
+    if (!el) return !val.trim();
+    const hasBlockNodes = !!el.querySelector('table, img, iframe, [data-bbcode], blockquote, ul, ol, hr, div.relative');
+    const hasText = !!el.textContent?.trim();
+    return !hasBlockNodes && !hasText;
+  }, []);
+
+  const triggerChange = useCallback(() => {
+    if (!editorRef.current) return;
+    const bbcode = htmlToBBCode(editorRef.current.innerHTML);
+    isUpdatingRef.current = true;
+    onChange(bbcode);
+    setIsEmpty(checkEditorEmpty(editorRef.current, bbcode));
+    requestAnimationFrame(() => {
+      isUpdatingRef.current = false;
+    });
+  }, [onChange, checkEditorEmpty]);
+
+  const handleEditorClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const btn = target.closest('button[data-action]') as HTMLButtonElement | null;
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const action = btn.getAttribute('data-action');
+    const blockEl = btn.closest('[data-bbcode]') as HTMLElement | null;
+    if (!blockEl) return;
+
+    if (action === 'delete') {
+      // Сохраняем снапшот BBCode в undo-стек перед удалением
+      const currentBBCode = editorRef.current ? htmlToBBCode(editorRef.current.innerHTML) : '';
+      blockUndoStackRef.current.push(currentBBCode);
+      blockEl.remove();
+      triggerChange();
+      editorRef.current?.focus();
+      return;
+    }
+
+    if (action === 'edit') {
+      const rawBBCode = blockEl.getAttribute('data-bbcode');
+      if (!rawBBCode) return;
+
+      try {
+        const bbcode = decodeURIComponent(rawBBCode);
+        setEditingBlockElement(blockEl);
+
+        if (bbcode.startsWith('[table]')) {
+          setTableModalBBCode(bbcode);
+          setIsTableModalOpen(true);
+        } else if (bbcode.startsWith('[carousel]') || bbcode.startsWith('[collage]')) {
+          const isCarousel = bbcode.startsWith('[carousel]');
+          const match = bbcode.match(/\[(carousel|collage)\]([\s\S]*?)\[\/\1\]/i);
+          const urls = match ? match[2].trim().split('||').filter(Boolean) : [];
+          setMediaModalUrls(urls);
+          setMediaModalMode(isCarousel ? 'carousel' : 'collage');
+          setIsMediaModalOpen(true);
+        }
+      } catch (err) {
+        console.error('Failed to parse block bbcode:', err);
+      }
+    }
+  };
+
+  const handleInsertOrUpdateBlock = (newBBCode: string) => {
+    if (editingBlockElement) {
+      const parsedHtml = parsePostContentToHtml(newBBCode, true);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = parsedHtml;
+      const newNode = tempDiv.firstElementChild;
+      if (newNode) {
+        editingBlockElement.replaceWith(newNode);
+      } else {
+        editingBlockElement.outerHTML = parsedHtml;
+      }
+      setEditingBlockElement(null);
+      triggerChange();
+    }
+  };
 
   const getBottomOffset = () => {
     if (!editorClassName) return '3.5rem';
@@ -275,10 +371,10 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       const parsedHtml = parsePostContentToHtml(value, true);
       if (div.innerHTML !== parsedHtml) {
         div.innerHTML = parsedHtml;
-        setIsEmpty(!value || !div.textContent?.trim());
+        setIsEmpty(checkEditorEmpty(div, value));
       }
     }
-  }, [value]);
+  }, [value, checkEditorEmpty]);
 
   // Определяет активные форматы в текущей позиции курсора
   const updateActiveFormats = useCallback(() => {
@@ -348,12 +444,13 @@ export default function RichTextEditor({ value, onChange, placeholder, className
     const html = editorRef.current.innerHTML;
     const bbcode = htmlToBBCode(html);
     onChange(bbcode);
-    setIsEmpty(!bbcode || !editorRef.current.textContent?.trim());
+    setIsEmpty(checkEditorEmpty(editorRef.current, bbcode));
     updateActiveFormats();
+
     setTimeout(() => {
       isUpdatingRef.current = false;
     }, 0);
-  }, [onChange, updateActiveFormats]);
+  }, [onChange, updateActiveFormats, checkEditorEmpty]);
 
   // Обёртка для execCommand с обновлением состояния
   const execCmd = useCallback((command: string, arg?: string) => {
@@ -585,6 +682,22 @@ export default function RichTextEditor({ value, onChange, placeholder, className
 
   // ── Клавиатурные хуки ─────────────────────────────────────────────────────
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Ctrl/Cmd+Z — восстановление блоков удалённых через Notion-тулбар
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      if (blockUndoStackRef.current.length > 0) {
+        e.preventDefault();
+        const prev = blockUndoStackRef.current.pop()!;
+        if (editorRef.current) {
+          const parsed = parsePostContentToHtml(prev, true);
+          isUpdatingRef.current = true;
+          editorRef.current.innerHTML = parsed;
+          onChange(prev);
+          setIsEmpty(checkEditorEmpty(editorRef.current, prev));
+          requestAnimationFrame(() => { isUpdatingRef.current = false; });
+        }
+        return;
+      }
+    }
     // Backspace логика для пустых цитат, сносок и спойлеров, а также для отмены форматирования из начала блока
     if (e.key === 'Backspace') {
       const sel = window.getSelection();
@@ -962,6 +1075,14 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         <Divider />
 
         {/* Блочные */}
+        <BlockBtn onClick={() => { setTableModalBBCode(''); setIsTableModalOpen(true); }} active={false} title={strings?.create_table || 'Таблица'}>
+          <SvgIcon className="w-5 h-5 fill-current" id="IC-table" />
+        </BlockBtn>
+        {onCarouselOpen && (
+          <BlockBtn onClick={onCarouselOpen} active={false} title={strings?.editor_carousel || 'Карусель / Коллаж'}>
+            <SvgIcon className="w-5 h-5 fill-current" id="IC-photos" />
+          </BlockBtn>
+        )}
         <BlockBtn onClick={() => insertBlock('quote')} active={activeFormats.quote} title={strings?.editor_quote || 'Цитата'}>
           <SvgIcon className="w-5 h-5 fill-current" id="IC-quote" />
         </BlockBtn>
@@ -984,6 +1105,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
+          onClick={handleEditorClick}
           onInput={handleInput}
           onBlur={handleInput}
           onKeyDown={handleKeyDown}
@@ -993,9 +1115,9 @@ export default function RichTextEditor({ value, onChange, placeholder, className
             'rich-editor bg-transparent px-3 pt-[2.5rem] w-full text-white max-h-[calc(100vh-14rem)] md:max-h-[calc(100vh-20rem)] overflow-y-auto',
             'focus:outline-none duration-300 whitespace-pre-wrap break-words',
             '[&_a]:text-purple-500 [&_a]:hover:text-purple-400 [&_a]:duration-300',
-            editorClassName || 'pb-24 min-h-[16rem]'
+            editorClassName || 'pb-36 min-h-[16rem]'
           )}
-          style={{ userSelect: 'text' }}
+          style={{ userSelect: 'text', scrollPaddingBottom: scrollPaddingBottom ?? '4.5rem' }}
         />
 
         {/* ── Тянулка (Resizer Handle) ── */}
@@ -1057,6 +1179,47 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           </button>
         </form>
       </Modal>
+
+      {/* ── Модальное окно редактирования/создания таблицы ── */}
+      <PostBlockTableModal
+        isOpen={isTableModalOpen}
+        onClose={() => {
+          setIsTableModalOpen(false);
+          setEditingBlockElement(null);
+        }}
+        onInsert={(bbcode) => {
+          if (editingBlockElement) {
+            handleInsertOrUpdateBlock(bbcode);
+          } else {
+            const html = parsePostContentToHtml(bbcode, true);
+            document.execCommand('insertHTML', false, html);
+            triggerChange();
+          }
+        }}
+        initialBBCode={tableModalBBCode}
+        strings={strings}
+      />
+
+      {/* ── Модальное окно редактирования каруселей/коллажей ── */}
+      <PostBlockMediaModal
+        isOpen={isMediaModalOpen}
+        onClose={() => {
+          setIsMediaModalOpen(false);
+          setEditingBlockElement(null);
+        }}
+        onInsert={(bbcode) => {
+          if (editingBlockElement) {
+            handleInsertOrUpdateBlock(bbcode);
+          } else {
+            const html = parsePostContentToHtml(bbcode, true);
+            document.execCommand('insertHTML', false, html);
+            triggerChange();
+          }
+        }}
+        initialUrls={mediaModalUrls}
+        initialMode={mediaModalMode}
+        strings={strings}
+      />
     </div>
   );
 }

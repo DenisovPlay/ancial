@@ -2,161 +2,237 @@
 
 import React, { useState, useEffect } from 'react';
 import Modal from './modal';
+import { SvgIcon } from '../feed/editor-shared';
+
+type TableCell = {
+  text: string;
+  isHeader?: boolean;
+};
 
 type PostBlockTableModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onInsert: (bbcode: string) => void;
+  initialBBCode?: string;
   strings?: Record<string, string>;
 };
 
-const MIN_ROWS = 2;
-const MAX_ROWS = 6;
-const MIN_COLS = 2;
-const MAX_COLS = 6;
+export function parseTableBBCode(bbcode: string): TableCell[][] {
+  const matrix: TableCell[][] = [];
+  const trRegex = /\[tr\]([\s\S]*?)\[\/tr\]/gi;
+  let trMatch;
 
-function buildEmptyGrid(rows: number, cols: number): string[][] {
-  return Array.from({ length: rows }, () => Array(cols).fill(''));
+  while ((trMatch = trRegex.exec(bbcode)) !== null) {
+    const row: TableCell[] = [];
+    const cellRegex = /\[(th|td)\]([\s\S]*?)\[\/\1\]/gi;
+    let cellMatch;
+    while ((cellMatch = cellRegex.exec(trMatch[1])) !== null) {
+      const tag = cellMatch[1].toLowerCase();
+      row.push({
+        text: cellMatch[2].trim(),
+        isHeader: tag === 'th',
+      });
+    }
+    if (row.length > 0) {
+      matrix.push(row);
+    }
+  }
+
+  if (matrix.length === 0) {
+    // Дефолтная таблица 2x2
+    return [
+      [{ text: '', isHeader: true }, { text: '', isHeader: true }],
+      [{ text: '', isHeader: false }, { text: '', isHeader: false }],
+    ];
+  }
+
+  return matrix;
+}
+
+export function buildTableBBCode(matrix: TableCell[][]): string {
+  if (!matrix.length || !matrix[0].length) return '';
+
+  let result = '[table]\n';
+  matrix.forEach((row) => {
+    result += '[tr]';
+    row.forEach((cell) => {
+      const tag = cell.isHeader ? 'th' : 'td';
+      result += `[${tag}]${cell.text.trim()}[/${tag}]`;
+    });
+    result += '[/tr]\n';
+  });
+  result += '[/table]';
+  return result;
 }
 
 export default function PostBlockTableModal({
   isOpen,
   onClose,
   onInsert,
+  initialBBCode,
   strings,
 }: PostBlockTableModalProps) {
-  const [rows, setRows] = useState(3);
-  const [cols, setCols] = useState(3);
-  // data[0] = заголовки (th), data[1..] = строки данных (td)
-  const [data, setData] = useState<string[][]>(() => buildEmptyGrid(3, 3));
+  const [matrix, setMatrix] = useState<TableCell[][]>(() => parseTableBBCode(initialBBCode || ''));
 
-  // Пересобираем сетку при изменении размеров
   useEffect(() => {
-    setData((prev) => {
-      const newData = buildEmptyGrid(rows, cols);
-      prev.forEach((row, ri) => {
-        row.forEach((cell, ci) => {
-          if (ri < rows && ci < cols) {
-            newData[ri][ci] = cell;
-          }
-        });
-      });
-      return newData;
-    });
-  }, [rows, cols]);
+    if (isOpen) {
+      setMatrix(parseTableBBCode(initialBBCode || ''));
+    }
+  }, [isOpen, initialBBCode]);
 
-  const handleCellChange = (ri: number, ci: number, val: string) => {
-    setData((prev) => {
-      const next = prev.map((r) => [...r]);
-      next[ri][ci] = val;
-      return next;
-    });
-  };
-
-  const handleInsert = () => {
-    let bbcode = '\n[table]\n';
-    data.forEach((row, ri) => {
-      bbcode += '[tr]';
-      row.forEach((cell) => {
-        const tag = ri === 0 ? 'th' : 'td';
-        bbcode += `[${tag}]${cell}[/${tag}]`;
-      });
-      bbcode += '[/tr]\n';
-    });
-    bbcode += '[/table]\n';
-    onInsert(bbcode);
-    onClose();
-  };
-
-  const handleClose = () => {
-    setData(buildEmptyGrid(rows, cols));
-    onClose();
-  };
-
-  function SizeBtn({
-    value,
-    min,
-    max,
-    onChange,
-    label,
-  }: {
-    value: number;
-    min: number;
-    max: number;
-    onChange: (v: number) => void;
-    label: string;
-  }) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-zinc-400 w-16">{label}</span>
-        <button
-          type="button"
-          onClick={() => onChange(Math.max(min, value - 1))}
-          disabled={value <= min}
-          className="w-7 h-7 flex items-center justify-center rounded-2xl border border-zinc-600/30 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 duration-300 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-bold text-sm"
-        >
-          −
-        </button>
-        <span className="w-6 text-center font-bold text-zinc-100 text-sm">{value}</span>
-        <button
-          type="button"
-          onClick={() => onChange(Math.min(max, value + 1))}
-          disabled={value >= max}
-          className="w-7 h-7 flex items-center justify-center rounded-2xl border border-zinc-600/30 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 duration-300 active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed font-bold text-sm"
-        >
-          +
-        </button>
-      </div>
+  const updateCell = (rowIndex: number, colIndex: number, text: string) => {
+    setMatrix((prev) =>
+      prev.map((row, rIdx) =>
+        rIdx === rowIndex
+          ? row.map((cell, cIdx) => (cIdx === colIndex ? { ...cell, text } : cell))
+          : row
+      )
     );
-  }
+  };
+
+  const toggleRowHeader = (rowIndex: number) => {
+    setMatrix((prev) =>
+      prev.map((row, rIdx) =>
+        rIdx === rowIndex
+          ? row.map((cell) => ({ ...cell, isHeader: !cell.isHeader }))
+          : row
+      )
+    );
+  };
+
+  const addRow = () => {
+    setMatrix((prev) => {
+      const colsCount = prev[0]?.length || 2;
+      const newRow: TableCell[] = Array.from({ length: colsCount }, () => ({
+        text: '',
+        isHeader: false,
+      }));
+      return [...prev, newRow];
+    });
+  };
+
+  const removeRow = (rowIndex: number) => {
+    if (matrix.length <= 1) return;
+    setMatrix((prev) => prev.filter((_, idx) => idx !== rowIndex));
+  };
+
+  const addColumn = () => {
+    setMatrix((prev) =>
+      prev.map((row, rIdx) => [
+        ...row,
+        { text: '', isHeader: rIdx === 0 && row[0]?.isHeader },
+      ])
+    );
+  };
+
+  const removeColumn = (colIndex: number) => {
+    if ((matrix[0]?.length || 0) <= 1) return;
+    setMatrix((prev) => prev.map((row) => row.filter((_, idx) => idx !== colIndex)));
+  };
+
+  const handleSave = () => {
+    const bbcode = buildTableBBCode(matrix);
+    if (bbcode) {
+      onInsert(bbcode);
+      onClose();
+    }
+  };
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
-      title={strings?.editor_table || 'Таблица'}
+      onClose={onClose}
+      title={initialBBCode ? strings?.edit_table || 'Редактировать таблицу' : strings?.create_table || 'Создать таблицу'}
+      width="lg"
     >
       <div className="flex flex-col gap-3">
-        {/* Размер таблицы */}
-        <div className="flex gap-3 flex-wrap p-3 bg-zinc-800/40 rounded-3xl border border-zinc-700/40">
-          <SizeBtn
-            label="Строки"
-            value={rows}
-            min={MIN_ROWS}
-            max={MAX_ROWS}
-            onChange={setRows}
-          />
-          <SizeBtn
-            label="Колонки"
-            value={cols}
-            min={MIN_COLS}
-            max={MAX_COLS}
-            onChange={setCols}
-          />
+        {/* Верхняя панель управления колонками и строками */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={addRow}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/30 rounded-2xl duration-300 active:scale-95 cursor-pointer"
+            >
+              <SvgIcon className="w-4 h-4 fill-current" id="IC-plus" />
+              <span>{strings?.add_row || '+ Строка'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={addColumn}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/30 rounded-2xl duration-300 active:scale-95 cursor-pointer"
+            >
+              <SvgIcon className="w-4 h-4 fill-current" id="IC-plus" />
+              <span>{strings?.add_column || '+ Столбец'}</span>
+            </button>
+          </div>
+          <span className="text-xs text-zinc-400">
+            {matrix.length} × {matrix[0]?.length || 0}
+          </span>
         </div>
 
-        <p className="text-xs text-zinc-500 px-1">
-          Первая строка — заголовки таблицы.
-        </p>
-
-        {/* Редактор ячеек */}
-        <div className="overflow-x-auto rounded-2xl border border-zinc-700/50">
-          <table className="w-full border-collapse min-w-max">
-            <tbody>
-              {data.map((row, ri) => (
-                <tr key={ri} className={ri === 0 ? 'bg-zinc-800' : 'even:bg-zinc-800/30'}>
-                  {row.map((cell, ci) => (
-                    <td key={ci} className="border border-zinc-700/50 p-0.5">
+        {/* Табличная Notion-сетка */}
+        <div className="overflow-x-auto max-h-[50vh] border border-zinc-700/50 rounded-2xl bg-zinc-950/40">
+          <table className="w-full border-collapse">
+            <thead className="px-2">
+              <tr>
+                <th className="w-10 p-1 text-xs text-zinc-500 font-normal border-b border-zinc-800">#</th>
+                {matrix[0]?.map((_, colIdx) => (
+                  <th key={`col-head-${colIdx}`} className="p-1 border-b border-zinc-800">
+                    <div className="flex items-center justify-between gap-1 px-1">
+                      <span className="text-xs text-zinc-400 font-medium">Столбец {colIdx + 1}</span>
+                      {matrix[0].length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeColumn(colIdx)}
+                          className="p-1 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-800 duration-200 cursor-pointer"
+                          title="Удалить столбец"
+                        >
+                          <SvgIcon className="w-3.5 h-3.5 fill-current" id="IC-trash" />
+                        </button>
+                      )}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="px-2">
+              {matrix.map((row, rowIdx) => (
+                <tr key={`row-${rowIdx}`} className="group hover:bg-zinc-900/50">
+                  <td className="w-10 p-1 text-center border-b border-zinc-800/60">
+                    <div className="flex flex-col items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleRowHeader(rowIdx)}
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-bold cursor-pointer transition-colors ${row[0]?.isHeader
+                          ? 'bg-purple-500/30 text-purple-300 border border-purple-500/40'
+                          : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
+                          }`}
+                        title="Переключить заголовок (TH/TD)"
+                      >
+                        {row[0]?.isHeader ? 'TH' : 'TD'}
+                      </button>
+                      {matrix.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeRow(rowIdx)}
+                          className="p-1 text-zinc-500 hover:text-red-400 rounded-lg duration-200 cursor-pointer opacity-0 group-hover:opacity-100"
+                          title="Удалить строку"
+                        >
+                          <SvgIcon className="w-3.5 h-3.5 fill-current" id="IC-trash" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  {row.map((cell, colIdx) => (
+                    <td key={`cell-${rowIdx}-${colIdx}`} className="p-1 border-b border-zinc-800/60 min-w-[140px]">
                       <input
                         type="text"
-                        value={cell}
-                        onChange={(e) => handleCellChange(ri, ci, e.target.value)}
-                        placeholder={ri === 0 ? `Загол. ${ci + 1}` : `Ячейка`}
-                        className={`w-full bg-transparent px-2 py-1.5 text-sm focus:outline-none focus:ring-0 min-w-[80px] ${
-                          ri === 0
-                            ? 'font-semibold text-zinc-200 placeholder-zinc-600'
-                            : 'text-zinc-300 placeholder-zinc-700'
-                        }`}
+                        value={cell.text}
+                        onChange={(e) => updateCell(rowIdx, colIdx, e.target.value)}
+                        placeholder={`Ячейка ${rowIdx + 1}:${colIdx + 1}`}
+                        className={`w-full bg-zinc-900/90 border border-zinc-700/50 rounded-xl px-2.5 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-purple-500 duration-200 ${cell.isHeader ? 'font-semibold bg-zinc-800/70 text-purple-200' : ''
+                          }`}
                       />
                     </td>
                   ))}
@@ -166,14 +242,23 @@ export default function PostBlockTableModal({
           </table>
         </div>
 
-        {/* Кнопка вставки */}
-        <button
-          type="button"
-          onClick={handleInsert}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
-        >
-          {strings?.editor_table || 'Вставить таблицу'}
-        </button>
+        {/* Нижние кнопки сохранения */}
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/30 rounded-3xl duration-300 active:scale-95 cursor-pointer"
+          >
+            {strings?.cancel || 'Отмена'}
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="px-5 py-2 text-sm font-bold text-white bg-purple-500 hover:bg-purple-600 border border-purple-400/30 rounded-3xl duration-300 active:scale-95 shadow cursor-pointer"
+          >
+            {initialBBCode ? strings?.save || 'Сохранить' : strings?.insert || 'Вставить'}
+          </button>
+        </div>
       </div>
     </Modal>
   );

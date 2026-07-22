@@ -17,8 +17,10 @@ function NetStatusBanner() {
 
   return (
     <div
-      className={`fixed top-0 inset-x-0 w-full flex items-center justify-center pt-[calc(env(safe-area-inset-top,0px)+0.25rem)] z-[9999999999] pointer-events-none transition-[opacity,transform,visibility] duration-[320ms] ease-[cubic-bezier(0.34,1.4,0.64,1)] ${
-        isVisible ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-full opacity-0'
+      className={`fixed top-0 inset-x-0 w-full flex items-center justify-center pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-[9999999999] pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+        isVisible
+          ? 'visible translate-y-0 opacity-100 scale-100'
+          : 'invisible -translate-y-full opacity-0 scale-90'
       }`}
       aria-live="polite"
       aria-hidden={!isVisible}

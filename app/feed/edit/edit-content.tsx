@@ -193,6 +193,10 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       editor_quote: lang?.editor_quote || 'Цитата',
       editor_spoiler: lang?.editor_spoiler || 'Спойлер',
       editor_footnote: lang?.editor_footnote || 'Сноска',
+      create_table: lang?.create_table || 'Создать таблицу',
+      edit_table: lang?.edit_table || 'Редактировать таблицу',
+      add_row: lang?.add_row || '+ Строка',
+      add_column: lang?.add_column || '+ Столбец',
     };
   }, [lang]);
 

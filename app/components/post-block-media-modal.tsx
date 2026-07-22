@@ -18,6 +18,8 @@ type PostBlockMediaModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onInsert: (bbcode: string) => void;
+  initialUrls?: string[];
+  initialMode?: MediaMode;
   strings?: Record<string, string>;
 };
 
@@ -25,12 +27,31 @@ export default function PostBlockMediaModal({
   isOpen,
   onClose,
   onInsert,
+  initialUrls,
+  initialMode = 'carousel',
   strings,
 }: PostBlockMediaModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [images, setImages] = useState<DraftMediaImage[]>([]);
-  const [mode, setMode] = useState<MediaMode>('carousel');
+  const [mode, setMode] = useState<MediaMode>(initialMode);
   const [isUploading, setIsUploading] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      if (initialUrls && initialUrls.length > 0) {
+        const initialDrafts: DraftMediaImage[] = initialUrls.map((url) => ({
+          id: makeId(),
+          previewUrl: url,
+          uploadedUrl: url,
+          status: 'uploaded',
+        }));
+        setImages(initialDrafts);
+      } else {
+        setImages([]);
+      }
+    }
+  }, [isOpen, initialUrls, initialMode]);
 
   const MAX_IMAGES = 6;
   const hasUploading = images.some((i) => i.status === 'uploading');
@@ -38,8 +59,11 @@ export default function PostBlockMediaModal({
   const canInsert = images.filter((i) => i.status === 'uploaded').length >= 2 && !hasUploading;
 
   const handleClose = () => {
-    // Отзываем ObjectURL для всех черновиков
-    images.forEach((img) => safeRevokeObjectUrl(img.previewUrl));
+    images.forEach((img) => {
+      if (img.previewUrl.startsWith('blob:')) {
+        safeRevokeObjectUrl(img.previewUrl);
+      }
+    });
     setImages([]);
     setMode('carousel');
     onClose();
@@ -86,9 +110,33 @@ export default function PostBlockMediaModal({
     setIsUploading(false);
   };
 
+  const moveLeft = (index: number) => {
+    if (index <= 0) return;
+    setImages((prev) => {
+      const copy = [...prev];
+      const temp = copy[index - 1];
+      copy[index - 1] = copy[index];
+      copy[index] = temp;
+      return copy;
+    });
+  };
+
+  const moveRight = (index: number) => {
+    if (index >= images.length - 1) return;
+    setImages((prev) => {
+      const copy = [...prev];
+      const temp = copy[index + 1];
+      copy[index + 1] = copy[index];
+      copy[index] = temp;
+      return copy;
+    });
+  };
+
   const handleRemove = (id: string) => {
     const img = images.find((i) => i.id === id);
-    if (img) safeRevokeObjectUrl(img.previewUrl);
+    if (img && img.previewUrl.startsWith('blob:')) {
+      safeRevokeObjectUrl(img.previewUrl);
+    }
     setImages((prev) => prev.filter((i) => i.id !== id));
   };
 
@@ -104,8 +152,11 @@ export default function PostBlockMediaModal({
       ? `\n[carousel]${urls}[/carousel]\n`
       : `\n[collage]${urls}[/collage]\n`;
 
-    // Освобождаем Object URLs
-    images.forEach((img) => safeRevokeObjectUrl(img.previewUrl));
+    images.forEach((img) => {
+      if (img.previewUrl.startsWith('blob:')) {
+        safeRevokeObjectUrl(img.previewUrl);
+      }
+    });
     setImages([]);
     onInsert(bbcode);
     onClose();
@@ -160,8 +211,8 @@ export default function PostBlockMediaModal({
         {/* Сетка превью */}
         {images.length > 0 && (
           <div className="grid grid-cols-3 gap-1.5">
-            {images.map((img) => (
-              <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/40">
+            {images.map((img, idx) => (
+              <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/40 group/item">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={img.previewUrl}
@@ -181,14 +232,43 @@ export default function PostBlockMediaModal({
                     <SvgIcon className="w-6 h-6 fill-red-400" id="IC-times" />
                   </div>
                 )}
+
+                {/* Навигационные кнопки смены порядка */}
+                {img.status !== 'uploading' && (
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 flex items-center justify-between px-1 pointer-events-none">
+                    {idx > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => moveLeft(idx)}
+                        className="p-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white cursor-pointer active:scale-95 duration-200 pointer-events-auto"
+                        title="Сдвинуть влево"
+                      >
+                        <SvgIcon className="w-3.5 h-3.5 fill-current" id="IC-chevron-left" />
+                      </button>
+                    ) : <div />}
+
+                    {idx < images.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => moveRight(idx)}
+                        className="p-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white cursor-pointer active:scale-95 duration-200 pointer-events-auto"
+                        title="Сдвинуть вправо"
+                      >
+                        <SvgIcon className="w-3.5 h-3.5 fill-current" id="IC-chevron-right" />
+                      </button>
+                    ) : <div />}
+                  </div>
+                )}
+
                 {/* Кнопка удаления */}
                 {img.status !== 'uploading' && (
                   <button
                     type="button"
                     onClick={() => handleRemove(img.id)}
                     className="absolute top-1 right-1 w-6 h-6 rounded-full bg-zinc-900/80 border border-zinc-600/40 flex items-center justify-center cursor-pointer active:scale-95 duration-300 hover:bg-zinc-800"
+                    title="Удалить фото"
                   >
-                    <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />
+                    <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-trash" />
                   </button>
                 )}
               </div>

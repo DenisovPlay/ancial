@@ -1225,5 +1225,9 @@ export const ru: Record<string, string> = {
     "total_tracks": "Всего треков",
     "your_artists": "Ваши артисты",
     "album_likes": "Лайки на альбомах",
-    "try_refresh_page": "Попробуйте обновить страницу"
+    "try_refresh_page": "Попробуйте обновить страницу",
+    "create_table": "Создать таблицу",
+    "edit_table": "Редактировать таблицу",
+    "add_row": "Строка",
+    "add_column": "Столбец"
 };

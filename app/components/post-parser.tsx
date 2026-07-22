@@ -76,16 +76,19 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
                 const tag = cellMatch[1].toLowerCase();
                 const content = cellMatch[2];
                 if (tag === 'th') {
-                    cells += `<th class="border border-zinc-700/60 px-3 py-1.5 bg-zinc-800 font-semibold text-zinc-200 text-sm text-left">${content}</th>`;
+                    cells += `<th class="border border-zinc-700/60 px-3 py-1.5 bg-zinc-800 font-semibold text-zinc-200 text-sm text-left h-10 min-h-[2.5rem] min-w-[3.5rem]">${content}</th>`;
                 } else {
-                    cells += `<td class="border border-zinc-700/60 px-3 py-1.5 text-zinc-300 text-sm">${content}</td>`;
+                    cells += `<td class="border border-zinc-700/60 px-3 py-1.5 text-zinc-300 text-sm h-10 min-h-[2.5rem] min-w-[3.5rem]">${content}</td>`;
                 }
             }
             rows += `<tr class="even:bg-zinc-800/30">${cells}</tr>`;
         }
 
+        const overlay = isPreview
+            ? `<div class="notion-block-toolbar" contenteditable="false"><button type="button" data-action="edit" data-type="table" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-white transition-colors cursor-pointer" title="Редактировать таблицу"><svg class="w-4 h-4 fill-current"><use href="#IC-edit"></use></svg></button><button type="button" data-action="delete" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-red-400 transition-colors cursor-pointer" title="Удалить"><svg class="w-4 h-4 fill-current"><use href="#IC-trash"></use></svg></button></div>`
+            : '';
         const dataAttr = isPreview ? ` data-bbcode="${encodeURIComponent(match)}" contenteditable="false"` : '';
-        return `<div class="overflow-x-auto my-2 rounded-2xl border border-zinc-700/50"${dataAttr}><table class="w-full border-collapse">${rows}</table></div>`;
+        return `<div class="relative group overflow-x-auto my-2 rounded-2xl border border-zinc-700/50"${dataAttr}>${overlay}<table class="w-full border-collapse">${rows}</table></div>`;
     });
 
     // Спойлер — инлайновый Telegram-style
@@ -124,11 +127,13 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
         const items = urls.trim().split('||').map((u: string) => u.trim()).filter(Boolean);
         if (!items.length) return '';
         const count = items.length;
+        const countBadgeClass = isPreview ? "carousel-count-badge is-preview" : "carousel-count-badge";
+
         const countBadge = count > 1
-            ? `<div class="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-2 py-0.5 text-xs font-semibold text-white shadow backdrop-blur-md flex items-center gap-1"><svg class="w-3.5 h-3.5 fill-current inline-block align-middle" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg> ${count}</div>`
+            ? `<div class="${countBadgeClass}"><svg class="w-3.5 h-3.5 fill-current inline-block align-middle" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg> ${count}</div>`
             : '';
         const slides = items.map((url: string, i: number) =>
-            `<div class="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] cursor-pointer active:scale-95 duration-300"><img src="${url}" alt="Слайд ${i + 1}" class="h-64 md:h-96 w-full rounded-3xl object-cover shadow" loading="lazy" draggable="false" /></div>`
+            `<div class="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] cursor-pointer duration-300 select-none"><img src="${url}" alt="Слайд ${i + 1}" class="h-64 md:h-96 w-full rounded-3xl object-contain bg-zinc-950/80 shadow border border-zinc-800/40 pointer-events-auto" loading="lazy" draggable="false" /></div>`
         ).join('');
 
         const leftArrow = count > 1
@@ -138,8 +143,11 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             ? `<button type="button" onclick="const container = this.parentElement.querySelector('.overflow-x-auto'); container.scrollBy({ left: container.clientWidth * 0.7, behavior: 'smooth' })" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>`
             : '';
 
+        const overlay = isPreview
+            ? `<div class="notion-block-toolbar" contenteditable="false"><button type="button" data-action="edit" data-type="media" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-white transition-colors cursor-pointer" title="Редактировать карусель"><svg class="w-4 h-4 fill-current"><use href="#IC-edit"></use></svg></button><button type="button" data-action="delete" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-red-400 transition-colors cursor-pointer" title="Удалить"><svg class="w-4 h-4 fill-current"><use href="#IC-trash"></use></svg></button></div>`
+            : '';
         const dataAttr = isPreview ? ` data-bbcode="${encodeURIComponent(match)}" contenteditable="false"` : '';
-        return `<div class="relative -mx-3 my-2 group/carousel"${dataAttr}>${leftArrow}${rightArrow}${countBadge}<div class="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth scroll-pl-3 scroll-pr-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden before:block before:w-3 before:shrink-0 before:content-[''] after:block after:w-3 after:shrink-0 after:content-['']">${slides}</div></div>`;
+        return `<div class="relative group my-2 group/carousel"${dataAttr}>${overlay}${leftArrow}${rightArrow}${countBadge}<div class="flex gap-3 overflow-x-auto overflow-y-hidden touch-pan-y overscroll-x-contain -mx-3 px-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">${slides}</div></div>`;
     });
 
     // Коллаж (CSS Grid)
@@ -152,8 +160,11 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             return `<img src="${url}" alt="Коллаж ${i + 1}" class="${spanClass} w-full h-40 object-cover rounded-2xl shadow cursor-pointer active:scale-95 duration-300" loading="lazy" draggable="false" />`;
         }).join('');
 
+        const overlay = isPreview
+            ? `<div class="notion-block-toolbar" contenteditable="false"><button type="button" data-action="edit" data-type="media" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-white transition-colors cursor-pointer" title="Редактировать коллаж"><svg class="w-4 h-4 fill-current"><use href="#IC-edit"></use></svg></button><button type="button" data-action="delete" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-red-400 transition-colors cursor-pointer" title="Удалить"><svg class="w-4 h-4 fill-current"><use href="#IC-trash"></use></svg></button></div>`
+            : '';
         const dataAttr = isPreview ? ` data-bbcode="${encodeURIComponent(match)}" contenteditable="false"` : '';
-        return `<div class="grid ${cols} gap-1.5 my-2"${dataAttr}>${imgs}</div>`;
+        return `<div class="relative group my-2"${dataAttr}>${overlay}<div class="grid ${cols} gap-1.5">${imgs}</div></div>`;
     });
 
     // ─── ИНЛАЙН-ФОРМАТИРОВАНИЕ ───────────────────────────────────────────────
