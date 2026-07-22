@@ -391,7 +391,7 @@ export class AncialAPI {
   }
 
   static async updateProfileMedia<T = unknown>(field: 'cover' | 'img', url: string): Promise<T> {
-    return this.request<T>('/user/UpdateInfo.php', { method: 'POST', body: new URLSearchParams({ [field]: url }) });
+    return this.request<T>('/user/UpdateProfile.php', { method: 'POST', body: new URLSearchParams({ [field]: url }) });
   }
 
   static async securityAction<T = unknown>(action: 'change_password' | 'change_email_phone', params: Record<string, string>): Promise<T> {
