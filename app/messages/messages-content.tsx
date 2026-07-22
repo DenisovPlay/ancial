@@ -1781,15 +1781,15 @@ export default function MessagesContent() {
                               </button>
                             );
                           })}
-                          <div className={cn('lg:pb-20', isPulsePlayerActive ? 'pb-48' : 'pb-28')} />
+                          <div className={cn('lg:pb-20', isPulsePlayerActive ? 'pb-56' : 'pb-36')} />
                         </div>
 
                         <button
                           type="button"
                           onClick={() => setCreateGroupModalOpen(true)}
                           className={cn(
-                            'fixed right-3 lg:absolute lg:bottom-3 lg:right-3 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-500 active:scale-95 duration-300 border border-zinc-600/30 cursor-pointer',
-                            isPulsePlayerActive ? 'bottom-36' : 'bottom-21',
+                            'fixed right-3 lg:absolute z-40 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-500 active:scale-95 duration-300 border border-zinc-600/30 cursor-pointer',
+                            isPulsePlayerActive ? 'bottom-38 lg:bottom-22' : 'bottom-21 lg:bottom-3',
                           )}
                           title={lang?.create_group || 'Создать групповой чат'}
                         >
@@ -1984,8 +1984,8 @@ export default function MessagesContent() {
 
                                 const groupSenderName = isGroupDialog
                                   ? (senderMember
-                                      ? ((senderMember as any).name || `${senderMember.fname || ''} ${senderMember.lname || ''}`.trim() || senderMember.username || 'Участник')
-                                      : 'Участник')
+                                    ? ((senderMember as any).name || `${senderMember.fname || ''} ${senderMember.lname || ''}`.trim() || senderMember.username || 'Участник')
+                                    : 'Участник')
                                   : undefined;
 
                                 const groupSenderAvatarUrl = isGroupDialog

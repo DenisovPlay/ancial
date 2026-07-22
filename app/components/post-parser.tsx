@@ -215,8 +215,8 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
     // 4. Очистка лишних <br> вокруг блочных элементов
     // Блочные элементы (h2-h4, списки, цитаты, таблицы, спойлеры) сами по себе переносят строку.
     // Избыточные <br> перед ними или после них создают огромные пустые дыры в тексте.
-    html = html.replace(/<br\s*\/?>\s*(<\/?(?:h2|h3|h4|blockquote|ul|ol|details|table|div)\b)/gi, '$1');
-    html = html.replace(/(<\/?(?:h2|h3|h4|blockquote|ul|ol|details|table|div)\b[^>]*>)\s*<br\s*\/?>/gi, '$1');
+    html = html.replace(/(?:<br\s*\/?>\s*)+(<\/?(?:h2|h3|h4|blockquote|ul|ol|details|table|div)\b)/gi, '$1');
+    html = html.replace(/(<\/?(?:h2|h3|h4|blockquote|ul|ol|details|table|div)\b[^>]*>)\s*(?:<br\s*\/?>\s*)*/gi, '$1');
 
     // 5. Если в редакторе документ оканчивается на block-элемент (div карусели/коллажа/таблицы),
     // дописываем пустой параграф <p><br></p> в конец, чтобы курсор не застревал.
