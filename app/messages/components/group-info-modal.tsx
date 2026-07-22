@@ -480,7 +480,7 @@ export default function GroupInfoModal({
               type="button"
               onClick={handleLeaveGroup}
               disabled={loadingAction}
-              className="w-full p-3 rounded-3xl bg-red-800 hover:bg-red-600/30 border border-zinc-600/30 font-bold text-red-400 duration-300 active:scale-95 cursor-pointer mt-1"
+              className="z-[30] w-full p-3 rounded-3xl bg-red-800 hover:bg-red-700 border border-zinc-600/30 font-bold text-red-400 duration-300 active:scale-95 cursor-pointer mt-1"
             >
               Покинуть чат
             </button>
