@@ -682,6 +682,71 @@ body:has(.apps-overlay-route) #main-content {
   padding-right: 0 !important;
 }
 
+.post-content-container>s {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>em {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>strong {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>b {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>i {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>h1 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>h2 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>h3 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>h4 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>h5 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>h6 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>a {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.post-content-container>span {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
 /* Для таблиц внешнее выравнивание по сетке поста, а внутри контейнера таблицы px-3 не нужен */
 .post-content-container>div:has(> table),
 .post-content-container>table {

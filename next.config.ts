@@ -25,7 +25,31 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: '*.ancial.ru',
+      },
+      {
+        protocol: 'https',
         hostname: 'cdn.betterttv.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.userapi.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.vk.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.vkusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.vk-cdn.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.avatars.yandex.net',
       },
     ],
   },

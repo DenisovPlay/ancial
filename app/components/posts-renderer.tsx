@@ -201,9 +201,7 @@ function ExpandablePostContent({
     const measure = () => {
       const fullHeight = el.scrollHeight;
       const MAX_HEIGHT = 260;
-      if (fullHeight > MAX_HEIGHT + 24) {
-        setIsOverflowing(true);
-      }
+      setIsOverflowing(fullHeight > MAX_HEIGHT + 24);
     };
 
     measure();
@@ -243,7 +241,7 @@ function ExpandablePostContent({
           userSelect: 'text',
         }}
         className={cn(
-          '-mx-3 px-3 w-[calc(100%+1.5rem)] text-base lg:text-lg text-zinc-200 font-medium break-words overflow-hidden relative post-content-container',
+          '-mx-3 px-3 -my-1 py-1 w-[calc(100%+1.5rem)] text-base lg:text-lg text-zinc-200 font-medium break-words overflow-hidden relative post-content-container',
           animate && 'transition-[max-height] duration-500 ease-in-out',
         )}
         dangerouslySetInnerHTML={{ __html: parsedHtml }}
@@ -755,7 +753,7 @@ function PostCardInner({
             postId={post.id}
             onClick={handlePostContentClick}
             strings={strings}
-            initiallyOverflowing={!!post.is_long_content}
+            initiallyOverflowing={flag(post.is_long_content)}
             noCollapse={noCollapse}
           />
         )}
