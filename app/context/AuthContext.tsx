@@ -141,30 +141,65 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
+    const tryRestoreFromOfflineCache = () => {
+      try {
+        const cachedUser = cache.get<User>('user_profile');
+        const token = cache.get<string>('token');
+        if (cachedUser && token) {
+          console.log('[Auth] Восстановление авторизации из локального кэша в офлайне.');
+          applyAuthState(true, cachedUser);
+          return true;
+        }
+      } catch (e) {
+        console.error('[Auth] Не удалось прочитать локальный кэш пользователя', e);
+      }
+      return false;
+    };
+
+    // Если устройство офлайн — сразу используем локальный кэш профиля
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (tryRestoreFromOfflineCache()) {
+        if (!silent) setIsLoading(false);
+        return;
+      }
+    }
+
     if (!silent) {
       setIsLoading(true);
     }
     publishAuthState(authStateRef.current.isAuthenticated, authStateRef.current.user, true);
+
     try {
       const readSessionUser = async () => {
-        const checkRes = await fetch(`/api/V2/auth/CheckStatus.php`, {
-          cache: 'no-store',
-          credentials: 'include',
-        });
-
         try {
+          const checkRes = await fetch(`/api/V2/auth/CheckStatus.php`, {
+            cache: 'no-store',
+            credentials: 'include',
+          });
+
+          if (!checkRes.ok) {
+            return { auth: false, isNetworkError: true };
+          }
+
           const json = await checkRes.json();
           if (json.success && json.data) {
             return json.data;
           }
           return { auth: false };
         } catch {
-          return { auth: false };
+          return { auth: false, isNetworkError: true };
         }
       };
 
       // 1. Проверяем текущую сессию на сервере
       let checkData = await readSessionUser();
+
+      if (checkData.isNetworkError) {
+        // Ошибка сети — пытаемся сохранить авторизацию через локальный кэш
+        if (tryRestoreFromOfflineCache()) {
+          return;
+        }
+      }
 
       if (checkData.auth === true && checkData.user) {
         if (checkData.token) {
@@ -182,8 +217,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (restored) {
             console.log('[Auth] Авторизован через токен. Обновляем данные.');
 
-            // После логина по токену повторно читаем серверную сессию,
-            // чтобы получить актуальную схему пользователя из check.php.
+            // После логина по токену повторно читаем серверную сессию
             checkData = await readSessionUser();
 
             if (checkData.auth === true && checkData.user) {
@@ -192,29 +226,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               }
               applyAuthState(true, checkData.user);
               window.GlobalWS?.init();
+            } else if (checkData.isNetworkError && tryRestoreFromOfflineCache()) {
+              return;
             } else {
-              // Запасной путь для старых сценариев, если check.php ещё не успел обновиться
-              const formData = new URLSearchParams();
-              formData.set('token', token);
-              const infoRes = await fetch(`/api/V2/auth/Login.php`, {
-                method: 'POST',
-                body: formData.toString(),
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                cache: 'no-store',
-                credentials: 'include',
-              });
-              const infoData = await infoRes.json();
+              // Запасной путь для старых сценариев
+              try {
+                const formData = new URLSearchParams();
+                formData.set('token', token);
+                const infoRes = await fetch(`/api/V2/auth/Login.php`, {
+                  method: 'POST',
+                  body: formData.toString(),
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  cache: 'no-store',
+                  credentials: 'include',
+                });
+                const infoData = await infoRes.json();
 
-              if (infoData.success && infoData.data && infoData.data.user) {
-                applyAuthState(true, infoData.data.user);
-                window.GlobalWS?.init();
-              } else {
-                applyAuthState(false, null);
-                cache.remove('token');
+                if (infoData.success && infoData.data && infoData.data.user) {
+                  applyAuthState(true, infoData.data.user);
+                  window.GlobalWS?.init();
+                } else {
+                  applyAuthState(false, null);
+                  cache.remove('token');
+                }
+              } catch {
+                if (!tryRestoreFromOfflineCache()) {
+                  applyAuthState(false, null);
+                }
               }
             }
           } else {
-            // Ошибка авторизации по токену (например, просрочен)
+            // Если мы офлайн или вызов провалился по сети — сохраняем сессию из кэша
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+              if (tryRestoreFromOfflineCache()) {
+                return;
+              }
+            }
             applyAuthState(false, null);
             cache.remove('token');
           }
@@ -225,21 +272,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('Ошибка при проверке авторизации:', error);
-
-      try {
-        const cachedUser = cache.get<User>('user_profile');
-        const token = cache.get<string>('token');
-        if (cachedUser && token) {
-          console.log('[Auth] Восстановление авторизации из локального кэша в офлайне.');
-          applyAuthState(true, cachedUser);
-          return;
+      if (!tryRestoreFromOfflineCache()) {
+        if (!silent) {
+          applyAuthState(false, null);
         }
-      } catch (e) {
-        console.error('[Auth] Не удалось прочитать локальный кэш пользователя', e);
-      }
-
-      if (!silent) {
-        applyAuthState(false, null);
       }
     } finally {
       if (!silent) {
@@ -261,6 +297,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const refreshAuth = () => {
       if (isLoggingOutRef.current) return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       if (window.location.pathname === '/login' || window.location.pathname === '/signup') {
         return;
       }

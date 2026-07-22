@@ -166,10 +166,7 @@ export default function PulseMyContent() {
         }
       })
       .catch(() => {
-        if (!cancelled) {
-          removePulseCache(LIBRARY_CACHE_KEY);
-          setLibrary(null);
-        }
+        // При ошибке сети (офлайн) сохраняем кэшированную библиотеку
       })
       .finally(() => {
         if (!cancelled) setLibraryLoading(false);
@@ -189,10 +186,7 @@ export default function PulseMyContent() {
         }
       })
       .catch(() => {
-        if (!cancelled) {
-          removePulseCache(HISTORY_CACHE_KEY);
-          setHistory([]);
-        }
+        // При ошибке сети (офлайн) сохраняем кэшированную историю
       })
       .finally(() => {
         if (!cancelled) setHistoryLoading(false);

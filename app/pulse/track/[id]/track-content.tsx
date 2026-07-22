@@ -126,7 +126,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
         setIsLiked(Boolean(result.is_liked));
       })
       .catch(() => {
-        if (!cancelled) setTrack(null);
+        // При ошибке сети (офлайн) сохраняем загруженные/кэшированные данные
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -139,7 +139,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
         cache.set(`similar_tracks_${trackId}`, result || [], { category: 'pulse' });
       })
       .catch(() => {
-        if (!cancelled) setSimilarTracks([]);
+        // При ошибке сети (офлайн) оставляем кэшированные похожие треки
       })
       .finally(() => {
         if (!cancelled) setIsSimilarLoading(false);

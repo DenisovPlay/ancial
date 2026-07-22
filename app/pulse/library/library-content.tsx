@@ -86,10 +86,7 @@ export default function PulseLibraryContent() {
         }
       })
       .catch(() => {
-        if (!cancelled) {
-          removePulseCache(LIBRARY_BIG_CACHE_KEY);
-          setLibrary(null);
-        }
+        // При ошибке сети (офлайн) сохраняем кэшированную библиотеку
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

@@ -232,7 +232,9 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       })
       .catch(() => {
         if (!cancelled) {
-          if (builtinPlaylist) {
+          if (cachedPlaylist) {
+            setPlaylist(cachedPlaylist);
+          } else if (builtinPlaylist) {
             setPlaylist(builtinPlaylist);
           } else {
             setPlaylist(null);
@@ -249,7 +251,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     return () => {
       cancelled = true;
     };
-  }, [authLoading, builtinPlaylist, isAuthenticated, isBuiltinPlaylist, lang?.somethingwrong, playlistId, router]);
+  }, [authLoading, builtinPlaylist, cachedPlaylist, isAuthenticated, isBuiltinPlaylist, lang?.somethingwrong, playlistId, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -272,8 +274,11 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       })
       .catch(() => {
         if (!cancelled) {
-          setTracks([]);
-          setError(lang?.somethingwrong || 'Произошла ошибка =(');
+          if (cachedTracks && cachedTracks.length > 0) {
+            setTracks(cachedTracks);
+          } else {
+            setError(lang?.somethingwrong || 'Произошла ошибка =(');
+          }
         }
       })
       .finally(() => {

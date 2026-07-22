@@ -234,6 +234,19 @@ function isAndroidBrowser() {
   return /Android/i.test(navigator.userAgent);
 }
 
+function readInitialLikedSongIds(): number[] {
+  try {
+    const cached = cache.get<number[]>('pulse_fav_ids', { category: 'pulse' });
+    if (Array.isArray(cached) && cached.length > 0) {
+      return cached.map((id) => toNumber(id)).filter(Boolean);
+    }
+    if (typeof window !== 'undefined' && Array.isArray((window as Window & { _pulseLikedSongs?: unknown[] })._pulseLikedSongs)) {
+      return ((window as Window & { _pulseLikedSongs?: unknown[] })._pulseLikedSongs || []).map((id) => toNumber(id)).filter(Boolean);
+    }
+  } catch {}
+  return [];
+}
+
 function buildMediaArtwork(track: PulseTrack | null) {
   // On Android, Chrome's PlaybackListenerService crashes with
   // "cannot use a recycled source in createBitmap" when artwork URLs are set.
@@ -851,7 +864,7 @@ export function PulsePlayerProvider({
   const currentIsPlaylistRef = useRef(false);
   const playlistRef = useRef<PulseTrack[]>([]);
   const indexRef = useRef(0);
-  const likedSongIdsRef = useRef<number[] | null>(null);
+  const likedSongIdsRef = useRef<number[]>(readInitialLikedSongIds());
   const seekingSliderRef = useRef<'desktop' | 'mobile' | null>(null);
   const visualProgressFrameRef = useRef<number | null>(null);
   const mobileSeekInputRef = useRef<HTMLInputElement | null>(null);
@@ -981,7 +994,7 @@ export function PulsePlayerProvider({
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(() => readSavedVolume());
-  const [likedSongIds, setLikedSongIds] = useState<number[] | null>(null);
+  const [likedSongIds, setLikedSongIds] = useState<number[]>(() => readInitialLikedSongIds());
   const [lyricsLines, setLyricsLines] = useState<PulseLyricsLine[]>([]);
   const [lyricsSource, setLyricsSource] = useState('');
   const [seekValue, setSeekValue] = useState(0);
@@ -1021,7 +1034,10 @@ export function PulsePlayerProvider({
   const hiddenByMessagesDialog = Boolean(pathname && pathname.startsWith('/messages/'));
   const effectivePlayerVisible = isMounted && !hiddenByMessagesDialog;
   const isPlayerAnimatingIn = isVisible && isMounted;
-  const activeLike = currentTrack ? likedSongIds?.includes(toNumber(currentTrack.sid)) === true : false;
+  const isPlayingFromFavorites = playlistId === '-5' || currentCollectionIdRef.current === '-5' || currentCollectionIdRef.current === 'playlist_-5';
+  const activeLike = currentTrack
+    ? (isPlayingFromFavorites || (likedSongIds ? likedSongIds.includes(toNumber(currentTrack.sid)) : false))
+    : false;
   const activeLyricState = getActiveLyricState(lyricsLines, currentTime);
   const activeLyricLine = activeLyricState.activeIndex >= 0 ? lyricsLines[activeLyricState.activeIndex] : null;
   const mobileLyric = activeLyricLine ? splitLyricText(activeLyricLine.text) : null;
@@ -1500,34 +1516,45 @@ export function PulsePlayerProvider({
     }
   };
 
-  const ensureLikedSongsLoaded = async () => {
+  const ensureLikedSongsLoaded = async (force = false) => {
     if (!isAuthenticated) {
       likedSongIdsRef.current = [];
       setLikedSongIds([]);
       return [];
     }
 
-    if (likedSongIdsRef.current !== null) {
+    if (!force && likedSongIdsRef.current !== null && likedSongIdsRef.current.length > 0) {
       return likedSongIdsRef.current;
     }
 
     try {
       const result = await AncialAPI.pulseGetLibrary<{ ids?: unknown }>('favorites');
       const nextIds = normalizeSongIds(result.ids);
-      likedSongIdsRef.current = nextIds;
-      setLikedSongIds(nextIds);
+      setLikedSongsState(nextIds);
       return nextIds;
     } catch {
-      likedSongIdsRef.current = [];
-      setLikedSongIds([]);
-      return [];
+      const cached = cache.get<number[]>('pulse_fav_ids', { category: 'pulse' })
+        || (typeof window !== 'undefined' ? (window._pulseLikedSongs as number[] | undefined) : undefined)
+        || [];
+      const nextIds = normalizeSongIds(cached);
+      setLikedSongsState(nextIds);
+      return nextIds;
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      void ensureLikedSongsLoaded(true);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const handleLikesUpdated = (e: CustomEvent) => {
       likedSongIdsRef.current = e.detail;
       setLikedSongIds(e.detail);
+      try {
+        cache.set('pulse_fav_ids', e.detail, { category: 'pulse', subcategory: 'favorites' });
+      } catch {}
       if (typeof window !== 'undefined') {
         window._pulseLikedSongs = e.detail;
       }
@@ -1539,6 +1566,9 @@ export function PulsePlayerProvider({
   const setLikedSongsState = (nextIds: number[]) => {
     likedSongIdsRef.current = nextIds;
     setLikedSongIds(nextIds);
+    try {
+      cache.set('pulse_fav_ids', nextIds, { category: 'pulse', subcategory: 'favorites' });
+    } catch {}
     if (typeof window !== 'undefined') {
       window._pulseLikedSongs = nextIds;
       window.dispatchEvent(new CustomEvent('pulse-likes-updated', { detail: nextIds }));
@@ -1654,15 +1684,10 @@ export function PulsePlayerProvider({
       return;
     }
 
+    const trackId = toNumber(track.sid);
     const trackSource = normalizeTrackSource(track.src);
-    if (!trackSource) {
-      notify({
-        content: lang?.pulse_unknown_song || 'Неизвестная песня...',
-        type: 'error',
-        time: 5,
-      });
-      return;
-    }
+    let finalSource = trackSource;
+    let isFromCache = false;
 
     // Освобождаем память от старого Blob URL перед загрузкой нового трека
     if (activeBlobUrlRef.current) {
@@ -1673,10 +1698,6 @@ export function PulsePlayerProvider({
       }
       activeBlobUrlRef.current = null;
     }
-
-    const trackId = toNumber(track.sid);
-    let finalSource = trackSource;
-    let isFromCache = false;
 
     if (trackId > 0) {
       try {
@@ -1690,6 +1711,15 @@ export function PulsePlayerProvider({
       } catch (e) {
         console.error('Failed to check audio cache', e);
       }
+    }
+
+    if (!finalSource) {
+      notify({
+        content: lang?.pulse_unknown_song || 'Неизвестная песня...',
+        type: 'error',
+        time: 5,
+      });
+      return;
     }
 
     currentSongIdRef.current = trackId;
@@ -1713,7 +1743,7 @@ export function PulsePlayerProvider({
     }
 
     // Если трек играет из сети, запускаем фоновое асинхронное кэширование с передачей метаданных
-    if (!isFromCache && trackId > 0) {
+    if (!isFromCache && trackId > 0 && trackSource) {
       if (audioCacheAbortControllerRef.current) {
         audioCacheAbortControllerRef.current.abort();
       }
@@ -1774,6 +1804,16 @@ export function PulsePlayerProvider({
         } catch (e) {
           console.error('Failed to cache collection tracks', e);
         }
+
+        // Если это плейлист Избранное (-5) — сразу обновляем и кэшируем ID лайкнутых треков в плеере
+        if (kind === 'playlist' && resolvedId === '-5') {
+          const favIds = tracks.map((t) => toNumber(t.sid)).filter(Boolean);
+          if (favIds.length > 0) {
+            const current = likedSongIdsRef.current || [];
+            const merged = Array.from(new Set([...current, ...favIds]));
+            setLikedSongsState(merged);
+          }
+        }
       }
 
       return tracks;
@@ -1784,7 +1824,7 @@ export function PulsePlayerProvider({
           // 1. Сначала пытаемся прочитать кэш самого плеера
           let cached = cache.get<PulseTrack[]>(collectionCacheKey, { category: 'pulse', subcategory: 'tracks' });
 
-          // 2. Если его нет — пытаемся прочитать UI-кэш страницы плейлиста (сохраняется при открытии страницы)
+          // 2. Если его нет — пытаемся прочитать UI-кэш страницы плейлиста
           if (!cached || cached.length === 0) {
             const uiCacheKey = kind === 'playlist'
               ? `playlist_tracks_${resolvedId}`
@@ -1797,6 +1837,21 @@ export function PulsePlayerProvider({
           if (cached && cached.length > 0) {
             console.log(`[Pulse] Offline: playing collection from cache (${kind}:${resolvedId})`);
             return cached;
+          }
+
+          // 3. Запасной выбор при офлайне: возвращаем список всех скачанных в IndexedDB треков
+          const downloadedTracks = await cache.audio.getDownloadedList();
+          if (downloadedTracks.length > 0) {
+            console.log(`[Pulse] Offline: playing downloaded tracks from IndexedDB (${downloadedTracks.length} tracks)`);
+            return downloadedTracks.map((dt) => ({
+              sid: String(dt.id),
+              title: dt.title || '',
+              artist: dt.artist || '',
+              src: 'offline-indexeddb',
+              status: '1',
+              explicit: false,
+              artwork: [],
+            } as unknown as PulseTrack));
           }
         } catch (e) {
           console.error('Failed to read collection cache', e);

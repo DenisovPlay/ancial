@@ -99,16 +99,16 @@ export async function restoreLegacyAuthSession(token = getStoredAuthToken()) {
       if (typeof window !== 'undefined') {
         if (restored) {
           window.dispatchEvent(new Event(AUTH_SESSION_RESTORED_EVENT));
-        } else {
+        } else if (response.ok) {
+          // Сервер ответил (200 OK), но токен оказался недействительным
           window.dispatchEvent(new Event(AUTH_SESSION_FAILED_EVENT));
         }
       }
 
       return restored;
     } catch {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event(AUTH_SESSION_FAILED_EVENT));
-      }
+      // При сетевой ошибке (офлайн) событие AUTH_SESSION_FAILED_EVENT не генерируется,
+      // чтобы AuthContext не пытался сбросить токен пользователя.
       return false;
     } finally {
       authSessionRefreshPromise = null;

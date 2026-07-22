@@ -172,10 +172,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
         setLoadingTracks(false);
       })
       .catch(() => {
-        if (!cancelled) {
-          setArtist(null);
-          setPlaylists([]);
-        }
+        // При ошибке сети (офлайн) оставляем кэшированные данные артиста, плейлистов и треков
       })
       .finally(() => {
         if (!cancelled) {
