@@ -299,10 +299,10 @@ export default function GroupInfoModal({
         view === 'add_members'
           ? 'Добавление участников'
           : view === 'edit_title'
-            ? 'Название группы'
-            : lang?.group_info || 'Информация о чате'
+            ? 'Изменить чат'
+            : ''
       }
-      bodyClassName="p-3 pt-14 pb-3"
+      bodyClassName="!overflow-hidden p-3 pt-14 pb-3"
     >
       <div className="flex flex-col gap-3 text-white">
         {/* Кнопка «Назад» при нахождении во вложенном табе */}
@@ -323,7 +323,7 @@ export default function GroupInfoModal({
         {view === 'main' && (
           <>
             {/* Единая шапка группы */}
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-3 -mt-9 sm:-mt-13 z-[1000] sm:mr-10 sm:pl-10">
               <input
                 ref={avatarInputRef}
                 type="file"
@@ -332,6 +332,136 @@ export default function GroupInfoModal({
                 onChange={handleAvatarUpload}
               />
 
+              <div
+                className="relative shrink-0"
+              >
+                <img
+                  src={normalizeAssetUrl(avatar, FALLBACK_AVATAR)}
+                  alt=""
+                  className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30"
+                />
+              </div>
+
+              <div className="flex flex-col items-center gap-1 text-center w-full">
+                <div className="flex items-center justify-center gap-2 max-w-full">
+                  <span className="text-lg font-medium truncate">{title}</span>
+                </div>
+
+                <span className="text-xs text-zinc-400">
+                  {members.length} {members.length === 1 ? 'участник' : members.length > 1 && members.length < 5 ? 'участника' : 'участников'}
+                </span>
+              </div>
+            </div>
+
+            <div className={`grid grid-cols-${isAdminOrOwner ? 3 : 2} gap-3 w-full`}>
+              <button
+                type="button"
+                onClick={copyInviteLink}
+                className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
+                <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
+                  <use href="#IC-plus"></use>
+                </svg>
+                <span className="text-sm sm:text-md">Пригласить</span>
+              </button>
+              {isAdminOrOwner && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditTitle(title);
+                    setView('edit_title');
+                  }}
+                  className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
+                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
+                    <use href="#IC-edit"></use>
+                  </svg>
+                  <span className="text-sm sm:text-md">Изменить</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLeaveGroup}
+                disabled={loadingAction}
+                className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-red-800/25 hover:bg-red-800/50 text-red-500 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
+                <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
+                  <use href="#IC-exit"></use>
+                </svg>
+                <span className="text-sm sm:text-md">Покинуть</span>
+              </button>
+            </div>
+
+            {/* Список участников */}
+            <div className="flex flex-col gap-2">
+              <div className="z-[30] flex items-center justify-between bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
+                <span className="text-sm text-zinc-300">Участники ({members.length})</span>
+                {isAdminOrOwner && (
+                  <button
+                    type="button"
+                    onClick={handleOpenAddMembers}
+                    className="text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-300"
+                  >
+                    + Добавить
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col max-h-80 overflow-y-auto -mb-8 pb-8 -mt-5 pt-5 -mx-3">
+                {members.map((member) => {
+                  const userObj = {
+                    id: member.id,
+                    username: member.username,
+                    fname: member.fname || member.name || member.username || 'Пользователь',
+                    lname: member.lname || '',
+                    img: member.img,
+                    verify: member.verify,
+                  };
+
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 hover:bg-zinc-800/40 duration-300"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={normalizeAssetUrl(member.img, FALLBACK_AVATAR)}
+                          alt=""
+                          className="w-12 h-12 rounded-full object-cover shrink-0"
+                        />
+                        <div className="flex flex-col min-w-0">
+                          <AccountName user={userObj} nameClassName="text-sm font-medium text-white truncate" />
+                        </div>
+                      </div>
+
+                      {member.role === 'owner' && (
+                        <span className="text-xs text-purple-400 bg-purple-500/25 p-1 rounded-3xl border border-zinc-600/30">
+                          Создатель
+                        </span>
+                      )}
+
+                      {isAdminOrOwner && member.id !== currentUserId && member.role !== 'owner' && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(member.id)}
+                          disabled={loadingAction}
+                          className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-full duration-300 active:scale-95 cursor-pointer shrink-0"
+                          title="Исключить из группы"
+                        >
+                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* --- VIEW 2: ИЗМЕНЕНИЕ НАЗВАНИЯ --- */}
+        {view === 'edit_title' && (
+          <div className="flex flex-col w-full gap-3">
+            <div className="flex items-center justify-center gap-3 w-full">
               <div
                 className={`relative group shrink-0 ${isAdminOrOwner ? 'cursor-pointer' : ''}`}
                 onClick={() => isAdminOrOwner && avatarInputRef.current?.click()}
@@ -355,180 +485,64 @@ export default function GroupInfoModal({
                 )}
               </div>
 
-              <div className="flex flex-col items-center gap-1 text-center w-full">
-                <div className="flex items-center justify-center gap-2 max-w-full">
-                  <span className="text-xl font-bold truncate">{title}</span>
-                  {isAdminOrOwner && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditTitle(title);
-                        setView('edit_title');
-                      }}
-                      className="p-1 text-zinc-400 hover:text-purple-400 duration-300 cursor-pointer active:scale-95 shrink-0"
-                      title="Изменить название"
-                    >
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                      </svg>
-                    </button>
-                  )}
+              <div className="flex flex-col w-full -mt-3.5">
+                <span className="text-zinc-400 pl-4 z-20">Название чата</span>
+                <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Например: Проект Ancial"
+                    className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600"
+                    autoFocus
+                  />
                 </div>
-
-                <span className="text-xs text-zinc-400">
-                  {members.length} {members.length === 1 ? 'участник' : members.length > 1 && members.length < 5 ? 'участника' : 'участников'}
-                </span>
               </div>
             </div>
-
-            {/* Ссылка-приглашение */}
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-bold text-zinc-300">Ссылка-приглашение</span>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  readOnly
-                  value={inviteUrl}
-                  className="flex-1 p-2.5 bg-zinc-800/80 border border-zinc-600/30 rounded-3xl text-xs text-zinc-300 focus:outline-none select-all"
-                />
-                <button
-                  type="button"
-                  onClick={copyInviteLink}
-                  className="p-2.5 px-4 bg-purple-600 hover:bg-purple-500 rounded-3xl text-xs font-bold duration-300 active:scale-95 cursor-pointer shrink-0"
-                >
-                  Копировать
-                </button>
-              </div>
+            <div className="grid grid-cols-2 gap-3 w-full items-center justify-center">
               {isAdminOrOwner && (
                 <button
                   type="button"
                   onClick={handleResetInviteCode}
                   disabled={loadingAction}
-                  className="self-start text-[11px] text-zinc-400 hover:text-red-400 duration-300 cursor-pointer active:scale-95 mt-1"
+                  className="w-full p-3 rounded-3xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white text-sm duration-300 active:scale-95 cursor-pointer border border-zinc-600/30"
                 >
-                  Сбросить инвайт-ссылку
+                  Сбросить ссылку
                 </button>
               )}
+              <button
+                type="button"
+                onClick={handleSaveTitle}
+                disabled={loadingAction || !editTitle.trim()}
+                className="w-full p-3 rounded-3xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm duration-300 active:scale-95 cursor-pointer border border-zinc-600/30"
+              >
+                {loadingAction ? 'Сохранение...' : 'Сохранить'}
+              </button>
             </div>
-
-            {/* Список участников */}
-            <div className="flex flex-col gap-2">
-              <div className="z-[30] flex items-center justify-between bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
-                <span className="text-xs font-bold text-zinc-300">Участники ({members.length})</span>
-                {isAdminOrOwner && (
-                  <button
-                    type="button"
-                    onClick={handleOpenAddMembers}
-                    className="text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-300"
-                  >
-                    + Добавить
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2 max-h-60 overflow-y-auto -mb-8 pb-8 -mt-5 pt-5">
-                {members.map((member) => {
-                  const userObj = {
-                    id: member.id,
-                    username: member.username,
-                    fname: member.fname || member.name || member.username || 'Пользователь',
-                    lname: member.lname || '',
-                    img: member.img,
-                    verify: member.verify,
-                  };
-
-                  return (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-2.5 rounded-3xl bg-zinc-800/40 border border-zinc-600/30 shrink-0"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src={normalizeAssetUrl(member.img, FALLBACK_AVATAR)}
-                          alt=""
-                          className="w-8 h-8 rounded-full object-cover shrink-0"
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <AccountName user={userObj} nameClassName="text-sm font-medium text-white truncate" />
-                          <span className="text-[10px] text-purple-400">
-                            {member.role === 'owner' ? 'Создатель' : member.role === 'admin' ? 'Администратор' : 'Участник'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {isAdminOrOwner && member.id !== currentUserId && member.role !== 'owner' && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveMember(member.id)}
-                          disabled={loadingAction}
-                          className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-full duration-300 active:scale-95 cursor-pointer shrink-0"
-                          title="Исключить из группы"
-                        >
-                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Покинуть группу */}
-            <button
-              type="button"
-              onClick={handleLeaveGroup}
-              disabled={loadingAction}
-              className="z-[30] w-full p-3 rounded-3xl bg-red-800 hover:bg-red-700 border border-zinc-600/30 font-bold text-red-400 duration-300 active:scale-95 cursor-pointer mt-1"
-            >
-              Покинуть чат
-            </button>
-          </>
-        )}
-
-        {/* --- VIEW 2: ИЗМЕНЕНИЕ НАЗВАНИЯ --- */}
-        {view === 'edit_title' && (
-          <div className="flex flex-col gap-3">
-            <label className="text-xs text-zinc-400 font-medium">Новое название чата</label>
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="Например: Проект Ancial"
-              className="w-full p-3 bg-zinc-800 border border-zinc-600/30 rounded-3xl text-sm text-white focus:outline-none focus:border-purple-500 duration-300"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={handleSaveTitle}
-              disabled={loadingAction || !editTitle.trim()}
-              className="w-full p-3 rounded-3xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-sm duration-300 active:scale-95 cursor-pointer border border-zinc-600/30 mt-1"
-            >
-              {loadingAction ? 'Сохранение...' : 'Сохранить'}
-            </button>
           </div>
         )}
 
         {/* --- VIEW 3: ДОБАВЛЕНИЕ УЧАСТНИКОВ --- */}
         {view === 'add_members' && (
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs text-zinc-400 font-medium">Выберите друзей для добавления</label>
-              <span className="text-xs text-purple-400 font-semibold">
-                Выбрано: {selectedAddUserIds.size}
-              </span>
+
+            <div className="z-[30] -mx-3 px-3 bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
+              <div className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
+                <input
+                  className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
+                  type="text"
+                  placeholder="Поиск среди друзей..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button
+                  className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700"
+                >
+                  <svg className="inline w-8 h-8 fill-white"><use href="#IC-search"></use></svg>
+                </button>
+              </div>
             </div>
-
-            <input
-              type="text"
-              placeholder="Поиск среди друзей..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="z-[30] w-full p-3 bg-zinc-800 border border-zinc-600/30 rounded-3xl text-xs text-white focus:outline-none duration-300"
-            />
-
-            <div className="flex flex-col gap-1.5 max-h-60 overflow-y-auto -my-8 py-8">
+            <div className="flex flex-col max-h-96 overflow-y-auto -mb-10 pb-8 -mt-8 pt-8 -mx-3">
               {loadingFriends ? (
                 <span className="text-xs text-zinc-400 p-3 text-center">Загрузка друзей...</span>
               ) : filteredFriends.length === 0 ? (
@@ -549,19 +563,19 @@ export default function GroupInfoModal({
                     <div
                       key={friend.id}
                       onClick={() => toggleSelectAddUser(friend.id)}
-                      className={`flex items-center justify-between p-2.5 rounded-3xl border duration-300 cursor-pointer active:scale-95 ${isSel ? 'border-purple-500 bg-purple-500/10' : 'border-zinc-700/50 bg-zinc-800/30 hover:bg-zinc-800/60'
+                      className={`cursor-pointer flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 duration-300 ${isSel ? 'bg-purple-500/10' : 'hover:bg-zinc-800/40'
                         }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
                           src={normalizeAssetUrl(friend.img, FALLBACK_AVATAR)}
                           alt=""
-                          className="w-8 h-8 rounded-full object-cover shrink-0"
+                          className="w-12 h-12 rounded-full object-cover shrink-0"
                         />
                         <div className="flex flex-col min-w-0">
-                          <AccountName user={userObj} nameClassName="text-xs font-medium text-white truncate" />
+                          <AccountName user={userObj} nameClassName="text-sm font-medium text-white truncate" />
                           {friend.username && (
-                            <span className="text-[10px] text-zinc-400 truncate">@{friend.username}</span>
+                            <span className="text-xs text-zinc-400 truncate">@{friend.username}</span>
                           )}
                         </div>
                       </div>
@@ -576,14 +590,16 @@ export default function GroupInfoModal({
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={handleAddMembersSubmit}
-              disabled={loadingAction || !selectedAddUserIds.size}
-              className="w-full p-3 rounded-3xl bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 disabled:text-zinc-300 text-white font-bold text-sm duration-300 active:scale-95 cursor-pointer border border-zinc-600/30 mt-1"
-            >
-              {loadingAction ? 'Добавление...' : `Добавить выбранных (${selectedAddUserIds.size})`}
-            </button>
+            <div className="z-[30] -mx-3 px-3 bg-gradient-to-t from-zinc-900 via-zinc-900/90 to-transparent">
+              <button
+                type="button"
+                onClick={handleAddMembersSubmit}
+                disabled={loadingAction || !selectedAddUserIds.size}
+                className="w-full p-3 rounded-3xl bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 disabled:text-zinc-300 text-white text-sm duration-300 active:scale-95 cursor-pointer border border-zinc-600/30 mt-1"
+              >
+                {loadingAction ? 'Добавление...' : `Добавить (${selectedAddUserIds.size})`}
+              </button>
+            </div>
           </div>
         )}
       </div>

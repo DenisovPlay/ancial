@@ -142,9 +142,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
+    // Правильное чтение кэша с указанием category: 'profile',
+    // чтобы resolveKeyInfo сформировал ключ 'ancial:profile:user_profile'
     const tryRestoreFromOfflineCache = () => {
       try {
-        const cachedUser = cache.get<User>('user_profile');
+        const cachedUser = cache.get<User>('user_profile', { category: 'profile' });
         const token = cache.get<string>('token');
         if (cachedUser && token) {
           console.log('[Auth] Восстановление авторизации из локального кэша в офлайне.');
@@ -192,14 +194,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       };
 
+      // Шаг 0: Если есть токен — сначала восстанавливаем PHP-сессию ДО CheckStatus.
+      // Это решает проблему «разлогинивает без перезагрузки»: PHP-сессия протухла,
+      // но токен валидный — устанавливаем сессию, потом CheckStatus видит auth: true.
+      const storedToken = cache.get<string>('token');
+      if (storedToken) {
+        try {
+          await restoreLegacyAuthSession(storedToken);
+        } catch {
+          // Сеть недоступна — пропускаем, CheckStatus сам вернёт isNetworkError
+        }
+      }
+
       // 1. Проверяем текущую сессию на сервере
       let checkData = await readSessionUser();
 
       if (checkData.isNetworkError) {
-        // Ошибка сети — пытаемся сохранить авторизацию через локальный кэш
+        // Ошибка сети — пытаемся восстановить авторизацию из локального кэша
         if (tryRestoreFromOfflineCache()) {
           return;
         }
+        // Кэша нет — не разлогиниваем принудительно при сетевой ошибке
+        return;
       }
 
       if (checkData.auth === true && checkData.user) {
@@ -209,67 +225,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Пользователь авторизован на сервере
         applyAuthState(true, checkData.user);
         window.GlobalWS?.init();
-      } else {
-        // Разлогинило на сервере (или сессии нет). Пробуем войти по токену
-        const token = cache.get<string>('token');
-        if (token) {
-          const restored = await restoreLegacyAuthSession(token);
+      } else if (storedToken) {
+        // CheckStatus вернул auth: false, но токен есть.
+        // restoreLegacyAuthSession уже вызван выше — пробуем ещё раз (вдруг первый был гонкой).
+        const restored = await restoreLegacyAuthSession(storedToken);
 
-          if (restored) {
-            console.log('[Auth] Авторизован через токен. Обновляем данные.');
+        if (restored) {
+          console.log('[Auth] Авторизован через токен. Обновляем данные.');
+          checkData = await readSessionUser();
 
-            // После логина по токену повторно читаем серверную сессию
-            checkData = await readSessionUser();
-
-            if (checkData.auth === true && checkData.user) {
-              if (checkData.token) {
-                cache.set('token', checkData.token, { category: 'profile' });
-              }
-              applyAuthState(true, checkData.user);
-              window.GlobalWS?.init();
-            } else if (checkData.isNetworkError && tryRestoreFromOfflineCache()) {
-              return;
-            } else {
-              // Запасной путь для старых сценариев
-              try {
-                const formData = new URLSearchParams();
-                formData.set('token', token);
-                const infoRes = await fetch(`/api/V2/auth/Login.php`, {
-                  method: 'POST',
-                  body: formData.toString(),
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                  cache: 'no-store',
-                  credentials: 'include',
-                });
-                const infoData = await infoRes.json();
-
-                if (infoData.success && infoData.data && infoData.data.user) {
-                  applyAuthState(true, infoData.data.user);
-                  window.GlobalWS?.init();
-                } else {
-                  applyAuthState(false, null);
-                  cache.remove('token');
-                }
-              } catch {
-                if (!tryRestoreFromOfflineCache()) {
-                  applyAuthState(false, null);
-                }
-              }
+          if (checkData.auth === true && checkData.user) {
+            if (checkData.token) {
+              cache.set('token', checkData.token, { category: 'profile' });
             }
+            applyAuthState(true, checkData.user);
+            window.GlobalWS?.init();
+          } else if (checkData.isNetworkError) {
+            // Сеть пропала — фоллбэк на кэш, без удаления токена
+            tryRestoreFromOfflineCache();
           } else {
-            // Если мы офлайн или вызов провалился по сети — сохраняем сессию из кэша
-            if (typeof navigator !== 'undefined' && !navigator.onLine) {
-              if (tryRestoreFromOfflineCache()) {
-                return;
-              }
-            }
+            // Токен невалидный (не нашёл пользователя в БД после двух попыток)
             applyAuthState(false, null);
             cache.remove('token');
           }
         } else {
-          // Ни сессии, ни токена
-          applyAuthState(false, null);
+          // restoreLegacyAuthSession вернул false.
+          if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            // Офлайн — сохраняем сессию из кэша, не удаляем токен
+            tryRestoreFromOfflineCache();
+          } else {
+            // Онлайн, сервер отклонил токен — это настоящий разлогин
+            applyAuthState(false, null);
+            cache.remove('token');
+          }
         }
+      } else {
+        // Ни сессии, ни токена
+        applyAuthState(false, null);
       }
     } catch (error) {
       console.error('Ошибка при проверке авторизации:', error);
