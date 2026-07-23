@@ -465,7 +465,7 @@ export default function MessageBubble({
                       {block.type === 'main' && (
                         <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
                           {!isOwn && senderName && (
-                            <span className="text-[10px] -mb-2 font-bold text-purple-400 select-none">{senderName}</span>
+                            <span className="px-1.5 text-[10px] -mb-2 font-bold text-purple-400 select-none">{senderName}</span>
                           )}
                           {messageImages.length ? (
                             <div

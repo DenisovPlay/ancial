@@ -173,7 +173,7 @@ export default function MessagesContent() {
   const groupMembersCount = selectedDialog?.members?.length || (selectedDialog as any)?.members_count || (dialogListItem as any)?.members_count || 0;
 
   const dialogTitle = isGroupDialog
-    ? (selectedDialog?.title || dialogListItem?.title || 'Групповой чат')
+    ? (selectedDialog?.title || dialogListItem?.title || (lang?.group_chat || 'Групповой чат'))
     : getDialogTitle(effectiveForeignUser);
 
   const dialogAvatarUrl = isGroupDialog
@@ -200,8 +200,14 @@ export default function MessagesContent() {
         : dialogPresenceOnline
       : wsPresenceLastOnline > 0 && isOnline(wsPresenceLastOnline);
 
+  const getGroupMembersCountText = (count: number) => {
+    if (count === 1) return `${count} ${lang?.group_members_1 || 'участник'}`;
+    if (count > 1 && count < 5) return `${count} ${lang?.group_members_2_4 || 'участника'}`;
+    return `${count} ${lang?.group_members_5 || 'участников'}`;
+  };
+
   const dialogStatusLabel = isGroupDialog
-    ? (groupMembersCount > 0 ? `${groupMembersCount} ${groupMembersCount === 1 ? 'участник' : groupMembersCount > 1 && groupMembersCount < 5 ? 'участника' : 'участников'}` : 'Групповой чат')
+    ? (groupMembersCount > 0 ? getGroupMembersCountText(groupMembersCount) : (lang?.group_chat || 'Групповой чат'))
     : blockedDialog
       ? (lang?.unknown || 'неизвестно')
       : dialogLoading || messagesLoading || loadingNewer
@@ -1951,7 +1957,7 @@ export default function MessagesContent() {
                               }
                             }}
                           >
-                            {isGroupDialog ? 'Настройки беседы' : (lang?.chat_settings || 'Настройки чата')}
+                            {isGroupDialog ? (lang?.group_settings || 'Настройки беседы') : (lang?.chat_settings || 'Настройки чата')}
                           </DropdownItem>
                         )}
                         {!isGroupDialog && (
@@ -2009,8 +2015,8 @@ export default function MessagesContent() {
 
                                 const groupSenderName = isGroupDialog
                                   ? (senderMember
-                                    ? ((senderMember as any).name || `${senderMember.fname || ''} ${senderMember.lname || ''}`.trim() || senderMember.username || 'Участник')
-                                    : 'Участник')
+                                    ? ((senderMember as any).name || `${senderMember.fname || ''} ${senderMember.lname || ''}`.trim() || senderMember.username || (lang?.group_participant || 'Участник'))
+                                    : (lang?.group_participant || 'Участник'))
                                   : undefined;
 
                                 const groupSenderAvatarUrl = isGroupDialog
@@ -2392,6 +2398,12 @@ export default function MessagesContent() {
             void reloadCurrentDialogMeta();
             void loadDialogs({ force: true });
             void loadMessagesNewer(dialogSessionRef.current);
+          }}
+          onLeave={() => {
+            setGroupInfoModalOpen(false);
+            resetDialogState();
+            router.replace('/messages');
+            void loadDialogs({ force: true });
           }}
         />
       )}

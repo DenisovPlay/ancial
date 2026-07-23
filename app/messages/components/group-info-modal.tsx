@@ -29,6 +29,7 @@ interface GroupInfoModalProps {
   myRole: 'owner' | 'admin' | 'member';
   members: GroupMember[];
   onGroupUpdated: () => void;
+  onLeave?: () => void;
 }
 
 type ModalView = 'main' | 'add_members' | 'edit_title';
@@ -43,6 +44,7 @@ export default function GroupInfoModal({
   myRole,
   members,
   onGroupUpdated,
+  onLeave,
 }: GroupInfoModalProps) {
   const { lang, user } = useAuth();
   const { showNote } = useNotification();
@@ -89,7 +91,7 @@ export default function GroupInfoModal({
       const memberIds = new Set(members.map((m) => m.id));
       setFriendsList(list.filter((f: any) => f?.id && !memberIds.has(Number(f.id))));
     } catch {
-      showNote({ content: 'Не удалось загрузить список друзей', type: 'error', time: 3 });
+      showNote({ content: lang?.failed_load_friends || 'Не удалось загрузить список друзей', type: 'error', time: 3 });
     } finally {
       setLoadingFriends(false);
     }
@@ -121,12 +123,12 @@ export default function GroupInfoModal({
           user_ids: Array.from(selectedAddUserIds),
         }),
       });
-      showNote({ content: res?.message || 'Участники добавлены', type: 'success', time: 3 });
+      showNote({ content: res?.message || (lang?.members_added || 'Участники добавлены'), type: 'success', time: 3 });
       setView('main');
       setSelectedAddUserIds(new Set());
       onGroupUpdated();
     } catch (err: any) {
-      showNote({ content: err?.message || 'Ошибка добавления участников', type: 'error', time: 4 });
+      showNote({ content: err?.message || (lang?.error_adding_members || 'Ошибка добавления участников'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -139,7 +141,7 @@ export default function GroupInfoModal({
   const copyInviteLink = async () => {
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      showNote({ content: 'Ссылка-приглашение скопирована в буфер обмена', type: 'success', time: 3 });
+      showNote({ content: lang?.invite_link_copied || 'Ссылка-приглашение скопирована в буфер обмена', type: 'success', time: 3 });
     } catch {
       showNote({ content: inviteUrl, type: 'info', time: 5 });
     }
@@ -161,13 +163,13 @@ export default function GroupInfoModal({
 
       if (res?.invite_code) {
         setInviteCode(res.invite_code);
-        showNote({ content: 'Ссылка-приглашение сброшена', type: 'success', time: 3 });
+        showNote({ content: lang?.invite_link_reset || 'Ссылка-приглашение сброшена', type: 'success', time: 3 });
         onGroupUpdated();
       } else {
-        showNote({ content: 'Не удалось сбросить ссылку', type: 'error', time: 4 });
+        showNote({ content: lang?.failed_reset_invite_link || 'Не удалось сбросить ссылку', type: 'error', time: 4 });
       }
     } catch (err: any) {
-      showNote({ content: err?.message || 'Ошибка сети', type: 'error', time: 4 });
+      showNote({ content: err?.message || (lang?.somethingwrong || 'Произошла ошибка =('), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -178,7 +180,7 @@ export default function GroupInfoModal({
     if (!file) return;
 
     setUploadingAvatar(true);
-    showNote({ content: 'Загрузка аватарки...', type: 'info', time: 3 });
+    showNote({ content: lang?.uploading_avatar || 'Загрузка аватарки...', type: 'info', time: 3 });
 
     try {
       const form = new FormData();
@@ -191,7 +193,7 @@ export default function GroupInfoModal({
       const imageUrl = data?.data?.url;
 
       if (!imageUrl) {
-        throw new Error('Ошибка загрузки фото');
+        throw new Error(lang?.error_uploading_photo || 'Ошибка загрузки фото');
       }
 
       await AncialAPI.request('/messages/GroupAction.php', {
@@ -204,10 +206,10 @@ export default function GroupInfoModal({
         }),
       });
 
-      showNote({ content: 'Аватарка группы обновлена', type: 'success', time: 3 });
+      showNote({ content: lang?.group_avatar_updated || 'Аватарка группы обновлена', type: 'success', time: 3 });
       onGroupUpdated();
     } catch (err: any) {
-      showNote({ content: err?.message || 'Ошибка загрузки изображения', type: 'error', time: 3 });
+      showNote({ content: err?.message || (lang?.error_uploading_image || 'Ошибка загрузки изображения'), type: 'error', time: 3 });
     } finally {
       setUploadingAvatar(false);
       event.target.value = '';
@@ -232,11 +234,11 @@ export default function GroupInfoModal({
         }),
       });
 
-      showNote({ content: 'Название группы обновлено', type: 'success', time: 3 });
+      showNote({ content: lang?.group_name_updated || 'Название группы обновлено', type: 'success', time: 3 });
       setView('main');
       onGroupUpdated();
     } catch (err: any) {
-      showNote({ content: err?.message || 'Не удалось обновить название', type: 'error', time: 4 });
+      showNote({ content: err?.message || (lang?.failed_update_group_name || 'Не удалось обновить название'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -254,10 +256,10 @@ export default function GroupInfoModal({
         }),
       });
 
-      showNote({ content: 'Участник удален из чата', type: 'success', time: 3 });
+      showNote({ content: lang?.member_removed_from_chat || 'Участник удален из чата', type: 'success', time: 3 });
       onGroupUpdated();
     } catch (err: any) {
-      showNote({ content: err?.message || 'Не удалось удалить участника', type: 'error', time: 4 });
+      showNote({ content: err?.message || (lang?.failed_remove_member || 'Не удалось удалить участника'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -273,11 +275,15 @@ export default function GroupInfoModal({
         }),
       });
 
-      showNote({ content: 'Вы вышли из беседы', type: 'info', time: 3 });
-      onGroupUpdated();
+      showNote({ content: lang?.you_left_group || 'Вы вышли из беседы', type: 'info', time: 3 });
       onClose();
+      if (onLeave) {
+        onLeave();
+      } else {
+        onGroupUpdated();
+      }
     } catch (err: any) {
-      showNote({ content: err?.message || 'Не удалось выйти из чата', type: 'error', time: 4 });
+      showNote({ content: err?.message || (lang?.failed_leave_chat || 'Не удалось выйти из чата'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -291,15 +297,21 @@ export default function GroupInfoModal({
     return fullName.includes(q) || uname.includes(q);
   });
 
+  const getMembersCountText = (count: number) => {
+    if (count === 1) return `${count} ${lang?.group_members_1 || 'участник'}`;
+    if (count > 1 && count < 5) return `${count} ${lang?.group_members_2_4 || 'участника'}`;
+    return `${count} ${lang?.group_members_5 || 'участников'}`;
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={
         view === 'add_members'
-          ? 'Добавление участников'
+          ? (lang?.add_members || 'Добавление участников')
           : view === 'edit_title'
-            ? 'Изменить чат'
+            ? (lang?.edit_chat || 'Изменить чат')
             : ''
       }
       bodyClassName="!overflow-hidden p-3 pt-14 pb-3"
@@ -315,7 +327,7 @@ export default function GroupInfoModal({
             <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
               <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
             </svg>
-            <span>Назад</span>
+            <span>{lang?.back || 'Назад'}</span>
           </button>
         )}
 
@@ -348,7 +360,7 @@ export default function GroupInfoModal({
                 </div>
 
                 <span className="text-xs text-zinc-400">
-                  {members.length} {members.length === 1 ? 'участник' : members.length > 1 && members.length < 5 ? 'участника' : 'участников'}
+                  {getMembersCountText(members.length)}
                 </span>
               </div>
             </div>
@@ -361,7 +373,7 @@ export default function GroupInfoModal({
                 <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
                   <use href="#IC-plus"></use>
                 </svg>
-                <span className="text-sm sm:text-md">Пригласить</span>
+                <span className="text-sm sm:text-md">{lang?.invite || 'Пригласить'}</span>
               </button>
               {isAdminOrOwner && (
                 <button
@@ -374,7 +386,7 @@ export default function GroupInfoModal({
                   <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
                     <use href="#IC-edit"></use>
                   </svg>
-                  <span className="text-sm sm:text-md">Изменить</span>
+                  <span className="text-sm sm:text-md">{lang?.edit_action || 'Изменить'}</span>
                 </button>
               )}
               <button
@@ -385,21 +397,21 @@ export default function GroupInfoModal({
                 <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
                   <use href="#IC-exit"></use>
                 </svg>
-                <span className="text-sm sm:text-md">Покинуть</span>
+                <span className="text-sm sm:text-md">{lang?.leave || 'Покинуть'}</span>
               </button>
             </div>
 
             {/* Список участников */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 -mb-1.5">
               <div className="z-[30] flex items-center justify-between bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
-                <span className="text-sm text-zinc-300">Участники ({members.length})</span>
+                <span className="text-sm text-zinc-300">{lang?.members || 'Участники'} ({members.length})</span>
                 {isAdminOrOwner && (
                   <button
                     type="button"
                     onClick={handleOpenAddMembers}
                     className="text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-300"
                   >
-                    + Добавить
+                    {lang?.add_member_btn || '+ Добавить'}
                   </button>
                 )}
               </div>
@@ -409,7 +421,7 @@ export default function GroupInfoModal({
                   const userObj = {
                     id: member.id,
                     username: member.username,
-                    fname: member.fname || member.name || member.username || 'Пользователь',
+                    fname: member.fname || member.name || member.username || (lang?.user_fallback || 'Пользователь'),
                     lname: member.lname || '',
                     img: member.img,
                     verify: member.verify,
@@ -433,7 +445,7 @@ export default function GroupInfoModal({
 
                       {member.role === 'owner' && (
                         <span className="text-xs text-purple-400 bg-purple-500/25 p-1 rounded-3xl border border-zinc-600/30">
-                          Создатель
+                          {lang?.role_owner || 'Создатель'}
                         </span>
                       )}
 
@@ -443,7 +455,7 @@ export default function GroupInfoModal({
                           onClick={() => handleRemoveMember(member.id)}
                           disabled={loadingAction}
                           className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-full duration-300 active:scale-95 cursor-pointer shrink-0"
-                          title="Исключить из группы"
+                          title={lang?.remove_from_group || 'Исключить из группы'}
                         >
                           <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
@@ -465,7 +477,7 @@ export default function GroupInfoModal({
               <div
                 className={`relative group shrink-0 ${isAdminOrOwner ? 'cursor-pointer' : ''}`}
                 onClick={() => isAdminOrOwner && avatarInputRef.current?.click()}
-                title={isAdminOrOwner ? 'Сменить аватарку группы' : undefined}
+                title={isAdminOrOwner ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
               >
                 <img
                   src={normalizeAssetUrl(avatar, FALLBACK_AVATAR)}
@@ -486,13 +498,13 @@ export default function GroupInfoModal({
               </div>
 
               <div className="flex flex-col w-full -mt-3.5">
-                <span className="text-zinc-400 pl-4 z-20">Название чата</span>
+                <span className="text-zinc-400 pl-4 z-20">{lang?.chat_name || 'Название чата'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder="Например: Проект Ancial"
+                    placeholder={lang?.eg_chat_name || 'Например: Проект Ancial'}
                     className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600"
                     autoFocus
                   />
@@ -507,7 +519,7 @@ export default function GroupInfoModal({
                   disabled={loadingAction}
                   className="w-full p-3 rounded-3xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white text-sm duration-300 active:scale-95 cursor-pointer border border-zinc-600/30"
                 >
-                  Сбросить ссылку
+                  {lang?.reset_link || 'Сбросить ссылку'}
                 </button>
               )}
               <button
@@ -516,7 +528,7 @@ export default function GroupInfoModal({
                 disabled={loadingAction || !editTitle.trim()}
                 className="w-full p-3 rounded-3xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-sm duration-300 active:scale-95 cursor-pointer border border-zinc-600/30"
               >
-                {loadingAction ? 'Сохранение...' : 'Сохранить'}
+                {loadingAction ? (lang?.saving || 'Сохранение...') : (lang?.save || 'Сохранить')}
               </button>
             </div>
           </div>
@@ -531,7 +543,7 @@ export default function GroupInfoModal({
                 <input
                   className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                   type="text"
-                  placeholder="Поиск среди друзей..."
+                  placeholder={lang?.search_friends_placeholder || 'Поиск среди друзей...'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -544,16 +556,16 @@ export default function GroupInfoModal({
             </div>
             <div className="flex flex-col max-h-96 overflow-y-auto -mb-10 pb-8 -mt-8 pt-8 -mx-3">
               {loadingFriends ? (
-                <span className="text-xs text-zinc-400 p-3 text-center">Загрузка друзей...</span>
+                <span className="text-xs text-zinc-400 p-3 text-center">{lang?.loading_friends || 'Загрузка друзей...'}</span>
               ) : filteredFriends.length === 0 ? (
-                <span className="text-xs text-zinc-400 p-3 text-center">Друзья не найдены</span>
+                <span className="text-xs text-zinc-400 p-3 text-center">{lang?.friends_not_found || 'Друзья не найдены'}</span>
               ) : (
                 filteredFriends.map((friend) => {
                   const isSel = selectedAddUserIds.has(friend.id);
                   const userObj = {
                     id: friend.id,
                     username: friend.username,
-                    fname: friend.fname || friend.name || friend.username || 'Пользователь',
+                    fname: friend.fname || friend.name || friend.username || (lang?.user_fallback || 'Пользователь'),
                     lname: friend.lname || '',
                     img: friend.img,
                     verify: friend.verify,
@@ -563,7 +575,7 @@ export default function GroupInfoModal({
                     <div
                       key={friend.id}
                       onClick={() => toggleSelectAddUser(friend.id)}
-                      className={`cursor-pointer flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 duration-300 ${isSel ? 'bg-purple-500/10' : 'hover:bg-zinc-800/40'
+                      className={`active:scale-95 cursor-pointer flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 duration-300 ${isSel ? 'bg-purple-500/10' : 'hover:bg-zinc-800/40'
                         }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -597,7 +609,7 @@ export default function GroupInfoModal({
                 disabled={loadingAction || !selectedAddUserIds.size}
                 className="w-full p-3 rounded-3xl bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 disabled:text-zinc-300 text-white text-sm duration-300 active:scale-95 cursor-pointer border border-zinc-600/30 mt-1"
               >
-                {loadingAction ? 'Добавление...' : `Добавить (${selectedAddUserIds.size})`}
+                {loadingAction ? (lang?.adding || 'Добавление...') : `${lang?.add || 'Добавить'} (${selectedAddUserIds.size})`}
               </button>
             </div>
           </div>

@@ -83,7 +83,7 @@ export default function CreateGroupModal({
 
   const handleCreate = async () => {
     if (!title.trim()) {
-      showNote({ content: 'Введите название беседы', type: 'error', time: 3 });
+      showNote({ content: lang?.enter_chat_name || 'Введите название беседы', type: 'error', time: 3 });
       return;
     }
 
@@ -102,14 +102,14 @@ export default function CreateGroupModal({
       });
 
       if (res?.hash) {
-        showNote({ content: 'Групповой чат создан', type: 'success', time: 3 });
+        showNote({ content: lang?.group_chat_created || 'Групповой чат создан', type: 'success', time: 3 });
         onGroupCreated(res);
         onClose();
       } else {
-        showNote({ content: 'Не удалось создать чат', type: 'error', time: 4 });
+        showNote({ content: lang?.failed_create_chat || 'Не удалось создать чат', type: 'error', time: 4 });
       }
     } catch (err: any) {
-      showNote({ content: err?.message || 'Ошибка при создании группы', type: 'error', time: 4 });
+      showNote({ content: err?.message || (lang?.error_creating_group || 'Ошибка при создании группы'), type: 'error', time: 4 });
     } finally {
       setCreating(false);
     }
@@ -137,7 +137,7 @@ export default function CreateGroupModal({
           <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 border border-zinc-600/30">
             <input
               type="text"
-              placeholder="Название чата..."
+              placeholder={lang?.chat_name_placeholder || 'Название чата...'}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
@@ -152,7 +152,7 @@ export default function CreateGroupModal({
             <input
               className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
               type="text"
-              placeholder="Поиск среди друзей..."
+              placeholder={lang?.search_friends_placeholder || 'Поиск среди друзей...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -165,16 +165,16 @@ export default function CreateGroupModal({
         {/* Список друзей */}
         <div className="flex flex-col max-h-72 overflow-y-auto -mb-10 pb-8 -mt-8 pt-8 -mx-3">
           {loadingFriends ? (
-            <span className="text-xs text-zinc-400 p-3 text-center">Загрузка друзей...</span>
+            <span className="text-xs text-zinc-400 p-3 text-center">{lang?.loading_friends || 'Загрузка друзей...'}</span>
           ) : filteredFriends.length === 0 ? (
-            <span className="text-xs text-zinc-400 p-3 text-center">Друзья не найдены</span>
+            <span className="text-xs text-zinc-400 p-3 text-center">{lang?.friends_not_found || 'Друзья не найдены'}</span>
           ) : (
             filteredFriends.map((friend) => {
               const isSelected = selectedUserIds.has(friend.id);
               const userObj = {
                 id: friend.id,
                 username: friend.username,
-                fname: friend.fname || friend.name || friend.username || 'Пользователь',
+                fname: friend.fname || friend.name || friend.username || (lang?.user_fallback || 'Пользователь'),
                 lname: friend.lname || '',
                 img: friend.img,
                 verify: friend.verify,
@@ -219,7 +219,7 @@ export default function CreateGroupModal({
             disabled={creating || !title.trim()}
             className="w-full p-3 rounded-3xl bg-purple-600 hover:bg-purple-500 text-white text-sm duration-300 active:scale-95 cursor-pointer shadow-lg disabled:bg-purple-800 disabled:text-zinc-300 border border-zinc-600/30"
           >
-            {creating ? 'Создание...' : `Создать беседу${selectedUserIds.size ? ` (${selectedUserIds.size})` : ''}`}
+            {creating ? (lang?.creating || 'Создание...') : `${lang?.create_chat || 'Создать беседу'}${selectedUserIds.size ? ` (${selectedUserIds.size})` : ''}`}
           </button>
         </div>
       </div>
