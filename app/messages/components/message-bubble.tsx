@@ -139,6 +139,8 @@ export default function MessageBubble({
   onReplyClick,
   senderName,
   senderAvatarUrl,
+  hideAvatar,
+  hideName,
   members,
 }: {
   authUserImage: string;
@@ -155,6 +157,8 @@ export default function MessageBubble({
   onReplyClick: (replyToId: string | number) => void;
   senderName?: string;
   senderAvatarUrl?: string;
+  hideAvatar?: boolean | null;
+  hideName?: boolean | null;
   members?: GroupMember[] | Array<{ id: number; fname?: string; lname?: string; name?: string; img?: string }> | null;
   key?: React.Key;
 }) {
@@ -214,6 +218,7 @@ export default function MessageBubble({
   const sevenTvStickerId = sevenTvStickerTokenData?.id ?? '';
   const hasMessageText = !sevenTvStickerName && Boolean(stripHtml(messageBodyHtml).trim());
   const isStickerOnlyMessage = Boolean(sevenTvStickerName);
+  const isMediaOnlyMessage = (messageImages.length > 0 || isStickerOnlyMessage) && !hasMessageText;
   const canTranslateMessage = !isOwn && isTextMessage && !isStickerOnlyMessage;
   const canEditMessage = isOwn && isTextMessage && !isStickerOnlyMessage;
   const reactions = parseReactions(message.reactions);
@@ -341,7 +346,7 @@ export default function MessageBubble({
               <img
                 src={normalizeAssetUrl(senderAvatarUrl, FALLBACK_AVATAR)}
                 alt={senderName || ''}
-                className="w-7 h-7 rounded-full object-cover shrink-0 mb-1 border border-zinc-600/30 shadow"
+                className={cn("w-7 h-7 rounded-full object-cover shrink-0 mb-1 border border-zinc-600/30 shadow", hideAvatar && "invisible")}
               />
             ) : null}
             <div className={cn("relative flex flex-col min-w-0 max-w-[90vw] lg:max-w-[40vw]", isOwn ? "items-end" : "items-start")}>
@@ -486,7 +491,7 @@ export default function MessageBubble({
 
                       {block.type === 'main' && (
                         <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
-                          {!isOwn && senderName && (
+                          {!isOwn && senderName && !isMediaOnlyMessage && !hideName && (
                             <span className="px-1.5 text-[10px] -mb-2 font-bold text-purple-400 select-none">{senderName}</span>
                           )}
                           {messageImages.length ? (

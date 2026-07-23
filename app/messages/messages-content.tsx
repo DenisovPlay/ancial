@@ -113,28 +113,50 @@ function TypingDots() {
 
 function TypingBubble({
   isGroup,
-  avatarUrl,
+  typingUsersList = [],
 }: {
   isGroup: boolean;
-  avatarUrl?: string;
+  typingUsersList?: { id: string; url: string }[];
 }) {
   return (
     <motion.div
       key="typing-bubble"
-      initial={{ opacity: 0, y: 8, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 6, scale: 0.95 }}
-      transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="flex items-end gap-2 px-3 pb-1"
+      initial={{ opacity: 0, y: 10, x: -10, scale: 0.8, paddingBottom: 0 }}
+      animate={{ opacity: 1, y: 0, x: 0, scale: 1, paddingBottom: 4 }}
+      exit={{ opacity: 0, y: 10, x: -10, scale: 0.8, paddingBottom: 0 }}
+      transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+      style={{ originX: 0, originY: 1 }}
+      className="relative flex w-full gap-2 items-end justify-start"
     >
-      {isGroup && avatarUrl && (
-        <img
-          src={avatarUrl}
-          alt=""
-          className="h-7 w-7 rounded-full object-cover shrink-0 shadow"
-        />
+      {isGroup && typingUsersList.length > 0 && (
+        <div className="flex items-center mb-1 shrink-0">
+          <AnimatePresence>
+            {typingUsersList.map((user, i) => (
+              <motion.div
+                key={user.id}
+                initial={{ opacity: 0, width: 0, scale: 0.5 }}
+                animate={{ opacity: 1, width: i === 0 ? 28 : 16, scale: 1 }}
+                exit={{ opacity: 0, width: 0, scale: 0.5 }}
+                transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                className="relative h-7 shrink-0"
+                style={{ zIndex: typingUsersList.length - i }}
+              >
+                <motion.img
+                  src={user.url}
+                  alt=""
+                  initial={{ x: -20 }}
+                  animate={{ x: 0 }}
+                  exit={{ x: -20 }}
+                  transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="w-7 h-7 min-w-[28px] max-w-[28px] rounded-full object-cover border border-zinc-600/30 shadow absolute top-0"
+                  style={{ left: i === 0 ? 0 : -12 }}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       )}
-      <div className="flex items-center gap-[3px] rounded-2xl rounded-bl-sm bg-zinc-800/80 border border-zinc-700/40 px-3 py-2 shadow backdrop-blur-sm">
+      <div className="flex items-center gap-1.5">
         <TypingDots />
       </div>
     </motion.div>
@@ -574,7 +596,7 @@ export default function MessagesContent() {
 
       const nextDialogs = rawNext.map((d: any) => {
         const isCurrent = (activeId > 0 && Number(d.id) === activeId) ||
-                          (activeHash && normalizeHash(d.hash) === activeHash);
+          (activeHash && normalizeHash(d.hash) === activeHash);
         if (isCurrent) {
           return {
             ...d,
@@ -594,7 +616,7 @@ export default function MessagesContent() {
       if (typeof payload?.unread_count === 'number') {
         const activeUnreadCount = rawNext.reduce((acc: number, d: any) => {
           const isCurrent = (activeId > 0 && Number(d.id) === activeId) ||
-                            (activeHash && normalizeHash(d.hash) === activeHash);
+            (activeHash && normalizeHash(d.hash) === activeHash);
           if (isCurrent) {
             return acc;
           }
@@ -1214,7 +1236,7 @@ export default function MessagesContent() {
       if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
     prevTypingCountRef.current = count;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTypingUserIds.length]);
 
   const scheduleWsRefresh = () => {
@@ -2284,13 +2306,7 @@ export default function MessagesContent() {
                         <span className="max-w-full truncate text-base font-bold">
                           {dialogTitle || '...'}
                         </span>
-                        {activeTypingUserIds.length > 0 ? (
-                          <span className="max-w-full truncate text-xs text-zinc-400 lg:text-sm flex items-center gap-1">
-                            <TypingDots />
-                          </span>
-                        ) : (
-                          <span className="max-w-full truncate text-xs text-zinc-300 lg:text-sm">{dialogStatusLabel}</span>
-                        )}
+                        <span className="max-w-full truncate text-xs text-zinc-300 lg:text-sm">{dialogStatusLabel}</span>
                       </button>
                     </div>
 
@@ -2395,7 +2411,7 @@ export default function MessagesContent() {
                             </div>
                           ) : null}
 
-                          {timelineItems.map((item) =>
+                          {timelineItems.map((item, index) =>
                             item.kind === 'separator' ? (
                               <div key={`sep:${item.dayKey}`} className="my-3 flex w-full justify-center">
                                 <span className="rounded-full border border-zinc-600/30 bg-zinc-900/70 px-3 py-1 text-xs text-zinc-200 shadow">
@@ -2426,6 +2442,14 @@ export default function MessagesContent() {
                                   ? (senderMember?.img || FALLBACK_AVATAR)
                                   : undefined;
 
+                                const nextItem = timelineItems[index + 1];
+                                const isNextFromSameSender = nextItem && nextItem.kind !== 'separator' && Number(nextItem.message.sender_id) === senderId;
+                                const hideAvatar = isGroupDialog && isNextFromSameSender;
+
+                                const prevItem = timelineItems[index - 1];
+                                const isPrevFromSameSender = prevItem && prevItem.kind !== 'separator' && Number(prevItem.message.sender_id) === senderId;
+                                const hideName = isGroupDialog && isPrevFromSameSender;
+
                                 return (
                                   <MessageBubble
                                     key={`msg:${getMessageId(item.message)}`}
@@ -2436,6 +2460,8 @@ export default function MessagesContent() {
                                     message={item.message}
                                     senderName={groupSenderName}
                                     senderAvatarUrl={groupSenderAvatarUrl}
+                                    hideAvatar={hideAvatar}
+                                    hideName={hideName}
                                     members={selectedDialog?.members}
                                     onAddReaction={(messageId, reaction) => {
                                       void sendReaction(messageId, reaction, 'add');
@@ -2463,17 +2489,21 @@ export default function MessagesContent() {
                           {/* Typing bubble — под списком сообщений */}
                           <AnimatePresence>
                             {activeTypingUserIds.length > 0 && (() => {
-                              const firstTypingId = Number(activeTypingUserIds[0]);
-                              const typingMember = selectedDialog?.members?.find(
-                                (m) => Number(m.id) === firstTypingId
-                              );
-                              const avatarUrl = isGroupDialog
-                                ? (typingMember?.img || FALLBACK_AVATAR)
-                                : undefined;
+                              const typingUsersList = isGroupDialog
+                                ? activeTypingUserIds.map((id) => {
+                                    const typingMember = selectedDialog?.members?.find(
+                                      (m) => Number(m.id) === Number(id)
+                                    );
+                                    return {
+                                      id: String(id),
+                                      url: typingMember?.img || FALLBACK_AVATAR
+                                    };
+                                  })
+                                : [];
                               return (
                                 <TypingBubble
                                   isGroup={isGroupDialog}
-                                  avatarUrl={avatarUrl}
+                                  typingUsersList={typingUsersList}
                                 />
                               );
                             })()}
