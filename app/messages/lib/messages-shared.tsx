@@ -671,8 +671,73 @@ export function parseMessageLinks(text: string) {
     },
   );
 
+  // Format mentions (@user and $group) and BBCode / PHP span tags
+  const MENTION_CLASS_MSG = 'active:scale-95 border border-zinc-600/30 text-purple-300 hover:text-purple-200 px-2 py-0.5 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700/80 duration-300 cursor-pointer inline-flex items-center gap-0.5 font-semibold text-xs select-none transition-all';
+
+  const makeUserMsg = (username: string) =>
+    `<a href="/@${username}" class="${MENTION_CLASS_MSG}" data-user="${username}">@${username}</a>`;
+
+  const makeGroupMsg = (groupname: string) =>
+    `<a href="/$${groupname}" class="${MENTION_CLASS_MSG}" data-group="${groupname}">$${groupname}</a>`;
+
+  // [mention=user]username[/mention] — новый PHP формат
+  html = html.replace(/\[mention=user\]([\s\S]*?)\[\/mention\]/gi, (_, val) =>
+    makeUserMsg(val.trim().replace(/^@/, ''))
+  );
+
+  // [mention=group]groupname[/mention] — новый PHP формат
+  html = html.replace(/\[mention=group\]([\s\S]*?)\[\/mention\]/gi, (_, val) =>
+    makeGroupMsg(val.trim().replace(/^\$/, ''))
+  );
+
+  // Старые BBCode [user=...] / [group=...]
+  html = html.replace(/\[user=([a-zA-Z0-9_]{2,32})\]([\s\S]*?)\[\/user\]/gi, (_, u) =>
+    makeUserMsg(u.replace(/^@/, ''))
+  );
+  html = html.replace(/\[user=([a-zA-Z0-9_]{2,32})\]/gi, (_, u) =>
+    makeUserMsg(u.replace(/^@/, ''))
+  );
+  html = html.replace(/\[group=([a-zA-Z0-9_]{2,32})\]([\s\S]*?)\[\/group\]/gi, (_, g) =>
+    makeGroupMsg(g.replace(/^\$/, ''))
+  );
+  html = html.replace(/\[group=([a-zA-Z0-9_]{2,32})\]/gi, (_, g) =>
+    makeGroupMsg(g.replace(/^\$/, ''))
+  );
+
+  // Backward compat: старые PHP-span'ы с data-group (из БД)
+  html = html.replace(
+    /<span[^>]*data-group=["']([^"']+)["'][^>]*>[\s\S]*?<\/span>/gi,
+    (_, g) => makeGroupMsg(g.replace(/^\$/, ''))
+  );
+
+  // Backward compat: старые PHP-span'ы с data-user (из БД)
+  html = html.replace(
+    /<span[^>]*data-user=["']([^"']+)["'][^>]*>[\s\S]*?<\/span>/gi,
+    (_, u) => makeUserMsg(u.replace(/^@/, ''))
+  );
+
+  // Backward compat: span с onclick="topage(...)
+  html = html.replace(
+    /<span[^>]*onclick=["']topage\(['"]\/?([@$]?[\w\d_-]+)['"]\);?["'][^>]*>[\s\S]*?<\/span>/gi,
+    (_, target) => {
+      const isGroup = target.startsWith('$');
+      const name = target.replace(/^[@$]/, '');
+      return isGroup ? makeGroupMsg(name) : makeUserMsg(name);
+    }
+  );
+
+  // Raw text mentions: @username или $groupname (не внутри HTML-атрибутов)
+  const rawMentionRegex = /(?:^|[\s\n>(])(@[a-zA-Z0-9_]{2,32}|\$[a-zA-Z0-9_]{2,32})(?=$|[\s\n<.,!?:;)])/gi;
+  html = html.replace(rawMentionRegex, (match, tag) => {
+    const isGroup = tag.startsWith('$');
+    const name = tag.slice(1);
+    const prefix = match.slice(0, match.length - tag.length);
+    return prefix + (isGroup ? makeGroupMsg(name) : makeUserMsg(name));
+  });
+
   return html;
 }
+
 
 export function isOnline(lastOnlineTime: number | string | null | undefined) {
   const onlineAt = toNumber(lastOnlineTime);

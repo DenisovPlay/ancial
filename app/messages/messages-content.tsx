@@ -10,6 +10,7 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
@@ -84,6 +85,61 @@ import {
   writeMessageCache,
   type WsPayload,
 } from './lib/messages-shared';
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * TypingBubble
+ * Прыгающие 3 точки — как в iMessage/Telegram.
+ * Для личного чата — только точки, для группового — аватар слева.
+ * ────────────────────────────────────────────────────────────────────────── */
+function TypingDots() {
+  return (
+    <span className="flex items-center gap-[3px] h-5">
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="block h-2 w-2 rounded-full bg-zinc-400"
+          animate={{ y: [0, -5, 0] }}
+          transition={{
+            duration: 0.7,
+            repeat: Infinity,
+            ease: 'easeInOut',
+            delay: i * 0.15,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function TypingBubble({
+  isGroup,
+  avatarUrl,
+}: {
+  isGroup: boolean;
+  avatarUrl?: string;
+}) {
+  return (
+    <motion.div
+      key="typing-bubble"
+      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 6, scale: 0.95 }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
+      className="flex items-end gap-2 px-3 pb-1"
+    >
+      {isGroup && avatarUrl && (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="h-7 w-7 rounded-full object-cover shrink-0 shadow"
+        />
+      )}
+      <div className="flex items-center gap-[3px] rounded-2xl rounded-bl-sm bg-zinc-800/80 border border-zinc-700/40 px-3 py-2 shadow backdrop-blur-sm">
+        <TypingDots />
+      </div>
+    </motion.div>
+  );
+}
 
 export default function MessagesContent() {
   const router = useRouter();
@@ -264,11 +320,50 @@ export default function MessagesContent() {
         : dialogPresenceOnline
       : wsPresenceLastOnline > 0 && isOnline(wsPresenceLastOnline);
 
+  const [typingUsers, setTypingUsers] = useState<Record<number, { name?: string; until: number }>>({});
+  const lastTypingSentRef = useRef<number>(0);
+
   const getGroupMembersCountText = (count: number) => {
     if (count === 1) return `${count} ${lang?.group_members_1 || 'участник'}`;
     if (count > 1 && count < 5) return `${count} ${lang?.group_members_2_4 || 'участника'}`;
     return `${count} ${lang?.group_members_5 || 'участников'}`;
   };
+
+  // Периодически вычищаем просроченных typing-юзеров (TTL истёк)
+  useEffect(() => {
+    if (Object.keys(typingUsers).length === 0) return;
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setTypingUsers((prev) => {
+        const expired = Object.keys(prev).filter((id) => prev[Number(id)].until <= now);
+        if (expired.length === 0) return prev;
+        const next = { ...prev };
+        expired.forEach((id) => delete next[Number(id)]);
+        return next;
+      });
+    }, 500);
+    return () => clearInterval(timer);
+  }, [typingUsers]);
+
+  const activeTypingUserIds = Object.keys(typingUsers).filter(
+    (idStr) => typingUsers[Number(idStr)]?.until > Date.now()
+  );
+
+  let typingLabel = '';
+  if (activeTypingUserIds.length > 0) {
+    if (isGroupDialog) {
+      const names = activeTypingUserIds.map((uidStr) => {
+        const uid = Number(uidStr);
+        const u = typingUsers[uid];
+        if (u?.name) return u.name;
+        const member = selectedDialog?.members?.find((m) => Number(m.id) === uid);
+        return member?.fname || getCachedUserInfo(uid)?.fname || (lang?.group_participant || 'Участник');
+      });
+      typingLabel = `${names.join(', ')} ${names.length > 1 ? (lang?.typing_plural || 'печатают...') : (lang?.typing || 'печатает...')}`;
+    } else {
+      typingLabel = lang?.typing || 'печатает...';
+    }
+  }
 
   const dialogStatusLabel = isGroupDialog
     ? (groupMembersCount > 0 ? getGroupMembersCountText(groupMembersCount) : (lang?.group_chat || 'Групповой чат'))
@@ -1074,6 +1169,54 @@ export default function MessagesContent() {
     void loadDialogs({ force: true });
   };
 
+  const sendTypingSignal = () => {
+    const dialogId = currentDialogIdRef.current;
+    if (!dialogId || !globalWS.isConnected()) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 2000) return;
+    lastTypingSentRef.current = now;
+
+    globalWS.send({
+      type: 'typing',
+      dialog_id: dialogId,
+      typing: true,
+    });
+  };
+
+  const handleWsTyping = (payload?: unknown) => {
+    const dataObj = ((payload as any)?.data ?? payload) as Record<string, unknown>;
+    const typingUserId = toNumber(dataObj?.user_id ?? dataObj?.sender_id ?? (payload as any)?.user_id);
+    const isTyping = dataObj?.typing !== false && (payload as any)?.typing !== false;
+
+    if (!typingUserId || typingUserId === currentUserId) return;
+
+    const userName = String(dataObj?.fname || dataObj?.name || '');
+
+    setTypingUsers((prev) => {
+      if (!isTyping) {
+        const next = { ...prev };
+        delete next[typingUserId];
+        return next;
+      }
+      return {
+        ...prev,
+        [typingUserId]: { name: userName, until: Date.now() + 3500 },
+      };
+    });
+  };
+
+  // Когда появляется typing bubble — плавно скроллим вниз (если пользователь уже был внизу)
+  const prevTypingCountRef = useRef(0);
+  useEffect(() => {
+    const count = activeTypingUserIds.length;
+    if (count > 0 && prevTypingCountRef.current === 0 && isAtBottom) {
+      const el = messageScrollRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+    prevTypingCountRef.current = count;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTypingUserIds.length]);
+
   const scheduleWsRefresh = () => {
     if (wsRefreshTimerRef.current !== null) return;
 
@@ -1193,6 +1336,8 @@ export default function MessagesContent() {
     globalWS.addDialogListener('message:deleted', handleWsMessageDeleted);
     globalWS.addDialogListener('message:edited', handleWsMessageEdited);
     globalWS.addDialogListener('message:reaction', handleWsMessageReaction);
+    globalWS.addDialogListener('user:typing', handleWsTyping);
+    globalWS.addDialogListener('typing', handleWsTyping);
     globalWS.addDialogListener('call:signal', handleWsCallSignal);
     globalWS.addGlobalPresenceListener(handlePresenceUpdate);
 
@@ -2139,7 +2284,13 @@ export default function MessagesContent() {
                         <span className="max-w-full truncate text-base font-bold">
                           {dialogTitle || '...'}
                         </span>
-                        <span className="max-w-full truncate text-xs text-zinc-300 lg:text-sm">{dialogStatusLabel}</span>
+                        {activeTypingUserIds.length > 0 ? (
+                          <span className="max-w-full truncate text-xs text-zinc-400 lg:text-sm flex items-center gap-1">
+                            <TypingDots />
+                          </span>
+                        ) : (
+                          <span className="max-w-full truncate text-xs text-zinc-300 lg:text-sm">{dialogStatusLabel}</span>
+                        )}
                       </button>
                     </div>
 
@@ -2309,6 +2460,24 @@ export default function MessagesContent() {
                           )}
 
 
+                          {/* Typing bubble — под списком сообщений */}
+                          <AnimatePresence>
+                            {activeTypingUserIds.length > 0 && (() => {
+                              const firstTypingId = Number(activeTypingUserIds[0]);
+                              const typingMember = selectedDialog?.members?.find(
+                                (m) => Number(m.id) === firstTypingId
+                              );
+                              const avatarUrl = isGroupDialog
+                                ? (typingMember?.img || FALLBACK_AVATAR)
+                                : undefined;
+                              return (
+                                <TypingBubble
+                                  isGroup={isGroupDialog}
+                                  avatarUrl={avatarUrl}
+                                />
+                              );
+                            })()}
+                          </AnimatePresence>
 
                           {!dialogLoading && !messages.length ? (
                             <div className="flex min-h-[50vh] items-center justify-center">
@@ -2387,7 +2556,10 @@ export default function MessagesContent() {
                           ref={messageInputRef}
                           rows={1}
                           value={composerText}
-                          onChange={(event) => setComposerText(event.target.value)}
+                          onChange={(event) => {
+                            setComposerText(event.target.value);
+                            sendTypingSignal();
+                          }}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' && !event.shiftKey) {
                               event.preventDefault();

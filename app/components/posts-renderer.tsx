@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import { useMentionNavigation } from '../hooks/use-mention-navigation';
 
 import ImageViewerModal, { type ImageViewerSlide } from './image-viewer-modal';
 import { Dropdown, DropdownItem } from './navigation';
@@ -190,6 +191,7 @@ function ExpandablePostContent({
   noCollapse?: boolean;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
+  useMentionNavigation(contentRef);
   // Инициализация из бэкенда — благодаря этому SSR сразу рендерит сжатый пост
   const [isOverflowing, setIsOverflowing] = useState(initiallyOverflowing ?? false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -224,6 +226,7 @@ function ExpandablePostContent({
   if (noCollapse) {
     return (
       <div
+        ref={contentRef}
         id={`textblock${postId}`}
         style={{ userSelect: 'text' }}
         className="-mx-3 px-3 w-[calc(100%+1.5rem)] text-base lg:text-lg text-zinc-200 font-medium break-words relative post-content-container my-1"

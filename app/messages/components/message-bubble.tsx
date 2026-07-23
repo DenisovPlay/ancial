@@ -2,8 +2,10 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { useMentionNavigation } from '../../hooks/use-mention-navigation';
 
 import { Dropdown, DropdownItem } from '../../components/navigation';
 import {
@@ -107,6 +109,19 @@ function SevenTvStickerMessage({
   );
 }
 
+/** Рендерит HTML сообщения через dangerouslySetInnerHTML и перехватывает
+ *  клики по mention-ссылкам (@user / $group) для SPA-навигации без перезагрузки. */
+function MentionSafeHtml({ html }: { html: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useMentionNavigation(ref);
+  return (
+    <span
+      ref={ref}
+      className="whitespace-pre-wrap break-words"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
 
 
 export default function MessageBubble({
@@ -518,7 +533,7 @@ export default function MessageBubble({
                           ) : null}
 
                           {hasMessageText ? (
-                            <span className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: messageBodyHtml }} />
+                            <MentionSafeHtml html={messageBodyHtml} />
                           ) : null}
                         </div>
                       )}

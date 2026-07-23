@@ -218,11 +218,89 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
     html = html.replace(/(?:<br\s*\/?>\s*)+(<\/?(?:h2|h3|h4|blockquote|ul|ol|details|table|div)\b)/gi, '$1');
     html = html.replace(/(<\/?(?:h2|h3|h4|blockquote|ul|ol|details|table|div)\b[^>]*>)\s*(?:<br\s*\/?>\s*)*/gi, '$1');
 
-    // 5. Если в редакторе документ оканчивается на block-элемент (div карусели/коллажа/таблицы),
+    // 5. Форматирование упоминаний пользователей (@user) и групп ($group)
+    html = formatMentions(html);
+
+    // 6. Если в редакторе документ оканчивается на block-элемент (div карусели/коллажа/таблицы),
     // дописываем пустой параграф <p><br></p> в конец, чтобы курсор не застревал.
     if (isPreview && html.trim().endsWith('</div>')) {
         html += '<p><br></p>';
     }
 
     return html;
+}
+
+export function formatMentions(html: string): string {
+    if (!html) return html;
+
+    const MENTION_CLASS = 'active:scale-95 border border-zinc-600/30 text-purple-400 hover:text-purple-300 px-2 py-0.5 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700/80 duration-300 cursor-pointer inline-flex items-center gap-0.5 font-semibold text-sm select-none transition-all';
+
+    const makeUser = (username: string) =>
+        `<a href="/@${username}" class="${MENTION_CLASS}" data-user="${username}">@${username}</a>`;
+
+    const makeGroup = (groupname: string) =>
+        `<a href="/$${groupname}" class="${MENTION_CLASS}" data-group="${groupname}">$${groupname}</a>`;
+
+    let result = html;
+
+    // 1. [mention=user]username[/mention]  — новый PHP формат
+    result = result.replace(/\[mention=user\]([\s\S]*?)\[\/mention\]/gi, (_, val) => {
+        const name = val.trim().replace(/^@/, '');
+        return makeUser(name);
+    });
+
+    // 2. [mention=group]groupname[/mention]  — новый PHP формат
+    result = result.replace(/\[mention=group\]([\s\S]*?)\[\/mention\]/gi, (_, val) => {
+        const name = val.trim().replace(/^\$/, '');
+        return makeGroup(name);
+    });
+
+    // 3. Старые BBCode [user=username] / [user=username]label[/user]
+    result = result.replace(/\[user=([a-zA-Z0-9_]{2,32})\]([\s\S]*?)\[\/user\]/gi, (_, u) =>
+        makeUser(u.replace(/^@/, ''))
+    );
+    result = result.replace(/\[user=([a-zA-Z0-9_]{2,32})\]/gi, (_, u) =>
+        makeUser(u.replace(/^@/, ''))
+    );
+
+    // 4. Старые BBCode [group=groupname] / [group=groupname]label[/group]
+    result = result.replace(/\[group=([a-zA-Z0-9_]{2,32})\]([\s\S]*?)\[\/group\]/gi, (_, g) =>
+        makeGroup(g.replace(/^\$/, ''))
+    );
+    result = result.replace(/\[group=([a-zA-Z0-9_]{2,32})\]/gi, (_, g) =>
+        makeGroup(g.replace(/^\$/, ''))
+    );
+
+    // 5. Backward compat: старые PHP-span'ы с data-group (из БД)
+    result = result.replace(
+        /<span[^>]*data-group=["']([^"']+)["'][^>]*>[\s\S]*?<\/span>/gi,
+        (_, g) => makeGroup(g.replace(/^\$/, ''))
+    );
+
+    // 6. Backward compat: старые PHP-span'ы с data-user (из БД)
+    result = result.replace(
+        /<span[^>]*data-user=["']([^"']+)["'][^>]*>[\s\S]*?<\/span>/gi,
+        (_, u) => makeUser(u.replace(/^@/, ''))
+    );
+
+    // 7. Backward compat: старые span с onclick="topage(...)
+    result = result.replace(
+        /<span[^>]*onclick=["']topage\(['"]\/?([@$]?[\w\d_-]+)['"]\);?["'][^>]*>[\s\S]*?<\/span>/gi,
+        (_, target) => {
+            const isGroup = target.startsWith('$');
+            const name = target.replace(/^[@$]/, '');
+            return isGroup ? makeGroup(name) : makeUser(name);
+        }
+    );
+
+    // 8. Raw text mentions: @username или $groupname (не внутри HTML-атрибутов)
+    const rawMentionRegex = /(?:^|[\s\n>(])(@[a-zA-Z0-9_]{2,32}|\$[a-zA-Z0-9_]{2,32})(?=$|[\s\n<.,!?:;)])/gi;
+    result = result.replace(rawMentionRegex, (match, tag) => {
+        const isGroup = tag.startsWith('$');
+        const name = tag.slice(1);
+        const prefix = match.slice(0, match.length - tag.length);
+        return prefix + (isGroup ? makeGroup(name) : makeUser(name));
+    });
+
+    return result;
 }
