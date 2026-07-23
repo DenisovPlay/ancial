@@ -2499,7 +2499,7 @@ export default function MessagesContent() {
           inviteCode={selectedDialog.invite_code || ''}
           myRole={(selectedDialog.my_role as any) || 'member'}
           members={selectedDialog.members || []}
-          onGroupUpdated={() => {
+          onGroupUpdated={(partial) => {
             void reloadCurrentDialogMeta();
             void loadDialogs({ force: true });
             void loadMessagesNewer(dialogSessionRef.current);

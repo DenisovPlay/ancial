@@ -28,7 +28,7 @@ interface GroupInfoModalProps {
   inviteCode: string;
   myRole: 'owner' | 'admin' | 'member';
   members: GroupMember[];
-  onGroupUpdated: () => void;
+  onGroupUpdated: (partial?: { avatar?: string; title?: string }) => void;
   onLeave?: () => void;
 }
 
@@ -52,6 +52,7 @@ export default function GroupInfoModal({
   const [view, setView] = useState<ModalView>('main');
   const [inviteCode, setInviteCode] = useState(initialInviteCode);
   const [editTitle, setEditTitle] = useState(title);
+  const [currentAvatar, setCurrentAvatar] = useState(avatar);
   const [loadingAction, setLoadingAction] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -68,11 +69,12 @@ export default function GroupInfoModal({
     if (isOpen) {
       setView('main');
       setEditTitle(title);
+      setCurrentAvatar(avatar);
       setInviteCode(initialInviteCode);
       setSelectedAddUserIds(new Set());
       setSearchQuery('');
     }
-  }, [isOpen, title, initialInviteCode]);
+  }, [isOpen, title, avatar, initialInviteCode]);
 
   const fetchFriends = async () => {
     setLoadingFriends(true);
@@ -206,8 +208,9 @@ export default function GroupInfoModal({
         }),
       });
 
+      setCurrentAvatar(imageUrl);
       showNote({ content: lang?.group_avatar_updated || 'Аватарка группы обновлена', type: 'success', time: 3 });
-      onGroupUpdated();
+      onGroupUpdated({ avatar: imageUrl });
     } catch (err: any) {
       showNote({ content: err?.message || (lang?.error_uploading_image || 'Ошибка загрузки изображения'), type: 'error', time: 3 });
     } finally {
@@ -230,13 +233,13 @@ export default function GroupInfoModal({
           dialog_id: dialogId,
           action: 'update_info',
           title: editTitle.trim(),
-          avatar: avatar,
+          avatar: currentAvatar || avatar,
         }),
       });
 
       showNote({ content: lang?.group_name_updated || 'Название группы обновлено', type: 'success', time: 3 });
       setView('main');
-      onGroupUpdated();
+      onGroupUpdated({ title: editTitle.trim() });
     } catch (err: any) {
       showNote({ content: err?.message || (lang?.failed_update_group_name || 'Не удалось обновить название'), type: 'error', time: 4 });
     } finally {
@@ -317,6 +320,14 @@ export default function GroupInfoModal({
       bodyClassName="!overflow-hidden p-3 pt-14 pb-3"
     >
       <div className="flex flex-col gap-3 text-white">
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleAvatarUpload}
+        />
+
         {/* Кнопка «Назад» при нахождении во вложенном табе */}
         {view !== 'main' && (
           <button
@@ -336,22 +347,27 @@ export default function GroupInfoModal({
           <>
             {/* Единая шапка группы */}
             <div className="flex flex-col items-center gap-3 -mt-9 sm:-mt-13 z-[1000] sm:mr-10 sm:pl-10">
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarUpload}
-              />
-
               <div
-                className="relative shrink-0"
+                className={`relative group shrink-0 ${isAdminOrOwner ? 'cursor-pointer active:scale-95 duration-300' : ''}`}
+                onClick={() => isAdminOrOwner && avatarInputRef.current?.click()}
+                title={isAdminOrOwner ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
               >
                 <img
-                  src={normalizeAssetUrl(avatar, FALLBACK_AVATAR)}
+                  src={normalizeAssetUrl(currentAvatar || avatar, FALLBACK_AVATAR)}
                   alt=""
-                  className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30"
+                  className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30 group-hover:opacity-85 duration-300"
                 />
+                {isAdminOrOwner && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 duration-300">
+                    {uploadingAvatar ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                        <path d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 5z" />
+                      </svg>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col items-center gap-1 text-center w-full">
@@ -480,7 +496,7 @@ export default function GroupInfoModal({
                 title={isAdminOrOwner ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
               >
                 <img
-                  src={normalizeAssetUrl(avatar, FALLBACK_AVATAR)}
+                  src={normalizeAssetUrl(currentAvatar || avatar, FALLBACK_AVATAR)}
                   alt=""
                   className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30 group-hover:opacity-85 duration-300"
                 />
