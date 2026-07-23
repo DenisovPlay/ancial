@@ -407,6 +407,29 @@ export default function MessagesContent() {
     }
   };
 
+  // Перезагружает только метаданные текущего диалога (title, avatar, members)
+  // без перезагрузки сообщений. Используется после GroupInfoModal-действий.
+  const reloadCurrentDialogMeta = async () => {
+    const hash = currentDialogHashRef.current;
+    if (!hash) return;
+    try {
+      const result = await AncialAPI.getDialogByHash<any>(hash);
+      const raw = result as any;
+      const payload = raw.data ?? raw;
+      const dialogMetaRaw = payload.dialog ?? null;
+      if (!dialogMetaRaw?.id) return;
+      const serverImg = (dialogMetaRaw as any).img || (dialogMetaRaw as any).bg || '';
+      const dialogMeta = {
+        ...dialogMetaRaw,
+        img: normalizeAssetUrl(serverImg, ''),
+      };
+      setSelectedDialog(dialogMeta);
+      currentDialogMetaRef.current = dialogMeta;
+    } catch {
+      // Тихая ошибка — не ломаем UX
+    }
+  };
+
   const persistMessages = ({
     foreignUserValue,
     dialogMetaValue,
@@ -1931,14 +1954,16 @@ export default function MessagesContent() {
                             {isGroupDialog ? 'Настройки беседы' : (lang?.chat_settings || 'Настройки чата')}
                           </DropdownItem>
                         )}
-                        <DropdownItem
-                          icon="IC-trash"
-                          onClick={() => {
-                            setDeleteDialogModalOpen(true);
-                          }}
-                        >
-                          {isGroupDialog ? 'Покинуть/Удалить' : (lang?.dialogdelete || 'Удалить диалог')}
-                        </DropdownItem>
+                        {!isGroupDialog && (
+                          <DropdownItem
+                            icon="IC-trash"
+                            onClick={() => {
+                              setDeleteDialogModalOpen(true);
+                            }}
+                          >
+                            {lang?.dialogdelete || 'Удалить диалог'}
+                          </DropdownItem>
+                        )}
                       </Dropdown>
                     </div>
                   </div>
@@ -2364,6 +2389,7 @@ export default function MessagesContent() {
           myRole={(selectedDialog.my_role as any) || 'member'}
           members={selectedDialog.members || []}
           onGroupUpdated={() => {
+            void reloadCurrentDialogMeta();
             void loadDialogs({ force: true });
             void loadMessagesNewer(dialogSessionRef.current);
           }}
