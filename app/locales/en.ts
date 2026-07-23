@@ -1292,5 +1292,13 @@ export const en: Record<string, string> = {
   "search_not_found": "Nothing found",
   "try_another_search": "Try changing your search query",
   "reset_search": "Reset search",
-  "interlocutor_dative": "interlocutor"
+  "interlocutor_dative": "interlocutor",
+  "badge_verify": "Verified account",
+  "badge_ai": "AI manages this account",
+  "badge_developer": "Ancial Developer",
+  "badge_staff": "Ancial Staff",
+  "badge_brand": "Business Account",
+  "badge_pioneer": "Pioneer",
+  "badge_beta_tester": "Beta Tester",
+  "badge_creator": "Creator"
 };

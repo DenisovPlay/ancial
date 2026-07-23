@@ -18,6 +18,7 @@ import YandexRtb from '../components/yandex-rtb';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
+import AccountName from '../components/account-name';
 import ImageViewerModal from '../components/image-viewer-modal';
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
@@ -2177,19 +2178,16 @@ export default function MessagesContent() {
                                   </div>
 
                                   <div className="flex min-w-0 flex-1 flex-col">
-                                    <span className="truncate text-base font-medium text-zinc-100 lg:text-lg">
-                                      {dialogName || 'Пользователь'}
-                                      {String(dialog.Uverify ?? '0') === '1' ? (
-                                        <Icon name="IC-verify" className="ml-1 inline h-5 w-5 fill-blue-500" />
-                                      ) : String(dialog.Uverify ?? '0') === '2' ? (
-                                        <span title="ИИ / Бот" className="ml-1 inline-flex items-center">
-                                          <svg className="w-4 h-4 text-purple-400 fill-current inline drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
-                                            <path d="M19 2L20.2 5.8L24 7L20.2 8.2L19 12L17.8 8.2L14 7L17.8 5.8L19 2Z" opacity="0.75" />
-                                          </svg>
-                                        </span>
-                                      ) : null}
-                                    </span>
+                                    <AccountName
+                                      as="span"
+                                      user={{
+                                        name: dialogName,
+                                        verify: dialog.Uverify,
+                                        badges: dialog.Ubadges,
+                                      }}
+                                      nameClassName="text-base font-medium text-zinc-100 lg:text-lg"
+                                      className="truncate flex"
+                                    />
                                     <span className="truncate text-sm text-zinc-300 lg:text-base">
                                       {preview || (lang?.write_message || 'Напишите сообщение')}
                                     </span>

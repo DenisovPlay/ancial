@@ -30,6 +30,7 @@ export type DialogListItem = {
   Ulastonline?: number | string | null;
   Uname?: string | null;
   Uverify?: number | string | null;
+  Ubadges?: string | null;
   unread_count?: number | string | null;
 };
 
@@ -55,6 +56,7 @@ export type DialogUser = {
   lname?: string | null;
   username?: string | null;
   verify?: number | string | null;
+  badges?: string | null;
 };
 
 export type DialogListResponse = {
@@ -1162,6 +1164,7 @@ export function mapDialogListItemToUser(dialog: DialogListItem | null | undefine
     lastonlinetime: dialog.Ulastonline ?? null,
     lname: lnameParts.join(' ') || null,
     verify: dialog.Uverify ?? null,
+    badges: dialog.Ubadges ?? null,
   };
 }
 

@@ -20,6 +20,7 @@ export interface User {
   active?: string;
   status?: string;
   verify?: string;
+  badges?: string;
   country?: string;
   city?: string;
   address?: string;

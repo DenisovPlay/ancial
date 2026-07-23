@@ -1292,5 +1292,13 @@ export const ru: Record<string, string> = {
     "search_not_found": "Ничего не найдено",
     "try_another_search": "Попробуйте изменить поисковый запрос",
     "reset_search": "Сбросить поиск",
-    "interlocutor_dative": "собеседнику"
+    "interlocutor_dative": "собеседнику",
+    "badge_verify": "Подтверждённый аккаунт",
+    "badge_ai": "ИИ ведёт этот аккаунт",
+    "badge_developer": "Разработчик Ancial",
+    "badge_staff": "Команда Ancial",
+    "badge_brand": "Бизнес-аккаунт",
+    "badge_pioneer": "Первопроходец",
+    "badge_beta_tester": "Бета-тестер",
+    "badge_creator": "Известный автор"
 };
