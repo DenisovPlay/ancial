@@ -1765,7 +1765,7 @@ export default function MessagesContent() {
                   onScroll={handleDialogsScroll}
                   className="flex min-h-0 flex-1 flex-col lg:overflow-y-auto"
                 >
-                  <div className="z-[30] pt-3 pb-2 px-3 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent">
+                  <div className="z-[30] p-3 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent">
                     <div className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
                       <input
                         className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
@@ -1813,7 +1813,9 @@ export default function MessagesContent() {
                             alt=""
                             className="mb-3 h-40 w-40 object-contain"
                           />
-                          <span className="text-lg text-zinc-200">Связь потеряна!</span>
+                          <span className="text-lg text-zinc-200">
+                            {lang?.connection_lost || 'Связь потеряна!'}
+                          </span>
                           <span className="text-zinc-400">
                             {lang?.refresh_page || 'Попробуйте обновить страницу'}
                           </span>
@@ -1827,7 +1829,7 @@ export default function MessagesContent() {
                             }}
                             className="mt-3 rounded-full border border-zinc-600/30 bg-purple-500 px-4 py-2 text-white duration-300 hover:bg-purple-600 active:scale-95"
                           >
-                            Попробовать ещё
+                            {lang?.try_again || 'Попробовать ещё'}
                           </button>
                         </div>
                       ) : dialogs.length === 0 ? (
@@ -1844,20 +1846,13 @@ export default function MessagesContent() {
                         <>
                           {filteredDialogs.length === 0 ? (
                             <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-400 h-full">
-                              <Icon name="IC-search" className="w-12 h-12 fill-zinc-600 mb-2" />
-                              <span className="text-base font-semibold text-zinc-200">
+                              <Icon name="IC-search" className="w-14 h-14 fill-zinc-600 mb-2" />
+                              <span className="text-lg font-semibold text-zinc-200">
                                 {lang?.search_not_found || 'Ничего не найдено'}
                               </span>
-                              <span className="text-xs text-zinc-400 mt-1">
+                              <span className="text-sm text-zinc-400 mt-1">
                                 {lang?.try_another_search || 'Попробуйте изменить поисковый запрос'}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => setDialogSearchQuery('')}
-                                className="mt-4 text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-200"
-                              >
-                                {lang?.reset_search || 'Сбросить поиск'}
-                              </button>
                             </div>
                           ) : (
                             filteredDialogs.map((dialog) => {
