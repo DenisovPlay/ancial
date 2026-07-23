@@ -23,6 +23,17 @@ export interface AccountData {
 }
 
 /**
+ * Декодирует HTML-сущности в строку
+ */
+export function decodeHtmlEntities(text: string | null | undefined): string {
+  if (!text) return '';
+  if (typeof window === 'undefined') return text; // SSR fallback
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
+/**
  * Извлекает и форматирует имя пользователя или сообщества
  */
 export function getUserDisplayName(
@@ -31,20 +42,20 @@ export function getUserDisplayName(
 ): string {
   if (!account) return fallback;
 
-  const fname = (account.fname ?? '').trim();
-  const lname = (account.lname ?? '').trim();
+  const fname = decodeHtmlEntities(account.fname ?? '').trim();
+  const lname = decodeHtmlEntities(account.lname ?? '').trim();
   const combinedName = `${fname} ${lname}`.trim();
 
   if (combinedName) {
     return combinedName;
   }
 
-  const directName = (account.name ?? account.title ?? '').trim();
+  const directName = decodeHtmlEntities(account.name ?? account.title ?? '').trim();
   if (directName) {
     return directName;
   }
 
-  const username = (account.username ?? account.login ?? '').trim();
+  const username = decodeHtmlEntities(account.username ?? account.login ?? '').trim();
   if (username) {
     return username;
   }

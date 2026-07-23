@@ -241,7 +241,7 @@ function FriendsContent() {
                     <AccountName
                       user={friend}
                       fallback={lang?.anonymous || 'Аноним'}
-                      className="text-zinc-200 lg:text-lg font-medium cursor-pointer truncate"
+                      className="text-zinc-200 lg:text-lg font-medium cursor-pointer"
                       nameClassName="text-zinc-200 lg:text-lg font-medium truncate"
                     />
                     {friend.id === user?.id && (
