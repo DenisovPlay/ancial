@@ -43,6 +43,10 @@ import {
   DIALOGS_REFRESH_INTERVAL_MS,
   FALLBACK_AVATAR,
   FALLBACK_WELCOME_IMAGE,
+  cacheUserInfo,
+  getCachedUserInfo,
+  getDialogMembersCache,
+  writeGroupMembersCache,
   getDialogPreviewStatusIconName,
   getDialogTitle,
   getDialogsCache,
@@ -337,13 +341,24 @@ export default function MessagesContent() {
 
   useEffect(() => {
     currentDialogMetaRef.current = selectedDialog;
-    currentDialogIdRef.current = toNumber(selectedDialog?.id);
+    const activeId = toNumber(selectedDialog?.id);
+    currentDialogIdRef.current = activeId;
     currentDialogHashRef.current = normalizeHash(selectedDialog?.hash);
     currentForeignUserRef.current = foreignUser;
     currentForeignUserIdRef.current = toNumber(foreignUser?.id);
     currentMessageCacheKeyRef.current = currentDialogIdRef.current
       ? getMessageCacheKey(currentUserId, currentDialogIdRef.current)
       : '';
+
+    if (typeof window !== 'undefined') {
+      (window as any).__activeDialogId = activeId;
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        (window as any).__activeDialogId = 0;
+      }
+    };
   }, [currentUserId, foreignUser, selectedDialog]);
 
   useEffect(() => {
@@ -455,12 +470,22 @@ export default function MessagesContent() {
     dialogsLastFetchAtRef.current = Date.now();
 
     try {
-      const result = await AncialAPI.getDialogList<DialogListResponse>();
-      const nextDialogs = Array.isArray(result) ? result : Array.isArray((result as any).dialogs) ? (result as any).dialogs : [];
+      const result = await AncialAPI.getDialogList<any>();
+      const rawData = result as any;
+      const payload = rawData?.data ?? rawData;
+      const nextDialogs = Array.isArray(payload?.dialogs) ? payload.dialogs : (Array.isArray(payload) ? payload : []);
       setDialogs(nextDialogs);
       setDialogsError('');
       setDialogsLoading(false);
       writeDialogsCache(nextDialogs);
+
+      if (typeof payload?.unread_count === 'number') {
+        window.dispatchEvent(
+          new CustomEvent('ancial:unread_update', {
+            detail: { type: 'messages_set', count: payload.unread_count }
+          })
+        );
+      }
     } catch (error) {
       console.error('Failed to load dialogs', error);
 
@@ -830,10 +855,19 @@ export default function MessagesContent() {
     }
 
     const rawImg = (cached?.dialogMeta as any)?.img || (cached?.dialogMeta as any)?.bg || (dialogFromList as any)?.bg || (dialogFromList as any)?.img || '';
+    let cachedMembers = (cached?.dialogMeta as any)?.members;
+    const targetDialogId = toNumber(cached?.dialogMeta?.id || dialogFromList?.id);
+    if (!cachedMembers || !cachedMembers.length) {
+      if (targetDialogId > 0) {
+        cachedMembers = getDialogMembersCache(targetDialogId) ?? undefined;
+      }
+    }
+
     const cachedDialogMeta: DialogMeta | null = (cached?.dialogMeta || dialogFromList) ? ({
       id: cached?.dialogMeta?.id || dialogFromList?.id,
       hash: cached?.dialogMeta?.hash || dialogFromList?.hash || normalizedHash,
       img: normalizeAssetUrl(rawImg, ''),
+      members: cachedMembers,
       blocked: Boolean((cached?.dialogMeta as any)?.blocked ?? (dialogFromList as any)?.blocked),
     } as any) : null;
 
@@ -879,6 +913,10 @@ export default function MessagesContent() {
 
       if (!dialogMetaRaw?.id) {
         throw new Error(payload.error ?? (lang?.dialog_not_found || 'Диалог не найден'));
+      }
+
+      if (Array.isArray(dialogMetaRaw.members) && dialogMetaRaw.members.length > 0) {
+        writeGroupMembersCache(toNumber(dialogMetaRaw.id), dialogMetaRaw.members);
       }
 
       const serverImg = (dialogMetaRaw as any).img || (dialogMetaRaw as any).bg || (cachedDialogMeta as any)?.img || '';
@@ -1861,6 +1899,12 @@ export default function MessagesContent() {
                               const preview = formatDialogPreview(dialog.Mmessage, lang);
                               const dialogName = decodeText(dialog.Uname);
                               const previewStatusIcon = getDialogPreviewStatusIconName(dialog.Mstatus);
+                              const isMyLastMessage = Boolean(
+                                dialog.Mmessage?.startsWith(lang?.you || 'Вы:') ||
+                                dialog.Mmessage?.startsWith('Вы:') ||
+                                dialog.Mmessage?.startsWith('You:')
+                              );
+                              const unreadCount = Number(dialog.unread_count || 0);
 
                               return (
                                 <button
@@ -1888,6 +1932,13 @@ export default function MessagesContent() {
                                       {dialogName || 'Пользователь'}
                                       {String(dialog.Uverify ?? '0') === '1' ? (
                                         <Icon name="IC-verify" className="ml-1 inline h-5 w-5 fill-blue-500" />
+                                      ) : String(dialog.Uverify ?? '0') === '2' ? (
+                                        <span title="ИИ / Бот" className="ml-1 inline-flex items-center">
+                                          <svg className="w-4 h-4 text-purple-400 fill-current inline drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+                                            <path d="M19 2L20.2 5.8L24 7L20.2 8.2L19 12L17.8 8.2L14 7L17.8 5.8L19 2Z" opacity="0.75" />
+                                          </svg>
+                                        </span>
                                       ) : null}
                                     </span>
                                     <span className="truncate text-sm text-zinc-300 lg:text-base">
@@ -1895,17 +1946,23 @@ export default function MessagesContent() {
                                     </span>
                                   </div>
 
-                                  <div className="flex shrink-0 flex-col items-end text-xs text-zinc-400 lg:text-sm">
+                                  <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-zinc-400 lg:text-sm">
                                     <span>{normalizeText(dialog.Mtime)}</span>
-                                    <Icon
-                                      name={previewStatusIcon}
-                                      className={cn(
-                                        'h-5 w-5',
-                                        String(dialog.Mstatus ?? '0') === '0'
-                                          ? 'fill-white'
-                                          : 'fill-purple-500',
-                                      )}
-                                    />
+                                    {isMyLastMessage ? (
+                                      <Icon
+                                        name={previewStatusIcon}
+                                        className={cn(
+                                          'h-5 w-5',
+                                          String(dialog.Mstatus ?? '0') === '0'
+                                            ? 'fill-white'
+                                            : 'fill-purple-500',
+                                        )}
+                                      />
+                                    ) : unreadCount > 0 ? (
+                                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-purple-500 px-1.5 text-[11px] font-bold text-white shadow">
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                      </span>
+                                    ) : null}
                                   </div>
                                 </button>
                               );
@@ -2114,9 +2171,17 @@ export default function MessagesContent() {
                               </div>
                             ) : (
                               (() => {
-                                const senderMember = isGroupDialog
-                                  ? selectedDialog?.members?.find((m) => Number(m.id) === Number(item.message.sender_id))
+                                const senderId = Number(item.message.sender_id);
+                                let senderMember = isGroupDialog
+                                  ? selectedDialog?.members?.find((m) => Number(m.id) === senderId)
                                   : null;
+
+                                if (isGroupDialog && !senderMember && senderId > 0) {
+                                  const cachedUser = getCachedUserInfo(senderId);
+                                  if (cachedUser) {
+                                    senderMember = cachedUser;
+                                  }
+                                }
 
                                 const groupSenderName = isGroupDialog
                                   ? (senderMember
@@ -2138,6 +2203,7 @@ export default function MessagesContent() {
                                     message={item.message}
                                     senderName={groupSenderName}
                                     senderAvatarUrl={groupSenderAvatarUrl}
+                                    members={selectedDialog?.members}
                                     onAddReaction={(messageId, reaction) => {
                                       void sendReaction(messageId, reaction, 'add');
                                     }}

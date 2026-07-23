@@ -10,7 +10,21 @@ function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
-const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, icon?: string, imgSrc?: string, onClick?: () => void, isActive?: boolean }) => {
+const NavItem = ({
+  href,
+  icon,
+  imgSrc,
+  onClick,
+  isActive,
+  badgeCount,
+}: {
+  href?: string;
+  icon?: string;
+  imgSrc?: string;
+  onClick?: () => void;
+  isActive?: boolean;
+  badgeCount?: number;
+}) => {
   const pathname = usePathname();
   const active = isActive !== undefined
     ? isActive
@@ -21,21 +35,28 @@ const NavItem = ({ href, icon, imgSrc, onClick, isActive }: { href?: string, ico
       ),
     );
 
-  const className = `w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 active:scale-95 ${active
+  const className = `relative w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 active:scale-95 ${active
     ? "bg-zinc-700/90 border-zinc-600/30"
     : "hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30"
     }`;
 
-  const innerContent = imgSrc ? (
+  const innerContent = (
     <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={imgSrc} alt="Avatar" className="w-14 h-14 rounded-full object-cover" />
+      {imgSrc ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img src={imgSrc} alt="Avatar" className="w-14 h-14 rounded-full object-cover" />
+      ) : icon ? (
+        <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+          <use href={`#${icon}`}></use>
+        </svg>
+      ) : null}
+      {Boolean(badgeCount && badgeCount > 0) && (
+        <span className="absolute top-1 right-1 min-w-[18px] h-4.5 px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-zinc-900 shadow-md">
+          {badgeCount! > 99 ? '99+' : badgeCount}
+        </span>
+      )}
     </>
-  ) : icon ? (
-    <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <use href={`#${icon}`}></use>
-    </svg>
-  ) : null;
+  );
 
   if (href) {
     return (
@@ -224,7 +245,6 @@ export const Dropdown = ({
           ${isOpen ? 'opacity-100 scale-100 visible pointer-events-auto' : 'opacity-0 scale-95 invisible pointer-events-none'}
         `}
       >
-        {/* Клонируем элементы и добавляем закрытие дропдауна при клике на любой элемент внутри */}
         {React.Children.map(children, (child) => {
           if (React.isValidElement<{ onClick?: () => void }>(child)) {
             return React.cloneElement(child, {
@@ -244,13 +264,14 @@ export const Dropdown = ({
 };
 
 type DropdownItemProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   href?: string;
   icon?: string;
   iconClassName?: string;
   iconNode?: React.ReactNode;
   onClick?: () => void;
+  badgeCount?: number;
 };
 
 export const DropdownItem = ({
@@ -261,6 +282,7 @@ export const DropdownItem = ({
   className,
   iconClassName,
   iconNode,
+  badgeCount,
 }: DropdownItemProps) => {
   const pathname = usePathname();
   const isActive = href ? pathname === href : false;
@@ -275,12 +297,19 @@ export const DropdownItem = ({
 
   const content = (
     <>
-      {iconNode ?? (
-        <svg className={cn('inline w-6 h-6', !hasCustomFill && 'fill-white', iconClassName)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href={`#${icon}`}></use>
-        </svg>
+      <div className="relative inline-flex items-center shrink-0">
+        {iconNode ?? (
+          <svg className={cn('inline w-6 h-6', !hasCustomFill && 'fill-white', iconClassName)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+            <use href={`#${icon}`}></use>
+          </svg>
+        )}
+      </div>
+      <span className="flex-grow truncate">{children}</span>
+      {Boolean(badgeCount && badgeCount > 0) && (
+        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full shrink-0">
+          {badgeCount! > 99 ? '99+' : badgeCount}
+        </span>
       )}
-      {children}
     </>
   );
 
@@ -323,6 +352,55 @@ export default function Navigation() {
   const pathname = usePathname();
   const isPulseContext = pathname === '/pulse' || pathname?.startsWith('/pulse/');
 
+  const [unreadMessages, setUnreadMessages] = useState<number>(0);
+  const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    const fetchUnreadCounts = async () => {
+      try {
+        const [resMsgs, resNotifs] = await Promise.all([
+          fetch('/api/V2/messages/GetDialogList.php').then(r => r.json()).catch(() => null),
+          fetch('/api/V2/user/Notifications.php').then(r => r.json()).catch(() => null),
+        ]);
+
+        if (resMsgs?.success) {
+          const rawData = resMsgs.data ?? resMsgs;
+          const count = typeof rawData?.unread_count === 'number'
+            ? rawData.unread_count
+            : Array.isArray(rawData?.dialogs)
+            ? rawData.dialogs.reduce((acc: number, d: any) => acc + Number(d.unread_count || 0), 0)
+            : 0;
+          setUnreadMessages(count);
+        }
+
+        if (resNotifs?.success) {
+          setUnreadNotifications(resNotifs.data?.unread_count ?? 0);
+        }
+      } catch (e) {}
+    };
+
+    void fetchUnreadCounts();
+
+    const handleCustomUnread = (e: any) => {
+      if (e.detail?.type === 'messages_set') {
+        setUnreadMessages(Math.max(0, e.detail.count ?? 0));
+      } else if (e.detail?.type === 'messages') {
+        setUnreadMessages((prev) => Math.max(0, prev + (e.detail.delta ?? 1)));
+      } else if (e.detail?.type === 'notifications') {
+        setUnreadNotifications((prev) => Math.max(0, prev + (e.detail.delta ?? 1)));
+      } else if (e.detail?.type === 'clear_notifications') {
+        setUnreadNotifications(0);
+      } else if (e.detail?.type === 'clear_messages') {
+        setUnreadMessages(0);
+      }
+    };
+
+    window.addEventListener('ancial:unread_update', handleCustomUnread);
+    return () => window.removeEventListener('ancial:unread_update', handleCustomUnread);
+  }, [isAuthenticated, user, lang]);
+
   return (
     <>
       <motion.nav layoutRoot layout data-app-nav="desktop" className="hidden lg:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
@@ -337,7 +415,7 @@ export default function Navigation() {
         </MotionNavItem>
 
         <MotionNavItem id="desktop-messages" isVisible={isAuthenticated && user ? true : false}>
-          <NavItem href="/messages" icon="IC-chats" />
+          <NavItem href="/messages" icon="IC-chats" badgeCount={unreadMessages} />
         </MotionNavItem>
 
         <MotionNavItem id="desktop-friends" isVisible={isAuthenticated && user ? true : false}>
@@ -367,7 +445,7 @@ export default function Navigation() {
             <DropdownItem href={`/@${user?.username}`} icon="IC-user">
               {lang?.myaccount}
             </DropdownItem>
-            <DropdownItem href="/notifications" icon="IC-notification">
+            <DropdownItem href="/notifications" icon="IC-notification" badgeCount={unreadNotifications}>
               {lang?.notif}
             </DropdownItem>
             <DropdownItem href="/settings" icon="IC-settings">
@@ -420,7 +498,7 @@ export default function Navigation() {
             <NavItem href="/pulse" icon="IC-music" />
           </MotionNavItem>
           <MotionNavItem id="messages" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
-            <NavItem href="/messages" icon="IC-chats" />
+            <NavItem href="/messages" icon="IC-chats" badgeCount={unreadMessages} />
           </MotionNavItem>
           <MotionNavItem id="friends" isVisible={!isPulseContext && isAuthenticated && user ? true : false}>
             <NavItem href="/friends" icon="IC-friends" />
@@ -445,7 +523,7 @@ export default function Navigation() {
               <DropdownItem href={`/@${user?.username}`} icon="IC-user">
                 {lang?.myaccount}
               </DropdownItem>
-              <DropdownItem href="/notifications" icon="IC-notification">
+              <DropdownItem href="/notifications" icon="IC-notification" badgeCount={unreadNotifications}>
                 {lang?.notif}
               </DropdownItem>
               <DropdownItem href="/settings" icon="IC-settings">

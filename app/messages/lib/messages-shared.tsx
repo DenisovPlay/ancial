@@ -30,6 +30,7 @@ export type DialogListItem = {
   Ulastonline?: number | string | null;
   Uname?: string | null;
   Uverify?: number | string | null;
+  unread_count?: number | string | null;
 };
 
 export type DialogMeta = {
@@ -78,6 +79,7 @@ export type DialogMessage = {
   id?: number | string | null;
   message?: string | null;
   reactions?: string | null;
+  read_by?: Array<number | string> | null;
   sender_id?: number | string | null;
   status?: number | string | null;
   reply_to?: number | string | null;
@@ -771,6 +773,51 @@ export function writeDialogsCache(dialogs: DialogListItem[]) {
 export function applyCachedDialogs(dialogs: DialogListItem[]) {
   return dialogs.map((dialog) => ({ ...dialog }));
 }
+
+export function cacheUserInfo(userId: number | string, info: { fname?: string; lname?: string; username?: string; img?: string }) {
+  const idNum = Number(userId);
+  if (!idNum) return;
+  const existing = cache.get<{ fname?: string; lname?: string; username?: string; img?: string }>(`user_info:${idNum}`, { category: 'users', subcategory: 'info' }) || {};
+  cache.set(
+    `user_info:${idNum}`,
+    {
+      ...existing,
+      ...info,
+      fname: info.fname || existing.fname || '',
+      lname: info.lname || existing.lname || '',
+      username: info.username || existing.username || '',
+      img: info.img || existing.img || '',
+    },
+    { category: 'users', subcategory: 'info' }
+  );
+}
+
+export function getCachedUserInfo(userId: number | string) {
+  const idNum = Number(userId);
+  if (!idNum) return null;
+  return cache.get<GroupMember>(`user_info:${idNum}`, { category: 'users', subcategory: 'info' }) || null;
+}
+
+export function writeGroupMembersCache(dialogId: number | string, members: GroupMember[]) {
+  const idNum = Number(dialogId);
+  if (!idNum || !Array.isArray(members)) return;
+  cache.set(
+    `group_members:${idNum}`,
+    members,
+    { category: 'chats', subcategory: 'members' }
+  );
+  members.forEach((m) => {
+    cacheUserInfo(m.id, m);
+  });
+}
+
+export function getGroupMembersCache(dialogId: number | string) {
+  const idNum = Number(dialogId);
+  if (!idNum) return null;
+  return cache.get<GroupMember[]>(`group_members:${idNum}`, { category: 'chats', subcategory: 'members' }) || null;
+}
+
+export const getDialogMembersCache = getGroupMembersCache;
 
 export function getMessageCacheKey(userId: number, dialogId: number) {
   return `msg-cache:${userId}:${dialogId}`;

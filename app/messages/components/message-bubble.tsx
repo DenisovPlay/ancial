@@ -11,9 +11,11 @@ import {
   cn,
   DialogMessage,
   DialogUser,
+  GroupMember,
   extractMessageImages,
   FALLBACK_AVATAR,
   formatMessageTime,
+  getCachedUserInfo,
   getDialogImageKey,
   getMessageBodyHtmlWithoutImages,
   getMessageId,
@@ -105,6 +107,8 @@ function SevenTvStickerMessage({
   );
 }
 
+
+
 export default function MessageBubble({
   authUserImage,
   currentUserId,
@@ -120,6 +124,7 @@ export default function MessageBubble({
   onReplyClick,
   senderName,
   senderAvatarUrl,
+  members,
 }: {
   authUserImage: string;
   currentUserId: number;
@@ -135,6 +140,8 @@ export default function MessageBubble({
   onReplyClick: (replyToId: string | number) => void;
   senderName?: string;
   senderAvatarUrl?: string;
+  members?: GroupMember[] | Array<{ id: number; fname?: string; lname?: string; name?: string; img?: string }> | null;
+  key?: React.Key;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [transformY, setTransformY] = useState(0);
@@ -520,10 +527,27 @@ export default function MessageBubble({
                         <div className={cn("mt-1 flex items-end justify-end gap-1", block.type !== 'main' && "px-1 pb-1")}>
                           <div className="flex flex-1 flex-wrap items-center gap-1">
                             {reactions.map((reaction, index) => {
-                              const ownReaction = reaction.userId === String(currentUserId);
-                              const avatar = ownReaction
-                                ? normalizeAssetUrl(authUserImage, FALLBACK_AVATAR)
-                                : normalizeAssetUrl(foreignUser?.img, FALLBACK_AVATAR);
+                              const reactionUserId = String(reaction.userId);
+                              const ownReaction = reactionUserId === String(currentUserId);
+
+                              let reactionUserImg = '';
+                              if (ownReaction) {
+                                reactionUserImg = authUserImage || '';
+                              } else {
+                                const foundMember = members?.find((m) => String(m.id) === reactionUserId);
+                                if (foundMember?.img) {
+                                  reactionUserImg = foundMember.img;
+                                } else {
+                                  const cachedUser = getCachedUserInfo(reactionUserId);
+                                  if (cachedUser?.img) {
+                                    reactionUserImg = cachedUser.img;
+                                  } else if (foreignUser && String(foreignUser.id) === reactionUserId) {
+                                    reactionUserImg = foreignUser.img || '';
+                                  }
+                                }
+                              }
+
+                              const avatar = normalizeAssetUrl(reactionUserImg, FALLBACK_AVATAR);
 
                               return (
                                 <button
@@ -571,7 +595,7 @@ export default function MessageBubble({
                                   name={getMessageStatusIconName(message.status)}
                                   className={cn(
                                     'h-3 w-3',
-                                    String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-zinc-200',
+                                    String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-purple-400',
                                   )}
                                 />
                               ) : null}

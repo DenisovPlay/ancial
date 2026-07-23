@@ -51,25 +51,41 @@ export function getUserDisplayName(
 }
 
 /**
- * Проверяет наличие статуса верификации у аккаунта
+ * Возвращает числовой статус верификации:
+ * 0 - обычный пользователь
+ * 1 - верифицированный человек
+ * 2 - ИИ / Бот аккаунт
  */
-export function isAccountVerified(account?: AccountData | null): boolean {
-  if (!account) return false;
+export function getVerifyStatus(
+  account?: AccountData | null,
+  rawVerify?: boolean | number | string | null
+): number {
   const v =
-    account.verify ??
-    account.veriflevel ??
-    account.official ??
-    account.is_verified ??
-    account.isVerified ??
-    account.Uverify;
+    rawVerify !== undefined
+      ? rawVerify
+      : account?.verify ??
+        account?.veriflevel ??
+        account?.official ??
+        account?.is_verified ??
+        account?.isVerified ??
+        account?.Uverify;
 
-  if (typeof v === 'boolean') return v;
-  if (typeof v === 'number') return v === 1;
+  if (v === true) return 1;
+  if (v === false || v === null || v === undefined) return 0;
+  if (typeof v === 'number') return v;
   if (typeof v === 'string') {
     const trimmed = v.trim().toLowerCase();
-    return trimmed === '1' || trimmed === 'true';
+    if (trimmed === '2') return 2;
+    if (trimmed === '1' || trimmed === 'true') return 1;
   }
-  return false;
+  return 0;
+}
+
+/**
+ * Проверяет наличие статуса верификации у аккаунта (1 или 2)
+ */
+export function isAccountVerified(account?: AccountData | null): boolean {
+  return getVerifyStatus(account) > 0;
 }
 
 export interface AccountNameProps {
@@ -114,8 +130,7 @@ export default function AccountName({
   children,
 }: AccountNameProps) {
   const displayName = name ?? getUserDisplayName(user, fallback);
-  const verified =
-    verify !== undefined ? isAccountVerified({ verify }) : isAccountVerified(user);
+  const verifyStatus = getVerifyStatus(user, verify);
 
   return (
     <Component
@@ -124,12 +139,24 @@ export default function AccountName({
     >
       <span className={cn('truncate', nameClassName)}>{displayName}</span>
       {children}
-      {showBadges && verified && (
+      {showBadges && verifyStatus === 1 && (
         <SvgIcon
           className={cn('w-5 h-5 shrink-0 inline fill-blue-500', badgeClassName)}
           id="IC-verify"
           viewBox="0 0 48 48"
         />
+      )}
+      {showBadges && verifyStatus === 2 && (
+        <span title="Искусственный интеллект / Бот" className="inline-flex items-center shrink-0">
+          <svg
+            className={cn('w-4 h-4 text-purple-400 fill-current shrink-0 inline drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]', badgeClassName)}
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+            <path d="M19 2L20.2 5.8L24 7L20.2 8.2L19 12L17.8 8.2L14 7L17.8 5.8L19 2Z" opacity="0.75" />
+          </svg>
+        </span>
       )}
     </Component>
   );

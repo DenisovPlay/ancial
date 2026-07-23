@@ -142,6 +142,33 @@ function emitPresenceStoreUpdate() {
 }
 
 function notifyEvent(eventName: string, payload?: unknown) {
+  if (typeof window !== 'undefined') {
+    if (eventName === 'message:new') {
+      const data = (payload as any)?.data ?? payload;
+      const currentUserId = Number(cache.get<any>('user_profile')?.id || 0);
+      const senderId = Number(data?.sender_id || 0);
+      const msgDialogId = Number(data?.dialog_id || (payload as any)?.dialog_id || 0);
+      const activeDialogId = Number((window as any).__activeDialogId || 0);
+
+      // Увеличиваем счетчик сообщений в навигации, только если:
+      // 1. Сообщение отправлено кем-то другим
+      // 2. Этот диалог в данный момент НЕ открыт у пользователя
+      if ((!senderId || senderId !== currentUserId) && (!activeDialogId || activeDialogId !== msgDialogId)) {
+        window.dispatchEvent(
+          new CustomEvent('ancial:unread_update', {
+            detail: { type: 'messages', delta: 1, payload }
+          })
+        );
+      }
+    } else if (eventName === 'notification:new') {
+      window.dispatchEvent(
+        new CustomEvent('ancial:unread_update', {
+          detail: { type: 'notifications', delta: 1, payload }
+        })
+      );
+    }
+  }
+
   const listeners = eventListeners.get(eventName);
   if (!listeners?.size) return;
 

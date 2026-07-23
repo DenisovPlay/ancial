@@ -10,7 +10,8 @@ export type CacheCategory =
   | 'profile'
   | 'pulse'
   | 'notifications'
-  | 'apps';
+  | 'apps'
+  | 'users';
 
 export type CacheSubcategory<C extends CacheCategory> =
   C extends 'home'
@@ -20,7 +21,7 @@ export type CacheSubcategory<C extends CacheCategory> =
     : C extends 'wallet'
     ? 'overview' | 'merchants' | 'merchant_details' | 'accounts' | 'transactions' | 'history'
     : C extends 'chats'
-    ? 'dialogs' | 'messages' | 'messages_hash' | 'previews'
+    ? 'dialogs' | 'messages' | 'messages_hash' | 'previews' | 'members'
     : C extends 'feed'
     ? 'posts'
     : C extends 'friends'
@@ -33,6 +34,8 @@ export type CacheSubcategory<C extends CacheCategory> =
     ? 'list'
     : C extends 'apps'
     ? 'home' | 'category' | 'search'
+    : C extends 'users'
+    ? 'info'
     : never;
 
 export interface CacheOptions<C extends CacheCategory> {
