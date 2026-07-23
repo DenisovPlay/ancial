@@ -1288,5 +1288,9 @@ export const en: Record<string, string> = {
   "error_creating_group": "Error creating group",
   "create_group": "Create group chat",
   "create_group_chat": "Create group chat",
+  "search_chats_placeholder": "Search chats...",
+  "search_not_found": "Nothing found",
+  "try_another_search": "Try changing your search query",
+  "reset_search": "Reset search",
   "interlocutor_dative": "interlocutor"
 };

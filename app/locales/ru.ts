@@ -1288,5 +1288,9 @@ export const ru: Record<string, string> = {
     "error_creating_group": "Ошибка при создании группы",
     "create_group": "Создать групповой чат",
     "create_group_chat": "Создать групповой чат",
+    "search_chats_placeholder": "Поиск диалогов...",
+    "search_not_found": "Ничего не найдено",
+    "try_another_search": "Попробуйте изменить поисковый запрос",
+    "reset_search": "Сбросить поиск",
     "interlocutor_dative": "собеседнику"
 };

@@ -22,6 +22,7 @@ export type DialogListItem = {
   title?: string | null;
   avatar?: string | null;
   invite_code?: string | null;
+  username?: string | null;
   Mmessage?: string | null;
   Mstatus?: number | string | null;
   Mtime?: string | null;

@@ -139,6 +139,66 @@ export default function MessagesContent() {
   const [composerHeight, setComposerHeight] = useState(60);
   const activeCallTimeoutRef = useRef<number | null>(null);
 
+  const [dialogSearchQuery, setDialogSearchQuery] = useState('');
+
+  const filteredDialogs = useMemo(() => {
+    if (!dialogSearchQuery.trim()) return dialogs;
+    const q = dialogSearchQuery.toLowerCase().trim();
+    return dialogs.filter((dialog) => {
+      const dialogName = (decodeText(dialog.Uname) || '').toLowerCase();
+      const username = ((dialog.username || (dialog as any).username || '') as string).toLowerCase();
+      const title = (dialog.title || '').toLowerCase();
+      const msg = (dialog.Mmessage || '').toLowerCase();
+      return dialogName.includes(q) || username.includes(q) || title.includes(q) || msg.includes(q);
+    });
+  }, [dialogs, dialogSearchQuery]);
+
+  const [isPlusVisible, setIsPlusVisible] = useState(true);
+  const lastDialogsScrollTopRef = useRef(0);
+
+  const handleDialogsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const currentScrollTop = e.currentTarget.scrollTop;
+    const lastScrollTop = lastDialogsScrollTopRef.current;
+
+    if (currentScrollTop <= 10) {
+      setIsPlusVisible(true);
+    } else {
+      const diff = currentScrollTop - lastScrollTop;
+      if (diff > 5) {
+        setIsPlusVisible(false);
+      } else if (diff < -5) {
+        setIsPlusVisible(true);
+      }
+    }
+
+    lastDialogsScrollTopRef.current = Math.max(0, currentScrollTop);
+  };
+
+  useEffect(() => {
+    const handleWindowScroll = () => {
+      const currentScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+      const lastScrollTop = lastDialogsScrollTopRef.current;
+
+      if (currentScrollTop <= 10) {
+        setIsPlusVisible(true);
+      } else {
+        const diff = currentScrollTop - lastScrollTop;
+        if (diff > 5) {
+          setIsPlusVisible(false);
+        } else if (diff < -5) {
+          setIsPlusVisible(true);
+        }
+      }
+
+      lastDialogsScrollTopRef.current = Math.max(0, currentScrollTop);
+    };
+
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleWindowScroll);
+    };
+  }, []);
+
   const dialogsInFlightRef = useRef(false);
   const dialogsLastFetchAtRef = useRef(0);
   const dialogSessionRef = useRef(0);
@@ -1694,146 +1754,196 @@ export default function MessagesContent() {
                 routeHash && 'hidden lg:flex',
               )}
             >
-              <div className="flex flex-col h-full w-full lg:bg-zinc-900/50 lg:backdrop-blur-lg lg:shadow lg:rounded-3xl lg:overflow-hidden lg:border lg:border-zinc-600/30">
+              <div className="flex flex-col h-full w-full lg:bg-zinc-900/50 lg:backdrop-blur-lg lg:shadow lg:rounded-3xl lg:overflow-hidden lg:border lg:border-zinc-600/30 relative">
 
-                <span className="w-full px-3 pb-3 pt-3 text-3xl font-extralight lg:hidden">
+                <span className="w-full px-3 pb-0 pt-3 text-3xl font-extralight lg:hidden">
                   {lang?.chats || 'Чаты'}
                 </span>
 
-                <div className="relative flex h-full flex-col">
-                  <div className="flex h-full flex-col">
-                    {dialogsLoading && dialogs.length === 0 ? (
-                      <div className="flex flex-col w-full">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <div key={i} className="flex items-center gap-3 p-3 w-full animate-pulse">
-                            <div className="h-16 w-16 shrink-0 rounded-full bg-zinc-800 shadow" />
-                            <div className="flex min-w-0 flex-1 flex-col gap-2 justify-center">
-                              <div className="h-4 w-1/2 rounded-full bg-zinc-800" />
-                              <div className="h-3 w-3/4 rounded-full bg-zinc-800" />
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-2 justify-center">
-                              <div className="h-3 w-10 rounded-full bg-zinc-800" />
-                              <div className="h-5 w-5 rounded-full bg-zinc-800" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : dialogsError && dialogs.length === 0 ? (
-                      <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-                        <img
-                          src="/includes/img/stickers/sponge.gif"
-                          alt=""
-                          className="mb-3 h-40 w-40 object-contain"
-                        />
-                        <span className="text-lg text-zinc-200">Связь потеряна!</span>
-                        <span className="text-zinc-400">
-                          {lang?.refresh_page || 'Попробуйте обновить страницу'}
-                        </span>
-                        <span className="mt-1 text-xs text-zinc-500">{dialogsError}</span>
+                <div
+                  id="dialog-list-container"
+                  onScroll={handleDialogsScroll}
+                  className="flex min-h-0 flex-1 flex-col lg:overflow-y-auto"
+                >
+                  <div className="z-[30] pt-3 pb-2 px-3 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent">
+                    <div className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
+                      <input
+                        className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
+                        placeholder={lang?.search_chats_placeholder || 'Поиск диалогов...'}
+                        type="text"
+                        value={dialogSearchQuery}
+                        onChange={(e) => setDialogSearchQuery(e.target.value)}
+                      />
+                      {dialogSearchQuery ? (
                         <button
                           type="button"
-                          onClick={() => {
-                            setDialogsError('');
-                            setDialogsLoading(true);
-                            void loadDialogs({ force: true });
-                          }}
-                          className="mt-3 rounded-full border border-zinc-600/30 bg-purple-500 px-4 py-2 text-white duration-300 hover:bg-purple-600 active:scale-95"
+                          onClick={() => setDialogSearchQuery('')}
+                          className="cursor-pointer shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-zinc-700/60 text-zinc-400 hover:text-white transition-colors duration-200"
                         >
-                          Попробовать ещё
-                        </button>
-                      </div>
-                    ) : dialogs.length === 0 ? (
-                      <div className="flex h-full flex-col items-center justify-center gap-0.5 pb-3 text-center">
-                        <img src={NOTHING_FOUND_IMAGE} alt="" className="h-56 w-56 object-contain" />
-                        <span className="w-full text-base font-black text-zinc-100">
-                          {lang?.emptycomments || 'Пока ничего нет'}
-                        </span>
-                        <span className="w-full text-sm font-medium text-zinc-300">
-                          {lang?.emptymessagesdesc || 'Здесь появятся ваши диалоги'}
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <div id="dialog-list-container" className="flex min-h-0 flex-1 flex-col lg:overflow-y-auto">
-                          {dialogs.map((dialog) => {
-                            const dialogHash = normalizeHash(dialog.hash);
-                            const active = dialogHash === routeHash;
-                            const preview = formatDialogPreview(dialog.Mmessage, lang);
-                            const dialogName = decodeText(dialog.Uname);
-                            const previewStatusIcon = getDialogPreviewStatusIconName(dialog.Mstatus);
-
-                            return (
-                              <button
-                                key={dialogHash || String(dialog.id)}
-                                type="button"
-                                onClick={() => handleDialogOpen(dialogHash)}
-                                className={cn(
-                                  'cursor-pointer flex items-center gap-3 p-3 text-left duration-300 hover:bg-zinc-800 active:scale-95 active:rounded-3xl',
-                                  active && 'bg-zinc-800/90',
-                                )}
-                              >
-                                <div className="shrink-0">
-                                  <img
-                                    className={cn(
-                                      'h-16 w-16 rounded-full object-cover shadow',
-                                      isOnline(dialog.Ulastonline) && 'ring-2 ring-lime-500',
-                                    )}
-                                    src={normalizeAssetUrl(dialog.Uimg, FALLBACK_AVATAR)}
-                                    alt={dialogName || 'Dialog avatar'}
-                                  />
-                                </div>
-
-                                <div className="flex min-w-0 flex-1 flex-col">
-                                  <span className="truncate text-base font-medium text-zinc-100 lg:text-lg">
-                                    {dialogName || 'Пользователь'}
-                                    {String(dialog.Uverify ?? '0') === '1' ? (
-                                      <Icon name="IC-verify" className="ml-1 inline h-5 w-5 fill-blue-500" />
-                                    ) : null}
-                                  </span>
-                                  <span className="truncate text-sm text-zinc-300 lg:text-base">
-                                    {preview || (lang?.write_message || 'Напишите сообщение')}
-                                  </span>
-                                </div>
-
-                                <div className="flex shrink-0 flex-col items-end text-xs text-zinc-400 lg:text-sm">
-                                  <span>{normalizeText(dialog.Mtime)}</span>
-                                  <Icon
-                                    name={previewStatusIcon}
-                                    className={cn(
-                                      'h-5 w-5',
-                                      String(dialog.Mstatus ?? '0') === '0'
-                                        ? 'fill-white'
-                                        : 'fill-purple-500',
-                                    )}
-                                  />
-                                </div>
-                              </button>
-                            );
-                          })}
-                          <div className={cn('lg:pb-20', isPulsePlayerActive ? 'pb-56' : 'pb-36')} />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setCreateGroupModalOpen(true)}
-                          className={cn(
-                            'fixed right-3 lg:absolute z-40 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-500 active:scale-95 duration-300 border border-zinc-600/30 cursor-pointer',
-                            isPulsePlayerActive ? 'bottom-38 lg:bottom-22' : 'bottom-21 lg:bottom-3',
-                          )}
-                          title={lang?.create_group || 'Создать групповой чат'}
-                        >
-                          <svg className="w-7 h-7 fill-white" viewBox="0 0 24 24">
-                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                           </svg>
                         </button>
-                        <YandexRtb
-                          blockId="R-A-3636730-16"
-                          className="hidden w-full max-h-24 items-center justify-center lg:flex"
-                        />
-                      </>
-                    )}
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="relative flex h-full flex-col min-h-0 flex-1">
+                    <div className="flex h-full flex-col min-h-0 flex-1">
+                      {dialogsLoading && dialogs.length === 0 ? (
+                        <div className="flex flex-col w-full">
+                          {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="flex items-center gap-3 p-3 w-full animate-pulse">
+                              <div className="h-16 w-16 shrink-0 rounded-full bg-zinc-800 shadow" />
+                              <div className="flex min-w-0 flex-1 flex-col gap-2 justify-center">
+                                <div className="h-4 w-1/2 rounded-full bg-zinc-800" />
+                                <div className="h-3 w-3/4 rounded-full bg-zinc-800" />
+                              </div>
+                              <div className="flex shrink-0 flex-col items-end gap-2 justify-center">
+                                <div className="h-3 w-10 rounded-full bg-zinc-800" />
+                                <div className="h-5 w-5 rounded-full bg-zinc-800" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : dialogsError && dialogs.length === 0 ? (
+                        <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+                          <img
+                            src="/includes/img/stickers/sponge.gif"
+                            alt=""
+                            className="mb-3 h-40 w-40 object-contain"
+                          />
+                          <span className="text-lg text-zinc-200">Связь потеряна!</span>
+                          <span className="text-zinc-400">
+                            {lang?.refresh_page || 'Попробуйте обновить страницу'}
+                          </span>
+                          <span className="mt-1 text-xs text-zinc-500">{dialogsError}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDialogsError('');
+                              setDialogsLoading(true);
+                              void loadDialogs({ force: true });
+                            }}
+                            className="mt-3 rounded-full border border-zinc-600/30 bg-purple-500 px-4 py-2 text-white duration-300 hover:bg-purple-600 active:scale-95"
+                          >
+                            Попробовать ещё
+                          </button>
+                        </div>
+                      ) : dialogs.length === 0 ? (
+                        <div className="flex h-full flex-col items-center justify-center gap-0.5 pb-3 text-center">
+                          <img src={NOTHING_FOUND_IMAGE} alt="" className="h-56 w-56 object-contain" />
+                          <span className="w-full text-base font-black text-zinc-100">
+                            {lang?.emptycomments || 'Пока ничего нет'}
+                          </span>
+                          <span className="w-full text-sm font-medium text-zinc-300">
+                            {lang?.emptymessagesdesc || 'Здесь появятся ваши диалоги'}
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          {filteredDialogs.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-400 h-full">
+                              <Icon name="IC-search" className="w-12 h-12 fill-zinc-600 mb-2" />
+                              <span className="text-base font-semibold text-zinc-200">
+                                {lang?.search_not_found || 'Ничего не найдено'}
+                              </span>
+                              <span className="text-xs text-zinc-400 mt-1">
+                                {lang?.try_another_search || 'Попробуйте изменить поисковый запрос'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setDialogSearchQuery('')}
+                                className="mt-4 text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-200"
+                              >
+                                {lang?.reset_search || 'Сбросить поиск'}
+                              </button>
+                            </div>
+                          ) : (
+                            filteredDialogs.map((dialog) => {
+                              const dialogHash = normalizeHash(dialog.hash);
+                              const active = dialogHash === routeHash;
+                              const preview = formatDialogPreview(dialog.Mmessage, lang);
+                              const dialogName = decodeText(dialog.Uname);
+                              const previewStatusIcon = getDialogPreviewStatusIconName(dialog.Mstatus);
+
+                              return (
+                                <button
+                                  key={dialogHash || String(dialog.id)}
+                                  type="button"
+                                  onClick={() => handleDialogOpen(dialogHash)}
+                                  className={cn(
+                                    'cursor-pointer flex items-center gap-3 p-3 text-left duration-300 hover:bg-zinc-800 active:scale-95 active:rounded-3xl',
+                                    active && 'bg-zinc-800/90',
+                                  )}
+                                >
+                                  <div className="shrink-0">
+                                    <img
+                                      className={cn(
+                                        'h-16 w-16 rounded-full object-cover shadow',
+                                        isOnline(dialog.Ulastonline) && 'ring-2 ring-lime-500',
+                                      )}
+                                      src={normalizeAssetUrl(dialog.Uimg, FALLBACK_AVATAR)}
+                                      alt={dialogName || 'Dialog avatar'}
+                                    />
+                                  </div>
+
+                                  <div className="flex min-w-0 flex-1 flex-col">
+                                    <span className="truncate text-base font-medium text-zinc-100 lg:text-lg">
+                                      {dialogName || 'Пользователь'}
+                                      {String(dialog.Uverify ?? '0') === '1' ? (
+                                        <Icon name="IC-verify" className="ml-1 inline h-5 w-5 fill-blue-500" />
+                                      ) : null}
+                                    </span>
+                                    <span className="truncate text-sm text-zinc-300 lg:text-base">
+                                      {preview || (lang?.write_message || 'Напишите сообщение')}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex shrink-0 flex-col items-end text-xs text-zinc-400 lg:text-sm">
+                                    <span>{normalizeText(dialog.Mtime)}</span>
+                                    <Icon
+                                      name={previewStatusIcon}
+                                      className={cn(
+                                        'h-5 w-5',
+                                        String(dialog.Mstatus ?? '0') === '0'
+                                          ? 'fill-white'
+                                          : 'fill-purple-500',
+                                      )}
+                                    />
+                                  </div>
+                                </button>
+                              );
+                            })
+                          )}
+
+                          <div className={cn('lg:pb-20', isPulsePlayerActive ? 'pb-56' : 'pb-36')} />
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCreateGroupModalOpen(true)}
+                  className={cn(
+                    'fixed right-3 lg:absolute z-40 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-500 active:scale-95 duration-300 border border-zinc-600/30 cursor-pointer transition-all ease-in-out',
+                    isPulsePlayerActive ? 'bottom-38 lg:bottom-22' : 'bottom-21 lg:bottom-3',
+                    isPlusVisible
+                      ? 'translate-y-0 opacity-100 scale-100'
+                      : 'translate-y-28 opacity-0 scale-90 pointer-events-none',
+                  )}
+                  title={lang?.create_group || 'Создать групповой чат'}
+                >
+                  <svg className="w-7 h-7 fill-white" viewBox="0 0 24 24">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                  </svg>
+                </button>
+                <YandexRtb
+                  blockId="R-A-3636730-16"
+                  className="hidden w-full max-h-24 items-center justify-center lg:flex"
+                />
               </div>
             </div>
 
