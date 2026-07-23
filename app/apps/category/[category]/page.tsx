@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { createPageMetadata } from '../../../seo';
-import AppsContent from '../../apps-content';
+import { redirect } from 'next/navigation';
 
 type AppsCategoryPageProps = {
   params: Promise<{ category: string }>;
@@ -24,6 +24,6 @@ export default async function AppsCategoryPage({
   params,
 }: AppsCategoryPageProps) {
   const { category } = await params;
-
-  return <AppsContent category={decodeURIComponent(category)} mode="category" />;
+  
+  redirect(`/apps?category=${category}`);
 }

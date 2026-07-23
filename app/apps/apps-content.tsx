@@ -2,8 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { FormEvent, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '../context/AuthContext';
 import { useDragScroll } from '../hooks/useDragScroll';
@@ -29,12 +29,6 @@ import {
 } from './apps-icons';
 
 type AppsMode = 'home' | 'search' | 'category';
-
-type AppsContentProps = {
-  category?: string;
-  initialQuery?: string;
-  mode: AppsMode;
-};
 
 type CategoryItem = {
   animationClass?: string;
@@ -101,9 +95,15 @@ const categories: CategoryItem[] = [
   },
 ];
 
-export default function AppsContent({ category, initialQuery = '', mode }: AppsContentProps) {
+function AppsContentInner() {
   const router = useRouter();
   const { lang } = useAuth();
+  const searchParams = useSearchParams();
+  
+  const category = searchParams.get('category') ?? undefined;
+  const initialQuery = searchParams.get('q') ?? '';
+  const mode = initialQuery ? 'search' : category ? 'category' : 'home';
+
   const categoryScrollRef = useDragScroll({ speed: 1.4 });
   const [apps, setApps] = useState<LegacyAppSummary[]>([]);
   const [error, setError] = useState('');
@@ -192,7 +192,11 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    router.push(`/apps/search?q=${encodeURIComponent(query.trim())}`);
+    if (query.trim()) {
+      router.push(`/apps?q=${encodeURIComponent(query.trim())}`);
+    } else {
+      router.push('/apps');
+    }
   };
 
   const heading = useMemo(() => {
@@ -262,7 +266,7 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
                 )}
                 data-category-active={isActive ? "true" : "false"}
                 key={item.key}
-                onClick={() => router.push(`/apps/category/${encodeURIComponent(item.href)}`)}
+                onClick={() => router.push(`/apps?category=${encodeURIComponent(item.href)}`)}
                 type="button"
               >
                 <div className="flex justify-center items-center relative z-0">
@@ -364,6 +368,18 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
         onClose={() => setModalAppId(null)}
       />
     </div>
+  );
+}
+
+export default function AppsContent() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <SpinnerIcon className="w-12 h-12 fill-white animate-spin" />
+      </div>
+    }>
+      <AppsContentInner />
+    </Suspense>
   );
 }
 

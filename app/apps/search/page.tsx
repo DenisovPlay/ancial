@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { createPageMetadata } from '../../seo';
-import AppsContent from '../apps-content';
+import { redirect } from 'next/navigation';
 
 type AppsSearchPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -20,5 +20,5 @@ export default async function AppsSearchPage({
   const queryValue = params.q;
   const query = Array.isArray(queryValue) ? queryValue[0] : queryValue;
 
-  return <AppsContent initialQuery={query ?? ''} mode="search" />;
+  redirect(`/apps?q=${query ?? ''}`);
 }
