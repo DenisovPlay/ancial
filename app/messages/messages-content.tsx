@@ -473,16 +473,42 @@ export default function MessagesContent() {
       const result = await AncialAPI.getDialogList<any>();
       const rawData = result as any;
       const payload = rawData?.data ?? rawData;
-      const nextDialogs = Array.isArray(payload?.dialogs) ? payload.dialogs : (Array.isArray(payload) ? payload : []);
+      const rawNext = Array.isArray(payload?.dialogs) ? payload.dialogs : (Array.isArray(payload) ? payload : []);
+      const activeId = currentDialogIdRef.current;
+      const activeHash = currentDialogHashRef.current;
+
+      const nextDialogs = rawNext.map((d: any) => {
+        const isCurrent = (activeId > 0 && Number(d.id) === activeId) ||
+                          (activeHash && normalizeHash(d.hash) === activeHash);
+        if (isCurrent) {
+          return {
+            ...d,
+            unread_count: 0,
+            unread: 0,
+            status: 1,
+          };
+        }
+        return d;
+      });
+
       setDialogs(nextDialogs);
       setDialogsError('');
       setDialogsLoading(false);
       writeDialogsCache(nextDialogs);
 
       if (typeof payload?.unread_count === 'number') {
+        const activeUnreadCount = rawNext.reduce((acc: number, d: any) => {
+          const isCurrent = (activeId > 0 && Number(d.id) === activeId) ||
+                            (activeHash && normalizeHash(d.hash) === activeHash);
+          if (isCurrent) {
+            return acc;
+          }
+          return acc + Number(d.unread_count || 0);
+        }, 0);
+
         window.dispatchEvent(
           new CustomEvent('ancial:unread_update', {
-            detail: { type: 'messages_set', count: payload.unread_count }
+            detail: { type: 'messages_set', count: activeUnreadCount }
           })
         );
       }
@@ -843,6 +869,7 @@ export default function MessagesContent() {
     if (session !== dialogSessionRef.current) return;
 
     const normalizedHash = normalizeHash(hash);
+    clearDialogUnreadLocally(normalizedHash);
     setDialogError('');
     setHasMoreMessages(true);
     setLoadingOlder(false);
@@ -1153,6 +1180,12 @@ export default function MessagesContent() {
 
   useEffect(() => {
     const dialogId = currentDialogIdRef.current;
+    const dialogHash = currentDialogHashRef.current || routeHash;
+    if (typeof window !== 'undefined') {
+      (window as any).__activeDialogId = dialogId || 0;
+      (window as any).__activeDialogHash = dialogHash || '';
+    }
+
     if (!isAuthenticated || !dialogId || blockedDialog) return undefined;
 
     globalWS.subscribeDialog(dialogId);
@@ -1170,11 +1203,15 @@ export default function MessagesContent() {
     }
 
     return () => {
+      if (typeof window !== 'undefined') {
+        (window as any).__activeDialogId = 0;
+        (window as any).__activeDialogHash = '';
+      }
       teardownWs();
     };
     // WS subscriptions are keyed by dialog/user ids; handlers intentionally keep current state via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blockedDialog, isAuthenticated, selectedDialog?.id, foreignUser?.id]);
+  }, [blockedDialog, isAuthenticated, selectedDialog?.id, foreignUser?.id, routeHash]);
 
   useLayoutEffect(() => {
     const scrollContainer = messageScrollRef.current;
@@ -1205,14 +1242,59 @@ export default function MessagesContent() {
     };
   }, [routeHash, selectedDialogId]);
 
+  const clearDialogUnreadLocally = (targetIdOrHash: number | string) => {
+    setDialogs((currentDialogs) => {
+      let unreadDelta = 0;
+      const updated = currentDialogs.map((dialog) => {
+        const isMatch = typeof targetIdOrHash === 'number'
+          ? Number(dialog.id) === targetIdOrHash
+          : normalizeHash(dialog.hash) === normalizeHash(String(targetIdOrHash));
+
+        if (isMatch) {
+          const count = Number((dialog as any).unread_count ?? (dialog as any).unread ?? 0);
+          if (count > 0) {
+            unreadDelta = count;
+          }
+          return {
+            ...dialog,
+            unread_count: 0,
+            unread: 0,
+            status: 1,
+          };
+        }
+        return dialog;
+      });
+
+      writeDialogsCache(updated);
+
+      if (unreadDelta > 0) {
+        window.dispatchEvent(
+          new CustomEvent('ancial:unread_update', {
+            detail: { type: 'messages_decrement', amount: unreadDelta }
+          })
+        );
+      }
+
+      return updated;
+    });
+  };
+
   const handleDialogOpen = (hash: string) => {
     const normalizedHash = normalizeHash(hash);
     if (!normalizedHash || normalizedHash === routeHash) return;
+    if (typeof window !== 'undefined') {
+      (window as any).__activeDialogHash = normalizedHash;
+    }
+    clearDialogUnreadLocally(normalizedHash);
     setRouteHash(normalizedHash);
     window.history.pushState(null, '', `/messages/${encodeURIComponent(normalizedHash)}`);
   };
 
   const handleDialogClose = () => {
+    if (typeof window !== 'undefined') {
+      (window as any).__activeDialogId = 0;
+      (window as any).__activeDialogHash = '';
+    }
     setRouteHash('');
     window.history.pushState(null, '', '/messages');
   };

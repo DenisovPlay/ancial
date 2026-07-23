@@ -148,12 +148,19 @@ function notifyEvent(eventName: string, payload?: unknown) {
       const currentUserId = Number(cache.get<any>('user_profile')?.id || 0);
       const senderId = Number(data?.sender_id || 0);
       const msgDialogId = Number(data?.dialog_id || (payload as any)?.dialog_id || 0);
+      const msgDialogHash = String(data?.dialog_hash || (payload as any)?.dialog_hash || '');
+
       const activeDialogId = Number((window as any).__activeDialogId || 0);
+      const activeDialogHash = String((window as any).__activeDialogHash || '');
+
+      const isCurrentActive =
+        (activeDialogId > 0 && msgDialogId > 0 && activeDialogId === msgDialogId) ||
+        (activeDialogHash !== '' && msgDialogHash !== '' && activeDialogHash === msgDialogHash);
 
       // Увеличиваем счетчик сообщений в навигации, только если:
       // 1. Сообщение отправлено кем-то другим
       // 2. Этот диалог в данный момент НЕ открыт у пользователя
-      if ((!senderId || senderId !== currentUserId) && (!activeDialogId || activeDialogId !== msgDialogId)) {
+      if ((!senderId || senderId !== currentUserId) && !isCurrentActive) {
         window.dispatchEvent(
           new CustomEvent('ancial:unread_update', {
             detail: { type: 'messages', delta: 1, payload }
