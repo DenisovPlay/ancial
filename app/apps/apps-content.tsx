@@ -7,6 +7,10 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '../context/AuthContext';
 import { useDragScroll } from '../hooks/useDragScroll';
+
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
 import {
   type LegacyAppSummary,
   type LegacyAppsResponse,
@@ -167,6 +171,25 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
     setQuery(initialQuery);
   }, [initialQuery]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const container = categoryScrollRef.current;
+      const activeButton = container?.querySelector<HTMLElement>('[data-category-active="true"]');
+
+      if (!container || !activeButton) return;
+
+      const scrollLeft =
+        activeButton.offsetLeft - container.offsetWidth / 2 + activeButton.offsetWidth / 2;
+
+      container.scrollTo({
+        left: scrollLeft,
+        behavior: 'smooth',
+      });
+    }, 100);
+
+    return () => window.clearTimeout(timer);
+  }, [category]);
+
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     router.push(`/apps/search?q=${encodeURIComponent(query.trim())}`);
@@ -178,7 +201,7 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
     }
 
     if (mode === 'search') {
-      return query ? `${lang?.search ?? 'Поиск'}: ${query}` : lang?.appssearchplaceholder ?? 'Поиск';
+      return query ? `«${query}»` : '';
     }
 
     return lang?.popular ?? 'Популярное';
@@ -228,26 +251,43 @@ export default function AppsContent({ category, initialQuery = '', mode }: AppsC
 
       <div ref={categoryScrollRef} className="overflow-auto flex lg:rounded-box viewport dragscroll w-full px-3 lg:px-0 max-w-screen-2xl">
         <div className="flex flex-row flex-nowrap gap-3 accounts-content justify-center items-center">
-          {categories.map((item) => (
-            <button
-              className={`${item.animationClass ?? ''} bg-zinc-900/20 border border-zinc-600/30 rounded-3xl p-1.5 flex flex-col gap-0.5 cursor-pointer duration-300 w-36 h-24 overflow-hidden justify-center items-center shadow group active:scale-95 shrink-0`}
-              key={item.key}
-              onClick={() => router.push(`/apps/category/${encodeURIComponent(item.href)}`)}
-              type="button"
-            >
-              <div className="flex justify-center items-center">
-                <div className="border border-zinc-600/30 fill-purple-500 bg-purple-500/25 flex justify-center items-center rounded-full p-1.5 w-14 h-14 shadow group-hover:w-44 group-hover:h-44 duration-500">
-                  <CategoryIcon
-                    className={`${categoryAnimationIconClass(item.key)} w-12 h-12 group-hover:h-16 group-hover:w-16 duration-300`}
-                    name={item.icon}
-                  />
+          {categories.map((item) => {
+            const isActive = category === item.href;
+            return (
+              <button
+                className={cn(
+                  item.animationClass ?? '',
+                  "bg-zinc-900/20 border border-zinc-600/30 rounded-3xl p-1.5 flex flex-col gap-0.5 cursor-pointer duration-300 w-36 h-24 overflow-hidden justify-center items-center shadow group active:scale-95 shrink-0",
+                  isActive ? "bg-zinc-800/50 shadow-md" : "hover:bg-zinc-800/50"
+                )}
+                data-category-active={isActive ? "true" : "false"}
+                key={item.key}
+                onClick={() => router.push(`/apps/category/${encodeURIComponent(item.href)}`)}
+                type="button"
+              >
+                <div className="flex justify-center items-center relative z-0">
+                  <div className={cn(
+                    "border border-zinc-600/30 fill-purple-500 bg-purple-500/25 flex justify-center items-center rounded-full p-1.5 shadow duration-500 group-hover:w-44 group-hover:h-44",
+                    isActive ? "w-44 h-44" : "w-14 h-14"
+                  )}>
+                    <CategoryIcon
+                      className={cn(
+                        `${categoryAnimationIconClass(item.key)} duration-300 group-hover:h-16 group-hover:w-16`,
+                        isActive ? "w-16 h-16" : "w-12 h-12"
+                      )}
+                      name={item.icon}
+                    />
+                  </div>
                 </div>
-              </div>
-              <span className="text-lg font-bold text-content-700 max-w-32 truncate">
-                {lang?.[item.langKey] ?? item.labelFallback}
-              </span>
-            </button>
-          ))}
+                <span className={cn(
+                  "text-lg font-bold max-w-32 truncate z-10 duration-300",
+                  isActive ? "text-white" : "text-content-700 group-hover:text-white"
+                )}>
+                  {lang?.[item.langKey] ?? item.labelFallback}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

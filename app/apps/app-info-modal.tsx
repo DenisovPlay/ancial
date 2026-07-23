@@ -329,12 +329,12 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                 {/* Лента скриншотов с поддержкой перетягивания мышью и свайпа (DragScroll) */}
                 <div
                   ref={screenshotsRef}
-                  className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth px-3 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing"
+                  className="flex gap-3 overflow-x-auto overflow-y-hidden scroll-smooth px-3 py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing after:content-[''] after:w-px after:shrink-0"
                 >
                   {screenshots.map((image, index) => (
                     <button
                       aria-label={`${app.name} screenshot ${index + 1}`}
-                      className="snap-start shrink-0 cursor-pointer active:scale-95 duration-300 rounded-2xl overflow-hidden focus:outline-none"
+                      className="shrink-0 cursor-pointer active:scale-95 duration-300 rounded-2xl overflow-hidden focus:outline-none"
                       key={`${image}-${index}`}
                       onClick={() => openScreenshot(index)}
                       type="button"
