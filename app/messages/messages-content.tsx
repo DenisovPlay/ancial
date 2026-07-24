@@ -1032,8 +1032,9 @@ export default function MessagesContent() {
       setBlockedDialog(Boolean((cachedDialogMeta as any).blocked));
 
       const cachedMsgs = cached?.messages ? sortMessages(cached.messages) : [];
+      // Always set messages (even empty) to immediately clear the previous dialog's messages
+      setMessages(cachedMsgs);
       if (cachedMsgs.length) {
-        setMessages(cachedMsgs);
         scrollActionRef.current = { type: 'bottom' };
       }
       setDialogLoading(false);
@@ -1250,7 +1251,22 @@ export default function MessagesContent() {
     }, 150);
   };
 
-  const handleWsMessageNew = () => {
+  const handleWsMessageNew = (payload?: unknown) => {
+    const wsPayload = payload as WsPayload | undefined;
+    const dataObj = wsPayload?.data as Record<string, unknown> | undefined;
+    const senderId = toNumber(dataObj?.sender_id ?? dataObj?.user_id ?? (wsPayload as any)?.user_id);
+    
+    if (senderId && senderId !== currentUserId) {
+      setTypingUsers((prev) => {
+        if (prev[senderId]) {
+          const next = { ...prev };
+          delete next[senderId];
+          return next;
+        }
+        return prev;
+      });
+    }
+
     scheduleWsRefresh();
   };
 
@@ -1846,27 +1862,26 @@ export default function MessagesContent() {
       }
     });
 
-    setSendingMessage(true);
-
-    try {
-      await AncialAPI.sendMessage({
-        di_id: dialogId,
-        message: nextValue,
-        ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
-      });
-
-      await loadMessagesNewer(dialogSessionRef.current);
-      await loadDialogs({ force: true });
-    } catch (error) {
-      console.error('Failed to send message', error);
-      notify({
-        content: lang?.somethingwrong || 'Произошла ошибка =(',
-        type: 'error',
-      });
-    } finally {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      setSendingMessage(false);
-    }
+    // Fire-and-forget: don't block the input — send in background
+    (async () => {
+      try {
+        await AncialAPI.sendMessage({
+          di_id: dialogId,
+          message: nextValue,
+          ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
+        });
+        await loadMessagesNewer(dialogSessionRef.current);
+        await loadDialogs({ force: true });
+      } catch (error) {
+        console.error('Failed to send message', error);
+        notify({
+          content: lang?.somethingwrong || 'Произошла ошибка =(',
+          type: 'error',
+        });
+      } finally {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      }
+    })();
   };
 
   const handleStickerSend = async (stickerName: string) => {
@@ -1901,27 +1916,25 @@ export default function MessagesContent() {
       }
     });
 
-    setSendingMessage(true);
-
-    try {
-      await AncialAPI.sendMessage({
-        di_id: dialogId,
-        sticker: `:${stickerName}:`,
-        ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
-      });
-
-      await loadMessagesNewer(dialogSessionRef.current);
-      await loadDialogs({ force: true });
-    } catch (error) {
-      console.error('Failed to send sticker', error);
-      notify({
-        content: lang?.somethingwrong || 'Произошла ошибка =(',
-        type: 'error',
-      });
-    } finally {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      setSendingMessage(false);
-    }
+    (async () => {
+      try {
+        await AncialAPI.sendMessage({
+          di_id: dialogId,
+          sticker: `:${stickerName}:`,
+          ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
+        });
+        await loadMessagesNewer(dialogSessionRef.current);
+        await loadDialogs({ force: true });
+      } catch (error) {
+        console.error('Failed to send sticker', error);
+        notify({
+          content: lang?.somethingwrong || 'Произошла ошибка =(',
+          type: 'error',
+        });
+      } finally {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      }
+    })();
   };
 
   const handleSevenTvStickerSend = async (sticker: SevenTvSticker) => {
@@ -2591,13 +2604,13 @@ export default function MessagesContent() {
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' && !event.shiftKey) {
                               event.preventDefault();
-                              if (composerText.trim() && selectedDialog && !sendingMessage) {
+                              if (composerText.trim() && selectedDialog) {
                                 void handleMessageSend(event);
                               }
                             }
                           }}
                           placeholder={lang?.write_message || 'Напишите сообщение'}
-                          disabled={!selectedDialog || sendingMessage}
+                          disabled={!selectedDialog}
                           className="relative z-[1] w-full h-[40px] max-h-32 min-h-[40px] resize-none bg-transparent py-2 pl-3 pr-1 text-white placeholder-zinc-600/80 focus:border-0 focus:outline-none focus:ring-0 leading-6 scrollbar-none"
                         />
 
@@ -2659,14 +2672,10 @@ export default function MessagesContent() {
 
                         <button
                           type="submit"
-                          disabled={!selectedDialog || sendingMessage}
+                          disabled={!selectedDialog}
                           className="relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-purple-500 disabled:cursor-not-allowed disabled:bg-zinc-500/50 disabled:opacity-70 active:scale-95 mb-[1px]"
                         >
-                          {sendingMessage ? (
-                            <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-white" />
-                          ) : (
-                            <Icon name="IC-send" className="h-8 w-8 fill-white" />
-                          )}
+                          <Icon name="IC-send" className="h-8 w-8 fill-white" />
                         </button>
                       </form>
                     </div>

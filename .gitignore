@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/AncBot
 
 # next.js
 /.next/
