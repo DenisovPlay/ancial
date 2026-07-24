@@ -362,8 +362,13 @@ export class AncialAPI {
     const endpoint = (action === 'delete' || action === 'cancel') ? '/friends/Delete.php' : '/friends/Add.php';
     const params: Record<string, string> = { action };
     if (action === 'create') params.fid = String(targetId);
-    else if (action === 'add') params.frid = String(targetId);
-    else params.fid = String(targetId);
+    else if (action === 'add') {
+      params.frid = String(targetId);
+      params.fid = String(targetId);
+    } else {
+      params.fid = String(targetId);
+      params.frid = String(targetId);
+    }
     
     return this.request<T>(endpoint, { method: 'POST', body: new URLSearchParams(params) });
   }
