@@ -170,7 +170,9 @@ export default function MessagesContent() {
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const { showNote } = useNotification();
   const { currentSongId, currentTrackObj, isPlaying, togglePlay } = usePulsePlayer();
-  const isPulsePlayerActive = Boolean(currentSongId || currentTrackObj);
+  // Плеер скрывается только когда открыт конкретный диалог (/messages/HASH).
+  // На странице /messages без чата плеер виден — кнопка "+" тоже поднимается.
+  const isPulsePlayerActive = Boolean((currentSongId || currentTrackObj) && !pathname.startsWith('/messages/'));
 
   // Next.js useParams in a layout might not see child segment params.
   // So we extract it from the pathname directly.
