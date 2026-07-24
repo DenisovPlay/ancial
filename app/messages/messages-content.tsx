@@ -298,6 +298,7 @@ export default function MessagesContent() {
   const currentForeignUserRef = useRef<DialogUser | null>(null);
   const currentForeignUserIdRef = useRef(0);
   const currentMessageCacheKeyRef = useRef('');
+  const cancelledMessageIdsRef = useRef<Set<number>>(new Set());
 
   const timelineItems = useMemo(() => buildTimelineItems(messages, lang), [messages, lang]);
   const dialogImageSlides = useMemo(() => buildDialogImageSlides(messages), [messages]);
@@ -1531,6 +1532,10 @@ export default function MessagesContent() {
     if (!messageId) return;
 
     if (message.isSending) {
+      const numId = Number(messageId);
+      if (numId) {
+        cancelledMessageIdsRef.current.add(numId);
+      }
       setMessages((currentMessages) => currentMessages.filter((item) => getMessageId(item) !== messageId));
       return;
     }
@@ -1870,20 +1875,36 @@ export default function MessagesContent() {
     // Fire-and-forget: don't block the input — send in background
     (async () => {
       try {
-        await AncialAPI.sendMessage({
+        if (cancelledMessageIdsRef.current.has(tempId)) {
+          return;
+        }
+        const res = await AncialAPI.sendMessage<{ msg_id?: number; data?: { msg_id?: number } }>({
           di_id: dialogId,
           message: nextValue,
           ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
         });
+
+        if (cancelledMessageIdsRef.current.has(tempId)) {
+          const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+          if (sentMsgId) {
+            void AncialAPI.messageAction('delete', { msg_id: sentMsgId });
+          }
+          return;
+        }
+
         await loadMessagesNewer(dialogSessionRef.current);
         await loadDialogs({ force: true });
       } catch (error) {
+        if (cancelledMessageIdsRef.current.has(tempId)) {
+          return;
+        }
         console.error('Failed to send message', error);
         notify({
           content: lang?.somethingwrong || 'Произошла ошибка =(',
           type: 'error',
         });
       } finally {
+        cancelledMessageIdsRef.current.delete(tempId);
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
       }
     })();
