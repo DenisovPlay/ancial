@@ -17,6 +17,7 @@ import { AncialAPI } from '../../../lib/api-v2';
 import { SvgIcon } from '../../editor-shared';
 import AccountName from '../../../components/account-name';
 import FeedPostSkeleton from '../../feed-post-skeleton';
+import { parsePostContentToHtml } from '../../../components/post-parser';
 
 type Id = string | number;
 
@@ -143,6 +144,25 @@ function FeedCommentCard({
   onReport: (comment: FeedComment) => void;
   reportLabel: string;
 }) {
+  const router = useRouter();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const handler = (e: Event) => {
+      const anchor = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-user], a[data-group]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href) return;
+      e.preventDefault();
+      e.stopPropagation();
+      router.push(href);
+    };
+    el.addEventListener('click', handler);
+    return () => el.removeEventListener('click', handler);
+  }, [router]);
+
   return (
     <div
       id={`comment${comment.id}`}
@@ -198,7 +218,11 @@ function FeedCommentCard({
         </Dropdown>
       </div>
 
-      <div className="text-base lg:text-lg text-zinc-200 font-medium">{comment.content}</div>
+      <div
+        ref={contentRef}
+        className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words"
+        dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(comment.content) }}
+      />
     </div>
   );
 }
