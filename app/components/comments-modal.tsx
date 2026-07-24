@@ -1,10 +1,13 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { cn, SvgIcon } from '../feed/editor-shared';
 import Modal from './modal';
 import { Dropdown, DropdownItem } from './navigation';
 import AccountName from './account-name';
+import { parsePostContentToHtml } from './post-parser';
 
 export interface FeedComment {
   content: string;
@@ -58,6 +61,26 @@ export function CommentsModal({
   emptyDescription,
   writeCommentPlaceholder,
 }: CommentsModalProps) {
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const el = commentsContainerRef.current;
+    if (!el) return;
+    const handler = (e: Event) => {
+      const anchor = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-user], a[data-group]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href) return;
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+      router.push(href);
+    };
+    el.addEventListener('click', handler);
+    return () => el.removeEventListener('click', handler);
+  }, [router, onClose]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} width="lg">
       <div className="flex flex-col gap-3 relative">
@@ -98,7 +121,7 @@ export function CommentsModal({
           </form>
         ) : null}
 
-        <div className="flex flex-col gap-3">
+        <div ref={commentsContainerRef} className="flex flex-col gap-3">
           {isLoading ? (
             <div className="w-full flex items-center justify-center py-6">
               <SvgIcon className="w-16 h-16 inline animate-spin fill-purple-500" id="IC-loader" viewBox="0 0 48 48" />
@@ -196,7 +219,7 @@ function CommentCard({
         </Dropdown>
       </div>
 
-      <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: comment.content }} />
+      <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(comment.content) }} />
     </div>
   );
 }

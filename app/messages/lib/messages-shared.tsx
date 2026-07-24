@@ -728,14 +728,17 @@ export function parseMessageLinks(text: string) {
     }
   );
 
-  // Raw text mentions: @username или $groupname (не внутри HTML-атрибутов)
-  const rawMentionRegex = /(?:^|[\s\n>(])(@[a-zA-Z0-9_]{2,32}|\$[a-zA-Z0-9_]{2,32})(?=$|[\s\n<.,!?:;)])/gi;
-  html = html.replace(rawMentionRegex, (match, tag) => {
-    const isGroup = tag.startsWith('$');
-    const name = tag.slice(1);
-    const prefix = match.slice(0, match.length - tag.length);
-    return prefix + (isGroup ? makeGroupMsg(name) : makeUserMsg(name));
-  });
+  // Raw text mentions: @username или $groupname (только вне HTML-тегов <a>)
+  html = html.replace(
+    /(<a\b[^>]*>[\s\S]*?<\/a>)|(?:^|[\s\n(])(@[a-zA-Z0-9_]{2,32}|\$[a-zA-Z0-9_]{2,32})(?=$|[\s\n<.,!?:;)])/gi,
+    (match, existingAnchor, tag) => {
+      if (existingAnchor) return existingAnchor;
+      const isGroup = tag.startsWith('$');
+      const name = tag.slice(1);
+      const prefix = match.slice(0, match.length - tag.length);
+      return prefix + (isGroup ? makeGroupMsg(name) : makeUserMsg(name));
+    }
+  );
 
   return html;
 }
