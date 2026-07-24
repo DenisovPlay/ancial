@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import { SITE_URL } from '../config';
 import { useEffect, useState, useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
@@ -56,12 +57,7 @@ function trimTrailingSlash(value: string) {
 }
 
 function buildPayUrl(orderHash: string) {
-  const configuredBase =
-    process.env.NEXT_PUBLIC_PAY_BASE?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || 'https://ancial.ru/';
-
-  return `${trimTrailingSlash(configuredBase)}/pay/${orderHash}`;
+  return `${trimTrailingSlash(SITE_URL)}/pay/${orderHash}`;
 }
 
 export default function WalletContent() {

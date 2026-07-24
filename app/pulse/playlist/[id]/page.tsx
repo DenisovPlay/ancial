@@ -8,6 +8,7 @@ import {
 } from '../playlist-model';
 import PulsePlaylistContent from './playlist-content';
 import { httpsGetJson } from '../../../lib/https-get';
+import { API_BASE } from '../../../config';
 
 type PulsePlaylistPageProps = {
   params: Promise<{
@@ -17,12 +18,11 @@ type PulsePlaylistPageProps = {
 
 const FALLBACK_TITLE = 'Плейлисты в Pulse';
 const FALLBACK_DESCRIPTION = 'Слушайте подборки и плейлисты в Ancial Pulse! Бесплатно. Без рекламы.';
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://api.ancial.ru';
 
 export async function generateMetadata({ params }: PulsePlaylistPageProps): Promise<Metadata> {
   const { id } = await params;
   const playlistId = normalizePulsePlaylistId(id);
-  
+
   let title = getPulseBuiltinPlaylistTitle(playlistId);
   let description = getPulseBuiltinPlaylistDescription(playlistId);
   let ogImage: string | undefined = undefined;
@@ -34,10 +34,10 @@ export async function generateMetadata({ params }: PulsePlaylistPageProps): Prom
       if (data?.success && data?.data?.playlist) {
         const playlist = data.data.playlist;
         const pTitle = decodeHtmlEntities(playlist.name) || FALLBACK_TITLE;
-        
+
         title = pTitle;
         description = decodeHtmlEntities(playlist.desk) || `Слушайте плейлист «${pTitle}» в Ancial Pulse. Бесплатно и без рекламы.`;
-        
+
         const src = playlist.img;
         if (src && typeof src === 'string') {
           ogImage = src.startsWith('http') ? src : `${API_BASE}${src}`;

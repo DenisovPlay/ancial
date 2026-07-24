@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { createPageMetadata, decodeHtmlEntities } from '../../../seo';
 import PulseTrackContent from './track-content';
 import { httpsGetJson } from '../../../lib/https-get';
+import { API_BASE } from '../../../config';
 
 type PulseTrackPageProps = {
   params: Promise<{
@@ -10,11 +11,10 @@ type PulseTrackPageProps = {
   }>;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://api.ancial.ru';
 
 export async function generateMetadata({ params }: PulseTrackPageProps): Promise<Metadata> {
   const { id } = await params;
-  
+
   let title = 'Музыка в Pulse';
   let description = 'Слушайте любимые треки в Ancial Pulse без ограничений и рекламы.';
   let ogImage: string | undefined = undefined;
@@ -25,14 +25,14 @@ export async function generateMetadata({ params }: PulseTrackPageProps): Promise
       const track = data.data.track;
       const trackTitle = decodeHtmlEntities(track.name) || 'Неизвестный трек';
       const trackArtist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
-      
+
       title = `${trackArtist} — ${trackTitle}`;
       description = `Слушайте трек «${trackTitle}» от ${trackArtist} в Ancial Pulse. Бесплатно и без рекламы.`;
-      
+
       const artworkArray = Array.isArray(track.artwork) ? track.artwork : [];
       const cover = artworkArray.find((item: any) => item?.src);
       const src = cover?.src || track.img;
-      
+
       if (src && typeof src === 'string') {
         ogImage = src.startsWith('http') ? src : `${API_BASE}${src}`;
       }

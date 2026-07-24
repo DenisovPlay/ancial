@@ -1,11 +1,11 @@
 import type { NextConfig } from "next";
 
-// Disable TLS validation errors in local development for the misconfigured api.ancial.ru SSL certificate
+// Disable TLS validation errors in local development for the misconfigured ancial-backend.ru.zeniflow.ru SSL certificate
 if (process.env.NODE_ENV === 'development') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'https://api.ancial.ru';
+import { API_BASE } from './app/config';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['gradualblur'],

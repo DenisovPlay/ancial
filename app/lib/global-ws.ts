@@ -1,5 +1,6 @@
 import { AncialAPI } from './api-v2';
-import { cache } from './cache.ts';
+import { WS_BASE } from '../config';
+import { cache } from './cache';
 
 export type NetStatusState = 'hidden' | 'reconnecting';
 
@@ -86,33 +87,7 @@ function hasBrowserWebSocket() {
 }
 
 function resolveWebSocketUrl() {
-  const explicitUrl = process.env.NEXT_PUBLIC_WS_URL?.trim();
-  if (explicitUrl) return explicitUrl;
-
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE?.trim();
-  let base = apiBase || 'https://api.ancial.ru';
-
-  if (!base) return '';
-
-  try {
-    if (typeof window !== 'undefined') {
-      if (base.startsWith('/')) {
-        base = window.location.origin + base;
-      } else if (!/^https?:\/\//i.test(base)) {
-        base = window.location.protocol + '//' + base;
-      }
-    }
-
-    const wsPath = base.endsWith('/') ? base + 'ws' : base + '/ws';
-    const url = new URL(wsPath);
-    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-    url.search = '';
-    url.hash = '';
-    return url.toString();
-  } catch (err) {
-    console.error('[GlobalWS] Failed to construct WS URL', err);
-    return '';
-  }
+  return WS_BASE;
 }
 
 function emitNetStatus() {
@@ -229,7 +204,7 @@ function doHeartbeat() {
   void AncialAPI.request('/info/Ping.php', {
     method: 'POST',
     keepalive: true,
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 function stopHeartbeat() {

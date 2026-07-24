@@ -4,6 +4,7 @@
 import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { SITE_DOMAIN } from '../../config';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useMentionNavigation } from '../../hooks/use-mention-navigation';
 
@@ -179,7 +180,7 @@ export default function MessageBubble({
     ? getMessageBodyHtmlWithoutImages(message.message)
     : String(message.message ?? '');
 
-  const domain = process.env.NEXT_PUBLIC_SITE_DOMAIN || 'ancial.ru';
+  const domain = SITE_DOMAIN;
 
   const postIds = useMemo(() => {
     const postRegex = new RegExp(`https?://${domain}/(?:feed/)?post/(\\d+)`, 'gi');

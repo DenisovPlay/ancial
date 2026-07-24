@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { SITE_URL } from './config';
 
 import { SITE_CONFIG } from './seo';
 
@@ -24,10 +25,7 @@ export async function getRequestOrigin() {
     return trimTrailingSlash(`${protocol}://${host}`);
   }
 
-  const fallback =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    SITE_CONFIG.url;
+  const fallback = SITE_URL;
 
   return trimTrailingSlash(fallback);
 }
