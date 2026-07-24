@@ -361,32 +361,36 @@ export default function MessageBubble({
                 wrapperClassName="pointer-events-none absolute left-0 right-0 top-0 z-30 h-0"
                 menuClassName="pointer-events-auto w-fit overflow-hidden rounded-2xl bg-zinc-900/85"
               >
-                <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
-                  {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => {
-                        onAddReaction(messageId, emoji);
-                      }}
-                      className="cursor-pointer duration-300 hover:scale-125 active:scale-95"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
+                {!message.isSending && (
+                  <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
+                    {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => {
+                          onAddReaction(messageId, emoji);
+                        }}
+                        className="cursor-pointer duration-300 hover:scale-125 active:scale-95"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-                <DropdownItem
-                  icon="IC-reply"
-                  className="h-8"
-                  onClick={() => {
-                    onReply(message);
-                  }}
-                >
-                  {lang?.reply || 'Ответить'}
-                </DropdownItem>
+                {!message.isSending && (
+                  <DropdownItem
+                    icon="IC-reply"
+                    className="h-8"
+                    onClick={() => {
+                      onReply(message);
+                    }}
+                  >
+                    {lang?.reply || 'Ответить'}
+                  </DropdownItem>
+                )}
 
-                {canTranslateMessage && typeof translator === 'function' ? (
+                {!message.isSending && canTranslateMessage && typeof translator === 'function' ? (
                   <DropdownItem
                     icon="IC-translate"
                     className="h-8"
@@ -410,7 +414,7 @@ export default function MessageBubble({
                   </DropdownItem>
                 ) : null}
 
-                {canEditMessage ? (
+                {!message.isSending && canEditMessage ? (
                   <DropdownItem
                     icon="IC-edit"
                     className="h-8"

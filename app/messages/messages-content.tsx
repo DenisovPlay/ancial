@@ -1530,6 +1530,11 @@ export default function MessagesContent() {
     const messageId = getMessageId(message);
     if (!messageId) return;
 
+    if (message.isSending) {
+      setMessages((currentMessages) => currentMessages.filter((item) => getMessageId(item) !== messageId));
+      return;
+    }
+
     try {
       const response = await AncialAPI.messageAction<{ message?: string }>('delete', { msg_id: messageId });
       const text = response.message || '';
