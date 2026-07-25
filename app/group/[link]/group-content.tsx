@@ -685,10 +685,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
           is_bookmarked: nextBookmarked,
         };
       });
-    } catch (nextError) {
+    } catch (nextError: any) {
       console.error('Bookmark failed', nextError);
       showNote({
-        content: strings.somethingwrong,
+        content: nextError?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -754,10 +754,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
           user_vote_up: null,
         };
       });
-    } catch (nextError) {
+    } catch (nextError: any) {
       console.error('Vote failed', nextError);
       showNote({
-        content: strings.somethingwrong,
+        content: nextError?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });

@@ -723,10 +723,10 @@ export default function FeedContent() {
           };
         }),
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Bookmark failed', error);
       showNote({
-        content: strings.somethingwrong,
+        content: error?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -747,10 +747,10 @@ export default function FeedContent() {
       }
 
       applyVoteState(post, direction);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Vote failed', error);
       showNote({
-        content: strings.somethingwrong,
+        content: error?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -785,10 +785,10 @@ export default function FeedContent() {
       setCommentInput('');
       incrementCommentsCount(activeCommentsPost.id, 1);
       await loadComments(activeCommentsPost.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create comment failed', error);
       showNote({
-        content: strings.somethingwrong,
+        content: error?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -813,10 +813,10 @@ export default function FeedContent() {
       if (activeCommentsPost) {
         incrementCommentsCount(activeCommentsPost.id, -1);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Delete comment failed', error);
       showNote({
-        content: strings.somethingwrong,
+        content: error?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -838,10 +838,10 @@ export default function FeedContent() {
         type: 'success',
         time: 5,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Report failed', error);
       showNote({
-        content: strings.somethingwrong,
+        content: error?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });

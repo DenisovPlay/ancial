@@ -411,10 +411,10 @@ export default function SinglePostContent({ postId }: { postId: string }) {
           ),
         };
       });
-    } catch (nextError) {
+    } catch (nextError: any) {
       console.error('Bookmark failed', nextError);
       showNote({
-        content: strings.somethingwrong,
+        content: nextError?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -482,10 +482,10 @@ export default function SinglePostContent({ postId }: { postId: string }) {
           user_vote_up: null,
         };
       });
-    } catch (nextError) {
+    } catch (nextError: any) {
       console.error('Vote failed', nextError);
       showNote({
-        content: strings.somethingwrong,
+        content: nextError?.message || strings.somethingwrong,
         type: 'error',
         time: 5,
       });
