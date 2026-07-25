@@ -11,102 +11,127 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   transpilePackages: ['gradualblur'],
   images: {
+    dangerouslyAllowSVG: true,
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'i.ibb.co',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: 'ibb.co',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.ibb.co',
+        pathname: '**',
       },
       {
         protocol: 'http',
         hostname: 'i.ibb.co',
+        pathname: '**',
       },
       {
         protocol: 'http',
         hostname: '*.ibb.co',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: 'i.imgur.com',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: 'imgur.com',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.imgur.com',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: 'i.scdn.co',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.scdn.co',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: 'ancial.ru',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.ancial.ru',
+        pathname: '**',
       },
       {
         protocol: 'http',
         hostname: 'ancial.ru',
+        pathname: '**',
       },
       {
         protocol: 'http',
         hostname: '*.ancial.ru',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: 'zypo.cc',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.zypo.cc',
+        pathname: '**',
       },
       {
         protocol: 'http',
         hostname: 'zypo.cc',
+        pathname: '**',
       },
       {
         protocol: 'http',
         hostname: '*.zypo.cc',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: 'cdn.betterttv.net',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.userapi.com',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.vk.com',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.vkusercontent.com',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.vk-cdn.net',
+        pathname: '**',
       },
       {
         protocol: 'https',
         hostname: '*.avatars.yandex.net',
+        pathname: '**',
       },
     ],
   },
