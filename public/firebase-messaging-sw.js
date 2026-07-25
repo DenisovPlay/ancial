@@ -14,7 +14,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.data?.title || 'Ancial';
+  const title = payload.data?.title || 'Zypo';
   const options = {
     body: payload.data?.body || 'Новое уведомление',
     icon: payload.data?.icon || '/includes/img/anlite/anlogo.webp',

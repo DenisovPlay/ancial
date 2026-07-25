@@ -4,7 +4,7 @@ import AppGuidesContent from './app-guides-content';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Гайд по приложению',
-  description: 'Руководство по использованию приложения Ancial.',
+  description: 'Руководство по использованию приложения Zypo.',
   keywords: ['гайд', 'приложение', 'инструкция', 'Ancial'],
   canonical: '/about/guides/app',
 });

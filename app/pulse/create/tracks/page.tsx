@@ -123,7 +123,7 @@ export default function PulseCreateTracksPage() {
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Удалить трек?"
-        description="Удаление трека необратимо удалит его с серверов Ancial Pulse."
+        description="Удаление трека необратимо удалит его с серверов Zypo Pulse."
       />
     </div>
   );

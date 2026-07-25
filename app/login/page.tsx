@@ -4,7 +4,7 @@ import LoginContent from './login-content';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Вход',
-  description: 'Войдите в свой аккаунт Ancial для доступа к ленте, сообщениям и другим сервисам.',
+  description: 'Войдите в свой аккаунт Zypo для доступа к ленте, сообщениям и другим сервисам.',
   keywords: ['вход', 'авторизация', 'логин', 'аккаунт'],
   canonical: '/login',
 });

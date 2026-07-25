@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: GroupPageProps): Promise<Meta
 
   return createPageMetadata({
     canonical: `/$${encodeURIComponent(groupHandle)}`,
-    description: `Сообщество $${groupHandle} в Ancial.`,
+    description: `Сообщество $${groupHandle} в Zypo.`,
     title: `$${groupHandle}`,
   });
 }

@@ -115,7 +115,7 @@ export default function PulseCreateArtistsPage() {
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Удалить артиста?"
-        description="Удаление профиля артиста необратимо удалит его с серверов Ancial Pulse. Привязанные треки и альбомы останутся."
+        description="Удаление профиля артиста необратимо удалит его с серверов Zypo Pulse. Привязанные треки и альбомы останутся."
       />
     </div>
   );

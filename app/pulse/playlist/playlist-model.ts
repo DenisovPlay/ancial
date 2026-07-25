@@ -85,7 +85,7 @@ const BUILTIN_PLAYLIST_META: Record<string, PulsePlaylistMeta> = {
   '-5': {
     artist: '',
     creator: 'Pulse',
-    desk: 'Ваши избранные треки в Ancial Pulse.',
+    desk: 'Ваши избранные треки в Zypo Pulse.',
     genlist: 'Your',
     id: '-5',
     img: '/includes/img/pulse/cover/your.png',
@@ -118,9 +118,9 @@ export function getPulseBuiltinPlaylistTitle(value: string | number | null | und
 
 export function getPulseBuiltinPlaylistDescription(value: string | number | null | undefined, lang?: Record<string, string>) {
   const id = normalizePulsePlaylistId(value);
-  if (id === '-1') return lang?.playlist_top_desc || 'Самые популярные треки Ancial Pulse.';
-  if (id === '-2') return lang?.playlist_new_desc || 'Новые треки Ancial Pulse.';
-  if (id === '-5') return lang?.playlist_favorites_desc || 'Ваши избранные треки в Ancial Pulse.';
+  if (id === '-1') return lang?.playlist_top_desc || 'Самые популярные треки Zypo Pulse.';
+  if (id === '-2') return lang?.playlist_new_desc || 'Новые треки Zypo Pulse.';
+  if (id === '-5') return lang?.playlist_favorites_desc || 'Ваши избранные треки в Zypo Pulse.';
   return '';
 }
 
@@ -137,7 +137,7 @@ export function getPulseBuiltinPlaylistMeta(value: string | number | null | unde
     meta.desk = lang?.playlist_new_meta_desc || 'Громкие новинки';
   } else if (id === '-5') {
     meta.name = lang?.playlist_favorites || 'Избранное';
-    meta.desk = lang?.playlist_favorites_desc || 'Ваши избранные треки в Ancial Pulse.';
+    meta.desk = lang?.playlist_favorites_desc || 'Ваши избранные треки в Zypo Pulse.';
   }
   return meta;
 }

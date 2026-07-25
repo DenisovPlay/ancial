@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PulseArtistPageProps): Promis
   const { id } = await params;
 
   let title = 'Исполнители в Pulse';
-  let description = 'Слушайте музыку популярных исполнителей в Ancial Pulse бесплатно.';
+  let description = 'Слушайте музыку популярных исполнителей в Zypo Pulse бесплатно.';
   let ogImage: string | undefined = undefined;
 
   try {
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PulseArtistPageProps): Promis
       const artistName = decodeHtmlEntities(artist.name) || 'Артист Pulse';
 
       title = artistName;
-      description = decodeHtmlEntities(artist.desk) || `Слушайте треки и плейлисты исполнителя ${artistName} в Ancial Pulse.`;
+      description = decodeHtmlEntities(artist.desk) || `Слушайте треки и плейлисты исполнителя ${artistName} в Zypo Pulse.`;
 
       const src = artist.img;
       if (src && typeof src === 'string') {

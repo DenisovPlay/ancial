@@ -243,7 +243,7 @@ function readInitialLikedSongIds(): number[] {
     if (typeof window !== 'undefined' && Array.isArray((window as Window & { _pulseLikedSongs?: unknown[] })._pulseLikedSongs)) {
       return ((window as Window & { _pulseLikedSongs?: unknown[] })._pulseLikedSongs || []).map((id) => toNumber(id)).filter(Boolean);
     }
-  } catch {}
+  } catch { }
   return [];
 }
 
@@ -1554,7 +1554,7 @@ export function PulsePlayerProvider({
       setLikedSongIds(e.detail);
       try {
         cache.set('pulse_fav_ids', e.detail, { category: 'pulse', subcategory: 'favorites' });
-      } catch {}
+      } catch { }
       if (typeof window !== 'undefined') {
         window._pulseLikedSongs = e.detail;
       }
@@ -1568,7 +1568,7 @@ export function PulsePlayerProvider({
     setLikedSongIds(nextIds);
     try {
       cache.set('pulse_fav_ids', nextIds, { category: 'pulse', subcategory: 'favorites' });
-    } catch {}
+    } catch { }
     if (typeof window !== 'undefined') {
       window._pulseLikedSongs = nextIds;
       window.dispatchEvent(new CustomEvent('pulse-likes-updated', { detail: nextIds }));
@@ -2406,7 +2406,7 @@ export function PulsePlayerProvider({
         try {
           if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
             navigator.mediaSession.metadata = new MediaMetadata({
-              album: normalizeText(capturedTrack.album) || 'Ancial',
+              album: normalizeText(capturedTrack.album) || 'Zypo',
               artist: capturedArtist,
               artwork: buildMediaArtwork(capturedTrack),
               title: capturedTitle,

@@ -6,7 +6,7 @@ import PulseSearchPlaylistsContent from './playlists-content';
 
 export const metadata: Metadata = createPageMetadata({
   canonical: '/pulse/search/playlists',
-  description: 'Все плейлисты по результатам поиска в Ancial Pulse.',
+  description: 'Все плейлисты по результатам поиска в Zypo Pulse.',
   title: 'Плейлисты — Поиск Pulse',
 });
 

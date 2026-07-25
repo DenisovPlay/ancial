@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 
   return createPageMetadata({
     canonical: `/@${encodeURIComponent(profileHandle)}`,
-    description: `Профиль @${profileHandle} в Ancial.`,
+    description: `Профиль @${profileHandle} в Zypo.`,
     openGraph: {
       type: 'profile',
     },

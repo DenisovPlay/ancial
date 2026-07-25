@@ -4,7 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Архитектура и инициализация Ancial
+# Архитектура и инициализация Zypo
 
 ## 1. Локализация и переводы (lang)
 - **Инициализация:** Объект словаря переводов `lang` подгружается и инициализируется глобально на клиенте из `app/locales/` через контекст авторизации `AuthContext` без сетевых запросов к бэкенду.
@@ -43,7 +43,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
   </Modal>
   ```
 
-## 5. Дизайн-код Ancial
+## 5. Дизайн-код Zypo
 - **Стилизация:** Строго следуй дизайн-коду и токенам проекта при создании/редактировании интерфейсов:
   - Закругления: `rounded-3xl`
   - Интерактивность: `cursor-pointer`, `active:scale-95`

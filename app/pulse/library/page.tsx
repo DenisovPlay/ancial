@@ -5,7 +5,7 @@ import PulseLibraryContent from './library-content';
 
 export const metadata: Metadata = createPageMetadata({
   canonical: '/pulse/library',
-  description: 'Ваши плейлисты в Ancial Pulse.',
+  description: 'Ваши плейлисты в Zypo Pulse.',
   title: 'Библиотека Pulse',
 });
 

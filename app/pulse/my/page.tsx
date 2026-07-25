@@ -5,7 +5,7 @@ import PulseMyContent from './my-content';
 
 export const metadata: Metadata = createPageMetadata({
   canonical: '/pulse/my',
-  description: 'Ваша библиотека и история прослушивания в Ancial Pulse.',
+  description: 'Ваша библиотека и история прослушивания в Zypo Pulse.',
   title: 'Мой Pulse',
 });
 

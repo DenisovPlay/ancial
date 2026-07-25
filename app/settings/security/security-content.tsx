@@ -391,10 +391,10 @@ export default function SecuritySettingsPage() {
         <div className="grid lg:grid-cols-2 gap-3 w-full max-w-3xl px-3 lg:px-0">
           <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center">
             <Image
-              alt="Ancial"
+              alt="Zypo logo"
               className="w-12 h-12 shadow rounded-2xl mb-3"
               height={48}
-              src="/includes/img/anlite/anlogo.webp"
+              src="/img/zypo/logo.webp"
               unoptimized
               width={48}
             />

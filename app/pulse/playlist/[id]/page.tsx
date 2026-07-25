@@ -17,7 +17,7 @@ type PulsePlaylistPageProps = {
 };
 
 const FALLBACK_TITLE = 'Плейлисты в Pulse';
-const FALLBACK_DESCRIPTION = 'Слушайте подборки и плейлисты в Ancial Pulse! Бесплатно. Без рекламы.';
+const FALLBACK_DESCRIPTION = 'Слушайте подборки и плейлисты в Zypo Pulse! Бесплатно. Без рекламы.';
 
 export async function generateMetadata({ params }: PulsePlaylistPageProps): Promise<Metadata> {
   const { id } = await params;
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PulsePlaylistPageProps): Prom
         const pTitle = decodeHtmlEntities(playlist.name) || FALLBACK_TITLE;
 
         title = pTitle;
-        description = decodeHtmlEntities(playlist.desk) || `Слушайте плейлист «${pTitle}» в Ancial Pulse. Бесплатно и без рекламы.`;
+        description = decodeHtmlEntities(playlist.desk) || `Слушайте плейлист «${pTitle}» в Zypo Pulse. Бесплатно и без рекламы.`;
 
         const src = playlist.img;
         if (src && typeof src === 'string') {

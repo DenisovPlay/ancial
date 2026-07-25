@@ -16,7 +16,7 @@ export async function generateMetadata({
 
   return createPageMetadata({
     canonical: `/apps/overlay/${encodeURIComponent(game)}`,
-    description: 'Тут открываются разные веб-приложения. Да-да, прямо в Ancial.',
+    description: 'Тут открываются разные веб-приложения. Да-да, прямо в Zypo.',
     title: overlayGame?.name ?? 'Оверлей',
   });
 }

@@ -6,7 +6,7 @@ import PulseSearchArtistsContent from './artists-content';
 
 export const metadata: Metadata = createPageMetadata({
   canonical: '/pulse/search/artists',
-  description: 'Все артисты по результатам поиска в Ancial Pulse.',
+  description: 'Все артисты по результатам поиска в Zypo Pulse.',
   title: 'Артисты — Поиск Pulse',
 });
 

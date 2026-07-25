@@ -5,7 +5,7 @@ import { createPageMetadata } from '../seo';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Чаты',
-  description: 'Приватное общение с друзьями и коллегами на Ancial.',
+  description: 'Приватное общение с друзьями и коллегами на Zypo.',
   keywords: ['чаты', 'сообщения', 'личные сообщения', 'диалоги'],
   canonical: '/messages',
 });

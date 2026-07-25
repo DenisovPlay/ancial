@@ -77,11 +77,11 @@ export function getVerifyStatus(
     rawVerify !== undefined
       ? rawVerify
       : account?.verify ??
-        account?.veriflevel ??
-        account?.official ??
-        account?.is_verified ??
-        account?.isVerified ??
-        account?.Uverify;
+      account?.veriflevel ??
+      account?.official ??
+      account?.is_verified ??
+      account?.isVerified ??
+      account?.Uverify;
 
   if (v === true) return 1;
   if (v === false || v === null || v === undefined) return 0;
@@ -144,7 +144,7 @@ export default function AccountName({
   const { lang } = useAuth();
   const displayName = name ?? getUserDisplayName(user, fallback);
   const verifyStatus = getVerifyStatus(user, verify);
-  
+
   const badgesString = user?.badges || '';
   const badgesList = badgesString.split(',').map(b => b.trim().toLowerCase()).filter(Boolean);
 
@@ -177,7 +177,7 @@ export default function AccountName({
         </span>
       )}
       {showBadges && badgesList.includes('developer') && (
-        <span title={lang?.badge_developer || 'Разработчик Ancial'} className="inline-flex items-center shrink-0">
+        <span title={lang?.badge_developer || 'Разработчик Zypo'} className="inline-flex items-center shrink-0">
           <svg
             className={cn('w-4 h-4 text-cyan-400 shrink-0 inline drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]', badgeClassName)}
             viewBox="0 0 24 24"
@@ -193,7 +193,7 @@ export default function AccountName({
         </span>
       )}
       {showBadges && badgesList.includes('staff') && (
-        <span title={lang?.badge_staff || 'Команда Ancial'} className="inline-flex items-center shrink-0">
+        <span title={lang?.badge_staff || 'Команда Zypo'} className="inline-flex items-center shrink-0">
           <svg
             className={cn('w-4 h-4 text-rose-500 shrink-0 inline drop-shadow-[0_0_6px_rgba(244,63,94,0.5)]', badgeClassName)}
             viewBox="0 0 24 24"
@@ -225,10 +225,10 @@ export default function AccountName({
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
-            <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+            <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
           </svg>
         </span>
       )}

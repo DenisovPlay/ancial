@@ -1604,7 +1604,7 @@ export default function WalletContent() {
           <div className="p-3 mb-2.5 border border-zinc-600/30 bg-amber-500/25 text-amber-500 rounded-3xl shadow flex flex-col w-full text-left">
             <span className="font-bold text-base">{lang?.attention || 'Внимание!'}</span>
             <span className="text-sm">{lang?.testing_mode || 'Функция находится на этапе тестирования. Если вы произвели платёж, но баланс не изменился, пожалуйста, свяжитесь с поддержкой.'}</span>
-            <span className="text-xs">{lang?.contacts_hint || 'Контакты находятся в Настройки -> О Ancial -> Контакты'}</span>
+            <span className="text-xs">{lang?.contacts_hint || 'Контакты находятся в Настройки -> О Zypo -> Контакты'}</span>
           </div>
 
           <div className="flex flex-col w-full text-left">
@@ -1658,7 +1658,7 @@ export default function WalletContent() {
               lang?.topup_btn || 'Пополнить'
             )}
           </button>
-          <span className="text-xs text-zinc-300 pt-3 text-left">{lang?.payment_notice || 'Платёж будет выполнен через Ancial Merchant. Совершая платёж, Вы принимаете условия Ancial Payments и Wallet.'}</span>
+          <span className="text-xs text-zinc-300 pt-3 text-left">{lang?.payment_notice || 'Платёж будет выполнен через Zypo Merchant. Совершая платёж, Вы принимаете условия Zypo Payments и Wallet.'}</span>
         </form>
       </Modal>
 

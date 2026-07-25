@@ -124,7 +124,7 @@ export default function PulseCreateAlbumsPage() {
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Удалить альбом?"
-        description="Удаление альбома необратимо удалит его с серверов Ancial Pulse. Все привязанные треки также могут быть удалены."
+        description="Удаление альбома необратимо удалит его с серверов Zypo Pulse. Все привязанные треки также могут быть удалены."
       />
     </div>
   );

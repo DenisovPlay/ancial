@@ -4,7 +4,7 @@ import AboutContent from './about-content';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'О проекте',
-  description: 'Узнайте больше об Ancial — история развития, технологии, контакты и документация.',
+  description: 'Узнайте больше об Zypo — история развития, технологии, контакты и документация.',
   keywords: ['о проекте', 'история', 'команда', 'технологии', 'Ancial'],
   canonical: '/about',
 });

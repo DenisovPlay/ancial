@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-const SITE_TITLE = 'Ancial';
+const SITE_TITLE = 'Zypo';
 
 export function buildDocumentTitle(title: string | null | undefined) {
   const normalizedTitle = (title ?? '').trim();

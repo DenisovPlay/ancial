@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PulseTrackPageProps): Promise
   const { id } = await params;
 
   let title = 'Музыка в Pulse';
-  let description = 'Слушайте любимые треки в Ancial Pulse без ограничений и рекламы.';
+  let description = 'Слушайте любимые треки в Zypo Pulse без ограничений и рекламы.';
   let ogImage: string | undefined = undefined;
 
   try {
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PulseTrackPageProps): Promise
       const trackArtist = decodeHtmlEntities(track.artist) || 'Неизвестный исполнитель';
 
       title = `${trackArtist} — ${trackTitle}`;
-      description = `Слушайте трек «${trackTitle}» от ${trackArtist} в Ancial Pulse. Бесплатно и без рекламы.`;
+      description = `Слушайте трек «${trackTitle}» от ${trackArtist} в Zypo Pulse. Бесплатно и без рекламы.`;
 
       const artworkArray = Array.isArray(track.artwork) ? track.artwork : [];
       const cover = artworkArray.find((item: any) => item?.src);

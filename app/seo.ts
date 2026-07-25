@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const SITE_CONFIG = {
-  title: 'Ancial',
+  title: 'Zypo',
   tagline: 'Больше, чем социальная сеть',
   description: 'Социальная сеть с лентой новостей, сообщениями, звонками, музыкой, играми и кошельком. Современная платформа для общения и развлечений.',
   url: 'https://zypo.cc',
@@ -25,6 +25,7 @@ export const DEFAULT_SEO: Metadata = {
     'музыка',
     'игры',
     'Ancial',
+    'Zypo'
   ],
   authors: [{ name: 'ZeniFlow', url: 'https://zypo.cc' }],
   creator: 'ZeniFlow',

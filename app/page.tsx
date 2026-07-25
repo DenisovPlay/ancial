@@ -4,8 +4,8 @@ import { createPageMetadata } from './seo';
 import HomeContent from './home-content';
 
 export const metadata: Metadata = createPageMetadata({
-  title: 'Ancial - Социальная сеть для общения и развлечений',
-  description: 'Добро пожаловать в Ancial — социальную сеть с лентой новостей, сообщениями, звонками, музыкой, играми и кошельком.',
+  title: 'Zypo - Социальная сеть для общения и развлечений',
+  description: 'Добро пожаловать в Zypo — социальную сеть с лентой новостей, сообщениями, звонками, музыкой, играми и кошельком.',
   keywords: ['главная', 'лента', 'социальная сеть', 'Ancial'],
   canonical: '/',
 });

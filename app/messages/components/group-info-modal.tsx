@@ -520,7 +520,7 @@ export default function GroupInfoModal({
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder={lang?.eg_chat_name || 'Например: Проект Ancial'}
+                    placeholder={lang?.eg_chat_name || 'Например: Проект Zypo'}
                     className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600"
                     autoFocus
                   />

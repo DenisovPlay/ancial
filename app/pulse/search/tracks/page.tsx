@@ -6,7 +6,7 @@ import PulseSearchTracksContent from './tracks-content';
 
 export const metadata: Metadata = createPageMetadata({
   canonical: '/pulse/search/tracks',
-  description: 'Все треки по результатам поиска в Ancial Pulse.',
+  description: 'Все треки по результатам поиска в Zypo Pulse.',
   title: 'Треки — Поиск Pulse',
 });
 

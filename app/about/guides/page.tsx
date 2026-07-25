@@ -4,7 +4,7 @@ import GuidesContent from './guides-content';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Гайды',
-  description: 'Руководства и инструкции по использованию Ancial.',
+  description: 'Руководства и инструкции по использованию Zypo.',
   keywords: ['гайды', 'руководства', 'инструкции', 'помощь'],
   canonical: '/about/guides',
 });

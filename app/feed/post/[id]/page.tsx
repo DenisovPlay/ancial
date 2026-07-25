@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: SinglePostPageProps): Promise
 
   return createPageMetadata({
     canonical: `/feed/post/${encodeURIComponent(id)}`,
-    description: 'Запись из ленты Ancial.',
+    description: 'Запись из ленты Zypo.',
     openGraph: {
       type: 'article',
     },
