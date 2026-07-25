@@ -157,7 +157,7 @@ export default function HomeContent() {
     if (!cachedCurrency) {
       try {
         cachedCurrency = cache.get<HomeCurrencyCacheData>('rates_backup');
-      } catch {}
+      } catch { }
     }
     if (cachedCurrency) {
       setCurrencies(cachedCurrency);
@@ -179,7 +179,7 @@ export default function HomeContent() {
             writeCachedCurrency(ratesData);
             try {
               cache.set('rates_backup', ratesData, { category: 'home' }); // Сохраняем бессрочный бэкап
-            } catch {}
+            } catch { }
           }
         }
       } catch (currencyErr) {
@@ -189,7 +189,7 @@ export default function HomeContent() {
           try {
             const backup = cache.get<HomeCurrencyCacheData>('rates_backup');
             if (backup) setCurrencies(backup);
-          } catch {}
+          } catch { }
         }
       }
 
@@ -204,7 +204,7 @@ export default function HomeContent() {
           if (!cachedWeather) {
             cachedWeather = cache.get<HomeWeatherCacheData>('weather_backup');
           }
-          
+
           if (cachedWeather) {
             setWeather(cachedWeather);
             setWeatherLoading(false);
@@ -222,7 +222,7 @@ export default function HomeContent() {
             city = locationRes.data.city;
             try {
               cache.set('last_city', city, { category: 'home' }); // Запоминаем последний город
-            } catch {}
+            } catch { }
           }
         } catch (locationErr) {
           console.error('[Location] Fetch failed', locationErr);
@@ -233,7 +233,7 @@ export default function HomeContent() {
           try {
             const lastCity = cache.get<string>('last_city');
             if (lastCity) city = lastCity;
-          } catch {}
+          } catch { }
         }
 
         if (city) {
@@ -241,7 +241,7 @@ export default function HomeContent() {
           if (!cachedWeather) {
             try {
               cachedWeather = cache.get<HomeWeatherCacheData>('weather_backup');
-            } catch {}
+            } catch { }
           }
           if (cachedWeather) {
             setWeather(cachedWeather);
@@ -266,7 +266,7 @@ export default function HomeContent() {
               writeCachedWeather(city, weatherRes.data);
               try {
                 cache.set('weather_backup', weatherRes.data, { category: 'home' }); // Сохраняем бессрочный бэкап
-              } catch {}
+              } catch { }
             } else if (!weather) {
               const backup = cache.get<HomeWeatherCacheData>('weather_backup');
               if (backup) setWeather(backup);
@@ -277,7 +277,7 @@ export default function HomeContent() {
               try {
                 const backup = cache.get<HomeWeatherCacheData>('weather_backup');
                 if (backup) setWeather(backup);
-              } catch {}
+              } catch { }
             }
           }
         } else {
@@ -285,7 +285,7 @@ export default function HomeContent() {
           try {
             const backup = cache.get<HomeWeatherCacheData>('weather_backup');
             if (backup) setWeather(backup);
-          } catch {}
+          } catch { }
         }
       } catch (err) {
         console.error('[Weather/Location] Process failed', err);
@@ -525,14 +525,15 @@ export default function HomeContent() {
           className="-mt-32 /hidden bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-3xl w-full max-w-screen-md p-3 flex items-center gap-3 shadow relative z-10"
         >
           <div className="flex flex-col w-full">
-            <span className="text-lg lg:text-2xl font-bold">Свершилось! Ancial теперь на React!</span>
+            <span className="text-lg lg:text-2xl font-bold">С 1 августа Ancial начинает постепенный переход к Zypo.</span>
             <span className="text-sm lg:text-base text-zinc-300">
-              Мы всё ещё продолжаем разработку, поэтому вы можете встречать баги и недоработки.
+              Всё продолжает работать как обычно, но вы можете сталкиваться с двойным написанием Ancial/Zypo и старыми логотипами. Не пугайтесь, это нормально - мы в процессе переезда.
             </span>
-            <span className="text-xs lg:text-sm text-zinc-400">
-              Совсем скоро мы вернём привычный функционал, а пока наслаждайтесь обновлённым интерфейсом!
+            <span className="text-xs lg:text-sm text-zinc-400 pt-3">
+              <b>Что-то случилось?</b><br />
+              Да, из-за действий КЦД .RU/.РФ, с 1 сентября мы теряем доступ к нашему привычному Ancial.RU, поэтому решили двигаться дальше.
             </span>
-            <div className="flex items-center justify-end gap-3 mt-1.5">
+            <div className="hidden flex items-center justify-end gap-3 mt-1.5">
               <a
                 href="https://t.me/ancialru"
                 target="_blank"
@@ -546,11 +547,13 @@ export default function HomeContent() {
         </motion.div>
 
         {/* Search Input Container */}
-        {!queryParam && (
-          <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
-            {searchBarContent}
-          </motion.div>
-        )}
+        {
+          !queryParam && (
+            <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
+              {searchBarContent}
+            </motion.div>
+          )
+        }
 
         {/* Information Widgets below Search */}
         <motion.div
@@ -606,10 +609,11 @@ export default function HomeContent() {
             </>
           )}
         </motion.div>
-      </div>
+      </div >
 
       {/* 2. Search Results View (persists in DOM, only hidden when q is empty) */}
-      <div className={`w-full h-screen overflow-y-auto flex flex-col items-center lg:items-start p-3 pt-0 gap-3 absolute inset-0 duration-300 transition-opacity ${queryParam ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+      < div className={`w-full h-screen overflow-y-auto flex flex-col items-center lg:items-start p-3 pt-0 gap-3 absolute inset-0 duration-300 transition-opacity ${queryParam ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`
+      }>
         <Script
           id="google-cse"
           async
@@ -934,79 +938,81 @@ export default function HomeContent() {
         </div>
 
         {/* Custom Image Preview Modal */}
-        {imageModal && (
-          <div
-            className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-2xl"
-            onClick={() => setImageModal(null)}
-          >
+        {
+          imageModal && (
             <div
-              className="relative flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-3xl border border-zinc-600/30 bg-zinc-950/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row"
-              onClick={(e) => e.stopPropagation()}
+              className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-2xl"
+              onClick={() => setImageModal(null)}
             >
-              {/* Close button */}
-              <button
-                onClick={() => setImageModal(null)}
-                className="absolute top-3 right-3 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-zinc-600/30 bg-zinc-800/90 text-zinc-200 duration-300 active:scale-95 hover:bg-zinc-700"
-                aria-label="Закрыть"
+              <div
+                className="relative flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-3xl border border-zinc-600/30 bg-zinc-950/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row"
+                onClick={(e) => e.stopPropagation()}
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4">
-                  <use href="/icons.svg#IC-modal-close"></use>
-                </svg>
-              </button>
+                {/* Close button */}
+                <button
+                  onClick={() => setImageModal(null)}
+                  className="absolute top-3 right-3 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-zinc-600/30 bg-zinc-800/90 text-zinc-200 duration-300 active:scale-95 hover:bg-zinc-700"
+                  aria-label="Закрыть"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4">
+                    <use href="/icons.svg#IC-modal-close"></use>
+                  </svg>
+                </button>
 
-              {/* Image */}
-              <div className="flex-shrink-0 flex items-start justify-center w-full md:w-auto">
-                <img
-                  src={imageModal.src}
-                  alt={imageModal.title || 'Image preview'}
-                  className="rounded-3xl object-contain"
-                  style={{ maxWidth: '100%', maxHeight: '70vh', width: 'auto', height: 'auto', minWidth: '180px' }}
-                />
-              </div>
+                {/* Image */}
+                <div className="flex-shrink-0 flex items-start justify-center w-full md:w-auto">
+                  <img
+                    src={imageModal.src}
+                    alt={imageModal.title || 'Image preview'}
+                    className="rounded-3xl object-contain"
+                    style={{ maxWidth: '100%', maxHeight: '70vh', width: 'auto', height: 'auto', minWidth: '180px' }}
+                  />
+                </div>
 
-              {/* Info */}
-              <div className="flex flex-col gap-3 flex-1 min-w-0 pt-1 pr-8">
-                {imageModal.title && (
-                  <p className="text-zinc-100 font-semibold text-base leading-snug line-clamp-3">
-                    {imageModal.title}
-                  </p>
-                )}
-                {imageModal.pageUrl && (
-                  <p className="text-zinc-500 text-xs truncate">
-                    {(() => { try { return new URL(imageModal.pageUrl).hostname; } catch { return imageModal.pageUrl; } })()}
-                  </p>
-                )}
-                <div className="flex flex-col gap-2 mt-2">
+                {/* Info */}
+                <div className="flex flex-col gap-3 flex-1 min-w-0 pt-1 pr-8">
+                  {imageModal.title && (
+                    <p className="text-zinc-100 font-semibold text-base leading-snug line-clamp-3">
+                      {imageModal.title}
+                    </p>
+                  )}
                   {imageModal.pageUrl && (
+                    <p className="text-zinc-500 text-xs truncate">
+                      {(() => { try { return new URL(imageModal.pageUrl).hostname; } catch { return imageModal.pageUrl; } })()}
+                    </p>
+                  )}
+                  <div className="flex flex-col gap-2 mt-2">
+                    {imageModal.pageUrl && (
+                      <a
+                        href={imageModal.pageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-800 px-5 py-2 text-sm font-medium text-white duration-300 active:scale-95 hover:bg-zinc-700"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+                          <use href="/icons.svg#IC-modal-external"></use>
+                        </svg>
+                        {lang?.open_page || 'Открыть страницу'}
+                      </a>
+                    )}
                     <a
-                      href={imageModal.pageUrl}
+                      href={imageModal.src}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-800 px-5 py-2 text-sm font-medium text-white duration-300 active:scale-95 hover:bg-zinc-700"
+                      className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-900/80 px-5 py-2 text-sm font-medium text-zinc-300 duration-300 active:scale-95 hover:bg-zinc-800"
                     >
                       <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
-                        <use href="/icons.svg#IC-modal-external"></use>
+                        <use href="/icons.svg#IC-modal-download"></use>
                       </svg>
-                      {lang?.open_page || 'Открыть страницу'}
+                      {lang?.open_image || 'Открыть изображение'}
                     </a>
-                  )}
-                  <a
-                    href={imageModal.src}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-900/80 px-5 py-2 text-sm font-medium text-zinc-300 duration-300 active:scale-95 hover:bg-zinc-800"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
-                      <use href="/icons.svg#IC-modal-download"></use>
-                    </svg>
-                    {lang?.open_image || 'Открыть изображение'}
-                  </a>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-    </div>
+          )
+        }
+      </div >
+    </div >
   );
 }
