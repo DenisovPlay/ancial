@@ -660,7 +660,7 @@ export function parseMessageLinks(text: string) {
         finalUrl = `https://${url}`;
       }
 
-      return `<a href="https://ancial.ru/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" class="text-purple-300 hover:text-purple-200 underline duration-300">${linkText}</a>`;
+      return `<a href="https://zypo.cc/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" class="text-purple-300 hover:text-purple-200 underline duration-300">${linkText}</a>`;
     },
   );
 

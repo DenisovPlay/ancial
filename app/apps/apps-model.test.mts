@@ -14,7 +14,7 @@ test("rewriteLegacyPlayUrl converts legacy overlay links to the App Router route
     "/apps/overlay/hgl",
   );
   assert.equal(
-    rewriteLegacyPlayUrl("https://ancial.ru/anui/apps/playoverlay?gm=venge.io"),
+    rewriteLegacyPlayUrl("https://zypo.cc/anui/apps/playoverlay?gm=venge.io"),
     "/apps/overlay/venge.io",
   );
   assert.equal(

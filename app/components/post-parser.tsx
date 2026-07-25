@@ -186,7 +186,7 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             if (!/^https?:\/\//i.test(url)) {
                 url = 'https://' + url;
             }
-            return `<a href="https://ancial.ru/redirect?link=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${customText.trim()}</a>`;
+            return `<a href="https://zypo.cc/redirect?link=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${customText.trim()}</a>`;
         } else if (rawUrl) {
             let url = rawUrl.trim();
 
@@ -198,7 +198,7 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             if (!/^https?:\/\//i.test(finalUrl)) {
                 finalUrl = 'https://' + finalUrl;
             }
-            return `<a href="https://ancial.ru/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${url}</a>`;
+            return `<a href="https://zypo.cc/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${url}</a>`;
         }
 
         return match;

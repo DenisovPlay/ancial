@@ -44,7 +44,7 @@ const overlayGames: Record<string, OverlayGame> = {
     id: "pb",
     name: "Pixel Battle",
     requiresAuth: true,
-    src: "https://ancial.ru/anui/apps/pb/new_index.php",
+    src: "https://zypo.cc/anui/apps/pb/new_index.php",
   },
   hgl: {
     backHref: "/apps",
@@ -74,7 +74,7 @@ const overlayGames: Record<string, OverlayGame> = {
     backHref: "/apps",
     id: "brffbingo",
     name: "Bingo по Братишкину",
-    src: "https://ancial.ru/anui/apps/bingo/",
+    src: "https://zypo.cc/anui/apps/bingo/",
   },
   kkkr: {
     backHref: "/apps",
@@ -138,7 +138,7 @@ export function rewriteLegacyPlayUrl(link: string | null | undefined) {
   }
 
   try {
-    const url = new URL(link, "https://ancial.ru");
+    const url = new URL(link, "https://zypo.cc");
     const isLegacyOverlay =
       url.pathname === "/anui/apps/playoverlay" || url.pathname === "/apps/overlay";
     const game = url.searchParams.get("gm");

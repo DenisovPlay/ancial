@@ -156,7 +156,7 @@ export default function LegalPage() {
               </p>
               <p className="mt-2">
                 <a
-                  href="https://ancial.ru/about/legal"
+                  href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:text-purple-300 underline"
                 >
                   Официальная публикация
@@ -241,14 +241,14 @@ export default function LegalPage() {
                 <li>
                   Используя Pulse, вы принимаете настоящие{" "}
                   <a
-                    href="https://ancial.ru/about/legal"
+                    href="https://zypo.cc/about/legal"
                     className="text-purple-400 hover:text-purple-300"
                   >
                     Правила
                   </a>{" "}
                   и
                   <a
-                    href="https://ancial.ru/about/legal"
+                    href="https://zypo.cc/about/legal"
                     className="text-purple-400 hover:text-purple-300"
                   >
                     Политику конфиденциальности
@@ -704,7 +704,7 @@ export default function LegalPage() {
                 <p className="text-sm">
                   Полная версия правил:
                   <a
-                    href="https://ancial.ru/about/legal"
+                    href="https://zypo.cc/about/legal"
                     className="text-purple-400 hover:text-purple-300 underline font-medium"
                   >
                     ancial.ru/about/legal
@@ -739,7 +739,7 @@ export default function LegalPage() {
               </p>
               <p className="mt-2">
                 <a
-                  href="https://ancial.ru/about/legal"
+                  href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:text-purple-300 underline"
                 >
                   Официальная публикация
@@ -807,7 +807,7 @@ export default function LegalPage() {
                 <li>
                   Администрация оставляет за собой право в одностороннем порядке
                   изменять Правила. Изменения публикуются на
-                  https://ancial.ru/about/legal и вступают в силу через 7 (семь)
+                  https://zypo.cc/about/legal и вступают в силу через 7 (семь)
                   календарных дней. Продолжение использования платформы после
                   вступления изменений в силу означает их принятие.
                 </li>
@@ -1484,10 +1484,10 @@ export default function LegalPage() {
                 <br />
                 Полная версия всегда доступна по адресу:
                 <a
-                  href="https://ancial.ru/about/legal"
+                  href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:text-purple-300 underline font-medium"
                 >
-                  https://ancial.ru/about/legal
+                  https://zypo.cc/about/legal
                 </a>
               </p>
               <div className="bg-zinc-900 p-6 rounded-3xl border border-purple-800/50">
@@ -1522,7 +1522,7 @@ export default function LegalPage() {
               <p className="mt-2">
                 Версия правил: 1.3 | Опубликовано:{" "}
                 <a
-                  href="https://ancial.ru/about/legal"
+                  href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:underline"
                 >
                   ancial.ru/about/legal
@@ -1552,7 +1552,7 @@ export default function LegalPage() {
               </p>
               <p className="mt-2">
                 <a
-                  href="https://ancial.ru/about/legal"
+                  href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:text-purple-300 underline"
                 >
                   Official Publication
@@ -1619,7 +1619,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   The Administration reserves the right to unilaterally change
-                  the Terms. Changes are published at https://ancial.ru/about/legal
+                  the Terms. Changes are published at https://zypo.cc/about/legal
                   and take effect after 7 (seven) calendar days. Continued use
                   of the platform after the changes take effect means acceptance
                   of them.
@@ -2283,10 +2283,10 @@ export default function LegalPage() {
                 <br />
                 The full version is always available at:
                 <a
-                  href="https://ancial.ru/about/legal"
+                  href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:text-purple-300 underline font-medium"
                 >
-                  https://ancial.ru/about/legal
+                  https://zypo.cc/about/legal
                 </a>
               </p>
               <div className="bg-zinc-900 p-6 rounded-3xl border border-purple-800/50">
@@ -2321,7 +2321,7 @@ export default function LegalPage() {
               <p className="mt-2">
                 Terms version: 1.3 | Published:{" "}
                 <a
-                  href="https://ancial.ru/about/legal"
+                  href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:underline"
                 >
                   ancial.ru/about/legal
@@ -2460,11 +2460,11 @@ export default function LegalPage() {
               Актуальная версия настоящей Политики использования файлов cookie
               размещена в сети Интернет по адресу:
               <a
-                href="https://ancial.ru/about/legal/"
+                href="https://zypo.cc/about/legal/"
                 target="_blank"
                 className="text-blue-500 hover:underline"
               >
-                https://ancial.ru/about/legal/
+                https://zypo.cc/about/legal/
               </a>
               . Мы оставляем за собой право вносить в неё изменения в любое
               время без предварительного уведомления. Обновлённая редакция
@@ -2511,7 +2511,7 @@ export default function LegalPage() {
               персональных данных (далее &ndash; Политика) применяется ко всей
               информации, которую Оператор может получить о посетителях
               веб-сайта&nbsp;
-              <span className="text-purple-500">https://ancial.ru</span>.
+              <span className="text-purple-500">https://zypo.cc</span>.
             </p>
             <br />
             <h5>2. Основные понятия, используемые в Политике</h5>
@@ -2532,7 +2532,7 @@ export default function LegalPage() {
               2.3. Веб-сайт &ndash; совокупность графических и информационных
               материалов, а также программ для ЭВМ и баз данных, обеспечивающих
               их доступность в сети интернет по сетевому адресу&nbsp;
-              <span className="text-purple-500">https://ancial.ru</span>.
+              <span className="text-purple-500">https://zypo.cc</span>.
             </p>
             <br />
             <p>
@@ -2574,7 +2574,7 @@ export default function LegalPage() {
               2.8. Персональные данные &ndash; любая информация, относящаяся
               прямо или косвенно к определенному или определяемому Пользователю
               веб-сайта&nbsp;
-              <span className="text-purple-500">https://ancial.ru</span>.
+              <span className="text-purple-500">https://zypo.cc</span>.
             </p>
             <br />
             <p>
@@ -2590,7 +2590,7 @@ export default function LegalPage() {
             <br />
             <p>
               2.10. Пользователь &ndash; любой посетитель веб-сайта&nbsp;
-              <span className="text-purple-500">https://ancial.ru</span>.
+              <span className="text-purple-500">https://zypo.cc</span>.
             </p>
             <br />
             <p>
@@ -2894,7 +2894,7 @@ export default function LegalPage() {
             <p>
               &ndash;&nbsp;предоставление доступа Пользователю к сервисам,
               информации и/или материалам, содержащимся на веб-сайте{" "}
-              <span className="text-purple-500">https://ancial.ru</span>.
+              <span className="text-purple-500">https://zypo.cc</span>.
             </p>
             <br />
             <p>
@@ -2940,7 +2940,7 @@ export default function LegalPage() {
               8.2. Оператор обрабатывает персональные данные Пользователя только
               в случае их заполнения и/или отправки Пользователем самостоятельно
               через специальные формы, расположенные на сайте&nbsp;
-              <span className="text-purple-500">https://ancial.ru</span>
+              <span className="text-purple-500">https://zypo.cc</span>
               &nbsp;или направленные Оператору посредством электронной почты.
               Заполняя соответствующие формы и/или отправляя свои персональные
               данные Оператору, Пользователь выражает свое согласие с данной
@@ -3171,7 +3171,7 @@ export default function LegalPage() {
             <p>
               14.3. Актуальная версия Политики в свободном доступе расположена в
               сети Интернет по адресу&nbsp;
-              <span className="text-purple-500">https://ancial.ru/about/legal</span>.
+              <span className="text-purple-500">https://zypo.cc/about/legal</span>.
             </p>
           </div>
         </div>

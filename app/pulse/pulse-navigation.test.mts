@@ -40,7 +40,7 @@ test('ported pulse library and artist paths stay inside the React app', () => {
 
 test('legacy pulse paths still point to ancial.ru until they are ported', () => {
   assert.deepEqual(getPulseNavigationTarget('/pulse/legacy?q=test'), {
-    href: 'https://ancial.ru/pulse/legacy?q=test',
+    href: 'https://zypo.cc/pulse/legacy?q=test',
     type: 'external',
   });
 });

@@ -18,7 +18,7 @@ export default function Home() {
     return (
         <div className="flex flex-col jusitify-center items-center gap-3 py-3">
             <div className="w-full max-w-3xl flex items-center">
-                <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Ancial`}</span>
+                <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Zypo`}</span>
             </div>
 
             <div className="px-3 lg:px-0 w-full max-w-3xl">
@@ -43,7 +43,7 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col w-full max-w-3xl">
-                <span className="w-full max-w-3xl text-lg text-zinc-300 px-3 lg:px-0">Ancial by ZeniFlow - это уникальный проект, объединяющий в себе множество полезных сервисов.</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300 px-3 lg:px-0">Zypo by ZeniFlow - это уникальный проект, объединяющий в себе множество полезных сервисов.</span>
                 <div className="flex items-center gap-3 w-full flex-nowrap overflow-x-auto drag-scroll viewport py-3 px-3 lg:px-0" ref={iconsScrollRef}>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-indigo-500 flex items-center justify-center shrink-0">
                         <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-feed`}></use></svg>
@@ -134,10 +134,10 @@ export default function Home() {
                 <span className="w-full max-w-3xl text-lg text-zinc-300">В 2025 запустили в разработку новый отдельный Pulse (Музыка) и Zeni (Финтех). А ещё - <span className="text-purple-500">Ancial Lite</span> - более мощную и более лёгкую версию Ancial на новой кодовой базе, освежили логотип, взяли более яркие и броские цвета. Вместо <span className="text-purple-500">Ctrl C + Ctrl V</span> и <span className="text-purple-500">Ancial Group</span> решили назвать себя проще - <span className="text-purple-500">ZeniFlow</span>, в честь не вышедшего финтех сервиса <span className="text-purple-500">Zeni</span>.</span>
 
                 <span className="text-xl font-bold text-white mt-3">2026</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">Начали новую эпоху - опубликовались на Product Radar и начали делать React-версию клиента.</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">Начали новую эпоху - опубликовались на Product Radar и начали делать React-версию клиента.<br /> Выпустили React версию и решились сменить название на Zypo.cc.</span>
 
                 <span className="text-xl font-bold text-white mt-3">Сейчас</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">Ну вроде как мы живы, если вы это читаете ;)<br />Главное помните, что Ancial - <b className="text-white">больше, чем социальная сеть</b>!</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">Ну вроде как мы живы, если вы это читаете ;)<br />Главное помните, что Zypo - <b className="text-white">больше, чем социальная сеть</b>!</span>
 
             </div>
 

@@ -21,7 +21,7 @@ messaging.onBackgroundMessage((payload) => {
     badge: '/includes/img/anlite/anlogo.webp',
     tag: 'ancial-notification',
     data: {
-      url: payload.data?.click_action || 'https://ancial.ru/'
+      url: payload.data?.click_action || 'https://zypo.cc/'
     }
   };
   self.registration.showNotification(title, options);
@@ -29,7 +29,7 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || 'https://ancial.ru/';
+  const urlToOpen = event.notification.data?.url || 'https://zypo.cc/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (let i = 0; i < clientList.length; i++) {
@@ -47,11 +47,11 @@ self.addEventListener('notificationclick', (event) => {
 
 // ─── OFFLINE CACHING ────────────────────────────────────────────────────────
 
-const CACHE_STATIC  = 'ancial-static-v2';
-const CACHE_PAGES   = 'ancial-pages-v2';
-const CACHE_IMAGES  = 'ancial-images-v1';
+const CACHE_STATIC = 'ancial-static-v2';
+const CACHE_PAGES = 'ancial-pages-v2';
+const CACHE_IMAGES = 'ancial-images-v1';
 // Кэш для API-ответов, которые нужны офлайн (языки, справочники)
-const CACHE_API     = 'ancial-api-v1';
+const CACHE_API = 'ancial-api-v1';
 
 // Список API-эндпоинтов V2 которые кэшируются SW (Stale-While-Revalidate)
 // Остальные /api/V2/* запросы SW не трогает — данные живут в localStorage
@@ -82,9 +82,9 @@ const PRECACHE_PAGES = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     Promise.all([
-      caches.open(CACHE_STATIC).then((c) => c.addAll(PRECACHE_STATIC).catch(() => {})),
+      caches.open(CACHE_STATIC).then((c) => c.addAll(PRECACHE_STATIC).catch(() => { })),
       caches.open(CACHE_PAGES).then((c) =>
-        Promise.allSettled(PRECACHE_PAGES.map((url) => c.add(url).catch(() => {})))
+        Promise.allSettled(PRECACHE_PAGES.map((url) => c.add(url).catch(() => { })))
       ),
     ]).then(() => self.skipWaiting())
   );
@@ -110,7 +110,7 @@ function saveToCache(cacheName, request, response) {
   if (response && (response.status === 200 || response.status === 0)) {
     caches.open(cacheName)
       .then((c) => c.put(request, response.clone()))
-      .catch(() => {});
+      .catch(() => { });
   }
 }
 

@@ -138,7 +138,7 @@ export default function GroupInfoModal({
 
   const inviteUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/invite/${inviteCode || initialInviteCode}`
-    : `https://ancial.ru/invite/${inviteCode || initialInviteCode}`;
+    : `https://zypo.cc/invite/${inviteCode || initialInviteCode}`;
 
   const copyInviteLink = async () => {
     try {

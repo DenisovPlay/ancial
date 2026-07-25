@@ -35,6 +35,9 @@ export const metadata: Metadata = {
       template: `%s | ${SITE_CONFIG.title}`,
     },
   },
+  other: {
+    'google-adsense-account': 'ca-pub-9947484450577422',
+  },
 };
 
 export const viewport: Viewport = {
@@ -57,6 +60,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-black text-white">
+        <Script
+          id="google-adsense"
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9947484450577422"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <Script id="yandex-metrika" strategy="afterInteractive">
           {`
             (function(m,e,t,r,i,k,a){

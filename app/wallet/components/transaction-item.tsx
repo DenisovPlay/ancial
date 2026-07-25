@@ -211,7 +211,7 @@ export function TransactionDetailsModal({ transaction, isOpen, onClose, ownedIds
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => window.open(`https://ancial.ru/api/wallet/generate_receipt.php?id=${transaction.id}`, '_blank')}
+                onClick={() => window.open(`https://zypo.cc/api/wallet/generate_receipt.php?id=${transaction.id}`, '_blank')}
                 className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
                 {lang?.receipt || 'Чек'}

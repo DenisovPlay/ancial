@@ -52,7 +52,7 @@ export default function SettingsPage() {
 
         {isAuthenticated && (
           <>
-            <SettingsItem 
+            <SettingsItem
               href="/settings/account"
               title={lang?.account || 'Аккаунт'}
               iconBgClass="bg-pink-500/10"
@@ -61,7 +61,7 @@ export default function SettingsPage() {
               }
             />
 
-            <SettingsItem 
+            <SettingsItem
               href="/settings/security"
               title={lang?.security || 'Безопасность'}
               iconBgClass="bg-blue-500/10"
@@ -70,7 +70,7 @@ export default function SettingsPage() {
               }
             />
 
-            <SettingsItem 
+            <SettingsItem
               href="/settings/socials"
               title={lang?.socialnetworks || 'Социальные сети'}
               iconBgClass="bg-lime-500/10"
@@ -79,7 +79,7 @@ export default function SettingsPage() {
               }
             />
 
-            <SettingsItem 
+            <SettingsItem
               href="/settings/notifications"
               title={lang?.notif || 'Уведомления'}
               iconBgClass="bg-amber-500/10"
@@ -88,7 +88,7 @@ export default function SettingsPage() {
               }
             />
 
-            <SettingsItem 
+            <SettingsItem
               href="/settings/cache"
               title={lang?.cache_settings || 'Память'}
               iconBgClass="bg-purple-500/10"
@@ -99,7 +99,7 @@ export default function SettingsPage() {
           </>
         )}
 
-        <SettingsItem 
+        <SettingsItem
           title={lang?.language || 'Язык'}
           iconBgClass="bg-red-500/10"
           icon={
@@ -117,17 +117,17 @@ export default function SettingsPage() {
           }
         />
 
-        <SettingsItem 
+        <SettingsItem
           href="/about"
-          title={`${lang?.about || 'О'} Ancial`}
+          title={`${lang?.about || 'О'} Zypo`}
           iconBgClass="bg-emerald-500/10"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-emerald-500" viewBox="0 0 48 48"><use href={`#IC-book`}></use></svg>
           }
         />
       </div>
-      
-      <div className="lg:hidden"><br/><br/><br/><br/></div>
+
+      <div className="lg:hidden"><br /><br /><br /><br /></div>
     </div>
   );
 }

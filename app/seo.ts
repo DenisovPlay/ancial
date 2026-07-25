@@ -4,7 +4,7 @@ export const SITE_CONFIG = {
   title: 'Ancial',
   tagline: 'Больше, чем социальная сеть',
   description: 'Социальная сеть с лентой новостей, сообщениями, звонками, музыкой, играми и кошельком. Современная платформа для общения и развлечений.',
-  url: 'https://ancial.ru',
+  url: 'https://zypo.cc',
   locale: 'ru_RU',
   twitter: '@ancialru',
 };
@@ -26,7 +26,7 @@ export const DEFAULT_SEO: Metadata = {
     'игры',
     'Ancial',
   ],
-  authors: [{ name: 'ZeniFlow', url: 'https://ancial.ru' }],
+  authors: [{ name: 'ZeniFlow', url: 'https://zypo.cc' }],
   creator: 'ZeniFlow',
   openGraph: {
     type: 'website',
@@ -71,6 +71,9 @@ export const DEFAULT_SEO: Metadata = {
     // Добавить при необходимости
     // google: 'your-google-verification-code',
     // yandex: 'your-yandex-verification-code',
+  },
+  other: {
+    'google-adsense-account': 'ca-pub-9947484450577422',
   },
 };
 

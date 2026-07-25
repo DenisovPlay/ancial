@@ -29,6 +29,14 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'zypo.cc',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.zypo.cc',
+      },
+      {
+        protocol: 'https',
         hostname: 'cdn.betterttv.net',
       },
       {

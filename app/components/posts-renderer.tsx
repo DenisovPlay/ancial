@@ -343,7 +343,7 @@ function PostCardInner({
   onVote,
   post,
   renderIndex = 1,
-  shareBaseUrl = 'https://ancial.ru/feed/post',
+  shareBaseUrl = 'https://zypo.cc/feed/post',
   noCollapse = false,
 }: PostCardProps) {
   const router = useRouter();

@@ -714,7 +714,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                 onTranslate={translatePost}
                 onVote={handleVote}
                 post={post}
-                shareBaseUrl="https://ancial.ru/feed/post"
+                shareBaseUrl="https://zypo.cc/feed/post"
                 renderIndex={1}
               />
 
