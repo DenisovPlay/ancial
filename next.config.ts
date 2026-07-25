@@ -8,6 +8,7 @@ if (process.env.NODE_ENV === 'development') {
 import { API_BASE } from './app/config';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   transpilePackages: ['gradualblur'],
   images: {
     remotePatterns: [
@@ -17,7 +18,39 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'ibb.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.ibb.co',
+      },
+      {
+        protocol: 'http',
+        hostname: 'i.ibb.co',
+      },
+      {
+        protocol: 'http',
+        hostname: '*.ibb.co',
+      },
+      {
+        protocol: 'https',
         hostname: 'i.imgur.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'imgur.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.imgur.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.scdn.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.scdn.co',
       },
       {
         protocol: 'https',
@@ -28,11 +61,27 @@ const nextConfig: NextConfig = {
         hostname: '*.ancial.ru',
       },
       {
+        protocol: 'http',
+        hostname: 'ancial.ru',
+      },
+      {
+        protocol: 'http',
+        hostname: '*.ancial.ru',
+      },
+      {
         protocol: 'https',
         hostname: 'zypo.cc',
       },
       {
         protocol: 'https',
+        hostname: '*.zypo.cc',
+      },
+      {
+        protocol: 'http',
+        hostname: 'zypo.cc',
+      },
+      {
+        protocol: 'http',
         hostname: '*.zypo.cc',
       },
       {

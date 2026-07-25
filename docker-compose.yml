@@ -1,0 +1,12 @@
+services:
+  zypo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zypo-app
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
