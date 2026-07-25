@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    id: 'ru.ancial',
-    name: 'Ancial',
-    short_name: 'Ancial',
+    id: 'cc.zypo',
+    name: 'Zypo',
+    short_name: 'Zypo',
     description: 'Больше, чем просто социальная сеть',
     start_url: '/',
     scope: '/',
@@ -38,13 +38,13 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         purpose: 'any',
         sizes: '401x401',
-        src: '/includes/img/401anlogo.png',
+        src: '/img/zypo/logo-rounded.webp',
         type: 'image/png',
       },
       {
         purpose: 'maskable',
         sizes: '401x401',
-        src: '/includes/img/401anlogo.png',
+        src: '/img/zypo/logo-rounded.webp',
         type: 'image/png',
       },
     ],

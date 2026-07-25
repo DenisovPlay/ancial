@@ -108,7 +108,7 @@ export default function SignupContent() {
         <div className="flex flex-col lg:grid grid-cols-1 lg:grid-cols-2 rounded-3xl overflow-hidden shadow-xl">
           <div className="bg-zinc-900 duration-300 flex flex-col lg:max-w-xs p-3 gap-3 shadow">
             <div className="flex flex-row gap-3 items-center">
-              <img className="w-16 h-16 rounded-2xl inline" src="/includes/img/401anlogo.png" alt="Logo" />
+              <img className="w-16 h-16 rounded-2xl inline" src="/img/zypo/logo-rounded.webp" alt="Logo" />
               <span className="text-zinc-200 text-lg">{lang?.reghello || 'Создайте аккаунт'}</span>
             </div>
 

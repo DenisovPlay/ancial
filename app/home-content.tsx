@@ -535,7 +535,7 @@ export default function HomeContent() {
             </span>
             <div className="hidden flex items-center justify-end gap-3 mt-1.5">
               <a
-                href="https://t.me/ancialru"
+                href="https://t.me/zypocc"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-400 hover:bg-blue-500 duration-300 active:scale-95 shadow border border-zinc-600/30"
@@ -921,7 +921,7 @@ export default function HomeContent() {
             className="cursor-pointer hover:opacity-90 active:scale-95 duration-300 shrink-0"
           >
             {/* Multi-gradient ancial text logo */}
-            <Image alt="Ancial Logo" className="h-12" width={120} height={120} src="/img/logos/ancial-write.svg" />
+            <Image alt="Ancial Logo" className="h-12" width={120} height={120} src="/img/zypo/letter.svg" />
           </motion.div>
 
           {queryParam && (
