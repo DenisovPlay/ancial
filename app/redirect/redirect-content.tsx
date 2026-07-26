@@ -169,7 +169,7 @@ function RedirectContentInner() {
                   router.push('/');
                 }
               }}
-              className="flex h-12 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-900 text-sm font-bold text-white transition-all hover:bg-zinc-800 active:scale-95"
+              className="cursor-pointer flex h-12 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-900 text-sm font-bold text-white transition-all hover:bg-zinc-800 active:scale-95"
             >
               {lang?.redirect_go_back || 'Назад'}
             </button>
@@ -179,7 +179,7 @@ function RedirectContentInner() {
                 href={targetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-12 items-center justify-center rounded-3xl bg-purple-600 text-sm font-bold text-white shadow-lg transition-all hover:bg-purple-500 active:scale-95"
+                className="cursor-pointer flex h-12 items-center justify-center rounded-3xl bg-purple-600 text-sm font-bold text-white shadow-lg transition-all hover:bg-purple-500 active:scale-95"
               >
                 {lang?.redirect_proceed || 'Перейти на сайт'}
               </a>
@@ -187,7 +187,7 @@ function RedirectContentInner() {
               <button
                 type="button"
                 disabled
-                className="flex h-12 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-950 text-sm font-bold text-zinc-600"
+                className="cursor-not-allowed flex h-12 items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-950 text-sm font-bold text-zinc-600"
               >
                 {lang?.redirect_blocked || 'Заблокировано'}
               </button>
