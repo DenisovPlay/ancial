@@ -91,7 +91,7 @@ const nextConfig: NextConfig = {
         },
         { // Proxy for legacy redirect handler
           source: '/redirect',
-          destination: `${API_BASE}/redirect`,
+          destination: `${API_BASE}/redirect.php`,
         },
         { // Proxy for legacy in-site apps (Pixel Battle, bingo и т.д.)
           source: '/anui/:path*',
