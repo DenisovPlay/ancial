@@ -69,14 +69,14 @@ export function latLonToTile(lat: number, lon: number, zoom: number) {
 export function buildWeatherMedia(mode: WeatherMode, weatherKey: WeatherConditionKey) {
   if (weatherKey === 'default') {
     return {
-      backgroundImageUrl: `/img/weather/newweather/bg/${mode}/default.png`,
+      backgroundImageUrl: `/img/weather/newweather/bg/${mode}/default.webp`,
       videoUrl: null,
     };
   }
 
   return {
     backgroundImageUrl: null,
-    videoUrl: `/img/weather/newweather/video/${weatherKey}-${mode}.mp4`,
+    videoUrl: `/img/weather/newweather/video/${weatherKey}-${mode}.webm`,
   };
 }
 
