@@ -2497,6 +2497,7 @@ export default function MessagesContent() {
                                     foreignUser={foreignUser}
                                     lang={lang}
                                     message={item.message}
+                                    isGroupChat={isGroupDialog}
                                     senderName={groupSenderName}
                                     senderAvatarUrl={groupSenderAvatarUrl}
                                     hideAvatar={hideAvatar}

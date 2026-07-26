@@ -1243,6 +1243,7 @@ export const en: Record<string, string> = {
   "group_settings": "Group settings",
   "group_info": "Chat info",
   "group_participant": "Member",
+  "read_by": "read by",
   "failed_load_friends": "Failed to load friends list",
   "members_added": "Members added",
   "error_adding_members": "Error adding members",

@@ -1243,6 +1243,7 @@ export const ru: Record<string, string> = {
     "group_settings": "Настройки беседы",
     "group_info": "Информация о чате",
     "group_participant": "Участник",
+    "read_by": "прочитали",
     "failed_load_friends": "Не удалось загрузить список друзей",
     "members_added": "Участники добавлены",
     "error_adding_members": "Ошибка добавления участников",
