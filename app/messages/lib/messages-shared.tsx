@@ -926,18 +926,26 @@ export function getMessageId(message: DialogMessage) {
   return toNumber(message.id);
 }
 
+export function isRealMessageId(id: number) {
+  return id > 0 && id < 1000000000;
+}
+
 export function sortMessages(messages: DialogMessage[]) {
   return [...messages].sort((left, right) => getMessageId(left) - getMessageId(right));
 }
 
 export function getEarliestMessageId(messages: DialogMessage[]) {
   if (!messages.length) return 0;
-  return getMessageId(messages[0]);
+  const realMessages = messages.filter((m) => !m.isSending && isRealMessageId(getMessageId(m)));
+  if (!realMessages.length) return 0;
+  return getMessageId(realMessages[0]);
 }
 
 export function getLatestMessageId(messages: DialogMessage[]) {
   if (!messages.length) return 0;
-  return getMessageId(messages[messages.length - 1]);
+  const realMessages = messages.filter((m) => !m.isSending && isRealMessageId(getMessageId(m)));
+  if (!realMessages.length) return 0;
+  return getMessageId(realMessages[realMessages.length - 1]);
 }
 
 export function mergeMessages(existing: DialogMessage[], incoming: DialogMessage[]) {

@@ -1759,11 +1759,22 @@ export default function MessagesContent() {
         }
       });
 
-      await AncialAPI.sendMessage({
+      const res = await AncialAPI.sendMessage<{ msg_id?: number; data?: { msg_id?: number } }>({
         di_id: dialogId,
         img: imageUrl,
         ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
       });
+
+      const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+      if (sentMsgId && tempId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? { ...m, id: sentMsgId, isSending: false }
+              : m
+          )
+        );
+      }
 
       notify({
         content: lang?.done || 'Готово',
@@ -1774,6 +1785,9 @@ export default function MessagesContent() {
       await loadDialogs({ force: true });
     } catch (error) {
       console.error('Failed to send image message', error);
+      if (tempId) {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      }
       notify({
         content: lang?.somethingwrong || 'Произошла ошибка =(',
         type: 'error',
@@ -1918,8 +1932,18 @@ export default function MessagesContent() {
           ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
         });
 
+        const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+        if (sentMsgId) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId
+                ? { ...m, id: sentMsgId, isSending: false }
+                : m
+            )
+          );
+        }
+
         if (cancelledMessageIdsRef.current.has(tempId)) {
-          const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
           if (sentMsgId) {
             void AncialAPI.messageAction('delete', { msg_id: sentMsgId });
           }
@@ -1937,9 +1961,9 @@ export default function MessagesContent() {
           content: lang?.somethingwrong || 'Произошла ошибка =(',
           type: 'error',
         });
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
       } finally {
         cancelledMessageIdsRef.current.delete(tempId);
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
       }
     })();
   };
@@ -1978,11 +2002,23 @@ export default function MessagesContent() {
 
     (async () => {
       try {
-        await AncialAPI.sendMessage({
+        const res = await AncialAPI.sendMessage<{ msg_id?: number; data?: { msg_id?: number } }>({
           di_id: dialogId,
           sticker: `:${stickerName}:`,
           ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
         });
+
+        const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+        if (sentMsgId) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId
+                ? { ...m, id: sentMsgId, isSending: false }
+                : m
+            )
+          );
+        }
+
         await loadMessagesNewer(dialogSessionRef.current);
         await loadDialogs({ force: true });
       } catch (error) {
@@ -1991,7 +2027,6 @@ export default function MessagesContent() {
           content: lang?.somethingwrong || 'Произошла ошибка =(',
           type: 'error',
         });
-      } finally {
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
       }
     })();
@@ -2035,11 +2070,22 @@ export default function MessagesContent() {
     try {
       seedSevenTvStickerCache([sticker]);
 
-      await AncialAPI.sendMessage({
+      const res = await AncialAPI.sendMessage<{ msg_id?: number; data?: { msg_id?: number } }>({
         di_id: dialogId,
         message: `:7tv-${normalizedStickerName}-${sticker.id}:`,
         ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
       });
+
+      const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+      if (sentMsgId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempId
+              ? { ...m, id: sentMsgId, isSending: false }
+              : m
+          )
+        );
+      }
 
       await loadMessagesNewer(dialogSessionRef.current);
       await loadDialogs({ force: true });
@@ -2049,8 +2095,8 @@ export default function MessagesContent() {
         content: lang?.somethingwrong || 'Произошла ошибка =(',
         type: 'error',
       });
-    } finally {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    } finally {
       setSendingMessage(false);
     }
   };
