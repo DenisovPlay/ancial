@@ -102,6 +102,14 @@ const nextConfig: NextConfig = {
           source: '/pay/:path*',
           destination: `${API_BASE}/pay/:path*`,
         },
+        { // Proxy for sitemap
+          source: '/sitemap',
+          destination: `${API_BASE}/sitemap.php`,
+        },
+        { // Proxy for sitemap.xml
+          source: '/sitemap.xml',
+          destination: `${API_BASE}/sitemap.php`,
+        },
       ],
     };
   },
