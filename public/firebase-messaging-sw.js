@@ -1,4 +1,4 @@
-const SW_VERSION = '2.6';
+const SW_VERSION = '3.0';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -47,46 +47,26 @@ self.addEventListener('notificationclick', (event) => {
 
 // ─── OFFLINE CACHING ────────────────────────────────────────────────────────
 
-const CACHE_STATIC = 'ancial-static-v2';
-const CACHE_PAGES = 'ancial-pages-v2';
+const CACHE_STATIC = 'ancial-static-v3';
+const CACHE_PAGES = 'ancial-pages-v3';
 const CACHE_IMAGES = 'ancial-images-v1';
-// Кэш для API-ответов, которые нужны офлайн (языки, справочники)
 const CACHE_API = 'ancial-api-v1';
 
-// Список API-эндпоинтов V2 которые кэшируются SW (Stale-While-Revalidate)
-// Остальные /api/V2/* запросы SW не трогает — данные живут в localStorage
 const CACHEABLE_API_PATHS = [];
 
-// App shell — критические файлы, кэшируются при установке
+// App shell — только критические манифесты и иконки (без HTML страниц!)
 const PRECACHE_STATIC = [
-  '/',
   '/manifest.webmanifest',
   '/icons.svg',
   '/img/branding/pulse.svg',
 ];
 
-// Страницы для предварительного кэширования при установке SW
-const PRECACHE_PAGES = [
-  '/pulse',
-  '/messages',
-  '/apps',
-  '/feed',
-  '/friends',
-  '/notifications',
-  '/settings',
-  '/settings/cache',
-  '/wallet',
-];
-
 // ─── Install ─────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    Promise.all([
-      caches.open(CACHE_STATIC).then((c) => c.addAll(PRECACHE_STATIC).catch(() => { })),
-      caches.open(CACHE_PAGES).then((c) =>
-        Promise.allSettled(PRECACHE_PAGES.map((url) => c.add(url).catch(() => { })))
-      ),
-    ]).then(() => self.skipWaiting())
+    caches.open(CACHE_STATIC)
+      .then((c) => c.addAll(PRECACHE_STATIC).catch(() => { }))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -97,7 +77,7 @@ self.addEventListener('activate', (event) => {
     caches.keys()
       .then((names) =>
         Promise.all(
-          names.map((n) => (!allowed.includes(n) && n.startsWith('ancial-')) ? caches.delete(n) : undefined)
+          names.map((n) => (!allowed.includes(n)) ? caches.delete(n) : undefined)
         )
       )
       .then(() => self.clients.claim())
