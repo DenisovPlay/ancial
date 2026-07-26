@@ -1,4 +1,4 @@
-const SW_VERSION = '2.2';
+const SW_VERSION = '2.3';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -211,15 +211,14 @@ self.addEventListener('fetch', (event) => {
 
   if (isStaticAsset) { cacheFirst(event, CACHE_STATIC); return; }
 
-  // ── 3. Next.js RSC/data payloads → Network First
-  // Клиентские переходы App Router: _rsc=... параметр или RSC заголовок
-  // /_next/data/ — Pages Router data
+  // ── 3. Next.js RSC/data payloads → Bypass SW (пропускаем в сеть напрямую без вмешательства)
+  // Это исключает поломку клиентских переходов (SPA navigation) и предотвращает принудительную перезагрузку страницы
   const isRsc =
     url.searchParams.has('_rsc') ||
     req.headers.get('RSC') === '1' ||
     url.pathname.startsWith('/_next/data/');
 
-  if (isRsc) { networkFirst(event, CACHE_PAGES, null); return; }
+  if (isRsc) return;
 
   // ── 4. HTML-навигация (любой маршрут) → Network First + shell fallback
   // Охватывает: /, /messages, /apps, /pulse, /feed, /friends и любой другой маршрут
