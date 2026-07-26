@@ -375,7 +375,42 @@ function PulseTrackRow({
   const title = decodeHtmlEntities(track.title) || (lang?.untitled || 'Без названия');
   const artist = decodeHtmlEntities(track.artist) || (lang?.unknown_artist || 'Неизвестный исполнитель');
   const [isTrackMenuOpen, setIsTrackMenuOpen] = useState(false);
+  const [isCached, setIsCached] = useState(false);
+  const [isSavingOffline, setIsSavingOffline] = useState(false);
   const trackMenuZIndex = getPulseTrackDropdownZIndex(trackIndex, isTrackMenuOpen);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (trackId > 0) {
+      cache.audio.has(trackId).then((cached) => {
+        if (isMounted) setIsCached(cached);
+      }).catch(() => {});
+    }
+    return () => { isMounted = false; };
+  }, [trackId]);
+
+  const handleSaveOffline = async () => {
+    if (isSavingOffline || isCached) return;
+    setIsSavingOffline(true);
+    try {
+      const src = normalizeText(track.src);
+      if (src && trackId) {
+        const success = await cache.audio.save(
+          trackId,
+          src,
+          { title: track.title || undefined, artist: track.artist || undefined },
+          undefined,
+          true
+        );
+        if (success) setIsCached(true);
+      }
+    } catch (e) {
+      console.error('Failed to save offline:', e);
+    } finally {
+      setIsSavingOffline(false);
+    }
+  };
+
   const manageActions = [
     isAuthenticated && isOwnTrack && onEditTrack
       ? {
@@ -412,7 +447,7 @@ function PulseTrackRow({
       icon: 'IC-share',
       key: 'share',
       label: lang?.share || 'Поделиться',
-      onClick: () => void onCopyTrackLink(track.sid ?? 0, track),
+      onClick: () => void onCopyTrackLink(trackId, track),
     },
     onReportTrack
       ? {
@@ -442,6 +477,17 @@ function PulseTrackRow({
             className="absolute -left-1.5 -top-1.5 z-10 h-6 w-6 rounded-full border border-zinc-600/30 bg-pink-500/50 stroke-white p-1 backdrop-blur-sm backdrop-saturate-200"
             name="IC-crown"
           />
+        ) : null}
+
+        {isCached ? (
+          <div
+            className="absolute -right-1.5 -top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-emerald-500 text-white shadow-md backdrop-blur-sm"
+            title={lang?.pulse_already_saved_offline || 'Сохранено офлайн'}
+          >
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+            </svg>
+          </div>
         ) : null}
 
         <PulseCoverImage
@@ -506,8 +552,32 @@ function PulseTrackRow({
             {lang?.add_to_playlist || 'В плейлист'}
           </DropdownItem>
         ) : null}
-        <DropdownItem icon="IC-download" onClick={() => window.open(normalizeText(track.src), '_blank', 'noopener,noreferrer')}>
-          {lang?.download || 'Скачать'}
+        <DropdownItem
+          icon="IC-download"
+          onClick={() => {
+            const src = normalizeText(track.src);
+            if (!src) return;
+            const a = document.createElement('a');
+            a.href = src;
+            a.download = `${artist} - ${title}.mp3`;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }}
+        >
+          {lang?.pulse_download_mp3 || 'Скачать MP3'}
+        </DropdownItem>
+        <DropdownItem
+          icon={isCached ? 'IC-bookmark-filled' : 'IC-bookmark'}
+          onClick={handleSaveOffline}
+        >
+          {isSavingOffline
+            ? (lang?.pulse_saving_offline || 'Сохраняется...')
+            : isCached
+              ? (lang?.pulse_already_saved_offline || 'Сохранено офлайн')
+              : (lang?.pulse_save_offline || 'Сохранить офлайн')}
         </DropdownItem>
         <div className={cn('grid w-full gap-1.5', footerActions.length >= 3 ? 'grid-cols-3' : 'grid-cols-2')}>
           {footerActions.map((action) => (

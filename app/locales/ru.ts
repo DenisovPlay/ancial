@@ -1302,6 +1302,7 @@ export const ru: Record<string, string> = {
     "badge_beta_tester": "Бета-тестер",
     "badge_creator": "Известный автор",
     "pulse_save_offline": "Сохранить офлайн",
+    "pulse_download_mp3": "Скачать MP3",
     "pulse_saved_offline": "Сохранено!",
     "pulse_saving_offline": "Сохраняется...",
     "pulse_already_saved_offline": "Уже сохранено",

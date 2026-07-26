@@ -2873,9 +2873,28 @@ export function PulsePlayerProvider({
                               {lang?.add_to_playlist || 'В плейлист'}
                             </DropdownItem>
                             <DropdownItem
-                              icon={offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'IC-check' : 'IC-download'}
+                              icon="IC-download"
+                              onClick={() => {
+                                const track = currentTrack;
+                                if (!track?.src) return;
+                                const trackSource = normalizeTrackSource(track.src);
+                                if (!trackSource) return;
+                                const a = document.createElement('a');
+                                a.href = trackSource;
+                                a.download = `${playerArtist ? playerArtist + ' - ' : ''}${playerTitle || 'track'}.mp3`;
+                                a.target = '_blank';
+                                a.rel = 'noopener noreferrer';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }}
+                            >
+                              {lang?.pulse_download_mp3 || 'Скачать MP3'}
+                            </DropdownItem>
+                            <DropdownItem
+                              icon={offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'IC-bookmark-filled' : 'IC-bookmark'}
                               onClick={async () => {
-                                if (offlineSaveStatus === 'saving') return;
+                                if (offlineSaveStatus === 'saving' || offlineSaveStatus === 'already') return;
                                 const track = currentTrack;
                                 if (!track?.src || !track?.sid) return;
                                 const trackId = Number(track.sid);
@@ -2888,7 +2907,7 @@ export function PulsePlayerProvider({
                                     trackSource,
                                     { title: track.title || undefined, artist: track.artist || undefined },
                                     undefined,
-                                    true // force = true: игнорирует настройки автокэша
+                                    true
                                   );
                                   if (result === true) {
                                     setOfflineSaveStatus('saved');

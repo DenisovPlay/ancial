@@ -1302,6 +1302,7 @@ export const en: Record<string, string> = {
   "badge_beta_tester": "Beta Tester",
   "badge_creator": "Creator",
   "pulse_save_offline": "Save offline",
+  "pulse_download_mp3": "Download MP3",
   "pulse_saved_offline": "Saved!",
   "pulse_saving_offline": "Saving...",
   "pulse_already_saved_offline": "Already saved",
