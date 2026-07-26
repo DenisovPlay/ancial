@@ -18,6 +18,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+RUN rm -rf .next
 RUN npm run build
 
 FROM node:20-alpine AS runner
@@ -36,6 +37,7 @@ COPY --from=builder /app/public ./public
 # standalone output: самодостаточный сервер с минимальными зависимостями
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/standalone/.next/static
 
 USER nextjs
 

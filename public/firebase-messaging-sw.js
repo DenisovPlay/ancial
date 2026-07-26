@@ -1,4 +1,4 @@
-const SW_VERSION = '2.3';
+const SW_VERSION = '2.6';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -200,7 +200,8 @@ self.addEventListener('fetch', (event) => {
 
   if (isImage) { staleWhileRevalidate(event, CACHE_IMAGES); return; }
 
-  // ── 2. Статические ресурсы Next.js (JS/CSS/шрифты) → Cache First
+  // ── 2. Статические ресурсы Next.js (JS/CSS/шрифты) → Network First with 404 Eviction
+  // Гарантирует отбрасывание старых .css/.js файлов от предыдущих билдов (устраняет 404 на устаревшие chunks)
   const isStaticAsset =
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/img/') ||
@@ -209,7 +210,21 @@ self.addEventListener('fetch', (event) => {
     url.hostname.includes('fonts.gstatic.com') ||
     url.hostname.includes('fonts.googleapis.com');
 
-  if (isStaticAsset) { cacheFirst(event, CACHE_STATIC); return; }
+  if (isStaticAsset) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.status === 200) {
+            saveToCache(CACHE_STATIC, req, res);
+          } else if (res.status === 404) {
+            caches.open(CACHE_STATIC).then((c) => c.delete(req));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || new Response('', { status: 404 })))
+    );
+    return;
+  }
 
   // ── 3. Next.js RSC/data payloads → Bypass SW (пропускаем в сеть напрямую без вмешательства)
   // Это исключает поломку клиентских переходов (SPA navigation) и предотвращает принудительную перезагрузку страницы
