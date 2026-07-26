@@ -1961,9 +1961,9 @@ export default function MessagesContent() {
           content: lang?.somethingwrong || 'Произошла ошибка =(',
           type: 'error',
         });
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
       } finally {
         cancelledMessageIdsRef.current.delete(tempId);
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
       }
     })();
   };
@@ -2027,6 +2027,7 @@ export default function MessagesContent() {
           content: lang?.somethingwrong || 'Произошла ошибка =(',
           type: 'error',
         });
+      } finally {
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
       }
     })();
@@ -2095,8 +2096,8 @@ export default function MessagesContent() {
         content: lang?.somethingwrong || 'Произошла ошибка =(',
         type: 'error',
       });
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
     } finally {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setSendingMessage(false);
     }
   };

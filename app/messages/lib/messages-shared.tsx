@@ -963,7 +963,23 @@ export function mergeMessages(existing: DialogMessage[], incoming: DialogMessage
     merged.set(messageId, message);
   });
 
-  return sortMessages(Array.from(merged.values()));
+  const sorted = sortMessages(Array.from(merged.values()));
+
+  return sorted.filter((msg) => {
+    const msgId = getMessageId(msg);
+    if (!msg.isSending && isRealMessageId(msgId)) return true;
+    if (msg.isSending || !isRealMessageId(msgId)) {
+      const hasRealDuplicate = sorted.some(
+        (other) =>
+          !other.isSending &&
+          isRealMessageId(getMessageId(other)) &&
+          String(other.sender_id) === String(msg.sender_id) &&
+          other.message === msg.message
+      );
+      if (hasRealDuplicate) return false;
+    }
+    return true;
+  });
 }
 
 export function trimMessageCache(messages: DialogMessage[], keepSide: 'newest' | 'oldest') {
