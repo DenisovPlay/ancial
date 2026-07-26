@@ -1565,28 +1565,33 @@ export default function MessagesContent() {
     const messageId = getMessageId(message);
     if (!messageId) return;
 
-    if (message.isSending || !isRealMessageId(messageId)) {
-      const numId = Number(messageId);
-      if (numId) {
-        cancelledMessageIdsRef.current.add(numId);
+    const numericMessageId = Number(messageId);
+
+    if (message.isSending || !isRealMessageId(numericMessageId)) {
+      if (numericMessageId) {
+        cancelledMessageIdsRef.current.add(numericMessageId);
       }
       setMessages((currentMessages) => {
-        const nextMessages = currentMessages.filter((item) => getMessageId(item) !== messageId);
+        const nextMessages = currentMessages.filter((item) => Number(getMessageId(item)) !== numericMessageId);
         persistMessages({
           keepSide: 'newest',
           nextMessages,
         });
         return nextMessages;
       });
+      notify({
+        content: lang?.messagedeleted || 'Сообщение удалено',
+        type: 'success',
+      });
       return;
     }
 
     try {
-      const response = await AncialAPI.messageAction<{ message?: string }>('delete', { msg_id: messageId });
+      const response = await AncialAPI.messageAction<{ message?: string }>('delete', { msg_id: numericMessageId });
       const text = response.message || '';
 
       setMessages((currentMessages) => {
-        const nextMessages = currentMessages.filter((item) => getMessageId(item) !== messageId);
+        const nextMessages = currentMessages.filter((item) => Number(getMessageId(item)) !== numericMessageId);
         persistMessages({
           keepSide: 'newest',
           nextMessages,
@@ -1941,7 +1946,7 @@ export default function MessagesContent() {
 
         const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
         if (sentMsgId) {
-          setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
         }
 
         if (cancelledMessageIdsRef.current.has(tempId)) {
@@ -1964,7 +1969,7 @@ export default function MessagesContent() {
         });
       } finally {
         cancelledMessageIdsRef.current.delete(tempId);
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
       }
     })();
   };
@@ -2011,7 +2016,7 @@ export default function MessagesContent() {
 
         const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
         if (sentMsgId) {
-          setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
         }
 
         await loadMessagesNewer(dialogSessionRef.current);
@@ -2023,7 +2028,7 @@ export default function MessagesContent() {
           type: 'error',
         });
       } finally {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
       }
     })();
   };
@@ -2074,7 +2079,7 @@ export default function MessagesContent() {
 
       const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
       if (sentMsgId) {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
       }
 
       await loadMessagesNewer(dialogSessionRef.current);
@@ -2086,7 +2091,7 @@ export default function MessagesContent() {
         type: 'error',
       });
     } finally {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
       setSendingMessage(false);
     }
   };
