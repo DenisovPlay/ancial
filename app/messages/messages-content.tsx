@@ -64,6 +64,7 @@ import {
   Icon,
   IMGBB_API_KEY,
   isOnline,
+  isRealMessageId,
   mapDialogListItemToUser,
   mergeDialogUser,
   mergeMessages,
