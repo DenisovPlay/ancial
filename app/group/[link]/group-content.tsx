@@ -1414,7 +1414,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
             </label>
             <div className="flex">
               <span className="border border-zinc-600/30 bg-zinc-700 p-2 text-zinc-300 placeholder-zinc-500 rounded-l-3xl h-12 w-40 sm:w-48 cursor-not-allowed flex items-center justify-start">
-                ancial.ru/$
+                zypo.cc/$
               </span>
               <input
                 type="text"

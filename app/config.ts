@@ -14,4 +14,4 @@ export const SITE_URL = 'https://zypo.cc';
 export const SITE_DOMAIN = 'zypo.cc';
 
 /** Внешний сервис текстов песен (Pulse) */
-export const PULSE_LYRICS_BASE = 'https://pulse-lyrics.ancial.ru';
+export const PULSE_LYRICS_BASE = 'https://lyrics.pulse.zypo.cc';

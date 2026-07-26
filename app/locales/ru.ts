@@ -6,7 +6,7 @@ export const ru: Record<string, string> = {
     "currently_available": "не доступен в:",
     "soon_in": "Скоро в:",
     "thisinfoch": "Эта информация может помочь:",
-    "cial": "Ваша страна в списке доступных, но сайт недоступен? Напишите нам на почту: access@ancial.ru",
+    "cial": "Ваша страна в списке доступных, но сайт недоступен? Напишите нам на почту: contact@zypo.cc",
     "save": "Сохранить",
     "weather_map": "Карта осадков",
     "weather_next_days": "Ближайшие дни",

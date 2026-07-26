@@ -168,14 +168,14 @@ export default function LegalPage() {
                     Контакт для обращений правообладателей и властей:
                   </strong>
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Копирайт]"
+                    href="mailto:contact@zypo.cc?subject=[Копирайт]"
                     className="text-purple-400 hover:text-purple-300"
                   >
                     [Копирайт]
                   </a>{" "}
                   |
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Пропаганда]"
+                    href="mailto:contact@zypo.cc?subject=[Пропаганда]"
                     className="text-purple-400 hover:text-purple-300"
                   >
                     [Пропаганда]
@@ -330,7 +330,7 @@ export default function LegalPage() {
                 <li>
                   Правообладатели направляют уведомления на
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Копирайт]"
+                    href="mailto:contact@zypo.cc?subject=[Копирайт]"
                     className="text-purple-400"
                   >
                     [Копирайт]
@@ -350,7 +350,7 @@ export default function LegalPage() {
                 <li>
                   Контр-уведомление:{" "}
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Апелляция]"
+                    href="mailto:contact@zypo.cc?subject=[Апелляция]"
                     className="text-purple-400"
                   >
                     [Апелляция]
@@ -414,7 +414,7 @@ export default function LegalPage() {
                 <li>
                   Апелляция:{" "}
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Апелляция]"
+                    href="mailto:contact@zypo.cc?subject=[Апелляция]"
                     className="text-purple-400"
                   >
                     [Апелляция]
@@ -435,10 +435,10 @@ export default function LegalPage() {
                 Если вы считаете, что какой-то исполнитель ошибочно попал в этот
                 список, пожалуйста, свяжитесь с нами через
                 <a
-                  href="mailto:contact@ancial.ru?subject=[Запрещённый исполнитель]"
+                  href="mailto:contact@zypo.cc?subject=[Запрещённый исполнитель]"
                   className="text-purple-400"
                 >
-                  contact@ancial.ru
+                  contact@zypo.cc
                 </a>
                 с указанием имени исполнителя и причины, по которой вы считаете
                 его ошибочно включённым.
@@ -650,7 +650,7 @@ export default function LegalPage() {
                     [Копирайт]
                   </h3>
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Копирайт]"
+                    href="mailto:contact@zypo.cc?subject=[Копирайт]"
                     className="text-amber-200"
                   >
                     [Копирайт]
@@ -664,7 +664,7 @@ export default function LegalPage() {
                     [Пропаганда]
                   </h3>
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Пропаганда]"
+                    href="mailto:contact@zypo.cc?subject=[Пропаганда]"
                     className="text-amber-200"
                   >
                     [Пропаганда]
@@ -678,7 +678,7 @@ export default function LegalPage() {
                     [Жалоба]
                   </h3>
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Жалоба]"
+                    href="mailto:contact@zypo.cc?subject=[Жалоба]"
                     className="text-amber-200"
                   >
                     [Жалоба]
@@ -690,7 +690,7 @@ export default function LegalPage() {
                     [Апелляция]
                   </h3>
                   <a
-                    href="mailto:contact@ancial.ru?subject=[Апелляция]"
+                    href="mailto:contact@zypo.cc?subject=[Апелляция]"
                     className="text-amber-200"
                   >
                     [Апелляция]
@@ -707,7 +707,7 @@ export default function LegalPage() {
                     href="https://zypo.cc/about/legal"
                     className="text-purple-400 hover:text-purple-300 underline font-medium"
                   >
-                    ancial.ru/about/legal
+                    zypo.cc/about/legal
                   </a>
                 </p>
               </div>
@@ -749,10 +749,10 @@ export default function LegalPage() {
                 <p className="text-sm">
                   <strong>Контакт для обращений:</strong>
                   <a
-                    href="mailto:contact@ancial.ru"
+                    href="mailto:contact@zypo.cc"
                     className="text-purple-400 hover:text-purple-300"
                   >
-                    contact@ancial.ru
+                    contact@zypo.cc
                   </a>
                   <br />
                   <span className="text-red-400">
@@ -862,7 +862,7 @@ export default function LegalPage() {
                     </li>
                     <li>не передавать доступ к аккаунту третьим лицам;</li>
                     <li>
-                      немедленно уведомлять contact@ancial.ru (с темой
+                      немедленно уведомлять contact@zypo.cc (с темой
                       [Безопасность]) о взломе или несанкционированном доступе.
                     </li>
                   </ul>
@@ -883,7 +883,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   При удалении аккаунта по запросу пользователя (письмо на
-                  contact@ancial.ru с темой [Удаление аккаунта]):
+                  contact@zypo.cc с темой [Удаление аккаунта]):
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>
                       все данные (посты, сообщения, медиа, подписки) удаляются
@@ -1054,7 +1054,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   При поступлении жалобы от правообладателя (на
-                  contact@ancial.ru с темой [Авторские права]) — трек удаляется
+                  contact@zypo.cc с темой [Авторские права]) — трек удаляется
                   в течение 72 часов, пользователь получает уведомление.
                   Повторные нарушения ведут к блокировке аккаунта.
                 </li>
@@ -1098,7 +1098,7 @@ export default function LegalPage() {
                   или заблокировано — оно становится недоступным и на Ancial.
                 </li>
                 <li>
-                  При жалобе правообладателя (на contact@ancial.ru с темой
+                  При жалобе правообладателя (на contact@zypo.cc с темой
                   [Авторские права]) — ссылка на видео удаляется в течение 72
                   часов. Пользователь предупреждается. Повторные нарушения —
                   блокировка.
@@ -1186,7 +1186,7 @@ export default function LegalPage() {
                 <li>
                   Администрация вправе заморозить кошелёк при подозрении на
                   мошенничество, отмывание, спам или нарушение Правил. Для
-                  разморозки — письмо на contact@ancial.ru с темой [Кошелёк].
+                  разморозки — письмо на contact@zypo.cc с темой [Кошелёк].
                 </li>
               </ol>
             </section>
@@ -1203,7 +1203,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   При обнаружении нарушения — правообладатель может отправить
-                  жалобу на contact@ancial.ru с темой [Авторские права] и
+                  жалобу на contact@zypo.cc с темой [Авторские права] и
                   указанием:
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>Своих контактных данных;</li>
@@ -1220,7 +1220,7 @@ export default function LegalPage() {
                 <li>
                   Пользователь, чей контент удалён, получает уведомление и может
                   направить контр-уведомление (если считает удаление ошибочным)
-                  на contact@ancial.ru с темой [Апелляция — Авторские права].
+                  на contact@zypo.cc с темой [Апелляция — Авторские права].
                 </li>
                 <li>
                   Повторные нарушения авторских прав ведут к бессрочной
@@ -1275,7 +1275,7 @@ export default function LegalPage() {
                   Блокировка выдаётся немедленно без предварительного
                   предупреждения, за исключением случаев, когда Администрация
                   сочтёт возможным запросить пояснения — письмо на
-                  contact@ancial.ru с темой [Пояснение].
+                  contact@zypo.cc с темой [Пояснение].
                 </li>
               </ol>
             </section>
@@ -1313,7 +1313,7 @@ export default function LegalPage() {
                   Пользователь вправе:
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>
-                      Запросить копию своих данных (contact@ancial.ru с темой
+                      Запросить копию своих данных (contact@zypo.cc с темой
                       [Мои данные]);
                     </li>
                     <li>Удалить аккаунт и данные — см. пункт 2.5.</li>
@@ -1337,13 +1337,13 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Жалобы на контент подаются через кнопку «Пожаловаться» под
-                  материалом или на contact@ancial.ru с темой [Жалоба на
+                  материалом или на contact@zypo.cc с темой [Жалоба на
                   контент].
                 </li>
                 <li>
                   Решения модераторов окончательны, за исключением случаев,
                   когда пользователь может запросить пересмотр, отправив письмо
-                  на contact@ancial.ru с темой [Апелляция] и приложением
+                  на contact@zypo.cc с темой [Апелляция] и приложением
                   доказательств.
                 </li>
                 <li>
@@ -1388,7 +1388,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Официальная переписка с Администрацией ведётся только через
-                  contact@ancial.ru с обязательным указанием темы письма в
+                  contact@zypo.cc с обязательным указанием темы письма в
                   формате [ТЕМА]. Письма без темы могут быть проигнорированы или
                   обработаны с задержкой.
                 </li>
@@ -1462,7 +1462,7 @@ export default function LegalPage() {
                 <li>
                   Пользователи могут жаловаться на контент или действия
                   модераторов Сообщества через кнопку «Пожаловаться» или на
-                  contact@ancial.ru с темой [Жалоба на сообщество].
+                  contact@zypo.cc с темой [Жалоба на сообщество].
                 </li>
                 <li>
                   Администрация не обязана модерировать Сообщества превентивно,
@@ -1496,7 +1496,7 @@ export default function LegalPage() {
                 </h3>
                 <p>
                   При отправке любого письма на{" "}
-                  <strong>contact@ancial.ru</strong> обязательно указывайте тему
+                  <strong>contact@zypo.cc</strong> обязательно указывайте тему
                   в формате <code className="email-tag">[ТЕМА]</code>, например:
                 </p>
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1525,7 +1525,7 @@ export default function LegalPage() {
                   href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:underline"
                 >
-                  ancial.ru/about/legal
+                  zypo.cc/about/legal
                 </a>
               </p>
             </footer>
@@ -1562,10 +1562,10 @@ export default function LegalPage() {
                 <p className="text-sm">
                   <strong>Contact for inquiries:</strong>
                   <a
-                    href="mailto:contact@ancial.ru"
+                    href="mailto:contact@zypo.cc"
                     className="text-purple-400 hover:text-purple-300"
                   >
-                    contact@ancial.ru
+                    contact@zypo.cc
                   </a>
                   <br />
                   <span className="text-red-400">
@@ -1675,7 +1675,7 @@ export default function LegalPage() {
                       not transfer access to the account to third parties;
                     </li>
                     <li>
-                      immediately notify contact@ancial.ru (with the subject
+                      immediately notify contact@zypo.cc (with the subject
                       [Security]) of any hacking or unauthorized access.
                     </li>
                   </ul>
@@ -1697,7 +1697,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   When deleting an account at the user's request (email to
-                  contact@ancial.ru with the subject [Account Deletion]):
+                  contact@zypo.cc with the subject [Account Deletion]):
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>
                       all data (posts, messages, media, subscriptions) are
@@ -1862,7 +1862,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Upon receiving a complaint from a copyright holder (to
-                  contact@ancial.ru with the subject [Copyright]), the track is
+                  contact@zypo.cc with the subject [Copyright]), the track is
                   removed within 72 hours, the user is notified. Repeated
                   violations lead to account blocking.
                 </li>
@@ -1905,7 +1905,7 @@ export default function LegalPage() {
                   deleted or blocked, it becomes unavailable on Ancial as well.
                 </li>
                 <li>
-                  Upon a copyright holder's complaint (to contact@ancial.ru with
+                  Upon a copyright holder's complaint (to contact@zypo.cc with
                   the subject [Copyright]), the video link is removed within 72
                   hours. The user is warned. Repeated violations result in
                   blocking.
@@ -1990,7 +1990,7 @@ export default function LegalPage() {
                 <li>
                   The Administration has the right to freeze a wallet in case of
                   suspected fraud, money laundering, spam, or violation of the
-                  Terms. To unfreeze, email contact@ancial.ru with the subject
+                  Terms. To unfreeze, email contact@zypo.cc with the subject
                   [Wallet].
                 </li>
               </ol>
@@ -2008,7 +2008,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Upon discovering a violation, the copyright holder may send a
-                  complaint to contact@ancial.ru with the subject [Copyright]
+                  complaint to contact@zypo.cc with the subject [Copyright]
                   and include:
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>Their contact information;</li>
@@ -2026,7 +2026,7 @@ export default function LegalPage() {
                 <li>
                   A User whose content has been removed receives a notification
                   and may send a counter-notice (if they believe the removal was
-                  erroneous) to contact@ancial.ru with the subject [Appeal —
+                  erroneous) to contact@zypo.cc with the subject [Appeal —
                   Copyright].
                 </li>
                 <li>
@@ -2079,7 +2079,7 @@ export default function LegalPage() {
                 <li>
                   Blocking is issued immediately without prior warning, except
                   in cases where the Administration deems it possible to request
-                  clarifications — email to contact@ancial.ru with the subject
+                  clarifications — email to contact@zypo.cc with the subject
                   [Clarification].
                 </li>
               </ol>
@@ -2118,7 +2118,7 @@ export default function LegalPage() {
                   The User has the right to:
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>
-                      Request a copy of their data (contact@ancial.ru with the
+                      Request a copy of their data (contact@zypo.cc with the
                       subject [My Data]);
                     </li>
                     <li>Delete account and data — see paragraph 2.5.</li>
@@ -2142,12 +2142,12 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Complaints about content are submitted through the "Report"
-                  button under the material or to contact@ancial.ru with the
+                  button under the material or to contact@zypo.cc with the
                   subject [Content Complaint].
                 </li>
                 <li>
                   Moderator decisions are final, except in cases where the user
-                  can request a review by sending an email to contact@ancial.ru
+                  can request a review by sending an email to contact@zypo.cc
                   with the subject [Appeal] and attaching evidence.
                 </li>
                 <li>
@@ -2193,7 +2193,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Official correspondence with the Administration is conducted
-                  only through contact@ancial.ru with mandatory subject
+                  only through contact@zypo.cc with mandatory subject
                   indication in the format [SUBJECT]. Emails without a subject
                   may be ignored or processed with a delay.
                 </li>
@@ -2260,7 +2260,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Users can complain about content or actions of Community
-                  moderators through the "Report" button or to contact@ancial.ru
+                  moderators through the "Report" button or to contact@zypo.cc
                   with the subject [Community Complaint].
                 </li>
                 <li>
@@ -2294,7 +2294,7 @@ export default function LegalPage() {
                   ❗ IMPORTANT
                 </h3>
                 <p>
-                  When sending any email to <strong>contact@ancial.ru</strong>,
+                  When sending any email to <strong>contact@zypo.cc</strong>,
                   always specify the subject in the format{" "}
                   <code className="email-tag">[SUBJECT]</code>, for example:
                 </p>
@@ -2324,7 +2324,7 @@ export default function LegalPage() {
                   href="https://zypo.cc/about/legal"
                   className="text-purple-400 hover:underline"
                 >
-                  ancial.ru/about/legal
+                  zypo.cc/about/legal
                 </a>
               </p>
             </footer>
@@ -2902,7 +2902,7 @@ export default function LegalPage() {
               уведомления о новых продуктах и услугах, специальных предложениях
               и различных событиях. Пользователь всегда может отказаться от
               получения информационных сообщений, направив Оператору письмо на
-              адрес электронной почты&nbsp;contact@ancial.ru&nbsp;с пометкой
+              адрес электронной почты&nbsp;contact@zypo.cc&nbsp;с пометкой
               &laquo;Отказ от уведомлений о новых продуктах и услугах и
               специальных предложениях&raquo;.
             </p>
@@ -3045,7 +3045,7 @@ export default function LegalPage() {
               Пользователь может актуализировать их самостоятельно, путем
               направления Оператору уведомление на адрес электронной почты
               Оператора&nbsp;
-              <span className="text-purple-500">contact@ancial.ru</span>&nbsp;с
+              <span className="text-purple-500">contact@zypo.cc</span>&nbsp;с
               пометкой &laquo;Актуализация персональных данных&raquo;.
             </p>
             <br />
@@ -3057,7 +3057,7 @@ export default function LegalPage() {
               Пользователь может в любой момент отозвать свое согласие на
               обработку персональных данных, направив Оператору уведомление
               посредством электронной почты на электронный адрес Оператора&nbsp;
-              <span className="text-purple-500">contact@ancial.ru</span>&nbsp;с
+              <span className="text-purple-500">contact@zypo.cc</span>&nbsp;с
               пометкой &laquo;Отзыв согласия на обработку персональных
               данных&raquo;.
             </p>
@@ -3159,7 +3159,7 @@ export default function LegalPage() {
               14.1. Пользователь может получить любые разъяснения по
               интересующим вопросам, касающимся обработки его персональных
               данных, обратившись к Оператору с помощью электронной почты&nbsp;
-              <span className="text-purple-500">contact@ancial.ru</span>.
+              <span className="text-purple-500">contact@zypo.cc</span>.
             </p>
             <br />
             <p>

@@ -6,7 +6,7 @@ export const en: Record<string, string> = {
   "currently_available": "is currently unavailable in:",
   "soon_in": "Coming soon in:",
   "thisinfoch": "This information may help fix your issue:",
-  "cial": "Your country in the list of available, but the Zypo is unavailable? Let us know by email: access@ancial.ru",
+  "cial": "Your country in the list of available, but the Zypo is unavailable? Let us know by email: contact@zypo.cc",
   "save": "Save",
   "weather_map": "Precipitation map",
   "weather_next_days": "Upcoming days",

@@ -415,7 +415,7 @@ export function PulseTrackRow({
     if (trackId > 0) {
       cache.audio.has(trackId).then((cached) => {
         if (isMounted) setIsCached(cached);
-      }).catch(() => {});
+      }).catch(() => { });
     }
     return () => { isMounted = false; };
   }, [trackId]);
@@ -642,16 +642,16 @@ export function PulseLegalFooter({ className }: { className?: string }) {
           Уведомления о нарушениях авторских прав, пропаганде наркотиков или иной противоправной информации направляйте на{' '}
           <a
             className="cursor-pointer text-sm text-zinc-200 duration-300 hover:text-zinc-300 active:scale-95"
-            href="mailto:contact@ancial.ru?subject=[Копирайт]"
+            href="mailto:contact@zypo.cc?subject=[Копирайт]"
           >
-            contact@ancial.ru
+            contact@zypo.cc
           </a>{' '}
           с темой &quot;[Копирайт]&quot; или &quot;[Противоправная информация]&quot; - блокируем в течение 24 часов с момента получения обоснованного требования, если нам не требуются пояснения. Более подробная информация расположена на{' '}
           <Link
             href="/about/legal"
             className="cursor-pointer text-sm text-zinc-200 duration-300 hover:text-zinc-300 active:scale-95"
           >
-            ancial.ru/legal/
+            zypo.cc/legal/
           </Link>{' '}
           в разделе &quot;Правила&quot;.
           <br />

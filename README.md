@@ -146,4 +146,4 @@ ancial/
 
 - Официальный сайт: [ancial.ru](https://ancial.ru)
 - Telegram: [t.me/ancialru](https://t.me/ancialru)
-- Email: [contact@ancial.ru](mailto:contact@ancial.ru)
+- Email: [contact@zypo.cc](mailto:contact@zypo.cc)

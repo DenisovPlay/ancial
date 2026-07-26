@@ -9,6 +9,7 @@ const NEXT_IMAGE_REMOTE_HOSTS = new Set([
   'cdn.betterttv.net',
   'i.ibb.co',
   'i.imgur.com',
+  'zypo.cc'
 ]);
 
 export const PULSE_COVER_IMAGE_SIZES = {
