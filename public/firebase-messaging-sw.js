@@ -1,5 +1,5 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-const SW_VERSION = '4';
+const SW_VERSION = '5';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");

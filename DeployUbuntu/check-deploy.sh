@@ -11,6 +11,11 @@ BRANCH="main"
 LOG_FILE="$BASE_DIR/deploy.log"
 CONTAINER_NAME="zypo-app"
 
+# Prevent multiple concurrent script executions
+LOCK_FILE="/tmp/zypo_deploy.lock"
+exec 200>"$LOCK_FILE"
+flock -n 200 || exit 0
+
 # Create base directory if it doesn't exist
 mkdir -p "$BASE_DIR"
 
