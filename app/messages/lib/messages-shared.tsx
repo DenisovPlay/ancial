@@ -913,7 +913,12 @@ export function readMessageCache(cacheKey: string) {
     return null;
   }
 
-  return parsed;
+  const cleanMessages = parsed.messages.filter((m) => !m.isSending && isRealMessageId(getMessageId(m)));
+
+  return {
+    ...parsed,
+    messages: cleanMessages,
+  };
 }
 
 export function readMessageCacheByHash(userId: number, dialogHash: string) {
@@ -948,6 +953,39 @@ export function getLatestMessageId(messages: DialogMessage[]) {
   return getMessageId(realMessages[realMessages.length - 1]);
 }
 
+export function isStickerOrMessageDuplicate(optimisticMsg: DialogMessage, realMsg: DialogMessage) {
+  if (String(optimisticMsg.sender_id) !== String(realMsg.sender_id)) return false;
+
+  const optText = String(optimisticMsg.message || '').trim();
+  const realText = String(realMsg.message || '').trim();
+
+  if (!optText || !realText) return false;
+
+  if (optText === realText) return true;
+
+  const cleanOptCode = optText.replace(/^:|:$/g, '');
+  if (cleanOptCode && realText.includes(cleanOptCode)) {
+    return true;
+  }
+
+  if (optText.startsWith(':7tv-')) {
+    const parts = optText.split('-');
+    const stickerId = parts[parts.length - 1]?.replace(/:/g, '');
+    if (stickerId && realText.includes(stickerId)) {
+      return true;
+    }
+  }
+
+  if (optText.includes('src=') && realText.includes('src=')) {
+    const optSrc = optText.match(/src="([^"]+)"/)?.[1];
+    if (optSrc && realText.includes(optSrc)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function mergeMessages(existing: DialogMessage[], incoming: DialogMessage[]) {
   const merged = new Map<number, DialogMessage>();
 
@@ -968,13 +1006,13 @@ export function mergeMessages(existing: DialogMessage[], incoming: DialogMessage
   return sorted.filter((msg) => {
     const msgId = getMessageId(msg);
     if (!msg.isSending && isRealMessageId(msgId)) return true;
+
     if (msg.isSending || !isRealMessageId(msgId)) {
       const hasRealDuplicate = sorted.some(
         (other) =>
           !other.isSending &&
           isRealMessageId(getMessageId(other)) &&
-          String(other.sender_id) === String(msg.sender_id) &&
-          other.message === msg.message
+          isStickerOrMessageDuplicate(msg, other)
       );
       if (hasRealDuplicate) return false;
     }
@@ -1011,12 +1049,13 @@ export function writeMessageCache({
   messages: DialogMessage[];
   userId?: number;
 }) {
+  const cleanMessages = (messages || []).filter((m) => !m.isSending && isRealMessageId(getMessageId(m)));
   const payload = {
     dialog_hash: dialogHash,
     dialog_id: dialogId,
     foreignUser: foreignUser ?? null,
     dialogMeta: dialogMeta ?? null,
-    messages: trimMessageCache(sortMessages(messages), keepSide),
+    messages: trimMessageCache(sortMessages(cleanMessages), keepSide),
     time: Date.now(),
   };
 

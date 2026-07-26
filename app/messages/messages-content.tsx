@@ -1565,12 +1565,19 @@ export default function MessagesContent() {
     const messageId = getMessageId(message);
     if (!messageId) return;
 
-    if (message.isSending) {
+    if (message.isSending || !isRealMessageId(messageId)) {
       const numId = Number(messageId);
       if (numId) {
         cancelledMessageIdsRef.current.add(numId);
       }
-      setMessages((currentMessages) => currentMessages.filter((item) => getMessageId(item) !== messageId));
+      setMessages((currentMessages) => {
+        const nextMessages = currentMessages.filter((item) => getMessageId(item) !== messageId);
+        persistMessages({
+          keepSide: 'newest',
+          nextMessages,
+        });
+        return nextMessages;
+      });
       return;
     }
 
@@ -1934,13 +1941,7 @@ export default function MessagesContent() {
 
         const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
         if (sentMsgId) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId
-                ? { ...m, id: sentMsgId, isSending: false }
-                : m
-            )
-          );
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
         }
 
         if (cancelledMessageIdsRef.current.has(tempId)) {
@@ -2010,13 +2011,7 @@ export default function MessagesContent() {
 
         const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
         if (sentMsgId) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId
-                ? { ...m, id: sentMsgId, isSending: false }
-                : m
-            )
-          );
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
         }
 
         await loadMessagesNewer(dialogSessionRef.current);
@@ -2079,13 +2074,7 @@ export default function MessagesContent() {
 
       const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
       if (sentMsgId) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === tempId
-              ? { ...m, id: sentMsgId, isSending: false }
-              : m
-          )
-        );
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
       }
 
       await loadMessagesNewer(dialogSessionRef.current);
