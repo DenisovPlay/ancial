@@ -198,6 +198,10 @@ export default function MessagesContent() {
   const [dialogLoading, setDialogLoading] = useState(false);
   const [dialogError, setDialogError] = useState('');
   const [messages, setMessages] = useState<DialogMessage[]>([]);
+  const messagesRef = useRef<DialogMessage[]>(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loadingNewer, setLoadingNewer] = useState(false);
@@ -778,7 +782,11 @@ export default function MessagesContent() {
     setLoadingNewer(true);
 
     const cached = readMessageCache(cacheKey);
-    const currentMessages = cached?.messages ? sortMessages(cached.messages) : sortMessages(messages);
+    const cachedMsgs = cached?.messages ? sortMessages(cached.messages) : [];
+    const memoryMsgs = messagesRef.current.length ? sortMessages(messagesRef.current) : [];
+    const currentMessages = memoryMsgs.length && cachedMsgs.length
+      ? mergeMessages(cachedMsgs, memoryMsgs)
+      : (memoryMsgs.length ? memoryMsgs : cachedMsgs);
     const latestId = getLatestMessageId(currentMessages);
     const stickToBottom = shouldStickToBottom(messageScrollRef.current);
 
@@ -834,7 +842,11 @@ export default function MessagesContent() {
     if (!dialogId || !cacheKey || loadingOlder || !hasMoreMessages) return;
 
     const cached = readMessageCache(cacheKey);
-    const currentMessages = cached?.messages ? sortMessages(cached.messages) : sortMessages(messages);
+    const cachedMsgs = cached?.messages ? sortMessages(cached.messages) : [];
+    const memoryMsgs = messagesRef.current.length ? sortMessages(messagesRef.current) : [];
+    const currentMessages = memoryMsgs.length && cachedMsgs.length
+      ? mergeMessages(cachedMsgs, memoryMsgs)
+      : (memoryMsgs.length ? memoryMsgs : cachedMsgs);
     const earliestId = getEarliestMessageId(currentMessages);
 
     if (!earliestId || earliestId <= 1) {
@@ -1275,19 +1287,19 @@ export default function MessagesContent() {
 
   const handleWsMessageReaction = (payload?: unknown) => {
     const wsPayload = payload as WsPayload | undefined;
-    if (wsPayload?.data?.message_id && wsPayload.data.reaction && wsPayload.data.action) {
-      const msgId = toNumber(wsPayload.data.message_id as string | number);
-      const dataObj = wsPayload.data as Record<string, unknown>;
-      const reactedByStr = String(dataObj.reacted_by ?? dataObj.user_id ?? 0);
-      const reaction = String(wsPayload.data.reaction);
-      const action = String(wsPayload.data.action);
+    const dataObj = ((wsPayload as any)?.data ?? wsPayload) as Record<string, unknown>;
+    const msgId = getPayloadMessageId(payload);
+    const reaction = String(dataObj?.reaction || (wsPayload as any)?.reaction || '');
+    const action = String(dataObj?.action || (wsPayload as any)?.action || '');
+    const reactedByStr = String(dataObj?.reacted_by ?? dataObj?.user_id ?? dataObj?.sender_id ?? (wsPayload as any)?.user_id ?? (wsPayload as any)?.reacted_by ?? 0);
 
-      setMessages((currentMessages) =>
-        currentMessages.map((msg) => {
+    if (msgId && reaction && action) {
+      setMessages((currentMessages) => {
+        const nextMessages = currentMessages.map((msg) => {
           if (getMessageId(msg) !== msgId) return msg;
           const currentReactions = parseReactions(msg.reactions);
           let nextReactions = [...currentReactions];
-          if (action === 'add') {
+          if (action === 'add' || action === 'create') {
             const existingIndex = nextReactions.findIndex((r) => r.userId === reactedByStr);
             if (existingIndex !== -1) {
               nextReactions.splice(existingIndex, 1);
@@ -1295,15 +1307,22 @@ export default function MessagesContent() {
             nextReactions.push({ userId: reactedByStr, emoji: reaction });
           } else {
             nextReactions = nextReactions.filter(
-              (r) => !(r.userId === reactedByStr && r.emoji === reaction),
+              (r) => !(r.userId === reactedByStr && (r.emoji === reaction || !reaction)),
             );
           }
           return {
             ...msg,
             reactions: nextReactions.map((r) => `${r.userId}:${r.emoji}`).join('|'),
           };
-        }),
-      );
+        });
+
+        persistMessages({
+          keepSide: 'newest',
+          nextMessages,
+        });
+
+        return nextMessages;
+      });
       return;
     }
 
@@ -1488,9 +1507,10 @@ export default function MessagesContent() {
 
   const sendReaction = async (messageId: number, reaction: string, action: 'add' | 'delete') => {
     const currentUserIdStr = String(currentUserId);
+    let targetAction: 'add' | 'delete' = action;
 
-    setMessages((currentMessages) =>
-      currentMessages.map((msg) => {
+    setMessages((currentMessages) => {
+      const nextMessages = currentMessages.map((msg) => {
         if (getMessageId(msg) !== messageId) return msg;
         const currentReactions = parseReactions(msg.reactions);
         let nextReactions = [...currentReactions];
@@ -1501,24 +1521,36 @@ export default function MessagesContent() {
             nextReactions.splice(existingIndex, 1);
             if (oldReaction !== reaction) {
               nextReactions.push({ userId: currentUserIdStr, emoji: reaction });
+              targetAction = 'add';
+            } else {
+              targetAction = 'delete';
             }
           } else {
             nextReactions.push({ userId: currentUserIdStr, emoji: reaction });
+            targetAction = 'add';
           }
         } else {
           nextReactions = nextReactions.filter(
-            (r) => !(r.userId === currentUserIdStr && r.emoji === reaction),
+            (r) => !(r.userId === currentUserIdStr && (r.emoji === reaction || !reaction)),
           );
+          targetAction = 'delete';
         }
         return {
           ...msg,
           reactions: nextReactions.map((r) => `${r.userId}:${r.emoji}`).join('|'),
         };
-      }),
-    );
+      });
+
+      persistMessages({
+        keepSide: 'newest',
+        nextMessages,
+      });
+
+      return nextMessages;
+    });
 
     try {
-      await AncialAPI.messageAction('reaction', { msg_id: messageId, reaction, action });
+      await AncialAPI.messageAction('reaction', { msg_id: messageId, reaction, action: targetAction });
     } catch (error) {
       console.error('Failed to update reaction', error);
       notify({
