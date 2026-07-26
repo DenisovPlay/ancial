@@ -1307,5 +1307,18 @@ export const ru: Record<string, string> = {
     "pulse_saving_offline": "Сохраняется...",
     "pulse_already_saved_offline": "Уже сохранено",
     "pulse_save_offline_error": "Не удалось сохранить трек",
-    "pulse_save_offline_disabled": "Включите кэш в настройках памяти"
+    "pulse_save_offline_disabled": "Включите кэш в настройках памяти",
+    "redirect_title": "Переход на сторонний ресурс",
+    "redirect_subtitle": "Проверка безопасности ссылки перед открытием",
+    "redirect_link_label": "Ссылка",
+    "redirect_safe_title": "Риск низкий",
+    "redirect_safe_lead": "Алгоритмы не нашли угроз, но сохраняйте бдительность.",
+    "redirect_warning_title": "Подозрительный риск",
+    "redirect_warning_lead": "Есть риск-маркеры. Переход возможен, но крайне не рекомендуется.",
+    "redirect_danger_title": "Высокий риск",
+    "redirect_danger_lead": "Сайт выглядит опасным. Переход заблокирован.",
+    "redirect_go_back": "Назад",
+    "redirect_proceed": "Перейти на сайт",
+    "redirect_blocked": "Заблокировано",
+    "redirect_disclaimer": "Zypo не несёт ответственности за содержимое сторонних ресурсов. Будьте осторожны при вводе паролей и персональных данных."
 };

@@ -98,6 +98,19 @@ export interface WalletMerchantOrder {
   description: string;
   created_at: string;
 }
+export interface LinkGuardAnalysis {
+  isSuspicious: boolean;
+  wrongDomain: boolean;
+  blockRecommended: boolean;
+  score: number;
+  level: 'safe' | 'warning' | 'danger';
+  reasons: string[];
+  normalizedUrl: string;
+  finalUrl: string;
+  redirectChain: string[];
+  redirectHops: number;
+  displayDomain: string;
+}
 
 /**
  * Centralized client for Ancial API V2
@@ -138,8 +151,14 @@ export class AncialAPI {
     return this.request<T>('/auth/LogOut.php');
   }
 
+
+
   static async checkStatus<T = unknown>(): Promise<T> {
     return this.request<T>('/auth/CheckStatus.php');
+  }
+
+  static async checkLinkGuard(link: string): Promise<LinkGuardAnalysis> {
+    return this.request<LinkGuardAnalysis>(`/info/LinkGuard.php?link=${encodeURIComponent(link)}`);
   }
 
   // --- APPS ---

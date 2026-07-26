@@ -1307,5 +1307,18 @@ export const en: Record<string, string> = {
   "pulse_saving_offline": "Saving...",
   "pulse_already_saved_offline": "Already saved",
   "pulse_save_offline_error": "Failed to save track",
-  "pulse_save_offline_disabled": "Enable cache in memory settings"
+  "pulse_save_offline_disabled": "Enable cache in memory settings",
+  "redirect_title": "External Link Safety Check",
+  "redirect_subtitle": "Checking link security before opening",
+  "redirect_link_label": "Target Link",
+  "redirect_safe_title": "Low Risk",
+  "redirect_safe_lead": "No threats detected, but stay vigilant.",
+  "redirect_warning_title": "Suspicious Link",
+  "redirect_warning_lead": "Risk factors detected. Proceeding is not recommended.",
+  "redirect_danger_title": "High Risk",
+  "redirect_danger_lead": "This site appears dangerous. Access blocked.",
+  "redirect_go_back": "Go Back",
+  "redirect_proceed": "Proceed to Site",
+  "redirect_blocked": "Blocked",
+  "redirect_disclaimer": "Zypo is not responsible for external website content. Be cautious when sharing personal data."
 };

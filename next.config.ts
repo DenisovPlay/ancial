@@ -89,10 +89,7 @@ const nextConfig: NextConfig = {
           source: '/includes/:path*',
           destination: `${API_BASE}/includes/:path*`,
         },
-        { // Proxy for legacy redirect handler
-          source: '/redirect',
-          destination: `${API_BASE}/redirect.php`,
-        },
+
         { // Proxy for legacy in-site apps (Pixel Battle, bingo и т.д.)
           source: '/anui/:path*',
           destination: `${API_BASE}/anui/:path*`,
