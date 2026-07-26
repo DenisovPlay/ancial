@@ -69,12 +69,12 @@ function RedirectContentInner() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center p-4">
-      <div className="flex w-full max-w-xl flex-col gap-4">
+    <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center p-3">
+      <div className="flex w-full max-w-xl flex-col gap-3">
         {/* Header box */}
-        <div className="flex items-center gap-4 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-5 shadow-2xl backdrop-blur-xl">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-zinc-700/40 bg-zinc-800/80 shadow">
-            <img alt="Zypo Logo" className="h-9 w-9 rounded-xl" src="/img/branding/pulse.svg" />
+        <div className="pb-20 flex items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-5 shadow-2xl backdrop-blur-xl">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+            <img alt="Zypo Logo" className="h-14 w-14" src="/img/zypo/logo-rounded.webp" />
           </div>
           <div className="flex flex-col min-w-0">
             <h1 className="text-xl font-bold text-white lg:text-2xl">
@@ -87,7 +87,7 @@ function RedirectContentInner() {
         </div>
 
         {/* Target link box */}
-        <div className="flex flex-col gap-1 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-5 shadow-2xl backdrop-blur-xl">
+        <div className="-mt-20 flex flex-col gap-1 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-5 shadow-2xl backdrop-blur-xl">
           <span className="text-xs text-zinc-400">{lang?.redirect_link_label || 'Ссылка'}</span>
           <div className="break-all text-sm font-medium text-white lg:text-base">
             {rawLink ? decodeURIComponent(rawLink) : (lang?.not_found || 'Не указана')}
