@@ -281,13 +281,10 @@ export default function CacheSettingsPage() {
               }
             }
           }
-          if (cacheKey === 'ancial-images-v1') {
+          // Имена по префиксу, чтобы не разъезжаться с версиями кэшей в firebase-messaging-sw.js
+          if (cacheKey.startsWith('ancial-images-')) {
             imagesSize += currentSize;
-          } else if (
-            cacheKey === 'ancial-static-v1' || cacheKey === 'ancial-pages-v1' ||
-            cacheKey === 'ancial-static-v2' || cacheKey === 'ancial-pages-v2' ||
-            cacheKey === 'ancial-api-v1'
-          ) {
+          } else if (cacheKey.startsWith('ancial-')) {
             pwaSize += currentSize;
           }
         }
@@ -485,7 +482,12 @@ export default function CacheSettingsPage() {
     if (shouldClearImages) {
       try {
         if (typeof window !== 'undefined' && 'caches' in window) {
-          await window.caches.delete('ancial-images-v1');
+          const cacheKeys = await window.caches.keys();
+          await Promise.all(
+            cacheKeys
+              .filter((key) => key.startsWith('ancial-images-'))
+              .map((key) => window.caches.delete(key))
+          );
         }
       } catch (err) {
         console.error('Failed to clear Service Worker images cache', err);

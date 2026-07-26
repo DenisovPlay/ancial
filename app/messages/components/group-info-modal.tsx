@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
 import { FALLBACK_AVATAR, IMGBB_API_KEY, normalizeAssetUrl } from '../lib/messages-shared';
+import { SITE_URL } from '../../config';
 
 interface GroupMember {
   id: number;
@@ -138,7 +139,7 @@ export default function GroupInfoModal({
 
   const inviteUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/invite/${inviteCode || initialInviteCode}`
-    : `https://zypo.cc/invite/${inviteCode || initialInviteCode}`;
+    : `${SITE_URL}/invite/${inviteCode || initialInviteCode}`;
 
   const copyInviteLink = async () => {
     try {

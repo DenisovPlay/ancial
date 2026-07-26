@@ -1,3 +1,5 @@
+import { SITE_URL } from "../config.ts";
+
 export type LegacyAppSummary = {
   cover: string;
   desk: string;
@@ -44,7 +46,7 @@ const overlayGames: Record<string, OverlayGame> = {
     id: "pb",
     name: "Pixel Battle",
     requiresAuth: true,
-    src: "https://zypo.cc/anui/apps/pb/new_index.php",
+    src: `${SITE_URL}/anui/apps/pb/new_index.php`,
   },
   hgl: {
     backHref: "/apps",
@@ -74,7 +76,7 @@ const overlayGames: Record<string, OverlayGame> = {
     backHref: "/apps",
     id: "brffbingo",
     name: "Bingo по Братишкину",
-    src: "https://zypo.cc/anui/apps/bingo/",
+    src: `${SITE_URL}/anui/apps/bingo/`,
   },
   kkkr: {
     backHref: "/apps",
@@ -138,7 +140,7 @@ export function rewriteLegacyPlayUrl(link: string | null | undefined) {
   }
 
   try {
-    const url = new URL(link, "https://zypo.cc");
+    const url = new URL(link, SITE_URL);
     const isLegacyOverlay =
       url.pathname === "/anui/apps/playoverlay" || url.pathname === "/apps/overlay";
     const game = url.searchParams.get("gm");

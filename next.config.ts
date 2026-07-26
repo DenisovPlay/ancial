@@ -1,139 +1,59 @@
 import type { NextConfig } from "next";
 
-// Disable TLS validation errors in local development for the misconfigured ancial-backend.ru.zeniflow.ru SSL certificate
-if (process.env.NODE_ENV === 'development') {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+import { API_BASE, SITE_DOMAIN } from './app/config';
 
-import { API_BASE } from './app/config';
+// Хосты, с которых next/image может оптимизировать картинки.
+// insecure: true — дополнительно разрешает http (легаси-контент старого бэкенда).
+const IMAGE_HOSTS: { hostname: string; insecure?: boolean }[] = [
+  { hostname: 'ibb.co', insecure: true },
+  { hostname: '*.ibb.co', insecure: true },
+  { hostname: 'imgur.com' },
+  { hostname: '*.imgur.com' },
+  { hostname: '*.scdn.co' },
+  { hostname: 'ancial.ru', insecure: true },
+  { hostname: '*.ancial.ru', insecure: true },
+  { hostname: SITE_DOMAIN, insecure: true },
+  { hostname: `*.${SITE_DOMAIN}`, insecure: true },
+  { hostname: 'cdn.betterttv.net' },
+  { hostname: '*.userapi.com' },
+  { hostname: '*.vk.com' },
+  { hostname: '*.vkusercontent.com' },
+  { hostname: '*.vk-cdn.net' },
+  { hostname: '*.avatars.yandex.net' },
+];
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   transpilePackages: ['gradualblur'],
   images: {
     dangerouslyAllowSVG: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'i.ibb.co',
+    remotePatterns: IMAGE_HOSTS.flatMap(({ hostname, insecure }) =>
+      (insecure ? (['https', 'http'] as const) : (['https'] as const)).map((protocol) => ({
+        protocol,
+        hostname,
         pathname: '**',
+      })),
+    ),
+  },
+  async headers() {
+    return [
+      {
+        // HTML нельзя кэшировать промежуточным прокси (nginx/aapanel):
+        // иначе после деплоя отдаётся старая разметка со ссылками на уже
+        // несуществующие чанки /_next/static (404 на /settings и др.).
+        // Хэшированные ассеты Next при этом остаются immutable — их это правило не трогает.
+        source: '/:path*',
+        has: [{ type: 'header', key: 'accept', value: '.*text/html.*' }],
+        headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }],
       },
       {
-        protocol: 'https',
-        hostname: 'ibb.co',
-        pathname: '**',
+        // То же для RSC-payload'ов клиентской навигации (заголовок RSC: 1) —
+        // иначе прокси закэширует их и SPA-переходы будут тянуть старый билд
+        source: '/:path*',
+        has: [{ type: 'header', key: 'rsc' }],
+        headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }],
       },
-      {
-        protocol: 'https',
-        hostname: '*.ibb.co',
-        pathname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'i.ibb.co',
-        pathname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: '*.ibb.co',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'i.imgur.com',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'imgur.com',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.imgur.com',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'i.scdn.co',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.scdn.co',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ancial.ru',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.ancial.ru',
-        pathname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'ancial.ru',
-        pathname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: '*.ancial.ru',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'zypo.cc',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.zypo.cc',
-        pathname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'zypo.cc',
-        pathname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: '*.zypo.cc',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.betterttv.net',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.userapi.com',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.vk.com',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.vkusercontent.com',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.vk-cdn.net',
-        pathname: '**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.avatars.yandex.net',
-        pathname: '**',
-      },
-    ],
+    ];
   },
   async redirects() {
     return [
@@ -172,6 +92,10 @@ const nextConfig: NextConfig = {
         { // Proxy for legacy redirect handler
           source: '/redirect',
           destination: `${API_BASE}/redirect`,
+        },
+        { // Proxy for legacy in-site apps (Pixel Battle, bingo и т.д.)
+          source: '/anui/:path*',
+          destination: `${API_BASE}/anui/:path*`,
         },
         { // Proxy for weather app and other included legacy apps
           source: '/apps/included/:path*',

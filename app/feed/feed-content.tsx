@@ -1099,7 +1099,6 @@ export default function FeedContent() {
               onTranslate={translatePost}
               onVote={handleVote}
               posts={posts}
-              shareBaseUrl="https://zypo.cc/feed/post"
             />
           ) : (
             <EmptyIllustration title={strings.noposts} description={strings.nopostsdesc} />

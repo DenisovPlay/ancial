@@ -718,7 +718,7 @@ function FormContentInner() {
           <div className="flex gap-3 w-full">
             {successInfo && (
               <button
-                onClick={() => window.open(`https://zypo.cc/api/wallet/generate_receipt.php?id=${successInfo.transactionId}`, '_blank')}
+                onClick={() => window.open(`/api/V2/wallet/Transaction.php?action=receipt&id=${successInfo.transactionId}`, '_blank')}
                 className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
                 {lang?.receipt || 'Чек'}

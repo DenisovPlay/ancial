@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from './config';
 
 export const SITE_CONFIG = {
   title: 'Zypo',
   tagline: 'Больше, чем социальная сеть',
   description: 'Социальная сеть с лентой новостей, сообщениями, звонками, музыкой, играми и кошельком. Современная платформа для общения и развлечений.',
-  url: 'https://zypo.cc',
+  url: SITE_URL,
   locale: 'ru_RU',
   twitter: '@ancialru',
 };
@@ -27,7 +28,7 @@ export const DEFAULT_SEO: Metadata = {
     'Ancial',
     'Zypo'
   ],
-  authors: [{ name: 'ZeniFlow', url: 'https://zypo.cc' }],
+  authors: [{ name: 'ZeniFlow', url: SITE_URL }],
   creator: 'ZeniFlow',
   openGraph: {
     type: 'website',
@@ -41,9 +42,9 @@ export const DEFAULT_SEO: Metadata = {
     description: SITE_CONFIG.description,
     images: [
       {
-        url: '/img/og/og-image.jpg',
-        width: 1200,
-        height: 630,
+        url: '/img/zypo/logo.webp',
+        width: 1024,
+        height: 1024,
         alt: SITE_CONFIG.title,
       },
     ],
@@ -105,9 +106,7 @@ export function createPageMetadata(options: {
       title,
       description: description || SITE_CONFIG.description,
     },
-    alternates: {
-      canonical: canonical || `${SITE_CONFIG.url}${canonical || ''}`,
-    },
+    alternates: canonical ? { canonical: `${SITE_CONFIG.url}${canonical}` } : undefined,
   };
 }
 

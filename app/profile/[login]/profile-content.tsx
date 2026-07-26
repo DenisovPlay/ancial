@@ -984,7 +984,7 @@ export default function UserProfileContent({ login }: { login: string }) {
   }, [strings.accept, strings.add, strings.cancel, strings.delete, userData?.friend_button, userData?.full_data?.friend_status]);
 
   const currentCover = userData?.cover || '/img/covers/placeholder.png';
-  const currentAvatar = userData?.img || 'https://zypo.cc/includes/img/new_user.png';
+  const currentAvatar = userData?.img || '/includes/img/new_user.png';
 
   return (
     <div className="flex justify-center items-center md:pb-3">
@@ -1152,7 +1152,6 @@ export default function UserProfileContent({ login }: { login: string }) {
                     onTranslate={translatePost}
                     onVote={handleVote}
                     posts={posts}
-                    shareBaseUrl="https://zypo.cc/feed/post"
                   />
                 ) : (
                   <EmptyIllustration
@@ -1179,7 +1178,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                   {(mappedFriends || []).slice(0, 6).map((friend) => (
                     <UserMiniCard
                       key={String(friend.id)}
-                      image={friend.img || 'https://zypo.cc/includes/img/new_user.png'}
+                      image={friend.img || '/includes/img/new_user.png'}
                       isOnline={flag(friend.online)}
                       label={friend.fname || friend.name || ''}
                       onClick={() => navigateToUser(friend.username || friend.login)}
@@ -1199,7 +1198,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                   {(mappedSubscribers || []).slice(0, 6).map((subscriber) => (
                     <UserMiniCard
                       key={String(subscriber.id)}
-                      image={subscriber.img || 'https://zypo.cc/includes/img/new_user.png'}
+                      image={subscriber.img || '/includes/img/new_user.png'}
                       isOnline={flag(subscriber.online)}
                       label={subscriber.fname || subscriber.name || ''}
                       onClick={() => navigateToUser(subscriber.username || subscriber.login)}
@@ -1217,7 +1216,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                   {(mappedGroups || []).slice(0, 6).map((group) => (
                     <GroupMiniCard
                       key={String(group.id)}
-                      image={group.img || 'https://zypo.cc/includes/img/new_user.png'}
+                      image={group.img || '/includes/img/new_user.png'}
                       label={group.name || ''}
                       onClick={() => navigateToGroup(group.slnk)}
                     />

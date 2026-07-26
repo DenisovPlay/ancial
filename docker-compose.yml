@@ -6,7 +6,8 @@ services:
     container_name: zypo-app
     restart: unless-stopped
     ports:
-      - "0.0.0.0:3000:3000"
+      # Только localhost: наружу приложение отдаёт Nginx (aapanel) через Rathole-туннель
+      - "127.0.0.1:3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000

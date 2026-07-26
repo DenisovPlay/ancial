@@ -146,7 +146,7 @@ export function RelationGridModal({
       <div className="grid grid-cols-4 lg:grid-cols-5 gap-3">
         {items.length > 0 ? (
           items.map((item) => {
-            const image = item.img || 'https://zypo.cc/includes/img/new_user.png';
+            const image = item.img || '/includes/img/new_user.png';
 
             if (type === 'groups') {
               const group = item as GroupPreview;

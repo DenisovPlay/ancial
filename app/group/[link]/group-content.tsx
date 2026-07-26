@@ -1103,7 +1103,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
   };
 
   const currentCover = groupData?.cover || '/img/covers/placeholder.png';
-  const currentAvatar = groupData?.img || 'https://zypo.cc/includes/img/new_user.png';
+  const currentAvatar = groupData?.img || '/includes/img/new_user.png';
 
   return (
     <div className="flex justify-center items-center md:py-3">
@@ -1265,7 +1265,6 @@ export default function GroupProfileContent({ link }: { link: string }) {
                     onTranslate={translatePost}
                     onVote={handleVote}
                     posts={posts}
-                    shareBaseUrl="https://zypo.cc/feed/post"
                   />
                 ) : (
                   <EmptyIllustration title={strings.noposts} description={strings.nopostsdesc} />
@@ -1287,7 +1286,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                   {(groupData.subscribers || []).slice(0, 6).map((subscriber) => (
                     <UserMiniCard
                       key={String(subscriber.id)}
-                      image={subscriber.img || 'https://zypo.cc/includes/img/new_user.png'}
+                      image={subscriber.img || '/includes/img/new_user.png'}
                       isOnline={flag(subscriber.online)}
                       label={subscriber.fname || ''}
                       onClick={() => navigateToUser(subscriber.username)}
@@ -1322,7 +1321,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                       {(groupData.official_groups || []).map((officialGroup) => (
                         <GroupMiniCard
                           key={String(officialGroup.id)}
-                          image={officialGroup.img || 'https://zypo.cc/includes/img/new_user.png'}
+                          image={officialGroup.img || '/includes/img/new_user.png'}
                           label={officialGroup.name || ''}
                           onClick={() => navigateToGroup(officialGroup.slnk)}
                         />

@@ -53,24 +53,26 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## 6. Офлайн-архитектура и PWA
 
 ### Service Worker
-- **Единый Service Worker:** `public/firebase-messaging-sw.js` — единственный SW в проекте. Текущая версия: `2.0`. При изменении SW всегда поднимай `SW_VERSION` и имена кэшей (например `ancial-static-v3`), чтобы `activate` удалил старые кэши.
+- **Единый Service Worker:** `public/firebase-messaging-sw.js` — единственный SW в проекте. При изменении SW поднимай только `SW_VERSION` — имена кэшей static/pages выводятся из него автоматически (`ancial-static-v${SW_VERSION}`), и `activate` удалит старые кэши.
 - **Регистрация:** `app/components/sw-register.tsx` — регистрирует SW с `updateViaCache: 'none'` и вызывает `registration.update()` при каждом запуске для автоматического применения обновлений.
 - **Обход на localhost:** В SW встроен обход кэширования для хостов `localhost` и `127.0.0.1`.
 
 ### Стратегии кэширования SW
 | Тип запроса | Стратегия | Кэш |
 |---|---|---|
-| HTML-навигация (`mode: navigate`) | **Network First** → shell `/` fallback | `ancial-pages-v2` |
-| RSC payloads (`_rsc=...`, заголовок `RSC: 1`) | **Network First** | `ancial-pages-v2` |
-| `/_next/data/` payloads | **Network First** | `ancial-pages-v2` |
-| JS/CSS/шрифты `/_next/static/` | **Cache First** | `ancial-static-v2` |
+| HTML-навигация (`mode: navigate` или `Accept: text/html`) | **Network First** → shell `/` fallback | `ancial-pages-v*` |
+| RSC payloads (`_rsc=...`, заголовок `RSC: 1`, `/_next/data/`) | **Bypass** — напрямую в сеть | — |
+| JS/CSS/шрифты `/_next/static/` | **Network First + вычистка кэша по 404** (защита от чанков старых билдов) | `ancial-static-v*` |
 | Изображения (PNG, AVIF, WEBP, SVG, ...) | **Stale-While-Revalidate** | `ancial-images-v1` |
 | Audio (.mp3) | **Bypass** — IndexedDB плеер | — |
 | `/api/V2/` PHP API (остальное) | **Bypass** — localStorage кэш | — |
 | Firebase/Google | **Bypass** | — |
 
 ### Предварительное кэширование (при установке SW)
-SW при установке (`install`) кэширует shell (`/`, манифест, иконки) и ключевые страницы: `/pulse`, `/messages`, `/apps`, `/feed`, `/friends`, `/notifications`, `/settings`, `/wallet`.
+SW при установке (`install`) кэширует только критический shell: `/manifest.webmanifest`, `/icons.svg`, `/img/branding/pulse.svg`. HTML-страницы не прекэшируются — они попадают в `ancial-pages-v*` по мере посещения (Network First).
+
+### Кэширование на промежуточных прокси
+HTML отдаётся с `Cache-Control: no-store` (правило `headers()` в `next.config.ts`), чтобы Nginx/aapanel не запоминал разметку старого билда со ссылками на удалённые чанки. На reverse-proxy кэш для HTML должен быть выключен (см. `DeployUbuntu/README.md`).
 
 ### Авторизация офлайн
 - `AuthContext` при сетевой ошибке (`catch`) восстанавливает сессию из `localStorage`:  `user_profile` + `token`. Пользователь не "вылетает" из аккаунта.

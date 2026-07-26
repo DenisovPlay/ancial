@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
+import { SITE_URL } from '../../config';
 
 // Helper to dynamically load external scripts
 function loadScript(src: string): Promise<void> {
@@ -53,7 +54,7 @@ export default function SocialsContent() {
 
     const handleMessage = (event: MessageEvent) => {
       // Validate origin to ensure it's from our frontend server (since oauth page is proxied)
-      if (event.origin !== 'https://zypo.cc') return;
+      if (event.origin !== SITE_URL) return;
 
       if (event.data && event.data.type === 'oauth_success') {
         const token = event.data.token;
@@ -87,7 +88,7 @@ export default function SocialsContent() {
 
         const token = localStorage.getItem('token') || '';
         const origin = window.location.origin;
-        const authUrl = `https://zypo.cc/api/V2/oauth/Telegram.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
+        const authUrl = `${SITE_URL}/api/V2/oauth/Telegram.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
 
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -121,7 +122,7 @@ export default function SocialsContent() {
 
           const token = localStorage.getItem('token') || '';
           const origin = window.location.origin;
-          const redirectUri = `https://zypo.cc/api/V2/oauth/Yandex.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
+          const redirectUri = `${SITE_URL}/api/V2/oauth/Yandex.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
 
           const YaAuthSuggest = (window as any).YaAuthSuggest;
           if (YaAuthSuggest) {
@@ -131,7 +132,7 @@ export default function SocialsContent() {
                 response_type: 'token',
                 redirect_uri: redirectUri
               },
-              'https://zypo.cc/api/V2/oauth/Yandex.php',
+              `${SITE_URL}/api/V2/oauth/Yandex.php`,
               {
                 view: 'button',
                 parentId: 'yandexbutton',

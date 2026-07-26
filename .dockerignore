@@ -1,0 +1,29 @@
+# Сборка идёт из чистого контекста: локальные артефакты и секреты в образ не попадают
+node_modules
+.next
+.git
+.github
+.vercel
+.qwen
+.agents
+.DS_Store
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Секреты и локальное окружение
+.env*
+!.env.example
+*.pem
+
+# Не относится к фронтенду
+AncBot
+DeployUbuntu
+php-v2-api
+docs
+Dockerfile
+docker-compose.yml
+README.md
+todo.md
+migrate_v2.ts

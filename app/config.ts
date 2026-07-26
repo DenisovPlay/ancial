@@ -1,4 +1,17 @@
+// Центральная конфигурация проекта — единственное место, где задаются домены.
+// Все остальные файлы обязаны импортировать значения отсюда, а не хардкодить URL.
+
+/** Бэкенд (PHP V2-API), на который next.config.ts проксирует /api, /includes, /pay и т.д. */
 export const API_BASE = 'https://ancial-backend.ru.zeniflow.ru';
+
+/** WebSocket-endpoint (мессенджер, звонки) */
 export const WS_BASE = 'wss://ws.ancial-backend.ru.zeniflow.ru/';
+
+/** Публичный (канонический) адрес сайта — SEO, ссылки-шары, OAuth redirect */
 export const SITE_URL = 'https://zypo.cc';
+
+/** Домен сайта без протокола — используется в регэкспах и подписях */
 export const SITE_DOMAIN = 'zypo.cc';
+
+/** Внешний сервис текстов песен (Pulse) */
+export const PULSE_LYRICS_BASE = 'https://pulse-lyrics.ancial.ru';

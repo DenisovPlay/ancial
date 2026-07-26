@@ -460,28 +460,34 @@ export const cache = {
       });
     },
 
+    /**
+     * Сохраняет трек в IndexedDB. `force: true` — явное сохранение пользователем
+     * (кнопка «Сохранить»): игнорирует выключенный автокэш и нулевой лимит.
+     * Возвращает true, если трек в кэше (сохранён сейчас или был раньше).
+     */
     async save(
       trackId: number | string,
       url: string,
       metadata?: { title?: string; artist?: string },
-      signal?: AbortSignal
-    ): Promise<void> {
-      if (!this.isPlayedTracksCachingEnabled()) {
-        return; // Caching played tracks is disabled by user
+      signal?: AbortSignal,
+      force = false
+    ): Promise<boolean> {
+      if (!force && !this.isPlayedTracksCachingEnabled()) {
+        return false; // Caching played tracks is disabled by user
       }
       const maxMB = this.getMaxCacheSizeMB();
-      if (maxMB === 0) {
-        return; // Cache size limit is 0 (disabled)
+      if (!force && maxMB === 0) {
+        return false; // Cache size limit is 0 (disabled)
       }
       if (await this.has(trackId)) {
-        return; // Already cached
+        return true; // Already cached
       }
       const db = await getDB();
-      if (!db) return;
+      if (!db) return false;
 
       try {
         const response = await fetch(url, { signal });
-        if (!response.ok) return;
+        if (!response.ok) return false;
         const blob = await response.blob();
         
         await new Promise<void>((resolve, reject) => {
@@ -505,10 +511,12 @@ export const cache = {
         if (maxMB > 0) {
           await this.trimToMaxSize(maxMB * 1024 * 1024);
         }
+        return true;
       } catch (err: any) {
         if (err?.name !== 'AbortError' && err?.message !== 'Failed to fetch') {
           console.error('Failed to cache audio file', err);
         }
+        return false;
       }
     },
 

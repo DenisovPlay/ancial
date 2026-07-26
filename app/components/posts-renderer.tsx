@@ -15,6 +15,7 @@ import PostWidgetPoll, { type PollWidgetData } from './post-widget-poll';
 import PostWidgetQuote, { type QuoteWidgetData } from './post-widget-quote';
 import ShareModal from './share-modal';
 import { parsePostContentToHtml } from './post-parser';
+import { SITE_URL } from '../config';
 
 
 
@@ -343,7 +344,7 @@ function PostCardInner({
   onVote,
   post,
   renderIndex = 1,
-  shareBaseUrl = 'https://zypo.cc/feed/post',
+  shareBaseUrl = `${SITE_URL}/feed/post`,
   noCollapse = false,
 }: PostCardProps) {
   const router = useRouter();

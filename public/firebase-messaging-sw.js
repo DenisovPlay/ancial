@@ -1,4 +1,5 @@
-const SW_VERSION = '3.0';
+// Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
+const SW_VERSION = '4';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -21,7 +22,7 @@ messaging.onBackgroundMessage((payload) => {
     badge: '/includes/img/anlite/anlogo.webp',
     tag: 'ancial-notification',
     data: {
-      url: payload.data?.click_action || 'https://zypo.cc/'
+      url: payload.data?.click_action || self.location.origin + '/'
     }
   };
   self.registration.showNotification(title, options);
@@ -29,12 +30,12 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || 'https://zypo.cc/';
+  const urlToOpen = event.notification.data?.url || self.location.origin + '/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url.indexOf('ancial.ru') !== -1 && 'focus' in client) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
           return client.focus().then(() => client.navigate(urlToOpen));
         }
       }
@@ -47,8 +48,8 @@ self.addEventListener('notificationclick', (event) => {
 
 // ─── OFFLINE CACHING ────────────────────────────────────────────────────────
 
-const CACHE_STATIC = 'ancial-static-v3';
-const CACHE_PAGES = 'ancial-pages-v3';
+const CACHE_STATIC = `ancial-static-v${SW_VERSION}`;
+const CACHE_PAGES = `ancial-pages-v${SW_VERSION}`;
 const CACHE_IMAGES = 'ancial-images-v1';
 const CACHE_API = 'ancial-api-v1';
 
@@ -107,18 +108,6 @@ function networkFirst(event, cacheName, offlineFallback) {
             : new Response('', { status: 503, statusText: 'Offline' });
         })
       )
-  );
-}
-
-/** Cache First: кэш → сеть → кэш */
-function cacheFirst(event, cacheName) {
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((res) => { saveToCache(cacheName, event.request, res); return res; })
-        .catch(() => new Response('', { status: 503, statusText: 'Offline' }));
-    })
   );
 }
 

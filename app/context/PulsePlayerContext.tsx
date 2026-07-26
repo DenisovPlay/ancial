@@ -12,6 +12,7 @@ import React, {
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
+import { PULSE_LYRICS_BASE } from '../config';
 import { cache } from '../lib/cache.ts';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse/pulse-image';
 import PulsePlaylistEditorModal from '../pulse/pulse-playlist-editor-modal';
@@ -42,7 +43,10 @@ type PulseTrack = {
   mood?: string | null;
 };
 
-type PulseCollectionKind = 'artist' | 'genlist' | 'playlist' | 'track';
+type PulseCollectionKind = 'artist' | 'downloads' | 'genlist' | 'playlist' | 'track';
+
+/** Идентификатор виртуальной коллекции «Сохранённые» (треки из IndexedDB) */
+export const DOWNLOADS_COLLECTION_ID = 'downloads';
 
 type PulseLyricsLine = {
   text: string;
@@ -84,6 +88,7 @@ type PulsePlayerContextValue = {
   mode: PulsePlayerMode;
   openAddToPlaylist: (songId: number | string) => void;
   playArtistPlaylist: (artistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
+  playDownloadedTracks: (forceReload?: boolean, shuffle?: number, startIndex?: number) => Promise<void>;
   playGenlist: (playlistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
   playNextTrack: (trackId: number | string) => Promise<void>;
   playPlaylist: (playlistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
@@ -1008,6 +1013,8 @@ export function PulsePlayerProvider({
   const [playlistOptionsLoading, setPlaylistOptionsLoading] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
   const [isRadioMode, setIsRadioMode] = useState(false);
+  // Статус принудительного сохранения текущего трека: 'idle' | 'saving' | 'saved' | 'already' | 'error'
+  const [offlineSaveStatus, setOfflineSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'already' | 'error'>('idle');
   const [radioSeedName, setRadioSeedName] = useState('');
 
   const touchStartXRef = useRef<number | null>(null);
@@ -1025,6 +1032,15 @@ export function PulsePlayerProvider({
   const prevTrackObj = playlist[index - 1] ?? null;
   const nextTrackObj = playlist[index + 1] ?? null;
   const currentSongId = toNumber(currentTrack?.sid);
+  // При смене трека проверяем, есть ли он в офлайн-кэше
+  useEffect(() => {
+    if (!currentSongId) { setOfflineSaveStatus('idle'); return; }
+    let cancelled = false;
+    cache.audio.has(currentSongId).then((exists) => {
+      if (!cancelled) setOfflineSaveStatus(exists ? 'already' : 'idle');
+    }).catch(() => { if (!cancelled) setOfflineSaveStatus('idle'); });
+    return () => { cancelled = true; };
+  }, [currentSongId]);
   const userCountry = normalizeText(user?.country) || 'RU';
   const playerTitle = getTrackDisplayTitle(currentTrack, lang);
   const playerArtist = getTrackArtist(currentTrack, lang);
@@ -1730,6 +1746,7 @@ export function PulsePlayerProvider({
       preloadStartedRef.current = false;
       setLyricsLines([]);
       setLyricsSource('');
+      setOfflineSaveStatus('idle');
     }
     setStatusAudio('Loading');
 
@@ -1781,9 +1798,36 @@ export function PulsePlayerProvider({
     }
   };
 
+  /** Преобразует записи IndexedDB в объекты треков, проигрываемые через Blob URL */
+  const mapDownloadedToTracks = (
+    downloaded: Array<{ id: string; title?: string; artist?: string; savedAt: number }>,
+  ) =>
+    downloaded
+      .slice()
+      .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
+      .map((dt) => ({
+        sid: String(dt.id),
+        title: dt.title || '',
+        artist: dt.artist || '',
+        src: 'offline-indexeddb', // fake source, will be overridden by ObjectURL
+        status: '1',
+        explicit: false,
+        artwork: [],
+      } as unknown as PulseTrack));
+
   const fetchTrackCollection = async (kind: PulseCollectionKind, id: number | string) => {
     const resolvedId = normalizeText(String(id));
     if (!resolvedId) return [];
+
+    // Виртуальная коллекция «Сохранённые» — целиком из IndexedDB, работает и офлайн
+    if (kind === 'downloads') {
+      try {
+        return mapDownloadedToTracks(await cache.audio.getDownloadedList());
+      } catch (e) {
+        console.error('Failed to read downloaded tracks list', e);
+        return [];
+      }
+    }
 
     // Ключ для кэша треков коллекции
     const collectionCacheKey = `pulse_collection_${kind}_${resolvedId}`;
@@ -1843,15 +1887,7 @@ export function PulsePlayerProvider({
           const downloadedTracks = await cache.audio.getDownloadedList();
           if (downloadedTracks.length > 0) {
             console.log(`[Pulse] Offline: playing downloaded tracks from IndexedDB (${downloadedTracks.length} tracks)`);
-            return downloadedTracks.map((dt) => ({
-              sid: String(dt.id),
-              title: dt.title || '',
-              artist: dt.artist || '',
-              src: 'offline-indexeddb',
-              status: '1',
-              explicit: false,
-              artwork: [],
-            } as unknown as PulseTrack));
+            return mapDownloadedToTracks(downloadedTracks);
           }
         } catch (e) {
           console.error('Failed to read collection cache', e);
@@ -1863,15 +1899,7 @@ export function PulsePlayerProvider({
           const offlineTrack = downloadedTracks.find(t => String(t.id) === resolvedId);
           if (offlineTrack) {
             console.log(`[Pulse] Offline: playing single track from IndexedDB cache (${resolvedId})`);
-            return [{
-              sid: resolvedId,
-              title: offlineTrack.title || '',
-              artist: offlineTrack.artist || '',
-              src: 'offline-indexeddb', // fake source, will be overridden by ObjectURL
-              status: '1', // mark as playable
-              explicit: false,
-              artwork: [],
-            } as unknown as PulseTrack];
+            return mapDownloadedToTracks([offlineTrack]);
           }
         } catch (e) {
           console.error('Failed to read audio cache metadata for single track', e);
@@ -1986,6 +2014,10 @@ export function PulsePlayerProvider({
     expectedSongId?: number | string | null,
   ) => {
     await playCollection('artist', artistId, forceReload, shuffle, startIndex, expectedSongId);
+  };
+
+  const playDownloadedTracks = async (forceReload = true, shuffle = 0, startIndex = 0) => {
+    await playCollection('downloads', DOWNLOADS_COLLECTION_ID, forceReload, shuffle, startIndex);
   };
 
   const prevTrack = async () => {
@@ -2211,7 +2243,7 @@ export function PulsePlayerProvider({
 
     try {
       const response = await fetch(
-        `https://pulse-lyrics.ancial.ru/UniLyrics.php?a=${encodeURIComponent(artist)}&t=${encodeURIComponent(title)}&d=0&type=alternative`,
+        `${PULSE_LYRICS_BASE}/UniLyrics.php?a=${encodeURIComponent(artist)}&t=${encodeURIComponent(title)}&d=0&type=alternative`,
         {
           cache: 'no-store',
           signal,
@@ -2566,6 +2598,7 @@ export function PulsePlayerProvider({
     mode,
     openAddToPlaylist,
     playArtistPlaylist,
+    playDownloadedTracks,
     playGenlist,
     playNextTrack: queueTrackNext,
     playPlaylist,
@@ -2839,6 +2872,53 @@ export function PulsePlayerProvider({
                             <DropdownItem onClick={() => openAddToPlaylist(currentSongId)} icon="IC-plus">
                               {lang?.add_to_playlist || 'В плейлист'}
                             </DropdownItem>
+                            <DropdownItem
+                              icon={offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'IC-check' : 'IC-download'}
+                              onClick={async () => {
+                                if (offlineSaveStatus === 'saving') return;
+                                const track = currentTrack;
+                                if (!track?.src || !track?.sid) return;
+                                const trackId = Number(track.sid);
+                                const trackSource = normalizeTrackSource(track.src);
+                                if (!trackSource) return;
+                                setOfflineSaveStatus('saving');
+                                try {
+                                  const result = await cache.audio.save(
+                                    trackId,
+                                    trackSource,
+                                    { title: track.title || undefined, artist: track.artist || undefined },
+                                    undefined,
+                                    true // force = true: игнорирует настройки автокэша
+                                  );
+                                  if (result === true) {
+                                    setOfflineSaveStatus('saved');
+                                    notify({
+                                      content: lang?.pulse_saved_offline || 'Сохранено!',
+                                      type: 'success',
+                                      time: 3,
+                                    });
+                                  } else {
+                                    setOfflineSaveStatus('error');
+                                    notify({
+                                      content: lang?.pulse_save_offline_error || 'Не удалось сохранить трек',
+                                      type: 'error',
+                                      time: 4,
+                                    });
+                                  }
+                                } catch {
+                                  setOfflineSaveStatus('error');
+                                }
+                                setTimeout(() => setOfflineSaveStatus('idle'), 4000);
+                              }}
+                            >
+                              {offlineSaveStatus === 'saving'
+                                ? (lang?.pulse_saving_offline || 'Сохраняется...')
+                                : offlineSaveStatus === 'saved'
+                                  ? (lang?.pulse_saved_offline || 'Сохранено!')
+                                  : offlineSaveStatus === 'already'
+                                    ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
+                                    : (lang?.pulse_save_offline || 'Сохранить офлайн')}
+                            </DropdownItem>
                             {canUseEqualizer && (
                               <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
                                 Эквалайзер
@@ -2890,6 +2970,50 @@ export function PulsePlayerProvider({
                           />
                         </button>
                       ) : null}
+
+                      {/* Кнопка «Сохранить офлайн» — показывается всем (не требует авторизации) */}
+                      <button
+                        type="button"
+                        title={lang?.pulse_save_offline || 'Сохранить офлайн'}
+                        disabled={offlineSaveStatus === 'saving'}
+                        onClick={async () => {
+                          if (offlineSaveStatus === 'saving') return;
+                          const track = currentTrack;
+                          if (!track?.src || !track?.sid) return;
+                          const trackId = Number(track.sid);
+                          const trackSource = normalizeTrackSource(track.src);
+                          if (!trackSource) return;
+                          setOfflineSaveStatus('saving');
+                          try {
+                            const result = await cache.audio.save(
+                              trackId,
+                              trackSource,
+                              { title: track.title || undefined, artist: track.artist || undefined },
+                              undefined,
+                              true
+                            );
+                            if (result === true) {
+                              setOfflineSaveStatus('saved');
+                              notify({ content: lang?.pulse_saved_offline || 'Сохранено!', type: 'success', time: 3 });
+                            } else {
+                              setOfflineSaveStatus('error');
+                              notify({ content: lang?.pulse_save_offline_error || 'Не удалось сохранить трек', type: 'error', time: 4 });
+                            }
+                          } catch {
+                            setOfflineSaveStatus('error');
+                          }
+                          setTimeout(() => setOfflineSaveStatus('idle'), 4000);
+                        }}
+                        className="ml-3 cursor-pointer duration-300 active:scale-95 disabled:opacity-50"
+                      >
+                        <PlayerIcon
+                          name={offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'IC-check' : 'IC-download'}
+                          className={cn(
+                            'h-9 w-9 duration-300 hover:fill-zinc-300',
+                            offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'fill-green-400' : 'fill-white',
+                          )}
+                        />
+                      </button>
                     </div>
                   </div>
                 </div>
