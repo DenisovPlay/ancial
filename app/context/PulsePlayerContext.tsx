@@ -2989,50 +2989,6 @@ export function PulsePlayerProvider({
                           />
                         </button>
                       ) : null}
-
-                      {/* Кнопка «Сохранить офлайн» — показывается всем (не требует авторизации) */}
-                      <button
-                        type="button"
-                        title={lang?.pulse_save_offline || 'Сохранить офлайн'}
-                        disabled={offlineSaveStatus === 'saving'}
-                        onClick={async () => {
-                          if (offlineSaveStatus === 'saving') return;
-                          const track = currentTrack;
-                          if (!track?.src || !track?.sid) return;
-                          const trackId = Number(track.sid);
-                          const trackSource = normalizeTrackSource(track.src);
-                          if (!trackSource) return;
-                          setOfflineSaveStatus('saving');
-                          try {
-                            const result = await cache.audio.save(
-                              trackId,
-                              trackSource,
-                              { title: track.title || undefined, artist: track.artist || undefined },
-                              undefined,
-                              true
-                            );
-                            if (result === true) {
-                              setOfflineSaveStatus('saved');
-                              notify({ content: lang?.pulse_saved_offline || 'Сохранено!', type: 'success', time: 3 });
-                            } else {
-                              setOfflineSaveStatus('error');
-                              notify({ content: lang?.pulse_save_offline_error || 'Не удалось сохранить трек', type: 'error', time: 4 });
-                            }
-                          } catch {
-                            setOfflineSaveStatus('error');
-                          }
-                          setTimeout(() => setOfflineSaveStatus('idle'), 4000);
-                        }}
-                        className="ml-3 cursor-pointer duration-300 active:scale-95 disabled:opacity-50"
-                      >
-                        <PlayerIcon
-                          name={offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'IC-check' : 'IC-download'}
-                          className={cn(
-                            'h-9 w-9 duration-300 hover:fill-zinc-300',
-                            offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'fill-green-400' : 'fill-white',
-                          )}
-                        />
-                      </button>
                     </div>
                   </div>
                 </div>
