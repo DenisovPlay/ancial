@@ -10,6 +10,7 @@ export const ru: Record<string, string> = {
     "save": "Сохранить",
     "weather_map": "Карта осадков",
     "weather_next_days": "Ближайшие дни",
+    "weather_more_precisely_in": "Более точно в",
     "tomorrow": "Завтра",
     "weather": "Погода",
     "error_weather": "Не удалось получить данные о погоде для",

@@ -10,6 +10,7 @@ export const en: Record<string, string> = {
   "save": "Save",
   "weather_map": "Precipitation map",
   "weather_next_days": "Upcoming days",
+  "weather_more_precisely_in": "More precisely in",
   "tomorrow": "Tomorrow",
   "weather": "Weather",
   "error_weather": "Unable to fetch weather data for",
