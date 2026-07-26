@@ -603,85 +603,83 @@ export default function MessageBubble({
                       )}
 
                       {isLast ? (
-                        <div className={cn("mt-1 flex flex-col items-end gap-1", block.type !== 'main' && "px-1 pb-1")}>
-                          <div className="flex items-end justify-end gap-1">
-                            <div className="flex flex-1 flex-wrap items-center gap-1">
-                              {reactions.map((reaction) => {
-                                const reactionUserId = String(reaction.userId);
-                                const ownReaction = reactionUserId === String(currentUserId);
+                        <div className={cn("mt-1 flex items-end justify-end gap-1", block.type !== 'main' && "px-1 pb-1")}>
+                          <div className="flex flex-1 flex-wrap items-center gap-1">
+                            {reactions.map((reaction, index) => {
+                              const reactionUserId = String(reaction.userId);
+                              const ownReaction = reactionUserId === String(currentUserId);
 
-                                let reactionUserImg = '';
-                                if (ownReaction) {
-                                  reactionUserImg = authUserImage || '';
+                              let reactionUserImg = '';
+                              if (ownReaction) {
+                                reactionUserImg = authUserImage || '';
+                              } else {
+                                const foundMember = members?.find((m) => String(m.id) === reactionUserId);
+                                if (foundMember?.img) {
+                                  reactionUserImg = foundMember.img;
                                 } else {
-                                  const foundMember = members?.find((m) => String(m.id) === reactionUserId);
-                                  if (foundMember?.img) {
-                                    reactionUserImg = foundMember.img;
-                                  } else {
-                                    const cachedUser = getCachedUserInfo(reactionUserId);
-                                    if (cachedUser?.img) {
-                                      reactionUserImg = cachedUser.img;
-                                    } else if (foreignUser && String(foreignUser.id) === reactionUserId) {
-                                      reactionUserImg = foreignUser.img || '';
-                                    }
+                                  const cachedUser = getCachedUserInfo(reactionUserId);
+                                  if (cachedUser?.img) {
+                                    reactionUserImg = cachedUser.img;
+                                  } else if (foreignUser && String(foreignUser.id) === reactionUserId) {
+                                    reactionUserImg = foreignUser.img || '';
                                   }
                                 }
+                              }
 
-                                const avatar = normalizeAssetUrl(reactionUserImg, FALLBACK_AVATAR);
+                              const avatar = normalizeAssetUrl(reactionUserImg, FALLBACK_AVATAR);
 
-                                return (
-                                  <button
-                                    key={`${reaction.userId}:${reaction.emoji}`}
-                                    type="button"
-                                    onClick={() => {
-                                      if (!ownReaction) return;
-                                      onDeleteReaction(messageId, reaction.emoji);
-                                    }}
-                                    className={cn(
-                                      'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
-                                      ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
-                                    )}
-                                  >
-                                    <img
-                                      src={avatar}
-                                      alt=""
-                                      className="h-5 w-5 rounded-full object-cover shadow"
-                                    />
-                                    <span className="px-1 text-sm text-zinc-200">{reaction.emoji}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {message.isSending ? (
-                              <span className="flex select-none items-center gap-1 whitespace-nowrap text-[10px]">
-                                <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
-                              </span>
-                            ) : (
-                              <>
-                                {timeLabel ? (
-                                  <span
-                                    className={cn(
-                                      'select-none whitespace-nowrap text-[10px]',
-                                      isOwn ? 'text-zinc-300' : 'text-zinc-400',
-                                    )}
-                                  >
-                                    {timeLabel}
-                                  </span>
-                                ) : null}
-
-                                {isOwn ? (
-                                  <Icon
-                                    name={getMessageStatusIconName(message.status)}
-                                    className={cn(
-                                      'h-3 w-3',
-                                      String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-purple-400',
-                                    )}
+                              return (
+                                <button
+                                  key={`${reaction.userId}:${reaction.emoji}:${index}`}
+                                  type="button"
+                                  onClick={() => {
+                                    if (!ownReaction) return;
+                                    onDeleteReaction(messageId, reaction.emoji);
+                                  }}
+                                  className={cn(
+                                    'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
+                                    ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
+                                  )}
+                                >
+                                  <img
+                                    src={avatar}
+                                    alt=""
+                                    className="h-5 w-5 rounded-full object-cover shadow"
                                   />
-                                ) : null}
-                              </>
-                            )}
+                                  <span className="px-1 text-sm text-zinc-200">{reaction.emoji}</span>
+                                </button>
+                              );
+                            })}
                           </div>
+
+                          {message.isSending ? (
+                            <span className="flex select-none items-center gap-1 whitespace-nowrap text-[10px]">
+                              <Icon name="IC-loader" className="h-3 w-3 animate-spin fill-zinc-200" />
+                            </span>
+                          ) : (
+                            <>
+                              {timeLabel ? (
+                                <span
+                                  className={cn(
+                                    'select-none whitespace-nowrap text-[10px]',
+                                    isOwn ? 'text-zinc-300' : 'text-zinc-400',
+                                  )}
+                                >
+                                  {timeLabel}
+                                </span>
+                              ) : null}
+
+                              {isOwn ? (
+                                <Icon
+                                  name={getMessageStatusIconName(message.status)}
+                                  className={cn(
+                                    'h-3 w-3',
+                                    String(message.status ?? '0') === '0' ? 'fill-zinc-200' : 'fill-purple-400',
+                                  )}
+                                />
+                              ) : null}
+                            </>
+                          )}
                         </div>
                       ) : null}
                     </div>
