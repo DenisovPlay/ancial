@@ -391,20 +391,21 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
         {media.videoUrl && (
           <video
             autoPlay
-            className="absolute inset-0 h-full w-full object-cover pointer-events-none z-[-1]"
             loop
             muted
             playsInline
-            preload="none"
+            preload="auto"
             src={media.videoUrl}
+            className="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto -translate-x-1/2 -translate-y-1/2 object-cover pointer-events-none z-[-1]"
             style={{
               position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              minWidth: '100%',
-              minHeight: '100%',
+              top: '50%',
+              left: '50%',
+              minWidth: '100vw',
+              minHeight: '100dvh',
+              width: 'auto',
+              height: 'auto',
+              transform: 'translate(-50%, -50%)',
               objectFit: 'cover',
               objectPosition: 'center',
             }}
@@ -437,9 +438,9 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
           </div>
         )}
 
-        <div className="relative z-[9] flex h-screen w-full items-center justify-center">
+        <div className="relative z-[9] flex h-full w-full items-center justify-center">
           <div className="flex h-full w-full max-w-screen-md flex-col items-center overflow-y-auto">
-            <div className="z-[99] bg-gradient-to-b from-black via-black/60 to-transparent md:from-transparent md:via-transparent flex flex-col items-center justify-center sticky top-0 inset-x-0 pt-[0.25rem] w-full px-3 pb-2">
+            <div className="z-[99] bg-gradient-to-b from-black via-black/60 to-transparent md:from-transparent md:via-transparent flex flex-col items-center justify-center sticky top-0 inset-x-0 pt-[max(env(safe-area-inset-top),0.75rem)] md:pt-2 w-full px-3 pb-2">
               <span className="weather-cutetext mb-2 text-4xl text-blue-500">
                 {lang?.weather || 'Weather'}
               </span>
