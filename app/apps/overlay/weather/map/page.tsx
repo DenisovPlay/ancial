@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { BackIcon } from '../../../apps-icons';
 import WeatherMapContent from '../../../included/weather/map/weather-map-content';
@@ -27,8 +28,10 @@ export default function WeatherMapOverlayPage() {
         <BackIcon className="w-6 h-6 fill-white inline shrink-0" />
       </button>
 
-      {/* Map Content View with Overlay Support */}
-      <WeatherMapContent hideHeaderBackButton />
+      {/* Map Content View with Overlay Support wrapped in Suspense */}
+      <Suspense fallback={<div className="h-screen w-full bg-zinc-950" />}>
+        <WeatherMapContent hideHeaderBackButton />
+      </Suspense>
     </div>
   );
 }

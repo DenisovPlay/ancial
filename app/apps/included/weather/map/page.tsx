@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import WeatherMapContent from './weather-map-content';
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function WeatherMapPage() {
-  return <WeatherMapContent />;
+  return (
+    <Suspense fallback={<div className="h-screen w-full bg-zinc-950" />}>
+      <WeatherMapContent />
+    </Suspense>
+  );
 }
