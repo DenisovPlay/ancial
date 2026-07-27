@@ -1,9 +1,10 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { FormEvent, useEffect, useMemo, useState, useTransition } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../../../context/AuthContext';
+import { cache } from '../../../lib/cache';
 import { safeFetchJson } from '../../../lib/safe-fetch-json';
 import {
   buildWeatherMapLinks,
@@ -27,6 +28,83 @@ function SpinnerIcon() {
     <svg className="inline h-24 w-24 animate-spin fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
       <path d="M24 4a1.5 1.5 0 1 0 0 3c6.256 0 11.766 3.407 14.703 8.455a1.5 1.5 0 1 0 2.594-1.51C37.834 7.994 31.344 4 24 4Z" />
     </svg>
+  );
+}
+
+function WeatherSkeleton() {
+  return (
+    <div className="flex flex-col items-center w-full animate-pulse">
+      {/* Big Temperature Skeleton - aligned to left matching real font size */}
+      <div className="-mb-14 -mt-10 flex w-full items-start gap-1">
+        <div className="h-44 w-52 rounded-3xl bg-white/15 backdrop-blur-md" />
+        <div className="h-12 w-8 rounded-2xl bg-white/15 mt-6" />
+      </div>
+
+      {/* Mornight & Weather status text skeleton - left aligned */}
+      <div className="mt-6 flex w-full flex-col items-start gap-2">
+        <div className="h-7 w-44 rounded-full bg-white/15 backdrop-blur-md" />
+        <div className="h-8 w-36 rounded-full bg-white/15 backdrop-blur-md" />
+      </div>
+
+      {/* Hourly forecast skeleton */}
+      <div className="mt-4 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 p-3 shadow backdrop-blur-md">
+        <div className="h-5 w-36 rounded-full bg-white/15 mb-3" />
+        <div className="flex w-full justify-between gap-6 overflow-hidden">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex w-14 shrink-0 flex-col items-center gap-2">
+              <div className="h-4 w-10 rounded bg-white/15" />
+              <div className="h-8 w-8 rounded-full bg-white/15" />
+              <div className="h-5 w-8 rounded bg-white/15" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Upcoming days skeleton */}
+      <div className="mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 p-3 shadow backdrop-blur-md">
+        <div className="h-5 w-32 rounded-full bg-white/15 mb-3" />
+        <div className="flex w-full justify-between gap-6 overflow-hidden">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex w-14 shrink-0 flex-col items-center gap-2">
+              <div className="h-4 w-10 rounded bg-white/15" />
+              <div className="h-8 w-8 rounded-full bg-white/15" />
+              <div className="h-5 w-8 rounded bg-white/15" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Atmospheric details skeleton */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mt-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex flex-col justify-between h-20 rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md">
+            <div className="h-3 w-16 rounded bg-white/15" />
+            <div className="h-6 w-20 rounded bg-white/15 mt-2" />
+          </div>
+        ))}
+      </div>
+
+      {/* Sun & Moon cards skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-3 mb-8">
+        <div className="h-32 rounded-3xl border border-zinc-600/30 bg-black/10 p-4 shadow backdrop-blur-md flex flex-col justify-between">
+          <div className="flex justify-between items-center">
+            <div className="h-5 w-20 rounded bg-white/15" />
+            <div className="h-5 w-28 rounded-full bg-white/15" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="h-10 rounded-xl bg-white/15" />
+            <div className="h-10 rounded-xl bg-white/15" />
+          </div>
+        </div>
+        <div className="h-32 rounded-3xl border border-zinc-600/30 bg-black/10 p-4 shadow backdrop-blur-md flex flex-col justify-between">
+          <div className="flex justify-between items-center">
+            <div className="h-5 w-24 rounded bg-white/15" />
+            <div className="h-5 w-14 rounded-full bg-white/15" />
+          </div>
+          <div className="h-10 rounded-xl bg-white/15 mt-4" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -86,6 +164,15 @@ function ForecastIcon({ iconKey }: { iconKey: WeatherForecastIconKey }) {
   );
 }
 
+const QUICK_CITIES = [
+  { name: 'Москва', label: 'Москва' },
+  { name: 'Санкт-Петербург', label: 'СПб' },
+  { name: 'Екатеринбург', label: 'Екатеринбург' },
+  { name: 'Казань', label: 'Казань' },
+  { name: 'Сочи', label: 'Сочи' },
+  { name: 'Новосибирск', label: 'Новосибирск' },
+];
+
 type WeatherContentProps = {
   initialCity?: string;
 };
@@ -101,6 +188,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
   const [completedRequestKey, setCompletedRequestKey] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const activeChipRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!searchCity && !geoCoords && typeof window !== 'undefined' && navigator.geolocation) {
@@ -119,6 +207,18 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
     }
   }, [searchCity, geoCoords]);
 
+  const isLocationActive = !searchCity || Boolean(geoCoords);
+
+  useEffect(() => {
+    if (activeChipRef.current) {
+      activeChipRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }, [searchCity, weatherData?.city, geoCoords]);
+
   const requestKey = `${locale}:${searchCity}:${geoCoords?.lat}:${geoCoords?.lon}:${reloadKey}`;
 
   useEffect(() => {
@@ -132,6 +232,20 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
         endpoint += `&lat=${geoCoords.lat}&lon=${geoCoords.lon}`;
       }
 
+      const weatherCacheKey = `weather_${locale}_${searchCity.trim().toLowerCase() || (geoCoords ? `${geoCoords.lat.toFixed(2)}_${geoCoords.lon.toFixed(2)}` : 'default')}`;
+
+      // 1. Instant Cache Hit (Stale-While-Revalidate)
+      const cached = cache.get<WeatherAppData>(weatherCacheKey, {
+        category: 'apps',
+        subcategory: 'home',
+      });
+
+      if (cached && isActive) {
+        setWeatherData(cached);
+        setErrorMessage(null);
+      }
+
+      // 2. Background Revalidation
       const response = await safeFetchJson<WeatherApiResponse>(endpoint, {
         cache: 'no-store',
         credentials: 'include',
@@ -142,19 +256,30 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
       }
 
       if (!response?.success || !response.data) {
-        setWeatherData(null);
-        setErrorMessage(response?.error || 'Unable to fetch weather data');
+        if (!cached) {
+          setWeatherData(null);
+          setErrorMessage(response?.error || 'Unable to fetch weather data');
+        }
         setCompletedRequestKey(requestKey);
         return;
       }
 
-      setWeatherData({
+      const freshData: WeatherAppData = {
         ...response.data,
         weatherKey: response.data.weatherKey || detectWeatherKey(response.data.weather),
         days: Array.isArray(response.data.days) ? response.data.days : [],
-      });
+      };
+
+      setWeatherData(freshData);
       setErrorMessage(null);
       setCompletedRequestKey(requestKey);
+
+      // Save to localStorage cache (TTL: 30 minutes)
+      cache.set(weatherCacheKey, freshData, {
+        category: 'apps',
+        subcategory: 'home',
+        ttl: 30 * 60 * 1000,
+      });
     }
 
     void run();
@@ -237,7 +362,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
   const showLoadingOverlay = isLoading || isNavigating;
 
   return (
-    <div className="apps-overlay-route no-mobile-nav-padding no-pc-nav-padding min-h-screen w-full overflow-hidden bg-black relative">
+    <div className="apps-overlay-route no-mobile-nav-padding no-pc-nav-padding min-h-[100dvh] h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-black relative isolate">
       <style jsx global>{`
         @font-face {
           font-family: 'NauryzRedKedsWeather';
@@ -254,7 +379,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
       `}</style>
 
       <div
-        className="relative flex min-h-screen w-full items-center justify-center bg-center bg-cover"
+        className="relative flex min-h-[100dvh] h-[100dvh] w-full items-center justify-center bg-center bg-cover overflow-hidden"
         style={
           media.backgroundImageUrl
             ? {
@@ -266,24 +391,29 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
         {media.videoUrl && (
           <video
             autoPlay
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover pointer-events-none z-[-1]"
             loop
             muted
             playsInline
             preload="none"
             src={media.videoUrl}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              minWidth: '100%',
+              minHeight: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+            }}
           />
         )}
 
         <div className="absolute inset-0 hidden bg-gradient-to-r from-black via-black/10 to-transparent md:flex" />
         <div className="absolute inset-0 hidden bg-gradient-to-l from-black via-black/10 to-transparent md:flex" />
         <div className="absolute inset-0 bg-black/50" />
-
-        {showLoadingOverlay && (
-          <div className="absolute inset-0 z-[99999] flex items-center justify-center bg-black/90 backdrop-blur-sm">
-            <SpinnerIcon />
-          </div>
-        )}
 
         {!showLoadingOverlay && errorMessage && (
           <div className="absolute inset-0 z-[999] overflow-hidden">
@@ -308,151 +438,316 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
         )}
 
         <div className="relative z-[9] flex h-screen w-full items-center justify-center">
-          <div className="absolute inset-0" />
-          <div className="flex h-full w-full max-w-screen-md flex-col items-center overflow-y-auto px-3">
-            <span className="weather-cutetext sticky top-3 z-[99] mb-1 text-4xl text-blue-500">
-              {lang?.weather || 'Weather'}
-            </span>
+          <div className="flex h-full w-full max-w-screen-md flex-col items-center overflow-y-auto">
+            <div className="z-[99] bg-gradient-to-b from-black via-black/60 to-transparent md:from-transparent md:via-transparent flex flex-col items-center justify-center sticky top-0 inset-x-0 pt-[0.25rem] w-full px-3 pb-2">
+              <span className="weather-cutetext mb-2 text-4xl text-blue-500">
+                {lang?.weather || 'Weather'}
+              </span>
 
-            <form
-              className="sticky top-[3.25rem] z-[99] flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-black/10 p-1 text-white shadow backdrop-blur-md backdrop-saturate-200"
-              onSubmit={handleSubmit}
-            >
-              <button
-                aria-label={lang?.city || 'City'}
-                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-[margin,background-color,transform] duration-300 hover:mr-1 hover:bg-zinc-700 active:scale-95"
-                onClick={handleResetLocation}
-                type="button"
+              <form
+                className="flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-black/10 p-1 text-white shadow backdrop-blur-md backdrop-saturate-200"
+                onSubmit={handleSubmit}
               >
-                <LocationIcon />
-              </button>
+                <button
+                  aria-label={lang?.city || 'City'}
+                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-[margin,background-color,transform] duration-300 hover:mr-1 hover:bg-zinc-700 active:scale-95"
+                  onClick={handleResetLocation}
+                  type="button"
+                >
+                  <LocationIcon />
+                </button>
 
-              <input
-                className="h-10 w-full border-0 bg-transparent py-2 text-lg font-light text-white outline-none placeholder:text-zinc-200"
-                defaultValue={searchCity || weatherData?.city || ''}
-                key={searchCity || weatherData?.city || 'geo'}
-                name="city"
-                placeholder={lang?.city || 'City'}
-              />
+                <input
+                  className="h-10 w-full border-0 bg-transparent py-2 text-lg font-light text-white outline-none placeholder:text-zinc-200"
+                  defaultValue={searchCity || weatherData?.city || ''}
+                  key={searchCity || weatherData?.city || 'geo'}
+                  name="city"
+                  placeholder={lang?.city || 'City'}
+                />
 
-              <button
-                aria-label={lang?.city || 'Search'}
-                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-[background-color,transform] duration-300 hover:bg-zinc-700 active:scale-95"
-                type="submit"
-              >
-                <SearchIcon />
-              </button>
-            </form>
+                <button
+                  aria-label={lang?.city || 'Search'}
+                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-[background-color,transform] duration-300 hover:bg-zinc-700 active:scale-95"
+                  type="submit"
+                >
+                  <SearchIcon />
+                </button>
+              </form>
 
-            <span
-              className="-mb-14 -mt-5 flex w-full items-start font-bold text-white/90"
-              style={{ fontSize: 72, textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
-            >
-              <span style={{ fontSize: 192 }}>{weatherData?.temp ?? '--'}</span>
-              <span className="mt-6">°</span>
-            </span>
+              {/* Quick Select City Chips */}
+              <div className="-mx-3 flex w-[calc(100%+1.5rem)] gap-2 overflow-x-auto px-3 pt-2 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <button
+                  ref={isLocationActive ? activeChipRef : null}
+                  type="button"
+                  onClick={handleResetLocation}
+                  className={`flex items-center gap-1.5 shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-medium transition-all active:scale-95 cursor-pointer backdrop-blur-md ${isLocationActive
+                    ? 'border-blue-400 bg-blue-500/30 text-white font-semibold shadow-md shadow-blue-500/20'
+                    : 'border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20'
+                    }`}
+                >
+                  <LocationIcon />
+                  {isLocationActive && weatherData?.city
+                    ? weatherData.city
+                    : (lang?.weather_my_location || 'Моё местоположение')}
+                </button>
+                {QUICK_CITIES.map((cityItem) => {
+                  const isSelected = !isLocationActive && (
+                    searchCity.toLowerCase() === cityItem.name.toLowerCase() ||
+                    weatherData?.city?.toLowerCase() === cityItem.name.toLowerCase()
+                  );
 
-            <span
-              className="w-full text-2xl text-white/90"
-              dangerouslySetInnerHTML={{ __html: weatherData?.mornight || '' }}
-              style={{ textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
-            />
-
-            <span
-              className="w-full text-3xl text-zinc-100"
-              style={{ textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
-            >
-              {weatherData?.weather || ''}
-            </span>
-
-            <div className="mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 shadow backdrop-blur-md backdrop-saturate-200">
-              <span className="pl-3 pt-3 text-xl text-white">{lang?.weather_next_days || 'Upcoming days'}</span>
-              <div className="flex w-full gap-6 overflow-x-auto px-3 pb-3">
-                {forecastEntries.map((entry, index) => (
-                  <div key={index} className="flex w-14 flex-col items-center justify-center text-zinc-200">
-                    <span className="text-center text-sm">{entry.label}</span>
-                    <ForecastIcon iconKey={entry.iconKey} />
-                    <span className="text-center text-lg">{entry.temp === null ? '-°' : `${entry.temp}°`}</span>
-                  </div>
-                ))}
+                  return (
+                    <button
+                      key={cityItem.name}
+                      ref={isSelected ? activeChipRef : null}
+                      type="button"
+                      onClick={() => {
+                        startTransition(() => {
+                          setGeoCoords(null);
+                          setSearchCity(cityItem.name);
+                        });
+                      }}
+                      className={`shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-medium transition-all active:scale-95 backdrop-blur-md cursor-pointer ${isSelected
+                        ? 'border-white/80 bg-white/25 text-white font-semibold shadow-md shadow-white/10'
+                        : 'border-zinc-600/30 bg-black/20 text-zinc-300 hover:bg-zinc-800/40'
+                        }`}
+                    >
+                      {cityItem.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {mapLinks ? (
-              <>
-                <div className="flex w-full items-center justify-center">
-                  <a
-                    className="mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-zinc-600/30 bg-blue-400/25 p-3 text-lg font-bold text-white transition-[background-color,transform] duration-300 hover:bg-blue-500/50 active:scale-95 backdrop-blur-md backdrop-saturate-200"
-                    href={mapLinks.yandexWeatherUrl}
-                    rel="noreferrer"
-                    target="_blank"
+            <div className="flex flex-col justify-center items-center w-full px-3 overflow-visible">
+              {showLoadingOverlay && !weatherData ? (
+                <WeatherSkeleton />
+              ) : (
+                <>
+                  <span
+                    className="-mb-14 -mt-10 flex w-full items-start font-bold text-white/90"
+                    style={{ fontSize: 72, textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
                   >
-                    {lang?.weather_more_precisely_in || 'More precisely in'}
-                    <span className="flex items-center justify-center gap-0.5">
-                      {locale === 'ru' ? (
-                        <>
-                          <img
-                            alt="Yandex"
-                            className="h-5 shrink-0"
-                            src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/ru_white.6900a042.svg"
-                          />
-                          <img
-                            alt="Weather"
-                            className="h-5 shrink-0"
-                            src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/ru_white.43698d95.svg"
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <img
-                            alt="Yandex"
-                            className="h-5 shrink-0"
-                            src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/com_white.e2f9fd51.svg"
-                          />
-                          <img
-                            alt="Weather"
-                            className="h-5 shrink-0"
-                            src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/weather_white.138770f1.svg"
-                          />
-                        </>
-                      )}
-                    </span>
-                  </a>
-                </div>
+                    <span style={{ fontSize: 192 }}>{weatherData?.temp ?? '--'}</span>
+                    <span className="mt-6">°</span>
+                  </span>
 
-                <div className="flex w-full items-center justify-center">
-                  <a
-                    className="relative mt-3 mb-3 aspect-square w-full shrink-0 overflow-hidden rounded-3xl border border-zinc-600/30 shadow transition-transform duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200"
-                    href={mapLinks.yandexNowcastUrl}
-                    rel="noreferrer"
-                    target="_blank"
+                  <span
+                    className="w-full text-2xl text-white/90"
+                    dangerouslySetInnerHTML={{ __html: weatherData?.mornight || '' }}
+                    style={{ textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
+                  />
+
+                  <span
+                    className="w-full text-3xl text-zinc-100"
+                    style={{ textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
                   >
-                    <span
-                      className="absolute top-3 left-3 z-[99] text-xl text-white"
-                      style={{ textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
-                    >
-                      {lang?.weather_map || 'Precipitation map'}
-                    </span>
-                    <Image
-                      alt="Map"
-                      className="object-cover opacity-90"
-                      fill
-                      sizes="(min-width: 768px) 768px, 100vw"
-                      src={mapLinks.mapUrl}
-                      unoptimized
-                    />
-                    <Image
-                      alt="Precipitation overlay"
-                      className="object-cover animate-pulse rounded-2xl brightness-125 contrast-200 saturate-200"
-                      fill
-                      sizes="(min-width: 768px) 768px, 100vw"
-                      src={mapLinks.precipUrl}
-                      unoptimized
-                    />
-                  </a>
-                </div>
-              </>
-            ) : null}
+                    {weatherData?.weather || ''}
+                  </span>
+
+                  {/* Hourly Forecast */}
+                  {weatherData?.hourly && weatherData.hourly.length > 0 ? (
+                    <div className="mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 shadow backdrop-blur-md backdrop-saturate-200">
+                      <span className="pl-3 pt-3 text-xl text-white">{lang?.weather_hourly || 'Hourly forecast'}</span>
+                      <div className="flex w-full gap-6 overflow-x-auto px-3 pb-3">
+                        {weatherData.hourly.map((item, index) => (
+                          <div key={index} className="flex w-14 shrink-0 flex-col items-center justify-center text-zinc-200">
+                            <span className="text-center text-sm font-light text-zinc-300">{item.time}</span>
+                            <ForecastIcon iconKey={getForecastIconKey(item.weatherKey)} />
+                            <span className="text-center text-lg font-medium">{item.temp}°</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Upcoming Days */}
+                  <div className="mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 shadow backdrop-blur-md backdrop-saturate-200">
+                    <span className="pl-3 pt-3 text-xl text-white">{lang?.weather_next_days || 'Upcoming days'}</span>
+                    <div className="flex w-full gap-6 overflow-x-auto px-3 pb-3">
+                      {forecastEntries.map((entry, index) => (
+                        <div key={index} className="flex w-14 flex-col items-center justify-center text-zinc-200">
+                          <span className="text-center text-sm">{entry.label}</span>
+                          <ForecastIcon iconKey={entry.iconKey} />
+                          <span className="text-center text-lg">{entry.temp === null ? '-°' : `${entry.temp}°`}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Atmospheric Details */}
+                  {weatherData?.details ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mt-3">
+                      <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
+                        <span className="text-xs text-zinc-400 font-medium">{lang?.weather_humidity || 'Влажность'}</span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-2xl text-white font-semibold">{weatherData.details.humidity}</span>
+                          <span className="text-sm text-zinc-300">%</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
+                        <span className="text-xs text-zinc-400 font-medium">{lang?.weather_wind || 'Ветер'}</span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-2xl text-white font-semibold">{weatherData.details.windSpeed}</span>
+                          <span className="text-xs text-zinc-300">м/с</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
+                        <span className="text-xs text-zinc-400 font-medium">{lang?.weather_pressure || 'Давление'}</span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-2xl text-white font-semibold">{weatherData.details.pressure}</span>
+                          <span className="text-xs text-zinc-300">мм</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
+                        <span className="text-xs text-zinc-400 font-medium">{lang?.weather_visibility || 'Видимость'}</span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-2xl text-white font-semibold">{weatherData.details.visibility}</span>
+                          <span className="text-sm text-zinc-300">км</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Sun & Moon Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-3">
+                    {/* Sunrise / Sunset / UV Card */}
+                    <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-4 shadow backdrop-blur-md backdrop-saturate-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl text-white font-medium">
+                          {lang?.weather_sun || 'Sun'}
+                        </span>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-medium">
+                          {lang?.weather_uv || 'UV Index'}: {weatherData?.astro?.uvIndex ?? 3} ({weatherData?.astro?.uvText ?? 'Умеренный'})
+                        </span>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3">
+                          <svg className="w-8 h-8 stroke-amber-400 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2v6m-3-3l3-3 3 3M4.93 10.93l1.41 1.41M17.66 12.34l1.41-1.41M2 18h20M20 18a8 8 0 0 0-16 0" />
+                          </svg>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-zinc-400">{lang?.weather_sunrise || 'Восход'}</span>
+                            <span className="text-xl text-white font-semibold">{weatherData?.astro?.sunrise || '05:30'}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <svg className="w-8 h-8 stroke-indigo-300 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2v6M9 5l3 3 3-3M4.93 10.93l1.41 1.41M17.66 12.34l1.41-1.41M2 18h20M20 18a8 8 0 0 0-16 0" />
+                          </svg>
+                          <div className="flex flex-col">
+                            <span className="text-xs text-zinc-400">{lang?.weather_sunset || 'Закат'}</span>
+                            <span className="text-xl text-white font-semibold">{weatherData?.astro?.sunset || '21:15'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Moon Phase Card */}
+                    <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-4 shadow backdrop-blur-md backdrop-saturate-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl text-white font-medium">{lang?.weather_moon || 'Moon phase'}</span>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium">
+                          {Math.round(((weatherData?.astro?.moonVal ?? 0.5) > 0.5 ? 1 - (weatherData?.astro?.moonVal ?? 0.5) : (weatherData?.astro?.moonVal ?? 0.5)) * 200)}%
+                        </span>
+                      </div>
+
+                      <div className="mt-4 flex items-center gap-3">
+                        <svg className="w-8 h-8 fill-purple-300 shrink-0" viewBox="0 0 24 24">
+                          <path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
+                        </svg>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-zinc-400">{lang?.weather_moon || 'Фаза луны'}</span>
+                          <span className="text-lg text-white font-semibold">{weatherData?.astro?.moonPhase || 'Полнолуние'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Precipitation Map at the Bottom */}
+                  {mapLinks ? (
+                    <>
+                      <div className="flex w-full items-center justify-center mt-3">
+                        <a
+                          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-zinc-600/30 bg-blue-400/25 p-3 text-lg font-bold text-white transition-[background-color,transform] duration-300 hover:bg-blue-500/50 active:scale-95 backdrop-blur-md backdrop-saturate-200"
+                          href={mapLinks.yandexWeatherUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {lang?.weather_more_precisely_in || 'More precisely in'}
+                          <span className="flex items-center justify-center gap-0.5">
+                            {locale === 'ru' ? (
+                              <>
+                                <img
+                                  alt="Yandex"
+                                  className="h-5 shrink-0"
+                                  src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/ru_white.6900a042.svg"
+                                />
+                                <img
+                                  alt="Weather"
+                                  className="h-5 shrink-0"
+                                  src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/ru_white.43698d95.svg"
+                                />
+                              </>
+                            ) : (
+                              <>
+                                <img
+                                  alt="Yandex"
+                                  className="h-5 shrink-0"
+                                  src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/com_white.e2f9fd51.svg"
+                                />
+                                <img
+                                  alt="Weather"
+                                  className="h-5 shrink-0"
+                                  src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/weather_white.138770f1.svg"
+                                />
+                              </>
+                            )}
+                          </span>
+                        </a>
+                      </div>
+
+                      <div className="flex w-full items-center justify-center mb-8">
+                        <a
+                          className="relative mt-3 aspect-square w-full shrink-0 overflow-hidden rounded-3xl border border-zinc-600/30 shadow transition-transform duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200"
+                          href={mapLinks.yandexNowcastUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <span
+                            className="absolute top-3 left-3 z-[99] text-xl text-white"
+                            style={{ textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
+                          >
+                            {lang?.weather_map || 'Precipitation map'}
+                          </span>
+                          <Image
+                            alt="Map"
+                            className="object-cover opacity-90"
+                            fill
+                            sizes="(min-width: 768px) 768px, 100vw"
+                            src={mapLinks.mapUrl}
+                            unoptimized
+                          />
+                          <Image
+                            alt="Precipitation overlay"
+                            className="object-cover animate-pulse rounded-2xl brightness-125 contrast-200 saturate-200"
+                            fill
+                            sizes="(min-width: 768px) 768px, 100vw"
+                            src={mapLinks.precipUrl}
+                            unoptimized
+                          />
+                        </a>
+                      </div>
+                    </>
+                  ) : null}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

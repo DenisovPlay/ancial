@@ -15,7 +15,31 @@ export type WeatherForecastDay = {
   weatherKey: WeatherConditionKey;
 };
 
+export type WeatherForecastHour = {
+  time: string;
+  temp: number;
+  weather: string;
+  weatherKey: WeatherConditionKey;
+};
+
+export type WeatherAstroData = {
+  sunrise: string;
+  sunset: string;
+  uvIndex: number;
+  uvText: string;
+  moonPhase: string;
+  moonVal: number;
+};
+
+export type WeatherDetailsData = {
+  humidity: number;
+  pressure: number;
+  windSpeed: number;
+  visibility: number;
+};
+
 export type WeatherAppData = {
+  astro?: WeatherAstroData;
   city: string;
   coordinates: {
     lat: number;
@@ -23,6 +47,8 @@ export type WeatherAppData = {
   };
   country: string;
   days: WeatherForecastDay[];
+  details?: WeatherDetailsData;
+  hourly?: WeatherForecastHour[];
   maxTemp: number;
   minTemp: number;
   mornight: string;
