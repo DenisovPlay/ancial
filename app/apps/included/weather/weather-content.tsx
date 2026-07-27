@@ -3,6 +3,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useAuth } from '../../../context/AuthContext';
 import { cache } from '../../../lib/cache';
 import { safeFetchJson } from '../../../lib/safe-fetch-json';
@@ -35,7 +36,7 @@ function WeatherSkeleton() {
   return (
     <div className="flex flex-col items-center w-full animate-pulse">
       {/* Big Temperature Skeleton - aligned to left matching real font size */}
-      <div className="-mb-14 -mt-10 flex w-full items-start gap-1">
+      <div className="-mb-14 -mt- flex w-full items-start gap-1">
         <div className="h-44 w-52 rounded-3xl bg-white/15 backdrop-blur-md" />
         <div className="h-12 w-8 rounded-2xl bg-white/15 mt-6" />
       </div>
@@ -725,17 +726,21 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       </div>
 
                       <div className="flex w-full items-center justify-center mb-8">
-                        <a
-                          className="relative mt-3 aspect-square w-full shrink-0 overflow-hidden rounded-3xl border border-zinc-600/30 shadow transition-transform duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200"
-                          href={mapLinks.yandexNowcastUrl}
-                          rel="noreferrer"
-                          target="_blank"
+                        <Link
+                          className="relative mt-3 aspect-square w-full shrink-0 overflow-hidden rounded-3xl border border-zinc-600/30 shadow transition-transform duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200 cursor-pointer group"
+                          href={`/apps/overlay/weather/map?lat=${weatherData.coordinates.lat}&lon=${weatherData.coordinates.lon}&city=${encodeURIComponent(weatherData.city)}&temp=${weatherData.temp}&mode=${mode}`}
                         >
                           <span
-                            className="absolute top-3 left-3 z-[99] text-xl text-white"
+                            className="absolute top-3 left-3 z-[99] text-xl text-white font-medium"
                             style={{ textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
                           >
                             {lang?.weather_map || 'Precipitation map'}
+                          </span>
+                          <span className="absolute bottom-3 right-3 z-[99] text-xs px-3 py-1.5 rounded-full bg-black/60 text-white border border-white/20 backdrop-blur-md flex items-center gap-1 group-hover:bg-blue-600/80 transition-colors">
+                            <span>{langCode === 'en' ? 'Open interactive map' : 'Открыть интерактивную карту'}</span>
+                            <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-[2]" viewBox="0 0 24 24">
+                              <path d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
                           </span>
                           <Image
                             alt="Map"
@@ -753,7 +758,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                             src={mapLinks.precipUrl}
                             unoptimized
                           />
-                        </a>
+                        </Link>
                       </div>
                     </>
                   ) : null}
