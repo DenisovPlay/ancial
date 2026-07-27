@@ -396,19 +396,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
             playsInline
             preload="auto"
             src={media.videoUrl}
-            className="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto -translate-x-1/2 -translate-y-1/2 object-cover pointer-events-none z-[-1]"
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              minWidth: '100vw',
-              minHeight: '100dvh',
-              width: 'auto',
-              height: 'auto',
-              transform: 'translate(-50%, -50%)',
-              objectFit: 'cover',
-              objectPosition: 'center',
-            }}
+            className="z-[-1] absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
         )}
 
@@ -580,7 +568,12 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                   {weatherData?.details ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mt-3">
                       <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
-                        <span className="text-xs text-zinc-400 font-medium">{lang?.weather_humidity || 'Влажность'}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-zinc-400 font-medium">{lang?.weather_humidity || 'Влажность'}</span>
+                          <svg className="w-4 h-4 fill-cyan-400/80 shrink-0" viewBox="0 0 24 24">
+                            <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+                          </svg>
+                        </div>
                         <div className="mt-2 flex items-baseline gap-1">
                           <span className="text-2xl text-white font-semibold">{weatherData.details.humidity}</span>
                           <span className="text-sm text-zinc-300">%</span>
@@ -588,7 +581,12 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       </div>
 
                       <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
-                        <span className="text-xs text-zinc-400 font-medium">{lang?.weather_wind || 'Ветер'}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-zinc-400 font-medium">{lang?.weather_wind || 'Ветер'}</span>
+                          <svg className="w-4 h-4 stroke-teal-300 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+                          </svg>
+                        </div>
                         <div className="mt-2 flex items-baseline gap-1">
                           <span className="text-2xl text-white font-semibold">{weatherData.details.windSpeed}</span>
                           <span className="text-xs text-zinc-300">м/с</span>
@@ -596,7 +594,14 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       </div>
 
                       <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
-                        <span className="text-xs text-zinc-400 font-medium">{lang?.weather_pressure || 'Давление'}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-zinc-400 font-medium">{lang?.weather_pressure || 'Давление'}</span>
+                          <svg className="w-4 h-4 stroke-amber-300 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                            <circle cx="12" cy="12" r="5" />
+                            <path d="M12 12l2.5-2.5" />
+                          </svg>
+                        </div>
                         <div className="mt-2 flex items-baseline gap-1">
                           <span className="text-2xl text-white font-semibold">{weatherData.details.pressure}</span>
                           <span className="text-xs text-zinc-300">мм</span>
@@ -604,7 +609,13 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       </div>
 
                       <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
-                        <span className="text-xs text-zinc-400 font-medium">{lang?.weather_visibility || 'Видимость'}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-zinc-400 font-medium">{lang?.weather_visibility || 'Видимость'}</span>
+                          <svg className="w-4 h-4 stroke-sky-300 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </div>
                         <div className="mt-2 flex items-baseline gap-1">
                           <span className="text-2xl text-white font-semibold">{weatherData.details.visibility}</span>
                           <span className="text-sm text-zinc-300">км</span>
