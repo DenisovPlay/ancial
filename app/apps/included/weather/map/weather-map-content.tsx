@@ -46,6 +46,11 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
 
+  const centerRef = useRef(center);
+  useEffect(() => {
+    centerRef.current = center;
+  }, [center]);
+
   const smoothZoomRef = useRef(8.0);
   const targetZoomRef = useRef(8.0);
   const zoomAnimFrameRef = useRef<number | null>(null);
@@ -87,15 +92,17 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
 
   const checkAndSnapToMarker = useCallback(() => {
     const baseZ = Math.floor(smoothZoomRef.current);
-    const centerT = latLonToTileCoords(center.lat, center.lon, baseZ);
+    const centerT = latLonToTileCoords(centerRef.current.lat, centerRef.current.lon, baseZ);
     const targetT = latLonToTileCoords(initialLat, initialLon, baseZ);
     const pxX = (targetT.x - centerT.x) * TILE_SIZE;
     const pxY = (targetT.y - centerT.y) * TILE_SIZE;
 
     if (Math.hypot(pxX, pxY) < 140) {
-      setCenter({ lat: initialLat, lon: initialLon });
+      const newCenter = { lat: initialLat, lon: initialLon };
+      centerRef.current = newCenter;
+      setCenter(newCenter);
     }
-  }, [center.lat, center.lon, initialLat, initialLon, TILE_SIZE]);
+  }, [initialLat, initialLon, TILE_SIZE]);
 
   const addZoomImpulse = useCallback((delta: number) => {
     checkAndSnapToMarker();
@@ -115,7 +122,22 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
       cancelAnimationFrame(inertiaAnimRef.current);
       inertiaAnimRef.current = null;
     }
-  }, []);
+
+    const currentOffset = dragOffsetRef.current;
+    if (currentOffset.x !== 0 || currentOffset.y !== 0) {
+      const baseZ = Math.floor(smoothZoomRef.current);
+      const scale = 2 ** (smoothZoomRef.current - baseZ);
+      const currentTileCoords = latLonToTileCoords(centerRef.current.lat, centerRef.current.lon, baseZ);
+      const newX = currentTileCoords.x - (currentOffset.x / scale) / TILE_SIZE;
+      const newY = currentTileCoords.y - (currentOffset.y / scale) / TILE_SIZE;
+      const newCenter = tileCoordsToLatLon(newX, newY, baseZ);
+
+      centerRef.current = newCenter;
+      setCenter(newCenter);
+      dragOffsetRef.current = { x: 0, y: 0 };
+      setDragOffset({ x: 0, y: 0 });
+    }
+  }, [TILE_SIZE]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     stopInertia();
@@ -125,7 +147,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
       x: e.clientX,
       y: e.clientY,
       time: now,
-      center: { ...center },
+      center: { ...centerRef.current },
     };
     lastMoveRef.current = { x: e.clientX, y: e.clientY, time: now };
     dragOffsetRef.current = { x: 0, y: 0 };
@@ -163,7 +185,9 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
         const currentTileCoords = latLonToTileCoords(dragStartRef.current.center.lat, dragStartRef.current.center.lon, baseZ);
         const newX = currentTileCoords.x - (dragOffsetRef.current.x / scale) / TILE_SIZE;
         const newY = currentTileCoords.y - (dragOffsetRef.current.y / scale) / TILE_SIZE;
-        setCenter(tileCoordsToLatLon(newX, newY, baseZ));
+        const newCenter = tileCoordsToLatLon(newX, newY, baseZ);
+        centerRef.current = newCenter;
+        setCenter(newCenter);
       }
       setDragOffset({ x: 0, y: 0 });
       dragOffsetRef.current = { x: 0, y: 0 };
@@ -191,7 +215,9 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
           const currentTileCoords = latLonToTileCoords(dragStartRef.current.center.lat, dragStartRef.current.center.lon, baseZ);
           const newX = currentTileCoords.x - (currentDx / scale) / TILE_SIZE;
           const newY = currentTileCoords.y - (currentDy / scale) / TILE_SIZE;
-          setCenter(tileCoordsToLatLon(newX, newY, baseZ));
+          const newCenter = tileCoordsToLatLon(newX, newY, baseZ);
+          centerRef.current = newCenter;
+          setCenter(newCenter);
         }
         setDragOffset({ x: 0, y: 0 });
         dragOffsetRef.current = { x: 0, y: 0 };
@@ -220,7 +246,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
         x: touch.clientX,
         y: touch.clientY,
         time: now,
-        center: { ...center },
+        center: { ...centerRef.current },
       };
       lastMoveRef.current = { x: touch.clientX, y: touch.clientY, time: now };
       dragOffsetRef.current = { x: 0, y: 0 };
@@ -343,9 +369,11 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
     }
   }
 
-  const targetTileCoords = latLonToTileCoords(initialLat, initialLon, baseTileZoom);
-  const markerPxX = (targetTileCoords.x - centerTile.x) * TILE_SIZE;
-  const markerPxY = (targetTileCoords.y - centerTile.y) * TILE_SIZE;
+  // Compute marker position on screen from smoothZoom in viewport pixel coordinates
+  const currentCenterTileFloat = latLonToTileCoords(center.lat, center.lon, smoothZoom);
+  const targetMarkerTileFloat = latLonToTileCoords(initialLat, initialLon, smoothZoom);
+  const markerScreenX = (targetMarkerTileFloat.x - currentCenterTileFloat.x) * TILE_SIZE + dragOffset.x;
+  const markerScreenY = (targetMarkerTileFloat.y - currentCenterTileFloat.y) * TILE_SIZE + dragOffset.y;
 
   return (
     <div className="apps-overlay-route no-mobile-nav-padding no-pc-nav-padding relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-zinc-950 select-none isolate">
@@ -417,34 +445,42 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
                 />
               </div>
             ))}
+          </div>
+        </div>
 
-            {/* Target City Pin Marker */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setCenter({ lat: initialLat, lon: initialLon });
-                setTargetZoom(10);
-              }}
-              style={{
-                position: 'absolute',
-                left: `${markerPxX}px`,
-                top: `${markerPxY}px`,
-                transform: 'translate(-50%, -100%)',
-              }}
-              className="pointer-events-auto flex flex-col items-center cursor-pointer group z-[100] active:scale-95 transition-transform"
-            >
+        {/* Target City Pin Marker Layer (Fixed Screen Size Viewport Overlay) */}
+        <div className="absolute top-1/2 left-1/2 w-0 h-0 pointer-events-none z-[100]">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              const newCenter = { lat: initialLat, lon: initialLon };
+              centerRef.current = newCenter;
+              setCenter(newCenter);
+              setTargetZoom(10);
+            }}
+            style={{
+              position: 'absolute',
+              left: `${markerScreenX}px`,
+              top: `${markerScreenY}px`,
+              transform: 'translate(-50%, -100%)',
+            }}
+            className="pointer-events-auto flex flex-col items-center cursor-pointer group"
+          >
+            <div className="flex flex-col items-center transition-transform duration-200 active:scale-95">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-400/60 bg-zinc-950/90 text-white shadow-xl backdrop-blur-md group-hover:border-blue-300 group-hover:bg-blue-950">
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping shrink-0" />
                 <span className="text-sm font-bold whitespace-nowrap">{cityName}</span>
                 {cityTemp !== null && cityTemp !== undefined ? (
                   <span className="text-xs font-medium text-blue-300 ml-0.5">{cityTemp}°</span>
                 ) : null}
               </div>
               <div className="w-0.5 h-3 bg-blue-400/80 shadow-md" />
-              <div className="w-2 h-2 rounded-full bg-blue-400 shadow-lg shadow-blue-500/50" />
-            </button>
-          </div>
+              <div className="relative flex items-center justify-center -mt-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-400 ring-2 ring-zinc-950 shadow-lg shadow-blue-500/50" />
+                <span className="absolute w-4 h-4 rounded-full bg-blue-400 animate-ping opacity-75 shrink-0 pointer-events-none" />
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
