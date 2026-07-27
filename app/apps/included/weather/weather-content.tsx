@@ -165,14 +165,72 @@ function ForecastIcon({ iconKey }: { iconKey: WeatherForecastIconKey }) {
   );
 }
 
-const QUICK_CITIES = [
-  { name: 'Москва', label: 'Москва' },
-  { name: 'Санкт-Петербург', label: 'СПб' },
-  { name: 'Екатеринбург', label: 'Екатеринбург' },
-  { name: 'Казань', label: 'Казань' },
-  { name: 'Сочи', label: 'Сочи' },
-  { name: 'Новосибирск', label: 'Новосибирск' },
+type RecommendedCity = {
+  name: string;
+  labelRu: string;
+  labelEn: string;
+  lat: number;
+  lon: number;
+  pop: number;
+};
+
+const RECOMMENDED_CITIES: RecommendedCity[] = [
+  // Россия и СНГ
+  { name: 'Москва', labelRu: 'Москва', labelEn: 'Moscow', lat: 55.7558, lon: 37.6173, pop: 13100000 },
+  { name: 'Санкт-Петербург', labelRu: 'СПБ', labelEn: 'St. Petersburg', lat: 59.9343, lon: 30.3351, pop: 5600000 },
+  { name: 'Новосибирск', labelRu: 'Новосибирск', labelEn: 'Novosibirsk', lat: 55.0084, lon: 82.9357, pop: 1630000 },
+  { name: 'Екатеринбург', labelRu: 'Екатеринбург', labelEn: 'Yekaterinburg', lat: 56.8389, lon: 60.6057, pop: 1540000 },
+  { name: 'Казань', labelRu: 'Казань', labelEn: 'Kazan', lat: 55.7887, lon: 49.1221, pop: 1310000 },
+  { name: 'Нижний Новгород', labelRu: 'Н. Новгород', labelEn: 'N. Novgorod', lat: 56.3269, lon: 44.0059, pop: 1220000 },
+  { name: 'Челябинск', labelRu: 'Челябинск', labelEn: 'Chelyabinsk', lat: 55.1644, lon: 61.4368, pop: 1180000 },
+  { name: 'Красноярск', labelRu: 'Красноярск', labelEn: 'Krasnoyarsk', lat: 56.0153, lon: 92.8932, pop: 1190000 },
+  { name: 'Самара', labelRu: 'Самара', labelEn: 'Samara', lat: 53.2001, lon: 50.1500, pop: 1160000 },
+  { name: 'Уфа', labelRu: 'Уфа', labelEn: 'Ufa', lat: 54.7388, lon: 55.9721, pop: 1140000 },
+  { name: 'Ростов-на-Дону', labelRu: 'Ростов', labelEn: 'Rostov', lat: 47.2357, lon: 39.7015, pop: 1140000 },
+  { name: 'Краснодар', labelRu: 'Краснодар', labelEn: 'Krasnodar', lat: 45.0355, lon: 38.9753, pop: 1120000 },
+  { name: 'Сочи', labelRu: 'Сочи', labelEn: 'Sochi', lat: 43.6028, lon: 39.7342, pop: 440000 },
+  { name: 'Владивосток', labelRu: 'Владивосток', labelEn: 'Vladivostok', lat: 43.1155, lon: 131.8855, pop: 600000 },
+  { name: 'Минск', labelRu: 'Минск', labelEn: 'Minsk', lat: 53.9006, lon: 27.5590, pop: 2000000 },
+  { name: 'Алматы', labelRu: 'Алматы', labelEn: 'Almaty', lat: 43.2389, lon: 76.8897, pop: 2150000 },
+  { name: 'Астана', labelRu: 'Астана', labelEn: 'Astana', lat: 51.1694, lon: 71.4491, pop: 1350000 },
+  { name: 'Ташкент', labelRu: 'Ташкент', labelEn: 'Tashkent', lat: 41.2995, lon: 69.2401, pop: 2900000 },
+  { name: 'Тбилиси', labelRu: 'Тбилиси', labelEn: 'Tbilisi', lat: 41.7151, lon: 44.8271, pop: 1200000 },
+  { name: 'Ереван', labelRu: 'Ереван', labelEn: 'Yerevan', lat: 40.1872, lon: 44.5152, pop: 1100000 },
+  { name: 'Баку', labelRu: 'Баку', labelEn: 'Baku', lat: 40.4093, lon: 49.8671, pop: 2300000 },
+
+  // Европа и Турция
+  { name: 'Стамбул', labelRu: 'Стамбул', labelEn: 'Istanbul', lat: 41.0082, lon: 28.9784, pop: 15800000 },
+  { name: 'Лондон', labelRu: 'Лондон', labelEn: 'London', lat: 51.5074, lon: -0.1278, pop: 8900000 },
+  { name: 'Париж', labelRu: 'Париж', labelEn: 'Paris', lat: 48.8566, lon: 2.3522, pop: 2100000 },
+  { name: 'Берлин', labelRu: 'Берлин', labelEn: 'Berlin', lat: 52.5200, lon: 13.4050, pop: 3600000 },
+  { name: 'Рим', labelRu: 'Рим', labelEn: 'Rome', lat: 41.9028, lon: 12.4964, pop: 2800000 },
+  { name: 'Мадрид', labelRu: 'Мадрид', labelEn: 'Madrid', lat: 40.4168, lon: -3.7038, pop: 3300000 },
+  { name: 'Амстердам', labelRu: 'Амстердам', labelEn: 'Amsterdam', lat: 52.3676, lon: 4.9041, pop: 870000 },
+  { name: 'Варшава', labelRu: 'Варшава', labelEn: 'Warsaw', lat: 52.2297, lon: 21.0122, pop: 1800000 },
+  { name: 'Прага', labelRu: 'Прага', labelEn: 'Prague', lat: 50.0755, lon: 14.4378, pop: 1300000 },
+
+  // Азия и Ближний Восток
+  { name: 'Токио', labelRu: 'Токио', labelEn: 'Tokyo', lat: 35.6762, lon: 139.6503, pop: 14000000 },
+  { name: 'Пекин', labelRu: 'Пекин', labelEn: 'Beijing', lat: 39.9042, lon: 116.4074, pop: 21500000 },
+  { name: 'Дубай', labelRu: 'Дубай', labelEn: 'Dubai', lat: 25.2048, lon: 55.2708, pop: 3500000 },
+  { name: 'Бангкок', labelRu: 'Бангкок', labelEn: 'Bangkok', lat: 13.7563, lon: 100.5018, pop: 10500000 },
+  { name: 'Сингапур', labelRu: 'Сингапур', labelEn: 'Singapore', lat: 1.3521, lon: 103.8198, pop: 5600000 },
+
+  // Америка
+  { name: 'Нью-Йорк', labelRu: 'Нью-Йорк', labelEn: 'New York', lat: 40.7128, lon: -74.0060, pop: 8800000 },
+  { name: 'Лос-Анджелес', labelRu: 'Лос-Анджелес', labelEn: 'Los Angeles', lat: 34.0522, lon: -118.2437, pop: 3800000 },
 ];
+
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 type WeatherContentProps = {
   initialCity?: string;
@@ -190,6 +248,25 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
   const [reloadKey, setReloadKey] = useState(0);
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lon: number } | null>(null);
   const activeChipRef = useRef<HTMLButtonElement | null>(null);
+
+  const sortedNearbyCities = useMemo(() => {
+    const userLat = weatherData?.coordinates?.lat ?? geoCoords?.lat;
+    const userLon = weatherData?.coordinates?.lon ?? geoCoords?.lon;
+
+    if (userLat !== undefined && userLon !== undefined && (userLat !== 0 || userLon !== 0)) {
+      return [...RECOMMENDED_CITIES]
+        .sort((a, b) => {
+          const distA = calculateDistanceKm(userLat, userLon, a.lat, a.lon);
+          const distB = calculateDistanceKm(userLat, userLon, b.lat, b.lon);
+          return distA - distB;
+        })
+        .slice(0, 10);
+    }
+
+    return [...RECOMMENDED_CITIES]
+      .sort((a, b) => b.pop - a.pop)
+      .slice(0, 10);
+  }, [weatherData?.coordinates?.lat, weatherData?.coordinates?.lon, geoCoords?.lat, geoCoords?.lon]);
 
   useEffect(() => {
     if (!searchCity && !geoCoords && typeof window !== 'undefined' && navigator.geolocation) {
@@ -464,27 +541,14 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                 </button>
               </form>
 
-              {/* Quick Select City Chips */}
+              {/* Quick Select City Chips - Dynamically Recommended Nearby Cities */}
               <div className="-mx-3 flex w-[calc(100%+1.5rem)] gap-2 overflow-x-auto px-3 pt-2 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                <button
-                  ref={isLocationActive ? activeChipRef : null}
-                  type="button"
-                  onClick={handleResetLocation}
-                  className={`flex items-center gap-1.5 shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-medium transition-all active:scale-95 cursor-pointer backdrop-blur-md ${isLocationActive
-                    ? 'border-blue-400 bg-blue-500/30 text-white font-semibold shadow-md shadow-blue-500/20'
-                    : 'border-blue-500/30 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20'
-                    }`}
-                >
-                  <LocationIcon />
-                  {isLocationActive && weatherData?.city
-                    ? weatherData.city
-                    : (lang?.weather_my_location || 'Моё местоположение')}
-                </button>
-                {QUICK_CITIES.map((cityItem) => {
+                {sortedNearbyCities.map((cityItem) => {
                   const isSelected = !isLocationActive && (
                     searchCity.toLowerCase() === cityItem.name.toLowerCase() ||
                     weatherData?.city?.toLowerCase() === cityItem.name.toLowerCase()
                   );
+                  const chipLabel = langCode === 'en' ? cityItem.labelEn : cityItem.labelRu;
 
                   return (
                     <button
@@ -502,7 +566,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                         : 'border-zinc-600/30 bg-black/20 text-zinc-300 hover:bg-zinc-800/40'
                         }`}
                     >
-                      {cityItem.label}
+                      {chipLabel}
                     </button>
                   );
                 })}

@@ -31,6 +31,8 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
   const initialLat = parseFloat(searchParams.get('lat') || '55.7558');
   const initialLon = parseFloat(searchParams.get('lon') || '37.6173');
   const cityName = searchParams.get('city') || (langCode === 'en' ? 'Weather Map' : 'Карта осадков');
@@ -320,12 +322,23 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
     };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    stopInertia();
-    const zoomDelta = e.deltaY < 0 ? 0.35 : -0.35;
-    addZoomImpulse(zoomDelta);
-  };
+  // Non-passive wheel event listener to allow wheel preventDefault without browser console warnings
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onWheelNative = (e: WheelEvent) => {
+      e.preventDefault();
+      stopInertia();
+      const zoomDelta = e.deltaY < 0 ? 0.35 : -0.35;
+      addZoomImpulse(zoomDelta);
+    };
+
+    container.addEventListener('wheel', onWheelNative, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onWheelNative);
+    };
+  }, [addZoomImpulse, stopInertia]);
 
   const baseTileZoom = Math.max(3, Math.min(13, Math.floor(smoothZoom)));
   const fractionalScale = 2 ** (smoothZoom - baseTileZoom);
@@ -359,7 +372,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
         const precipTileUrl = `https://tile.openweathermap.org/map/precipitation_new/${baseTileZoom}/${tileX}/${tileY}.png?appid=1c503419b342442e86e7eccfc16a85c7`;
 
         tiles.push({
-          key: `t_${baseTileZoom}_${tileX}_${tileY}`,
+          key: `t_${baseTileZoom}_dx${dx}_dy${dy}_x${tileX}_y${tileY}`,
           mapTileUrl,
           precipTileUrl,
           left: dx * TILE_SIZE - offX,
@@ -395,9 +408,9 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
 
       {/* Interactive Canvas Container */}
       <div
+        ref={containerRef}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-        onWheel={handleWheel}
         className="relative h-full w-full cursor-grab active:cursor-grabbing overflow-hidden"
       >
         {/* GPU Accelerated Inertial Drag & Continuous Fractional Scale Container */}
@@ -420,12 +433,12 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
                 key={t.key}
                 style={{
                   position: 'absolute',
-                  left: `${t.left}px`,
-                  top: `${t.top}px`,
-                  width: `${TILE_SIZE}px`,
-                  height: `${TILE_SIZE}px`,
+                  left: `${t.left - 0.5}px`,
+                  top: `${t.top - 0.5}px`,
+                  width: `${TILE_SIZE + 1}px`,
+                  height: `${TILE_SIZE + 1}px`,
                 }}
-                className={`relative overflow-hidden ${isDay ? 'bg-slate-200' : 'bg-zinc-900'}`}
+                className="relative overflow-hidden"
               >
                 {/* Base Map Tile */}
                 <img
