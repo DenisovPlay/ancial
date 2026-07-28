@@ -502,6 +502,7 @@ export const ru: Record<string, string> = {
     "gotopayment": "Перейти к оплате",
     "qrdata": "Данные QR-кода",
     "copytext": "Скопировать текст",
+    "copy": "Копировать",
     "popular_topics": "Популярные темы",
     "post": "Запись",
     "my": "Моё",

@@ -473,6 +473,7 @@ export const en: Record<string, string> = {
   "gotopayment": "Go to payment",
   "qrdata": "QR-code data",
   "copytext": "Copy text",
+  "copy": "Copy",
   "popular_topics": "Popular topics",
   "post": "Post",
   "my": "My",

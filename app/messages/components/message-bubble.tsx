@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { SITE_DOMAIN } from '../../config';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useMentionNavigation } from '../../hooks/use-mention-navigation';
-
+import { useNotification } from '../../context/NotificationContext';
 import { Dropdown, DropdownItem } from '../../components/navigation';
 import {
   buildSevenTvStickerProxyUrl,
@@ -173,6 +173,21 @@ export default function MessageBubble({
   const replyIconOpacity = useTransform(dragX, [0, -50], [0, 1]);
   const replyIconScale = useTransform(dragX, [0, -50], [0.5, 1]);
   const replyIconX = useTransform(dragX, [0, -50], [20, 0]);
+  const { showNote } = useNotification();
+
+  const handleCopyText = useCallback(() => {
+    const rawText = message.message || '';
+    const cleanText = stripHtml(rawText).trim();
+    if (cleanText && typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(cleanText);
+      showNote({
+        content: lang?.copied || 'Скопировано',
+        type: 'success',
+        time: 2,
+      });
+    }
+    setMenuOpen(false);
+  }, [message.message, lang, showNote]);
 
   const messageId = getMessageId(message);
   const isOwn = toNumber(message.sender_id) === currentUserId;
@@ -444,6 +459,16 @@ export default function MessageBubble({
                   </DropdownItem>
                 )}
 
+                {!message.isSending && hasMessageText ? (
+                  <DropdownItem
+                    icon="IC-copy-file"
+                    className="h-8"
+                    onClick={handleCopyText}
+                  >
+                    {lang?.copy || 'Копировать'}
+                  </DropdownItem>
+                ) : null}
+
                 {!message.isSending && canTranslateMessage && typeof translator === 'function' ? (
                   <DropdownItem
                     icon="IC-translate"
@@ -549,7 +574,11 @@ export default function MessageBubble({
                       )}
 
                       {block.type === 'main' && (
-                        <div id={`msg-body-${messageId}`} className="flex flex-col gap-2">
+                        <div
+                          id={`msg-body-${messageId}`}
+                          className="flex flex-col gap-2 select-text cursor-text"
+                          style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                        >
                           {!isOwn && senderName && !isMediaOnlyMessage && !hideName && (
                             <span className="px-1.5 text-[10px] -mb-2 font-bold text-purple-400 select-none">{senderName}</span>
                           )}
