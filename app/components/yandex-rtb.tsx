@@ -61,7 +61,7 @@ export default function YandexRtb({
       <div
         className={
           className ??
-          'w-full max-h-24 hidden lg:block overflow-hidden rounded-3xl bg-zinc-900/40 animate-pulse'
+          'w-full max-h-24 block overflow-hidden rounded-3xl bg-zinc-900/40 animate-pulse'
         }
       />
     );
@@ -71,7 +71,7 @@ export default function YandexRtb({
     <div
       className={
         className ??
-        'w-full max-h-24 hidden lg:block overflow-hidden shadow-lg duration-300 cursor-pointer'
+        'w-full max-h-24 block overflow-hidden shadow-lg duration-300 cursor-pointer'
       }
     >
       <a
