@@ -11,7 +11,8 @@ export type CacheCategory =
   | 'pulse'
   | 'notifications'
   | 'apps'
-  | 'users';
+  | 'users'
+  | 'cinema';
 
 export type CacheSubcategory<C extends CacheCategory> =
   C extends 'home'
@@ -36,6 +37,8 @@ export type CacheSubcategory<C extends CacheCategory> =
     ? 'home' | 'category' | 'search'
     : C extends 'users'
     ? 'info'
+    : C extends 'cinema'
+    ? 'updates' | 'search' | 'video'
     : never;
 
 export interface CacheOptions<C extends CacheCategory> {
@@ -813,3 +816,6 @@ export const cache = {
     return { totalSize, keysCount, byCategory };
   },
 };
+
+export const CacheManager = cache;
+export default cache;

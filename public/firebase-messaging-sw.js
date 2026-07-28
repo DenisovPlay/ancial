@@ -1,5 +1,5 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-const SW_VERSION = '5';
+const SW_VERSION = '6';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -118,11 +118,15 @@ function staleWhileRevalidate(event, cacheName) {
       cache.match(event.request).then((cached) => {
         const networkFetch = fetch(event.request)
           .then((res) => {
-            if (res.status === 200 || res.status === 0) cache.put(event.request, res.clone());
+            if (res && (res.status === 200 || res.status === 0)) {
+              cache.put(event.request, res.clone());
+            }
             return res;
           })
-          .catch(() => undefined);
-        return cached || networkFetch;
+          .catch(() => null);
+
+        if (cached) return cached;
+        return networkFetch.then((res) => res || new Response('', { status: 504, statusText: 'Gateway Timeout' }));
       })
     )
   );
@@ -139,17 +143,18 @@ self.addEventListener('fetch', (event) => {
   // Разработка (localhost/127.0.0.1) — не кэшируем, чтобы HMR работал
   if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
 
-  // Firebase, Google APIs — пропускаем без кэша
+  // Firebase, Google APIs, External Cinema CDNs — пропускаем без кэша
   if (
     url.hostname.includes('firebase') ||
     url.hostname.includes('googleapis') ||
     url.hostname.includes('firebaseio') ||
-    url.hostname.includes('gstatic.com')
+    url.hostname.includes('gstatic.com') ||
+    url.hostname.includes('yandex.net') ||
+    url.hostname.includes('factorios.live') ||
+    url.hostname.includes('cdnhubstream.pro')
   ) return;
 
   // ── 0. Избранные API-эндпоинты → Stale-While-Revalidate ─────────────────
-  // Эти ответы нужны офлайн (локализация и т.п.) и не меняются часто.
-  // Загружаются мгновенно из кэша, в фоне обновляются при наличии сети.
   if (CACHEABLE_API_PATHS.some((p) => url.pathname === p || url.pathname.endsWith(p))) {
     staleWhileRevalidate(event, CACHE_API);
     return;
@@ -170,7 +175,6 @@ self.addEventListener('fetch', (event) => {
   if (isImage) { staleWhileRevalidate(event, CACHE_IMAGES); return; }
 
   // ── 2. Статические ресурсы Next.js (JS/CSS/шрифты) → Network First with 404 Eviction
-  // Гарантирует отбрасывание старых .css/.js файлов от предыдущих билдов (устраняет 404 на устаревшие chunks)
   const isStaticAsset =
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/img/') ||
@@ -183,10 +187,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          if (res.status === 200) {
-            saveToCache(CACHE_STATIC, req, res);
-          } else if (res.status === 404) {
+          if (res.status === 404) {
             caches.open(CACHE_STATIC).then((c) => c.delete(req));
+          } else {
+            saveToCache(CACHE_STATIC, req, res);
           }
           return res;
         })
@@ -195,28 +199,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── 3. Next.js RSC/data payloads → Bypass SW (пропускаем в сеть напрямую без вмешательства)
-  // Это исключает поломку клиентских переходов (SPA navigation) и предотвращает принудительную перезагрузку страницы
-  const isRsc =
-    url.searchParams.has('_rsc') ||
-    req.headers.get('RSC') === '1' ||
-    url.pathname.startsWith('/_next/data/');
+  // ── 3. HTML-навигация — Network First с фолбэком на shell `/` ─────────────
+  const isNavigate = req.mode === 'navigate' || (req.headers.get('Accept') || '').includes('text/html');
 
-  if (isRsc) return;
-
-  // ── 4. HTML-навигация (любой маршрут) → Network First + shell fallback
-  // Охватывает: /, /messages, /apps, /pulse, /feed, /friends и любой другой маршрут
-  const isNavigation =
-    req.mode === 'navigate' ||
-    (req.headers.get('accept') || '').includes('text/html');
-
-  if (isNavigation) {
-    networkFirst(event, CACHE_PAGES, () =>
-      caches.match('/').then((shell) => shell || new Response('', { status: 503 }))
-    );
-    return;
+  if (isNavigate) {
+    networkFirst(event, CACHE_PAGES, () => caches.match('/'));
   }
-
-  // ── 5. Next.js API Route Handlers (/apps/api/*, /api/*) → без кэша
-  // Данные API-хэндлеров хранятся приложением в localStorage через cache.ts
 });

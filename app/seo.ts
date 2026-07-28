@@ -85,15 +85,17 @@ export function createPageMetadata(options: {
   description?: string;
   keywords?: string[];
   canonical?: string;
+  robots?: Metadata['robots'];
   openGraph?: Metadata['openGraph'];
   twitter?: Metadata['twitter'];
 }): Metadata {
-  const { title, description, keywords, canonical, openGraph, twitter } = options;
+  const { title, description, keywords, canonical, robots, openGraph, twitter } = options;
 
   return {
     title,
     description: description || SITE_CONFIG.description,
     keywords: keywords || DEFAULT_SEO.keywords,
+    robots: robots || DEFAULT_SEO.robots,
     openGraph: {
       ...DEFAULT_SEO.openGraph,
       ...openGraph,

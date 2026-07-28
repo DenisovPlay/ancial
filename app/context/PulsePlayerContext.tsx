@@ -1047,8 +1047,21 @@ export function PulsePlayerProvider({
   const playerArtwork = getTrackArtwork(currentTrack);
   const prevArtwork = getTrackArtwork(prevTrackObj);
   const nextArtwork = getTrackArtwork(nextTrackObj);
-  const hiddenByMessagesDialog = Boolean(pathname && pathname.startsWith('/messages/'));
-  const effectivePlayerVisible = isMounted && !hiddenByMessagesDialog;
+  const hiddenByMessagesDialog = Boolean(
+    pathname?.startsWith('/messages') && isMobileDevice
+  );
+  const isCinema = Boolean(pathname?.startsWith('/cinema'));
+  const effectivePlayerVisible = isMounted && !hiddenByMessagesDialog && !isCinema;
+
+  useEffect(() => {
+    if (isCinema) {
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  }, [isCinema]);
+
   const isPlayerAnimatingIn = isVisible && isMounted;
   const isPlayingFromFavorites = playlistId === '-5' || currentCollectionIdRef.current === '-5' || currentCollectionIdRef.current === 'playlist_-5';
   const activeLike = currentTrack

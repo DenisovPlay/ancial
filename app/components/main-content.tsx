@@ -11,6 +11,7 @@ function cn(...classes: Array<string | false | null | undefined>) {
 export default function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isPulsePlaylistPage = /^\/pulse\/playlist\/[^/]+\/?$/.test(pathname || '');
+  const isCinemaPage = pathname?.startsWith('/cinema');
   const routeKey = pathname.startsWith('/messages') ? '/messages' : pathname;
   const routeScrollController = useMemo(
     () =>
@@ -35,11 +36,13 @@ export default function MainContent({ children }: { children: React.ReactNode })
     <div
       id="main-content"
       className={cn(
-        'flex-1 flex flex-col lg:pl-24 duration-300',
-        !isPulsePlaylistPage && 'pb-20 lg:pb-0',
+        'flex-1 flex flex-col duration-300 bg-black',
+        !isCinemaPage && 'lg:pl-24',
+        !isPulsePlaylistPage && !isCinemaPage && 'pb-20 lg:pb-0',
       )}
     >
       {children}
     </div>
   );
 }
+

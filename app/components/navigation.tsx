@@ -350,7 +350,13 @@ const MotionNavItem = ({ children, isVisible, id }: { children: React.ReactNode,
 export default function Navigation() {
   const { user, isAuthenticated, logout, lang } = useAuth();
   const pathname = usePathname();
+
+  if (pathname?.startsWith('/cinema')) {
+    return null;
+  }
+
   const isPulseContext = pathname === '/pulse' || pathname?.startsWith('/pulse/');
+
 
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
