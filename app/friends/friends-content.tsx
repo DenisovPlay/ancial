@@ -6,6 +6,7 @@ import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
+import YandexRtb from '../components/yandex-rtb';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
@@ -217,6 +218,7 @@ function FriendsContent() {
 
             return (
               <React.Fragment key={friend.id || i}>
+                {(i + 1) % 6 === 0 && <YandexRtb className="" />}
                 <div id={`friend_${friend.id}`} className="group relative flex items-center justify-between gap-3 p-3 hover:bg-zinc-800 duration-300 cursor-pointer active:scale-95 active:rounded-3xl">
                   {friend.id === user?.id && (
                     <div className="absolute inset-x-0 w-[50%] h-[50%] left-[25%] bottom-[0%] blur-3xl rounded-full bg-gradient-to-t from-lime-500/20 to-transparent z-[-1]"></div>

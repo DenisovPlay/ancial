@@ -184,7 +184,7 @@ function GroupsContent() {
         ) : (
           groups.map((group, index) => (
             <React.Fragment key={group.id || index}>
-              {index === 3 && <YandexRtb blockId="R-A-3636730-16" />}
+              {(index + 1) % 6 === 0 && <YandexRtb className="" />}
               <Link
                 href={`/$${group.slnk}`}
                 className="relative flex p-3 flex-grow hover:bg-zinc-800 duration-300 justify-center gap-3 cursor-pointer active:scale-95 active:rounded-3xl"

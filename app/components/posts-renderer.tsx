@@ -365,7 +365,7 @@ function PostCardInner({
   const images = post.images ?? [];
   const activeImages = customImages.length > 0 ? customImages : images;
   const hasBlurredImages = images.some((image) => flag(image.blur));
-  const showAd = renderIndex === 6;
+  const showAd = renderIndex !== undefined && renderIndex >= 0 && (renderIndex + 1) % 5 === 0;
   const authorHref =
     post.author.type === 'user'
       ? `/@${post.author.username ?? ''}`
@@ -972,8 +972,8 @@ function PostCardInner({
       </div>
 
       {showAd && (
-        <div className="hidden w-full overflow-hidden max-h-64 lg:max-h-64 rounded-3xl">
-          <YandexRtb blockId="R-A-3636730-10" className="w-full rounded-3xl min-h-24" />
+        <div className="w-full overflow-hidden md:rounded-3xl">
+          <YandexRtb />
         </div>
       )}
 

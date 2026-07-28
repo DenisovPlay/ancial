@@ -1271,7 +1271,7 @@ export default function MessagesContent() {
     const wsPayload = payload as WsPayload | undefined;
     const dataObj = wsPayload?.data as Record<string, unknown> | undefined;
     const senderId = toNumber(dataObj?.sender_id ?? dataObj?.user_id ?? (wsPayload as any)?.user_id);
-    
+
     if (senderId && senderId !== currentUserId) {
       setTypingUsers((prev) => {
         if (prev[senderId]) {
@@ -2258,7 +2258,7 @@ export default function MessagesContent() {
                               </span>
                             </div>
                           ) : (
-                            filteredDialogs.map((dialog) => {
+                            filteredDialogs.map((dialog, index) => {
                               const dialogHash = normalizeHash(dialog.hash);
                               const active = dialogHash === routeHash;
                               const preview = formatDialogPreview(dialog.Mmessage, lang);
@@ -2272,61 +2272,67 @@ export default function MessagesContent() {
                               const unreadCount = Number(dialog.unread_count || 0);
 
                               return (
-                                <button
-                                  key={dialogHash || String(dialog.id)}
-                                  type="button"
-                                  onClick={() => handleDialogOpen(dialogHash)}
-                                  className={cn(
-                                    'cursor-pointer flex items-center gap-3 p-3 text-left duration-300 hover:bg-zinc-800 active:scale-95 active:rounded-3xl',
-                                    active && 'bg-zinc-800/90',
+                                <React.Fragment key={dialogHash || String(dialog.id)}>
+                                  {(index + 1) % 6 === 0 && (
+                                    <div className="">
+                                      <YandexRtb className="w-full rounded-3xl" />
+                                    </div>
                                   )}
-                                >
-                                  <div className="shrink-0">
-                                    <img
-                                      className={cn(
-                                        'h-16 w-16 rounded-full object-cover shadow',
-                                        isOnline(dialog.Ulastonline) && 'ring-2 ring-lime-500',
-                                      )}
-                                      src={normalizeAssetUrl(dialog.Uimg, FALLBACK_AVATAR)}
-                                      alt={dialogName || 'Dialog avatar'}
-                                    />
-                                  </div>
-
-                                  <div className="flex min-w-0 flex-1 flex-col">
-                                    <AccountName
-                                      as="span"
-                                      user={{
-                                        name: dialogName,
-                                        verify: dialog.Uverify,
-                                        badges: dialog.Ubadges,
-                                      }}
-                                      nameClassName="text-base font-medium text-zinc-100 lg:text-lg"
-                                      className="truncate flex"
-                                    />
-                                    <span className="truncate text-sm text-zinc-300 lg:text-base">
-                                      {preview || (lang?.write_message || 'Напишите сообщение')}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-zinc-400 lg:text-sm">
-                                    <span>{normalizeText(dialog.Mtime)}</span>
-                                    {isMyLastMessage ? (
-                                      <Icon
-                                        name={previewStatusIcon}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDialogOpen(dialogHash)}
+                                    className={cn(
+                                      'cursor-pointer flex items-center gap-3 p-3 text-left duration-300 hover:bg-zinc-800 active:scale-95 active:rounded-3xl',
+                                      active && 'bg-zinc-800/90',
+                                    )}
+                                  >
+                                    <div className="shrink-0">
+                                      <img
                                         className={cn(
-                                          'h-5 w-5',
-                                          String(dialog.Mstatus ?? '0') === '0'
-                                            ? 'fill-white'
-                                            : 'fill-purple-500',
+                                          'h-16 w-16 rounded-full object-cover shadow',
+                                          isOnline(dialog.Ulastonline) && 'ring-2 ring-lime-500',
                                         )}
+                                        src={normalizeAssetUrl(dialog.Uimg, FALLBACK_AVATAR)}
+                                        alt={dialogName || 'Dialog avatar'}
                                       />
-                                    ) : unreadCount > 0 ? (
-                                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-purple-500 px-1.5 text-[11px] font-bold text-white shadow">
-                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </div>
+
+                                    <div className="flex min-w-0 flex-1 flex-col">
+                                      <AccountName
+                                        as="span"
+                                        user={{
+                                          name: dialogName,
+                                          verify: dialog.Uverify,
+                                          badges: dialog.Ubadges,
+                                        }}
+                                        nameClassName="text-base font-medium text-zinc-100 lg:text-lg"
+                                        className="truncate flex"
+                                      />
+                                      <span className="truncate text-sm text-zinc-300 lg:text-base">
+                                        {preview || (lang?.write_message || 'Напишите сообщение')}
                                       </span>
-                                    ) : null}
-                                  </div>
-                                </button>
+                                    </div>
+
+                                    <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-zinc-400 lg:text-sm">
+                                      <span>{normalizeText(dialog.Mtime)}</span>
+                                      {isMyLastMessage ? (
+                                        <Icon
+                                          name={previewStatusIcon}
+                                          className={cn(
+                                            'h-5 w-5',
+                                            String(dialog.Mstatus ?? '0') === '0'
+                                              ? 'fill-white'
+                                              : 'fill-purple-500',
+                                          )}
+                                        />
+                                      ) : unreadCount > 0 ? (
+                                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-purple-500 px-1.5 text-[11px] font-bold text-white shadow">
+                                          {unreadCount > 99 ? '99+' : unreadCount}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </button>
+                                </React.Fragment>
                               );
                             })
                           )}
@@ -2354,10 +2360,6 @@ export default function MessagesContent() {
                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                   </svg>
                 </button>
-                <YandexRtb
-                  blockId="R-A-3636730-16"
-                  className="hidden w-full max-h-24 items-center justify-center lg:flex"
-                />
               </div>
             </div>
 
@@ -2605,14 +2607,14 @@ export default function MessagesContent() {
                             {activeTypingUserIds.length > 0 && (() => {
                               const typingUsersList = isGroupDialog
                                 ? activeTypingUserIds.map((id) => {
-                                    const typingMember = selectedDialog?.members?.find(
-                                      (m) => Number(m.id) === Number(id)
-                                    );
-                                    return {
-                                      id: String(id),
-                                      url: typingMember?.img || FALLBACK_AVATAR
-                                    };
-                                  })
+                                  const typingMember = selectedDialog?.members?.find(
+                                    (m) => Number(m.id) === Number(id)
+                                  );
+                                  return {
+                                    id: String(id),
+                                    url: typingMember?.img || FALLBACK_AVATAR
+                                  };
+                                })
                                 : [];
                               return (
                                 <TypingBubble
