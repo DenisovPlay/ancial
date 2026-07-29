@@ -22,6 +22,21 @@ import {
 import { CinemaPageSkeleton } from './components/cinema-skeleton';
 import { useDragScroll } from '../hooks/useDragScroll';
 
+import { getCinemaCache, setCinemaCache } from './cinema-cache';
+
+// Interface for home bundle cache
+interface HomeCinemaBundle {
+  hero: Movie[];
+  top: Movie[];
+  newReleases: Movie[];
+  popularSeries: Movie[];
+  freshUpdates: Movie[];
+  cartoons: Movie[];
+  korean: Movie[];
+  anime: Movie[];
+  documentary: Movie[];
+}
+
 export default function CinemaContent() {
   useTvNavigation();
   const { lang } = useAuth();
@@ -43,7 +58,6 @@ export default function CinemaContent() {
   const [koreanDramas, setKoreanDramas] = useState<Movie[]>([]);
   const [animeList, setAnimeList] = useState<Movie[]>([]);
   const [documentaryMovies, setDocumentaryMovies] = useState<Movie[]>([]);
-  const [worldCinema, setWorldCinema] = useState<Movie[]>([]);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
 
   // Load user list & watch history from localStorage
@@ -62,12 +76,29 @@ export default function CinemaContent() {
     } catch (e) { }
   }, []);
 
-  // Load real API content on mount
+  // Load real API content on mount with SWR caching
   useEffect(() => {
     let isMounted = true;
 
-    async function loadRealCinemaData() {
+    // 1. Instantly apply cached bundle if available
+    const cachedBundle = getCinemaCache<HomeCinemaBundle>('home_bundle');
+    if (cachedBundle) {
+      setHeroMovies(cachedBundle.hero || []);
+      setTopMovies(cachedBundle.top || []);
+      setNewReleases(cachedBundle.newReleases || []);
+      setPopularSeries(cachedBundle.popularSeries || []);
+      setFreshUpdates(cachedBundle.freshUpdates || []);
+      setCartoonsList(cachedBundle.cartoons || []);
+      setKoreanDramas(cachedBundle.korean || []);
+      setAnimeList(cachedBundle.anime || []);
+      setDocumentaryMovies(cachedBundle.documentary || []);
+      setIsLoading(false);
+    } else {
       setIsLoading(true);
+    }
+
+    // 2. Background revalidate
+    async function loadRealCinemaData() {
       try {
         const [
           heroItems,
@@ -102,18 +133,37 @@ export default function CinemaContent() {
 
         if (!isMounted) return;
 
-        setHeroMovies(heroItems.slice(0, 5));
-        setTopMovies(top10Items.length >= 10 ? top10Items.slice(0, 10) : top10Items);
-        setNewReleases(freshMovies.slice(0, 15));
-        setPopularSeries(freshSeries.slice(0, 15));
+        const hero = heroItems.slice(0, 5);
+        const top = top10Items.length >= 10 ? top10Items.slice(0, 10) : top10Items;
+        const newRel = freshMovies.slice(0, 15);
+        const popSer = freshSeries.slice(0, 15);
+        const updatesList = [...(updatesRes.serials || []), ...(updatesRes.movies || [])].slice(0, 15);
+        const cartoons = cartoonsItems.slice(0, 15);
+        const korean = koreanItems.slice(0, 15);
+        const anime = animeItems.slice(0, 15);
+        const doc = page2Movies.slice(0, 15);
 
-        const updatesList = [...(updatesRes.serials || []), ...(updatesRes.movies || [])];
-        setFreshUpdates(updatesList.slice(0, 15));
+        setHeroMovies(hero);
+        setTopMovies(top);
+        setNewReleases(newRel);
+        setPopularSeries(popSer);
+        setFreshUpdates(updatesList);
+        setCartoonsList(cartoons);
+        setKoreanDramas(korean);
+        setAnimeList(anime);
+        setDocumentaryMovies(doc);
 
-        setCartoonsList(cartoonsItems.slice(0, 15));
-        setKoreanDramas(koreanItems.slice(0, 15));
-        setAnimeList(animeItems.slice(0, 15));
-        setDocumentaryMovies(page2Movies.slice(0, 15));
+        setCinemaCache<HomeCinemaBundle>('home_bundle', undefined, {
+          hero,
+          top,
+          newReleases: newRel,
+          popularSeries: popSer,
+          freshUpdates: updatesList,
+          cartoons,
+          korean,
+          anime,
+          documentary: doc,
+        });
       } catch (err) {
         console.error('Failed to load cinema API data:', err);
       } finally {

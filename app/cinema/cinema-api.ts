@@ -275,7 +275,7 @@ export async function fetchCinemaPlayers(
       iframeUrl: `https://tarantino.factorios.live/show/kinopoisk/${kp}`,
       isAvailable: true,
     });
-    let cdnUrl = `https://cdnmovies-stream.online/kinopoisk/${kp}/iframe`;
+    let cdnUrl = `https://ugly-turkey.cdnmovies-stream.online/kinopoisk/${kp}/iframe`;
     if (season || episode) {
       cdnUrl += `?season=${season || 1}&episode=${episode || 1}`;
     }
@@ -286,8 +286,90 @@ export async function fetchCinemaPlayers(
       iframeUrl: cdnUrl,
       isAvailable: true,
     });
+    let collapsUrl = `https://api.ortified.ws/embed/kp/${kp}`;
+    if (season || episode) {
+      collapsUrl += `?season=${season || 1}&episode=${episode || 1}`;
+    }
+    fallbackPlayers.push({
+      id: 'collaps',
+      name: 'Плеер 3 (Collaps)',
+      provider: 'Collaps',
+      iframeUrl: collapsUrl,
+      isAvailable: true,
+    });
+    fallbackPlayers.push({
+      id: 'videohub',
+      name: 'Плеер 4 (VideoHub)',
+      provider: 'VideoHub',
+      iframeUrl: 'videohub',
+      isAvailable: true,
+    });
   }
   return fallbackPlayers;
+}
+
+export async function fetchVideoHubStreamDirect(
+  kpId: string | number,
+  season: number = 1,
+  episode: number = 1,
+  translationName?: string
+): Promise<{ url: string; voiceType?: string; qualities: Array<{ label: string; url: string }> } | null> {
+  try {
+    const playlistRes = await fetch(
+      `https://plapi.cdnvideohub.com/api/v1/player/sv/playlist?pub=12&aggr=kp&id=${kpId}`
+    );
+    if (!playlistRes.ok) return null;
+    const playlistData = await playlistRes.json();
+    const items: any[] = playlistData?.items || [];
+    if (!items.length) return null;
+
+    let matchedItem = null;
+    if (playlistData.isSerial) {
+      const seasonItems = items.filter(
+        (i) => Number(i.season) === Number(season) && Number(i.episode) === Number(episode)
+      );
+      if (translationName) {
+        matchedItem = seasonItems.find((i) => i.voiceType === translationName);
+      }
+      if (!matchedItem) {
+        matchedItem = seasonItems[0] || items[0];
+      }
+    } else {
+      if (translationName) {
+        matchedItem = items.find((i) => i.voiceType === translationName);
+      }
+      if (!matchedItem) {
+        matchedItem = items[0];
+      }
+    }
+
+    if (!matchedItem?.vkId) return null;
+
+    // Must be requested directly from client IP/User-Agent
+    const videoRes = await fetch(
+      `https://plapi.cdnvideohub.com/api/v1/player/sv/video/${matchedItem.vkId}`
+    );
+    if (!videoRes.ok) return null;
+    const videoData = await videoRes.json();
+    const sources = videoData?.sources || {};
+
+    const qualities: Array<{ label: string; url: string }> = [];
+    if (sources.mpegFullHdUrl) qualities.push({ label: '1080p', url: sources.mpegFullHdUrl });
+    if (sources.mpegHighUrl) qualities.push({ label: '720p', url: sources.mpegHighUrl });
+    if (sources.mpegMediumUrl) qualities.push({ label: '480p', url: sources.mpegMediumUrl });
+    if (sources.mpegLowUrl) qualities.push({ label: '360p', url: sources.mpegLowUrl });
+    if (sources.hlsUrl && qualities.length === 0) qualities.push({ label: 'Auto (HLS)', url: sources.hlsUrl });
+
+    const defaultUrl = qualities[0]?.url || sources.hlsUrl || '';
+
+    if (defaultUrl) {
+      return { url: defaultUrl, voiceType: matchedItem.voiceType, qualities };
+    }
+    return null;
+  } catch (err) {
+    console.warn('fetchVideoHubStreamDirect error:', err);
+    return null;
+  }
 }
 
 export async function fetchCinemaSearch(
@@ -521,6 +603,14 @@ export function formatCdnMoviesItem(item: any): Movie {
         provider: 'FlixCDN',
         iframeUrl: `https://tarantino.factorios.live/show/kinopoisk/${kpId}`,
         quality: 'FullHD 1080p',
+        isAvailable: true,
+      },
+      {
+        id: 'collaps',
+        name: 'Плеер 3 (Collaps)',
+        provider: 'Collaps',
+        iframeUrl: `https://api.ortified.ws/embed/kp/${kpId}`,
+        quality: 'HD 1080p',
         isAvailable: true,
       },
     ],

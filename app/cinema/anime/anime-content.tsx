@@ -10,6 +10,7 @@ import { Movie } from '../types';
 import { useTvNavigation } from '../use-tv-navigation';
 import { fetchCinemaSearch, fetchCinemaGetVideo } from '../cinema-api';
 import { CinemaGridSkeleton, CinemaRowSkeleton } from '../components/cinema-skeleton';
+import { getCinemaCache, setCinemaCache } from '../cinema-cache';
 
 export default function AnimeContent() {
   useTvNavigation();
@@ -28,20 +29,35 @@ export default function AnimeContent() {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadInitialAnime() {
-      setIsLoading(true);
-      setPage(1);
-      let data: Movie[] = [];
-      if (selectedGenre === 'all') {
-        data = await fetchCinemaGetVideo({ genres: 'аниме', page: 1, limit: 20 });
-      } else {
-        data = await fetchCinemaGetVideo({ genres: `аниме,${selectedGenre}`, page: 1, limit: 20 });
-      }
+    setPage(1);
 
-      if (isMounted) {
-        setAnimeList(data);
-        setHasMore(data.length >= 10);
-        setIsLoading(false);
+    const cachedAnime = getCinemaCache<Movie[]>('catalog_anime', selectedGenre);
+    if (cachedAnime && cachedAnime.length > 0) {
+      setAnimeList(cachedAnime);
+      setHasMore(cachedAnime.length >= 10);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
+    async function loadInitialAnime() {
+      try {
+        let data: Movie[] = [];
+        if (selectedGenre === 'all') {
+          data = await fetchCinemaGetVideo({ genres: 'аниме', page: 1, limit: 20 });
+        } else {
+          data = await fetchCinemaGetVideo({ genres: `аниме,${selectedGenre}`, page: 1, limit: 20 });
+        }
+
+        if (isMounted && data) {
+          setAnimeList(data);
+          setHasMore(data.length >= 10);
+          setCinemaCache('catalog_anime', selectedGenre, data);
+        }
+      } catch (err) {
+        console.warn('loadInitialAnime error:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     }
     loadInitialAnime();

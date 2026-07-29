@@ -10,6 +10,7 @@ import { Movie } from '../types';
 import { useTvNavigation } from '../use-tv-navigation';
 import { fetchCinemaSearch, fetchCinemaGetVideo } from '../cinema-api';
 import { CinemaGridSkeleton, CinemaRowSkeleton } from '../components/cinema-skeleton';
+import { getCinemaCache, setCinemaCache } from '../cinema-cache';
 
 export default function MoviesContent() {
   useTvNavigation();
@@ -26,23 +27,38 @@ export default function MoviesContent() {
 
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
 
-  // Load initial movies on genre change
+  // Load initial movies on genre change with SWR caching
   useEffect(() => {
     let isMounted = true;
-    async function loadInitialMovies() {
-      setIsLoading(true);
-      setPage(1);
-      let data: Movie[] = [];
-      if (selectedGenre === 'all') {
-        data = await fetchCinemaSearch('', 'movie', 1, { orderby: 'created_at', orderby_direction: 'desc' });
-      } else {
-        data = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'movie', page: 1, limit: 20 });
-      }
+    setPage(1);
 
-      if (isMounted) {
-        setMovies(data);
-        setHasMore(data.length >= 10);
-        setIsLoading(false);
+    const cachedMovies = getCinemaCache<Movie[]>('catalog_movies', selectedGenre);
+    if (cachedMovies && cachedMovies.length > 0) {
+      setMovies(cachedMovies);
+      setHasMore(cachedMovies.length >= 10);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
+    async function loadInitialMovies() {
+      try {
+        let data: Movie[] = [];
+        if (selectedGenre === 'all') {
+          data = await fetchCinemaSearch('', 'movie', 1, { orderby: 'created_at', orderby_direction: 'desc' });
+        } else {
+          data = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'movie', page: 1, limit: 20 });
+        }
+
+        if (isMounted && data) {
+          setMovies(data);
+          setHasMore(data.length >= 10);
+          setCinemaCache('catalog_movies', selectedGenre, data);
+        }
+      } catch (err) {
+        console.warn('loadInitialMovies error:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     }
 

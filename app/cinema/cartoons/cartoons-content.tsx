@@ -10,6 +10,7 @@ import { Movie } from '../types';
 import { useTvNavigation } from '../use-tv-navigation';
 import { fetchCinemaCartoons } from '../cinema-api';
 import { CinemaGridSkeleton, CinemaRowSkeleton } from '../components/cinema-skeleton';
+import { getCinemaCache, setCinemaCache } from '../cinema-cache';
 
 export default function CartoonsContent() {
   useTvNavigation();
@@ -28,16 +29,31 @@ export default function CartoonsContent() {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadInitialCartoons() {
-      setIsLoading(true);
-      setPage(1);
-      const genreParam = selectedGenre === 'all' ? undefined : selectedGenre;
-      const data = await fetchCinemaCartoons({ page: 1, limit: 20, genre: genreParam });
+    setPage(1);
 
-      if (isMounted) {
-        setCartoonsList(data);
-        setHasMore(data.length >= 10);
-        setIsLoading(false);
+    const cachedCartoons = getCinemaCache<Movie[]>('catalog_cartoons', selectedGenre);
+    if (cachedCartoons && cachedCartoons.length > 0) {
+      setCartoonsList(cachedCartoons);
+      setHasMore(cachedCartoons.length >= 10);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
+    async function loadInitialCartoons() {
+      try {
+        const genreParam = selectedGenre === 'all' ? undefined : selectedGenre;
+        const data = await fetchCinemaCartoons({ page: 1, limit: 20, genre: genreParam });
+
+        if (isMounted && data) {
+          setCartoonsList(data);
+          setHasMore(data.length >= 10);
+          setCinemaCache('catalog_cartoons', selectedGenre, data);
+        }
+      } catch (err) {
+        console.warn('loadInitialCartoons error:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     }
     loadInitialCartoons();

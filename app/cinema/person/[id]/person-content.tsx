@@ -9,6 +9,7 @@ import { Movie } from '../../types';
 import { useTvNavigation } from '../../use-tv-navigation';
 import { fetchCinemaPersonById, getOptimizedImageUrl } from '../../cinema-api';
 import { CinemaGridSkeleton } from '../../components/cinema-skeleton';
+import { getCinemaCache, setCinemaCache } from '../../cinema-cache';
 
 interface PersonContentProps {
   personId: string;
@@ -41,13 +42,22 @@ export default function PersonContent({ personId }: PersonContentProps) {
   useEffect(() => {
     let isMounted = true;
 
+    const cachedPersonResult = getCinemaCache<{ person: any; movies: Movie[] }>('person', personId);
+    if (cachedPersonResult) {
+      setPerson(cachedPersonResult.person);
+      setMovies(cachedPersonResult.movies || []);
+      setIsLoading(false);
+    } else if (!person) {
+      setIsLoading(true);
+    }
+
     async function loadPersonData() {
-      if (!person) setIsLoading(true);
       try {
         const result = await fetchCinemaPersonById(personId, undefined, initialName, initialPoster);
         if (isMounted && result) {
           setPerson(result.person);
           setMovies(result.movies || []);
+          setCinemaCache('person', personId, result);
         }
       } catch (err) {
         console.error('Failed to load person data:', err);

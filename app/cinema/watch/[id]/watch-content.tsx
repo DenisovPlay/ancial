@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Movie } from '../../types';
-import { fetchCinemaVideoById } from '../../cinema-api';
+import { fetchCinemaVideoById, fetchVideoHubStreamDirect } from '../../cinema-api';
 import { useTvNavigation } from '../../use-tv-navigation';
 import { FrameBrandLoader } from '../../components/cinema-skeleton';
 import CustomPlayer from '../../components/custom-player';
@@ -25,6 +25,8 @@ export default function WatchContent({ id }: WatchContentProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showPicker, setShowPicker] = useState<boolean>(false);
   const [currentSeason, setCurrentSeason] = useState<number>(season ? Number(season) : 1);
+  const [videoHubStreamUrl, setVideoHubStreamUrl] = useState<string | undefined>(undefined);
+  const [videoHubQualities, setVideoHubQualities] = useState<Array<{ label: string; url: string }>>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -86,6 +88,34 @@ export default function WatchContent({ id }: WatchContentProps) {
       document.body.classList.remove('cinema-watch-open');
     };
   }, []);
+
+  // Fetch VideoHub stream directly on client before any early returns
+  useEffect(() => {
+    let isCancelled = false;
+    const selectedPlayerId = searchParams.get('player') || 'flixcdn';
+    const targetKpId = movie?.kinopoisk_id || movie?.id || id;
+    const activeSeason = season ? Number(season) : 1;
+    const activeEpisode = episode ? Number(episode) : 1;
+
+    if (selectedPlayerId === 'videohub' && targetKpId) {
+      fetchVideoHubStreamDirect(
+        targetKpId,
+        activeSeason,
+        activeEpisode
+      ).then((res) => {
+        if (!isCancelled && res?.url) {
+          setVideoHubStreamUrl(res.url);
+          setVideoHubQualities(res.qualities || []);
+        }
+      });
+    } else {
+      setVideoHubStreamUrl(undefined);
+      setVideoHubQualities([]);
+    }
+    return () => {
+      isCancelled = true;
+    };
+  }, [movie, searchParams, id, season, episode]);
 
   if (isLoading) {
     return (
@@ -154,8 +184,10 @@ export default function WatchContent({ id }: WatchContentProps) {
   const targetKpId = movie.kinopoisk_id || movie.id;
   let cdnMoviesIframeSrc = `https://ugly-turkey.cdnmovies-stream.online/kinopoisk/${targetKpId}/iframe`;
   const cdnParams = new URLSearchParams();
-  if (season) cdnParams.set('season', season);
-  if (episode) cdnParams.set('episode', episode);
+  if (isSeriesOrAnime) {
+    cdnParams.set('season', String(activeSeason));
+    cdnParams.set('episode', String(activeEpisode));
+  }
   if (translation) cdnParams.set('translation_id', translation);
   if (cdnParams.toString()) {
     cdnMoviesIframeSrc += `?${cdnParams.toString()}`;
@@ -164,8 +196,10 @@ export default function WatchContent({ id }: WatchContentProps) {
   const rawBaseUrl = movie.videoUrl || `https://tarantino.factorios.live/show/kinopoisk/${targetKpId}`;
   const baseUrl = rawBaseUrl.split('?')[0];
   const iframeParams = new URLSearchParams();
-  if (season) iframeParams.set('season', season);
-  if (episode) iframeParams.set('episode', episode);
+  if (isSeriesOrAnime) {
+    iframeParams.set('season', String(activeSeason));
+    iframeParams.set('episode', String(activeEpisode));
+  }
   if (translation) iframeParams.set('translation', translation);
   iframeParams.set('no_control_translations', '1');
   iframeParams.set('no_control_seasons', '1');
@@ -177,9 +211,21 @@ export default function WatchContent({ id }: WatchContentProps) {
   iframeParams.set('no_back', '1');
   const flixIframeSrc = `${baseUrl}?${iframeParams.toString()}`;
 
+  // Build Collaps iframe URL
+  let collapsIframeSrc = `https://api.ortified.ws/embed/kp/${targetKpId}`;
+  const collapsParams = new URLSearchParams();
+  if (isSeriesOrAnime) {
+    collapsParams.set('season', String(activeSeason));
+    collapsParams.set('episode', String(activeEpisode));
+  }
+  if (collapsParams.toString()) {
+    collapsIframeSrc += `?${collapsParams.toString()}`;
+  }
+
   const availablePlayers = movie.players || [
     { id: 'flixcdn', name: 'Плеер 1 (FlixCDN)', provider: 'FlixCDN', iframeUrl: flixIframeSrc, isAvailable: true },
     { id: 'cdnmovies', name: 'Плеер 2 (CDNMovies)', provider: 'CDNMovies', iframeUrl: cdnMoviesIframeSrc, isAvailable: true },
+    { id: 'collaps', name: 'Плеер 3 (Collaps)', provider: 'Collaps', iframeUrl: collapsIframeSrc, isAvailable: true },
   ];
 
   const hasMultipleSeasons = availableSeasonsCount > 1;
@@ -237,15 +283,41 @@ export default function WatchContent({ id }: WatchContentProps) {
     candidateUrl.includes('/stream/')
   );
 
-  const directStreamUrl = isDirectMediaFile ? candidateUrl : undefined;
-
   const selectedPlayerId = searchParams.get('player') || 'flixcdn';
   const activePlayerObj = (availablePlayers || []).find((p) => p.id === selectedPlayerId) || (availablePlayers || [])[0];
-  const activePlayerTranslations = (activePlayerObj?.translations && activePlayerObj.translations.length > 0)
-    ? activePlayerObj.translations
-    : (movie.translationsList || []);
+  const isCollapsPlayer = selectedPlayerId === 'collaps' || activePlayerObj?.id === 'collaps';
+  const activePlayerTranslations = isCollapsPlayer
+    ? []
+    : ((activePlayerObj?.translations && activePlayerObj.translations.length > 0)
+      ? activePlayerObj.translations
+      : (movie.translationsList || []));
 
-  const activeIframeSrc = selectedPlayerId === 'cdnmovies' ? cdnMoviesIframeSrc : flixIframeSrc;
+  const directStreamUrl = selectedPlayerId === 'videohub'
+    ? videoHubStreamUrl
+    : (isDirectMediaFile ? candidateUrl : undefined);
+
+  let activeIframeSrc = '';
+  if (selectedPlayerId === 'collaps') {
+    activeIframeSrc = collapsIframeSrc;
+  } else if (selectedPlayerId === 'cdnmovies') {
+    activeIframeSrc = cdnMoviesIframeSrc;
+  } else if (selectedPlayerId === 'flixcdn') {
+    activeIframeSrc = flixIframeSrc;
+  } else if (activePlayerObj?.iframeUrl) {
+    try {
+      const u = new URL(activePlayerObj.iframeUrl, typeof window !== 'undefined' ? window.location.origin : 'https://localhost');
+      if (isSeriesOrAnime || activeSeason > 1 || activeEpisode > 1) {
+        u.searchParams.set('season', String(activeSeason));
+        u.searchParams.set('episode', String(activeEpisode));
+      }
+      if (translation) {
+        u.searchParams.set('translation', String(translation));
+      }
+      activeIframeSrc = u.toString();
+    } catch (e) {
+      activeIframeSrc = activePlayerObj.iframeUrl;
+    }
+  }
 
   const handleSelectPlayer = (pId: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -278,6 +350,9 @@ export default function WatchContent({ id }: WatchContentProps) {
         selectedTranslationId={activeTranslation}
         players={availablePlayers}
         selectedPlayerId={selectedPlayerId}
+        qualities={selectedPlayerId === 'videohub' ? videoHubQualities : undefined}
+        selectedQualityUrl={videoHubStreamUrl}
+        onSelectQuality={(qUrl) => setVideoHubStreamUrl(qUrl)}
         onSelectPlayer={handleSelectPlayer}
         onNextEpisode={hasEpisodeSelection ? handleNextEpisode : undefined}
         onPrevEpisode={hasEpisodeSelection && activeEpisode > 1 ? handlePrevEpisode : undefined}

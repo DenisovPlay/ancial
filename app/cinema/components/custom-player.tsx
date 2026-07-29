@@ -17,6 +17,9 @@ interface CustomPlayerProps {
   selectedTranslationId?: number | null;
   players?: Array<{ id: string; name: string; provider: string; quality?: string }>;
   selectedPlayerId?: string;
+  qualities?: Array<{ label: string; url: string }>;
+  selectedQualityUrl?: string;
+  onSelectQuality?: (url: string) => void;
   onSelectPlayer?: (id: string) => void;
   onNextEpisode?: () => void;
   onPrevEpisode?: () => void;
@@ -50,6 +53,9 @@ export default function CustomPlayer({
   selectedTranslationId,
   players,
   selectedPlayerId = 'flixcdn',
+  qualities,
+  selectedQualityUrl,
+  onSelectQuality,
   onSelectPlayer,
   onNextEpisode,
   onPrevEpisode,
@@ -67,6 +73,7 @@ export default function CustomPlayer({
   const [volume, setVolume] = useState<number>(1);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [showQualityDropdown, setShowQualityDropdown] = useState<boolean>(false);
 
   const [showControls, setShowControls] = useState<boolean>(true);
   const [isIframeLoading, setIsIframeLoading] = useState<boolean>(true);
@@ -214,6 +221,8 @@ export default function CustomPlayer({
     };
   }, [resetControlsTimer]);
 
+  const isCollaps = selectedPlayerId === 'collaps' || (fallbackIframeSrc && fallbackIframeSrc.includes('ortified.ws'));
+
   // If no direct video src is provided, fallback cleanly to iframe with our custom controls overlay
   if (!src) {
     return (
@@ -228,15 +237,17 @@ export default function CustomPlayer({
         <div
           onMouseEnter={resetControlsTimer}
           onMouseMove={resetControlsTimer}
-          className="absolute top-0 inset-x-0 h-16 z-30 pointer-events-auto"
+          className={`absolute top-0 inset-x-0 h-16 z-30 ${isCollaps ? 'pointer-events-none' : 'pointer-events-auto'}`}
         />
         {/* TOP HEADER CONTROLS OVERLAY (ALWAYS Z-40 ABOVE PRELOADER) */}
         <div
-          className={`absolute top-0 inset-x-0 p-4 lg:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity duration-300 z-40 ${
-            showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
+          className={`absolute inset-x-0 p-4 lg:p-6 flex items-center justify-between transition-all duration-300 z-40 pointer-events-none ${
+            isCollaps
+              ? 'top-10 lg:top-12 bg-gradient-to-b from-transparent via-black/40 to-transparent'
+              : 'top-0 bg-gradient-to-b from-black/90 via-black/40 to-transparent'
+          } ${showControls ? 'opacity-100' : 'opacity-0'}`}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 pointer-events-auto">
             <button
               onClick={onBack}
               aria-label="Назад"
@@ -262,7 +273,7 @@ export default function CustomPlayer({
             <button
               onClick={onSelectEpisodeModal}
               tabIndex={0}
-              className="focusable-tv px-4 py-2 flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-xl outline-none focus:outline-none focus:ring-4 focus:ring-white cursor-pointer active:scale-95"
+              className="focusable-tv pointer-events-auto px-4 py-2 flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-xl outline-none focus:outline-none focus:ring-4 focus:ring-white cursor-pointer active:scale-95"
             >
               <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -271,8 +282,8 @@ export default function CustomPlayer({
                 {((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1)
                   ? `С${season || 1} Е${episode || 1} (Выбор серии)`
                   : players && players.length > 1
-                  ? 'Плееры и озвучка'
-                  : 'Выбор озвучки'}
+                  ? 'Плееры и источники'
+                  : 'Выбор серии'}
               </span>
             </button>
           )}
@@ -336,22 +347,22 @@ export default function CustomPlayer({
           showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 pr-2">
           <button
             onClick={onBack}
             aria-label="Назад"
             tabIndex={0}
-            className="focusable-tv p-2.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
+            className="focusable-tv p-2.5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl shrink-0"
           >
             <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
 
-          <div>
-            <h1 className="text-lg lg:text-xl font-black text-white line-clamp-1">{title}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg lg:text-xl font-black text-white truncate max-w-[200px] xs:max-w-[280px] sm:max-w-md lg:max-w-xl">{title}</h1>
             {isSeries && ((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1) && (
-              <p className="text-xs text-zinc-400 font-semibold">
+              <p className="text-[11px] sm:text-xs text-zinc-400 font-semibold truncate">
                 {(totalSeasons || 0) > 1 ? `Сезон ${season || 1}, ` : ''}Серия {episode || 1}
               </p>
             )}
@@ -362,17 +373,23 @@ export default function CustomPlayer({
           <button
             onClick={onSelectEpisodeModal}
             tabIndex={0}
-            className="focusable-tv px-4 py-2 flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-xl outline-none focus:outline-none focus:ring-4 focus:ring-white cursor-pointer active:scale-95"
+            aria-label="Выбор серии и озвучки"
+            className="focusable-tv px-3 py-2 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-xl outline-none focus:outline-none focus:ring-4 focus:ring-white cursor-pointer active:scale-95 shrink-0"
           >
-            <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
-            <span>
+            <span className="hidden sm:inline">
               {((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1)
                 ? `С${season || 1} Е${episode || 1} (Выбор серии)`
                 : players && players.length > 1
                 ? 'Плееры и озвучка'
                 : 'Выбор озвучки'}
+            </span>
+            <span className="sm:hidden font-extrabold text-xs">
+              {((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1)
+                ? `С${season || 1} Е${episode || 1}`
+                : 'Меню'}
             </span>
           </button>
         )}
@@ -436,13 +453,14 @@ export default function CustomPlayer({
         </div>
 
         {/* BOTTOM ACTION BUTTONS */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <div className="flex items-center justify-between gap-3 pt-1">
           <div className="flex items-center gap-3">
             {/* PLAY / PAUSE */}
             <button
               onClick={togglePlay}
               tabIndex={0}
-              className="focusable-tv p-3 rounded-2xl bg-white hover:bg-zinc-200 text-black font-extrabold flex items-center justify-center transition-transform active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white"
+              aria-label={isPlaying ? 'Пауза' : 'Воспроизведение'}
+              className="focusable-tv p-3 rounded-3xl bg-white hover:bg-zinc-200 text-black font-extrabold flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white shadow-xl"
             >
               {isPlaying ? (
                 <svg className="w-5 h-5 fill-black" viewBox="0 0 24 24">
@@ -455,12 +473,12 @@ export default function CustomPlayer({
               )}
             </button>
 
-            {/* REWIND -10S */}
+            {/* REWIND -10S (HIDDEN ON MOBILE PHONES) */}
             <button
               onClick={() => seekRelative(-10)}
               tabIndex={0}
               aria-label="Назад на 10 секунд"
-              className="focusable-tv p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white flex items-center gap-1 text-xs font-bold"
+              className="focusable-tv hidden sm:flex p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold"
             >
               <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
                 <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
@@ -468,12 +486,12 @@ export default function CustomPlayer({
               <span>-10s</span>
             </button>
 
-            {/* FAST FORWARD +10S */}
+            {/* FAST FORWARD +10S (HIDDEN ON MOBILE PHONES) */}
             <button
               onClick={() => seekRelative(10)}
               tabIndex={0}
               aria-label="Вперёд на 10 секунд"
-              className="focusable-tv p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white flex items-center gap-1 text-xs font-bold"
+              className="focusable-tv hidden sm:flex p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold"
             >
               <span>+10s</span>
               <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
@@ -483,12 +501,66 @@ export default function CustomPlayer({
           </div>
 
           <div className="flex items-center gap-3">
+            {/* QUALITY DROPDOWN SELECTOR */}
+            {qualities && qualities.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowQualityDropdown((prev) => !prev)}
+                  tabIndex={0}
+                  className="focusable-tv px-3.5 py-2 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs flex items-center gap-1.5 transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg"
+                >
+                  <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>
+                    {qualities.find((q) => (selectedQualityUrl ? selectedQualityUrl === q.url : src === q.url))?.label || qualities[0]?.label || 'Качество'}
+                  </span>
+                  <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${showQualityDropdown ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showQualityDropdown && (
+                  <div className="absolute bottom-12 right-0 bg-zinc-900/95 border border-zinc-700/60 rounded-3xl p-2 shadow-2xl backdrop-blur-xl z-50 flex flex-col gap-1 min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
+                    <div className="text-[10px] uppercase font-black tracking-wider text-zinc-400 px-3 py-1 border-b border-white/5">
+                      Качество
+                    </div>
+                    {qualities.map((q) => {
+                      const isSelected = selectedQualityUrl ? selectedQualityUrl === q.url : src === q.url;
+                      return (
+                        <button
+                          key={q.label}
+                          onClick={() => {
+                            if (onSelectQuality) onSelectQuality(q.url);
+                            setShowQualityDropdown(false);
+                          }}
+                          className={`focusable-tv w-full px-3 py-2 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all duration-200 cursor-pointer active:scale-95 outline-none focus:ring-2 focus:ring-white ${
+                            isSelected
+                              ? 'bg-white text-black shadow-md'
+                              : 'text-zinc-300 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          <span>{q.label}</span>
+                          {isSelected && (
+                            <svg className="w-3.5 h-3.5 fill-black" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* FULLSCREEN TOGGLE */}
             <button
               onClick={toggleFullscreen}
               tabIndex={0}
               aria-label="Полноэкранный режим"
-              className="focusable-tv p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
+              className="focusable-tv p-3 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg"
             >
               <svg className="w-5 h-5 stroke-white fill-none stroke-[2]" viewBox="0 0 24 24">
                 {isFullscreen ? (

@@ -11,6 +11,8 @@ import { useTvNavigation } from '../../use-tv-navigation';
 import { fetchCinemaVideoById, fetchCinemaSearch, getOptimizedImageUrl } from '../../cinema-api';
 import { CinemaInfoSkeleton, FrameBrandLoader } from '../../components/cinema-skeleton';
 
+import { getCinemaCache, setCinemaCache } from '../../cinema-cache';
+
 interface InfoContentProps {
   id: string;
 }
@@ -36,47 +38,84 @@ export default function InfoContent({ id }: InfoContentProps) {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadMovieInfo() {
-      setIsLoading(true);
-      const target = await fetchCinemaVideoById(id);
-      if (isMounted && target) {
-        setInfoMovie(target);
 
-        const defaultPlayerId = target.players?.[0]?.id || 'flixcdn';
-        setSelectedPlayerId(defaultPlayerId);
+    // 1. Read cached data first
+    const cachedMovie = getCinemaCache<Movie>('info', id);
+    const cachedSimilar = getCinemaCache<Movie[]>('similar', id);
 
-        // Load saved progress from localStorage
-        try {
-          const progRaw = localStorage.getItem(`cinema_progress_${target.id}`);
-          if (progRaw) {
-            const parsed = JSON.parse(progRaw);
-            setSavedProgress(parsed);
-            if (parsed.season) setSelectedSeason(parsed.season);
-            if (parsed.episode) setSelectedEpisode(parsed.episode);
-            if (parsed.translationId) setSelectedTranslation(parsed.translationId);
-          } else {
-            const defaultPlayer = target.players?.find((p) => p.id === defaultPlayerId) || target.players?.[0];
-            const defaultTrans = defaultPlayer?.translations?.[0]?.id || target.translationsList?.[0]?.id || null;
-            if (defaultTrans) setSelectedTranslation(defaultTrans);
-          }
-        } catch (e) { }
+    if (cachedMovie) {
+      setInfoMovie(cachedMovie);
+      if (cachedSimilar) setSimilarMovies(cachedSimilar);
+      setIsLoading(false);
 
-        // Load similar content
-        const similar = await fetchCinemaSearch('', target.type === 'series' ? 'serial' : 'movie');
-        if (isMounted) {
-          setSimilarMovies(similar.filter((m) => m.id !== target.id).slice(0, 10));
+      const defaultPlayerId = cachedMovie.players?.[0]?.id || 'flixcdn';
+      setSelectedPlayerId(defaultPlayerId);
+      try {
+        const progRaw = localStorage.getItem(`cinema_progress_${cachedMovie.id}`);
+        if (progRaw) {
+          const parsed = JSON.parse(progRaw);
+          setSavedProgress(parsed);
+          if (parsed.season) setSelectedSeason(parsed.season);
+          if (parsed.episode) setSelectedEpisode(parsed.episode);
+          if (parsed.translationId) setSelectedTranslation(parsed.translationId);
+        } else {
+          const defaultPlayer = cachedMovie.players?.find((p) => p.id === defaultPlayerId) || cachedMovie.players?.[0];
+          const defaultTrans = defaultPlayer?.translations?.[0]?.id || cachedMovie.translationsList?.[0]?.id || null;
+          if (defaultTrans) setSelectedTranslation(defaultTrans);
         }
-      }
-      if (isMounted) {
-        setIsLoading(false);
-        setTimeout(() => {
-          const watchBtn = document.querySelector<HTMLElement>('[data-watch-hero-btn]');
-          const backBtn = Array.from(document.querySelectorAll<HTMLElement>('[data-cinema-back="true"]')).find(
-            (b) => b.offsetWidth > 0 && b.offsetHeight > 0 && getComputedStyle(b).display !== 'none'
-          );
-          const targetBtn = watchBtn || backBtn;
-          if (targetBtn) targetBtn.focus();
-        }, 50);
+      } catch (e) {}
+    } else {
+      setIsLoading(true);
+    }
+
+    // 2. Background revalidate fetch
+    async function loadMovieInfo() {
+      try {
+        const target = await fetchCinemaVideoById(id);
+        if (isMounted && target) {
+          setInfoMovie(target);
+          setCinemaCache('info', id, target);
+
+          const defaultPlayerId = target.players?.[0]?.id || 'flixcdn';
+          setSelectedPlayerId(defaultPlayerId);
+
+          try {
+            const progRaw = localStorage.getItem(`cinema_progress_${target.id}`);
+            if (progRaw) {
+              const parsed = JSON.parse(progRaw);
+              setSavedProgress(parsed);
+              if (parsed.season) setSelectedSeason(parsed.season);
+              if (parsed.episode) setSelectedEpisode(parsed.episode);
+              if (parsed.translationId) setSelectedTranslation(parsed.translationId);
+            } else {
+              const defaultPlayer = target.players?.find((p) => p.id === defaultPlayerId) || target.players?.[0];
+              const defaultTrans = defaultPlayer?.translations?.[0]?.id || target.translationsList?.[0]?.id || null;
+              if (defaultTrans) setSelectedTranslation(defaultTrans);
+            }
+          } catch (e) { }
+
+          // Load similar content
+          const similar = await fetchCinemaSearch('', target.type === 'series' ? 'serial' : 'movie');
+          if (isMounted && similar) {
+            const filteredSimilar = similar.filter((m) => m.id !== target.id).slice(0, 10);
+            setSimilarMovies(filteredSimilar);
+            setCinemaCache('similar', id, filteredSimilar);
+          }
+        }
+      } catch (err) {
+        console.warn('loadMovieInfo error:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setTimeout(() => {
+            const watchBtn = document.querySelector<HTMLElement>('[data-watch-hero-btn]');
+            const backBtn = Array.from(document.querySelectorAll<HTMLElement>('[data-cinema-back="true"]')).find(
+              (b) => b.offsetWidth > 0 && b.offsetHeight > 0 && getComputedStyle(b).display !== 'none'
+            );
+            const targetBtn = watchBtn || backBtn;
+            if (targetBtn) targetBtn.focus();
+          }, 50);
+        }
       }
     }
 
@@ -149,7 +188,7 @@ export default function InfoContent({ id }: InfoContentProps) {
     } catch (err) { }
 
     const queryParams = new URLSearchParams();
-    if (infoMovie.type === 'series' || infoMovie.type === 'animeserial' || infoMovie.type === 'showserial') {
+    if (isSeriesOrAnime || availableSeasonsCount > 1 || currentSeasonEpisodes.length > 1) {
       queryParams.set('season', String(s));
       queryParams.set('episode', String(e));
     }
@@ -203,9 +242,12 @@ export default function InfoContent({ id }: InfoContentProps) {
   const hasEpisodeSelection = isSeriesOrAnime && (hasMultipleSeasons || hasMultipleEpisodes);
 
   const activePlayerObj = infoMovie.players?.find((p) => p.id === selectedPlayerId) || infoMovie.players?.[0];
-  const activeTranslations = (activePlayerObj?.translations && activePlayerObj.translations.length > 0)
-    ? activePlayerObj.translations
-    : (infoMovie.translationsList || []);
+  const isCollapsPlayer = selectedPlayerId === 'collaps' || activePlayerObj?.id === 'collaps';
+  const activeTranslations = isCollapsPlayer
+    ? []
+    : ((activePlayerObj?.translations && activePlayerObj.translations.length > 0)
+      ? activePlayerObj.translations
+      : (infoMovie.translationsList || []));
 
   return (
     <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">

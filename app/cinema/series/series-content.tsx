@@ -10,6 +10,7 @@ import { Movie } from '../types';
 import { useTvNavigation } from '../use-tv-navigation';
 import { fetchCinemaSearch, fetchCinemaGetVideo } from '../cinema-api';
 import { CinemaGridSkeleton, CinemaRowSkeleton } from '../components/cinema-skeleton';
+import { getCinemaCache, setCinemaCache } from '../cinema-cache';
 
 export default function SeriesContent() {
   useTvNavigation();
@@ -28,20 +29,35 @@ export default function SeriesContent() {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadInitialSeries() {
-      setIsLoading(true);
-      setPage(1);
-      let data: Movie[] = [];
-      if (selectedGenre === 'all') {
-        data = await fetchCinemaSearch('', 'serial', 1, { orderby: 'created_at', orderby_direction: 'desc' });
-      } else {
-        data = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'serial', page: 1, limit: 20 });
-      }
+    setPage(1);
 
-      if (isMounted) {
-        setSeries(data);
-        setHasMore(data.length >= 10);
-        setIsLoading(false);
+    const cachedSeries = getCinemaCache<Movie[]>('catalog_series', selectedGenre);
+    if (cachedSeries && cachedSeries.length > 0) {
+      setSeries(cachedSeries);
+      setHasMore(cachedSeries.length >= 10);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
+    async function loadInitialSeries() {
+      try {
+        let data: Movie[] = [];
+        if (selectedGenre === 'all') {
+          data = await fetchCinemaSearch('', 'serial', 1, { orderby: 'created_at', orderby_direction: 'desc' });
+        } else {
+          data = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'serial', page: 1, limit: 20 });
+        }
+
+        if (isMounted && data) {
+          setSeries(data);
+          setHasMore(data.length >= 10);
+          setCinemaCache('catalog_series', selectedGenre, data);
+        }
+      } catch (err) {
+        console.warn('loadInitialSeries error:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     }
     loadInitialSeries();
