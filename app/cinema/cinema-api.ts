@@ -29,9 +29,11 @@ function formatFlixMovie(item: any): Movie {
 
   const realId = String(
     target.kinopoisk_id ||
+    target.kinopoisk ||
     target.kp_id ||
     target.filmId ||
     item.kinopoisk_id ||
+    item.kinopoisk ||
     item.kp_id ||
     target.id ||
     item.id ||
@@ -56,6 +58,7 @@ function formatFlixMovie(item: any): Movie {
   const posterUrl =
     target.image_url ||
     target.poster ||
+    target.img ||
     target.poster_url ||
     target.posterUrl ||
     item.poster ||
@@ -69,7 +72,7 @@ function formatFlixMovie(item: any): Movie {
     posterUrl;
 
   const type: 'movie' | 'series' =
-    target.type === 'serial' || target.type === 'series' || target.is_serial || item.type === 'serial' ? 'series' : 'movie';
+    target.type === 'serial' || target.type === 'series' || target.type === 'animeserial' || target.type === 'showserial' || target.is_serial || item.type === 'serial' ? 'series' : 'movie';
 
   const director = target.director || (Array.isArray(target.directors) ? target.directors.map((d: any) => d.name_ru || d.name_en || d).join(', ') : 'Режиссёр');
   
@@ -84,7 +87,7 @@ function formatFlixMovie(item: any): Movie {
     ? target.actors.split(',').map((s: string) => s.trim())
     : ['В главных ролях'];
 
-  let videoUrl = target.player_url || target.iframe_url || target.url || target.link || target.stream_url || item.iframe_url || '';
+  let videoUrl = target.adress || target.player_url || target.iframe_url || target.url || target.link || target.stream_url || item.iframe_url || '';
   if (!videoUrl && realId) {
     videoUrl = `https://vidsrc.me/embed/movie?kp=${realId}`;
   }
@@ -92,6 +95,45 @@ function formatFlixMovie(item: any): Movie {
   const durationStr = target.film_length ? `${target.film_length} мин.` : typeof target.duration === 'number' ? `${target.duration} мин.` : String(target.duration || '110 мин.');
   const titleStr = target.ru_name || target.title_rus || target.title || target.name || target.ru_title || item.title || 'Без названия';
   const originalTitleStr = target.original_name || target.orig_title || target.original_title || target.en_title || target.alternative_name || '';
+
+  // Map translationsList
+  const rawTranslations = target.translations || item.translations || [];
+  const translationsList = Array.isArray(rawTranslations)
+    ? rawTranslations.map((t: any) => ({
+        id: t.id || t.translation_id || 0,
+        title: t.title || t.name || t.tag || 'Перевод',
+      })).filter((t: any) => t.id > 0)
+    : [];
+
+  // Map counters
+  const counters = target.counters || item.counters || null;
+
+  // Map files -> episodesBySeason
+  const files = target.files || item.files || [];
+  const episodesBySeason: Record<number, number[]> = {};
+
+  if (Array.isArray(files) && files.length > 0) {
+    files.forEach((f: any) => {
+      const s = f.season_number || f.season || 1;
+      const e = f.series_number || f.episode || f.series || 1;
+      if (!episodesBySeason[s]) episodesBySeason[s] = [];
+      if (!episodesBySeason[s].includes(e)) episodesBySeason[s].push(e);
+    });
+    Object.keys(episodesBySeason).forEach((sKey) => {
+      episodesBySeason[Number(sKey)].sort((a, b) => a - b);
+    });
+  } else if (counters && counters.seasons) {
+    const totalSeasons = counters.seasons || 1;
+    const totalEp = counters.episodes || 1;
+    const epPerSeason = Math.max(1, Math.ceil(totalEp / totalSeasons));
+    for (let s = 1; s <= totalSeasons; s++) {
+      const startEp = (s - 1) * epPerSeason + 1;
+      const endEp = Math.min(totalEp, s * epPerSeason);
+      const eps: number[] = [];
+      for (let e = startEp; e <= endEp; e++) eps.push(e);
+      episodesBySeason[s] = eps.length > 0 ? eps : [1];
+    }
+  }
 
   return {
     id: realId,
@@ -111,11 +153,34 @@ function formatFlixMovie(item: any): Movie {
     director,
     cast,
     isNew: year >= 2024,
+    counters,
+    translationsList,
+    episodesBySeason,
   };
 }
 
-export async function fetchCinemaSearch(query: string, type?: string, page: number = 1): Promise<Movie[]> {
-  const cacheKey = `cinema_search_${query}_${type || 'all'}_p${page}`;
+export async function fetchCinemaSearch(
+  query: string,
+  type?: string,
+  page: number = 1,
+  options?: { years?: string; orderby?: string; orderby_direction?: string; limit?: number }
+): Promise<Movie[]> {
+  if (query.trim()) {
+    return fetchCinemaVideos({
+      page,
+      limit: options?.limit || 20,
+      sort: '-rating_kp,-rating_imdb',
+      'filter[title]': query.trim(),
+      ...(type ? { type } : {})
+    });
+  }
+
+  const years = options?.years || '';
+  const orderby = options?.orderby || '';
+  const orderbyDir = options?.orderby_direction || '';
+  const limit = options?.limit || 20;
+
+  const cacheKey = `cinema_search_${query}_${type || 'all'}_${years}_${orderby}_${orderbyDir}_p${page}_l${limit}`;
   const cached = CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'search' });
   if (cached) return cached;
 
@@ -123,9 +188,12 @@ export async function fetchCinemaSearch(query: string, type?: string, page: numb
     const url = new URL(`${API_BASE}/search.php`, window.location.origin);
     if (query) url.searchParams.set('title', query);
     if (type) url.searchParams.set('type', type);
+    if (years) url.searchParams.set('years', years);
+    if (orderby) url.searchParams.set('orderby', orderby);
+    if (orderbyDir) url.searchParams.set('orderby_direction', orderbyDir);
     url.searchParams.set('page', String(page));
-    url.searchParams.set('offset', String((page - 1) * 20));
-    url.searchParams.set('limit', '20');
+    url.searchParams.set('offset', String((page - 1) * limit));
+    url.searchParams.set('limit', String(limit));
 
     const res = await fetch(url.toString());
     if (!res.ok) return [];
@@ -133,8 +201,9 @@ export async function fetchCinemaSearch(query: string, type?: string, page: numb
     const items = data?.result || data?.items || [];
     const movies = items.map(formatFlixMovie);
 
-    // Убрали автоматическое кэширование (CacheManager.set), 
-    // чтобы не засорять кэш опечатками и промежуточными буквами ("м", "ма", "мат" и т.д.)
+    if (movies.length > 0) {
+      CacheManager.set(cacheKey, movies, { category: 'cinema', subcategory: 'search', ttl: CINEMA_CACHE_TTL });
+    }
     return movies;
   } catch (err) {
     console.error('fetchCinemaSearch error:', err);
@@ -184,6 +253,39 @@ export async function fetchCinemaGetVideo(filters: {
   }
 }
 
+export async function fetchCinemaVideos(params: {
+  page?: number;
+  limit?: number;
+  sort_by?: string;
+  sort_direction?: string;
+  year_from?: number | string;
+  year_to?: number | string;
+  type?: string;
+  [key: string]: any;
+}): Promise<Movie[]> {
+  const queryStr = new URLSearchParams(params as any).toString();
+  const cacheKey = `cinema_v2_videos_${queryStr}`;
+  const cached = CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'video' });
+  if (cached) return cached;
+
+  try {
+    const url = new URL(`${API_BASE}/videos.php?${queryStr}`, window.location.origin);
+    const res = await fetch(url.toString());
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data?.data || data?.result || data?.items || [];
+    const movies = Array.isArray(items) ? items.map(formatFlixMovie) : [];
+
+    if (movies.length > 0) {
+      CacheManager.set(cacheKey, movies, { category: 'cinema', subcategory: 'video', ttl: CINEMA_CACHE_TTL });
+    }
+    return movies;
+  } catch (err) {
+    console.error('fetchCinemaVideos error:', err);
+    return [];
+  }
+}
+
 export async function fetchCinemaUpdates(): Promise<{ movies: Movie[]; serials: Movie[] }> {
   const cacheKey = `cinema_updates`;
   const cached = CacheManager.get<{ movies: Movie[]; serials: Movie[] }>(cacheKey, { category: 'cinema', subcategory: 'updates' });
@@ -220,6 +322,9 @@ export async function fetchCinemaVideoById(id: string): Promise<Movie | null> {
   if (cached) return cached;
 
   try {
+    let foundMovie: Movie | null = null;
+    let internalId = id;
+
     // STEP 1: Search strictly by kinopoisk_id
     const searchUrl = new URL(`${API_BASE}/search.php`, window.location.origin);
     searchUrl.searchParams.set('kinopoisk_id', id);
@@ -229,40 +334,37 @@ export async function fetchCinemaVideoById(id: string): Promise<Movie | null> {
       const items = searchData?.result || searchData?.items || [];
       const exactMatch = items.find((m: any) => String(m.kinopoisk_id || m.id) === String(id));
       if (exactMatch) {
-        const found = formatFlixMovie(exactMatch);
-        CacheManager.set(cacheKey, found, { category: 'cinema', subcategory: 'video', ttl: CINEMA_CACHE_TTL });
-        return found;
+        foundMovie = formatFlixMovie(exactMatch);
+        if (exactMatch.id) internalId = String(exactMatch.id);
       }
     }
 
-    // STEP 2: Fallback search in video.php with strict ID matching
-    const genUrl = new URL(`${API_BASE}/video.php`, window.location.origin);
-    genUrl.searchParams.set('id', id);
+    // STEP 2: Fetch v2 video details from video_v2.php (provides counters, files, translations)
+    const genUrl = new URL(`${API_BASE}/video_v2.php`, window.location.origin);
+    genUrl.searchParams.set('id', internalId);
     const genRes = await fetch(genUrl.toString());
     if (genRes.ok) {
       const genData = await genRes.json();
-      
-      // video.php (v2 эндпоинт) возвращает один объект в data, а не массив
       const v2Data = genData?.data || genData;
-      
-      // Проверяем, что вернулся объект с правильным ID (kinopoisk_id или внутренним id)
-      if (v2Data && !Array.isArray(v2Data) && (String(v2Data.kinopoisk_id || v2Data.kp_id) === String(id) || String(v2Data.id) === String(id))) {
-        const found = formatFlixMovie(v2Data);
-        CacheManager.set(cacheKey, found, { category: 'cinema', subcategory: 'video', ttl: CINEMA_CACHE_TTL });
-        return found;
-      }
-      
-      // На случай если бэкенд всё-таки вернул массив (fallback)
-      const items = Array.isArray(genData?.data?.items) ? genData.data.items : Array.isArray(genData?.result) ? genData.result : Array.isArray(genData?.items) ? genData.items : [];
-      const exactMatch = items.find((m: any) => String(m.kinopoisk_id || m.id) === String(id));
-      if (exactMatch) {
-        const found = formatFlixMovie(exactMatch);
-        CacheManager.set(cacheKey, found, { category: 'cinema', subcategory: 'video', ttl: CINEMA_CACHE_TTL });
-        return found;
+      if (v2Data && !Array.isArray(v2Data) && v2Data.id) {
+        const v2Movie = formatFlixMovie(v2Data);
+        if (foundMovie) {
+          foundMovie = {
+            ...foundMovie,
+            counters: v2Movie.counters || foundMovie.counters,
+            translationsList: (v2Movie.translationsList && v2Movie.translationsList.length > 0) ? v2Movie.translationsList : foundMovie.translationsList,
+            episodesBySeason: (v2Movie.episodesBySeason && Object.keys(v2Movie.episodesBySeason).length > 0) ? v2Movie.episodesBySeason : foundMovie.episodesBySeason,
+          };
+        } else {
+          foundMovie = v2Movie;
+        }
       }
     }
 
-    return null;
+    if (foundMovie) {
+      CacheManager.set(cacheKey, foundMovie, { category: 'cinema', subcategory: 'video', ttl: CINEMA_CACHE_TTL });
+    }
+    return foundMovie;
   } catch (err) {
     console.error('fetchCinemaVideoById error:', err);
     return null;

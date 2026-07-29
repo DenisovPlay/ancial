@@ -3,6 +3,15 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
+const getBackBtn = (): HTMLElement | null => {
+  const btns = Array.from(document.querySelectorAll<HTMLElement>('[data-cinema-back="true"]'));
+  return (
+    btns.find((b) => b.offsetWidth > 0 && b.offsetHeight > 0 && getComputedStyle(b).display !== 'none') ||
+    btns[0] ||
+    null
+  );
+};
+
 export function useTvNavigation() {
   const pathname = usePathname();
 
@@ -22,7 +31,7 @@ export function useTvNavigation() {
 
       // ON INFO PAGE (/cinema/info/...): ALWAYS FOCUS BACK BUTTON DIRECTLY
       if (currentPath.includes('/cinema/info') || currentPath.includes('/cinema/watch')) {
-        const backBtn = document.querySelector<HTMLElement>('[data-cinema-back="true"]');
+        const backBtn = getBackBtn();
         if (backBtn) {
           backBtn.focus();
           return;
@@ -99,7 +108,7 @@ export function useTvNavigation() {
         // IF NO ACTIVE FOCUS: BOOTSTRAP TO BACK BUTTON OR SEARCH INPUT OR ACTIVE NAV TAB
         if (!active || active === document.body) {
           e.preventDefault();
-          const backBtn = document.querySelector<HTMLElement>('[data-cinema-back="true"]');
+          const backBtn = getBackBtn();
           if (backBtn) {
             backBtn.focus();
             return;
@@ -124,17 +133,48 @@ export function useTvNavigation() {
 
         // ── 0. ABSOLUTE HIGHEST PRIORITY: SPECIAL RULES FOR BACK BUTTON IN HEADER ────
         if (isBackButton) {
-          if (e.key === 'ArrowDown') {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
             e.preventDefault();
-            const firstContentBtn = document.querySelector<HTMLElement>('[data-watch-hero-btn], [data-hero-section] button, [data-hero-section] a, main .focusable-tv, main button, main a');
+            const heroBtn = document.querySelector<HTMLElement>('[data-watch-hero-btn]');
+            const firstContentBtn = heroBtn || document.querySelector<HTMLElement>('main [data-movie-card="true"], main .focusable-tv, main button');
             if (firstContentBtn) {
               firstContentBtn.focus();
+              if (heroBtn) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                firstContentBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+            return;
+          }
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            return;
+          }
+        }
+
+        // ── 0.05 HERO WATCH BUTTON HANDLING ON INFO/MAIN PAGES ────────────────────
+        const isHeroBtn = active.hasAttribute('data-watch-hero-btn') || !!active.closest?.('[data-watch-hero-btn]');
+        if (isHeroBtn) {
+          if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            const backBtn = getBackBtn();
+            const targetHeader = backBtn || findActiveNavTab();
+            if (targetHeader) {
+              targetHeader.focus();
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }
             return;
           }
-          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
             e.preventDefault();
+            const firstCard = document.querySelector<HTMLElement>('main [data-movie-card="true"], main .focusable-tv');
+            if (firstCard) {
+              firstCard.focus();
+              firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              window.scrollBy({ top: 300, behavior: 'smooth' });
+            }
             return;
           }
         }
@@ -160,6 +200,21 @@ export function useTvNavigation() {
             }
           }
 
+          // RULE A.1: FROM SEARCH PAGE MAIN INPUT -> ARROW RIGHT GOES DIRECTLY TO VIRTUAL KEYBOARD PANEL
+          if (isSearchPageInput && e.key === 'ArrowRight') {
+            const vkeys = Array.from(
+              document.querySelectorAll<HTMLElement>('[data-vkey-panel] button')
+            ).filter((el) => el.offsetWidth > 0 && el.offsetHeight > 0);
+            if (vkeys.length > 0) {
+              e.preventDefault();
+              const firstVKey = document.querySelector<HTMLElement>(
+                '[data-vkey-panel] [data-leftmost-vkey="true"], [data-vkey-panel] button'
+              );
+              (firstVKey || vkeys[0]).focus();
+              return;
+            }
+          }
+
           // RULE B: FROM SEARCH PAGE MAIN INPUT -> ARROW DOWN GOES STRICTLY TO THE FIRST RESULT CARD (TOP-LEFT)!
           if (isSearchPageInput && e.key === 'ArrowDown') {
             e.preventDefault();
@@ -172,10 +227,13 @@ export function useTvNavigation() {
             }
           }
 
-          // RULE C: FROM RESULT CARDS -> ARROW UP GOES TO PAGE SEARCH INPUT (NEVER TO HEADER "ГЛАВНАЯ")
+          // RULE C: FROM RESULT CARDS -> ARROW UP GOES TO CARD DIRECTLY ABOVE OR SEARCH PAGE INPUT
           if (isResultCard && e.key === 'ArrowUp') {
             e.preventDefault();
             const cur = active.getBoundingClientRect();
+            const cx = cur.left + cur.width / 2;
+            const cy = cur.top + cur.height / 2;
+
             const focusables = Array.from(
               document.querySelectorAll<HTMLElement>('[data-search-results] [data-movie-card="true"], [data-search-results] .focusable-tv')
             ).filter(
@@ -186,20 +244,74 @@ export function useTvNavigation() {
                 getComputedStyle(el).visibility !== 'hidden'
             );
 
-            const cardAbove = focusables.find((el) => {
-              const r = el.getBoundingClientRect();
-              return r.top + r.height / 2 < cur.top - 10;
-            });
+            let closestAbove: HTMLElement | null = null;
+            let minScore = Infinity;
 
-            if (cardAbove) {
-              cardAbove.focus();
+            for (const el of focusables) {
+              const r = el.getBoundingClientRect();
+              const ex = r.left + r.width / 2;
+              const ey = r.top + r.height / 2;
+              const dy = ey - cy;
+              const dx = ex - cx;
+
+              if (dy < -10) {
+                const score = Math.abs(dy) * 2 + Math.abs(dx);
+                if (score < minScore) {
+                  minScore = score;
+                  closestAbove = el;
+                }
+              }
+            }
+
+            if (closestAbove) {
+              closestAbove.focus();
+              closestAbove.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
               const pageInput = document.querySelector<HTMLElement>('[data-search-page-input="true"], main input');
               if (pageInput) {
                 pageInput.focus();
+                pageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }
             }
             return;
+          }
+
+          // RULE C.1: FROM RESULT CARDS -> ARROW RIGHT ON RIGHTMOST COLUMN GOES TO VIRTUAL KEYBOARD
+          if (isResultCard && e.key === 'ArrowRight') {
+            const cur = active.getBoundingClientRect();
+            const focusables = Array.from(
+              document.querySelectorAll<HTMLElement>('[data-search-results] [data-movie-card="true"], [data-search-results] .focusable-tv')
+            ).filter((el) => el.offsetWidth > 0 && el.offsetHeight > 0);
+
+            const cardToRight = focusables.find((el) => {
+              if (el === active) return false;
+              const r = el.getBoundingClientRect();
+              return r.left > cur.left + 20 && Math.abs(r.top - cur.top) < 50;
+            });
+
+            if (!cardToRight) {
+              const vkeys = Array.from(
+                document.querySelectorAll<HTMLElement>('[data-vkey-panel] button')
+              ).filter((el) => el.offsetWidth > 0 && el.offsetHeight > 0);
+
+              if (vkeys.length > 0) {
+                e.preventDefault();
+                const cy = cur.top + cur.height / 2;
+                let bestVKey = vkeys[0];
+                let minDiff = Infinity;
+                for (const vk of vkeys) {
+                  const r = vk.getBoundingClientRect();
+                  const ey = r.top + r.height / 2;
+                  const diff = Math.abs(ey - cy);
+                  if (diff < minDiff) {
+                    minDiff = diff;
+                    bestVKey = vk;
+                  }
+                }
+                bestVKey.focus();
+                return;
+              }
+            }
           }
 
           // RULE D: FROM VIRTUAL KEYBOARD -> ARROW LEFT TARGETS 4TH COLUMN (RIGHTMOST CARD) AT CORRESPONDING Y HEIGHT
@@ -298,12 +410,17 @@ export function useTvNavigation() {
             e.preventDefault();
             active.blur();
             const heroBtn = document.querySelector<HTMLElement>('[data-watch-hero-btn], [data-hero-section] button, [data-hero-section] a');
-            const pageInput = document.querySelector<HTMLElement>('[data-search-page-input="true"]');
-            const genreChip = document.querySelector<HTMLElement>('.focusable-tv[class*="rounded-full"]');
-            const target = heroBtn || pageInput || genreChip || document.querySelector<HTMLElement>('.focusable-tv');
+            const mainTarget = document.querySelector<HTMLElement>(
+              'main [data-search-page-input="true"], main [data-movie-card="true"], main .focusable-tv, main button:not([disabled]), main a[href]'
+            );
+            const target = heroBtn || mainTarget;
             if (target) {
               target.focus();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              if (heroBtn) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
             }
             return;
           }
@@ -349,12 +466,17 @@ export function useTvNavigation() {
 
           if (e.key === 'ArrowDown') {
             const heroBtn = document.querySelector<HTMLElement>('[data-watch-hero-btn], [data-hero-section] button, [data-hero-section] a');
-            const pageInput = document.querySelector<HTMLElement>('[data-search-page-input="true"]');
-            const genreChip = document.querySelector<HTMLElement>('.focusable-tv[class*="rounded-full"]');
-            const target = heroBtn || pageInput || genreChip || document.querySelector<HTMLElement>('.focusable-tv');
+            const mainTarget = document.querySelector<HTMLElement>(
+              'main [data-search-page-input="true"], main [data-movie-card="true"], main .focusable-tv, main button:not([disabled]), main a[href]'
+            );
+            const target = heroBtn || mainTarget;
             if (target) {
               target.focus();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              if (heroBtn) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
             }
             return;
           }
@@ -364,37 +486,58 @@ export function useTvNavigation() {
           }
         }
 
-        // ── 3. MOVING UP FROM CONTENT (GENRE CHIPS / BACK BUTTON RESPECT) ─────────
+        // ── 3. MOVING UP FROM CONTENT (EXACT SPATIAL UP SELECTION) ─────────────────
         if (e.key === 'ArrowUp') {
           const cur = active.getBoundingClientRect();
+          const cx = cur.left + cur.width / 2;
           const cy = cur.top + cur.height / 2;
 
           const bodyFocusables = Array.from(
             document.querySelectorAll<HTMLElement>(
-              '.focusable-tv, button:not([disabled]):not([tabindex="-1"]), [tabindex="0"]'
+              '[data-hero-section] .focusable-tv, [data-watch-hero-btn], main .focusable-tv, main button:not([disabled]), main a[href], main [tabindex="0"]'
             )
           ).filter(
             (el) =>
               el !== active &&
-              !el.closest?.('header') &&
+              !active.contains(el) &&
               el.offsetWidth > 0 &&
               el.offsetHeight > 0 &&
               getComputedStyle(el).visibility !== 'hidden'
           );
 
-          const elementAbove = bodyFocusables.find((el) => {
-            const r = el.getBoundingClientRect();
-            return r.top + r.height / 2 < cy - 10;
-          });
+          let closestAbove: HTMLElement | null = null;
+          let minScore = Infinity;
 
-          if (!elementAbove || active.closest?.('[data-hero-section]')) {
-            const targetHeader = findActiveNavTab();
-            if (targetHeader) {
-              targetHeader.focus();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+          for (const el of bodyFocusables) {
+            const r = el.getBoundingClientRect();
+            const ex = r.left + r.width / 2;
+            const ey = r.top + r.height / 2;
+            const dy = ey - cy;
+            const dx = ex - cx;
+
+            // Only consider elements strictly above active (dy < -10)
+            if (dy < -10) {
+              const score = Math.abs(dy) * 2 + Math.abs(dx);
+              if (score < minScore) {
+                minScore = score;
+                closestAbove = el;
+              }
             }
+          }
+
+          if (closestAbove) {
+            closestAbove.focus();
+            closestAbove.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
           }
+
+          // If no element above in main body, jump to active header tab / back button
+          const targetHeader = findActiveNavTab();
+          if (targetHeader) {
+            targetHeader.focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+          return;
         }
 
         // ── 5. SPATIAL NAVIGATION FOR LOWER CARDS & ROWS ──────────────────────────

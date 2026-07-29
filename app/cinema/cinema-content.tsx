@@ -15,14 +15,17 @@ import {
   fetchCinemaUpdates,
   fetchCinemaSearch,
   fetchCinemaGetVideo,
+  fetchCinemaVideos,
 } from './cinema-api';
 import { CinemaPageSkeleton } from './components/cinema-skeleton';
+import { useDragScroll } from '../hooks/useDragScroll';
 
 export default function CinemaContent() {
   useTvNavigation();
   const { lang } = useAuth();
   const { showNote } = useNotification();
   const router = useRouter();
+  const topScrollRef = useDragScroll({ speed: 2 });
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [myListIds, setMyListIds] = useState<string[]>([]);
@@ -45,43 +48,32 @@ export default function CinemaContent() {
     async function loadRealCinemaData() {
       setIsLoading(true);
       try {
-        const [updates, page1Movies, page2Movies, series, anime, page3Movies, page4Movies, page5Movies] = await Promise.all([
-          fetchCinemaUpdates(),
-          fetchCinemaSearch('', 'movie', 1),
-          fetchCinemaSearch('', 'movie', 2),
-          fetchCinemaSearch('', 'serial', 1),
-          fetchCinemaSearch('', 'anime', 1),
-          fetchCinemaSearch('', 'movie', 3),
-          fetchCinemaSearch('', 'movie', 4),
-          fetchCinemaSearch('', 'movie', 5),
+        const [heroItems, top10Items, freshMovies, freshSeries, animeItems, page2Movies, page3Movies] = await Promise.all([
+          // 1. Hero Slider: 2026 releases sorted by date added (-created_at)
+          fetchCinemaVideos({ page: 1, limit: 10, sort: '-created_at', year_from: 2026 }),
+          // 2. Top 10: 2026 releases sorted by popularity (-rating_kp,-rating_imdb)
+          fetchCinemaVideos({ page: 1, limit: 10, sort: '-rating_kp,-rating_imdb', year_from: 2026 }),
+          // 3. New Releases: 2026 Movies sorted by date added (-created_at)
+          fetchCinemaVideos({ page: 1, limit: 15, sort: '-created_at', year_from: 2026, type: 'movie' }),
+          // 4. Popular Series: 2026 Series sorted by popularity (-rating_kp,-rating_imdb)
+          fetchCinemaVideos({ page: 1, limit: 15, sort: '-rating_kp,-rating_imdb', year_from: 2026, type: 'serial' }),
+          // 5. Anime: Real Anime Collection
+          fetchCinemaGetVideo({ genres: 'аниме', page: 1, limit: 15 }),
+          // 6. More 2026 Movies: page 2
+          fetchCinemaVideos({ page: 2, limit: 15, sort: '-created_at', year_from: 2026, type: 'movie' }),
+          // 7. More 2026 Movies: page 3
+          fetchCinemaVideos({ page: 3, limit: 15, sort: '-created_at', year_from: 2026, type: 'movie' }),
         ]);
 
         if (!isMounted) return;
 
-        // Hero slides: fresh updates
-        const combinedHero = [...updates.movies, ...updates.serials, ...page1Movies].slice(0, 5);
-        setHeroMovies(combinedHero.length > 0 ? combinedHero : page1Movies.slice(0, 5));
-
-        // 1. Top 10 Weekly: Page 1 Movies
-        setTopMovies(page1Movies.slice(0, 10));
-
-        // 2. New Releases: Page 2 Movies (completely unique)
-        setNewReleases(page2Movies.slice(0, 15));
-
-        // 3. Popular Series: Real Series
-        setPopularSeries(series.slice(0, 15));
-
-        // 4. Anime: Real Anime Collection
-        setAnimeList(anime.slice(0, 15));
-
-        // 5. Documentary & Drama: Page 3 Movies
-        setDocumentaryMovies(page3Movies.slice(0, 15));
-
-        // 6. Retro & Classic: Page 4 Movies
-        setRetroMovies(page4Movies.slice(0, 15));
-
-        // 7. World Cinema Hits: Page 5 Movies
-        setWorldCinema(page5Movies.slice(0, 15));
+        setHeroMovies(heroItems.slice(0, 5));
+        setTopMovies(top10Items.length >= 10 ? top10Items.slice(0, 10) : top10Items);
+        setNewReleases(freshMovies.slice(0, 15));
+        setPopularSeries(freshSeries.slice(0, 15));
+        setAnimeList(animeItems.slice(0, 15));
+        setDocumentaryMovies(page2Movies.slice(0, 15));
+        setWorldCinema(page3Movies.slice(0, 15));
       } catch (err) {
         console.error('Failed to load cinema API data:', err);
       } finally {
@@ -197,9 +189,12 @@ export default function CinemaContent() {
                 <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
                   {lang?.frame_top_10 || 'Топ-10 недели в Frame'}
                 </h2>
-                <div className="flex items-center gap-3 overflow-x-auto overflow-y-visible scrollbar-none -mx-6 px-6 py-3">
+                <div
+                  ref={topScrollRef}
+                  className="viewport dragscroll flex items-center gap-3 overflow-x-auto overflow-y-visible scrollbar-none -mx-3 px-3 lg:-mx-6 lg:px-6 py-3 select-none"
+                >
                   {topMovies.map((movie, idx) => (
-                    <div key={movie.id} className="flex-none w-44 sm:w-56">
+                    <div key={movie.id} className="flex-none w-40 sm:w-56">
                       <MovieCard
                         movie={movie}
                         rankNumber={idx + 1}

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useDragScroll } from '../../hooks/useDragScroll';
 
 export interface GenreItem {
   id: string;
@@ -228,19 +229,6 @@ export const ANIME_GENRES: GenreItem[] = [
     ),
   },
   {
-    id: 'сёнэн',
-    label: 'Сёнэн',
-    bgColor: 'bg-rose-600/20 hover:bg-rose-600/35',
-    activeBgColor: 'bg-rose-600 text-white shadow-lg shadow-rose-500/30',
-    textColor: 'text-rose-400',
-    borderColor: 'border-rose-500/30',
-    iconSvg: (
-      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M7 2v11h3v9l7-12h-4l4-8z" />
-      </svg>
-    ),
-  },
-  {
     id: 'фэнтези',
     label: 'Фэнтези',
     bgColor: 'bg-purple-600/20 hover:bg-purple-600/35',
@@ -268,14 +256,14 @@ export const ANIME_GENRES: GenreItem[] = [
   },
   {
     id: 'боевик',
-    label: 'Боевые искусства',
-    bgColor: 'bg-orange-600/20 hover:bg-orange-600/35',
-    activeBgColor: 'bg-orange-600 text-white shadow-lg shadow-orange-500/30',
-    textColor: 'text-orange-300',
-    borderColor: 'border-orange-500/30',
+    label: 'Боевики',
+    bgColor: 'bg-rose-600/20 hover:bg-rose-600/35',
+    activeBgColor: 'bg-rose-600 text-white shadow-lg shadow-rose-500/30',
+    textColor: 'text-rose-400',
+    borderColor: 'border-rose-500/30',
     iconSvg: (
       <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-        <path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 16h2v2h-2zm0-6h2v4h-2z" />
+        <path d="M7 2v11h3v9l7-12h-4l4-8z" />
       </svg>
     ),
   },
@@ -292,6 +280,32 @@ export const ANIME_GENRES: GenreItem[] = [
       </svg>
     ),
   },
+  {
+    id: 'драма',
+    label: 'Драмы',
+    bgColor: 'bg-cyan-600/20 hover:bg-cyan-600/35',
+    activeBgColor: 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30',
+    textColor: 'text-cyan-300',
+    borderColor: 'border-cyan-500/30',
+    iconSvg: (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 21l3.65-.89c1.2.57 2.56.89 4 0 4.97 0 9-4.03 9-9s-4.03-9-9-9zm-3 8c-.83 0-1.5-.67-1.5-1.5S8.17 8 9 8s1.5.67 1.5 1.5S9.83 11 9 11zm6 0c-.83 0-1.5-.67-1.5-1.5S14.17 8 15 8s1.5.67 1.5 1.5S15.83 11 15 11zm-3 5.5c-1.8 0-3.3-1.1-3.9-2.5h7.8c-.6 1.4-2.1 2.5-3.9 2.5z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'фантастика',
+    label: 'Фантастика',
+    bgColor: 'bg-indigo-600/20 hover:bg-indigo-600/35',
+    activeBgColor: 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30',
+    textColor: 'text-indigo-300',
+    borderColor: 'border-indigo-500/30',
+    iconSvg: (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M12 2.5s-5.5 4.5-5.5 10c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5c0-5.5-5.5-10-5.5-10zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm0 2.5c-3.59 0-6.5-2.91-6.5-6.5h-2c0 4.69 3.81 8.5 8.5 8.5v-2z" />
+      </svg>
+    ),
+  },
 ];
 
 interface GenreChipsProps {
@@ -301,8 +315,13 @@ interface GenreChipsProps {
 }
 
 export default function GenreChips({ genres, selectedId, onSelect }: GenreChipsProps) {
+  const scrollRef = useDragScroll({ speed: 2 });
+
   return (
-    <div className="flex items-center gap-3 overflow-x-auto scrollbar-none py-2 -mx-6 px-6">
+    <div
+      ref={scrollRef as any}
+      className="viewport dragscroll flex items-center gap-3 overflow-x-auto scrollbar-none py-2 -mx-3 px-3 lg:-mx-6 lg:px-6 select-none"
+    >
       {genres.map((g) => {
         const isSelected = selectedId === g.id;
         return (

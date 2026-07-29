@@ -33,9 +33,9 @@ export default function AnimeContent() {
       setPage(1);
       let data: Movie[] = [];
       if (selectedGenre === 'all') {
-        data = await fetchCinemaSearch('', 'anime', 1);
+        data = await fetchCinemaGetVideo({ genres: 'аниме', page: 1, limit: 20 });
       } else {
-        data = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'anime', page: 1, limit: 20 });
+        data = await fetchCinemaGetVideo({ genres: `аниме,${selectedGenre}`, page: 1, limit: 20 });
       }
 
       if (isMounted) {
@@ -58,9 +58,9 @@ export default function AnimeContent() {
     let newItems: Movie[] = [];
 
     if (selectedGenre === 'all') {
-      newItems = await fetchCinemaSearch('', 'anime', nextPage);
+      newItems = await fetchCinemaGetVideo({ genres: 'аниме', page: nextPage, limit: 20 });
     } else {
-      newItems = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'anime', page: nextPage, limit: 20 });
+      newItems = await fetchCinemaGetVideo({ genres: `аниме,${selectedGenre}`, page: nextPage, limit: 20 });
     }
 
     if (newItems.length > 0) {
@@ -109,7 +109,7 @@ export default function AnimeContent() {
         onSearchChange={setSearchQuery}
       />
 
-      <main className="w-full px-6 space-y-6 pt-3">
+      <main className="w-full px-3 lg:px-6 space-y-6 pt-3">
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
           {lang?.frame_tab_anime || 'Аниме'}
         </h1>

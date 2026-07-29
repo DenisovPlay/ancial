@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import WatchContent from './watch-content';
 import { createPageMetadata } from '../../../seo';
+import { FrameBrandLoader } from '../../components/cinema-skeleton';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Просмотр — Frame',
@@ -11,5 +13,9 @@ export const metadata: Metadata = createPageMetadata({
 
 export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <WatchContent id={id} />;
+  return (
+    <Suspense fallback={<div className="w-screen h-screen bg-black flex items-center justify-center"><FrameBrandLoader /></div>}>
+      <WatchContent id={id} />
+    </Suspense>
+  );
 }

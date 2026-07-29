@@ -77,7 +77,7 @@ export default function SearchContent() {
       if (stored) {
         setMyListIds(JSON.parse(stored));
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Load recommendations for initial view
     (async () => {
@@ -146,7 +146,7 @@ export default function SearchContent() {
     setMyListIds(updated);
     try {
       localStorage.setItem('frame_my_list', JSON.stringify(updated));
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const currentRows =
@@ -162,37 +162,41 @@ export default function SearchContent() {
       <main className="w-full p-3 lg:p-6 space-y-6">
         {/* SPLIT SCREEN LAYOUT: RESULTS LEFT (60%), KEYBOARD RIGHT (40%) */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-          
+
           {/* LEFT SIDE: INPUT & RESULTS */}
           <div className="w-full lg:w-7/12 xl:w-2/3 space-y-6 order-2 lg:order-1">
-            {/* SEARCH INPUT BAR WITH DATA-SEARCH-PAGE-INPUT */}
-            <div className="relative flex items-center justify-between bg-zinc-900/90 border border-zinc-700/60 focus-within:border-white focus-within:ring-2 focus-within:ring-white rounded-3xl p-2 px-5 transition-all shadow-2xl">
-              <div className="flex items-center gap-4 w-full">
-                <svg className="w-6 h-6 fill-zinc-400 shrink-0">
-                  <use href="/icons.svg#IC-search"></use>
-                </svg>
+            {/* STICKY SEARCH INPUT BAR MATCHING /FRIENDS AND /GROUPS */}
+            <div className="sticky top-14 lg:top-16 z-[90] bg-gradient-to-b from-transparent via-black/90 to-transparent -mx-3 px-3 lg:mx-0 lg:px-0">
+              <div className="flex items-center justify-between bg-zinc-900/40 border border-zinc-600/30 backdrop-blur-md rounded-full w-full px-4 h-12">
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   tabIndex={0}
                   data-search-page-input="true"
-                  className="focusable-tv bg-transparent w-full text-lg sm:text-xl font-bold text-white placeholder-zinc-500 outline-none focus:outline-none"
+                  className="bg-transparent w-full text-base font-medium text-white placeholder-zinc-500 focus:outline-none border-none outline-none focus:ring-0"
                   placeholder={lang?.frame_search_placeholder || 'Введите название...'}
+                  autoComplete="off"
                 />
+                {query ? (
+                  <button
+                    onClick={handleClear}
+                    type="button"
+                    className="cursor-pointer shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-700/50"
+                    aria-label="Очистить"
+                  >
+                    <svg className="w-5 h-5 fill-zinc-400" viewBox="0 0 24 24">
+                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                    </svg>
+                  </button>
+                ) : (
+                  <div className="shrink-0 w-8 h-8 flex items-center justify-center">
+                    <svg className="w-5 h-5 fill-zinc-400" viewBox="0 0 24 24">
+                      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                    </svg>
+                  </div>
+                )}
               </div>
-              {query && (
-                <button
-                  onClick={handleClear}
-                  tabIndex={0}
-                  className="focusable-tv p-2 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:bg-zinc-800 shrink-0"
-                  aria-label="Очистить"
-                >
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                  </svg>
-                </button>
-              )}
             </div>
 
             {/* RESULTS TITLE */}
@@ -242,10 +246,10 @@ export default function SearchContent() {
             </div>
           </div>
 
-          {/* RIGHT SIDE: ON-SCREEN VIRTUAL KEYBOARD WITH DATA-VKEY-PANEL */}
-          <div data-vkey-panel="true" className="w-full lg:w-5/12 xl:w-1/3 order-1 lg:order-2 lg:sticky lg:top-20">
+          {/* RIGHT SIDE: ON-SCREEN VIRTUAL KEYBOARD (DESKTOP / TV ONLY) */}
+          <div data-vkey-panel="true" className="hidden lg:block w-full lg:w-5/12 xl:w-1/3 order-1 lg:order-2 lg:sticky lg:top-20">
             <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-4 sm:p-5 backdrop-blur-xl space-y-4 shadow-2xl">
-              
+
               {/* TOP ACTION ROW: RU / ENG / 123 / SPACE / BACKSPACE */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
                 <div className="flex items-center gap-1.5">
@@ -261,11 +265,10 @@ export default function SearchContent() {
                   <button
                     onClick={() => setLayoutMode('en')}
                     tabIndex={0}
-                    className={`focusable-tv px-3 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${
-                      layoutMode === 'en'
-                        ? 'bg-white text-black shadow-md'
-                        : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
-                    }`}
+                    className={`focusable-tv px-3 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${layoutMode === 'en'
+                      ? 'bg-white text-black shadow-md'
+                      : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                      }`}
                   >
                     ENG
                   </button>
@@ -273,11 +276,10 @@ export default function SearchContent() {
                   <button
                     onClick={() => setLayoutMode('123')}
                     tabIndex={0}
-                    className={`focusable-tv px-3 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${
-                      layoutMode === '123'
-                        ? 'bg-white text-black shadow-md'
-                        : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
-                    }`}
+                    className={`focusable-tv px-3 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${layoutMode === '123'
+                      ? 'bg-white text-black shadow-md'
+                      : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                      }`}
                   >
                     123
                   </button>

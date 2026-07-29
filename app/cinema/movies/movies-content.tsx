@@ -34,7 +34,7 @@ export default function MoviesContent() {
       setPage(1);
       let data: Movie[] = [];
       if (selectedGenre === 'all') {
-        data = await fetchCinemaSearch('', 'movie', 1);
+        data = await fetchCinemaSearch('', 'movie', 1, { orderby: 'created_at', orderby_direction: 'desc' });
       } else {
         data = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'movie', page: 1, limit: 20 });
       }
@@ -62,7 +62,7 @@ export default function MoviesContent() {
     let newItems: Movie[] = [];
 
     if (selectedGenre === 'all') {
-      newItems = await fetchCinemaSearch('', 'movie', nextPage);
+      newItems = await fetchCinemaSearch('', 'movie', nextPage, { orderby: 'created_at', orderby_direction: 'desc' });
     } else {
       newItems = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'movie', page: nextPage, limit: 20 });
     }
@@ -113,7 +113,7 @@ export default function MoviesContent() {
         onSearchChange={setSearchQuery}
       />
 
-      <main className="w-full px-6 space-y-6 pt-3">
+      <main className="w-full px-3 lg:px-6 space-y-6 pt-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
             {lang?.frame_tab_movies || 'Фильмы'}

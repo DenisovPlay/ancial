@@ -56,7 +56,7 @@ export function CinemaPageSkeleton() {
   return (
     <div className="w-full min-h-screen bg-black">
       <CinemaHeroSkeleton />
-      <div className="px-6 py-8 space-y-12 max-w-[1920px] mx-auto -mt-12 relative z-10">
+      <div className="space-y-12 max-w-[1920px] mx-auto -mt-12 relative z-10">
         <CinemaRowSkeleton />
         <CinemaRowSkeleton />
       </div>
@@ -66,7 +66,7 @@ export function CinemaPageSkeleton() {
 
 export function CinemaGridSkeleton() {
   return (
-    <div className="w-full px-6 py-12 max-w-[1920px] mx-auto space-y-8">
+    <div className="w-full max-w-[1920px] mx-auto space-y-8">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {Array.from({ length: 18 }).map((_, i) => (
           <div
@@ -96,13 +96,13 @@ export function CinemaInfoSkeleton() {
           </div>
           <div className="h-16 w-3/4 max-w-3xl bg-zinc-800 rounded-2xl" />
           <div className="h-4 w-1/3 max-w-sm bg-zinc-900 rounded-md" />
-          
+
           <div className="flex gap-4 pt-4">
             <div className="h-12 w-40 bg-zinc-800 rounded-3xl" />
           </div>
         </div>
       </div>
-      
+
       {/* Body details skeleton */}
       <div className="w-full px-6 pt-6 space-y-8 max-w-[1920px] mx-auto animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -111,14 +111,14 @@ export function CinemaInfoSkeleton() {
             <div className="h-4 w-11/12 bg-zinc-900 rounded-md" />
             <div className="h-4 w-4/5 bg-zinc-900 rounded-md" />
             <div className="h-4 w-3/4 bg-zinc-900 rounded-md" />
-            
+
             <div className="flex gap-3 pt-4">
               <div className="h-8 w-20 bg-zinc-800 rounded-full" />
               <div className="h-8 w-24 bg-zinc-800 rounded-full" />
               <div className="h-8 w-16 bg-zinc-800 rounded-full" />
             </div>
           </div>
-          
+
           <div className="space-y-4 bg-zinc-950 p-6 rounded-3xl border border-white/5">
             <div>
               <div className="h-3 w-16 bg-zinc-800 rounded-md mb-2" />
@@ -131,7 +131,7 @@ export function CinemaInfoSkeleton() {
             </div>
           </div>
         </div>
-        
+
         <div className="pt-8">
           <CinemaRowSkeleton title="Похожие" />
         </div>

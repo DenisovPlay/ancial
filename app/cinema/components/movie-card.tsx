@@ -29,7 +29,7 @@ export default function MovieCard({
           onClick();
         }
       }}
-      className="group focusable-tv relative w-full aspect-[2/3] rounded-3xl overflow-hidden bg-zinc-950 border border-white/10 hover:border-indigo-500/80 cursor-pointer transition-all duration-300 active:scale-95 shadow-lg outline-none focus:outline-none focus-visible:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-30 focus:border-white focus:shadow-2xl"
+      className="group focusable-tv relative w-full aspect-[2/3] rounded-3xl overflow-hidden bg-zinc-950 border border-white/10 hover:border-indigo-500/80 cursor-pointer transition-all duration-300 active:scale-95 shadow-lg outline-none focus:outline-none focus-visible:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-20 focus:border-white focus:shadow-2xl"
     >
       {/* POSTER IMAGE WITH NO-REFERRER & KP FALLBACK */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -58,25 +58,9 @@ export default function MovieCard({
             #{rankNumber}
           </span>
         )}
-        <span className="px-3 py-1 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-500/40 text-amber-400 font-extrabold text-[11px]">
+        <span className="px-3 py-1 rounded-full bg-amber-800/90 backdrop-blur-md backdrop-saturate-200 backdrop-hue-200 border border-amber-500/40 text-amber-400 font-extrabold text-[11px]">
           ★ {movie.rating}
         </span>
-      </div>
-
-      {/* PLAY BUTTON ON HOVER OR FOCUS */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-300 z-10">
-        <button
-          tabIndex={-1}
-          onClick={(e) => {
-            e.stopPropagation();
-            onPlay();
-          }}
-          className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-2xl transition-transform duration-300 active:scale-95 cursor-pointer"
-        >
-          <svg className="w-6 h-6 fill-black ml-0.5" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </button>
       </div>
 
       {/* BOTTOM INFO */}

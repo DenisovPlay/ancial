@@ -33,7 +33,7 @@ export default function SeriesContent() {
       setPage(1);
       let data: Movie[] = [];
       if (selectedGenre === 'all') {
-        data = await fetchCinemaSearch('', 'serial', 1);
+        data = await fetchCinemaSearch('', 'serial', 1, { orderby: 'created_at', orderby_direction: 'desc' });
       } else {
         data = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'serial', page: 1, limit: 20 });
       }
@@ -58,7 +58,7 @@ export default function SeriesContent() {
     let newItems: Movie[] = [];
 
     if (selectedGenre === 'all') {
-      newItems = await fetchCinemaSearch('', 'serial', nextPage);
+      newItems = await fetchCinemaSearch('', 'serial', nextPage, { orderby: 'created_at', orderby_direction: 'desc' });
     } else {
       newItems = await fetchCinemaGetVideo({ genres: selectedGenre, type: 'serial', page: nextPage, limit: 20 });
     }
@@ -109,7 +109,7 @@ export default function SeriesContent() {
         onSearchChange={setSearchQuery}
       />
 
-      <main className="w-full px-6 space-y-6 pt-3">
+      <main className="w-full px-3 lg:px-6 space-y-6 pt-3">
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
           {lang?.frame_tab_series || 'Сериалы'}
         </h1>

@@ -16,6 +16,11 @@ export interface Season {
   episodes: Episode[];
 }
 
+export interface MovieTranslation {
+  id: number;
+  title: string;
+}
+
 export interface Movie {
   id: string;
   title: string;
@@ -41,6 +46,14 @@ export interface Movie {
   matchPercentage?: number;
   audioLangs?: string[];
   subtitles?: string[];
+  counters?: {
+    seasons?: number;
+    episodes?: number;
+    last_season?: number;
+    last_episode?: number;
+  };
+  translationsList?: MovieTranslation[];
+  episodesBySeason?: Record<number, number[]>;
 }
 
 export interface GenreCategory {
