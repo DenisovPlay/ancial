@@ -161,8 +161,13 @@ export default function AccountContent({ accountId }: AccountContentProps) {
     setTopupError(null);
     try {
       const res = await AncialAPI.createTopup(parsedAmount, accountId);
-      if (res && res.payment_url) {
-        window.location.href = res.payment_url;
+      if (res && res.order_hash) {
+        router.push(`/pay/${res.order_hash}`);
+      } else if (res && res.payment_url) {
+        const relativeUrl = res.payment_url.startsWith('http')
+          ? new URL(res.payment_url).pathname + new URL(res.payment_url).search
+          : res.payment_url;
+        router.push(relativeUrl);
       } else {
         setTopupError(lang?.failed_to_create_topup_invoice || 'Не удалось создать счет для пополнения');
       }

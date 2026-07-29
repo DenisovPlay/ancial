@@ -98,7 +98,64 @@ export interface WalletMerchantOrder {
   description: string;
   created_at: string;
 }
+
+export interface PayOrder {
+  id: number;
+  merchant_id: number;
+  order_hash: string;
+  amount: number;
+  description: string;
+  label: string;
+  status: 'created' | 'pending' | 'paid' | 'failed' | 'refunded' | 'finished' | string;
+  gateway_id: string | null;
+  gateway_url: string | null;
+  created_at: string;
+  paid_at: string | null;
+}
+
+export interface PayMerchant {
+  id: number;
+  name: string;
+  img: string;
+  description: string;
+  badge: string;
+  fee_paid: 'user' | 'merchant' | string;
+  s_url: string;
+  e_url: string;
+}
+
+export interface PayGateway {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  fee_percent: number;
+  fee_fixed: number;
+  fee_text: string;
+  fee_color: string;
+  theme_color: string;
+  final_amount: number;
+  is_disabled: boolean;
+  disabled_reason: string | null;
+}
+
+export interface PayGatewayPending {
+  id: string;
+  name: string;
+  image: string;
+  description: string;
+  theme_color: string;
+}
+
+export interface PayOrderDetails {
+  order: PayOrder;
+  merchant: PayMerchant;
+  gateways: PayGateway[];
+  gateway_pending: PayGatewayPending | null;
+}
+
 export interface LinkGuardAnalysis {
+
   isSuspicious: boolean;
   wrongDomain: boolean;
   blockRecommended: boolean;
@@ -738,4 +795,22 @@ export class AncialAPI {
   static async getGatewayForm(gatewayId: number): Promise<{ gateway: any }> {
     return this.request<{ gateway: any }>(`/wallet/GetGateWayForm.php?gateway=${gatewayId}`);
   }
+
+  // --- PAY ---
+
+  static async getPayOrderDetails(orderHash: string): Promise<PayOrderDetails> {
+    return this.request<PayOrderDetails>(`/payments/GetOrderDetails.php?order_hash=${encodeURIComponent(orderHash)}`);
+  }
+
+  static async pollPayOrderStatus(orderHash: string): Promise<{ status: string }> {
+    return this.request<{ status: string }>(`/payments/PollStatus.php?order_hash=${encodeURIComponent(orderHash)}`);
+  }
+
+  static async redirectPayOrder(orderHash: string, gatewayId: string | number): Promise<{ payment_url: string; gateway_name: string }> {
+    return this.request<{ payment_url: string; gateway_name: string }>('/payments/Redirect.php', {
+      method: 'POST',
+      body: new URLSearchParams({ order: orderHash, gateway: String(gatewayId) })
+    });
+  }
 }
+
