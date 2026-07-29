@@ -1,6 +1,8 @@
+import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import SearchContent from './search-content';
 import { createPageMetadata } from '../../seo';
+import { CinemaGridSkeleton } from '../components/cinema-skeleton';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Поиск — Frame',
@@ -10,5 +12,9 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default function CinemaSearchPage() {
-  return <SearchContent />;
+  return (
+    <Suspense fallback={<CinemaGridSkeleton />}>
+      <SearchContent />
+    </Suspense>
+  );
 }
