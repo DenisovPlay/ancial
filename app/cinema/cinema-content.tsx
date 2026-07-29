@@ -217,6 +217,26 @@ export default function CinemaContent() {
       } catch (err) { }
     };
 
+    const handleDirectPlay = (movieId: string) => {
+      try {
+        const progRaw = localStorage.getItem(`cinema_progress_${movieId}`);
+        if (progRaw) {
+          const parsed = JSON.parse(progRaw);
+          const params = new URLSearchParams();
+          if (parsed.season) params.set('season', String(parsed.season));
+          if (parsed.episode) params.set('episode', String(parsed.episode));
+          if (parsed.translationId) params.set('translation', String(parsed.translationId));
+          if (parsed.playerId) params.set('player', parsed.playerId);
+          const savedTime = parsed.time || parsed.currentTime;
+          if (savedTime && savedTime > 5) params.set('time', String(Math.floor(savedTime)));
+          const qStr = params.toString();
+          router.push(`/cinema/watch/${movieId}${qStr ? `?${qStr}` : ''}`);
+          return;
+        }
+      } catch (e) {}
+      router.push(`/cinema/watch/${movieId}`);
+    };
+
     const continueWatchingMovies: Movie[] = watchHistory.map((item) => ({
       id: String(item.id),
       title: item.title || 'Видео',
@@ -263,7 +283,7 @@ export default function CinemaContent() {
                     isInMyList={myListIds.includes(movie.id)}
                     onToggleList={(e) => toggleMyList(movie.id, e)}
                     onClick={() => router.push(`/cinema/info/${movie.id}`)}
-                    onPlay={() => router.push(`/cinema/watch/${movie.id}`)}
+                    onPlay={() => handleDirectPlay(movie.id)}
                   />
                 ))}
               </div>
@@ -277,7 +297,7 @@ export default function CinemaContent() {
                 heroMovies={heroMovies}
                 myListIds={myListIds}
                 onToggleList={toggleMyList}
-                onPlayMovie={(m) => router.push(`/cinema/watch/${m.id}`)}
+                onPlayMovie={(m) => handleDirectPlay(m.id)}
               />
             )}
 
@@ -291,11 +311,7 @@ export default function CinemaContent() {
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => {
-                    const saved = watchHistory.find((h) => String(h.id) === String(movie.id));
-                    const query = saved?.season ? `?season=${saved.season}&episode=${saved.episode || 1}` : '';
-                    router.push(`/cinema/watch/${movie.id}${query}`);
-                  }}
+                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
 
@@ -317,7 +333,7 @@ export default function CinemaContent() {
                           isInMyList={myListIds.includes(movie.id)}
                           onToggleList={(e) => toggleMyList(movie.id, e)}
                           onClick={() => router.push(`/cinema/info/${movie.id}`)}
-                          onPlay={() => router.push(`/cinema/watch/${movie.id}`)}
+                          onPlay={() => handleDirectPlay(movie.id)}
                         />
                       </div>
                     ))}
@@ -333,7 +349,7 @@ export default function CinemaContent() {
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
 
@@ -345,7 +361,7 @@ export default function CinemaContent() {
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
 
@@ -357,7 +373,7 @@ export default function CinemaContent() {
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
 
@@ -369,7 +385,7 @@ export default function CinemaContent() {
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
 
@@ -381,7 +397,7 @@ export default function CinemaContent() {
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
 
@@ -393,7 +409,7 @@ export default function CinemaContent() {
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
 
@@ -405,7 +421,7 @@ export default function CinemaContent() {
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
 

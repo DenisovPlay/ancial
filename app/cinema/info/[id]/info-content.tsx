@@ -80,17 +80,18 @@ export default function InfoContent({ id }: InfoContentProps) {
       setIsLoading(false);
 
       const defaultPlayerId = cachedMovie.players?.[0]?.id || 'flixcdn';
-      setSelectedPlayerId(defaultPlayerId);
       try {
         const progRaw = localStorage.getItem(`cinema_progress_${cachedMovie.id}`);
         if (progRaw) {
           const parsed = JSON.parse(progRaw);
+          if (!parsed.time && parsed.currentTime) parsed.time = parsed.currentTime;
           setSavedProgress(parsed);
           if (parsed.season) setSelectedSeason(parsed.season);
           if (parsed.episode) setSelectedEpisode(parsed.episode);
           if (parsed.translationId) setSelectedTranslation(parsed.translationId);
-          if (parsed.playerId) setSelectedPlayerId(parsed.playerId);
+          setSelectedPlayerId(parsed.playerId || defaultPlayerId);
         } else {
+          setSelectedPlayerId(defaultPlayerId);
           const defaultPlayer = cachedMovie.players?.find((p) => p.id === defaultPlayerId) || cachedMovie.players?.[0];
           const defaultTrans = defaultPlayer?.translations?.[0]?.id || cachedMovie.translationsList?.[0]?.id || null;
           if (defaultTrans) setSelectedTranslation(defaultTrans);
@@ -109,7 +110,6 @@ export default function InfoContent({ id }: InfoContentProps) {
           setCinemaCache('info', id, target);
 
           const defaultPlayerId = target.players?.[0]?.id || 'flixcdn';
-          setSelectedPlayerId(defaultPlayerId);
 
           try {
             const progRaw = localStorage.getItem(`cinema_progress_${target.id}`);
@@ -122,8 +122,9 @@ export default function InfoContent({ id }: InfoContentProps) {
               if (parsed.season) setSelectedSeason(parsed.season);
               if (parsed.episode) setSelectedEpisode(parsed.episode);
               if (parsed.translationId) setSelectedTranslation(parsed.translationId);
-              if (parsed.playerId) setSelectedPlayerId(parsed.playerId);
+              setSelectedPlayerId(parsed.playerId || defaultPlayerId);
             } else {
+              setSelectedPlayerId(defaultPlayerId);
               const defaultPlayer = target.players?.find((p) => p.id === defaultPlayerId) || target.players?.[0];
               const defaultTrans = defaultPlayer?.translations?.[0]?.id || target.translationsList?.[0]?.id || null;
               if (defaultTrans) setSelectedTranslation(defaultTrans);
