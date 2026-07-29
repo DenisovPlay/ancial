@@ -140,6 +140,26 @@ export default function WatchContent({ id }: WatchContentProps) {
     };
   }, [movie, searchParams, id, season, episode]);
 
+  // Persist current watch selection (season, episode, translation, player) to localStorage
+  useEffect(() => {
+    if (!movie) return;
+    const curSeason = season ? Number(season) : 1;
+    const curEpisode = episode ? Number(episode) : 1;
+    const curTranslation = translation ? Number(translation) : null;
+    const curPlayerId = searchParams.get('player') || 'flixcdn';
+
+    const progressObj = {
+      season: curSeason,
+      episode: curEpisode,
+      translationId: curTranslation,
+      playerId: curPlayerId,
+      updatedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(`cinema_progress_${movie.id}`, JSON.stringify(progressObj));
+    } catch (e) {}
+  }, [movie, season, episode, translation, searchParams]);
+
   if (isLoading) {
     return (
       <div className="relative w-screen h-[100dvh] bg-black overflow-hidden select-none font-sans">
@@ -318,21 +338,6 @@ export default function WatchContent({ id }: WatchContentProps) {
   const directStreamUrl = selectedPlayerId === 'videohub'
     ? videoHubStreamUrl
     : (isDirectMediaFile ? candidateUrl : undefined);
-
-  // Persist current watch selection (season, episode, translation, player) to localStorage
-  useEffect(() => {
-    if (!movie) return;
-    const progressObj = {
-      season: activeSeason,
-      episode: activeEpisode,
-      translationId: activeTranslation,
-      playerId: selectedPlayerId,
-      updatedAt: Date.now(),
-    };
-    try {
-      localStorage.setItem(`cinema_progress_${movie.id}`, JSON.stringify(progressObj));
-    } catch (e) {}
-  }, [movie, activeSeason, activeEpisode, activeTranslation, selectedPlayerId]);
 
   let activeIframeSrc = '';
   if (selectedPlayerId === 'collaps') {
