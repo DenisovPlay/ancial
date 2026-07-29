@@ -68,6 +68,71 @@ export function useTvNavigation() {
       try {
         const active = document.activeElement as HTMLElement | null;
 
+        // Skip global TV navigation if focus is inside custom player controls or quality dropdown
+        if (
+          active?.hasAttribute('data-tv-player-control') ||
+          active?.closest('[data-tv-player-control]') ||
+          active?.closest('[data-quality-dropdown="true"]')
+        ) {
+          return;
+        }
+
+        // ── 0.001 SPECIAL D-PAD NAVIGATION INSIDE PICKER MODAL ([data-modal-picker="true"]) ──
+        const isModalPicker = active?.hasAttribute('data-modal-picker') || !!active?.closest?.('[data-modal-picker="true"]');
+        if (isModalPicker && active) {
+          if (e.key === 'Escape' || e.key === 'GoBack' || e.keyCode === 27 || e.keyCode === 4) {
+            e.preventDefault();
+            e.stopPropagation();
+            const closeBtn = document.querySelector<HTMLElement>('[data-modal-picker="true"] button');
+            if (closeBtn) closeBtn.click();
+            return;
+          }
+
+          const modalFocusables = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-modal-picker="true"] .focusable-tv, [data-modal-picker="true"] button')
+          ).filter((el) => el.offsetWidth > 0 && el.offsetHeight > 0 && getComputedStyle(el).display !== 'none');
+
+          if (modalFocusables.length > 0) {
+            const cur = active.getBoundingClientRect();
+            const cx = cur.left + cur.width / 2;
+            const cy = cur.top + cur.height / 2;
+
+            let bestNext: HTMLElement | null = null;
+            let minDist = Infinity;
+
+            for (const candidate of modalFocusables) {
+              if (candidate === active) continue;
+              const r = candidate.getBoundingClientRect();
+              const ex = r.left + r.width / 2;
+              const ey = r.top + r.height / 2;
+              const dx = ex - cx;
+              const dy = ey - cy;
+
+              if (e.key === 'ArrowRight' && dx > 3 && Math.abs(dy) < Math.abs(dx) * 2.5) {
+                const dist = dx * dx + dy * dy * 4;
+                if (dist < minDist) { minDist = dist; bestNext = candidate; }
+              } else if (e.key === 'ArrowLeft' && dx < -3 && Math.abs(dy) < Math.abs(dx) * 2.5) {
+                const dist = dx * dx + dy * dy * 4;
+                if (dist < minDist) { minDist = dist; bestNext = candidate; }
+              } else if (e.key === 'ArrowDown' && dy > 3) {
+                const dist = dy * dy * 2 + dx * dx;
+                if (dist < minDist) { minDist = dist; bestNext = candidate; }
+              } else if (e.key === 'ArrowUp' && dy < -3) {
+                const dist = dy * dy * 2 + dx * dx;
+                if (dist < minDist) { minDist = dist; bestNext = candidate; }
+              }
+            }
+
+            if (bestNext) {
+              e.preventDefault();
+              e.stopPropagation();
+              bestNext.focus();
+              bestNext.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              return;
+            }
+          }
+        }
+
         // Helper 1: Get all visible nav links inside header <nav>
         const getNavLinks = (): HTMLElement[] => {
           return Array.from(document.querySelectorAll<HTMLElement>('nav a[href]')).filter(

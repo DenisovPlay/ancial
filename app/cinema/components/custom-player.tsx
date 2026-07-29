@@ -10,6 +10,7 @@ interface CustomPlayerProps {
   movieId: string;
   season?: number;
   episode?: number;
+  startTime?: number;
   totalEpisodes?: number;
   totalSeasons?: number;
   isSeries?: boolean;
@@ -46,6 +47,7 @@ export default function CustomPlayer({
   movieId,
   season,
   episode,
+  startTime,
   totalEpisodes,
   totalSeasons,
   isSeries = false,
@@ -102,26 +104,18 @@ export default function CustomPlayer({
         }
       }
     } catch (e) {}
-
     return () => {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
   }, [movieId, resetControlsTimer]);
 
-  // Save playback time periodically
-  useEffect(() => {
-    if (!isPlaying || !currentTime) return;
-    const timer = setTimeout(() => {
-      try {
-        const progRaw = localStorage.getItem(`cinema_progress_${movieId}`);
-        const parsed = progRaw ? JSON.parse(progRaw) : {};
-        parsed.currentTime = currentTime;
-        parsed.updatedAt = Date.now();
-        localStorage.setItem(`cinema_progress_${movieId}`, JSON.stringify(parsed));
-      } catch (e) { }
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [currentTime, isPlaying, movieId]);
+  // Seek relative seconds
+  const seekRelative = (seconds: number) => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.max(0, Math.min(duration || 999999, videoRef.current.currentTime + seconds));
+    setCurrentTime(videoRef.current.currentTime);
+    resetControlsTimer();
+  };
 
   // Toggle play/pause
   const togglePlay = () => {
@@ -133,31 +127,156 @@ export default function CustomPlayer({
     }
   };
 
-  // Seek relative seconds
-  const seekRelative = (seconds: number) => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + seconds));
-    resetControlsTimer();
+  const [showResumeToast, setShowResumeToast] = useState(false);
+  const [resumeToastTime, setResumeToastTime] = useState<number | null>(null);
+  const restoredRef = useRef(false);
+  const lastSavedTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    restoredRef.current = false;
+  }, [src, season, episode]);
+
+  const saveCurrentProgress = (overrideTime?: number) => {
+    if (!movieId || !videoRef.current) return;
+    const curTime = overrideTime !== undefined ? overrideTime : videoRef.current.currentTime;
+    if (!curTime || curTime < 3) return;
+    const dur = videoRef.current.duration || 0;
+    try {
+      const raw = localStorage.getItem(`cinema_progress_${movieId}`);
+      const parsed = raw ? JSON.parse(raw) : {};
+      const updated = {
+        ...parsed,
+        season: season || parsed.season || 1,
+        episode: episode || parsed.episode || 1,
+        translationId: selectedTranslationId || parsed.translationId || null,
+        playerId: selectedPlayerId || 'videohub',
+        time: Math.floor(curTime),
+        currentTime: Math.floor(curTime),
+        duration: Math.floor(dur),
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem(`cinema_progress_${movieId}`, JSON.stringify(updated));
+    } catch (e) {}
   };
 
-  // Toggle fullscreen
+  // Save progress instantly when unmounting or changing episode
+  useEffect(() => {
+    return () => {
+      if (videoRef.current && videoRef.current.currentTime > 3) {
+        saveCurrentProgress(videoRef.current.currentTime);
+      }
+    };
+  }, [movieId, season, episode, selectedTranslationId, selectedPlayerId]);
+
+  const performRestoreTime = () => {
+    if (restoredRef.current || !videoRef.current || !movieId) return;
+    try {
+      let savedTime = startTime && startTime > 5 ? Number(startTime) : 0;
+
+      if (!savedTime) {
+        const raw = localStorage.getItem(`cinema_progress_${movieId}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const sMatch = !isSeries || !parsed.season || Number(parsed.season) === Number(season || 1);
+          const eMatch = !isSeries || !parsed.episode || Number(parsed.episode) === Number(episode || 1);
+          if (sMatch && eMatch) {
+            savedTime = Number(parsed.time || parsed.currentTime || 0);
+          }
+        }
+      }
+
+      if (savedTime > 5) {
+        const totalDur = videoRef.current.duration || 999999;
+        if (savedTime < totalDur - 15) {
+          videoRef.current.currentTime = savedTime;
+          setCurrentTime(savedTime);
+          restoredRef.current = true;
+
+          // Double check & retry if autoPlay initialized after metadata and reset currentTime to 0
+          setTimeout(() => {
+            if (videoRef.current && Math.abs(videoRef.current.currentTime - savedTime) > 3) {
+              videoRef.current.currentTime = savedTime;
+              setCurrentTime(savedTime);
+            }
+          }, 150);
+
+          setTimeout(() => {
+            if (videoRef.current && Math.abs(videoRef.current.currentTime - savedTime) > 3) {
+              videoRef.current.currentTime = savedTime;
+              setCurrentTime(savedTime);
+            }
+          }, 500);
+        }
+      }
+    } catch (e) {}
+  };
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration || 0);
+    }
+    performRestoreTime();
+  };
+
+  // Toggle fullscreen & sync state
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(() => { });
-      setIsFullscreen(true);
+    const isFs = !!(
+      document.fullscreenElement ||
+      (document as any).webkitFullscreenElement ||
+      (document as any).mozFullScreenElement ||
+      (document as any).msFullscreenElement
+    );
+
+    if (!isFs) {
+      const req = containerRef.current.requestFullscreen ||
+                  (containerRef.current as any).webkitRequestFullscreen ||
+                  (containerRef.current as any).mozRequestFullScreen ||
+                  (containerRef.current as any).msRequestFullscreen;
+      if (req) req.call(containerRef.current).catch(() => {});
     } else {
-      document.exitFullscreen().catch(() => { });
-      setIsFullscreen(false);
+      const exit = document.exitFullscreen ||
+                   (document as any).webkitExitFullscreen ||
+                   (document as any).mozCancelFullScreen ||
+                   (document as any).msExitFullscreen;
+      if (exit) exit.call(document).catch(() => {});
     }
   };
 
-  // Autofocus first quality item when dropdown opens
+  // Sync fullscreen state with native browser events
+  useEffect(() => {
+    const handleFsChange = () => {
+      const isFs = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isFs);
+    };
+
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    document.addEventListener('mozfullscreenchange', handleFsChange);
+    document.addEventListener('MSFullscreenChange', handleFsChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+      document.removeEventListener('mozfullscreenchange', handleFsChange);
+      document.removeEventListener('MSFullscreenChange', handleFsChange);
+    };
+  }, []);
+
+  // Autofocus selected or first quality item when dropdown opens
   useEffect(() => {
     if (showQualityDropdown) {
       setTimeout(() => {
-        const firstQualityBtn = document.querySelector<HTMLElement>('[data-quality-dropdown="true"] button');
-        if (firstQualityBtn) firstQualityBtn.focus();
+        const qualityItems = Array.from(
+          containerRef.current?.querySelectorAll<HTMLElement>('[data-quality-dropdown="true"] button') || []
+        );
+        const selectedOrFirst = qualityItems.find((el) => el.classList.contains('bg-white')) || qualityItems[0];
+        if (selectedOrFirst) selectedOrFirst.focus();
       }, 50);
     }
   }, [showQualityDropdown]);
@@ -177,8 +296,120 @@ export default function CustomPlayer({
         }
       }
 
-      // Don't intercept if typing in an input
-      if (document.activeElement?.tagName === 'INPUT') return;
+      const activeElem = document.activeElement as HTMLElement | null;
+      const activeControl = activeElem?.getAttribute('data-tv-player-control');
+
+      // Intercept D-Pad Arrow keys when any player control or quality item is active
+      if (
+        (activeControl || activeElem?.closest('[data-quality-dropdown="true"]')) &&
+        ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // SPECIAL NAVIGATION INSIDE QUALITY DROPDOWN MENU
+        if (showQualityDropdown || activeControl === 'quality-item' || activeElem?.closest('[data-quality-dropdown="true"]')) {
+          const items = Array.from(
+            containerRef.current?.querySelectorAll<HTMLElement>('[data-quality-dropdown="true"] button') || []
+          );
+          const currentIdx = items.indexOf(activeElem as HTMLElement);
+
+          if (e.key === 'ArrowDown') {
+            if (currentIdx !== -1 && currentIdx < items.length - 1) {
+              items[currentIdx + 1].focus();
+            } else if (items.length > 0) {
+              items[0].focus();
+            }
+            return;
+          }
+          if (e.key === 'ArrowUp') {
+            if (currentIdx > 0) {
+              items[currentIdx - 1].focus();
+            } else if (items.length > 0) {
+              items[items.length - 1].focus();
+            }
+            return;
+          }
+          if (e.key === 'ArrowLeft') {
+            setShowQualityDropdown(false);
+            const qBtn = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="quality"]');
+            if (qBtn) qBtn.focus();
+            return;
+          }
+        }
+
+        if (e.key === 'ArrowRight') {
+          if (activeControl === 'back') {
+            const picker = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="picker"]');
+            if (picker) picker.focus();
+          } else if (activeControl === 'play') {
+            const rewind = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="rewind"]');
+            if (rewind) rewind.focus();
+          } else if (activeControl === 'rewind') {
+            const fwd = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="forward"]');
+            if (fwd) fwd.focus();
+          } else if (activeControl === 'forward') {
+            const q = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="quality"]') ||
+                      containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="fullscreen"]');
+            if (q) q.focus();
+          } else if (activeControl === 'quality') {
+            const fs = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="fullscreen"]');
+            if (fs) fs.focus();
+          } else if (activeControl === 'timeline') {
+            seekRelative(5);
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowLeft') {
+          if (activeControl === 'picker') {
+            const back = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="back"]');
+            if (back) back.focus();
+          } else if (activeControl === 'fullscreen') {
+            const q = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="quality"]') ||
+                      containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="forward"]');
+            if (q) q.focus();
+          } else if (activeControl === 'quality') {
+            const fwd = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="forward"]');
+            if (fwd) fwd.focus();
+          } else if (activeControl === 'forward') {
+            const r = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="rewind"]');
+            if (r) r.focus();
+          } else if (activeControl === 'rewind') {
+            const p = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="play"]');
+            if (p) p.focus();
+          } else if (activeControl === 'timeline') {
+            seekRelative(-5);
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowUp') {
+          if (activeControl === 'timeline') {
+            const back = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="back"]') ||
+                         containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="picker"]');
+            if (back) back.focus();
+          } else if (['play', 'rewind', 'forward', 'quality', 'fullscreen'].includes(activeControl || '')) {
+            const timeline = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="timeline"]');
+            if (timeline) timeline.focus();
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowDown') {
+          if (activeControl === 'back' || activeControl === 'picker') {
+            const timeline = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="timeline"]');
+            if (timeline) timeline.focus();
+          } else if (activeControl === 'timeline') {
+            const play = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="play"]');
+            if (play) play.focus();
+          }
+          return;
+        }
+      }
+
+      // Don't intercept shortcut keys if typing in standard text inputs
+      if (document.activeElement?.tagName === 'INPUT' && (document.activeElement as HTMLInputElement).type !== 'range') return;
 
       switch (e.key) {
         case ' ':
@@ -272,6 +503,7 @@ export default function CustomPlayer({
               onClick={onBack}
               aria-label="Назад"
               tabIndex={0}
+              data-tv-player-control="back"
               className="focusable-tv p-2.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
             >
               <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
@@ -293,6 +525,7 @@ export default function CustomPlayer({
             <button
               onClick={onSelectEpisodeModal}
               tabIndex={0}
+              data-tv-player-control="picker"
               className="focusable-tv pointer-events-auto px-4 py-2 flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-xl outline-none focus:outline-none focus:ring-4 focus:ring-white cursor-pointer active:scale-95"
             >
               <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -343,17 +576,38 @@ export default function CustomPlayer({
         autoPlay
         playsInline
         muted={isMuted}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
+        onLoadedMetadata={handleLoadedMetadata}
+        onLoadedData={performRestoreTime}
+        onCanPlay={performRestoreTime}
+        onPlay={() => {
+          setIsPlaying(true);
+          performRestoreTime();
+        }}
+        onPause={() => {
+          setIsPlaying(false);
+          if (videoRef.current) saveCurrentProgress(videoRef.current.currentTime);
+        }}
         onTimeUpdate={() => {
           if (videoRef.current) {
-            setCurrentTime(videoRef.current.currentTime);
-            setDuration(videoRef.current.duration || 0);
+            if (!restoredRef.current && videoRef.current.currentTime < 3) {
+              performRestoreTime();
+            }
+
+            const cur = videoRef.current.currentTime;
+            const dur = videoRef.current.duration || 0;
+            setCurrentTime(cur);
+            setDuration(dur);
 
             // Calculate buffer
             if (videoRef.current.buffered.length > 0) {
               const bufEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
-              setBuffered((bufEnd / (videoRef.current.duration || 1)) * 100);
+              setBuffered((bufEnd / (dur || 1)) * 100);
+            }
+
+            // Save progress to localStorage every 2 seconds during playback
+            if (cur > 3 && Math.abs(cur - lastSavedTimeRef.current) >= 2) {
+              lastSavedTimeRef.current = cur;
+              saveCurrentProgress(cur);
             }
           }
         }}
@@ -372,6 +626,7 @@ export default function CustomPlayer({
             onClick={onBack}
             aria-label="Назад"
             tabIndex={0}
+            data-tv-player-control="back"
             className="focusable-tv p-2.5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl shrink-0"
           >
             <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
@@ -393,6 +648,7 @@ export default function CustomPlayer({
           <button
             onClick={onSelectEpisodeModal}
             tabIndex={0}
+            data-tv-player-control="picker"
             aria-label="Выбор серии и озвучки"
             className="focusable-tv px-3 py-2 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-xl outline-none focus:outline-none focus:ring-4 focus:ring-white cursor-pointer active:scale-95 shrink-0"
           >
@@ -437,9 +693,9 @@ export default function CustomPlayer({
       >
         {/* INTERACTIVE SEEK TIMELINE BAR */}
         <div className="space-y-1">
-          <div className="relative w-full h-2 group/slider flex items-center cursor-pointer">
+          <div className="relative w-full h-3.5 group/slider flex items-center cursor-pointer">
             {/* Background Track */}
-            <div className="absolute inset-0 rounded-full bg-white/20" />
+            <div className="absolute inset-0 rounded-full bg-white/20 group-focus-within/slider:ring-2 group-focus-within/slider:ring-indigo-400 group-focus-within/slider:scale-y-125 transition-all" />
             {/* Buffer Track */}
             <div
               className="absolute left-0 top-0 bottom-0 rounded-full bg-white/30 transition-all duration-200"
@@ -447,8 +703,13 @@ export default function CustomPlayer({
             />
             {/* Progress Track */}
             <div
-              className="absolute left-0 top-0 bottom-0 rounded-full bg-indigo-500 shadow-md shadow-indigo-500/50"
+              className="absolute left-0 top-0 bottom-0 rounded-full bg-indigo-500 shadow-md shadow-indigo-500/50 group-focus-within/slider:bg-gradient-to-r group-focus-within/slider:from-indigo-500 group-focus-within/slider:to-violet-400"
               style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+            />
+            {/* Glowing Focus Thumb Indicator */}
+            <div
+              className="absolute w-4 h-4 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.9)] transition-transform scale-0 group-focus-within/slider:scale-125 -ml-2 pointer-events-none"
+              style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
             />
             {/* Native Slider Input */}
             <input
@@ -462,7 +723,8 @@ export default function CustomPlayer({
                 setCurrentTime(val);
               }}
               tabIndex={0}
-              className="focusable-tv absolute inset-0 w-full h-full opacity-0 cursor-pointer outline-none focus:ring-2 focus:ring-white rounded-full"
+              data-tv-player-control="timeline"
+              className="focusable-tv absolute inset-0 w-full h-full opacity-0 cursor-pointer outline-none rounded-full"
             />
           </div>
 
@@ -479,6 +741,7 @@ export default function CustomPlayer({
             <button
               onClick={togglePlay}
               tabIndex={0}
+              data-tv-player-control="play"
               aria-label={isPlaying ? 'Пауза' : 'Воспроизведение'}
               className="focusable-tv p-3 rounded-3xl bg-white hover:bg-zinc-200 text-black font-extrabold flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white shadow-xl"
             >
@@ -493,12 +756,13 @@ export default function CustomPlayer({
               )}
             </button>
 
-            {/* REWIND -10S (HIDDEN ON MOBILE PHONES) */}
+            {/* REWIND -10S */}
             <button
               onClick={() => seekRelative(-10)}
               tabIndex={0}
+              data-tv-player-control="rewind"
               aria-label="Назад на 10 секунд"
-              className="focusable-tv hidden sm:flex p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold"
+              className="focusable-tv flex p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
             >
               <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
                 <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
@@ -506,12 +770,13 @@ export default function CustomPlayer({
               <span>-10s</span>
             </button>
 
-            {/* FAST FORWARD +10S (HIDDEN ON MOBILE PHONES) */}
+            {/* FAST FORWARD +10S */}
             <button
               onClick={() => seekRelative(10)}
               tabIndex={0}
+              data-tv-player-control="forward"
               aria-label="Вперёд на 10 секунд"
-              className="focusable-tv hidden sm:flex p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold"
+              className="focusable-tv flex p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
             >
               <span>+10s</span>
               <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
@@ -527,6 +792,7 @@ export default function CustomPlayer({
                 <button
                   onClick={() => setShowQualityDropdown((prev) => !prev)}
                   tabIndex={0}
+                  data-tv-player-control="quality"
                   className="focusable-tv px-3.5 py-2 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs flex items-center gap-1.5 transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg"
                 >
                   <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -551,11 +817,17 @@ export default function CustomPlayer({
                       return (
                         <button
                           key={q.label}
+                          tabIndex={0}
+                          data-tv-player-control="quality-item"
                           onClick={() => {
                             if (onSelectQuality) onSelectQuality(q.url);
                             setShowQualityDropdown(false);
+                            setTimeout(() => {
+                              const qBtn = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="quality"]');
+                              if (qBtn) qBtn.focus();
+                            }, 50);
                           }}
-                          className={`focusable-tv w-full px-3 py-2 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all duration-200 cursor-pointer active:scale-95 outline-none focus:ring-2 focus:ring-white ${
+                          className={`focusable-tv w-full px-3 py-2 rounded-2xl text-xs font-bold text-left flex items-center justify-between transition-all duration-200 cursor-pointer active:scale-95 outline-none focus:ring-2 focus:ring-white focus:bg-indigo-600 focus:text-white ${
                             isSelected
                               ? 'bg-white text-black shadow-md'
                               : 'text-zinc-300 hover:bg-white/10 hover:text-white'
@@ -579,12 +851,13 @@ export default function CustomPlayer({
             <button
               onClick={toggleFullscreen}
               tabIndex={0}
-              aria-label="Полноэкранный режим"
-              className="focusable-tv p-3 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg"
+              data-tv-player-control="fullscreen"
+              aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Полноэкранный режим"}
+              className="focusable-tv p-3 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg shrink-0"
             >
               <svg className="w-5 h-5 stroke-white fill-none stroke-[2]" viewBox="0 0 24 24">
                 {isFullscreen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9L4 4m0 0v4m0-4h4m6 0l5 5m0-5v4m0-4h-4m-6 16l-5-5m0 5v-4m0 4h4m6 0l5-5m0 5v-4m0 4h-4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9L4 4m0 0v4m0-4h4m11 5l5-5m0 0h-4m4 0v4M9 15l-5 5m0 0v-4m0 4h4m11 0l-5-5m0 0v4m0-4h4" />
                 ) : (
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m4 0v-4m0 4l-5-5" />
                 )}

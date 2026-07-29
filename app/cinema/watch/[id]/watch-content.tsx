@@ -148,17 +148,32 @@ export default function WatchContent({ id }: WatchContentProps) {
     const curTranslation = translation ? Number(translation) : null;
     const curPlayerId = searchParams.get('player') || 'flixcdn';
 
-    const progressObj = {
-      season: curSeason,
-      episode: curEpisode,
-      translationId: curTranslation,
-      playerId: curPlayerId,
-      updatedAt: Date.now(),
-    };
     try {
+      const raw = localStorage.getItem(`cinema_progress_${movie.id}`);
+      const existing = raw ? JSON.parse(raw) : {};
+      const progressObj = {
+        ...existing,
+        season: curSeason,
+        episode: curEpisode,
+        translationId: curTranslation,
+        playerId: curPlayerId,
+        updatedAt: Date.now(),
+      };
       localStorage.setItem(`cinema_progress_${movie.id}`, JSON.stringify(progressObj));
     } catch (e) {}
   }, [movie, season, episode, translation, searchParams]);
+
+  // Auto-focus active episode/season when picker modal opens
+  useEffect(() => {
+    if (showPicker) {
+      setTimeout(() => {
+        const picker = document.querySelector<HTMLElement>('[data-modal-picker="true"]');
+        if (!picker) return;
+        const activeItem = picker.querySelector<HTMLElement>('.bg-indigo-600, .bg-white') || picker.querySelector<HTMLElement>('.focusable-tv');
+        if (activeItem) activeItem.focus();
+      }, 50);
+    }
+  }, [showPicker]);
 
   if (isLoading) {
     return (
@@ -375,6 +390,9 @@ export default function WatchContent({ id }: WatchContentProps) {
     router.replace(`/cinema/watch/${movie.id}?${params.toString()}`);
   };
 
+  const startTimeParam = searchParams.get('time') || searchParams.get('t');
+  const startTimeVal = startTimeParam ? Number(startTimeParam) : undefined;
+
   return (
     <div className="relative w-screen h-[100dvh] bg-black overflow-hidden select-none">
       <style>{`#NAVP, [data-app-nav="mobile"], [data-app-nav="desktop"] { display: none !important; }`}</style>
@@ -386,6 +404,7 @@ export default function WatchContent({ id }: WatchContentProps) {
         movieId={movie.id}
         season={activeSeason}
         episode={activeEpisode}
+        startTime={startTimeVal}
         totalSeasons={hasMultipleSeasons ? availableSeasonsCount : 1}
         totalEpisodes={hasEpisodeSelection ? currentSeasonEpisodes.length : 1}
         isSeries={isSeriesOrAnime}

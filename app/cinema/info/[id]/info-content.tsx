@@ -45,7 +45,10 @@ export default function InfoContent({ id }: InfoContentProps) {
     pId: string
   ) => {
     try {
+      const raw = localStorage.getItem(`cinema_progress_${movieId}`);
+      const existing = raw ? JSON.parse(raw) : {};
       const progressObj = {
+        ...existing,
         season: s,
         episode: e,
         translationId: tId,
@@ -104,6 +107,9 @@ export default function InfoContent({ id }: InfoContentProps) {
             const progRaw = localStorage.getItem(`cinema_progress_${target.id}`);
             if (progRaw) {
               const parsed = JSON.parse(progRaw);
+              if (!parsed.time && parsed.currentTime) {
+                parsed.time = parsed.currentTime;
+              }
               setSavedProgress(parsed);
               if (parsed.season) setSelectedSeason(parsed.season);
               if (parsed.episode) setSelectedEpisode(parsed.episode);
@@ -243,6 +249,9 @@ export default function InfoContent({ id }: InfoContentProps) {
     if (p) {
       queryParams.set('player', p);
     }
+    if (savedProgress?.time && savedProgress.time > 5) {
+      queryParams.set('time', String(Math.floor(savedProgress.time)));
+    }
 
     const queryStr = queryParams.toString();
     router.push(`/cinema/watch/${infoMovie.id}${queryStr ? `?${queryStr}` : ''}`);
@@ -345,7 +354,7 @@ export default function InfoContent({ id }: InfoContentProps) {
             <button
               data-watch-hero-btn
               tabIndex={0}
-              onClick={() => handleWatch(savedProgress?.season, savedProgress?.episode, savedProgress?.translationId)}
+              onClick={() => handleWatch(savedProgress?.season, savedProgress?.episode, savedProgress?.translationId, savedProgress?.playerId)}
               className="focusable-tv px-8 py-3 rounded-3xl bg-white hover:bg-zinc-200 text-black font-black text-sm flex items-center gap-3 shadow-2xl transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-40"
             >
               <svg className="w-5 h-5 fill-black ml-0.5" viewBox="0 0 24 24">
@@ -354,7 +363,13 @@ export default function InfoContent({ id }: InfoContentProps) {
               <span>
                 {savedProgress
                   ? hasEpisodeSelection
-                    ? `Продолжить (С${savedProgress.season || 1} Е${savedProgress.episode || 1})`
+                    ? `Продолжить (С${savedProgress.season || 1} Е${savedProgress.episode || 1}${
+                        savedProgress.time && savedProgress.time > 5
+                          ? ` · ${Math.floor(savedProgress.time / 60)}:${String(Math.floor(savedProgress.time % 60)).padStart(2, '0')}`
+                          : ''
+                      })`
+                    : savedProgress.time && savedProgress.time > 5
+                    ? `Продолжить с ${Math.floor(savedProgress.time / 60)}:${String(Math.floor(savedProgress.time % 60)).padStart(2, '0')}`
                     : 'Продолжить'
                   : lang?.frame_watch_now || 'Смотреть'}
               </span>
@@ -364,7 +379,18 @@ export default function InfoContent({ id }: InfoContentProps) {
               <button
                 data-watch-hero-btn
                 tabIndex={0}
-                onClick={() => handleWatch(1, 1, selectedTranslation)}
+                onClick={() => {
+                  try {
+                    const raw = localStorage.getItem(`cinema_progress_${infoMovie.id}`);
+                    if (raw) {
+                      const parsed = JSON.parse(raw);
+                      delete parsed.time;
+                      delete parsed.currentTime;
+                      localStorage.setItem(`cinema_progress_${infoMovie.id}`, JSON.stringify(parsed));
+                    }
+                  } catch (e) {}
+                  handleWatch(1, 1, selectedTranslation);
+                }}
                 className="focusable-tv px-6 py-3 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800 text-white font-bold text-sm border border-zinc-700/50 backdrop-blur-md transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
               >
                 {hasEpisodeSelection ? 'Сначала (С1 Е1)' : 'Сначала'}
