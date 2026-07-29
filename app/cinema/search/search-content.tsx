@@ -149,9 +149,6 @@ export default function SearchContent() {
     } catch (err) { }
   };
 
-  const currentRows =
-    layoutMode === 'ru' ? RU_LAYOUT : layoutMode === 'en' ? EN_LAYOUT : NUM_LAYOUT;
-
   const displayMovies = query.trim() ? searchResults : recommendedMovies;
 
   return (
@@ -160,171 +157,38 @@ export default function SearchContent() {
       <AdblockBanner />
 
       <main className="w-full p-3 lg:p-6 space-y-6">
-        {/* SPLIT SCREEN LAYOUT: RESULTS LEFT (60%), KEYBOARD RIGHT (40%) */}
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
-
-          {/* LEFT SIDE: INPUT & RESULTS */}
-          <div className="w-full lg:w-7/12 xl:w-2/3 space-y-6 order-2 lg:order-1">
-            {/* STICKY SEARCH INPUT BAR MATCHING /FRIENDS AND /GROUPS */}
-            <div className="sticky top-14 lg:top-16 z-[90] bg-gradient-to-b from-transparent via-black/90 to-transparent -mx-3 px-3 lg:mx-0 lg:px-0">
-              <div className="flex items-center justify-between bg-zinc-900/40 border border-zinc-600/30 backdrop-blur-md rounded-full w-full px-4 h-12">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => handleQueryChange(e.target.value)}
-                  tabIndex={0}
-                  data-search-page-input="true"
-                  className="bg-transparent w-full text-base font-medium text-white placeholder-zinc-500 focus:outline-none border-none outline-none focus:ring-0"
-                  placeholder={lang?.frame_search_placeholder || 'Введите название...'}
-                  autoComplete="off"
-                />
-                {query ? (
-                  <button
-                    onClick={handleClear}
-                    type="button"
-                    className="cursor-pointer shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-700/50"
-                    aria-label="Очистить"
-                  >
-                    <svg className="w-5 h-5 fill-zinc-400" viewBox="0 0 24 24">
-                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                    </svg>
-                  </button>
-                ) : (
-                  <div className="shrink-0 w-8 h-8 flex items-center justify-center">
-                    <svg className="w-5 h-5 fill-zinc-400" viewBox="0 0 24 24">
-                      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* RESULTS TITLE */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                {query.trim()
-                  ? `${lang?.frame_search_results || 'Результаты'}: «${query}»`
-                  : 'Рекомендуем посмотреть'}
-              </h2>
-              {query.trim() && searchResults.length > 0 && (
-                <span className="text-zinc-500 font-bold text-sm">
-                  Найдено: {searchResults.length}
-                </span>
-              )}
-            </div>
-
-            {/* RESULTS CONTAINER WITH DATA-SEARCH-RESULTS */}
-            <div data-search-results="true">
-              {isLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 animate-pulse">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="aspect-[2/3] rounded-3xl bg-zinc-900/80 border border-white/5" />
-                  ))}
-                </div>
-              ) : query.trim() && searchResults.length === 0 ? (
-                <div className="py-16 text-center text-zinc-500 space-y-3 bg-zinc-950/50 border border-zinc-900 rounded-3xl">
-                  <svg className="w-12 h-12 fill-zinc-600 mx-auto" viewBox="0 0 24 24">
+        <div className="w-full space-y-6">
+          {/* STICKY SEARCH INPUT BAR MATCHING /FRIENDS AND /GROUPS */}
+          <div className="sticky top-14 lg:top-16 z-[90] bg-gradient-to-b from-transparent via-black/90 to-transparent -mx-3 px-3 lg:mx-0 lg:px-0">
+            <div className="flex items-center justify-between bg-zinc-900/40 border border-zinc-600/30 backdrop-blur-md rounded-full w-full px-4 h-12">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => handleQueryChange(e.target.value)}
+                tabIndex={0}
+                data-search-page-input="true"
+                className="bg-transparent w-full text-base font-medium text-white placeholder-zinc-500 focus:outline-none border-none outline-none focus:ring-0"
+                placeholder={lang?.frame_search_placeholder || 'Введите название...'}
+                autoComplete="off"
+              />
+              {query ? (
+                <button
+                  onClick={handleClear}
+                  type="button"
+                  className="cursor-pointer shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-700/50"
+                  aria-label="Очистить"
+                >
+                  <svg className="w-5 h-5 fill-zinc-400" viewBox="0 0 24 24">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="shrink-0 w-8 h-8 flex items-center justify-center">
+                  <svg className="w-5 h-5 fill-zinc-400" viewBox="0 0 24 24">
                     <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
                   </svg>
-                  <p className="text-lg font-bold text-zinc-400">Ничего не найдено</p>
-                  <p className="text-sm text-zinc-600">Проверьте название или раскладку клавиатуры</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {displayMovies.map((movie, index) => (
-                    <MovieCard
-                      key={`${movie.id}-${index}`}
-                      movie={movie}
-                      isInMyList={myListIds.includes(movie.id)}
-                      onToggleList={(e) => toggleMyList(movie.id, e)}
-                      onClick={() => handleMovieClick(movie)}
-                      onPlay={() => handleMovieClick(movie)}
-                    />
-                  ))}
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* RIGHT SIDE: ON-SCREEN VIRTUAL KEYBOARD (DESKTOP / TV ONLY) */}
-          <div data-vkey-panel="true" className="hidden lg:block w-full lg:w-5/12 xl:w-1/3 order-1 lg:order-2 lg:sticky lg:top-20">
-            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-4 sm:p-5 backdrop-blur-xl space-y-4 shadow-2xl">
-
-              {/* TOP ACTION ROW: RU / ENG / 123 / SPACE / BACKSPACE */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setLayoutMode('ru')}
-                    tabIndex={0}
-                    data-leftmost-vkey="true"
-                    className="focusable-tv px-3 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105"
-                  >
-                    РУС
-                  </button>
-
-                  <button
-                    onClick={() => setLayoutMode('en')}
-                    tabIndex={0}
-                    className={`focusable-tv px-3 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${layoutMode === 'en'
-                      ? 'bg-white text-black shadow-md'
-                      : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
-                      }`}
-                  >
-                    ENG
-                  </button>
-
-                  <button
-                    onClick={() => setLayoutMode('123')}
-                    tabIndex={0}
-                    className={`focusable-tv px-3 py-1.5 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${layoutMode === '123'
-                      ? 'bg-white text-black shadow-md'
-                      : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
-                      }`}
-                  >
-                    123
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleVirtualKeyPress(' ')}
-                    tabIndex={0}
-                    className="focusable-tv px-4 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:bg-white focus:text-black"
-                  >
-                    Пробел
-                  </button>
-
-                  <button
-                    onClick={handleBackspace}
-                    tabIndex={0}
-                    className="focusable-tv px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs transition-all duration-200 cursor-pointer flex items-center gap-1 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:bg-white focus:text-black"
-                    aria-label="Стереть"
-                  >
-                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                      <path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* CHARACTER KEYS ROWS */}
-              <div className="space-y-1.5 pt-1">
-                {currentRows.map((row, rowIdx) => (
-                  <div key={rowIdx} className="flex justify-center items-center gap-1 sm:gap-1.5">
-                    {row.map((char, colIdx) => (
-                      <button
-                        key={char}
-                        onClick={() => handleVirtualKeyPress(char)}
-                        tabIndex={0}
-                        data-leftmost-vkey={colIdx === 0 ? 'true' : 'false'}
-                        className="focusable-tv h-9 w-7 sm:w-9 sm:h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-extrabold text-sm sm:text-base flex items-center justify-center transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-110 focus:bg-white focus:text-black shadow-md shrink-0"
-                      >
-                        {char}
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
 

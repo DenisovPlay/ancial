@@ -152,10 +152,30 @@ export default function CustomPlayer({
     }
   };
 
+  // Autofocus first quality item when dropdown opens
+  useEffect(() => {
+    if (showQualityDropdown) {
+      setTimeout(() => {
+        const firstQualityBtn = document.querySelector<HTMLElement>('[data-quality-dropdown="true"] button');
+        if (firstQualityBtn) firstQualityBtn.focus();
+      }, 50);
+    }
+  }, [showQualityDropdown]);
+
   // Keyboard navigation & controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       resetControlsTimer();
+
+      // Close Quality Dropdown on Escape or Back key
+      if (showQualityDropdown) {
+        if (e.key === 'Escape' || e.key === 'GoBack' || e.keyCode === 27 || e.keyCode === 4) {
+          e.preventDefault();
+          e.stopPropagation();
+          setShowQualityDropdown(false);
+          return;
+        }
+      }
 
       // Don't intercept if typing in an input
       if (document.activeElement?.tagName === 'INPUT') return;
@@ -196,9 +216,9 @@ export default function CustomPlayer({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [resetControlsTimer, duration, showControls]);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [resetControlsTimer, duration, showControls, showQualityDropdown]);
 
   // Wakeup controls on fullscreen change, window focus, or cursor returning to window
   useEffect(() => {
@@ -522,7 +542,7 @@ export default function CustomPlayer({
                 </button>
 
                 {showQualityDropdown && (
-                  <div className="absolute bottom-12 right-0 bg-zinc-900/95 border border-zinc-700/60 rounded-3xl p-2 shadow-2xl backdrop-blur-xl z-50 flex flex-col gap-1 min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
+                  <div data-quality-dropdown="true" className="absolute bottom-12 right-0 bg-zinc-900/95 border border-zinc-700/60 rounded-3xl p-2 shadow-2xl backdrop-blur-xl z-50 flex flex-col gap-1 min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
                     <div className="text-[10px] uppercase font-black tracking-wider text-zinc-400 px-3 py-1 border-b border-white/5">
                       Качество
                     </div>

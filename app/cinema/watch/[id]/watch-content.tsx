@@ -79,6 +79,29 @@ export default function WatchContent({ id }: WatchContentProps) {
     if (season) setCurrentSeason(Number(season));
   }, [season]);
 
+  // Handle TV Back / Escape key & autofocus when picker modal is open
+  useEffect(() => {
+    if (!showPicker) return;
+
+    setTimeout(() => {
+      const firstBtn = document.querySelector<HTMLElement>('[data-modal-picker="true"] button.focusable-tv, [data-modal-picker="true"] button');
+      if (firstBtn) firstBtn.focus();
+    }, 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'GoBack' || e.keyCode === 27 || e.keyCode === 4) {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowPicker(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [showPicker]);
+
   // Hide mobile navigation bar on mount (matching /messages pattern)
   useEffect(() => {
     document.documentElement.classList.add('cinema-watch-open');
@@ -296,6 +319,21 @@ export default function WatchContent({ id }: WatchContentProps) {
     ? videoHubStreamUrl
     : (isDirectMediaFile ? candidateUrl : undefined);
 
+  // Persist current watch selection (season, episode, translation, player) to localStorage
+  useEffect(() => {
+    if (!movie) return;
+    const progressObj = {
+      season: activeSeason,
+      episode: activeEpisode,
+      translationId: activeTranslation,
+      playerId: selectedPlayerId,
+      updatedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(`cinema_progress_${movie.id}`, JSON.stringify(progressObj));
+    } catch (e) {}
+  }, [movie, activeSeason, activeEpisode, activeTranslation, selectedPlayerId]);
+
   let activeIframeSrc = '';
   if (selectedPlayerId === 'collaps') {
     activeIframeSrc = collapsIframeSrc;
@@ -363,7 +401,7 @@ export default function WatchContent({ id }: WatchContentProps) {
 
       {/* OVERLAY EPISODES & SEASONS PICKER MODAL */}
       {showPicker && showModalPicker && (
-        <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-2xl flex flex-col p-4 lg:p-8 space-y-6 overflow-y-auto animate-in fade-in duration-200">
+        <div data-modal-picker="true" className="absolute inset-0 z-50 bg-black/90 backdrop-blur-2xl flex flex-col p-4 lg:p-8 space-y-6 overflow-y-auto animate-in fade-in duration-200">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <div>
               <h2 className="text-2xl font-black text-white">{movie.title}</h2>
@@ -375,7 +413,9 @@ export default function WatchContent({ id }: WatchContentProps) {
             </div>
             <button
               onClick={() => setShowPicker(false)}
-              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs"
+              tabIndex={0}
+              autoFocus
+              className="focusable-tv px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 cursor-pointer"
             >
               Закрыть ✕
             </button>
@@ -390,6 +430,7 @@ export default function WatchContent({ id }: WatchContentProps) {
                   <button
                     key={sNum}
                     onClick={() => setCurrentSeason(sNum)}
+                    tabIndex={0}
                     className={`focusable-tv px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap shrink-0 transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${currentSeason === sNum
                         ? 'bg-white text-black shadow-lg'
                         : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
@@ -413,7 +454,8 @@ export default function WatchContent({ id }: WatchContentProps) {
                     <button
                       key={epNum}
                       onClick={() => handleSelectEpisode(currentSeason, epNum, activeTranslation)}
-                      className={`py-3 rounded-2xl font-black text-xs transition-all duration-200 cursor-pointer ${isCurrent
+                      tabIndex={0}
+                      className={`focusable-tv py-3 rounded-2xl font-black text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:bg-indigo-600 focus:text-white ${isCurrent
                           ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-lg'
                           : 'bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
                         }`}
@@ -435,7 +477,8 @@ export default function WatchContent({ id }: WatchContentProps) {
                   <button
                     key={p.id}
                     onClick={() => handleSelectPlayer(p.id)}
-                    className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 transition-all duration-200 cursor-pointer ${selectedPlayerId === p.id
+                    tabIndex={0}
+                    className={`focusable-tv px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${selectedPlayerId === p.id
                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-400'
                         : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
                       }`}
@@ -461,7 +504,8 @@ export default function WatchContent({ id }: WatchContentProps) {
                       handleSelectTranslation(trans.id);
                       setShowPicker(false);
                     }}
-                    className={`px-4 py-2 rounded-2xl font-bold text-xs transition-all duration-200 cursor-pointer ${activeTranslation === trans.id
+                    tabIndex={0}
+                    className={`focusable-tv px-4 py-2 rounded-2xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${activeTranslation === trans.id
                         ? 'bg-indigo-600 text-white shadow-lg'
                         : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
                       }`}

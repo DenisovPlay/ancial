@@ -36,6 +36,26 @@ export default function InfoContent({ id }: InfoContentProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('flixcdn');
   const [savedProgress, setSavedProgress] = useState<{ season?: number; episode?: number; translationId?: number | null } | null>(null);
 
+  // Helper to save selection to localStorage
+  const saveMovieSelection = (
+    movieId: string,
+    s: number,
+    e: number,
+    tId: number | null,
+    pId: string
+  ) => {
+    try {
+      const progressObj = {
+        season: s,
+        episode: e,
+        translationId: tId,
+        playerId: pId,
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem(`cinema_progress_${movieId}`, JSON.stringify(progressObj));
+    } catch (err) {}
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -58,6 +78,7 @@ export default function InfoContent({ id }: InfoContentProps) {
           if (parsed.season) setSelectedSeason(parsed.season);
           if (parsed.episode) setSelectedEpisode(parsed.episode);
           if (parsed.translationId) setSelectedTranslation(parsed.translationId);
+          if (parsed.playerId) setSelectedPlayerId(parsed.playerId);
         } else {
           const defaultPlayer = cachedMovie.players?.find((p) => p.id === defaultPlayerId) || cachedMovie.players?.[0];
           const defaultTrans = defaultPlayer?.translations?.[0]?.id || cachedMovie.translationsList?.[0]?.id || null;
@@ -87,6 +108,7 @@ export default function InfoContent({ id }: InfoContentProps) {
               if (parsed.season) setSelectedSeason(parsed.season);
               if (parsed.episode) setSelectedEpisode(parsed.episode);
               if (parsed.translationId) setSelectedTranslation(parsed.translationId);
+              if (parsed.playerId) setSelectedPlayerId(parsed.playerId);
             } else {
               const defaultPlayer = target.players?.find((p) => p.id === defaultPlayerId) || target.players?.[0];
               const defaultTrans = defaultPlayer?.translations?.[0]?.id || target.translationsList?.[0]?.id || null;
@@ -155,22 +177,45 @@ export default function InfoContent({ id }: InfoContentProps) {
     } catch (err) { }
   };
 
+  const handleSelectSeason = (sNum: number) => {
+    setSelectedSeason(sNum);
+    setSelectedEpisode(1);
+    if (infoMovie) {
+      saveMovieSelection(infoMovie.id, sNum, 1, selectedTranslation, selectedPlayerId);
+    }
+  };
+
+  const handleSelectEpisode = (epNum: number) => {
+    setSelectedEpisode(epNum);
+    if (infoMovie) {
+      saveMovieSelection(infoMovie.id, selectedSeason, epNum, selectedTranslation, selectedPlayerId);
+    }
+  };
+
+  const handleSelectTranslation = (transId: number) => {
+    setSelectedTranslation(transId);
+    if (infoMovie) {
+      saveMovieSelection(infoMovie.id, selectedSeason, selectedEpisode, transId, selectedPlayerId);
+    }
+  };
+
+  const handleSelectPlayer = (playerId: string) => {
+    setSelectedPlayerId(playerId);
+    if (infoMovie) {
+      saveMovieSelection(infoMovie.id, selectedSeason, selectedEpisode, selectedTranslation, playerId);
+    }
+  };
+
   const handleWatch = (seasonNum?: number, episodeNum?: number, transId?: number | null, player?: string) => {
     if (!infoMovie) return;
     const s = seasonNum || selectedSeason || 1;
     const e = episodeNum || selectedEpisode || 1;
     const t = transId !== undefined ? transId : selectedTranslation;
+    const p = player || selectedPlayerId || 'flixcdn';
 
-    // Save progress to localStorage
-    const progressObj = {
-      season: s,
-      episode: e,
-      translationId: t,
-      updatedAt: Date.now(),
-    };
+    saveMovieSelection(infoMovie.id, s, e, t, p);
+
     try {
-      localStorage.setItem(`cinema_progress_${infoMovie.id}`, JSON.stringify(progressObj));
-      
       // Update watch history array
       const historyRaw = localStorage.getItem('cinema_watch_history');
       const history: any[] = historyRaw ? JSON.parse(historyRaw) : [];
@@ -195,7 +240,6 @@ export default function InfoContent({ id }: InfoContentProps) {
     if (t) {
       queryParams.set('translation', String(t));
     }
-    const p = player || selectedPlayerId || 'flixcdn';
     if (p) {
       queryParams.set('player', p);
     }
@@ -348,12 +392,16 @@ export default function InfoContent({ id }: InfoContentProps) {
                   key={p.id}
                   tabIndex={0}
                   onClick={() => {
-                    setSelectedPlayerId(p.id);
+                    let nextTrans = selectedTranslation;
                     if (p.translations && p.translations.length > 0) {
                       const hasMatch = p.translations.some((t) => t.id === selectedTranslation);
                       if (!hasMatch) {
-                        setSelectedTranslation(p.translations[0].id);
+                        nextTrans = p.translations[0].id;
                       }
+                    }
+                    handleSelectPlayer(p.id);
+                    if (nextTrans !== selectedTranslation && nextTrans !== null) {
+                      handleSelectTranslation(nextTrans);
                     }
                   }}
                   className={`focusable-tv px-4 py-2.5 rounded-2xl font-bold text-xs border flex items-center gap-2 transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
@@ -388,7 +436,7 @@ export default function InfoContent({ id }: InfoContentProps) {
                   <button
                     key={sNum}
                     tabIndex={0}
-                    onClick={() => setSelectedSeason(sNum)}
+                    onClick={() => handleSelectSeason(sNum)}
                     className={`focusable-tv px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap shrink-0 transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20 ${
                       selectedSeason === sNum
                         ? 'bg-white text-black shadow-lg shadow-white/10'
@@ -413,7 +461,7 @@ export default function InfoContent({ id }: InfoContentProps) {
                         key={epNum}
                         tabIndex={0}
                         onClick={() => {
-                          setSelectedEpisode(epNum);
+                          handleSelectEpisode(epNum);
                           handleWatch(selectedSeason, epNum, selectedTranslation);
                         }}
                         className={`focusable-tv py-2.5 rounded-2xl font-extrabold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
@@ -448,7 +496,7 @@ export default function InfoContent({ id }: InfoContentProps) {
                 <button
                   key={trans.id}
                   tabIndex={0}
-                  onClick={() => setSelectedTranslation(trans.id)}
+                  onClick={() => handleSelectTranslation(trans.id)}
                   className={`focusable-tv px-4 py-2 rounded-2xl font-bold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
                     selectedTranslation === trans.id
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
