@@ -34,7 +34,15 @@ export default function InfoContent({ id }: InfoContentProps) {
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
   const [selectedTranslation, setSelectedTranslation] = useState<number | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('flixcdn');
-  const [savedProgress, setSavedProgress] = useState<{ season?: number; episode?: number; translationId?: number | null } | null>(null);
+  const [savedProgress, setSavedProgress] = useState<{
+    season?: number;
+    episode?: number;
+    translationId?: number | null;
+    playerId?: string;
+    time?: number;
+    currentTime?: number;
+    duration?: number;
+  } | null>(null);
 
   // Helper to save selection to localStorage
   const saveMovieSelection = (
