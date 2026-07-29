@@ -308,6 +308,75 @@ export const ANIME_GENRES: GenreItem[] = [
   },
 ];
 
+export const CARTOON_GENRES: GenreItem[] = [
+  {
+    id: 'all',
+    label: 'Все мультфильмы',
+    bgColor: 'bg-emerald-600/20 hover:bg-emerald-600/35',
+    activeBgColor: 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30',
+    textColor: 'text-emerald-300',
+    borderColor: 'border-emerald-500/30',
+    iconSvg: (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'семейный',
+    label: 'Семейные',
+    bgColor: 'bg-amber-500/20 hover:bg-amber-500/35',
+    activeBgColor: 'bg-amber-500 text-black shadow-lg shadow-amber-500/30',
+    textColor: 'text-amber-300',
+    borderColor: 'border-amber-500/30',
+    iconSvg: (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'сказка',
+    label: 'Сказки и фэнтези',
+    bgColor: 'bg-purple-600/20 hover:bg-purple-600/35',
+    activeBgColor: 'bg-purple-600 text-white shadow-lg shadow-purple-600/30',
+    textColor: 'text-purple-300',
+    borderColor: 'border-purple-500/30',
+    iconSvg: (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M12 2.5s-5.5 4.5-5.5 10c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5c0-5.5-5.5-10-5.5-10zm0 13c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'комедия',
+    label: 'Смешные',
+    bgColor: 'bg-rose-600/20 hover:bg-rose-600/35',
+    activeBgColor: 'bg-rose-600 text-white shadow-lg shadow-rose-600/30',
+    textColor: 'text-rose-300',
+    borderColor: 'border-rose-500/30',
+    iconSvg: (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-5-6c.78 2.34 2.72 4 5 4s4.22-1.66 5-4H7z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'приключения',
+    label: 'Приключения',
+    bgColor: 'bg-sky-600/20 hover:bg-sky-600/35',
+    activeBgColor: 'bg-sky-600 text-white shadow-lg shadow-sky-600/30',
+    textColor: 'text-sky-300',
+    borderColor: 'border-sky-500/30',
+    iconSvg: (
+      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+        <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
+      </svg>
+    ),
+  },
+];
+
+
 interface GenreChipsProps {
   genres: GenreItem[];
   selectedId: string;

@@ -8,7 +8,7 @@ import CinemaHeader from '../../components/cinema-header';
 import MovieRow from '../../components/movie-row';
 import { Movie } from '../../types';
 import { useTvNavigation } from '../../use-tv-navigation';
-import { fetchCinemaVideoById, fetchCinemaSearch } from '../../cinema-api';
+import { fetchCinemaVideoById, fetchCinemaSearch, getOptimizedImageUrl } from '../../cinema-api';
 import { CinemaInfoSkeleton, FrameBrandLoader } from '../../components/cinema-skeleton';
 
 interface InfoContentProps {
@@ -28,10 +28,11 @@ export default function InfoContent({ id }: InfoContentProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Watch state & selection
-  const [savedProgress, setSavedProgress] = useState<{ season?: number; episode?: number; translationId?: number } | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
   const [selectedTranslation, setSelectedTranslation] = useState<number | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>('flixcdn');
+  const [savedProgress, setSavedProgress] = useState<{ season?: number; episode?: number; translationId?: number | null } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -40,6 +41,9 @@ export default function InfoContent({ id }: InfoContentProps) {
       const target = await fetchCinemaVideoById(id);
       if (isMounted && target) {
         setInfoMovie(target);
+
+        const defaultPlayerId = target.players?.[0]?.id || 'flixcdn';
+        setSelectedPlayerId(defaultPlayerId);
 
         // Load saved progress from localStorage
         try {
@@ -50,8 +54,10 @@ export default function InfoContent({ id }: InfoContentProps) {
             if (parsed.season) setSelectedSeason(parsed.season);
             if (parsed.episode) setSelectedEpisode(parsed.episode);
             if (parsed.translationId) setSelectedTranslation(parsed.translationId);
-          } else if (target.translationsList && target.translationsList.length > 0) {
-            setSelectedTranslation(target.translationsList[0].id);
+          } else {
+            const defaultPlayer = target.players?.find((p) => p.id === defaultPlayerId) || target.players?.[0];
+            const defaultTrans = defaultPlayer?.translations?.[0]?.id || target.translationsList?.[0]?.id || null;
+            if (defaultTrans) setSelectedTranslation(defaultTrans);
           }
         } catch (e) { }
 
@@ -110,7 +116,7 @@ export default function InfoContent({ id }: InfoContentProps) {
     } catch (err) { }
   };
 
-  const handleWatch = (seasonNum?: number, episodeNum?: number, transId?: number | null) => {
+  const handleWatch = (seasonNum?: number, episodeNum?: number, transId?: number | null, player?: string) => {
     if (!infoMovie) return;
     const s = seasonNum || selectedSeason || 1;
     const e = episodeNum || selectedEpisode || 1;
@@ -142,16 +148,21 @@ export default function InfoContent({ id }: InfoContentProps) {
       localStorage.setItem('cinema_watch_history', JSON.stringify(filtered.slice(0, 50)));
     } catch (err) { }
 
-    // Build URL query params
     const queryParams = new URLSearchParams();
-    if (infoMovie.type === 'series' || (infoMovie.counters && infoMovie.counters.seasons)) {
+    if (infoMovie.type === 'series' || infoMovie.type === 'animeserial' || infoMovie.type === 'showserial') {
       queryParams.set('season', String(s));
       queryParams.set('episode', String(e));
     }
-    if (t) queryParams.set('translation', String(t));
+    if (t) {
+      queryParams.set('translation', String(t));
+    }
+    const p = player || selectedPlayerId || 'flixcdn';
+    if (p) {
+      queryParams.set('player', p);
+    }
 
-    const watchUrl = `/cinema/watch/${infoMovie.id}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    router.push(watchUrl);
+    const queryStr = queryParams.toString();
+    router.push(`/cinema/watch/${infoMovie.id}${queryStr ? `?${queryStr}` : ''}`);
   };
 
   if (isLoading) {
@@ -190,6 +201,11 @@ export default function InfoContent({ id }: InfoContentProps) {
   const hasMultipleSeasons = availableSeasonsCount > 1;
   const hasMultipleEpisodes = currentSeasonEpisodes.length > 1;
   const hasEpisodeSelection = isSeriesOrAnime && (hasMultipleSeasons || hasMultipleEpisodes);
+
+  const activePlayerObj = infoMovie.players?.find((p) => p.id === selectedPlayerId) || infoMovie.players?.[0];
+  const activeTranslations = (activePlayerObj?.translations && activePlayerObj.translations.length > 0)
+    ? activePlayerObj.translations
+    : (infoMovie.translationsList || []);
 
   return (
     <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">
@@ -274,6 +290,45 @@ export default function InfoContent({ id }: InfoContentProps) {
 
       {/* INFO BODY DETAILS */}
       <main className="w-full px-3 lg:px-6 pt-3 space-y-8">
+        {/* AVAILABLE PLAYERS SELECTOR ON INFO PAGE */}
+        {infoMovie.players && infoMovie.players.length > 0 && (
+          <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Источники и плееры</span>
+            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {infoMovie.players.map((p) => (
+                <button
+                  key={p.id}
+                  tabIndex={0}
+                  onClick={() => {
+                    setSelectedPlayerId(p.id);
+                    if (p.translations && p.translations.length > 0) {
+                      const hasMatch = p.translations.some((t) => t.id === selectedTranslation);
+                      if (!hasMatch) {
+                        setSelectedTranslation(p.translations[0].id);
+                      }
+                    }
+                  }}
+                  className={`focusable-tv px-4 py-2.5 rounded-2xl font-bold text-xs border flex items-center gap-2 transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
+                    selectedPlayerId === p.id
+                      ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/30 ring-1 ring-indigo-400'
+                      : 'bg-zinc-900/90 text-zinc-400 hover:text-white border-white/10'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>{p.name}</span>
+                  {p.quality && <span className="text-[10px] text-zinc-500 font-medium">({p.quality})</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* NATIVE SEASONS AND EPISODES SELECTOR */}
         {isSeriesOrAnime && (hasMultipleSeasons || currentSeasonEpisodes.length > 1) && (
           <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
@@ -337,17 +392,17 @@ export default function InfoContent({ id }: InfoContentProps) {
           </div>
         )}
 
-        {/* NATIVE TRANSLATIONS SELECTOR */}
-        {infoMovie.translationsList && infoMovie.translationsList.length > 1 && (
+        {/* NATIVE TRANSLATIONS SELECTOR FOR ACTIVE PLAYER */}
+        {activeTranslations && activeTranslations.length > 0 && (
           <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" />
               </svg>
-              <span>Озвучка и перевод</span>
+              <span>Озвучка и перевод ({activePlayerObj?.name || 'Плеер'})</span>
             </h3>
             <div className="flex flex-wrap items-center gap-2">
-              {infoMovie.translationsList.map((trans) => (
+              {activeTranslations.map((trans) => (
                 <button
                   key={trans.id}
                   tabIndex={0}
@@ -383,14 +438,13 @@ export default function InfoContent({ id }: InfoContentProps) {
           <div className="space-y-4 bg-white/5 backdrop-blur-xl p-5 rounded-3xl border border-white/10 text-sm shadow-xl h-fit">
             {infoMovie.director && (
               <div>
-                <span className="text-zinc-500 block mb-1 text-xs font-semibold">Режиссер</span>
-                <span className="text-white font-bold">{infoMovie.director}</span>
-              </div>
-            )}
-            {infoMovie.cast && infoMovie.cast.length > 0 && (
-              <div>
-                <span className="text-zinc-500 block mb-1 text-xs font-semibold">В главных ролях</span>
-                <span className="text-zinc-300">{infoMovie.cast.join(', ')}</span>
+                <span className="text-zinc-500 block mb-1 text-xs font-semibold">{lang?.frame_director || 'Режиссер'}</span>
+                <button
+                  onClick={() => router.push(`/cinema/person/${encodeURIComponent(infoMovie.director || '')}`)}
+                  className="text-indigo-400 font-bold hover:underline cursor-pointer bg-transparent p-0 border-0 text-left"
+                >
+                  {infoMovie.director}
+                </button>
               </div>
             )}
             {infoMovie.translationsList && infoMovie.translationsList.length > 0 && (
@@ -399,8 +453,80 @@ export default function InfoContent({ id }: InfoContentProps) {
                 <span className="text-zinc-300">{infoMovie.translationsList.map((t) => t.title).join(', ')}</span>
               </div>
             )}
+            <div>
+              <span className="text-zinc-500 block mb-1 text-xs font-semibold">Качество</span>
+              <span className="text-zinc-300 font-bold">{infoMovie.quality || 'FullHD'}</span>
+            </div>
           </div>
         </div>
+
+        {/* CAST & CREW HORIZONTAL ROW WITH AVATARS (MAX 12 ACTORS) */}
+        {((infoMovie.actorsList && infoMovie.actorsList.length > 0) || (infoMovie.cast && infoMovie.cast.length > 0)) && (
+          <section className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                {lang?.frame_cast || 'В главных ролях'}
+              </h3>
+            </div>
+
+            <div className="viewport dragscroll flex items-center gap-3 overflow-x-auto scrollbar-none -mx-3 px-3 lg:-mx-6 lg:px-6 py-2 select-none">
+              {infoMovie.actorsList && infoMovie.actorsList.length > 0
+                ? infoMovie.actorsList.slice(0, 12).map((actor, idx) => (
+                    <button
+                      key={idx}
+                      tabIndex={0}
+                      onClick={() => {
+                        const pid = actor.id || actor.kinopoisk_id || actor.name;
+                        const nameQuery = encodeURIComponent(actor.name);
+                        const posterQuery = actor.posterUrl ? `&poster=${encodeURIComponent(actor.posterUrl)}` : '';
+                        router.push(`/cinema/person/${encodeURIComponent(String(pid))}?name=${nameQuery}${posterQuery}`);
+                      }}
+                      className="focusable-tv group flex-none w-28 sm:w-32 bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/10 hover:border-indigo-500/50 p-2.5 rounded-2xl flex flex-col items-center text-center gap-2 cursor-pointer transition-all duration-300 active:scale-95 shadow-md outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20"
+                    >
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-zinc-950 border border-white/10 shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getOptimizedImageUrl(actor.posterUrl, '@w300')}
+                          alt={actor.name}
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.src = '/img/branding/frame.svg';
+                          }}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="w-full space-y-0.5">
+                        <p className="text-xs font-bold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors">
+                          {actor.name}
+                        </p>
+                        {actor.character && (
+                          <p className="text-[10px] text-zinc-400 font-medium line-clamp-1">
+                            {actor.character}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))
+                : (infoMovie.cast || []).slice(0, 12).map((actorName, idx) => (
+                    <button
+                      key={idx}
+                      tabIndex={0}
+                      onClick={() => router.push(`/cinema/person/${encodeURIComponent(actorName)}`)}
+                      className="focusable-tv group flex-none w-28 sm:w-32 bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/10 hover:border-indigo-500/50 p-2.5 rounded-2xl flex flex-col items-center text-center gap-2 cursor-pointer transition-all duration-300 active:scale-95 shadow-md outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20"
+                    >
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-zinc-950 border border-white/10 shrink-0 flex items-center justify-center text-zinc-500 font-black text-xl">
+                        {actorName.charAt(0)}
+                      </div>
+                      <div className="w-full space-y-0.5">
+                        <p className="text-xs font-bold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors">
+                          {actorName}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+            </div>
+          </section>
+        )}
 
         {/* SIMILAR MOVIES ROW */}
         {similarMovies.length > 0 && (

@@ -29,7 +29,9 @@ export default function WatchContent({ id }: WatchContentProps) {
   useEffect(() => {
     let isMounted = true;
     async function loadWatchMovie() {
-      setIsLoading(true);
+      if (!movie) {
+        setIsLoading(true);
+      }
       const target = await fetchCinemaVideoById(id);
       if (isMounted) {
         setMovie(target);
@@ -87,8 +89,29 @@ export default function WatchContent({ id }: WatchContentProps) {
 
   if (isLoading) {
     return (
-      <div className="w-screen h-screen bg-black text-white flex flex-col items-center justify-center">
-        <FrameBrandLoader />
+      <div className="relative w-screen h-[100dvh] bg-black overflow-hidden select-none font-sans">
+        <style>{`#NAVP, [data-app-nav="mobile"], [data-app-nav="desktop"] { display: none !important; }`}</style>
+        {/* TOP HEADER CONTROLS (ALWAYS VISIBLE & CLICKABLE DURING INITIAL LOAD) */}
+        <div className="absolute top-0 inset-x-0 p-4 lg:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-center justify-between z-40">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              aria-label="Назад"
+              tabIndex={0}
+              className="focusable-tv p-2.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
+            >
+              <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-lg lg:text-xl font-black text-white line-clamp-1">Загрузка...</h1>
+          </div>
+        </div>
+
+        {/* PRELOADER ISOLATED IN THE CENTER BEHIND TOP BAR */}
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
+          <FrameBrandLoader />
+        </div>
       </div>
     );
   }
@@ -109,11 +132,13 @@ export default function WatchContent({ id }: WatchContentProps) {
 
   const availableSeasonsCount = movie.counters?.seasons || (movie.episodesBySeason ? Object.keys(movie.episodesBySeason).length : 0) || 1;
   const isSeriesOrAnime =
-    movie.type !== 'movie' ||
-    Boolean(movie.counters?.seasons && movie.counters.seasons > 0) ||
-    Boolean(movie.counters?.episodes && movie.counters.episodes > 0) ||
-    Boolean(movie.episodesBySeason && Object.keys(movie.episodesBySeason).length > 0) ||
-    Boolean(movie.genres?.some((g) => g.toLowerCase().includes('сериал') || g.toLowerCase().includes('шоу')));
+    movie.type === 'series' ||
+    movie.type === 'animeserial' ||
+    movie.type === 'showserial' ||
+    availableSeasonsCount > 1 ||
+    Boolean(movie.counters?.episodes && movie.counters.episodes > 1) ||
+    Boolean(movie.counters?.seasons && movie.counters.seasons > 1) ||
+    Boolean(movie.genres?.some((g) => g.toLowerCase().includes('сериал')));
 
   const activeSeason = season ? Number(season) : 1;
   const activeEpisode = episode ? Number(episode) : 1;
@@ -125,11 +150,44 @@ export default function WatchContent({ id }: WatchContentProps) {
       : Array.from({ length: movie.counters?.episodes || 10 }, (_, i) => i + 1)
     : [];
 
+  // Build CDNMovies iframe URL
+  const targetKpId = movie.kinopoisk_id || movie.id;
+  let cdnMoviesIframeSrc = `https://ugly-turkey.cdnmovies-stream.online/kinopoisk/${targetKpId}/iframe`;
+  const cdnParams = new URLSearchParams();
+  if (season) cdnParams.set('season', season);
+  if (episode) cdnParams.set('episode', episode);
+  if (translation) cdnParams.set('translation_id', translation);
+  if (cdnParams.toString()) {
+    cdnMoviesIframeSrc += `?${cdnParams.toString()}`;
+  }
+
+  const rawBaseUrl = movie.videoUrl || `https://tarantino.factorios.live/show/kinopoisk/${targetKpId}`;
+  const baseUrl = rawBaseUrl.split('?')[0];
+  const iframeParams = new URLSearchParams();
+  if (season) iframeParams.set('season', season);
+  if (episode) iframeParams.set('episode', episode);
+  if (translation) iframeParams.set('translation', translation);
+  iframeParams.set('no_control_translations', '1');
+  iframeParams.set('no_control_seasons', '1');
+  iframeParams.set('no_control_episodes', '1');
+  iframeParams.set('no_sharing', '1');
+  iframeParams.set('no_title', '1');
+  iframeParams.set('no_header', '1');
+  iframeParams.set('no_control_title', '1');
+  iframeParams.set('no_back', '1');
+  const flixIframeSrc = `${baseUrl}?${iframeParams.toString()}`;
+
+  const availablePlayers = movie.players || [
+    { id: 'flixcdn', name: 'Плеер 1 (FlixCDN)', provider: 'FlixCDN', iframeUrl: flixIframeSrc, isAvailable: true },
+    { id: 'cdnmovies', name: 'Плеер 2 (CDNMovies)', provider: 'CDNMovies', iframeUrl: cdnMoviesIframeSrc, isAvailable: true },
+  ];
+
   const hasMultipleSeasons = availableSeasonsCount > 1;
   const hasMultipleEpisodes = currentSeasonEpisodes.length > 1;
   const hasEpisodeSelection = isSeriesOrAnime && (hasMultipleSeasons || hasMultipleEpisodes);
   const hasMultipleTranslations = Boolean(movie.translationsList && movie.translationsList.length > 1);
-  const showModalPicker = hasEpisodeSelection || hasMultipleTranslations;
+  const hasMultiplePlayers = Boolean(availablePlayers && availablePlayers.length > 1);
+  const showModalPicker = hasEpisodeSelection || hasMultipleTranslations || hasMultiplePlayers;
 
   const handleSelectEpisode = (sNum: number, epNum: number, transId?: number | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -181,26 +239,26 @@ export default function WatchContent({ id }: WatchContentProps) {
 
   const directStreamUrl = isDirectMediaFile ? candidateUrl : undefined;
 
-  // Build iframe URL according to FlixCDN Iframe documentation
-  const targetKpId = movie.kinopoisk_id || movie.id;
-  const rawBaseUrl = movie.videoUrl || `https://tarantino.factorios.live/show/kinopoisk/${targetKpId}`;
-  const baseUrl = rawBaseUrl.split('?')[0];
-  const iframeParams = new URLSearchParams();
-  if (season) iframeParams.set('season', season);
-  if (episode) iframeParams.set('episode', episode);
-  if (translation) iframeParams.set('translation', translation);
+  const selectedPlayerId = searchParams.get('player') || 'flixcdn';
+  const activePlayerObj = (availablePlayers || []).find((p) => p.id === selectedPlayerId) || (availablePlayers || [])[0];
+  const activePlayerTranslations = (activePlayerObj?.translations && activePlayerObj.translations.length > 0)
+    ? activePlayerObj.translations
+    : (movie.translationsList || []);
 
-  // Hide duplicate iframe controls, header, title & sharing since Ancial UI handles them natively
-  iframeParams.set('no_control_translations', '1');
-  iframeParams.set('no_control_seasons', '1');
-  iframeParams.set('no_control_episodes', '1');
-  iframeParams.set('no_sharing', '1');
-  iframeParams.set('no_title', '1');
-  iframeParams.set('no_header', '1');
-  iframeParams.set('no_control_title', '1');
-  iframeParams.set('no_back', '1');
+  const activeIframeSrc = selectedPlayerId === 'cdnmovies' ? cdnMoviesIframeSrc : flixIframeSrc;
 
-  const iframeSrc = `${baseUrl}?${iframeParams.toString()}`;
+  const handleSelectPlayer = (pId: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('player', pId);
+    const targetPlayerObj = (availablePlayers || []).find((p) => p.id === pId);
+    if (targetPlayerObj?.translations && targetPlayerObj.translations.length > 0) {
+      const hasMatch = targetPlayerObj.translations.some((t) => t.id === activeTranslation);
+      if (!hasMatch) {
+        params.set('translation', String(targetPlayerObj.translations[0].id));
+      }
+    }
+    router.replace(`/cinema/watch/${movie.id}?${params.toString()}`);
+  };
 
   return (
     <div className="relative w-screen h-[100dvh] bg-black overflow-hidden select-none">
@@ -208,15 +266,19 @@ export default function WatchContent({ id }: WatchContentProps) {
       {/* CUSTOM PLAYER (HANDLES NATIVE HTML5 OR FALLBACK IFRAME WITH OUR CONTROLS) */}
       <CustomPlayer
         src={directStreamUrl}
-        fallbackIframeSrc={iframeSrc}
+        fallbackIframeSrc={activeIframeSrc}
         title={movie.title}
         movieId={movie.id}
         season={activeSeason}
         episode={activeEpisode}
         totalSeasons={hasMultipleSeasons ? availableSeasonsCount : 1}
         totalEpisodes={hasEpisodeSelection ? currentSeasonEpisodes.length : 1}
-        translations={movie.translationsList}
+        isSeries={isSeriesOrAnime}
+        translations={activePlayerTranslations}
         selectedTranslationId={activeTranslation}
+        players={availablePlayers}
+        selectedPlayerId={selectedPlayerId}
+        onSelectPlayer={handleSelectPlayer}
         onNextEpisode={hasEpisodeSelection ? handleNextEpisode : undefined}
         onPrevEpisode={hasEpisodeSelection && activeEpisode > 1 ? handlePrevEpisode : undefined}
         onSelectTranslation={handleSelectTranslation}
@@ -289,15 +351,41 @@ export default function WatchContent({ id }: WatchContentProps) {
             </div>
           )}
 
-          {/* TRANSLATIONS (ONLY IF >1 TRANSLATION) */}
-          {hasMultipleTranslations && (
+          {/* PLAYERS / SOURCES SELECTOR */}
+          {availablePlayers && availablePlayers.length > 1 && (
             <div className="space-y-2 pt-2 border-t border-white/10">
-              <span className="text-xs font-semibold text-zinc-400 block">Озвучка:</span>
+              <span className="text-xs font-semibold text-zinc-400 block">Плеер / Источник:</span>
               <div className="flex flex-wrap items-center gap-2">
-                {(movie.translationsList || []).map((trans) => (
+                {availablePlayers.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSelectPlayer(p.id)}
+                    className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center gap-2 transition-all duration-200 cursor-pointer ${selectedPlayerId === p.id
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-400'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+                      }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>{p.name}</span>
+                    {p.quality && <span className="text-[10px] text-zinc-500 font-medium">({p.quality})</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TRANSLATIONS FOR ACTIVE PLAYER */}
+          {activePlayerTranslations && activePlayerTranslations.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-white/10">
+              <span className="text-xs font-semibold text-zinc-400 block">Озвучка ({activePlayerObj?.name || 'Плеер'}):</span>
+              <div className="flex flex-wrap items-center gap-2">
+                {activePlayerTranslations.map((trans) => (
                   <button
                     key={trans.id}
-                    onClick={() => handleSelectTranslation(trans.id)}
+                    onClick={() => {
+                      handleSelectTranslation(trans.id);
+                      setShowPicker(false);
+                    }}
                     className={`px-4 py-2 rounded-2xl font-bold text-xs transition-all duration-200 cursor-pointer ${activeTranslation === trans.id
                         ? 'bg-indigo-600 text-white shadow-lg'
                         : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'

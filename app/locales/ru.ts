@@ -1382,6 +1382,20 @@ export const ru: Record<string, string> = {
     "frame_genre_anime": "Аниме",
     "frame_genre_fantasy": "Фэнтези",
     "frame_added_toast": "Добавлено в Избранное Frame!",
-    "frame_removed_toast": "Удалено из Избранного"
+    "frame_removed_toast": "Удалено из Избранного",
+    "frame_tab_cartoons": "Мультфильмы",
+    "frame_cartoons_section": "Мультфильмы и анимация",
+    "frame_cartoons_full": "Полнометражные мультфильмы",
+    "frame_cartoons_series": "Популярные мультсериалы",
+    "frame_cartoons_family": "Семейные и детские мультфильмы",
+    "frame_korean_dramas": "Корейские дорамы и триллеры",
+    "frame_french_comedies": "Французские комедии",
+    "frame_fresh_updates": "Свежие эпизоды и обновления",
+    "frame_top_imdb": "Топ по рейтингу IMDb",
+    "frame_person_filmography": "Фильмография и роли",
+    "frame_person_director": "Режиссерская фильмография",
+    "frame_person_actor": "Актёрская фильмография",
+    "frame_person_not_found": "Персона не найдена"
 };
+
 

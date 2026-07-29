@@ -36,8 +36,8 @@ export default function MovieRow({
         ref={scrollRef}
         className="viewport dragscroll flex items-center gap-3 overflow-x-auto overflow-y-visible scrollbar-none -mx-3 px-3 lg:-mx-6 lg:px-6 py-3 select-none"
       >
-        {movies.map((movie) => (
-          <div key={movie.id} className="flex-none w-40 sm:w-56">
+        {movies.map((movie, idx) => (
+          <div key={`${movie.id}-${idx}`} className="flex-none w-40 sm:w-56">
             <MovieCard
               movie={movie}
               isInMyList={myListIds.includes(movie.id)}

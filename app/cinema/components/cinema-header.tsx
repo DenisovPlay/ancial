@@ -76,6 +76,7 @@ export default function CinemaHeader({
                   { id: 'all', href: '/cinema', label: lang?.frame_tab_home || 'Главная' },
                   { id: 'movie', href: '/cinema/movies', label: lang?.frame_tab_movies || 'Фильмы' },
                   { id: 'series', href: '/cinema/series', label: lang?.frame_tab_series || 'Сериалы' },
+                  { id: 'cartoons', href: '/cinema/cartoons', label: lang?.frame_tab_cartoons || 'Мультфильмы' },
                   { id: 'anime', href: '/cinema/anime', label: lang?.frame_tab_anime || 'Аниме' },
                 ].map((tab) => (
                   <Link

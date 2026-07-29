@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { FrameBrandLoader } from './cinema-skeleton';
 
 interface CustomPlayerProps {
   src?: string;
@@ -11,8 +12,12 @@ interface CustomPlayerProps {
   episode?: number;
   totalEpisodes?: number;
   totalSeasons?: number;
+  isSeries?: boolean;
   translations?: Array<{ id: number; title: string }>;
   selectedTranslationId?: number | null;
+  players?: Array<{ id: string; name: string; provider: string; quality?: string }>;
+  selectedPlayerId?: string;
+  onSelectPlayer?: (id: string) => void;
   onNextEpisode?: () => void;
   onPrevEpisode?: () => void;
   onSelectTranslation?: (id: number) => void;
@@ -40,8 +45,12 @@ export default function CustomPlayer({
   episode,
   totalEpisodes,
   totalSeasons,
+  isSeries = false,
   translations,
   selectedTranslationId,
+  players,
+  selectedPlayerId = 'flixcdn',
+  onSelectPlayer,
   onNextEpisode,
   onPrevEpisode,
   onSelectTranslation,
@@ -60,27 +69,23 @@ export default function CustomPlayer({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const [showControls, setShowControls] = useState<boolean>(true);
+  const [isIframeLoading, setIsIframeLoading] = useState<boolean>(true);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-hide controls timer (works unconditionally for both video and iframe mode)
+  useEffect(() => {
+    setIsIframeLoading(true);
+  }, [fallbackIframeSrc, selectedPlayerId]);
+
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
       setShowControls(false);
-    }, 3500);
+    }, 4500);
   }, []);
 
-  // Initial auto-hide timer on mount
   useEffect(() => {
     resetControlsTimer();
-    return () => {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    };
-  }, [resetControlsTimer]);
-
-  // Restore saved playback time on mount
-  useEffect(() => {
     try {
       const progRaw = localStorage.getItem(`cinema_progress_${movieId}`);
       if (progRaw) {
@@ -89,8 +94,12 @@ export default function CustomPlayer({
           videoRef.current.currentTime = parsed.currentTime;
         }
       }
-    } catch (e) { }
-  }, [movieId]);
+    } catch (e) {}
+
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, [movieId, resetControlsTimer]);
 
   // Save playback time periodically
   useEffect(() => {
@@ -221,7 +230,7 @@ export default function CustomPlayer({
           onMouseMove={resetControlsTimer}
           className="absolute top-0 inset-x-0 h-16 z-30 pointer-events-auto"
         />
-        {/* TOP HEADER CONTROLS OVERLAY */}
+        {/* TOP HEADER CONTROLS OVERLAY (ALWAYS Z-40 ABOVE PRELOADER) */}
         <div
           className={`absolute top-0 inset-x-0 p-4 lg:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-center justify-between transition-opacity duration-300 z-40 ${
             showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -241,9 +250,9 @@ export default function CustomPlayer({
 
             <div>
               <h1 className="text-lg lg:text-xl font-black text-white line-clamp-1">{title}</h1>
-              {onSelectEpisodeModal && (season || episode) && (
+              {isSeries && ((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1) && (
                 <p className="text-xs text-zinc-400 font-semibold">
-                  Сезон {season || 1}, Серия {episode || 1}
+                  {(totalSeasons || 0) > 1 ? `Сезон ${season || 1}, ` : ''}Серия {episode || 1}
                 </p>
               )}
             </div>
@@ -258,15 +267,29 @@ export default function CustomPlayer({
               <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
               </svg>
-              <span>{((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1) ? `С${season || 1} Е${episode || 1} (Выбор серии)` : 'Выбор озвучки'}</span>
+              <span>
+                {((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1)
+                  ? `С${season || 1} Е${episode || 1} (Выбор серии)`
+                  : players && players.length > 1
+                  ? 'Плееры и озвучка'
+                  : 'Выбор озвучки'}
+              </span>
             </button>
           )}
         </div>
 
+        {/* IFRAME PRELOADER (LOCATED AT Z-10 BEHIND TOP BAR Z-40) */}
+        {isIframeLoading && (
+          <div className="absolute inset-0 z-10 bg-black flex flex-col items-center justify-center pointer-events-none">
+            <FrameBrandLoader />
+          </div>
+        )}
+
         <iframe
           src={fallbackIframeSrc}
           title={title}
-          className="w-full h-full border-0"
+          className="w-full h-full border-0 relative z-20"
+          onLoad={() => setIsIframeLoading(false)}
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
           allowFullScreen
         />
@@ -327,9 +350,9 @@ export default function CustomPlayer({
 
           <div>
             <h1 className="text-lg lg:text-xl font-black text-white line-clamp-1">{title}</h1>
-            {(season || episode) && (
+            {isSeries && ((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1) && (
               <p className="text-xs text-zinc-400 font-semibold">
-                Сезон {season || 1}, Серия {episode || 1}
+                {(totalSeasons || 0) > 1 ? `Сезон ${season || 1}, ` : ''}Серия {episode || 1}
               </p>
             )}
           </div>
@@ -344,7 +367,13 @@ export default function CustomPlayer({
             <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
-            <span>Выбор серии</span>
+            <span>
+              {((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1)
+                ? `С${season || 1} Е${episode || 1} (Выбор серии)`
+                : players && players.length > 1
+                ? 'Плееры и озвучка'
+                : 'Выбор озвучки'}
+            </span>
           </button>
         )}
       </div>

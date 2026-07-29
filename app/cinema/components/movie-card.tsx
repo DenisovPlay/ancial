@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Movie } from '../types';
+import { getOptimizedImageUrl } from '../cinema-api';
 
 interface MovieCardProps {
   movie: Movie;
@@ -18,6 +19,13 @@ export default function MovieCard({
   onClick,
   onPlay,
 }: MovieCardProps) {
+  const posterSrc = getOptimizedImageUrl(movie.posterUrl, '@w300');
+  const updateBadgeText = movie.updateBadge
+    ? movie.updateBadge.season && movie.updateBadge.episode
+      ? `С${movie.updateBadge.season} Э${movie.updateBadge.episode}`
+      : movie.updateBadge.translationTitle || ''
+    : null;
+
   return (
     <div
       tabIndex={0}
@@ -34,7 +42,7 @@ export default function MovieCard({
       {/* POSTER IMAGE WITH NO-REFERRER & KP FALLBACK */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={movie.posterUrl}
+        src={posterSrc}
         alt={movie.title}
         loading="lazy"
         decoding="async"
@@ -63,15 +71,28 @@ export default function MovieCard({
         </span>
       </div>
 
+      {/* UPDATE BADGE (e.g. S2 E5) */}
+      {updateBadgeText && (
+        <div className="absolute top-3 right-3 z-10">
+          <span className="px-2.5 py-1 rounded-full bg-indigo-600/90 backdrop-blur-md border border-indigo-400/40 text-white font-black text-[10px] uppercase shadow-lg">
+            {updateBadgeText}
+          </span>
+        </div>
+      )}
+
       {/* BOTTOM INFO */}
       <div className="absolute bottom-3 inset-x-3 space-y-1 z-10">
         <h3 className="text-sm font-extrabold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors">
           {movie.title}
         </h3>
-        <div className="flex items-center gap-2 text-xs text-zinc-400 font-medium">
+        <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
           <span>{movie.year}</span>
+          {movie.genres && movie.genres.length > 0 && (
+            <span className="truncate max-w-[50%] text-zinc-500 text-[11px]">{movie.genres[0]}</span>
+          )}
         </div>
       </div>
     </div>
   );
 }
+

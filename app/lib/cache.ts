@@ -38,7 +38,7 @@ export type CacheSubcategory<C extends CacheCategory> =
     : C extends 'users'
     ? 'info'
     : C extends 'cinema'
-    ? 'updates' | 'search' | 'video'
+    ? 'updates' | 'search' | 'video' | 'person' | 'translations' | 'genres'
     : never;
 
 export interface CacheOptions<C extends CacheCategory> {

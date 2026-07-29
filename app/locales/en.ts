@@ -1382,6 +1382,20 @@ export const en: Record<string, string> = {
   "frame_genre_anime": "Anime",
   "frame_genre_fantasy": "Fantasy",
   "frame_added_toast": "Added to Frame My List!",
-  "frame_removed_toast": "Removed from My List"
+  "frame_removed_toast": "Removed from My List",
+  "frame_tab_cartoons": "Cartoons",
+  "frame_cartoons_section": "Cartoons & Animation",
+  "frame_cartoons_full": "Animated Feature Films",
+  "frame_cartoons_series": "Popular Animated Series",
+  "frame_cartoons_family": "Family & Kids Cartoons",
+  "frame_korean_dramas": "Korean Dramas & Thrillers",
+  "frame_french_comedies": "French Comedies",
+  "frame_fresh_updates": "Fresh Episodes & Releases",
+  "frame_top_imdb": "Top Rated on IMDb",
+  "frame_person_filmography": "Filmography & Roles",
+  "frame_person_director": "Director's Filmography",
+  "frame_person_actor": "Actor's Filmography",
+  "frame_person_not_found": "Person not found"
 };
+
 

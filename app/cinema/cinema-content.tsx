@@ -16,6 +16,8 @@ import {
   fetchCinemaSearch,
   fetchCinemaGetVideo,
   fetchCinemaVideos,
+  fetchCinemaCartoons,
+  fetchCinemaByCountry,
 } from './cinema-api';
 import { CinemaPageSkeleton } from './components/cinema-skeleton';
 import { useDragScroll } from '../hooks/useDragScroll';
@@ -36,9 +38,11 @@ export default function CinemaContent() {
   const [topMovies, setTopMovies] = useState<Movie[]>([]);
   const [newReleases, setNewReleases] = useState<Movie[]>([]);
   const [popularSeries, setPopularSeries] = useState<Movie[]>([]);
+  const [freshUpdates, setFreshUpdates] = useState<Movie[]>([]);
+  const [cartoonsList, setCartoonsList] = useState<Movie[]>([]);
+  const [koreanDramas, setKoreanDramas] = useState<Movie[]>([]);
   const [animeList, setAnimeList] = useState<Movie[]>([]);
   const [documentaryMovies, setDocumentaryMovies] = useState<Movie[]>([]);
-  const [retroMovies, setRetroMovies] = useState<Movie[]>([]);
   const [worldCinema, setWorldCinema] = useState<Movie[]>([]);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
 
@@ -65,21 +69,35 @@ export default function CinemaContent() {
     async function loadRealCinemaData() {
       setIsLoading(true);
       try {
-        const [heroItems, top10Items, freshMovies, freshSeries, animeItems, page2Movies, page3Movies] = await Promise.all([
-          // 1. Hero Slider: 2026 releases sorted by date added (-created_at)
-          fetchCinemaVideos({ page: 1, limit: 10, sort: '-created_at', year_from: 2026 }),
-          // 2. Top 10: 2026 releases sorted by popularity (-rating_kp,-rating_imdb)
-          fetchCinemaVideos({ page: 1, limit: 10, sort: '-rating_kp,-rating_imdb', year_from: 2026 }),
-          // 3. New Releases: 2026 Movies sorted by date added (-created_at)
-          fetchCinemaVideos({ page: 1, limit: 15, sort: '-created_at', year_from: 2026, type: 'movie' }),
-          // 4. Popular Series: 2026 Series sorted by popularity (-rating_kp,-rating_imdb)
-          fetchCinemaVideos({ page: 1, limit: 15, sort: '-rating_kp,-rating_imdb', year_from: 2026, type: 'serial' }),
-          // 5. Anime: Real Anime Collection
+        const [
+          heroItems,
+          top10Items,
+          freshMovies,
+          freshSeries,
+          updatesRes,
+          cartoonsItems,
+          koreanItems,
+          animeItems,
+          page2Movies,
+        ] = await Promise.all([
+          // 1. Hero Slider: Latest releases sorted by date added (-created_at)
+          fetchCinemaVideos({ page: 1, limit: 10, sort: '-created_at' }),
+          // 2. Top 10: Top rated movies/series sorted by popularity (-rating_kp,-rating_imdb)
+          fetchCinemaVideos({ page: 1, limit: 10, sort: '-rating_kp,-rating_imdb' }),
+          // 3. New Releases: Movies sorted by date added (-created_at)
+          fetchCinemaVideos({ page: 1, limit: 15, sort: '-created_at', type: 'movie' }),
+          // 4. Popular Series: Series sorted by popularity (-rating_kp,-rating_imdb)
+          fetchCinemaVideos({ page: 1, limit: 15, sort: '-rating_kp,-rating_imdb', type: 'serial' }),
+          // 5. Fresh Updates Stream
+          fetchCinemaUpdates(),
+          // 6. Cartoons collection
+          fetchCinemaCartoons({ limit: 15 }),
+          // 7. Korean Dramas & Thrillers
+          fetchCinemaByCountry('Южная Корея', 15),
+          // 8. Anime Collection
           fetchCinemaGetVideo({ genres: 'аниме', page: 1, limit: 15 }),
-          // 6. More 2026 Movies: page 2
-          fetchCinemaVideos({ page: 2, limit: 15, sort: '-created_at', year_from: 2026, type: 'movie' }),
-          // 7. More 2026 Movies: page 3
-          fetchCinemaVideos({ page: 3, limit: 15, sort: '-created_at', year_from: 2026, type: 'movie' }),
+          // 9. World Cinema (page 2)
+          fetchCinemaVideos({ page: 2, limit: 15, sort: '-rating_kp', type: 'movie' }),
         ]);
 
         if (!isMounted) return;
@@ -88,9 +106,14 @@ export default function CinemaContent() {
         setTopMovies(top10Items.length >= 10 ? top10Items.slice(0, 10) : top10Items);
         setNewReleases(freshMovies.slice(0, 15));
         setPopularSeries(freshSeries.slice(0, 15));
+
+        const updatesList = [...(updatesRes.serials || []), ...(updatesRes.movies || [])];
+        setFreshUpdates(updatesList.slice(0, 15));
+
+        setCartoonsList(cartoonsItems.slice(0, 15));
+        setKoreanDramas(koreanItems.slice(0, 15));
         setAnimeList(animeItems.slice(0, 15));
         setDocumentaryMovies(page2Movies.slice(0, 15));
-        setWorldCinema(page3Movies.slice(0, 15));
       } catch (err) {
         console.error('Failed to load cinema API data:', err);
       } finally {
@@ -183,9 +206,9 @@ export default function CinemaContent() {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {searchResults.map((movie) => (
+                {searchResults.map((movie, idx) => (
                   <MovieCard
-                    key={movie.id}
+                    key={`${movie.id}-${idx}`}
                     movie={movie}
                     isInMyList={myListIds.includes(movie.id)}
                     onToggleList={(e) => toggleMyList(movie.id, e)}
@@ -237,7 +260,7 @@ export default function CinemaContent() {
                     className="viewport dragscroll flex items-center gap-3 overflow-x-auto overflow-y-visible scrollbar-none -mx-3 px-3 lg:-mx-6 lg:px-6 py-3 select-none"
                   >
                     {topMovies.map((movie, idx) => (
-                      <div key={movie.id} className="flex-none w-40 sm:w-56">
+                      <div key={`${movie.id}-${idx}`} className="flex-none w-40 sm:w-56">
                         <MovieCard
                           movie={movie}
                           rankNumber={idx + 1}
@@ -252,7 +275,19 @@ export default function CinemaContent() {
                 </section>
               )}
 
-              {/* NEW MOVIES ROW (PAGE 2) */}
+              {/* FRESH UPDATES STREAM */}
+              {freshUpdates.length > 0 && (
+                <MovieRow
+                  title={lang?.frame_fresh_updates || 'Свежие эпизоды и обновления'}
+                  movies={freshUpdates}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                />
+              )}
+
+              {/* NEW MOVIES ROW */}
               {newReleases.length > 0 && (
                 <MovieRow
                   title={lang?.frame_new_releases || 'Новинки кино'}
@@ -276,11 +311,11 @@ export default function CinemaContent() {
                 />
               )}
 
-              {/* DOCUMENTARY & DRAMAS ROW (PAGE 3) */}
-              {documentaryMovies.length > 0 && (
+              {/* CARTOONS & ANIMATION ROW */}
+              {cartoonsList.length > 0 && (
                 <MovieRow
-                  title="Драмы и захватывающие истории"
-                  movies={documentaryMovies}
+                  title={lang?.frame_cartoons_section || 'Мультфильмы и анимация'}
+                  movies={cartoonsList}
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
@@ -288,23 +323,11 @@ export default function CinemaContent() {
                 />
               )}
 
-              {/* RETRO & CLASSIC ROW (PAGE 4) */}
-              {retroMovies.length > 0 && (
+              {/* KOREAN DRAMAS & THRILLERS ROW */}
+              {koreanDramas.length > 0 && (
                 <MovieRow
-                  title="Мировая классика и культовое кино"
-                  movies={retroMovies}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
-                />
-              )}
-
-              {/* WORLD CINEMA ROW (PAGE 5) */}
-              {worldCinema.length > 0 && (
-                <MovieRow
-                  title="Шедевры мирового кинематографа"
-                  movies={worldCinema}
+                  title={lang?.frame_korean_dramas || 'Корейские дорамы и триллеры'}
+                  movies={koreanDramas}
                   myListIds={myListIds}
                   onToggleList={toggleMyList}
                   onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
@@ -323,6 +346,19 @@ export default function CinemaContent() {
                   onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
                 />
               )}
+
+              {/* DOCUMENTARY & DRAMAS ROW */}
+              {documentaryMovies.length > 0 && (
+                <MovieRow
+                  title="Шедевры кинематографа"
+                  movies={documentaryMovies}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                />
+              )}
+
             </main>
           </>
         )}

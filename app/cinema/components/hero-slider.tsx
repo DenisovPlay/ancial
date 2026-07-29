@@ -47,7 +47,7 @@ export default function HeroSlider({ heroMovies = [], myListIds, onToggleList, o
           
           return (
             <div
-              key={hero.id}
+              key={`${hero.id}-${idx}`}
               className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
                 isActive ? 'opacity-100 z-0' : 'opacity-0 -z-10 pointer-events-none'
               }`}
@@ -92,7 +92,7 @@ export default function HeroSlider({ heroMovies = [], myListIds, onToggleList, o
       {/* HERO INFO BLOCK: ONLY TITLE AND BUTTONS */}
       <div className="relative z-30 px-6 space-y-3 pb-6 w-full">
         {/* TITLE ANIMATED ON CHANGE */}
-        <div key={currentHero.id} className="animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-1000 ease-out fill-mode-both">
+        <div key={`${currentHero.id}-${heroIndex}`} className="animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-1000 ease-out fill-mode-both">
           <h1 className="w-full text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight drop-shadow-2xl">
             {currentHero.title}
           </h1>
@@ -133,7 +133,7 @@ export default function HeroSlider({ heroMovies = [], myListIds, onToggleList, o
           <div className="flex items-center gap-3">
             {slides.map((h, idx) => (
               <button
-                key={h.id}
+                key={`${h.id}-${idx}`}
                 tabIndex={-1}
                 onClick={() => setHeroIndex(idx)}
                 className={`h-1.5 rounded-full transition-all cursor-pointer outline-none ${idx === heroIndex ? 'w-10 bg-white' : 'w-3 bg-white/30 hover:bg-white/60'
