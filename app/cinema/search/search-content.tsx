@@ -192,6 +192,51 @@ export default function SearchContent() {
             </div>
           </div>
 
+          {/* RESULTS TITLE */}
+          <div className="flex items-center justify-between pt-2">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              {query.trim()
+                ? `${lang?.frame_search_results || 'Результаты'}: «${query}»`
+                : 'Рекомендуем посмотреть'}
+            </h2>
+            {query.trim() && searchResults.length > 0 && (
+              <span className="text-zinc-500 font-bold text-sm">
+                Найдено: {searchResults.length}
+              </span>
+            )}
+          </div>
+
+          {/* RESULTS CONTAINER WITH DATA-SEARCH-RESULTS */}
+          <div data-search-results="true">
+            {isLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 animate-pulse">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="aspect-[2/3] rounded-3xl bg-zinc-900/80 border border-white/5" />
+                ))}
+              </div>
+            ) : query.trim() && searchResults.length === 0 ? (
+              <div className="py-16 text-center text-zinc-500 space-y-3 bg-zinc-950/50 border border-zinc-900 rounded-3xl">
+                <svg className="w-12 h-12 fill-zinc-600 mx-auto" viewBox="0 0 24 24">
+                  <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                </svg>
+                <p className="text-lg font-bold text-zinc-400">Ничего не найдено</p>
+                <p className="text-sm text-zinc-600">Проверьте название фильма или сериала</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                {displayMovies.map((movie, index) => (
+                  <MovieCard
+                    key={`${movie.id}-${index}`}
+                    movie={movie}
+                    isInMyList={myListIds.includes(movie.id)}
+                    onToggleList={(e) => toggleMyList(movie.id, e)}
+                    onClick={() => handleMovieClick(movie)}
+                    onPlay={() => handleMovieClick(movie)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
