@@ -156,7 +156,41 @@ export function useTvNavigation() {
         // ── 0.05 HERO WATCH BUTTON HANDLING ON INFO/MAIN PAGES ────────────────────
         const isHeroBtn = active.hasAttribute('data-watch-hero-btn') || !!active.closest?.('[data-watch-hero-btn]');
         if (isHeroBtn) {
-          if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          const heroButtons = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-hero-section] button.focusable-tv, [data-hero-section] a.focusable-tv, [data-watch-hero-btn]')
+          ).filter((el) => el.offsetWidth > 0 && el.offsetHeight > 0);
+          const idx = heroButtons.indexOf(active);
+
+          if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (idx !== -1 && idx < heroButtons.length - 1) {
+              heroButtons[idx + 1].focus();
+            } else {
+              const firstCard = document.querySelector<HTMLElement>('main [data-movie-card="true"], main .focusable-tv');
+              if (firstCard) {
+                firstCard.focus();
+                firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+            return;
+          }
+
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (idx > 0) {
+              heroButtons[idx - 1].focus();
+            } else {
+              const backBtn = getBackBtn();
+              const targetHeader = backBtn || findActiveNavTab();
+              if (targetHeader) {
+                targetHeader.focus();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }
+            return;
+          }
+
+          if (e.key === 'ArrowUp') {
             e.preventDefault();
             const backBtn = getBackBtn();
             const targetHeader = backBtn || findActiveNavTab();
@@ -166,7 +200,8 @@ export function useTvNavigation() {
             }
             return;
           }
-          if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+
+          if (e.key === 'ArrowDown') {
             e.preventDefault();
             const firstCard = document.querySelector<HTMLElement>('main [data-movie-card="true"], main .focusable-tv');
             if (firstCard) {
@@ -574,11 +609,11 @@ export function useTvNavigation() {
 
           switch (e.key) {
             case 'ArrowLeft':
-              valid = dx < -5;
+              valid = dx < -5 && dy < 35;
               dist = Math.abs(dx) + Math.abs(dy) * 6;
               break;
             case 'ArrowRight':
-              valid = dx > 5;
+              valid = dx > 5 && dy < 35;
               dist = Math.abs(dx) + Math.abs(dy) * 6;
               break;
             case 'ArrowUp':
@@ -607,6 +642,13 @@ export function useTvNavigation() {
               block: 'center',
               inline: 'nearest',
             });
+          }
+        } else if (e.key === 'ArrowLeft') {
+          const heroBtn = document.querySelector<HTMLElement>('[data-watch-hero-btn]');
+          const targetHeader = heroBtn || findActiveNavTab();
+          if (targetHeader) {
+            targetHeader.focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }
       } catch (err) {

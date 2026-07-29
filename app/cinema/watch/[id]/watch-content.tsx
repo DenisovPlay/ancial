@@ -6,6 +6,7 @@ import { Movie } from '../../types';
 import { fetchCinemaVideoById } from '../../cinema-api';
 import { useTvNavigation } from '../../use-tv-navigation';
 import { FrameBrandLoader } from '../../components/cinema-skeleton';
+import CustomPlayer from '../../components/custom-player';
 
 interface WatchContentProps {
   id: string;
@@ -74,6 +75,16 @@ export default function WatchContent({ id }: WatchContentProps) {
     if (season) setCurrentSeason(Number(season));
   }, [season]);
 
+  // Hide mobile navigation bar on mount (matching /messages pattern)
+  useEffect(() => {
+    document.documentElement.classList.add('cinema-watch-open');
+    document.body.classList.add('cinema-watch-open');
+    return () => {
+      document.documentElement.classList.remove('cinema-watch-open');
+      document.body.classList.remove('cinema-watch-open');
+    };
+  }, []);
+
   if (isLoading) {
     return (
       <div className="w-screen h-screen bg-black text-white flex flex-col items-center justify-center">
@@ -96,17 +107,29 @@ export default function WatchContent({ id }: WatchContentProps) {
     );
   }
 
-  const availableSeasonsCount = movie.counters?.seasons || (movie.episodesBySeason ? Object.keys(movie.episodesBySeason).length : 0);
-  const isSeriesOrAnime = movie.type === 'series' || availableSeasonsCount > 0;
+  const availableSeasonsCount = movie.counters?.seasons || (movie.episodesBySeason ? Object.keys(movie.episodesBySeason).length : 0) || 1;
+  const isSeriesOrAnime =
+    movie.type !== 'movie' ||
+    Boolean(movie.counters?.seasons && movie.counters.seasons > 0) ||
+    Boolean(movie.counters?.episodes && movie.counters.episodes > 0) ||
+    Boolean(movie.episodesBySeason && Object.keys(movie.episodesBySeason).length > 0) ||
+    Boolean(movie.genres?.some((g) => g.toLowerCase().includes('сериал') || g.toLowerCase().includes('шоу')));
 
   const activeSeason = season ? Number(season) : 1;
   const activeEpisode = episode ? Number(episode) : 1;
   const activeTranslation = translation ? Number(translation) : (movie.translationsList?.[0]?.id || null);
 
   const currentSeasonEpisodes = isSeriesOrAnime
-    ? (movie.episodesBySeason && movie.episodesBySeason[currentSeason]) ||
-    Array.from({ length: movie.counters?.episodes || 12 }, (_, i) => i + 1)
+    ? (movie.episodesBySeason && movie.episodesBySeason[currentSeason] && movie.episodesBySeason[currentSeason].length > 0)
+      ? movie.episodesBySeason[currentSeason]
+      : Array.from({ length: movie.counters?.episodes || 10 }, (_, i) => i + 1)
     : [];
+
+  const hasMultipleSeasons = availableSeasonsCount > 1;
+  const hasMultipleEpisodes = currentSeasonEpisodes.length > 1;
+  const hasEpisodeSelection = isSeriesOrAnime && (hasMultipleSeasons || hasMultipleEpisodes);
+  const hasMultipleTranslations = Boolean(movie.translationsList && movie.translationsList.length > 1);
+  const showModalPicker = hasEpisodeSelection || hasMultipleTranslations;
 
   const handleSelectEpisode = (sNum: number, epNum: number, transId?: number | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -123,57 +146,95 @@ export default function WatchContent({ id }: WatchContentProps) {
     router.replace(`/cinema/watch/${movie.id}?${params.toString()}`);
   };
 
+  const handleNextEpisode = () => {
+    if (activeEpisode < (currentSeasonEpisodes.length || 100)) {
+      handleSelectEpisode(activeSeason, activeEpisode + 1, activeTranslation);
+    } else if (activeSeason < availableSeasonsCount) {
+      handleSelectEpisode(activeSeason + 1, 1, activeTranslation);
+    }
+  };
+
+  const handlePrevEpisode = () => {
+    if (activeEpisode > 1) {
+      handleSelectEpisode(activeSeason, activeEpisode - 1, activeTranslation);
+    }
+  };
+
+  // Find direct stream url if available in files
+  const matchedFile = (movie.files || []).find((f: any) => {
+    const sMatch = !f.season_number || Number(f.season_number) === activeSeason;
+    const eMatch = !f.series_number || Number(f.series_number) === activeEpisode;
+    const tMatch = !f.translation?.id || Number(f.translation.id) === activeTranslation;
+    return sMatch && eMatch && tMatch;
+  }) || (movie.files || [])[0];
+
+  // Only use directStreamUrl if matchedFile has an actual media stream URL (mp4, m3u8, webm, etc.)
+  const candidateUrl = matchedFile?.url;
+  const isDirectMediaFile = candidateUrl && (
+    candidateUrl.includes('.mp4') ||
+    candidateUrl.includes('.m3u8') ||
+    candidateUrl.includes('.mkv') ||
+    candidateUrl.includes('.webm') ||
+    candidateUrl.includes('/file/') ||
+    candidateUrl.includes('/stream/')
+  );
+
+  const directStreamUrl = isDirectMediaFile ? candidateUrl : undefined;
+
   // Build iframe URL according to FlixCDN Iframe documentation
-  const baseUrl = `https://tarantino.factorios.live/show/kinopoisk/${movie.id}`;
+  const targetKpId = movie.kinopoisk_id || movie.id;
+  const rawBaseUrl = movie.videoUrl || `https://tarantino.factorios.live/show/kinopoisk/${targetKpId}`;
+  const baseUrl = rawBaseUrl.split('?')[0];
   const iframeParams = new URLSearchParams();
   if (season) iframeParams.set('season', season);
   if (episode) iframeParams.set('episode', episode);
   if (translation) iframeParams.set('translation', translation);
 
-  // Hide duplicate iframe controls & sharing since Ancial UI handles them natively
+  // Hide duplicate iframe controls, header, title & sharing since Ancial UI handles them natively
   iframeParams.set('no_control_translations', '1');
   iframeParams.set('no_control_seasons', '1');
   iframeParams.set('no_control_episodes', '1');
   iframeParams.set('no_sharing', '1');
+  iframeParams.set('no_title', '1');
+  iframeParams.set('no_header', '1');
+  iframeParams.set('no_control_title', '1');
+  iframeParams.set('no_back', '1');
 
   const iframeSrc = `${baseUrl}?${iframeParams.toString()}`;
 
   return (
     <div className="relative w-screen h-[100dvh] bg-black overflow-hidden select-none">
-      {/* TOP CONTROLS BAR: BACK BUTTON & EPISODE PICKER TOGGLE */}
-      <div className="absolute top-3 left-3 right-3 z-50 flex items-center justify-between pointer-events-none">
-        <button
-          onClick={() => router.back()}
-          aria-label="Назад"
-          tabIndex={0}
-          className="focusable-tv pointer-events-auto p-2 flex items-center justify-center rounded-full cursor-pointer active:scale-95 duration-300 bg-black/60 hover:bg-black/90 border border-white/20 backdrop-blur-md h-11 w-11 shadow-2xl outline-none focus:outline-none focus:ring-4 focus:ring-white"
-        >
-          <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-
-        {isSeriesOrAnime && (
-          <button
-            onClick={() => setShowPicker(!showPicker)}
-            tabIndex={0}
-            className="focusable-tv pointer-events-auto px-4 py-2 flex items-center gap-2 rounded-full cursor-pointer active:scale-95 duration-300 bg-black/60 hover:bg-black/90 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-2xl outline-none focus:outline-none focus:ring-4 focus:ring-white"
-          >
-            <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            <span>С{activeSeason} Е{activeEpisode} (Выбор серии)</span>
-          </button>
-        )}
-      </div>
+      <style>{`#NAVP, [data-app-nav="mobile"], [data-app-nav="desktop"] { display: none !important; }`}</style>
+      {/* CUSTOM PLAYER (HANDLES NATIVE HTML5 OR FALLBACK IFRAME WITH OUR CONTROLS) */}
+      <CustomPlayer
+        src={directStreamUrl}
+        fallbackIframeSrc={iframeSrc}
+        title={movie.title}
+        movieId={movie.id}
+        season={activeSeason}
+        episode={activeEpisode}
+        totalSeasons={hasMultipleSeasons ? availableSeasonsCount : 1}
+        totalEpisodes={hasEpisodeSelection ? currentSeasonEpisodes.length : 1}
+        translations={movie.translationsList}
+        selectedTranslationId={activeTranslation}
+        onNextEpisode={hasEpisodeSelection ? handleNextEpisode : undefined}
+        onPrevEpisode={hasEpisodeSelection && activeEpisode > 1 ? handlePrevEpisode : undefined}
+        onSelectTranslation={handleSelectTranslation}
+        onSelectEpisodeModal={showModalPicker ? () => setShowPicker(true) : undefined}
+        onBack={() => router.back()}
+      />
 
       {/* OVERLAY EPISODES & SEASONS PICKER MODAL */}
-      {showPicker && isSeriesOrAnime && (
+      {showPicker && showModalPicker && (
         <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-2xl flex flex-col p-4 lg:p-8 space-y-6 overflow-y-auto animate-in fade-in duration-200">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <div>
               <h2 className="text-2xl font-black text-white">{movie.title}</h2>
-              <p className="text-xs text-zinc-400">Сезон {activeSeason}, Серия {activeEpisode}</p>
+              {hasEpisodeSelection && (
+                <p className="text-xs text-zinc-400">
+                  {hasMultipleSeasons ? `Сезон ${activeSeason}, ` : ''}Серия {activeEpisode}
+                </p>
+              )}
             </div>
             <button
               onClick={() => setShowPicker(false)}
@@ -183,16 +244,16 @@ export default function WatchContent({ id }: WatchContentProps) {
             </button>
           </div>
 
-          {/* SEASONS */}
-          {availableSeasonsCount > 0 && (
+          {/* SEASONS (ONLY IF >1 SEASON) */}
+          {hasMultipleSeasons && (
             <div className="space-y-2">
               <span className="text-xs font-semibold text-zinc-400 block">Сезон:</span>
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-2">
+              <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-2 px-1 -mx-1">
                 {Array.from({ length: availableSeasonsCount }, (_, i) => i + 1).map((sNum) => (
                   <button
                     key={sNum}
                     onClick={() => setCurrentSeason(sNum)}
-                    className={`px-5 py-2 rounded-2xl font-bold text-sm transition-all duration-200 cursor-pointer ${currentSeason === sNum
+                    className={`focusable-tv px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap shrink-0 transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 ${currentSeason === sNum
                         ? 'bg-white text-black shadow-lg'
                         : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
                       }`}
@@ -204,34 +265,36 @@ export default function WatchContent({ id }: WatchContentProps) {
             </div>
           )}
 
-          {/* EPISODES GRID */}
-          <div className="space-y-2">
-            <span className="text-xs font-semibold text-zinc-400 block">Серии сезона {currentSeason}:</span>
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
-              {currentSeasonEpisodes.map((epNum) => {
-                const isCurrent = currentSeason === activeSeason && epNum === activeEpisode;
-                return (
-                  <button
-                    key={epNum}
-                    onClick={() => handleSelectEpisode(currentSeason, epNum, activeTranslation)}
-                    className={`py-3 rounded-2xl font-black text-xs transition-all duration-200 cursor-pointer ${isCurrent
-                        ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-lg'
-                        : 'bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
-                      }`}
-                  >
-                    {epNum}
-                  </button>
-                );
-              })}
+          {/* EPISODES GRID (ONLY IF MULTIPLE EPISODES / SEASONS) */}
+          {hasEpisodeSelection && (
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-zinc-400 block">Серии сезона {currentSeason}:</span>
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
+                {currentSeasonEpisodes.map((epNum) => {
+                  const isCurrent = currentSeason === activeSeason && epNum === activeEpisode;
+                  return (
+                    <button
+                      key={epNum}
+                      onClick={() => handleSelectEpisode(currentSeason, epNum, activeTranslation)}
+                      className={`py-3 rounded-2xl font-black text-xs transition-all duration-200 cursor-pointer ${isCurrent
+                          ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-lg'
+                          : 'bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
+                        }`}
+                    >
+                      {epNum}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* TRANSLATIONS */}
-          {movie.translationsList && movie.translationsList.length > 0 && (
+          {/* TRANSLATIONS (ONLY IF >1 TRANSLATION) */}
+          {hasMultipleTranslations && (
             <div className="space-y-2 pt-2 border-t border-white/10">
               <span className="text-xs font-semibold text-zinc-400 block">Озвучка:</span>
               <div className="flex flex-wrap items-center gap-2">
-                {movie.translationsList.map((trans) => (
+                {(movie.translationsList || []).map((trans) => (
                   <button
                     key={trans.id}
                     onClick={() => handleSelectTranslation(trans.id)}
@@ -248,15 +311,6 @@ export default function WatchContent({ id }: WatchContentProps) {
           )}
         </div>
       )}
-
-      {/* FULLSCREEN IFRAME / VIDEO PLAYER */}
-      <iframe
-        src={iframeSrc}
-        title={movie.title}
-        className="w-full h-full border-0"
-        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-        allowFullScreen
-      />
     </div>
   );
 }

@@ -65,22 +65,10 @@ body:has(.home-route) #main-content {
   overflow: hidden;
 }
 
-html.messages-dialog-open [data-app-nav="mobile"] {
-  display: none !important;
-}
-
-body.messages-dialog-open-body [data-app-nav="mobile"] {
-  display: none !important;
-}
-
-body.messages-dialog-open-body #NAVP {
-  display: none !important;
-}
-
-body.messages-dialog-open-body.pulse-player-visible #main-content {
-  padding-bottom: 0 !important;
-}
-
+html.messages-dialog-open [data-app-nav="mobile"],
+body.messages-dialog-open-body [data-app-nav="mobile"],
+html.cinema-watch-open [data-app-nav="mobile"],
+body.cinema-watch-open [data-app-nav="mobile"],
 body.pulse-player-full [data-app-nav="mobile"] {
   display: none !important;
 }
@@ -767,17 +755,15 @@ body:has(.apps-overlay-route) #main-content {
 /* TV FOCUSABLE STYLES FOR CINEMA BACK BUTTON */
 [data-cinema-back="true"]:focus,
 [data-cinema-back="true"]:focus-visible {
-  outline: 4px solid #ffffff !important;
-  outline-offset: 3px !important;
-  background-color: #ffffff !important;
-  color: #000000 !important;
-  transform: scale(1.15) !important;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.95) !important;
-  z-index: 50 !important;
+  outline: 3px solid #ffffff !important;
+  outline-offset: 2px !important;
+  background-color: rgba(24, 24, 27, 0.9) !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 [data-cinema-back="true"]:focus svg,
 [data-cinema-back="true"]:focus-visible svg {
-  stroke: #000000 !important;
-  fill: #000000 !important;
+  stroke: #ffffff !important;
+  fill: none !important;
 }

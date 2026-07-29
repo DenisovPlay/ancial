@@ -71,8 +71,9 @@ function formatFlixMovie(item: any): Movie {
     target.big_poster ||
     posterUrl;
 
-  const type: 'movie' | 'series' =
-    target.type === 'serial' || target.type === 'series' || target.type === 'animeserial' || target.type === 'showserial' || target.is_serial || item.type === 'serial' ? 'series' : 'movie';
+  const rawType = String(target.type || item.type || '').toLowerCase();
+  const isSerial = rawType.includes('serial') || rawType === 'series' || rawType.includes('show') || target.is_serial || item.is_serial;
+  const type: 'movie' | 'series' = isSerial ? 'series' : 'movie';
 
   const director = target.director || (Array.isArray(target.directors) ? target.directors.map((d: any) => d.name_ru || d.name_en || d).join(', ') : 'Режиссёр');
   
@@ -106,7 +107,7 @@ function formatFlixMovie(item: any): Movie {
     : [];
 
   // Map counters
-  const counters = target.counters || item.counters || null;
+  const counters = target.counters || item.counters || (isSerial ? { seasons: target.seasons_count || 1, episodes: target.episodes_count || 10 } : null);
 
   // Map files -> episodesBySeason
   const files = target.files || item.files || [];
@@ -122,16 +123,18 @@ function formatFlixMovie(item: any): Movie {
     Object.keys(episodesBySeason).forEach((sKey) => {
       episodesBySeason[Number(sKey)].sort((a, b) => a - b);
     });
-  } else if (counters && counters.seasons) {
-    const totalSeasons = counters.seasons || 1;
-    const totalEp = counters.episodes || 1;
+  }
+
+  if (isSerial && Object.keys(episodesBySeason).length === 0) {
+    const totalSeasons = counters?.seasons || 1;
+    const totalEp = counters?.episodes || 10;
     const epPerSeason = Math.max(1, Math.ceil(totalEp / totalSeasons));
     for (let s = 1; s <= totalSeasons; s++) {
       const startEp = (s - 1) * epPerSeason + 1;
       const endEp = Math.min(totalEp, s * epPerSeason);
       const eps: number[] = [];
       for (let e = startEp; e <= endEp; e++) eps.push(e);
-      episodesBySeason[s] = eps.length > 0 ? eps : [1];
+      episodesBySeason[s] = eps.length > 0 ? eps : Array.from({ length: 10 }, (_, i) => i + 1);
     }
   }
 
@@ -153,6 +156,8 @@ function formatFlixMovie(item: any): Movie {
     director,
     cast,
     isNew: year >= 2024,
+    kinopoisk_id: target.kinopoisk_id || target.kp_id || target.kinopoiskId || realId,
+    files: target.files || [],
     counters,
     translationsList,
     episodesBySeason,

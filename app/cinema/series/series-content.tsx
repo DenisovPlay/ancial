@@ -97,7 +97,7 @@ export default function SeriesContent() {
   const filteredSeries = series.filter((m) =>
     searchQuery
       ? m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.originalTitle.toLowerCase().includes(searchQuery.toLowerCase())
+      (m.originalTitle || '').toLowerCase().includes(searchQuery.toLowerCase())
       : true
   );
 

@@ -29,6 +29,7 @@ export default function CinemaContent() {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [myListIds, setMyListIds] = useState<string[]>([]);
+  const [watchHistory, setWatchHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [heroMovies, setHeroMovies] = useState<Movie[]>([]);
@@ -40,6 +41,22 @@ export default function CinemaContent() {
   const [retroMovies, setRetroMovies] = useState<Movie[]>([]);
   const [worldCinema, setWorldCinema] = useState<Movie[]>([]);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
+
+  // Load user list & watch history from localStorage
+  useEffect(() => {
+    try {
+      const savedList = localStorage.getItem('frame_my_list');
+      if (savedList) setMyListIds(JSON.parse(savedList));
+
+      const savedHistory = localStorage.getItem('cinema_watch_history');
+      if (savedHistory) {
+        const parsed = JSON.parse(savedHistory);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setWatchHistory(parsed);
+        }
+      }
+    } catch (e) { }
+  }, []);
 
   // Load real API content on mount
   useEffect(() => {
@@ -83,12 +100,6 @@ export default function CinemaContent() {
 
     loadRealCinemaData();
 
-    // Load user list from localStorage
-    try {
-      const savedList = localStorage.getItem('frame_my_list');
-      if (savedList) setMyListIds(JSON.parse(savedList));
-    } catch (e) { }
-
     return () => {
       isMounted = false;
     };
@@ -109,180 +120,212 @@ export default function CinemaContent() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const toggleMyList = (movieId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    let updated: string[];
-    if (myListIds.includes(movieId)) {
-      updated = myListIds.filter((id) => id !== movieId);
-      showNote({
-        content: lang?.frame_note_removed || 'Удалено из Моего списка',
-        type: 'info',
-        time: 3,
-      });
-    } else {
-      updated = [...myListIds, movieId];
-      showNote({
-        content: lang?.frame_note_added || 'Добавлено в Мой список',
-        type: 'success',
-        time: 3,
-      });
-    }
-    setMyListIds(updated);
-    try {
-      localStorage.setItem('frame_my_list', JSON.stringify(updated));
-    } catch (err) { }
-  };
+    const toggleMyList = (movieId: string, e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      let updated: string[];
+      if (myListIds.includes(movieId)) {
+        updated = myListIds.filter((id) => id !== movieId);
+        showNote({
+          content: lang?.frame_note_removed || 'Удалено из Моего списка',
+          type: 'info',
+          time: 3,
+        });
+      } else {
+        updated = [...myListIds, movieId];
+        showNote({
+          content: lang?.frame_note_added || 'Добавлено в Мой список',
+          type: 'success',
+          time: 3,
+        });
+      }
+      setMyListIds(updated);
+      try {
+        localStorage.setItem('frame_my_list', JSON.stringify(updated));
+      } catch (err) { }
+    };
 
-  return (
-    <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">
-      <CinemaHeader
-        activeTab="all"
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
-      <AdblockBanner />
+    const continueWatchingMovies: Movie[] = watchHistory.map((item) => ({
+      id: String(item.id),
+      title: item.title || 'Видео',
+      originalTitle: item.originalTitle || '',
+      description: item.description || '',
+      posterUrl: item.posterUrl || '',
+      backdropUrl: item.backdropUrl || item.posterUrl || '',
+      rating: item.rating ? String(item.rating) : undefined,
+      year: item.year ? String(item.year) : '',
+      ageRating: item.ageRating || '',
+      duration: item.duration || '',
+      quality: 'HD',
+      genres: item.season && item.episode ? [`Сезон ${item.season}, Серия ${item.episode}`] : ['Продолжить'],
+      type: item.type || 'movie',
+    }));
 
-      {isLoading ? (
-        <CinemaPageSkeleton />
-      ) : searchQuery.trim() ? (
-        <main className="w-full px-6 space-y-6 pt-3">
-          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            {lang?.frame_search_results || 'Результаты поиска'}: «{searchQuery}»
-          </h2>
+    return (
+      <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">
+        <CinemaHeader
+          activeTab="all"
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+        <AdblockBanner />
 
-          {searchResults.length === 0 ? (
-            <div className="py-20 text-center text-zinc-500 space-y-3">
-              <p className="text-lg font-medium">Ничего не найдено по вашему запросу</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {searchResults.map((movie) => (
-                <MovieCard
-                  key={movie.id}
-                  movie={movie}
-                  isInMyList={myListIds.includes(movie.id)}
-                  onToggleList={(e) => toggleMyList(movie.id, e)}
-                  onClick={() => router.push(`/cinema/info/${movie.id}`)}
-                  onPlay={() => router.push(`/cinema/watch/${movie.id}`)}
-                />
-              ))}
-            </div>
-          )}
-        </main>
-      ) : (
-        <>
-          {/* HERO SLIDER WITH REAL MOVIES */}
-          {heroMovies.length > 0 && (
-            <HeroSlider
-              heroMovies={heroMovies}
-              myListIds={myListIds}
-              onToggleList={toggleMyList}
-              onPlayMovie={(m) => router.push(`/cinema/watch/${m.id}`)}
-            />
-          )}
+        {isLoading ? (
+          <CinemaPageSkeleton />
+        ) : searchQuery.trim() ? (
+          <main className="w-full px-6 space-y-6 pt-3">
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              {lang?.frame_search_results || 'Результаты поиска'}: «{searchQuery}»
+            </h2>
 
-          {/* MAIN CATALOG ROWS */}
-          <main className="w-full px-3 lg:px-6 space-y-6 lg:space-y-12">
-            {/* TOP-10 WEEKLY ROW */}
-            {topMovies.length > 0 && (
-              <section className="space-y-3">
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                  {lang?.frame_top_10 || 'Топ-10 недели в Frame'}
-                </h2>
-                <div
-                  ref={topScrollRef}
-                  className="viewport dragscroll flex items-center gap-3 overflow-x-auto overflow-y-visible scrollbar-none -mx-3 px-3 lg:-mx-6 lg:px-6 py-3 select-none"
-                >
-                  {topMovies.map((movie, idx) => (
-                    <div key={movie.id} className="flex-none w-40 sm:w-56">
-                      <MovieCard
-                        movie={movie}
-                        rankNumber={idx + 1}
-                        isInMyList={myListIds.includes(movie.id)}
-                        onToggleList={(e) => toggleMyList(movie.id, e)}
-                        onClick={() => router.push(`/cinema/info/${movie.id}`)}
-                        onPlay={() => router.push(`/cinema/watch/${movie.id}`)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* NEW MOVIES ROW (PAGE 2) */}
-            {newReleases.length > 0 && (
-              <MovieRow
-                title={lang?.frame_new_releases || 'Новинки кино'}
-                movies={newReleases}
-                myListIds={myListIds}
-                onToggleList={toggleMyList}
-                onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
-              />
-            )}
-
-            {/* POPULAR SERIES ROW */}
-            {popularSeries.length > 0 && (
-              <MovieRow
-                title={lang?.frame_popular_series || 'Популярные сериалы'}
-                movies={popularSeries}
-                myListIds={myListIds}
-                onToggleList={toggleMyList}
-                onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
-              />
-            )}
-
-            {/* DOCUMENTARY & DRAMAS ROW (PAGE 3) */}
-            {documentaryMovies.length > 0 && (
-              <MovieRow
-                title="Драмы и захватывающие истории"
-                movies={documentaryMovies}
-                myListIds={myListIds}
-                onToggleList={toggleMyList}
-                onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
-              />
-            )}
-
-            {/* RETRO & CLASSIC ROW (PAGE 4) */}
-            {retroMovies.length > 0 && (
-              <MovieRow
-                title="Мировая классика и культовое кино"
-                movies={retroMovies}
-                myListIds={myListIds}
-                onToggleList={toggleMyList}
-                onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
-              />
-            )}
-
-            {/* WORLD CINEMA ROW (PAGE 5) */}
-            {worldCinema.length > 0 && (
-              <MovieRow
-                title="Шедевры мирового кинематографа"
-                movies={worldCinema}
-                myListIds={myListIds}
-                onToggleList={toggleMyList}
-                onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
-              />
-            )}
-
-            {/* ANIME ROW */}
-            {animeList.length > 0 && (
-              <MovieRow
-                title={lang?.frame_anime_collection || 'Коллекция аниме'}
-                movies={animeList}
-                myListIds={myListIds}
-                onToggleList={toggleMyList}
-                onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
-              />
+            {searchResults.length === 0 ? (
+              <div className="py-20 text-center text-zinc-500 space-y-3">
+                <p className="text-lg font-medium">Ничего не найдено по вашему запросу</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {searchResults.map((movie) => (
+                  <MovieCard
+                    key={movie.id}
+                    movie={movie}
+                    isInMyList={myListIds.includes(movie.id)}
+                    onToggleList={(e) => toggleMyList(movie.id, e)}
+                    onClick={() => router.push(`/cinema/info/${movie.id}`)}
+                    onPlay={() => router.push(`/cinema/watch/${movie.id}`)}
+                  />
+                ))}
+              </div>
             )}
           </main>
-        </>
-      )}
-    </div>
-  );
-}
+        ) : (
+          <>
+            {/* HERO SLIDER WITH REAL MOVIES */}
+            {heroMovies.length > 0 && (
+              <HeroSlider
+                heroMovies={heroMovies}
+                myListIds={myListIds}
+                onToggleList={toggleMyList}
+                onPlayMovie={(m) => router.push(`/cinema/watch/${m.id}`)}
+              />
+            )}
+
+            {/* MAIN CATALOG ROWS */}
+            <main className="w-full px-3 lg:px-6 space-y-6 lg:space-y-12">
+              {/* CONTINUE WATCHING ("ВЫ СМОТРЕЛИ") ROW */}
+              {continueWatchingMovies.length > 0 && (
+                <MovieRow
+                  title="Вы смотрели"
+                  movies={continueWatchingMovies}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => {
+                    const saved = watchHistory.find((h) => String(h.id) === String(movie.id));
+                    const query = saved?.season ? `?season=${saved.season}&episode=${saved.episode || 1}` : '';
+                    router.push(`/cinema/watch/${movie.id}${query}`);
+                  }}
+                />
+              )}
+
+              {/* TOP-10 WEEKLY ROW */}
+              {topMovies.length > 0 && (
+                <section className="space-y-3">
+                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    {lang?.frame_top_10 || 'Топ-10 недели в Frame'}
+                  </h2>
+                  <div
+                    ref={topScrollRef}
+                    className="viewport dragscroll flex items-center gap-3 overflow-x-auto overflow-y-visible scrollbar-none -mx-3 px-3 lg:-mx-6 lg:px-6 py-3 select-none"
+                  >
+                    {topMovies.map((movie, idx) => (
+                      <div key={movie.id} className="flex-none w-40 sm:w-56">
+                        <MovieCard
+                          movie={movie}
+                          rankNumber={idx + 1}
+                          isInMyList={myListIds.includes(movie.id)}
+                          onToggleList={(e) => toggleMyList(movie.id, e)}
+                          onClick={() => router.push(`/cinema/info/${movie.id}`)}
+                          onPlay={() => router.push(`/cinema/watch/${movie.id}`)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* NEW MOVIES ROW (PAGE 2) */}
+              {newReleases.length > 0 && (
+                <MovieRow
+                  title={lang?.frame_new_releases || 'Новинки кино'}
+                  movies={newReleases}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                />
+              )}
+
+              {/* POPULAR SERIES ROW */}
+              {popularSeries.length > 0 && (
+                <MovieRow
+                  title={lang?.frame_popular_series || 'Популярные сериалы'}
+                  movies={popularSeries}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                />
+              )}
+
+              {/* DOCUMENTARY & DRAMAS ROW (PAGE 3) */}
+              {documentaryMovies.length > 0 && (
+                <MovieRow
+                  title="Драмы и захватывающие истории"
+                  movies={documentaryMovies}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                />
+              )}
+
+              {/* RETRO & CLASSIC ROW (PAGE 4) */}
+              {retroMovies.length > 0 && (
+                <MovieRow
+                  title="Мировая классика и культовое кино"
+                  movies={retroMovies}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                />
+              )}
+
+              {/* WORLD CINEMA ROW (PAGE 5) */}
+              {worldCinema.length > 0 && (
+                <MovieRow
+                  title="Шедевры мирового кинематографа"
+                  movies={worldCinema}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                />
+              )}
+
+              {/* ANIME ROW */}
+              {animeList.length > 0 && (
+                <MovieRow
+                  title={lang?.frame_anime_collection || 'Коллекция аниме'}
+                  movies={animeList}
+                  myListIds={myListIds}
+                  onToggleList={toggleMyList}
+                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onPlayMovie={(movie) => router.push(`/cinema/watch/${movie.id}`)}
+                />
+              )}
+            </main>
+          </>
+        )}
+      </div>
+    );
+  }

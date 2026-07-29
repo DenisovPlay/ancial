@@ -172,13 +172,24 @@ export default function InfoContent({ id }: InfoContentProps) {
     );
   }
 
-  // Derive available seasons and episodes
-  const availableSeasonsCount = infoMovie.counters?.seasons || (infoMovie.episodesBySeason ? Object.keys(infoMovie.episodesBySeason).length : 0);
-  const isSeriesOrAnime = infoMovie.type === 'series' || availableSeasonsCount > 0;
+  // Derive available seasons and episodes ONLY for series/anime
+  const availableSeasonsCount = infoMovie.counters?.seasons || (infoMovie.episodesBySeason ? Object.keys(infoMovie.episodesBySeason).length : 0) || 1;
+  const isSeriesOrAnime =
+    infoMovie.type !== 'movie' ||
+    Boolean(infoMovie.counters?.seasons && infoMovie.counters.seasons > 0) ||
+    Boolean(infoMovie.counters?.episodes && infoMovie.counters.episodes > 0) ||
+    Boolean(infoMovie.episodesBySeason && Object.keys(infoMovie.episodesBySeason).length > 0) ||
+    Boolean(infoMovie.genres?.some((g) => g.toLowerCase().includes('сериал') || g.toLowerCase().includes('шоу')));
+
   const currentSeasonEpisodes = isSeriesOrAnime
-    ? (infoMovie.episodesBySeason && infoMovie.episodesBySeason[selectedSeason]) ||
-      Array.from({ length: infoMovie.counters?.episodes || 12 }, (_, i) => i + 1)
+    ? (infoMovie.episodesBySeason && infoMovie.episodesBySeason[selectedSeason] && infoMovie.episodesBySeason[selectedSeason].length > 0)
+      ? infoMovie.episodesBySeason[selectedSeason]
+      : Array.from({ length: infoMovie.counters?.episodes || 10 }, (_, i) => i + 1)
     : [];
+
+  const hasMultipleSeasons = availableSeasonsCount > 1;
+  const hasMultipleEpisodes = currentSeasonEpisodes.length > 1;
+  const hasEpisodeSelection = isSeriesOrAnime && (hasMultipleSeasons || hasMultipleEpisodes);
 
   return (
     <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">
@@ -216,9 +227,9 @@ export default function InfoContent({ id }: InfoContentProps) {
             <span className="text-xs text-zinc-400 font-semibold">{infoMovie.year}</span>
             <span className="text-xs text-zinc-400 font-semibold">• {infoMovie.ageRating}</span>
             <span className="text-xs text-zinc-400 font-semibold">• {infoMovie.duration}</span>
-            {isSeriesOrAnime && availableSeasonsCount > 0 && (
+            {isSeriesOrAnime && availableSeasonsCount > 1 && (
               <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-bold">
-                {availableSeasonsCount} {availableSeasonsCount === 1 ? 'сезон' : availableSeasonsCount < 5 ? 'сезона' : 'сезонов'}
+                {availableSeasonsCount} {availableSeasonsCount < 5 ? 'сезона' : 'сезонов'}
               </span>
             )}
           </div>
@@ -240,18 +251,21 @@ export default function InfoContent({ id }: InfoContentProps) {
               </svg>
               <span>
                 {savedProgress
-                  ? `Продолжить (С${savedProgress.season || 1} Е${savedProgress.episode || 1})`
+                  ? hasEpisodeSelection
+                    ? `Продолжить (С${savedProgress.season || 1} Е${savedProgress.episode || 1})`
+                    : 'Продолжить'
                   : lang?.frame_watch_now || 'Смотреть'}
               </span>
             </button>
 
             {savedProgress && (
               <button
+                data-watch-hero-btn
                 tabIndex={0}
                 onClick={() => handleWatch(1, 1, selectedTranslation)}
                 className="focusable-tv px-6 py-3 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800 text-white font-bold text-sm border border-zinc-700/50 backdrop-blur-md transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
               >
-                Сначала (С1 Е1)
+                {hasEpisodeSelection ? 'Сначала (С1 Е1)' : 'Сначала'}
               </button>
             )}
           </div>
@@ -260,67 +274,71 @@ export default function InfoContent({ id }: InfoContentProps) {
 
       {/* INFO BODY DETAILS */}
       <main className="w-full px-3 lg:px-6 pt-3 space-y-8">
-        {/* NATIVE SEASONS AND EPISODES SELECTOR (IF SERIES) */}
-        {isSeriesOrAnime && availableSeasonsCount > 0 && (
+        {/* NATIVE SEASONS AND EPISODES SELECTOR */}
+        {isSeriesOrAnime && (hasMultipleSeasons || currentSeasonEpisodes.length > 1) && (
           <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-              <span>Выбор сезона и серии</span>
+              <span>{hasMultipleSeasons ? 'Выбор сезона и серии' : 'Выбор серии'}</span>
             </h3>
 
-            {/* SEASON TABS */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-2">
-              {Array.from({ length: availableSeasonsCount }, (_, i) => i + 1).map((sNum) => (
-                <button
-                  key={sNum}
-                  tabIndex={0}
-                  onClick={() => setSelectedSeason(sNum)}
-                  className={`focusable-tv px-5 py-2 rounded-2xl font-bold text-sm transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
-                    selectedSeason === sNum
-                      ? 'bg-white text-black shadow-lg shadow-white/10'
-                      : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-                  }`}
-                >
-                  Сезон {sNum}
-                </button>
-              ))}
-            </div>
-
-            {/* EPISODES GRID */}
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-zinc-400 block">Серии ({currentSeasonEpisodes.length}):</span>
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
-                {currentSeasonEpisodes.map((epNum) => {
-                  const isCurrent = selectedSeason === (savedProgress?.season || 1) && epNum === (savedProgress?.episode || 1);
-                  return (
-                    <button
-                      key={epNum}
-                      tabIndex={0}
-                      onClick={() => {
-                        setSelectedEpisode(epNum);
-                        handleWatch(selectedSeason, epNum, selectedTranslation);
-                      }}
-                      className={`focusable-tv py-2.5 rounded-2xl font-extrabold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
-                        isCurrent
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 ring-1 ring-indigo-400'
-                          : selectedEpisode === epNum
-                          ? 'bg-white text-black font-black'
-                          : 'bg-zinc-900/90 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
-                      }`}
-                    >
-                      {epNum} серия
-                    </button>
-                  );
-                })}
+            {/* SEASON TABS (ONLY IF >1 SEASON) */}
+            {hasMultipleSeasons && (
+              <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-2 px-1 -mx-1">
+                {Array.from({ length: availableSeasonsCount }, (_, i) => i + 1).map((sNum) => (
+                  <button
+                    key={sNum}
+                    tabIndex={0}
+                    onClick={() => setSelectedSeason(sNum)}
+                    className={`focusable-tv px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap shrink-0 transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20 ${
+                      selectedSeason === sNum
+                        ? 'bg-white text-black shadow-lg shadow-white/10'
+                        : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
+                    }`}
+                  >
+                    Сезон {sNum}
+                  </button>
+                ))}
               </div>
-            </div>
+            )}
+
+            {/* EPISODES GRID (ONLY IF >1 EPISODE) */}
+            {currentSeasonEpisodes.length > 1 && (
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-zinc-400 block">Серии ({currentSeasonEpisodes.length}):</span>
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
+                  {currentSeasonEpisodes.map((epNum) => {
+                    const isCurrent = selectedSeason === (savedProgress?.season || 1) && epNum === (savedProgress?.episode || 1);
+                    return (
+                      <button
+                        key={epNum}
+                        tabIndex={0}
+                        onClick={() => {
+                          setSelectedEpisode(epNum);
+                          handleWatch(selectedSeason, epNum, selectedTranslation);
+                        }}
+                        className={`focusable-tv py-2.5 rounded-2xl font-extrabold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
+                          isCurrent
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 ring-1 ring-indigo-400'
+                            : selectedEpisode === epNum
+                            ? 'bg-white text-black font-black'
+                            : 'bg-zinc-900/90 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
+                        }`}
+                      >
+                        {epNum} серия
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* NATIVE TRANSLATIONS SELECTOR */}
-        {infoMovie.translationsList && infoMovie.translationsList.length > 0 && (
+        {infoMovie.translationsList && infoMovie.translationsList.length > 1 && (
           <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

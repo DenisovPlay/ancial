@@ -32,7 +32,7 @@ export default function CinemaHeader({
             tabIndex={0}
             data-cinema-back="true"
             aria-label="Назад"
-            className="focusable-tv absolute left-0 p-2 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-all duration-300 bg-zinc-900/90 border border-zinc-700/60 hover:bg-zinc-800 text-white h-9 w-9 shrink-0 outline-none focus:outline-none focus:ring-4 focus:ring-white focus:bg-white focus:text-black focus-visible:ring-4 focus-visible:ring-white focus-visible:bg-white focus-visible:text-black focus:scale-110 shadow-xl z-50"
+            className="focusable-tv absolute left-0 p-2 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-all duration-300 bg-zinc-900/90 border border-white/20 hover:bg-zinc-800 text-white h-10 w-10 shrink-0 outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl z-50"
           >
             <svg className="w-5 h-5 fill-none stroke-current stroke-[2.5]" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -54,7 +54,7 @@ export default function CinemaHeader({
               tabIndex={0}
               data-cinema-back="true"
               aria-label="Назад"
-              className="focusable-tv p-2 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-all duration-300 bg-zinc-900/90 border border-zinc-700/60 hover:bg-zinc-800 text-white h-10 w-10 shrink-0 z-50 outline-none focus:outline-none focus:ring-4 focus:ring-white focus:bg-white focus:text-black focus-visible:ring-4 focus-visible:ring-white focus-visible:bg-white focus-visible:text-black focus:scale-110 shadow-xl"
+              className="focusable-tv p-2 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-all duration-300 bg-zinc-900/90 border border-white/20 hover:bg-zinc-800 text-white h-10 w-10 shrink-0 z-50 outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
             >
               <svg className="w-5 h-5 fill-none stroke-current stroke-[2.5]" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
