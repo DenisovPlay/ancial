@@ -522,7 +522,7 @@ export default function InfoContent({ id }: InfoContentProps) {
                 ))}
               </div>
             </div>
-          ) : (hasMultipleSeasons || currentSeasonEpisodes.length > 0) ? (
+          ) : hasEpisodeSelection ? (
             <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
                 <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
