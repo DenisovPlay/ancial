@@ -9,26 +9,10 @@ import MovieCard from '../components/movie-card';
 import AdblockBanner from '../components/adblock-banner';
 import { Movie } from '../types';
 import { useTvNavigation } from '../use-tv-navigation';
-import { fetchCinemaSearch, fetchCinemaUpdates, cacheCinemaSearchResults } from '../cinema-api';
-
-// VIRTUAL KEYBOARD LAYOUTS FOR TV
-const RU_LAYOUT = [
-  ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ'],
-  ['ф', 'ы', 'в', 'а', 'п', 'р', 'о', 'л', 'д', 'ж', 'э'],
-  ['я', 'ч', 'с', 'м', 'и', 'т', 'ь', 'б', 'ю'],
-];
-
-const EN_LAYOUT = [
-  ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-  ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-  ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
-];
-
-const NUM_LAYOUT = [
-  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-  ['-', '/', ':', ';', '(', ')', '$', '&', '@', '"'],
-  ['.', ',', '?', '!', "'", '#', '%', '*', '+', '='],
-];
+import { fetchCinemaSearch, fetchCinemaUpdates, cacheCinemaSearchResults, deduplicateCinemaList } from '../cinema-api';
+import { goToMovieInfo } from '../cinema-navigation';
+import { getCinemaCache, setCinemaCache } from '../cinema-cache';
+import { CacheManager } from '../../lib/cache';
 
 export default function SearchContent() {
   useTvNavigation();
@@ -40,10 +24,25 @@ export default function SearchContent() {
 
   const initialQuery = searchParams.get('q') || '';
   const [query, setQuery] = useState<string>(initialQuery);
-  const [layoutMode, setLayoutMode] = useState<'ru' | 'en' | '123'>('ru');
-  const [searchResults, setSearchResults] = useState<Movie[]>([]);
-  const [recommendedMovies, setRecommendedMovies] = useState<Movie[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<Movie[]>(() => {
+    if (typeof window === 'undefined' || !initialQuery.trim()) return [];
+    const trimmed = initialQuery.trim();
+    const cacheKey = `cinema_v2_videos_page=1&limit=20&sort=-rating_kp%2C-rating_imdb&filter%5Btitle%5D=${encodeURIComponent(trimmed)}`;
+    return (
+      getCinemaCache<Movie[]>('search', trimmed) ||
+      CacheManager.get<Movie[]>(`cinema_search_${trimmed}_all_p1`, { category: 'cinema', subcategory: 'search' }) ||
+      CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'video' }) ||
+      []
+    );
+  });
+  const [recommendedMovies, setRecommendedMovies] = useState<Movie[]>(() => {
+    if (typeof window === 'undefined') return [];
+    return getCinemaCache<Movie[]>('search', 'recommended') || [];
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (!initialQuery.trim()) return false;
+    return searchResults.length === 0;
+  });
   const [myListIds, setMyListIds] = useState<string[]>([]);
 
   // Update URL silently when query changes
@@ -64,10 +63,10 @@ export default function SearchContent() {
 
   const handleMovieClick = (movie: Movie) => {
     if (query.trim()) {
-      // Кэшируем результаты только если пользователь закончил ввод и кликнул на фильм
       cacheCinemaSearchResults(query.trim(), searchResults);
+      setCinemaCache('search', query.trim(), searchResults);
     }
-    router.push(`/cinema/info/${movie.id}`);
+    goToMovieInfo(router, movie.id, movie);
   };
 
   // Load My List & Initial Recommendations
@@ -79,47 +78,69 @@ export default function SearchContent() {
       }
     } catch (e) { }
 
-    // Load recommendations for initial view
+    // Check cached recommendations first for instant render
+    const cachedRecs = getCinemaCache<Movie[]>('search', 'recommended');
+    if (cachedRecs && cachedRecs.length > 0) {
+      setRecommendedMovies(deduplicateCinemaList(cachedRecs));
+    }
+
+    // Revalidate recommendations in background
     (async () => {
       try {
-        const data = await fetchCinemaUpdates();
-        setRecommendedMovies(data.movies || data.serials || []);
+        const data = await fetchCinemaUpdates({ skipCache: true });
+        const rawList = [...(data.serials || []), ...(data.movies || [])];
+        const list = deduplicateCinemaList(rawList).slice(0, 15);
+        if (list.length > 0) {
+          setRecommendedMovies(list);
+          setCinemaCache('search', 'recommended', list);
+        }
       } catch (err) {
         console.error('Failed to load initial search recommendations:', err);
       }
     })();
   }, []);
 
-  // Fetch search results on query change
+  // Fetch search results on query change with SWR (Instant Cache -> Background Revalidate)
   useEffect(() => {
-    if (!query.trim()) {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
       setSearchResults([]);
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    // 1. Instantly apply cached search results if available
+    const cacheKey = `cinema_v2_videos_page=1&limit=20&sort=-rating_kp%2C-rating_imdb&filter%5Btitle%5D=${encodeURIComponent(trimmedQuery)}`;
+    const cachedSearch =
+      getCinemaCache<Movie[]>('search', trimmedQuery) ||
+      CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'search' });
+
+    if (cachedSearch && cachedSearch.length > 0) {
+      setSearchResults(deduplicateCinemaList(cachedSearch));
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
+    // 2. Background revalidate network fetch
     const timer = setTimeout(async () => {
       try {
-        const results = await fetchCinemaSearch(query.trim());
-        setSearchResults(results);
+        const results = await fetchCinemaSearch(trimmedQuery, undefined, 1, { skipCache: true });
+        const cleanResults = deduplicateCinemaList(results);
+        if (cleanResults && cleanResults.length > 0) {
+          setSearchResults(cleanResults);
+          setCinemaCache('search', trimmedQuery, cleanResults);
+          cacheCinemaSearchResults(trimmedQuery, cleanResults);
+        }
       } catch (err) {
         console.error('Search fetch error:', err);
       } finally {
         setIsLoading(false);
       }
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [query]);
-
-  const handleVirtualKeyPress = (char: string) => {
-    handleQueryChange(query + char);
-  };
-
-  const handleBackspace = () => {
-    handleQueryChange(query.slice(0, -1));
-  };
 
   const handleClear = () => {
     handleQueryChange('');
@@ -143,7 +164,6 @@ export default function SearchContent() {
         time: 3,
       });
     }
-    setMyListIds(updated);
     try {
       localStorage.setItem('frame_my_list', JSON.stringify(updated));
     } catch (err) { }

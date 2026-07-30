@@ -220,8 +220,18 @@ export default function CustomPlayer({
     performRestoreTime();
   };
 
-  // Toggle fullscreen & sync state
+  // Toggle fullscreen & sync state (supporting iOS / Safari / Desktop / Mobile)
   const toggleFullscreen = () => {
+    // 1. Check iOS Safari Video native fullscreen method first
+    if (videoRef.current && typeof (videoRef.current as any).webkitEnterFullscreen === 'function') {
+      if ((videoRef.current as any).webkitDisplayingFullscreen) {
+        (videoRef.current as any).webkitExitFullscreen?.();
+      } else {
+        (videoRef.current as any).webkitEnterFullscreen();
+      }
+      return;
+    }
+
     if (!containerRef.current) return;
     const isFs = !!(
       document.fullscreenElement ||
@@ -235,7 +245,15 @@ export default function CustomPlayer({
                   (containerRef.current as any).webkitRequestFullscreen ||
                   (containerRef.current as any).mozRequestFullScreen ||
                   (containerRef.current as any).msRequestFullscreen;
-      if (req) req.call(containerRef.current).catch(() => {});
+      if (req) {
+        req.call(containerRef.current).catch(() => {
+          if (videoRef.current && (videoRef.current as any).webkitEnterFullscreen) {
+            (videoRef.current as any).webkitEnterFullscreen();
+          }
+        });
+      } else if (videoRef.current && (videoRef.current as any).webkitEnterFullscreen) {
+        (videoRef.current as any).webkitEnterFullscreen();
+      }
     } else {
       const exit = document.exitFullscreen ||
                    (document as any).webkitExitFullscreen ||
@@ -245,28 +263,40 @@ export default function CustomPlayer({
     }
   };
 
-  // Sync fullscreen state with native browser events
+  // Sync fullscreen state with native browser & webkit events
   useEffect(() => {
     const handleFsChange = () => {
       const isFs = !!(
         document.fullscreenElement ||
         (document as any).webkitFullscreenElement ||
         (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
+        (document as any).msFullscreenElement ||
+        (videoRef.current as any)?.webkitDisplayingFullscreen
       );
       setIsFullscreen(isFs);
     };
+
+    const vid = videoRef.current;
 
     document.addEventListener('fullscreenchange', handleFsChange);
     document.addEventListener('webkitfullscreenchange', handleFsChange);
     document.addEventListener('mozfullscreenchange', handleFsChange);
     document.addEventListener('MSFullscreenChange', handleFsChange);
 
+    if (vid) {
+      vid.addEventListener('webkitbeginfullscreen', handleFsChange);
+      vid.addEventListener('webkitendfullscreen', handleFsChange);
+    }
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFsChange);
       document.removeEventListener('webkitfullscreenchange', handleFsChange);
       document.removeEventListener('mozfullscreenchange', handleFsChange);
       document.removeEventListener('MSFullscreenChange', handleFsChange);
+      if (vid) {
+        vid.removeEventListener('webkitbeginfullscreen', handleFsChange);
+        vid.removeEventListener('webkitendfullscreen', handleFsChange);
+      }
     };
   }, []);
 
@@ -855,13 +885,13 @@ export default function CustomPlayer({
               tabIndex={0}
               data-tv-player-control="fullscreen"
               aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Полноэкранный режим"}
-              className="focusable-tv p-3 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg shrink-0"
+              className="focusable-tv p-3 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg shrink-0 flex items-center justify-center"
             >
-              <svg className="w-5 h-5 stroke-white fill-none stroke-[2]" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
                 {isFullscreen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9L4 4m0 0v4m0-4h4m11 5l5-5m0 0h-4m4 0v4M9 15l-5 5m0 0v-4m0 4h4m11 0l-5-5m0 0v4m0-4h4" />
+                  <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m4 0v-4m0 4l-5-5" />
+                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
                 )}
               </svg>
             </button>

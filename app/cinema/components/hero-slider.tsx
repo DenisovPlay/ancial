@@ -4,15 +4,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { Movie } from '../types';
+import { goToMovieInfo } from '../cinema-navigation';
 
 interface HeroSliderProps {
   heroMovies?: Movie[];
-  myListIds: string[];
-  onToggleList: (id: string, e?: React.MouseEvent) => void;
+  myListIds?: string[];
+  onToggleList?: (id: string, e?: React.MouseEvent) => void;
   onPlayMovie: (movie: Movie) => void;
 }
 
-export default function HeroSlider({ heroMovies = [], myListIds, onToggleList, onPlayMovie }: HeroSliderProps) {
+export default function HeroSlider({ heroMovies = [], myListIds = [], onToggleList, onPlayMovie }: HeroSliderProps) {
   const { lang } = useAuth();
   const router = useRouter();
 
@@ -116,7 +117,7 @@ export default function HeroSlider({ heroMovies = [], myListIds, onToggleList, o
           <button
             tabIndex={0}
             onFocus={handleHeroFocus}
-            onClick={() => router.push(`/cinema/info/${currentHero.id}`)}
+            onClick={() => goToMovieInfo(router, currentHero.id, currentHero)}
             className="focusable-tv p-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm flex items-center gap-3 backdrop-blur-xl transition-all duration-300 active:scale-95 border border-white/20 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-40"
           >
             <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">

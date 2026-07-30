@@ -7,6 +7,8 @@ import { fetchCinemaVideoById, fetchVideoHubStreamDirect } from '../../cinema-ap
 import { useTvNavigation } from '../../use-tv-navigation';
 import { FrameBrandLoader } from '../../components/cinema-skeleton';
 import CustomPlayer from '../../components/custom-player';
+import { CacheManager } from '../../../lib/cache';
+import { getCinemaCache } from '../../cinema-cache';
 import { saveWatchHistoryItem } from '../../cinema-history';
 
 interface WatchContentProps {
@@ -28,47 +30,88 @@ export default function WatchContent({ id }: WatchContentProps) {
   const [currentSeason, setCurrentSeason] = useState<number>(season ? Number(season) : 1);
   const [videoHubStreamUrl, setVideoHubStreamUrl] = useState<string | undefined>(undefined);
   const [videoHubQualities, setVideoHubQualities] = useState<Array<{ label: string; url: string }>>([]);
+  const [entryUrl, setEntryUrl] = useState<string | null>(null);
+
+  // Capture real entry referrer (page user came from before entering /cinema/watch)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && document.referrer) {
+      try {
+        const refUrl = new URL(document.referrer);
+        if (refUrl.origin === window.location.origin && !refUrl.pathname.includes('/cinema/watch')) {
+          setEntryUrl(refUrl.pathname + refUrl.search);
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  const handleGoBack = () => {
+    const targetId = id || movie?.id;
+
+    // 1. If entryUrl was explicitly an info page, use replace to erase watch from history stack
+    if (entryUrl && entryUrl.includes('/cinema/info/')) {
+      router.replace(entryUrl);
+      return;
+    }
+
+    // 2. Primary behavior: replace current watch entry in history with the info page of this title
+    if (targetId) {
+      router.replace(`/cinema/info/${targetId}`);
+      return;
+    }
+
+    // 3. Fallback
+    if (entryUrl) {
+      router.replace(entryUrl);
+    } else {
+      router.replace('/cinema');
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
+
+    // 1. Instantly read cached movie metadata if available
+    const cached = getCinemaCache<Movie>('info', id) || CacheManager.get<Movie>(`cinema_video_by_id_${id}`, { category: 'cinema', subcategory: 'video' });
+    if (cached) {
+      setMovie(cached);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
     async function loadWatchMovie() {
-      if (!movie) {
-        setIsLoading(true);
-      }
       const target = await fetchCinemaVideoById(id);
-      if (isMounted) {
+      if (isMounted && target) {
         setMovie(target);
         setIsLoading(false);
 
         // Update watch history & progress
-        if (target) {
-          try {
-            const activePlayerId = searchParams.get('player') || 'flixcdn';
-            const activeTransId = translation ? Number(translation) : null;
-            const transObj = target.translationsList?.find((t) => t.id === activeTransId);
-            const playerObj = target.players?.find((p) => p.id === activePlayerId);
+        try {
+          const activePlayerId = searchParams.get('player') || 'flixcdn';
+          const activeTransId = translation ? Number(translation) : null;
+          const transObj = target.translationsList?.find((t) => t.id === activeTransId);
+          const playerObj = target.players?.find((p) => p.id === activePlayerId);
 
-            saveWatchHistoryItem({
-              id: target.id,
-              title: target.title,
-              originalTitle: target.originalTitle,
-              description: target.description,
-              posterUrl: target.posterUrl,
-              backdropUrl: target.backdropUrl,
-              rating: target.rating,
-              year: target.year,
-              ageRating: target.ageRating,
-              duration: target.duration,
-              type: target.type,
-              season: season ? Number(season) : 1,
-              episode: episode ? Number(episode) : 1,
-              translationId: activeTransId,
-              translationTitle: transObj?.title || '',
-              playerId: activePlayerId,
-              playerName: playerObj?.name || '',
-            });
-          } catch (e) { }
-        }
+          saveWatchHistoryItem({
+            id: target.id,
+            title: target.title,
+            originalTitle: target.originalTitle,
+            description: target.description,
+            posterUrl: target.posterUrl,
+            backdropUrl: target.backdropUrl,
+            rating: target.rating,
+            year: target.year,
+            ageRating: target.ageRating,
+            duration: target.duration,
+            type: target.type,
+            season: season ? Number(season) : 1,
+            episode: episode ? Number(episode) : 1,
+            translationId: activeTransId,
+            translationTitle: transObj?.title || '',
+            playerId: activePlayerId,
+            playerName: playerObj?.name || '',
+          });
+        } catch (e) { }
       }
     }
     loadWatchMovie();
@@ -197,7 +240,7 @@ export default function WatchContent({ id }: WatchContentProps) {
         <div className="absolute top-0 inset-x-0 p-4 lg:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-center justify-between z-40">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => router.back()}
+              onClick={handleGoBack}
               aria-label="Назад"
               tabIndex={0}
               className="focusable-tv p-2.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
@@ -434,7 +477,7 @@ export default function WatchContent({ id }: WatchContentProps) {
         onPrevEpisode={hasEpisodeSelection && activeEpisode > 1 ? handlePrevEpisode : undefined}
         onSelectTranslation={handleSelectTranslation}
         onSelectEpisodeModal={showModalPicker ? () => setShowPicker(true) : undefined}
-        onBack={() => router.back()}
+        onBack={handleGoBack}
       />
 
       {/* OVERLAY EPISODES & SEASONS PICKER MODAL */}

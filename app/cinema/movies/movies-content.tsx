@@ -12,6 +12,8 @@ import { fetchCinemaSearch, fetchCinemaGetVideo } from '../cinema-api';
 import { CinemaGridSkeleton, CinemaRowSkeleton } from '../components/cinema-skeleton';
 import { getCinemaCache, setCinemaCache } from '../cinema-cache';
 
+import { goToMovieInfo } from '../cinema-navigation';
+
 export default function MoviesContent() {
   useTvNavigation();
   const { lang } = useAuth();
@@ -156,8 +158,8 @@ export default function MoviesContent() {
                 <MovieCard
                   key={`${movie.id}-${idx}`}
                   movie={movie}
-                  onClick={() => router.push(`/cinema/info/${movie.id}`)}
-                  onPlay={() => router.push(`/cinema/info/${movie.id}`)}
+                  onClick={() => goToMovieInfo(router, movie.id, movie)}
+                  onPlay={() => goToMovieInfo(router, movie.id, movie)}
                 />
               ))}
             </div>

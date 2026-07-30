@@ -11,6 +11,8 @@ import { fetchCinemaPersonById, getOptimizedImageUrl } from '../../cinema-api';
 import { CinemaGridSkeleton } from '../../components/cinema-skeleton';
 import { getCinemaCache, setCinemaCache } from '../../cinema-cache';
 
+import { goToMovieInfo } from '../../cinema-navigation';
+
 interface PersonContentProps {
   personId: string;
 }
@@ -81,7 +83,7 @@ export default function PersonContent({ personId }: PersonContentProps) {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         showBackButton={true}
-        onBack={() => router.back()}
+        onBack={() => router.push('/cinema')}
       />
 
       <main className="w-full px-3 lg:px-6 space-y-8 pt-4">
@@ -148,7 +150,7 @@ export default function PersonContent({ personId }: PersonContentProps) {
                     <MovieCard
                       key={`${movie.id}-${idx}`}
                       movie={movie}
-                      onClick={() => router.push(`/cinema/info/${movie.id}`)}
+                      onClick={() => goToMovieInfo(router, movie.id, movie)}
                       onPlay={() => router.push(`/cinema/watch/${movie.id}`)}
                     />
                   ))}

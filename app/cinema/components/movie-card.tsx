@@ -20,11 +20,22 @@ export default function MovieCard({
   onPlay,
 }: MovieCardProps) {
   const posterSrc = getOptimizedImageUrl(movie.posterUrl, '@w300');
-  const updateBadgeText = movie.updateBadge
-    ? movie.updateBadge.season && movie.updateBadge.episode
-      ? `С${movie.updateBadge.season} Э${movie.updateBadge.episode}`
-      : movie.updateBadge.translationTitle || ''
-    : null;
+  let updateBadgeText: string | null = null;
+  if (movie.updateBadge) {
+    if (movie.updateBadge.translationTitle === 'Новые серии') {
+      updateBadgeText = 'Новые серии';
+    } else if (movie.updateBadge.season && movie.updateBadge.episode) {
+      const isSerial =
+        movie.type === 'series' ||
+        movie.type === 'animeserial' ||
+        movie.type === 'showserial' ||
+        Boolean(movie.genres && movie.genres.some((g) => g.toLowerCase().includes('сериал') || g.toLowerCase().includes('новые серии')));
+
+      updateBadgeText = isSerial ? 'Новые серии' : `С${movie.updateBadge.season} Э${movie.updateBadge.episode}`;
+    } else {
+      updateBadgeText = movie.updateBadge.translationTitle || null;
+    }
+  }
 
   return (
     <div
@@ -87,9 +98,50 @@ export default function MovieCard({
         </h3>
         <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
           <span>{movie.year}</span>
-          {movie.genres && movie.genres.length > 0 && (
-            <span className="truncate max-w-[50%] text-zinc-500 text-[11px]">{movie.genres[0]}</span>
-          )}
+          {(() => {
+            const isSerialType =
+              movie.type === 'series' ||
+              movie.type === 'serial' ||
+              movie.type === 'animeserial' ||
+              movie.type === 'showserial' ||
+              movie.type === 'tv-series' ||
+              Boolean(movie.updateBadge?.season || movie.updateBadge?.episode) ||
+              Boolean(movie.genres && movie.genres.some((g) => g.toLowerCase().includes('сериал')));
+
+            const isAnimeType =
+              movie.type === 'anime' ||
+              movie.type === 'animeserial' ||
+              Boolean(movie.genres && movie.genres.some((g) => g.toLowerCase().includes('аниме')));
+
+            const isCartoonType =
+              movie.type === 'cartoons' ||
+              movie.type === 'cartoon' ||
+              Boolean(movie.genres && movie.genres.some((g) => g.toLowerCase().includes('мульт')));
+
+            const realGenre = movie.genres?.find(
+              (g) =>
+                g &&
+                g !== 'Новые серии' &&
+                g !== 'Обновлено' &&
+                g !== 'Фильм' &&
+                g !== 'Кино' &&
+                g !== 'Сериал'
+            );
+
+            let defaultTypeLabel = 'Фильм';
+            if (isAnimeType) {
+              defaultTypeLabel = isSerialType ? 'Аниме-сериал' : 'Аниме';
+            } else if (isCartoonType) {
+              defaultTypeLabel = isSerialType ? 'Мультсериал' : 'Мультфильм';
+            } else if (isSerialType) {
+              defaultTypeLabel = 'Сериал';
+            }
+
+            const displayGenre = realGenre || defaultTypeLabel;
+            return displayGenre ? (
+              <span className="truncate max-w-[60%] text-zinc-400 text-[11px] font-semibold">{displayGenre}</span>
+            ) : null;
+          })()}
         </div>
       </div>
     </div>

@@ -190,24 +190,6 @@ function formatFlixMovie(item: any): Movie {
     : [];
 
   const kpId = target.kinopoisk_id || target.kp_id || target.kinopoiskId || realId;
-  const defaultPlayers: PlayerOption[] = [
-    {
-      id: 'flixcdn',
-      name: 'Плеер 1 (FlixCDN)',
-      provider: 'FlixCDN',
-      iframeUrl: videoUrl || `https://tarantino.factorios.live/show/kinopoisk/${kpId}`,
-      quality: 'FullHD 1080p',
-      isAvailable: true,
-    },
-    {
-      id: 'cdnmovies',
-      name: 'Плеер 2 (CDNMovies)',
-      provider: 'CDNMovies',
-      iframeUrl: `https://cdnmovies-stream.online/kinopoisk/${kpId}/iframe`,
-      quality: 'WebDL 1080p',
-      isAvailable: true,
-    },
-  ];
 
   return {
     id: realId,
@@ -235,7 +217,7 @@ function formatFlixMovie(item: any): Movie {
     episodesBySeason,
     rawPersonalities: target.personalities || item.personalities || [],
     updateBadge,
-    players: defaultPlayers,
+    players: target.players || item.players || [],
   };
   }
 
@@ -264,48 +246,7 @@ export async function fetchCinemaPlayers(
   } catch (err) {
     console.warn('fetchCinemaPlayers error:', err);
   }
-
-  const kp = kinopoiskId || id;
-  const fallbackPlayers: PlayerOption[] = [];
-  if (kp) {
-    fallbackPlayers.push({
-      id: 'flixcdn',
-      name: 'Плеер 1 (FlixCDN)',
-      provider: 'FlixCDN',
-      iframeUrl: `https://tarantino.factorios.live/show/kinopoisk/${kp}`,
-      isAvailable: true,
-    });
-    let cdnUrl = `https://ugly-turkey.cdnmovies-stream.online/kinopoisk/${kp}/iframe`;
-    if (season || episode) {
-      cdnUrl += `?season=${season || 1}&episode=${episode || 1}`;
-    }
-    fallbackPlayers.push({
-      id: 'cdnmovies',
-      name: 'Плеер 2 (CDNMovies)',
-      provider: 'CDNMovies',
-      iframeUrl: cdnUrl,
-      isAvailable: true,
-    });
-    let collapsUrl = `https://api.ortified.ws/embed/kp/${kp}`;
-    if (season || episode) {
-      collapsUrl += `?season=${season || 1}&episode=${episode || 1}`;
-    }
-    fallbackPlayers.push({
-      id: 'collaps',
-      name: 'Плеер 3 (Collaps)',
-      provider: 'Collaps',
-      iframeUrl: collapsUrl,
-      isAvailable: true,
-    });
-    fallbackPlayers.push({
-      id: 'videohub',
-      name: 'Плеер 4 (VideoHub)',
-      provider: 'VideoHub',
-      iframeUrl: 'videohub',
-      isAvailable: true,
-    });
-  }
-  return fallbackPlayers;
+  return [];
 }
 
 export async function fetchVideoHubStreamDirect(
@@ -376,7 +317,7 @@ export async function fetchCinemaSearch(
   query: string,
   type?: string,
   page: number = 1,
-  options?: { years?: string; orderby?: string; orderby_direction?: string; limit?: number }
+  options?: { years?: string; orderby?: string; orderby_direction?: string; limit?: number; skipCache?: boolean }
 ): Promise<Movie[]> {
   if (query.trim()) {
     return fetchCinemaVideos({
@@ -384,7 +325,8 @@ export async function fetchCinemaSearch(
       limit: options?.limit || 20,
       sort: '-rating_kp,-rating_imdb',
       'filter[title]': query.trim(),
-      ...(type ? { type } : {})
+      ...(type ? { type } : {}),
+      skipCache: options?.skipCache,
     });
   }
 
@@ -394,8 +336,10 @@ export async function fetchCinemaSearch(
   const limit = options?.limit || 20;
 
   const cacheKey = `cinema_search_${query}_${type || 'all'}_${years}_${orderby}_${orderbyDir}_p${page}_l${limit}`;
-  const cached = CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'search' });
-  if (cached) return cached;
+  if (!options?.skipCache) {
+    const cached = CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'search' });
+    if (cached) return cached;
+  }
 
   try {
     const url = new URL(`${API_BASE}/search.php`, window.location.origin);
@@ -478,12 +422,16 @@ export async function fetchCinemaVideos(params: {
   year_from?: number | string;
   year_to?: number | string;
   type?: string;
+  skipCache?: boolean;
   [key: string]: any;
 }): Promise<Movie[]> {
-  const queryStr = new URLSearchParams(params as any).toString();
+  const { skipCache, ...cleanParams } = params;
+  const queryStr = new URLSearchParams(cleanParams as any).toString();
   const cacheKey = `cinema_v2_videos_${queryStr}`;
-  const cached = CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'video' });
-  if (cached) return cached;
+  if (!skipCache) {
+    const cached = CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'video' });
+    if (cached) return cached;
+  }
 
   try {
     const url = new URL(`${API_BASE}/videos.php?${queryStr}`, window.location.origin);
@@ -503,10 +451,12 @@ export async function fetchCinemaVideos(params: {
   }
 }
 
-export async function fetchCinemaUpdates(): Promise<{ movies: Movie[]; serials: Movie[] }> {
+export async function fetchCinemaUpdates(options?: { skipCache?: boolean }): Promise<{ movies: Movie[]; serials: Movie[] }> {
   const cacheKey = `cinema_updates`;
-  const cached = CacheManager.get<{ movies: Movie[]; serials: Movie[] }>(cacheKey, { category: 'cinema', subcategory: 'updates' });
-  if (cached) return cached;
+  if (!options?.skipCache) {
+    const cached = CacheManager.get<{ movies: Movie[]; serials: Movie[] }>(cacheKey, { category: 'cinema', subcategory: 'updates' });
+    if (cached) return cached;
+  }
 
   try {
     const url = new URL(`${API_BASE}/updates.php`, window.location.origin);
@@ -563,6 +513,47 @@ export async function fetchCinemaByGenre(genre: string, limit: number = 15, page
     limit,
     page,
   });
+}
+
+export function deduplicateCinemaList(movies: Movie[]): Movie[] {
+  if (!Array.isArray(movies) || movies.length === 0) return [];
+  const uniqueMap = new Map<string, Movie>();
+
+  for (const item of movies) {
+    if (!item) continue;
+
+    const baseTitle = (item.title || '')
+      .replace(/\s*(?:\(?\s*сезон\s*\d+.*|\(?\s*серия\s*\d+.*|с\d+\s*э\d+.*)\)?/gi, '')
+      .trim();
+
+    const normalizedTitleKey = baseTitle.toLowerCase();
+    const idKey = item.id || item.kinopoisk_id ? String(item.id || item.kinopoisk_id) : '';
+    
+    const key = idKey || normalizedTitleKey;
+    if (!key) continue;
+
+    if (!uniqueMap.has(key)) {
+      const isSerial =
+        item.type === 'series' ||
+        item.type === 'animeserial' ||
+        item.type === 'showserial' ||
+        Boolean(item.updateBadge?.season || item.updateBadge?.episode) ||
+        Boolean(item.genres && item.genres.some((g) => g.toLowerCase().includes('сериал') || g.toLowerCase().includes('эпизод')));
+
+      const realGenres = (item.genres || []).filter((g) => g && g !== 'Новые серии' && g !== 'Обновлено');
+      const defaultGenre = isSerial ? 'Сериал' : 'Кино';
+      const finalGenres = realGenres.length > 0 ? realGenres : [defaultGenre];
+
+      uniqueMap.set(key, {
+        ...item,
+        title: baseTitle || item.title,
+        genres: finalGenres,
+        updateBadge: isSerial ? { translationTitle: 'Новые серии' } : item.updateBadge,
+      });
+    }
+  }
+
+  return Array.from(uniqueMap.values());
 }
 
 export function formatCdnMoviesItem(item: any): Movie {
@@ -804,11 +795,13 @@ export async function fetchCinemaGenres(): Promise<{ id: number; name: string }[
   }
 }
 
-export async function fetchCinemaVideoById(id: string): Promise<Movie | null> {
+export async function fetchCinemaVideoById(id: string, options?: { skipCache?: boolean }): Promise<Movie | null> {
   if (!id) return null;
   const cacheKey = `cinema_video_by_id_${id}`;
-  const cached = CacheManager.get<Movie>(cacheKey, { category: 'cinema', subcategory: 'video' });
-  if (cached) return cached;
+  if (!options?.skipCache) {
+    const cached = CacheManager.get<Movie>(cacheKey, { category: 'cinema', subcategory: 'video' });
+    if (cached) return cached;
+  }
 
   try {
     let foundMovie: Movie | null = null;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -20,6 +20,7 @@ import {
   fetchCinemaByCountry,
 } from './cinema-api';
 import { CinemaPageSkeleton } from './components/cinema-skeleton';
+import { goToMovieInfo } from './cinema-navigation';
 import { useDragScroll } from '../hooks/useDragScroll';
 
 import { getCinemaCache, setCinemaCache } from './cinema-cache';
@@ -35,7 +36,6 @@ interface HomeCinemaBundle {
   cartoons: Movie[];
   korean: Movie[];
   anime: Movie[];
-  documentary: Movie[];
 }
 
 export default function CinemaContent() {
@@ -43,6 +43,7 @@ export default function CinemaContent() {
   const { lang } = useAuth();
   const { showNote } = useNotification();
   const router = useRouter();
+
   const topScrollRef = useDragScroll({ speed: 2 });
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -58,7 +59,6 @@ export default function CinemaContent() {
   const [cartoonsList, setCartoonsList] = useState<Movie[]>([]);
   const [koreanDramas, setKoreanDramas] = useState<Movie[]>([]);
   const [animeList, setAnimeList] = useState<Movie[]>([]);
-  const [documentaryMovies, setDocumentaryMovies] = useState<Movie[]>([]);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
 
   // Load user list & watch history via cache manager & subscribe to live updates
@@ -103,7 +103,6 @@ export default function CinemaContent() {
       setCartoonsList(cachedBundle.cartoons || []);
       setKoreanDramas(cachedBundle.korean || []);
       setAnimeList(cachedBundle.anime || []);
-      setDocumentaryMovies(cachedBundle.documentary || []);
       setIsLoading(false);
     } else {
       setIsLoading(true);
@@ -112,6 +111,8 @@ export default function CinemaContent() {
     // 2. Background revalidate
     async function loadRealCinemaData() {
       try {
+        const currentYear = 2026;
+
         const [
           heroItems,
           top10Items,
@@ -121,12 +122,11 @@ export default function CinemaContent() {
           cartoonsItems,
           koreanItems,
           animeItems,
-          page2Movies,
         ] = await Promise.all([
-          // 1. Hero Slider: Latest releases sorted by date added (-created_at)
-          fetchCinemaVideos({ page: 1, limit: 10, sort: '-created_at' }),
-          // 2. Top 10: Top rated movies/series sorted by popularity (-rating_kp,-rating_imdb)
-          fetchCinemaVideos({ page: 1, limit: 10, sort: '-rating_kp,-rating_imdb' }),
+          // 1. Hero Slider: Latest releases of 2026 sorted by date added (-created_at)
+          fetchCinemaVideos({ page: 1, limit: 10, sort: '-created_at', year_from: currentYear }),
+          // 2. Top 10: Top rated movies/series of 2026 sorted by TMDB popularity
+          fetchCinemaVideos({ page: 1, limit: 10, sort_by: 'tmdb_popularity', year_from: currentYear }),
           // 3. New Releases: Movies sorted by date added (-created_at)
           fetchCinemaVideos({ page: 1, limit: 15, sort: '-created_at', type: 'movie' }),
           // 4. Popular Series: Series sorted by popularity (-rating_kp,-rating_imdb)
@@ -139,8 +139,6 @@ export default function CinemaContent() {
           fetchCinemaByCountry('Южная Корея', 15),
           // 8. Anime Collection
           fetchCinemaGetVideo({ genres: 'аниме', page: 1, limit: 15 }),
-          // 9. World Cinema (page 2)
-          fetchCinemaVideos({ page: 2, limit: 15, sort: '-rating_kp', type: 'movie' }),
         ]);
 
         if (!isMounted) return;
@@ -149,11 +147,37 @@ export default function CinemaContent() {
         const top = top10Items.length >= 10 ? top10Items.slice(0, 10) : top10Items;
         const newRel = freshMovies.slice(0, 15);
         const popSer = freshSeries.slice(0, 15);
-        const updatesList = [...(updatesRes.serials || []), ...(updatesRes.movies || [])].slice(0, 15);
+
+        // Deduplicate updates by ID/title and set 'Новые серии' for series
+        const uniqueUpdatesMap = new Map<string, Movie>();
+        (updatesRes.serials || []).forEach((item: Movie) => {
+          const key = String(item.id || item.kinopoisk_id || item.title).trim();
+          if (key && !uniqueUpdatesMap.has(key)) {
+            const isSerial = item.type === 'series' || item.type === 'animeserial' || item.type === 'showserial' || (item.genres && item.genres.some((g) => g.toLowerCase().includes('сериал') || g.toLowerCase().includes('аниме')));
+            const realGenres = (item.genres || []).filter((g) => g && g !== 'Новые серии' && g !== 'Обновлено');
+            const defaultGenre = isSerial ? 'Сериал' : 'Обновлено';
+            const finalGenres = realGenres.length > 0 ? realGenres : [defaultGenre];
+            uniqueUpdatesMap.set(key, {
+              ...item,
+              genres: finalGenres,
+              updateBadge: isSerial ? { translationTitle: 'Новые серии' } : item.updateBadge,
+            });
+          }
+        });
+        (updatesRes.movies || []).forEach((item: Movie) => {
+          const key = String(item.id || item.kinopoisk_id || item.title).trim();
+          if (key && !uniqueUpdatesMap.has(key)) {
+            uniqueUpdatesMap.set(key, {
+              ...item,
+              genres: item.genres && item.genres.length > 0 ? item.genres : ['Фильм'],
+            });
+          }
+        });
+        const updatesList = Array.from(uniqueUpdatesMap.values()).slice(0, 15);
+
         const cartoons = cartoonsItems.slice(0, 15);
         const korean = koreanItems.slice(0, 15);
         const anime = animeItems.slice(0, 15);
-        const doc = page2Movies.slice(0, 15);
 
         setHeroMovies(hero);
         setTopMovies(top);
@@ -163,7 +187,6 @@ export default function CinemaContent() {
         setCartoonsList(cartoons);
         setKoreanDramas(korean);
         setAnimeList(anime);
-        setDocumentaryMovies(doc);
 
         setCinemaCache<HomeCinemaBundle>('home_bundle', undefined, {
           hero,
@@ -174,7 +197,6 @@ export default function CinemaContent() {
           cartoons,
           korean,
           anime,
-          documentary: doc,
         });
       } catch (err) {
         console.error('Failed to load cinema API data:', err);
@@ -205,29 +227,7 @@ export default function CinemaContent() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-    const toggleMyList = (movieId: string, e?: React.MouseEvent) => {
-      if (e) e.stopPropagation();
-      let updated: string[];
-      if (myListIds.includes(movieId)) {
-        updated = myListIds.filter((id) => id !== movieId);
-        showNote({
-          content: lang?.frame_note_removed || 'Удалено из Моего списка',
-          type: 'info',
-          time: 3,
-        });
-      } else {
-        updated = [...myListIds, movieId];
-        showNote({
-          content: lang?.frame_note_added || 'Добавлено в Мой список',
-          type: 'success',
-          time: 3,
-        });
-      }
-      setMyListIds(updated);
-      try {
-        localStorage.setItem('frame_my_list', JSON.stringify(updated));
-      } catch (err) { }
-    };
+
 
     const handleDirectPlay = (movieId: string) => {
       try {
@@ -309,9 +309,7 @@ export default function CinemaContent() {
                   <MovieCard
                     key={`${movie.id}-${idx}`}
                     movie={movie}
-                    isInMyList={myListIds.includes(movie.id)}
-                    onToggleList={(e) => toggleMyList(movie.id, e)}
-                    onClick={() => router.push(`/cinema/info/${movie.id}`)}
+                    onClick={() => goToMovieInfo(router, movie.id)}
                     onPlay={() => handleDirectPlay(movie.id)}
                   />
                 ))}
@@ -324,8 +322,6 @@ export default function CinemaContent() {
             {heroMovies.length > 0 && (
               <HeroSlider
                 heroMovies={heroMovies}
-                myListIds={myListIds}
-                onToggleList={toggleMyList}
                 onPlayMovie={(m) => handleDirectPlay(m.id)}
               />
             )}
@@ -337,9 +333,7 @@ export default function CinemaContent() {
                 <MovieRow
                   title="Вы смотрели"
                   movies={continueWatchingMovies}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onSelectMovie={(movie) => goToMovieInfo(router, movie.id, movie)}
                   onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
@@ -359,9 +353,7 @@ export default function CinemaContent() {
                         <MovieCard
                           movie={movie}
                           rankNumber={idx + 1}
-                          isInMyList={myListIds.includes(movie.id)}
-                          onToggleList={(e) => toggleMyList(movie.id, e)}
-                          onClick={() => router.push(`/cinema/info/${movie.id}`)}
+                          onClick={() => goToMovieInfo(router, movie.id, movie)}
                           onPlay={() => handleDirectPlay(movie.id)}
                         />
                       </div>
@@ -375,9 +367,7 @@ export default function CinemaContent() {
                 <MovieRow
                   title={lang?.frame_fresh_updates || 'Свежие эпизоды и обновления'}
                   movies={freshUpdates}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onSelectMovie={(movie) => goToMovieInfo(router, movie.id, movie)}
                   onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
@@ -387,9 +377,7 @@ export default function CinemaContent() {
                 <MovieRow
                   title={lang?.frame_new_releases || 'Новинки кино'}
                   movies={newReleases}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onSelectMovie={(movie) => goToMovieInfo(router, movie.id, movie)}
                   onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
@@ -399,9 +387,7 @@ export default function CinemaContent() {
                 <MovieRow
                   title={lang?.frame_popular_series || 'Популярные сериалы'}
                   movies={popularSeries}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onSelectMovie={(movie) => goToMovieInfo(router, movie.id, movie)}
                   onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
@@ -411,9 +397,7 @@ export default function CinemaContent() {
                 <MovieRow
                   title={lang?.frame_cartoons_section || 'Мультфильмы и анимация'}
                   movies={cartoonsList}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onSelectMovie={(movie) => goToMovieInfo(router, movie.id, movie)}
                   onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
@@ -423,9 +407,7 @@ export default function CinemaContent() {
                 <MovieRow
                   title={lang?.frame_korean_dramas || 'Корейские дорамы и триллеры'}
                   movies={koreanDramas}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onSelectMovie={(movie) => goToMovieInfo(router, movie.id)}
                   onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}
@@ -435,21 +417,7 @@ export default function CinemaContent() {
                 <MovieRow
                   title={lang?.frame_anime_collection || 'Коллекция аниме'}
                   movies={animeList}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
-                  onPlayMovie={(movie) => handleDirectPlay(movie.id)}
-                />
-              )}
-
-              {/* DOCUMENTARY & DRAMAS ROW */}
-              {documentaryMovies.length > 0 && (
-                <MovieRow
-                  title="Шедевры кинематографа"
-                  movies={documentaryMovies}
-                  myListIds={myListIds}
-                  onToggleList={toggleMyList}
-                  onSelectMovie={(movie) => router.push(`/cinema/info/${movie.id}`)}
+                  onSelectMovie={(movie) => goToMovieInfo(router, movie.id)}
                   onPlayMovie={(movie) => handleDirectPlay(movie.id)}
                 />
               )}

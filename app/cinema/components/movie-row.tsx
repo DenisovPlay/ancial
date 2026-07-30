@@ -8,8 +8,8 @@ import { useDragScroll } from '../../hooks/useDragScroll';
 interface MovieRowProps {
   title: string;
   movies: Movie[];
-  myListIds: string[];
-  onToggleList: (id: string, e?: React.MouseEvent) => void;
+  myListIds?: string[];
+  onToggleList?: (id: string, e?: React.MouseEvent) => void;
   onSelectMovie: (m: Movie) => void;
   onPlayMovie: (m: Movie) => void;
 }
@@ -17,7 +17,7 @@ interface MovieRowProps {
 export default function MovieRow({
   title,
   movies,
-  myListIds,
+  myListIds = [],
   onToggleList,
   onSelectMovie,
   onPlayMovie,
@@ -41,7 +41,7 @@ export default function MovieRow({
             <MovieCard
               movie={movie}
               isInMyList={myListIds.includes(movie.id)}
-              onToggleList={(e) => onToggleList(movie.id, e)}
+              onToggleList={onToggleList ? (e) => onToggleList(movie.id, e) : undefined}
               onClick={() => onSelectMovie(movie)}
               onPlay={() => onPlayMovie(movie)}
             />

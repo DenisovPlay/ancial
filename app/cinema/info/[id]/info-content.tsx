@@ -11,6 +11,7 @@ import { useTvNavigation } from '../../use-tv-navigation';
 import { fetchCinemaVideoById, fetchCinemaSearch, getOptimizedImageUrl } from '../../cinema-api';
 import { CinemaInfoSkeleton, FrameBrandLoader } from '../../components/cinema-skeleton';
 
+import { CacheManager } from '../../../lib/cache';
 import { getCinemaCache, setCinemaCache } from '../../cinema-cache';
 import { saveWatchHistoryItem, getMovieProgress } from '../../cinema-history';
 
@@ -26,15 +27,59 @@ export default function InfoContent({ id }: InfoContentProps) {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [myListIds, setMyListIds] = useState<string[]>([]);
-  const [infoMovie, setInfoMovie] = useState<Movie | null>(null);
-  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [fromUrl] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const saved = sessionStorage.getItem('ancial_cinema_info_referrer');
+      if (saved) {
+        sessionStorage.removeItem('ancial_cinema_info_referrer');
+        if (!saved.includes('/cinema/info/') && !saved.includes('/cinema/watch/')) {
+          return saved;
+        }
+      }
+
+      if (document.referrer) {
+        const refUrl = new URL(document.referrer);
+        if (
+          refUrl.origin === window.location.origin &&
+          !refUrl.pathname.includes('/cinema/info/') &&
+          !refUrl.pathname.includes('/cinema/watch/')
+        ) {
+          return refUrl.pathname + refUrl.search;
+        }
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  const handleInfoBack = () => {
+    if (fromUrl) {
+      router.push(fromUrl);
+    } else {
+      router.push('/cinema');
+    }
+  };
+
+  // Synchronous cache read for instant 0-ms initial render without skeleton flash
+  const [infoMovie, setInfoMovie] = useState<Movie | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return (
+      getCinemaCache<Movie>('info', id) ||
+      CacheManager.get<Movie>(`cinema_video_by_id_${id}`, { category: 'cinema', subcategory: 'video' })
+    );
+  });
+  const [similarMovies, setSimilarMovies] = useState<Movie[]>(() => {
+    if (typeof window === 'undefined') return [];
+    return getCinemaCache<Movie[]>('similar', id) || [];
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(() => !infoMovie);
+  const [isRevalidating, setIsRevalidating] = useState<boolean>(true);
 
   // Watch state & selection
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
   const [selectedTranslation, setSelectedTranslation] = useState<number | null>(null);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>('flixcdn');
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
   const [savedProgress, setSavedProgress] = useState<{
     season?: number;
     episode?: number;
@@ -82,16 +127,19 @@ export default function InfoContent({ id }: InfoContentProps) {
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Read cached data first
-    const cachedMovie = getCinemaCache<Movie>('info', id);
+    // 1. Read cached data first (check 'info' cache, then fallback to 'video' cache)
+    let cachedMovie = getCinemaCache<Movie>('info', id);
+    if (!cachedMovie) {
+      cachedMovie = CacheManager.get<Movie>(`cinema_video_by_id_${id}`, { category: 'cinema', subcategory: 'video' });
+    }
     const cachedSimilar = getCinemaCache<Movie[]>('similar', id);
 
     if (cachedMovie) {
       setInfoMovie(cachedMovie);
-      if (cachedSimilar) setSimilarMovies(cachedSimilar);
+      if (cachedSimilar && cachedSimilar.length > 0) setSimilarMovies(cachedSimilar);
       setIsLoading(false);
 
-      const defaultPlayerId = cachedMovie.players?.[0]?.id || 'flixcdn';
+      const defaultPlayerId = cachedMovie.players?.[0]?.id || '';
       try {
         const parsed = getMovieProgress(cachedMovie.id);
         if (parsed) {
@@ -100,8 +148,8 @@ export default function InfoContent({ id }: InfoContentProps) {
           if (parsed.season) setSelectedSeason(parsed.season);
           if (parsed.episode) setSelectedEpisode(parsed.episode);
           if (parsed.translationId) setSelectedTranslation(parsed.translationId);
-          setSelectedPlayerId(parsed.playerId || defaultPlayerId);
-        } else {
+          if (parsed.playerId) setSelectedPlayerId(parsed.playerId);
+        } else if (defaultPlayerId) {
           setSelectedPlayerId(defaultPlayerId);
           const defaultPlayer = cachedMovie.players?.find((p) => p.id === defaultPlayerId) || cachedMovie.players?.[0];
           const defaultTrans = defaultPlayer?.translations?.[0]?.id || cachedMovie.translationsList?.[0]?.id || null;
@@ -115,12 +163,14 @@ export default function InfoContent({ id }: InfoContentProps) {
     // 2. Background revalidate fetch
     async function loadMovieInfo() {
       try {
-        const target = await fetchCinemaVideoById(id);
+        setIsRevalidating(true);
+        const target = await fetchCinemaVideoById(id, { skipCache: true });
         if (isMounted && target) {
           setInfoMovie(target);
           setCinemaCache('info', id, target);
+          CacheManager.set(`cinema_video_by_id_${id}`, target, { category: 'cinema', subcategory: 'video', ttl: 24 * 60 * 60 * 1000 });
 
-          const defaultPlayerId = target.players?.[0]?.id || 'flixcdn';
+          const defaultPlayerId = target.players?.[0]?.id || '';
 
           try {
             const parsed = getMovieProgress(target.id);
@@ -132,14 +182,14 @@ export default function InfoContent({ id }: InfoContentProps) {
               if (parsed.season) setSelectedSeason(parsed.season);
               if (parsed.episode) setSelectedEpisode(parsed.episode);
               if (parsed.translationId) setSelectedTranslation(parsed.translationId);
-              setSelectedPlayerId(parsed.playerId || defaultPlayerId);
-            } else {
+              if (parsed.playerId && !selectedPlayerId) setSelectedPlayerId(parsed.playerId);
+            } else if (defaultPlayerId && !selectedPlayerId) {
               setSelectedPlayerId(defaultPlayerId);
               const defaultPlayer = target.players?.find((p) => p.id === defaultPlayerId) || target.players?.[0];
               const defaultTrans = defaultPlayer?.translations?.[0]?.id || target.translationsList?.[0]?.id || null;
               if (defaultTrans) setSelectedTranslation(defaultTrans);
             }
-          } catch (e) { }
+          } catch (e) {}
 
           // Load similar content
           const similar = await fetchCinemaSearch('', target.type === 'series' ? 'serial' : 'movie');
@@ -217,17 +267,21 @@ export default function InfoContent({ id }: InfoContentProps) {
     }
   };
 
-  const handleSelectTranslation = (transId: number) => {
+  const handleSelectTranslation = (transId: number, overridePlayerId?: string) => {
+    const pId = overridePlayerId || selectedPlayerId;
     setSelectedTranslation(transId);
+    setSavedProgress((prev) => (prev ? { ...prev, translationId: transId, playerId: pId } : { translationId: transId, playerId: pId }));
     if (infoMovie) {
-      saveMovieSelection(infoMovie.id, selectedSeason, selectedEpisode, transId, selectedPlayerId);
+      saveMovieSelection(infoMovie.id, selectedSeason, selectedEpisode, transId, pId);
     }
   };
 
-  const handleSelectPlayer = (playerId: string) => {
+  const handleSelectPlayer = (playerId: string, overrideTransId?: number | null) => {
+    const tId = overrideTransId !== undefined ? overrideTransId : selectedTranslation;
     setSelectedPlayerId(playerId);
+    setSavedProgress((prev) => (prev ? { ...prev, playerId, translationId: tId } : { playerId, translationId: tId }));
     if (infoMovie) {
-      saveMovieSelection(infoMovie.id, selectedSeason, selectedEpisode, selectedTranslation, playerId);
+      saveMovieSelection(infoMovie.id, selectedSeason, selectedEpisode, tId, playerId);
     }
   };
 
@@ -289,7 +343,9 @@ export default function InfoContent({ id }: InfoContentProps) {
   const currentSeasonEpisodes = isSeriesOrAnime
     ? (infoMovie.episodesBySeason && infoMovie.episodesBySeason[selectedSeason] && infoMovie.episodesBySeason[selectedSeason].length > 0)
       ? infoMovie.episodesBySeason[selectedSeason]
-      : Array.from({ length: infoMovie.counters?.episodes || 10 }, (_, i) => i + 1)
+      : (infoMovie.counters?.episodes && infoMovie.counters.episodes > 0)
+      ? Array.from({ length: infoMovie.counters.episodes }, (_, i) => i + 1)
+      : []
     : [];
 
   const hasMultipleSeasons = availableSeasonsCount > 1;
@@ -311,7 +367,7 @@ export default function InfoContent({ id }: InfoContentProps) {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         showBackButton
-        onBack={() => router.back()}
+        onBack={handleInfoBack}
       />
 
       {/* HERO COVER FOR MOVIE INFO */}
@@ -356,7 +412,7 @@ export default function InfoContent({ id }: InfoContentProps) {
             <button
               data-watch-hero-btn
               tabIndex={0}
-              onClick={() => handleWatch(savedProgress?.season, savedProgress?.episode, savedProgress?.translationId, savedProgress?.playerId)}
+              onClick={() => handleWatch(savedProgress?.season || selectedSeason, savedProgress?.episode || selectedEpisode, selectedTranslation, selectedPlayerId)}
               className="focusable-tv px-8 py-3 rounded-3xl bg-white hover:bg-zinc-200 text-black font-black text-sm flex items-center gap-3 shadow-2xl transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-40"
             >
               <svg className="w-5 h-5 fill-black ml-0.5" viewBox="0 0 24 24">
@@ -405,7 +461,15 @@ export default function InfoContent({ id }: InfoContentProps) {
       {/* INFO BODY DETAILS */}
       <main className="w-full px-3 lg:px-6 pt-3 space-y-8">
         {/* AVAILABLE PLAYERS SELECTOR ON INFO PAGE */}
-        {infoMovie.players && infoMovie.players.length > 0 && (
+        {isRevalidating && (!infoMovie.players || infoMovie.players.length === 0) ? (
+          <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl animate-pulse">
+            <div className="h-5 w-40 bg-zinc-800 rounded-lg"></div>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-32 bg-zinc-800 rounded-2xl"></div>
+              <div className="h-10 w-32 bg-zinc-800 rounded-2xl"></div>
+            </div>
+          </div>
+        ) : infoMovie.players && infoMovie.players.length > 0 ? (
           <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -427,9 +491,9 @@ export default function InfoContent({ id }: InfoContentProps) {
                         nextTrans = p.translations[0].id;
                       }
                     }
-                    handleSelectPlayer(p.id);
+                    handleSelectPlayer(p.id, nextTrans);
                     if (nextTrans !== selectedTranslation && nextTrans !== null) {
-                      handleSelectTranslation(nextTrans);
+                      setSelectedTranslation(nextTrans);
                     }
                   }}
                   className={`focusable-tv px-4 py-2.5 rounded-2xl font-bold text-xs border flex items-center gap-2 transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
@@ -445,69 +509,80 @@ export default function InfoContent({ id }: InfoContentProps) {
               ))}
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* NATIVE SEASONS AND EPISODES SELECTOR */}
-        {isSeriesOrAnime && (hasMultipleSeasons || currentSeasonEpisodes.length > 1) && (
-          <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              <span>{hasMultipleSeasons ? 'Выбор сезона и серии' : 'Выбор серии'}</span>
-            </h3>
-
-            {/* SEASON TABS (ONLY IF >1 SEASON) */}
-            {hasMultipleSeasons && (
-              <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-2 px-1 -mx-1">
-                {Array.from({ length: availableSeasonsCount }, (_, i) => i + 1).map((sNum) => (
-                  <button
-                    key={sNum}
-                    tabIndex={0}
-                    onClick={() => handleSelectSeason(sNum)}
-                    className={`focusable-tv px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap shrink-0 transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20 ${
-                      selectedSeason === sNum
-                        ? 'bg-white text-black shadow-lg shadow-white/10'
-                        : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
-                    }`}
-                  >
-                    Сезон {sNum}
-                  </button>
+        {isSeriesOrAnime && (
+          isRevalidating && (!infoMovie.episodesBySeason && (!infoMovie.counters || !infoMovie.counters.episodes)) ? (
+            <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl animate-pulse">
+              <div className="h-6 w-48 bg-zinc-800 rounded-lg"></div>
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="h-10 rounded-2xl bg-zinc-800"></div>
                 ))}
               </div>
-            )}
+            </div>
+          ) : (hasMultipleSeasons || currentSeasonEpisodes.length > 0) ? (
+            <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>{hasMultipleSeasons ? 'Выбор сезона и серии' : 'Выбор серии'}</span>
+              </h3>
 
-            {/* EPISODES GRID (ONLY IF >1 EPISODE) */}
-            {currentSeasonEpisodes.length > 1 && (
-              <div className="space-y-2">
-                <span className="text-xs font-semibold text-zinc-400 block">Серии ({currentSeasonEpisodes.length}):</span>
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
-                  {currentSeasonEpisodes.map((epNum) => {
-                    const isCurrent = selectedSeason === (savedProgress?.season || 1) && epNum === (savedProgress?.episode || 1);
-                    return (
-                      <button
-                        key={epNum}
-                        tabIndex={0}
-                        onClick={() => {
-                          handleSelectEpisode(epNum);
-                          handleWatch(selectedSeason, epNum, selectedTranslation);
-                        }}
-                        className={`focusable-tv py-2.5 rounded-2xl font-extrabold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
-                          isCurrent
-                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 ring-1 ring-indigo-400'
-                            : selectedEpisode === epNum
-                            ? 'bg-white text-black font-black'
-                            : 'bg-zinc-900/90 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
-                        }`}
-                      >
-                        {epNum} серия
-                      </button>
-                    );
-                  })}
+              {/* SEASON TABS (ONLY IF >1 SEASON) */}
+              {hasMultipleSeasons && (
+                <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none py-2 px-1 -mx-1">
+                  {Array.from({ length: availableSeasonsCount }, (_, i) => i + 1).map((sNum) => (
+                    <button
+                      key={sNum}
+                      tabIndex={0}
+                      onClick={() => handleSelectSeason(sNum)}
+                      className={`focusable-tv px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap shrink-0 transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20 ${
+                        selectedSeason === sNum
+                          ? 'bg-white text-black shadow-lg shadow-white/10'
+                          : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'
+                      }`}
+                    >
+                      Сезон {sNum}
+                    </button>
+                  ))}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+
+              {/* EPISODES GRID */}
+              {currentSeasonEpisodes.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-zinc-400 block">Серии ({currentSeasonEpisodes.length}):</span>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-2">
+                    {currentSeasonEpisodes.map((epNum) => {
+                      const isCurrent = selectedSeason === (savedProgress?.season || 1) && epNum === (savedProgress?.episode || 1);
+                      return (
+                        <button
+                          key={epNum}
+                          tabIndex={0}
+                          onClick={() => {
+                            handleSelectEpisode(epNum);
+                            handleWatch(selectedSeason, epNum, selectedTranslation);
+                          }}
+                          className={`focusable-tv py-2.5 rounded-2xl font-extrabold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
+                            isCurrent
+                              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 ring-1 ring-indigo-400'
+                              : selectedEpisode === epNum
+                              ? 'bg-white text-black font-black'
+                              : 'bg-zinc-900/90 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
+                          }`}
+                        >
+                          {epNum} серия
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null
         )}
 
         {/* NATIVE TRANSLATIONS SELECTOR FOR ACTIVE PLAYER */}
