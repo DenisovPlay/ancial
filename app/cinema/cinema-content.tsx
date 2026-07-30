@@ -23,6 +23,7 @@ import { CinemaPageSkeleton } from './components/cinema-skeleton';
 import { useDragScroll } from '../hooks/useDragScroll';
 
 import { getCinemaCache, setCinemaCache } from './cinema-cache';
+import { getWatchHistory, getMovieProgress, WatchHistoryItem } from './cinema-history';
 
 // Interface for home bundle cache
 interface HomeCinemaBundle {
@@ -60,20 +61,31 @@ export default function CinemaContent() {
   const [documentaryMovies, setDocumentaryMovies] = useState<Movie[]>([]);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
 
-  // Load user list & watch history from localStorage
+  // Load user list & watch history via cache manager & subscribe to live updates
   useEffect(() => {
     try {
       const savedList = localStorage.getItem('frame_my_list');
       if (savedList) setMyListIds(JSON.parse(savedList));
-
-      const savedHistory = localStorage.getItem('cinema_watch_history');
-      if (savedHistory) {
-        const parsed = JSON.parse(savedHistory);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setWatchHistory(parsed);
-        }
-      }
     } catch (e) { }
+
+    const refreshHistory = () => {
+      const list = getWatchHistory();
+      setWatchHistory(list);
+    };
+
+    refreshHistory();
+
+    window.addEventListener('focus', refreshHistory);
+    window.addEventListener('pageshow', refreshHistory);
+    document.addEventListener('visibilitychange', refreshHistory);
+    window.addEventListener('ancial:cinema_history_update', refreshHistory);
+
+    return () => {
+      window.removeEventListener('focus', refreshHistory);
+      window.removeEventListener('pageshow', refreshHistory);
+      document.removeEventListener('visibilitychange', refreshHistory);
+      window.removeEventListener('ancial:cinema_history_update', refreshHistory);
+    };
   }, []);
 
   // Load real API content on mount with SWR caching
@@ -219,9 +231,8 @@ export default function CinemaContent() {
 
     const handleDirectPlay = (movieId: string) => {
       try {
-        const progRaw = localStorage.getItem(`cinema_progress_${movieId}`);
-        if (progRaw) {
-          const parsed = JSON.parse(progRaw);
+        const parsed = getMovieProgress(movieId);
+        if (parsed) {
           const params = new URLSearchParams();
           if (parsed.season) params.set('season', String(parsed.season));
           if (parsed.episode) params.set('episode', String(parsed.episode));
@@ -237,21 +248,39 @@ export default function CinemaContent() {
       router.push(`/cinema/watch/${movieId}`);
     };
 
-    const continueWatchingMovies: Movie[] = watchHistory.map((item) => ({
-      id: String(item.id),
-      title: item.title || 'Видео',
-      originalTitle: item.originalTitle || '',
-      description: item.description || '',
-      posterUrl: item.posterUrl || '',
-      backdropUrl: item.backdropUrl || item.posterUrl || '',
-      rating: item.rating ? String(item.rating) : undefined,
-      year: item.year ? String(item.year) : '',
-      ageRating: item.ageRating || '',
-      duration: item.duration || '',
-      quality: 'HD',
-      genres: item.season && item.episode ? [`Сезон ${item.season}, Серия ${item.episode}`] : ['Продолжить'],
-      type: item.type || 'movie',
-    }));
+    const continueWatchingMovies: Movie[] = watchHistory.map((item: WatchHistoryItem) => {
+      const isSeries = item.type === 'series' || item.type === 'animeserial' || item.type === 'showserial' || (Boolean(item.season && item.season > 1)) || (Boolean(item.episode && item.episode > 1));
+      const timeSec = item.time || item.currentTime || 0;
+
+      let label = 'Продолжить';
+      if (isSeries) {
+        label = `Сезон ${item.season || 1}, Серия ${item.episode || 1}`;
+      } else if (timeSec > 5) {
+        const m = Math.floor(timeSec / 60);
+        const s = Math.floor(timeSec % 60);
+        label = `Продолжить (${m}:${s < 10 ? '0' : ''}${s})`;
+      } else if (item.translationTitle) {
+        label = item.translationTitle;
+      } else {
+        label = 'Фильм';
+      }
+
+      return {
+        id: String(item.id),
+        title: item.title || 'Видео',
+        originalTitle: item.originalTitle || '',
+        description: item.description || '',
+        posterUrl: item.posterUrl || '',
+        backdropUrl: item.backdropUrl || item.posterUrl || '',
+        rating: item.rating ? String(item.rating) : undefined,
+        year: item.year ? String(item.year) : '',
+        ageRating: item.ageRating || '',
+        duration: item.duration || '',
+        quality: 'HD',
+        genres: [label],
+        type: item.type || 'movie',
+      };
+    });
 
     return (
       <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">

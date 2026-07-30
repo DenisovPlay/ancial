@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FrameBrandLoader } from './cinema-skeleton';
+import { saveWatchHistoryItem } from '../cinema-history';
 
 interface CustomPlayerProps {
   src?: string;
@@ -137,26 +138,27 @@ export default function CustomPlayer({
   }, [src, season, episode]);
 
   const saveCurrentProgress = (overrideTime?: number) => {
-    if (!movieId || !videoRef.current) return;
-    const curTime = overrideTime !== undefined ? overrideTime : videoRef.current.currentTime;
+    if (!movieId) return;
+    const curTime = overrideTime !== undefined ? overrideTime : (videoRef.current ? videoRef.current.currentTime : 0);
     if (!curTime || curTime < 3) return;
-    const dur = videoRef.current.duration || 0;
-    try {
-      const raw = localStorage.getItem(`cinema_progress_${movieId}`);
-      const parsed = raw ? JSON.parse(raw) : {};
-      const updated = {
-        ...parsed,
-        season: season || parsed.season || 1,
-        episode: episode || parsed.episode || 1,
-        translationId: selectedTranslationId || parsed.translationId || null,
-        playerId: selectedPlayerId || 'videohub',
-        time: Math.floor(curTime),
-        currentTime: Math.floor(curTime),
-        duration: Math.floor(dur),
-        updatedAt: Date.now(),
-      };
-      localStorage.setItem(`cinema_progress_${movieId}`, JSON.stringify(updated));
-    } catch (e) {}
+    const dur = videoRef.current ? videoRef.current.duration || 0 : 0;
+    const activeTransObj = translations?.find((t) => t.id === selectedTranslationId);
+    const activePlayerObj = players?.find((p) => p.id === selectedPlayerId);
+
+    saveWatchHistoryItem({
+      id: movieId,
+      title,
+      season: season || 1,
+      episode: episode || 1,
+      translationId: selectedTranslationId || null,
+      translationTitle: activeTransObj?.title || '',
+      playerId: selectedPlayerId || 'videohub',
+      playerName: activePlayerObj?.name || '',
+      time: Math.floor(curTime),
+      currentTime: Math.floor(curTime),
+      durationSeconds: Math.floor(dur),
+      type: isSeries ? 'series' : 'movie',
+    });
   };
 
   // Save progress instantly when unmounting or changing episode

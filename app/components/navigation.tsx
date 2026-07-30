@@ -31,7 +31,7 @@ const NavItem = ({
     : Boolean(
       href && (
         pathname === href ||
-        (href !== '/' && pathname?.startsWith(`${href}/`))
+        (href !== '/' && href !== '/cinema' && pathname?.startsWith(`${href}/`))
       ),
     );
 

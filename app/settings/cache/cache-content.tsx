@@ -75,6 +75,43 @@ const DonutChart = ({ segments }: { segments: { color: string; value: number }[]
   );
 };
 
+// Cache Loading Skeleton Component
+const CacheSkeleton = () => (
+  <div className="flex flex-col justify-center items-center gap-6 w-full max-w-3xl animate-pulse px-3 lg:px-0">
+    {/* Donut Chart Skeleton */}
+    <div className="relative w-56 h-56 flex items-center justify-center">
+      <div className="w-56 h-56 rounded-full border-[6px] border-zinc-800/80 flex items-center justify-center">
+        <div className="w-36 h-36 rounded-full bg-zinc-900/80 flex flex-col items-center justify-center gap-2 border border-zinc-800/50">
+          <div className="h-6 w-24 bg-zinc-800/90 rounded-xl"></div>
+          <div className="h-3 w-28 bg-zinc-800/60 rounded-lg"></div>
+        </div>
+      </div>
+    </div>
+
+    {/* Controls Skeleton */}
+    <div className="w-full max-w-sm px-3 flex flex-row items-center gap-3">
+      <div className="h-[48px] grow rounded-3xl bg-zinc-900/80 border border-zinc-800/80"></div>
+      <div className="h-[48px] w-28 rounded-full bg-zinc-900/60 border border-zinc-800/80"></div>
+    </div>
+
+    {/* Categories Skeleton List */}
+    <div className="flex flex-col gap-3 w-full">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex items-center justify-between p-4 bg-zinc-900/60 rounded-3xl border border-zinc-800/80">
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full bg-zinc-800/90"></div>
+            <div className="h-5 w-28 sm:w-36 bg-zinc-800/90 rounded-xl"></div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-4 w-16 bg-zinc-800/70 rounded-xl"></div>
+            <div className="w-5 h-5 rounded-full bg-zinc-800/50"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export default function CacheSettingsPage() {
   const router = useRouter();
   const { lang, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -88,6 +125,7 @@ export default function CacheSettingsPage() {
   const [currentTtl, setCurrentTtl] = useState<number>(DEFAULT_CACHE_TTL);
   const [isPlayedTracksCachingEnabled, setIsPlayedTracksCachingEnabled] = useState<boolean>(() => cache.audio.isPlayedTracksCachingEnabled());
   const [maxAudioCacheSizeMB, setMaxAudioCacheSizeMB] = useState<number>(() => cache.audio.getMaxCacheSizeMB());
+  const [isLoadingCacheData, setIsLoadingCacheData] = useState<boolean>(true);
 
   const [cacheData, setCacheData] = useState<{
     totalSize: number;
@@ -332,7 +370,9 @@ export default function CacheSettingsPage() {
       if (savedTtl) {
         setCurrentTtl(parseInt(savedTtl, 10));
       }
-    } catch { }
+    } catch { } finally {
+      setIsLoadingCacheData(false);
+    }
   };
 
   const handleSaveTtl = (ttl: number) => {
@@ -571,13 +611,17 @@ export default function CacheSettingsPage() {
             className="w-10 h-10 flex items-center justify-center rounded-full bg-zinc-800/50 hover:bg-zinc-700/50 duration-300 active:scale-95 cursor-pointer text-zinc-300 border border-zinc-600/30"
           >
             <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-              <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.73 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.3-.08.63-.08.94s.04.64.08.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.49-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* Donut Chart */}
+      {authLoading || isLoadingCacheData ? (
+        <CacheSkeleton />
+      ) : (
+        <>
+          {/* Donut Chart */}
       <div className="flex flex-col items-center justify-center gap-3 w-full max-w-3xl">
         <div className="relative w-56 h-56 flex items-center justify-center">
           <DonutChart segments={chartSegments} />
@@ -797,6 +841,8 @@ export default function CacheSettingsPage() {
       </div>
 
       <div className="lg:hidden"><br /><br /><br /><br /></div>
+        </>
+      )}
 
       <Modal
         isOpen={isTtlModalOpen}

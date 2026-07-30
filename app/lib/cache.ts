@@ -38,7 +38,7 @@ export type CacheSubcategory<C extends CacheCategory> =
     : C extends 'users'
     ? 'info'
     : C extends 'cinema'
-    ? 'updates' | 'search' | 'video' | 'person' | 'translations' | 'genres'
+    ? 'updates' | 'search' | 'video' | 'person' | 'translations' | 'genres' | 'history' | 'progress' | 'home_bundle' | 'info' | 'similar'
     : never;
 
 export interface CacheOptions<C extends CacheCategory> {
@@ -90,6 +90,7 @@ export const LEGACY_KEY_MAPPINGS: Record<string, { category: CacheCategory; subc
   'pulse_home_welike': { category: 'pulse', subcategory: 'we_like' },
   'pulse_fav_ids': { category: 'pulse', subcategory: 'favorites' },
   'dialogs-cache': { category: 'chats', subcategory: 'dialogs' },
+  'cinema_watch_history': { category: 'cinema', subcategory: 'history' },
 };
 
 /**
@@ -188,6 +189,9 @@ export function resolveKeyInfo(
   }
   if (key.startsWith('feed_cache:')) {
     return { storageKey: key, category: 'feed', subcategory: 'posts' };
+  }
+  if (key.startsWith('cinema_progress_')) {
+    return { storageKey: key, category: 'cinema', subcategory: 'progress' };
   }
 
   return { storageKey: key };

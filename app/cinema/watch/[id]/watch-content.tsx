@@ -7,6 +7,7 @@ import { fetchCinemaVideoById, fetchVideoHubStreamDirect } from '../../cinema-ap
 import { useTvNavigation } from '../../use-tv-navigation';
 import { FrameBrandLoader } from '../../components/cinema-skeleton';
 import CustomPlayer from '../../components/custom-player';
+import { saveWatchHistoryItem } from '../../cinema-history';
 
 interface WatchContentProps {
   id: string;
@@ -42,27 +43,30 @@ export default function WatchContent({ id }: WatchContentProps) {
         // Update watch history & progress
         if (target) {
           try {
-            const progressObj = {
-              season: season ? Number(season) : 1,
-              episode: episode ? Number(episode) : 1,
-              translationId: translation ? Number(translation) : null,
-              updatedAt: Date.now(),
-            };
-            localStorage.setItem(`cinema_progress_${target.id}`, JSON.stringify(progressObj));
+            const activePlayerId = searchParams.get('player') || 'flixcdn';
+            const activeTransId = translation ? Number(translation) : null;
+            const transObj = target.translationsList?.find((t) => t.id === activeTransId);
+            const playerObj = target.players?.find((p) => p.id === activePlayerId);
 
-            const historyRaw = localStorage.getItem('cinema_watch_history');
-            const history: any[] = historyRaw ? JSON.parse(historyRaw) : [];
-            const filtered = history.filter((h: any) => String(h.id) !== String(target.id));
-            filtered.unshift({
+            saveWatchHistoryItem({
               id: target.id,
               title: target.title,
+              originalTitle: target.originalTitle,
+              description: target.description,
               posterUrl: target.posterUrl,
+              backdropUrl: target.backdropUrl,
+              rating: target.rating,
+              year: target.year,
+              ageRating: target.ageRating,
+              duration: target.duration,
               type: target.type,
               season: season ? Number(season) : 1,
               episode: episode ? Number(episode) : 1,
-              timestamp: Date.now(),
+              translationId: activeTransId,
+              translationTitle: transObj?.title || '',
+              playerId: activePlayerId,
+              playerName: playerObj?.name || '',
             });
-            localStorage.setItem('cinema_watch_history', JSON.stringify(filtered.slice(0, 50)));
           } catch (e) { }
         }
       }
@@ -140,26 +144,36 @@ export default function WatchContent({ id }: WatchContentProps) {
     };
   }, [movie, searchParams, id, season, episode]);
 
-  // Persist current watch selection (season, episode, translation, player) to localStorage
+  // Persist current watch selection (season, episode, translation, player) via cache manager
   useEffect(() => {
     if (!movie) return;
     const curSeason = season ? Number(season) : 1;
     const curEpisode = episode ? Number(episode) : 1;
     const curTranslation = translation ? Number(translation) : null;
     const curPlayerId = searchParams.get('player') || 'flixcdn';
+    const transObj = movie.translationsList?.find((t) => t.id === curTranslation);
+    const playerObj = movie.players?.find((p) => p.id === curPlayerId);
 
     try {
-      const raw = localStorage.getItem(`cinema_progress_${movie.id}`);
-      const existing = raw ? JSON.parse(raw) : {};
-      const progressObj = {
-        ...existing,
+      saveWatchHistoryItem({
+        id: movie.id,
+        title: movie.title,
+        originalTitle: movie.originalTitle,
+        description: movie.description,
+        posterUrl: movie.posterUrl,
+        backdropUrl: movie.backdropUrl,
+        rating: movie.rating,
+        year: movie.year,
+        ageRating: movie.ageRating,
+        duration: movie.duration,
+        type: movie.type,
         season: curSeason,
         episode: curEpisode,
         translationId: curTranslation,
+        translationTitle: transObj?.title || '',
         playerId: curPlayerId,
-        updatedAt: Date.now(),
-      };
-      localStorage.setItem(`cinema_progress_${movie.id}`, JSON.stringify(progressObj));
+        playerName: playerObj?.name || '',
+      });
     } catch (e) {}
   }, [movie, season, episode, translation, searchParams]);
 

@@ -17,6 +17,9 @@ export function useTvNavigation() {
 
   // AUTOMATICALLY PRESERVE AND RESTORE FOCUS ON ACTIVE NAV TAB OR SEARCH INPUT ON ROUTE CHANGE
   useEffect(() => {
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 1024 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches));
+    if (isMobile) return;
+
     const timer = setTimeout(() => {
       const currentPath = (pathname || window.location.pathname || '/cinema').replace(/\/$/, '') || '/cinema';
 
@@ -61,6 +64,10 @@ export function useTvNavigation() {
   }, [pathname]);
 
   useEffect(() => {
+    // Only enable D-Pad / arrow key spatial navigation on desktop screens (>=1024px) or Non-Touch TV environments
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 1024 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches));
+    if (isMobile) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const ARROWS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
       if (!ARROWS.includes(e.key)) return;

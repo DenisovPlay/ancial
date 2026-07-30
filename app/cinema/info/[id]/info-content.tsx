@@ -12,6 +12,7 @@ import { fetchCinemaVideoById, fetchCinemaSearch, getOptimizedImageUrl } from '.
 import { CinemaInfoSkeleton, FrameBrandLoader } from '../../components/cinema-skeleton';
 
 import { getCinemaCache, setCinemaCache } from '../../cinema-cache';
+import { saveWatchHistoryItem, getMovieProgress } from '../../cinema-history';
 
 interface InfoContentProps {
   id: string;
@@ -44,7 +45,7 @@ export default function InfoContent({ id }: InfoContentProps) {
     duration?: number;
   } | null>(null);
 
-  // Helper to save selection to localStorage
+  // Helper to save selection via cache manager
   const saveMovieSelection = (
     movieId: string,
     s: number,
@@ -52,18 +53,29 @@ export default function InfoContent({ id }: InfoContentProps) {
     tId: number | null,
     pId: string
   ) => {
+    if (!infoMovie) return;
+    const transObj = infoMovie.translationsList?.find((t) => t.id === tId);
+    const playerObj = infoMovie.players?.find((p) => p.id === pId);
     try {
-      const raw = localStorage.getItem(`cinema_progress_${movieId}`);
-      const existing = raw ? JSON.parse(raw) : {};
-      const progressObj = {
-        ...existing,
+      saveWatchHistoryItem({
+        id: movieId,
+        title: infoMovie.title,
+        originalTitle: infoMovie.originalTitle,
+        description: infoMovie.description,
+        posterUrl: infoMovie.posterUrl,
+        backdropUrl: infoMovie.backdropUrl,
+        rating: infoMovie.rating,
+        year: infoMovie.year,
+        ageRating: infoMovie.ageRating,
+        duration: infoMovie.duration,
+        type: infoMovie.type,
         season: s,
         episode: e,
         translationId: tId,
+        translationTitle: transObj?.title || '',
         playerId: pId,
-        updatedAt: Date.now(),
-      };
-      localStorage.setItem(`cinema_progress_${movieId}`, JSON.stringify(progressObj));
+        playerName: playerObj?.name || '',
+      });
     } catch (err) {}
   };
 
@@ -81,9 +93,8 @@ export default function InfoContent({ id }: InfoContentProps) {
 
       const defaultPlayerId = cachedMovie.players?.[0]?.id || 'flixcdn';
       try {
-        const progRaw = localStorage.getItem(`cinema_progress_${cachedMovie.id}`);
-        if (progRaw) {
-          const parsed = JSON.parse(progRaw);
+        const parsed = getMovieProgress(cachedMovie.id);
+        if (parsed) {
           if (!parsed.time && parsed.currentTime) parsed.time = parsed.currentTime;
           setSavedProgress(parsed);
           if (parsed.season) setSelectedSeason(parsed.season);
@@ -112,9 +123,8 @@ export default function InfoContent({ id }: InfoContentProps) {
           const defaultPlayerId = target.players?.[0]?.id || 'flixcdn';
 
           try {
-            const progRaw = localStorage.getItem(`cinema_progress_${target.id}`);
-            if (progRaw) {
-              const parsed = JSON.parse(progRaw);
+            const parsed = getMovieProgress(target.id);
+            if (parsed) {
               if (!parsed.time && parsed.currentTime) {
                 parsed.time = parsed.currentTime;
               }
@@ -229,23 +239,6 @@ export default function InfoContent({ id }: InfoContentProps) {
     const p = player || selectedPlayerId || 'flixcdn';
 
     saveMovieSelection(infoMovie.id, s, e, t, p);
-
-    try {
-      // Update watch history array
-      const historyRaw = localStorage.getItem('cinema_watch_history');
-      const history: any[] = historyRaw ? JSON.parse(historyRaw) : [];
-      const filtered = history.filter((h: any) => String(h.id) !== String(infoMovie.id));
-      filtered.unshift({
-        id: infoMovie.id,
-        title: infoMovie.title,
-        posterUrl: infoMovie.posterUrl,
-        type: infoMovie.type,
-        season: s,
-        episode: e,
-        timestamp: Date.now(),
-      });
-      localStorage.setItem('cinema_watch_history', JSON.stringify(filtered.slice(0, 50)));
-    } catch (err) { }
 
     const queryParams = new URLSearchParams();
     if (isSeriesOrAnime || availableSeasonsCount > 1 || currentSeasonEpisodes.length > 1) {
