@@ -68,9 +68,63 @@ export default function CustomPlayer({
 }: CustomPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const isSeekingRef = useRef<boolean>(false);
+  const seekDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isFlixCDN = Boolean(
+    selectedPlayerId === 'flixcdn' ||
+    (fallbackIframeSrc && (fallbackIframeSrc.includes('tarantino.factorios.live') || fallbackIframeSrc.includes('flixcdn')))
+  );
+
+  const releaseSeekingDebounce = useCallback(() => {
+    if (seekDebounceTimerRef.current) clearTimeout(seekDebounceTimerRef.current);
+    seekDebounceTimerRef.current = setTimeout(() => {
+      isSeekingRef.current = false;
+    }, 1200);
+  }, []);
+
+  const sendIframeCommand = useCallback((cmd: string, val?: any) => {
+    if (!iframeRef.current || !iframeRef.current.contentWindow) return;
+    const win = iframeRef.current.contentWindow;
+    try {
+      if (cmd === 'pause') {
+        win.postMessage('pause', '*');
+        win.postMessage({ api: 'pause' }, '*');
+        win.postMessage(JSON.stringify({ api: 'pause' }), '*');
+      } else if (cmd === 'play') {
+        win.postMessage('play', '*');
+        win.postMessage({ api: 'play' }, '*');
+        win.postMessage(JSON.stringify({ api: 'play' }), '*');
+      } else if (cmd === 'playpause') {
+        win.postMessage('playpause', '*');
+        win.postMessage('play', '*');
+        win.postMessage({ api: 'play' }, '*');
+      } else if (cmd === 'seek') {
+        isSeekingRef.current = true;
+        releaseSeekingDebounce();
+        win.postMessage({ api: 'seek', time: val }, '*');
+        win.postMessage(JSON.stringify({ api: 'seek', time: val }), '*');
+        win.postMessage({ event: 'seek', time: val }, '*');
+        win.postMessage(JSON.stringify({ event: 'seek', time: val }), '*');
+        win.postMessage(`seek:${val}`, '*');
+        win.postMessage(`time:${val}`, '*');
+      } else if (cmd === 'volume') {
+        win.postMessage({ api: 'setVolume', volume: val }, '*');
+        win.postMessage(JSON.stringify({ api: 'setVolume', volume: val }), '*');
+      }
+    } catch (e) {}
+  }, [releaseSeekingDebounce]);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const currentTimeRef = useRef<number>(0);
+
+  const updateCurrentTime = useCallback((time: number) => {
+    currentTimeRef.current = time;
+    setCurrentTime(time);
+  }, []);
+
   const [duration, setDuration] = useState<number>(0);
   const [buffered, setBuffered] = useState<number>(0);
   const [volume, setVolume] = useState<number>(1);
@@ -81,6 +135,84 @@ export default function CustomPlayer({
   const [showControls, setShowControls] = useState<boolean>(true);
   const [isIframeLoading, setIsIframeLoading] = useState<boolean>(true);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const hasSeekedSavedTimeRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    hasSeekedSavedTimeRef.current = false;
+  }, [movieId, season, episode, fallbackIframeSrc]);
+
+  const getSavedTime = useCallback((): number => {
+    let saved = startTime && Number(startTime) > 5 ? Number(startTime) : 0;
+    if (!saved && movieId) {
+      try {
+        const raw = localStorage.getItem(`cinema_progress_${movieId}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const sMatch = !isSeries || !parsed.season || Number(parsed.season) === Number(season || 1);
+          const eMatch = !isSeries || !parsed.episode || Number(parsed.episode) === Number(episode || 1);
+          if (sMatch && eMatch) {
+            saved = Number(parsed.time || parsed.currentTime || 0);
+          }
+        }
+      } catch (e) {}
+    }
+    return saved;
+  }, [startTime, movieId, isSeries, season, episode]);
+
+  // Listen to postMessage from FlixCDN iframe
+  useEffect(() => {
+    if (!isFlixCDN) return;
+
+    const handleIframeMessage = (e: MessageEvent) => {
+      try {
+        let data = e.data;
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+          } catch (err) {}
+        }
+        if (!data || typeof data !== 'object') return;
+
+        if (typeof data.duration === 'number' && data.duration > 0) {
+          setDuration(data.duration);
+
+          // Auto-restore saved progress as soon as ad finishes & real duration is received
+          if (!hasSeekedSavedTimeRef.current) {
+            const savedTime = getSavedTime();
+            if (savedTime > 5 && savedTime < data.duration - 15) {
+              hasSeekedSavedTimeRef.current = true;
+              updateCurrentTime(savedTime);
+              setTimeout(() => {
+                sendIframeCommand('seek', savedTime);
+              }, 150);
+              setTimeout(() => {
+                sendIframeCommand('seek', savedTime);
+              }, 500);
+            }
+          }
+        }
+        if (typeof data.time === 'number') {
+          if (!isSeekingRef.current) {
+            updateCurrentTime(data.time);
+            if (data.time > 3 && Math.abs(data.time - lastSavedTimeRef.current) >= 2) {
+              lastSavedTimeRef.current = data.time;
+              saveCurrentProgress(data.time);
+            }
+          }
+        }
+
+        if (data.event === 'pause' || data.event === 'paused' || data.action === 'Video paused') {
+          setIsPlaying(false);
+        } else if (data.event === 'play' || data.event === 'playing' || data.action === 'Video playing') {
+          setIsPlaying(true);
+        }
+      } catch (err) {}
+    };
+
+    window.addEventListener('message', handleIframeMessage);
+    return () => window.removeEventListener('message', handleIframeMessage);
+  }, [isFlixCDN, movieId, season, episode, updateCurrentTime, getSavedTime, sendIframeCommand]);
 
   useEffect(() => {
     setIsIframeLoading(true);
@@ -102,24 +234,40 @@ export default function CustomPlayer({
         const parsed = JSON.parse(progRaw);
         if (parsed.currentTime && videoRef.current) {
           videoRef.current.currentTime = parsed.currentTime;
+          updateCurrentTime(parsed.currentTime);
         }
       }
     } catch (e) {}
     return () => {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
-  }, [movieId, resetControlsTimer]);
+  }, [movieId, resetControlsTimer, updateCurrentTime]);
 
-  // Seek relative seconds
+  // Seek relative seconds with instant ref sync
   const seekRelative = (seconds: number) => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(0, Math.min(duration || 999999, videoRef.current.currentTime + seconds));
-    setCurrentTime(videoRef.current.currentTime);
-    resetControlsTimer();
+    const baseTime = currentTimeRef.current || (videoRef.current ? videoRef.current.currentTime : 0);
+    const targetTime = Math.max(0, Math.min(duration || 999999, baseTime + seconds));
+    updateCurrentTime(targetTime);
+
+    if (isFlixCDN && !src) {
+      sendIframeCommand('seek', targetTime);
+      resetControlsTimer();
+      return;
+    }
+    if (videoRef.current) {
+      videoRef.current.currentTime = targetTime;
+      resetControlsTimer();
+    }
   };
 
   // Toggle play/pause
   const togglePlay = () => {
+    if (isFlixCDN && !src) {
+      const nextState = !isPlaying;
+      setIsPlaying(nextState);
+      sendIframeCommand(nextState ? 'play' : 'pause');
+      return;
+    }
     if (!videoRef.current) return;
     if (isPlaying) {
       videoRef.current.pause();
@@ -139,9 +287,11 @@ export default function CustomPlayer({
 
   const saveCurrentProgress = (overrideTime?: number) => {
     if (!movieId) return;
+    // CRITICAL: Never overwrite progress during pre-roll / ads (when duration is uninitialized or <=30s)
+    if (!src && (!duration || duration <= 30)) return;
     const curTime = overrideTime !== undefined ? overrideTime : (videoRef.current ? videoRef.current.currentTime : 0);
     if (!curTime || curTime < 3) return;
-    const dur = videoRef.current ? videoRef.current.duration || 0 : 0;
+    const dur = duration || (videoRef.current ? videoRef.current.duration || 0 : 0);
     const activeTransObj = translations?.find((t) => t.id === selectedTranslationId);
     const activePlayerObj = players?.find((p) => p.id === selectedPlayerId);
 
@@ -388,7 +538,7 @@ export default function CustomPlayer({
             const fs = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="fullscreen"]');
             if (fs) fs.focus();
           } else if (activeControl === 'timeline') {
-            seekRelative(5);
+            seekRelative(10);
           }
           return;
         }
@@ -411,7 +561,7 @@ export default function CustomPlayer({
             const p = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="play"]');
             if (p) p.focus();
           } else if (activeControl === 'timeline') {
-            seekRelative(-5);
+            seekRelative(-10);
           }
           return;
         }
@@ -582,6 +732,7 @@ export default function CustomPlayer({
         )}
 
         <iframe
+          ref={iframeRef}
           src={fallbackIframeSrc}
           title={title}
           className="w-full h-full border-0 relative z-20"
@@ -589,6 +740,107 @@ export default function CustomPlayer({
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
           allowFullScreen
         />
+
+        {/* FLIXCDN CUSTOM CONTROLS OVERLAY (BOTTOM BAR) */}
+        {isFlixCDN && (
+          <div
+            className={`absolute bottom-0 inset-x-0 p-4 lg:p-6 bg-gradient-to-t from-black/95 via-black/70 to-transparent space-y-3 transition-opacity duration-300 z-40 ${
+              showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            {/* INTERACTIVE SEEK TIMELINE BAR */}
+            <div className="space-y-1">
+              <div className="relative w-full h-3.5 group/slider flex items-center cursor-pointer">
+                <div className="absolute inset-0 rounded-full bg-white/20 group-focus-within/slider:ring-2 group-focus-within/slider:ring-indigo-400 group-focus-within/slider:scale-y-125 transition-all" />
+                <div
+                  className="absolute left-0 top-0 bottom-0 rounded-full bg-indigo-500 shadow-md shadow-indigo-500/50 group-focus-within/slider:bg-gradient-to-r group-focus-within/slider:from-indigo-500 group-focus-within/slider:to-violet-400"
+                  style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                />
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  value={currentTime}
+                  onMouseDown={() => { isSeekingRef.current = true; }}
+                  onTouchStart={() => { isSeekingRef.current = true; }}
+                  onMouseUp={releaseSeekingDebounce}
+                  onTouchEnd={releaseSeekingDebounce}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    isSeekingRef.current = true;
+                    setCurrentTime(val);
+                    sendIframeCommand('seek', val);
+                  }}
+                  tabIndex={0}
+                  data-tv-player-control="timeline"
+                  className="focusable-tv absolute inset-0 w-full h-full opacity-0 cursor-pointer outline-none rounded-full"
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs font-semibold text-zinc-400 px-1 pt-1">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* BOTTOM ACTION BUTTONS */}
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={togglePlay}
+                  tabIndex={0}
+                  data-tv-player-control="play"
+                  aria-label={isPlaying ? 'Пауза' : 'Воспроизведение'}
+                  className="focusable-tv p-3 rounded-3xl bg-white hover:bg-zinc-200 text-black font-extrabold flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white shadow-xl"
+                >
+                  {isPlaying ? (
+                    <svg className="w-5 h-5 fill-black" viewBox="0 0 24 24">
+                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 fill-black ml-0.5" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => seekRelative(-10)}
+                  tabIndex={0}
+                  data-tv-player-control="rewind"
+                  aria-label="-10 секунд"
+                  className="focusable-tv p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center gap-1 backdrop-blur-md border border-white/10 transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
+                >
+                  -10s
+                </button>
+
+                <button
+                  onClick={() => seekRelative(10)}
+                  tabIndex={0}
+                  data-tv-player-control="forward"
+                  aria-label="+10 секунд"
+                  className="focusable-tv p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center gap-1 backdrop-blur-md border border-white/10 transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
+                >
+                  +10s
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleFullscreen}
+                  tabIndex={0}
+                  data-tv-player-control="fullscreen"
+                  aria-label="На весь экран"
+                  className="focusable-tv p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
+                >
+                  <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

@@ -119,8 +119,14 @@ export function saveWatchHistoryItem(item: Partial<WatchHistoryItem> & { id: str
   const translationTitle = item.translationTitle || existingProg.translationTitle || '';
   const playerId = item.playerId || existingProg.playerId || 'flixcdn';
   const playerName = item.playerName || existingProg.playerName || '';
-  const savedTime = item.time !== undefined ? item.time : (item.currentTime !== undefined ? item.currentTime : (existingProg.time || existingProg.currentTime || 0));
-  const durSeconds = item.durationSeconds !== undefined ? item.durationSeconds : (existingProg.duration || 0);
+  const incomingTime = item.time !== undefined ? item.time : item.currentTime;
+  const savedTime = (incomingTime !== undefined && incomingTime > 0)
+    ? incomingTime
+    : (existingProg.time || existingProg.currentTime || 0);
+
+  const durSeconds = (item.durationSeconds !== undefined && item.durationSeconds > 0)
+    ? item.durationSeconds
+    : (existingProg.duration || 0);
 
   // 2. Сохраняем индивидуальный прогресс
   const updatedProgress = {

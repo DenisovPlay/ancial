@@ -295,8 +295,11 @@ export default function WatchContent({ id }: WatchContentProps) {
       : Array.from({ length: movie.counters?.episodes || 10 }, (_, i) => i + 1)
     : [];
 
+  // Derive clean numeric Kinopoisk ID (strip non-digits if present in temporary string IDs)
+  const rawDigits = String(movie.kinopoisk_id || movie.id || id).replace(/\D+/g, '');
+  const targetKpId = rawDigits || String(movie.kinopoisk_id || movie.id || id);
+
   // Build CDNMovies iframe URL
-  const targetKpId = movie.kinopoisk_id || movie.id;
   let cdnMoviesIframeSrc = `https://ugly-turkey.cdnmovies-stream.online/kinopoisk/${targetKpId}/iframe`;
   const cdnParams = new URLSearchParams();
   if (isSeriesOrAnime) {
@@ -308,7 +311,10 @@ export default function WatchContent({ id }: WatchContentProps) {
     cdnMoviesIframeSrc += `?${cdnParams.toString()}`;
   }
 
-  const rawBaseUrl = movie.videoUrl || `https://tarantino.factorios.live/show/kinopoisk/${targetKpId}`;
+  let rawBaseUrl = movie.videoUrl;
+  if (!rawBaseUrl || rawBaseUrl.includes('null') || rawBaseUrl.includes('undefined')) {
+    rawBaseUrl = `https://tarantino.factorios.live/show/kinopoisk/${targetKpId}`;
+  }
   const baseUrl = rawBaseUrl.split('?')[0];
   const iframeParams = new URLSearchParams();
   if (isSeriesOrAnime) {
@@ -316,6 +322,8 @@ export default function WatchContent({ id }: WatchContentProps) {
     iframeParams.set('episode', String(activeEpisode));
   }
   if (translation) iframeParams.set('translation', translation);
+  iframeParams.set('no_controls', '1');
+  iframeParams.set('no_control', '1');
   iframeParams.set('no_control_translations', '1');
   iframeParams.set('no_control_seasons', '1');
   iframeParams.set('no_control_episodes', '1');
@@ -411,16 +419,20 @@ export default function WatchContent({ id }: WatchContentProps) {
     ? videoHubStreamUrl
     : (isDirectMediaFile ? candidateUrl : undefined);
 
+  const isFlixCdnPlayer =
+    selectedPlayerId === 'flixcdn' ||
+    Boolean(activePlayerObj?.iframeUrl && (activePlayerObj.iframeUrl.includes('tarantino') || activePlayerObj.iframeUrl.includes('flixcdn'))) ||
+    Boolean(movie.videoUrl && (movie.videoUrl.includes('tarantino') || movie.videoUrl.includes('flixcdn')));
+
   let activeIframeSrc = '';
   if (selectedPlayerId === 'collaps') {
     activeIframeSrc = collapsIframeSrc;
   } else if (selectedPlayerId === 'cdnmovies') {
     activeIframeSrc = cdnMoviesIframeSrc;
-  } else if (selectedPlayerId === 'flixcdn') {
-    activeIframeSrc = flixIframeSrc;
-  } else if (activePlayerObj?.iframeUrl) {
+  } else if (isFlixCdnPlayer || activePlayerObj?.iframeUrl) {
+    const rawUrl = activePlayerObj?.iframeUrl || flixIframeSrc;
     try {
-      const u = new URL(activePlayerObj.iframeUrl, typeof window !== 'undefined' ? window.location.origin : 'https://localhost');
+      const u = new URL(rawUrl, typeof window !== 'undefined' ? window.location.origin : 'https://localhost');
       if (isSeriesOrAnime || activeSeason > 1 || activeEpisode > 1) {
         u.searchParams.set('season', String(activeSeason));
         u.searchParams.set('episode', String(activeEpisode));
@@ -428,9 +440,21 @@ export default function WatchContent({ id }: WatchContentProps) {
       if (translation) {
         u.searchParams.set('translation', String(translation));
       }
+      if (isFlixCdnPlayer) {
+        u.searchParams.set('no_controls', '1');
+        u.searchParams.set('no_control', '1');
+        u.searchParams.set('no_control_translations', '1');
+        u.searchParams.set('no_control_seasons', '1');
+        u.searchParams.set('no_control_episodes', '1');
+        u.searchParams.set('no_sharing', '1');
+        u.searchParams.set('no_title', '1');
+        u.searchParams.set('no_header', '1');
+        u.searchParams.set('no_control_title', '1');
+        u.searchParams.set('no_back', '1');
+      }
       activeIframeSrc = u.toString();
     } catch (e) {
-      activeIframeSrc = activePlayerObj.iframeUrl;
+      activeIframeSrc = rawUrl;
     }
   }
 
