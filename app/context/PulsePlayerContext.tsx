@@ -313,7 +313,7 @@ export function PulsePlayerProvider({
   const prevArtwork = getTrackArtwork(prevTrackObj);
   const nextArtwork = getTrackArtwork(nextTrackObj);
   const hiddenByMessagesDialog = Boolean(
-    pathname?.startsWith('/messages') && isMobileDevice
+    pathname?.startsWith('/messages/') && isMobileDevice
   );
   const isCinema = Boolean(pathname?.startsWith('/cinema'));
   const effectivePlayerVisible = isMounted && !hiddenByMessagesDialog && !isCinema;
