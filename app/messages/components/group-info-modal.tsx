@@ -6,7 +6,8 @@ import AccountName from '../../components/account-name';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
-import { FALLBACK_AVATAR, IMGBB_API_KEY, normalizeAssetUrl } from '../lib/messages-shared';
+import { uploadImage } from '../../lib/upload';
+import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
 import { SITE_URL } from '../../config';
 
 interface GroupMember {
@@ -186,14 +187,7 @@ export default function GroupInfoModal({
     showNote({ content: lang?.uploading_avatar || 'Загрузка аватарки...', type: 'info', time: 3 });
 
     try {
-      const form = new FormData();
-      form.append('image', file);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-        method: 'POST',
-        body: form,
-      });
-      const data = await res.json();
-      const imageUrl = data?.data?.url;
+      const imageUrl = await uploadImage(file);
 
       if (!imageUrl) {
         throw new Error(lang?.error_uploading_photo || 'Ошибка загрузки фото');

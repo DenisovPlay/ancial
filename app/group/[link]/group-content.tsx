@@ -29,8 +29,8 @@ import { cache } from '../../lib/cache.ts';
 import {
   cn,
   SvgIcon,
-  uploadImageToImgbb,
 } from '../../feed/editor-shared';
+import { uploadImage } from '../../lib/upload';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
 
 type Id = string | number;
@@ -1014,7 +1014,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         time: 5,
       });
 
-      const uploadedUrl = await uploadImageToImgbb(file);
+      const uploadedUrl = await uploadImage(file);
 
       const response = (await AncialAPI.updateGroupInfo({
         gid: String(groupData.id),

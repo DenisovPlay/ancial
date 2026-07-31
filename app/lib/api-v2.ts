@@ -515,6 +515,14 @@ export class AncialAPI {
     return this.request<T>('/user/SecurityAction.php', { method: 'POST', body });
   }
 
+  static async verifyEmailCode(code: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/verification/Email.php?action=verify&code=${encodeURIComponent(code)}`);
+  }
+
+  static async sendEmailVerification(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/verification/Email.php?action=send');
+  }
+
   static async disconnectTelegram(): Promise<{ message: string }> {
     return this.request<{ message: string }>('/oauth/Telegram.php?action=disconnect', { method: 'POST' });
   }

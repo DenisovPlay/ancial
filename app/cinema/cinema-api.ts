@@ -2,12 +2,30 @@
 
 import { Movie, PlayerOption } from './types';
 import { CacheManager } from '../lib/cache';
+import { CINEMA_IMAGE_PROXY_BASE } from '../config';
 
 const API_BASE = '/api/V2/cinema';
 const CINEMA_CACHE_TTL = 3600; // 1 hour TTL
 
-export function getOptimizedImageUrl(url: string | undefined, sizeModifier: string = '@w300'): string {
-  if (!url) return '/img/branding/frame.svg';
+export function getOptimizedImageUrl(
+  url: string | undefined,
+  sizeModifier: string = '@w300',
+  kpId?: string | number
+): string {
+  if (!url) {
+    if (kpId && /^\d+$/.test(String(kpId))) {
+      return `https://st.kp.yandex.net/images/film_big/${kpId}.jpg`;
+    }
+    return '/img/branding/frame.svg';
+  }
+  if (
+    url.includes('factorios.live') ||
+    url.includes('picasso.') ||
+    url.includes('tarantino.')
+  ) {
+    const kpParam = kpId ? `&kpId=${encodeURIComponent(String(kpId))}` : '';
+    return `${CINEMA_IMAGE_PROXY_BASE}?url=${encodeURIComponent(url)}${kpParam}`;
+  }
   if (url.includes('cdnhubstream.pro') && !url.includes('@')) {
     return `${url}${sizeModifier}`;
   }

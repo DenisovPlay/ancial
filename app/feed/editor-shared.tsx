@@ -10,8 +10,9 @@ type Sticker = {
   src: string;
 };
 
-export const IMGBB_UPLOAD_URL =
-  'https://api.imgbb.com/1/upload?key=595c8d872da11fdaa5225badc67cc6e6';
+import { uploadImage } from '../lib/upload';
+
+export { uploadImage };
 export const MAX_IMAGES = 3;
 
 export const STICKERS: Sticker[] = [
@@ -126,30 +127,4 @@ export function safeRevokeObjectUrl(url: string | null | undefined) {
   URL.revokeObjectURL(url);
 }
 
-export async function uploadImageToImgbb(file: File) {
-  const formData = new FormData();
-  formData.append('image', file);
 
-  const response = await fetch(IMGBB_UPLOAD_URL, {
-    body: formData,
-    method: 'POST',
-  });
-
-  if (!response.ok) {
-    throw new Error(`Upload failed with status ${response.status}`);
-  }
-
-  const data = (await response.json()) as {
-    data?: {
-      url?: string;
-    };
-  };
-
-  const uploadedUrl = data.data?.url;
-
-  if (!uploadedUrl) {
-    throw new Error('Missing uploaded image url');
-  }
-
-  return uploadedUrl;
-}

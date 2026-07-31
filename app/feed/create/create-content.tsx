@@ -19,7 +19,7 @@ import {
   decodeHtmlEntities,
   makeId,
   safeRevokeObjectUrl,
-  uploadImageToImgbb,
+  uploadImage,
 } from '../editor-shared';
 
 type AvailableAuthor = {
@@ -327,7 +327,7 @@ export default function CreatePostContent() {
     });
 
     try {
-      const uploadedUrl = await uploadImageToImgbb(file);
+      const uploadedUrl = await uploadImage(file);
 
       setImages((currentImages) =>
         currentImages.map((currentImage) =>

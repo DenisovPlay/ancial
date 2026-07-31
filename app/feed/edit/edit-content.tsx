@@ -22,7 +22,7 @@ import {
   decodeHtmlToTextareaValue,
   makeId,
   safeRevokeObjectUrl,
-  uploadImageToImgbb,
+  uploadImage,
 } from '../editor-shared';
 
 
@@ -416,7 +416,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     });
 
     try {
-      const uploadedUrl = await uploadImageToImgbb(file);
+      const uploadedUrl = await uploadImage(file);
 
       setImages((currentImages) =>
         currentImages.map((currentImage) =>

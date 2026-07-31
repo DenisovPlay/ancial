@@ -21,6 +21,7 @@ import { usePulsePlayer } from '../context/PulsePlayerContext';
 import AccountName from '../components/account-name';
 import ImageViewerModal from '../components/image-viewer-modal';
 import { AncialAPI } from '../lib/api-v2';
+import { uploadImage } from '../lib/upload';
 import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
 import CreateGroupModal from './components/create-group-modal';
@@ -62,7 +63,6 @@ import {
   formatDialogPreview,
   hasMeaningfulValue,
   Icon,
-  IMGBB_API_KEY,
   isOnline,
   isRealMessageId,
   mapDialogListItemToUser,
@@ -1714,29 +1714,6 @@ export default function MessagesContent() {
     }
   };
 
-  const uploadToImgbb = async (file: File) => {
-    const form = new FormData();
-    form.append('image', file);
-
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-      body: form,
-      method: 'POST',
-    });
-
-    const result = (await response.json()) as {
-      data?: {
-        url?: string;
-      };
-    };
-
-    const imageUrl = normalizeText(result.data?.url);
-    if (!imageUrl) {
-      throw new Error('Upload failed');
-    }
-
-    return imageUrl;
-  };
-
   const handleMessageImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     const dialogId = currentDialogIdRef.current;
@@ -1752,7 +1729,7 @@ export default function MessagesContent() {
     let tempId: number | null = null;
 
     try {
-      const imageUrl = await uploadToImgbb(file);
+      const imageUrl = await uploadImage(file);
       tempId = Date.now();
       const currentReplyingTo = replyingTo;
       const imgHtml = `<img src="${imageUrl}" data-src="${imageUrl}" data-type="image" data-fancybox="images" class="max-h-48 lg:max-h-64 shrink-0 cursor-pointer duration-300 active:scale-95 overflow rounded-lg">`;
@@ -1834,7 +1811,7 @@ export default function MessagesContent() {
     });
 
     try {
-      const imageUrl = await uploadToImgbb(file);
+      const imageUrl = await uploadImage(file);
 
       const result = await AncialAPI.updateDialogBackground<{ success?: boolean; error?: string }>(dialogId, imageUrl);
       const isSuccess = (result as any).success !== false;

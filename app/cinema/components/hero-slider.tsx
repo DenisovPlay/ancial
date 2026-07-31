@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { Movie } from '../types';
 import { goToMovieInfo } from '../cinema-navigation';
+import { getOptimizedImageUrl } from '../cinema-api';
 
 interface HeroSliderProps {
   heroMovies?: Movie[];
@@ -68,7 +69,7 @@ export default function HeroSlider({ heroMovies = [], myListIds = [], onToggleLi
                 ) : (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={hero.backdropUrl || hero.posterUrl}
+                    src={getOptimizedImageUrl(hero.backdropUrl || hero.posterUrl, '@w700', hero.id)}
                     alt={hero.title}
                     referrerPolicy="no-referrer"
                     onError={(e) => {

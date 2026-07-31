@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
+import { uploadImage } from '../lib/upload';
 import { type PulsePlaylistMeta } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { PulseModal, PulseModalField } from './pulse-modal';
@@ -13,18 +14,9 @@ import {
   normalizeText,
 } from './pulse-components';
 
-const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload?key=595c8d872da11fdaa5225badc67cc6e6';
-
 async function uploadPlaylistCover(file: File) {
-  const formData = new FormData();
-  formData.append('image', file);
-
-  const response = await fetch(IMGBB_UPLOAD_URL, {
-    body: formData,
-    method: 'POST',
-  });
-  const result = await response.json() as { data?: { url?: string } };
-  return normalizeText(result.data?.url);
+  const url = await uploadImage(file);
+  return normalizeText(url);
 }
 
 type PulsePlaylistEditorModalProps = {

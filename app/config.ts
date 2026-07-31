@@ -15,3 +15,6 @@ export const SITE_DOMAIN = 'zypo.cc';
 
 /** Внешний сервис текстов песен (Pulse) */
 export const PULSE_LYRICS_BASE = 'https://lyrics.pulse.zypo.cc';
+
+/** Внешний прокси/кэш изображений Cinema (отдельный VPS / Нидерланды / PHP v2 API) */
+export const CINEMA_IMAGE_PROXY_BASE = 'https://ancial-backend.ru.zeniflow.ru/api/V2/cinema/image-proxy.php';

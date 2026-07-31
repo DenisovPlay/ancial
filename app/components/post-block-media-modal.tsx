@@ -2,8 +2,8 @@
 
 import React, { useRef, useState } from 'react';
 import Modal from './modal';
-import { SvgIcon } from '../feed/editor-shared';
-import { uploadImageToImgbb, makeId, safeRevokeObjectUrl } from '../feed/editor-shared';
+import { SvgIcon, makeId, safeRevokeObjectUrl } from '../feed/editor-shared';
+import { uploadImage } from '../lib/upload';
 
 type MediaMode = 'carousel' | 'collage';
 
@@ -91,7 +91,7 @@ export default function PostBlockMediaModal({
       filesToProcess.map(async (file, i) => {
         const draft = drafts[i];
         try {
-          const uploadedUrl = await uploadImageToImgbb(file);
+          const uploadedUrl = await uploadImage(file);
           setImages((prev) =>
             prev.map((img) =>
               img.id === draft.id ? { ...img, status: 'uploaded', uploadedUrl } : img,

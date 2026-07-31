@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
+import { uploadImage } from '../lib/upload';
 import {
   getPulseTrackEditInitialState,
   getPulseTrackUploadPayload,
@@ -56,7 +57,6 @@ declare global {
   }
 }
 
-const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload?key=595c8d872da11fdaa5225badc67cc6e6';
 const MEDIA_TAGS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js';
 
 let mediaTagsPromise: Promise<JsMediaTags | null> | null = null;
@@ -91,15 +91,8 @@ async function readAudioTags(file: File) {
 }
 
 async function uploadImageBlob(blob: Blob) {
-  const formData = new FormData();
-  formData.append('image', blob, 'cover.jpg');
-
-  const response = await fetch(IMGBB_UPLOAD_URL, {
-    body: formData,
-    method: 'POST',
-  });
-  const result = await response.json() as { data?: { url?: string } };
-  return normalizeText(result.data?.url);
+  const url = await uploadImage(blob, 'cover.jpg');
+  return normalizeText(url);
 }
 
 async function uploadAudioFile(file: File) {

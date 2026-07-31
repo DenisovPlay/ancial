@@ -32,8 +32,8 @@ import { cache } from '../../lib/cache.ts';
 import {
   cn,
   SvgIcon,
-  uploadImageToImgbb,
 } from '../../feed/editor-shared';
+import { uploadImage } from '../../lib/upload';
 import AccountName from '../../components/account-name';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
 
@@ -926,7 +926,7 @@ export default function UserProfileContent({ login }: { login: string }) {
         time: 5,
       });
 
-      const uploadedUrl = await uploadImageToImgbb(file);
+      const uploadedUrl = await uploadImage(file);
 
       const response = await AncialAPI.updateProfileMedia<{ message?: string }>(field, uploadedUrl);
       const message = response.message || strings.successProfileUpdate;

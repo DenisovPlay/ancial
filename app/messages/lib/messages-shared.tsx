@@ -171,7 +171,6 @@ export const DIALOGS_CACHE_KEY = 'dialogs-cache';
 export const DIALOGS_REFRESH_INTERVAL_MS = 20_000;
 export const MESSAGE_PAGE_SIZE = 30;
 export const MESSAGE_CACHE_LIMIT = 2000;
-export const IMGBB_API_KEY = '595c8d872da11fdaa5225badc67cc6e6';
 export const FALLBACK_AVATAR = '/includes/img/new_user.png';
 export const FALLBACK_WELCOME_IMAGE = '/includes/img/anlite/chats.png';
 export const NOTHING_FOUND_IMAGE = '/img/status/nothingfound.webp';

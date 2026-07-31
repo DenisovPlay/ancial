@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { AncialAPI } from '../../../lib/api-v2';
+import { uploadImage } from '../../../lib/upload';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -67,18 +68,11 @@ export default function PulseCreateEditArtistPage() {
     blobUrlRef.current = tempUrl;
     setImg(tempUrl);
 
-    const formData = new FormData();
-    formData.append('image', file);
-
-    fetch('https://api.imgbb.com/1/upload?key=595c8d872da11fdaa5225badc67cc6e6', {
-      method: 'POST',
-      body: formData
-    })
-      .then(res => res.json())
-      .then(res => {
-        if (res?.data?.url) {
+    uploadImage(file)
+      .then((uploadedUrl) => {
+        if (uploadedUrl) {
           cleanupBlobUrl();
-          setImg(res.data.url);
+          setImg(uploadedUrl);
         }
       })
       .catch(console.error);

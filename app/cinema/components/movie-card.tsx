@@ -19,7 +19,7 @@ export default function MovieCard({
   onClick,
   onPlay,
 }: MovieCardProps) {
-  const posterSrc = getOptimizedImageUrl(movie.posterUrl, '@w300');
+  const posterSrc = getOptimizedImageUrl(movie.posterUrl, '@w300', movie.id);
   let updateBadgeText: string | null = null;
   if (movie.updateBadge) {
     if (movie.updateBadge.translationTitle === 'Новые серии') {

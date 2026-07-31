@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Movie, Episode } from '../types';
+import { getOptimizedImageUrl } from '../cinema-api';
 
 interface VideoPlayerModalProps {
   playingData: {
@@ -98,7 +99,7 @@ export default function VideoPlayerModal({ playingData, onClose }: VideoPlayerMo
           <div className="relative w-full h-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={playingData.movie.backdropUrl}
+              src={getOptimizedImageUrl(playingData.movie.backdropUrl, '@w700', playingData.movie.id)}
               alt={playingData.movie.title}
               className="w-full h-full object-cover filter brightness-50"
             />

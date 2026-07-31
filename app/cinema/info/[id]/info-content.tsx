@@ -390,7 +390,7 @@ export default function InfoContent({ id }: InfoContentProps) {
       <div data-hero-section className="relative w-full h-[65vh] overflow-hidden -mt-24">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={infoMovie.backdropUrl || infoMovie.posterUrl}
+          src={getOptimizedImageUrl(infoMovie.backdropUrl || infoMovie.posterUrl, '@w700', infoMovie.id)}
           alt={infoMovie.title}
           referrerPolicy="no-referrer"
           onError={(e) => {

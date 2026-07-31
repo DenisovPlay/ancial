@@ -6,6 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter } from 'next/navigation';
 import { AncialAPI } from '../../../lib/api-v2';
+import { uploadImage } from '../../../lib/upload';
 
 const MEDIA_TAGS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js';
 
@@ -55,16 +56,9 @@ export default function PulseCreateUploadPage() {
     const tempUrl = URL.createObjectURL(file);
     setImg(tempUrl);
 
-    const formData = new FormData();
-    formData.append('image', file);
-
-    fetch('https://api.imgbb.com/1/upload?key=595c8d872da11fdaa5225badc67cc6e6', {
-      method: 'POST',
-      body: formData
-    })
-      .then(res => res.json())
-      .then(res => {
-        if (res?.data?.url) setImg(res.data.url);
+    uploadImage(file)
+      .then((uploadedUrl) => {
+        if (uploadedUrl) setImg(uploadedUrl);
       })
       .catch(console.error);
   };
