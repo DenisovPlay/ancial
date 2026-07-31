@@ -11,6 +11,7 @@ import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
+import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -44,6 +45,16 @@ type PulseTrackPageTrack = {
 type PulseTrackPageResponse = {
   is_liked?: boolean;
   track?: PulseTrackPageTrack | null;
+};
+
+type TrackShareAttachment = {
+  preview: {
+    authorImg: string;
+    authorName: string;
+    contentSnippet: string;
+    firstImage?: string;
+  };
+  widgets: Array<Record<string, unknown>>;
 };
 
 function getBlockedCountries(blockedIn: PulseTrackPageTrack['blockedin']) {
@@ -85,15 +96,10 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   });
   const [isSimilarLoading, setIsSimilarLoading] = useState(!similarTracks);
 
-  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => {
-    const cachedFavoriteIds = cache.get<number[]>('pulse_fav_ids', { category: 'pulse' });
-    return Array.isArray(cachedFavoriteIds)
-      ? cachedFavoriteIds.map((id) => toNumber(id)).filter(Boolean)
-      : [];
-  });
+  const { favoriteIds, getFavoriteIdsSnapshot, updateFavoriteIds } = usePulseFavoriteIds();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
-  const [shareAttachment, setShareAttachment] = useState<any>(null);
+  const [shareAttachment, setShareAttachment] = useState<TrackShareAttachment | null>(null);
 
   const userCountry = useMemo(() => {
     const nextCountry = normalizeText(
@@ -118,12 +124,18 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
 
   useEffect(() => {
     let cancelled = false;
+    const favoriteIdsSnapshot = getFavoriteIdsSnapshot();
 
     void AncialAPI.pulseGetTrack<PulseTrackPageResponse>(trackId)
       .then((result) => {
         if (cancelled) return;
         setTrack(result.track ?? null);
-        setIsLiked(Boolean(result.is_liked));
+        const currentFavoriteIdsSnapshot = getFavoriteIdsSnapshot();
+        setIsLiked(
+          favoriteIdsSnapshot.revision === currentFavoriteIdsSnapshot.revision
+            ? Boolean(result.is_liked)
+            : currentFavoriteIdsSnapshot.ids.includes(toNumber(result.track?.id ?? trackId)),
+        );
       })
       .catch(() => {
         // При ошибке сети (офлайн) сохраняем загруженные/кэшированные данные
@@ -148,7 +160,20 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
     return () => {
       cancelled = true;
     };
-  }, [trackId]);
+  }, [getFavoriteIdsSnapshot, trackId]);
+
+  useEffect(() => {
+    if (!trackNumericId) return undefined;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setIsLiked(favoriteIds.includes(trackNumericId));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [favoriteIds, trackNumericId]);
 
   const handleSearchSubmit = useCallback((event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -168,12 +193,14 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
       const result = response.message || '';
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
+        updateFavoriteIds((ids) => ids.includes(trackNumericId) ? ids : [...ids, trackNumericId]);
         setIsLiked(true);
         showPulseNote(result === 'CREATED_ADDED' ? (lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!') : (lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!'), 'success');
         return;
       }
 
       if (result === 'REMOVED') {
+        updateFavoriteIds((ids) => ids.filter((id) => id !== trackNumericId));
         setIsLiked(false);
         showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
         return;
@@ -183,7 +210,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang, showPulseNote, trackNumericId]);
+  }, [isAuthenticated, lang, showPulseNote, trackNumericId, updateFavoriteIds]);
 
   const addToPlaylist = useCallback(() => {
     if (!isAuthenticated) {

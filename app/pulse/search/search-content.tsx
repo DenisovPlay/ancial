@@ -13,6 +13,7 @@ import { SITE_CONFIG } from '../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../pulse-upload-track-modal';
 import { PulseHeader } from '../pulse-header';
 import { readPulseJsonCache, writePulseJsonCache } from '../pulse-cache';
+import { usePulseFavoriteIds } from '../player/use-pulse-favorite-ids';
 import {
   ActionIcon,
   getPulseBackgroundColorByMood,
@@ -76,9 +77,7 @@ export default function PulseSearchContent() {
   } = usePulsePlayer();
 
   const [artists, setArtists] = useState<PulseArtistCardData[]>([]);
-  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => (
-    (readPulseJsonCache<number[]>(FAVORITES_CACHE_KEY) ?? []).map((id) => toNumber(id)).filter(Boolean)
-  ));
+  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -142,8 +141,7 @@ export default function PulseSearchContent() {
         const nextIds = Array.isArray(favoritesResult.value.ids)
           ? favoritesResult.value.ids.map((id) => toNumber(id)).filter(Boolean)
           : [];
-        writePulseJsonCache(FAVORITES_CACHE_KEY, nextIds);
-        setFavoriteIds(nextIds);
+        replaceFavoriteIds(nextIds);
       }
 
       if (searchResult.status === 'fulfilled') {
@@ -200,21 +198,13 @@ export default function PulseSearchContent() {
       const result = response.message || '';
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
-        setFavoriteIds((ids) => {
-          const nextIds = ids.includes(trackId) ? ids : [...ids, trackId];
-          writePulseJsonCache(FAVORITES_CACHE_KEY, nextIds);
-          return nextIds;
-        });
+        updateFavoriteIds((ids) => ids.includes(trackId) ? ids : [...ids, trackId]);
         showPulseNote(result === 'CREATED_ADDED' ? (lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!') : (lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!'), 'success');
         return;
       }
 
       if (result === 'REMOVED') {
-        setFavoriteIds((ids) => {
-          const nextIds = ids.filter((id) => id !== trackId);
-          writePulseJsonCache(FAVORITES_CACHE_KEY, nextIds);
-          return nextIds;
-        });
+        updateFavoriteIds((ids) => ids.filter((id) => id !== trackId));
         showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
         return;
       }
@@ -223,7 +213,7 @@ export default function PulseSearchContent() {
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang, showPulseNote]);
+  }, [isAuthenticated, lang, showPulseNote, updateFavoriteIds]);
 
   const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
     const resolvedTrackId = toNumber(trackId);

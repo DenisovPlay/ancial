@@ -4,6 +4,7 @@ import Link from 'next/link';
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { AncialAPI } from '../lib/api-v2';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function cn(...classes: Array<string | false | null | undefined>) {
@@ -365,8 +366,8 @@ export default function Navigation() {
     const fetchUnreadCounts = async () => {
       try {
         const [resMsgs, resNotifs] = await Promise.all([
-          fetch('/api/V2/messages/GetDialogList.php').then(r => r.json()).catch(() => null),
-          fetch('/api/V2/user/Notifications.php').then(r => r.json()).catch(() => null),
+          AncialAPI.getDialogListResponse<any>().catch(() => null),
+          AncialAPI.getNotificationsResponse<any>().catch(() => null),
         ]);
 
         if (resMsgs?.success) {

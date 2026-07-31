@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
-import { cache } from '../lib/cache.ts';
+import { AncialAPI } from '../lib/api-v2';
+import { setAuthToken } from '../lib/cache-helpers';
 
 export default function SignupContent() {
   const [login, setLogin] = useState('');
@@ -36,53 +37,28 @@ export default function SignupContent() {
     setIsLoading(true);
 
     try {
-      const params = new URLSearchParams();
-      params.append('do_signup', 'True');
-      params.append('login', login);
-      params.append('email', email);
-      params.append('fname', fname);
-      params.append('lname', lname);
-      params.append('phone', phone);
-      params.append('password', password);
-      params.append('password_2', password_2);
-
-      const res = await fetch(`/api/V2/auth/SignUp.php`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString(),
+      const result = await AncialAPI.signupResponse({
+        login,
+        email,
+        fname,
+        lname,
+        phone,
+        password,
+        password_2,
       });
 
-      const data = await res.json();
-
-      if (!data.success) {
-        setError(data.error || (lang?.signup_error || 'Ошибка регистрации'));
+      if (!result.success) {
+        setError(result.error || (lang?.signup_error || 'Ошибка регистрации'));
         setIsLoading(false);
         return;
       }
 
-      const loginParams = new URLSearchParams();
-      loginParams.append('do_login', 'True');
-      loginParams.append('login', login);
-      loginParams.append('password', password);
+      const loginResult = await AncialAPI.loginResponse<{ token?: string }>({ login, password });
 
-      const loginRes = await fetch(`/api/V2/auth/Login.php`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: loginParams.toString(),
-      });
-
-      const loginData = await loginRes.json();
-
-      if (!loginData.success) {
+      if (!loginResult.success) {
         router.push('/login');
       } else {
-        cache.set('token', loginData.data?.token || '', { category: 'profile' });
+        setAuthToken(loginResult.data?.token || '');
         await checkAuth();
         router.push('/');
       }

@@ -7,19 +7,58 @@ import React, {
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
-import { PULSE_LYRICS_BASE } from '../config';
 import { cache } from '../lib/cache.ts';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse/pulse-image';
 import PulsePlaylistEditorModal from '../pulse/pulse-playlist-editor-modal';
 import { PulseModal } from '../pulse/pulse-modal';
+import { PulseEqualizerModal } from '../pulse/player/pulse-equalizer-modal';
+import { shouldDisableWebAudioForDevice, useEqualizer } from '../pulse/player/use-equalizer';
+import { usePulseFavorites } from '../pulse/player/use-pulse-favorites';
+import { useAddToPlaylist } from '../pulse/player/use-add-to-playlist';
+import { loadPulseLyrics } from '../pulse/player/lyrics-service';
+import { useOfflineAudioSave } from '../pulse/player/use-offline-audio-save';
+import { useVisualAudioProgress } from '../pulse/player/use-visual-audio-progress';
+import { PulsePlayerFullArtwork } from '../pulse/player/pulse-player-full-artwork';
+import { PulsePlayerFullControls } from '../pulse/player/pulse-player-full-controls';
+import { PulsePlayerFullHeader } from '../pulse/player/pulse-player-full-header';
+import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
+import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
+import {
+  getCachedAudioObjectUrl,
+  getDownloadedAudioTracks,
+  mapDownloadedAudioToTracks,
+  releaseObjectUrl,
+} from '../pulse/player/offline-audio';
 import { Dropdown, DropdownItem } from '../components/navigation';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
+import {
+  getActiveLyricState,
+  PulseLyricsDesktop,
+  PulseLyricsMobile,
+  splitLyricText,
+  type PulseLyricsLine,
+} from '../pulse/player/pulse-lyrics';
+
+import {
+  buildMediaArtwork,
+  clamp,
+  cn,
+  formatPlaybackTime,
+  getTrackArtist,
+  getTrackArtwork,
+  getTrackDisplayTitle,
+  isTrackPlayable,
+  normalizeSongIds,
+  normalizeText,
+  normalizeTrackSource,
+  parsePlaylistSongs,
+  toNumber,
+} from '../pulse/player/player-utils';
 
 type LangMap = Record<string, string> | null;
 
@@ -48,11 +87,6 @@ type PulseCollectionKind = 'artist' | 'downloads' | 'genlist' | 'playlist' | 'tr
 /** Идентификатор виртуальной коллекции «Сохранённые» (треки из IndexedDB) */
 export const DOWNLOADS_COLLECTION_ID = 'downloads';
 
-type PulseLyricsLine = {
-  text: string;
-  time: number;
-};
-
 type PulsePlayerMode = 'full' | 'mini';
 
 type PulsePlayerState = {
@@ -61,21 +95,6 @@ type PulsePlayerState = {
   listenCounted: boolean;
   listenedCounted: boolean;
   playlistId: string;
-};
-
-type PulsePlaylistManageItem = {
-  id?: number | string | null;
-  img?: string | null;
-  name?: string | null;
-  songs?: string | null;
-};
-
-type PulsePlaylistOption = {
-  hasSong: boolean;
-  id: string;
-  image: string;
-  name: string;
-  songs: number[];
 };
 
 type PulsePlayerContextValue = {
@@ -171,203 +190,12 @@ type SyncTrackProgressOptions = {
   forceProgressUpdate?: boolean;
 };
 
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
-
-function toNumber(value: number | string | null | undefined) {
-  const nextValue = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(nextValue) ? nextValue : 0;
-}
-
-function normalizeText(value: string | null | undefined) {
-  return String(value ?? '').trim();
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function formatPlaybackTime(value: number) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return '00:00';
-  }
-
-  const totalSeconds = Math.floor(value);
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-  const seconds = String(totalSeconds % 60).padStart(2, '0');
-  return `${minutes}:${seconds}`;
-}
-
-function getTrackDisplayTitle(track: PulseTrack | null, lang: LangMap) {
-  if (!track) return lang?.pulse_loading_dots || 'Загрузка';
-
-  const title = normalizeText(track.title) || (lang?.pulse_unknown_track || 'Неизвестный трек');
-  return String(track.explicit) === '1' || track.explicit === true ? `${title} \u{1F174}` : title;
-}
-
-function getTrackArtist(track: PulseTrack | null, lang: LangMap) {
-  if (!track) return 'Pulse';
-  return normalizeText(track.artist) || (lang?.pulse_unknown_artist || 'Неизвестный исполнитель');
-}
-
-function getTrackArtwork(track: PulseTrack | null) {
-  const artwork = Array.isArray(track?.artwork) ? track?.artwork : [];
-  const nextArtwork = artwork.find((item) => normalizeText(item?.src));
-  return normalizeText(nextArtwork?.src) || FALLBACK_TRACK_IMAGE;
-}
-
-function normalizeTrackSource(trackSource: string | null | undefined) {
-  return normalizeText(trackSource) || '';
-}
-
-function isTrackPlayable(track: PulseTrack | null, userCountry: string) {
-  if (!track) return false;
-  if (String(track.status ?? '0') !== '1') return false;
-
-  const blockedValue = track.blockedin;
-  if (Array.isArray(blockedValue)) {
-    return !blockedValue.includes(userCountry);
-  }
-
-  const blockedCountries = normalizeText(String(blockedValue ?? ''));
-  return blockedCountries ? !blockedCountries.includes(userCountry) : true;
-}
-
-function isAndroidBrowser() {
-  if (typeof navigator === 'undefined') return false;
-  return /Android/i.test(navigator.userAgent);
-}
-
-function readInitialLikedSongIds(): number[] {
-  try {
-    const cached = cache.get<number[]>('pulse_fav_ids', { category: 'pulse' });
-    if (Array.isArray(cached) && cached.length > 0) {
-      return cached.map((id) => toNumber(id)).filter(Boolean);
-    }
-    if (typeof window !== 'undefined' && Array.isArray((window as Window & { _pulseLikedSongs?: unknown[] })._pulseLikedSongs)) {
-      return ((window as Window & { _pulseLikedSongs?: unknown[] })._pulseLikedSongs || []).map((id) => toNumber(id)).filter(Boolean);
-    }
-  } catch { }
-  return [];
-}
-
-function buildMediaArtwork(track: PulseTrack | null) {
-  // On Android, Chrome's PlaybackListenerService crashes with
-  // "cannot use a recycled source in createBitmap" when artwork URLs are set.
-  // Chrome asynchronously downloads the bitmap and a race condition causes it
-  // to be recycled before the notification draws — this is an internal Chrome bug.
-  // Returning an empty array prevents any bitmap creation and eliminates the crash.
-  if (isAndroidBrowser()) return [];
-
-  const trackImage = getTrackArtwork(track);
-  const artwork = Array.isArray(track?.artwork) ? track.artwork : [];
-  const validArtwork = artwork.filter((item) => normalizeText(item?.src));
-
-  if (validArtwork.length && validArtwork[0]?.sizes) {
-    return validArtwork.map((item) => ({
-      sizes: normalizeText(item.sizes),
-      src: normalizeText(item.src),
-      type: normalizeText(item.type) || 'image/png',
-    }));
-  }
-
-  return [
-    { src: trackImage, sizes: '96x96', type: 'image/png' },
-    { src: trackImage, sizes: '128x128', type: 'image/png' },
-    { src: trackImage, sizes: '192x192', type: 'image/png' },
-    { src: trackImage, sizes: '256x256', type: 'image/png' },
-    { src: trackImage, sizes: '384x384', type: 'image/png' },
-    { src: trackImage, sizes: '512x512', type: 'image/png' },
-  ];
-}
-
-
 function readSavedVolume() {
   if (typeof window === 'undefined') return 0.7;
 
   const savedVolume = Number.parseFloat(cache.get<string>('pulse-volume') || '');
   if (!Number.isFinite(savedVolume)) return 0.7;
   return clamp(savedVolume, 0, 1);
-}
-
-function parseLyricsText(value: string) {
-  const lines: PulseLyricsLine[] = [];
-  const rawLines = value.split(/\r\n|\n/);
-  const lyricPattern = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
-
-  rawLines.forEach((line) => {
-    const match = line.match(lyricPattern);
-    if (!match) return;
-
-    const time = Number.parseInt(match[1], 10) * 60 + Number.parseFloat(match[2]);
-    const text = normalizeText(match[3]);
-    if (!text) return;
-
-    lines.push({ text, time });
-  });
-
-  lines.sort((left, right) => left.time - right.time);
-
-  if (lines.length > 0 && lines[0].time > 0.5) {
-    lines.unshift({ text: '♪', time: 0 });
-  }
-
-  return lines;
-}
-
-function getActiveLyricState(lines: PulseLyricsLine[], currentTime: number) {
-  let activeIndex = -1;
-
-  for (let index = 0; index < lines.length; index += 1) {
-    if (lines[index].time <= currentTime + 0.2) {
-      activeIndex = index;
-      continue;
-    }
-    break;
-  }
-
-  if (activeIndex === -1) {
-    return {
-      activeIndex: -1,
-      progress: 0,
-    };
-  }
-
-  const currentLine = lines[activeIndex];
-  const nextLine = lines[activeIndex + 1];
-  const duration = Math.max(0.1, (nextLine?.time ?? currentLine.time + 4) - currentLine.time - 0.5);
-  const progress = clamp((currentTime - currentLine.time) / duration, 0, 1);
-
-  return {
-    activeIndex,
-    progress,
-  };
-}
-
-function splitLyricText(text: string) {
-  let backText = '';
-  const mainText = text.replace(/\(([^)]*)\)/g, (_, value: string) => {
-    backText += `${value} `;
-    return '';
-  }).trim();
-
-  return {
-    backText: normalizeText(backText),
-    mainText: normalizeText(mainText) || '♪',
-  };
-}
-
-function normalizeSongIds(value: unknown) {
-  if (!Array.isArray(value)) return [];
-  return value.map((item) => toNumber(item as number | string | null | undefined)).filter(Boolean);
-}
-
-function parsePlaylistSongs(value: string | null | undefined) {
-  return String(value ?? '')
-    .split('|')
-    .map((item) => toNumber(item))
-    .filter(Boolean);
 }
 
 function PlayerIcon({
@@ -383,468 +211,6 @@ function PlayerIcon({
     </svg>
   );
 }
-
-function renderLyricWords(text: string, progress: number, isActive: boolean) {
-  const words = text.split(' ').filter(Boolean);
-  if (!words.length) {
-    return <span>{text}</span>;
-  }
-
-  const currentWordProgress = progress * words.length;
-
-  return words.map((word, wordIndex) => {
-    let fill = 0;
-
-    if (isActive) {
-      if (wordIndex < currentWordProgress - 1) {
-        fill = 100;
-      } else if (wordIndex > currentWordProgress) {
-        fill = 0;
-      } else {
-        fill = clamp((currentWordProgress - wordIndex) * 100, 0, 100);
-      }
-    }
-
-    const isCurrentWordFill = isActive && fill > 0 && fill < 100;
-    const style = isActive
-      ? ({
-        transition: isCurrentWordFill ? `--pulse-lyric-fill ${PLAYER_LYRIC_FILL_TRANSITION_MS}ms linear` : 'none',
-        '--pulse-lyric-fill': `${fill}%`,
-        backgroundImage: 'linear-gradient(90deg, #ffffff var(--pulse-lyric-fill), rgba(255,255,255,0.4) var(--pulse-lyric-fill))',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        color: 'transparent',
-      } as CSSProperties)
-      : undefined;
-
-    return (
-      <React.Fragment key={`${word}:${wordIndex}`}>
-        <span style={style}>{word}</span>
-        {wordIndex < words.length - 1 ? ' ' : null}
-      </React.Fragment>
-    );
-  });
-}
-
-type PulseMobileLyricEntry = {
-  activeIndex: number;
-  backText: string;
-  key: number;
-  mainText: string;
-  progress: number;
-};
-
-function PulseLyricsMobile({
-  activeIndex,
-  lyric,
-  progress,
-  source,
-}: {
-  activeIndex: number;
-  lyric: ReturnType<typeof splitLyricText> | null;
-  progress: number;
-  source: string;
-}) {
-  const [displayEntry, setDisplayEntry] = useState<PulseMobileLyricEntry | null>(null);
-  const [outgoingEntry, setOutgoingEntry] = useState<PulseMobileLyricEntry | null>(null);
-  const [displayPhase, setDisplayPhase] = useState<'enter' | 'exit' | 'idle'>('idle');
-  const animationFrameRef = useRef<number | null>(null);
-  const displayedEntryRef = useRef<PulseMobileLyricEntry | null>(null);
-  const enterTimerRef = useRef<number | null>(null);
-  const exitTimerRef = useRef<number | null>(null);
-  const latestEntryRef = useRef<PulseMobileLyricEntry | null>(null);
-  const motionKeyRef = useRef(0);
-
-  const mainText = lyric?.mainText || '♪';
-  const backText = lyric?.backText || '';
-
-  useEffect(() => {
-    latestEntryRef.current = activeIndex >= 0
-      ? {
-        activeIndex,
-        backText,
-        key: motionKeyRef.current,
-        mainText,
-        progress,
-      }
-      : null;
-  }, [activeIndex, backText, mainText, progress]);
-
-  useEffect(() => {
-    if (!displayedEntryRef.current || displayedEntryRef.current.activeIndex !== activeIndex) {
-      return;
-    }
-
-    displayedEntryRef.current = {
-      ...displayedEntryRef.current,
-      backText,
-      mainText,
-      progress,
-    };
-  }, [activeIndex, backText, mainText, progress]);
-
-  useEffect(() => {
-    const clearPendingAnimations = () => {
-      if (animationFrameRef.current !== null) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      if (exitTimerRef.current !== null) {
-        window.clearTimeout(exitTimerRef.current);
-        exitTimerRef.current = null;
-      }
-      if (enterTimerRef.current !== null) {
-        window.clearTimeout(enterTimerRef.current);
-        enterTimerRef.current = null;
-      }
-    };
-
-    const queueStateSync = (callback: () => void) => {
-      clearPendingAnimations();
-      animationFrameRef.current = window.requestAnimationFrame(() => {
-        animationFrameRef.current = null;
-        callback();
-      });
-    };
-
-    const nextEntry = latestEntryRef.current;
-    const previousEntry = displayedEntryRef.current;
-    const lineChanged = !!nextEntry && (
-      !previousEntry
-      || previousEntry.activeIndex !== nextEntry.activeIndex
-      || previousEntry.mainText !== nextEntry.mainText
-      || previousEntry.backText !== nextEntry.backText
-    );
-
-    if (!nextEntry) {
-      displayedEntryRef.current = null;
-      queueStateSync(() => {
-        setDisplayEntry(null);
-        setOutgoingEntry(null);
-        setDisplayPhase('idle');
-      });
-      return clearPendingAnimations;
-    }
-
-    if (!lineChanged) {
-      return clearPendingAnimations;
-    }
-
-    motionKeyRef.current += 1;
-    const enteringEntry: PulseMobileLyricEntry = {
-      ...nextEntry,
-      key: motionKeyRef.current,
-    };
-
-    if (!previousEntry) {
-      displayedEntryRef.current = enteringEntry;
-      queueStateSync(() => {
-        setOutgoingEntry(null);
-        setDisplayEntry(enteringEntry);
-        setDisplayPhase('enter');
-        enterTimerRef.current = window.setTimeout(() => {
-          setDisplayPhase('idle');
-          enterTimerRef.current = null;
-        }, 420);
-      });
-      return clearPendingAnimations;
-    }
-
-    const frozenOutgoingEntry: PulseMobileLyricEntry = {
-      ...previousEntry,
-      progress: previousEntry.progress,
-    };
-
-    queueStateSync(() => {
-      setDisplayEntry(null);
-      setOutgoingEntry(frozenOutgoingEntry);
-      setDisplayPhase('exit');
-
-      exitTimerRef.current = window.setTimeout(() => {
-        displayedEntryRef.current = enteringEntry;
-        setOutgoingEntry(null);
-        setDisplayEntry(enteringEntry);
-        setDisplayPhase('enter');
-        exitTimerRef.current = null;
-
-        enterTimerRef.current = window.setTimeout(() => {
-          setDisplayPhase('idle');
-          enterTimerRef.current = null;
-        }, 420);
-      }, 320);
-    });
-
-    return clearPendingAnimations;
-  }, [activeIndex, backText, mainText]);
-
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current !== null) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (exitTimerRef.current !== null) {
-        window.clearTimeout(exitTimerRef.current);
-      }
-      if (enterTimerRef.current !== null) {
-        window.clearTimeout(enterTimerRef.current);
-      }
-    };
-  }, []);
-
-  const visibleEntry = displayEntry;
-  const visibleProgress = visibleEntry?.activeIndex === activeIndex ? progress : (visibleEntry?.progress ?? 0);
-
-  return (
-    <div className="animate-opacity-fade-in absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/70 p-3 backdrop-blur-sm backdrop-saturate-200 lg:hidden">
-      <div className="relative flex h-[180px] w-full items-center justify-center overflow-hidden text-center text-zinc-100 drop-shadow-lg">
-        {outgoingEntry ? (
-          <div
-            key={`mobile-lyric-out-${outgoingEntry.key}-${outgoingEntry.activeIndex}`}
-            className="pulse-mobile-lyric-exit absolute inset-x-0 flex flex-col items-center justify-center px-2"
-          >
-            <span className="block text-2xl font-bold">
-              {renderLyricWords(outgoingEntry.mainText, outgoingEntry.progress, true)}
-            </span>
-            {outgoingEntry.backText ? (
-              <span className="mt-1 block text-sm font-semibold text-white/60">
-                ({outgoingEntry.backText})
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-
-        {visibleEntry ? (
-          <div
-            key={`mobile-lyric-in-${visibleEntry.key}-${visibleEntry.activeIndex}`}
-            className={
-              displayPhase === 'enter'
-                ? 'pulse-mobile-lyric-enter absolute inset-x-0 flex flex-col items-center justify-center px-2'
-                : 'absolute inset-x-0 flex flex-col items-center justify-center px-2'
-            }
-          >
-            <span className="block text-2xl font-bold">
-              {renderLyricWords(visibleEntry.mainText, visibleProgress, true)}
-            </span>
-            {visibleEntry.backText ? (
-              <span className="mt-1 block text-sm font-semibold text-white/60">
-                ({visibleEntry.backText})
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {source ? (
-        <span className="absolute inset-x-0 bottom-0 text-center text-xs text-zinc-500">
-          Источник: {source}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-const PulseLyricLineDesktop = React.memo(
-  React.forwardRef<HTMLButtonElement, {
-    isActive: boolean;
-    line: PulseLyricsLine;
-    onSeek: (time: number) => void;
-    progress: number;
-  }>(function PulseLyricLineDesktop({ isActive, line, onSeek, progress }, ref) {
-    return (
-      <button
-        ref={ref}
-        type="button"
-        onClick={() => onSeek(line.time)}
-        className={cn(
-          'block cursor-pointer py-1 text-center text-white/40 duration-300',
-          isActive && 'pointer-events-none scale-[1.03] text-white',
-          !isActive && 'hover:text-white/70',
-        )}
-        style={{
-          textShadow: isActive ? '0 0 18px rgba(255,255,255,0.2)' : undefined,
-          transformOrigin: 'center',
-        }}
-      >
-        {renderLyricWords(line.text, isActive ? progress : 0, isActive)}
-      </button>
-    );
-  }),
-  (prevProps, nextProps) => {
-    return (
-      prevProps.isActive === nextProps.isActive &&
-      prevProps.progress === nextProps.progress &&
-      prevProps.line === nextProps.line
-    );
-  }
-);
-
-function PulseLyricsDesktop({
-  activeIndex,
-  lines,
-  onSeek,
-  progress,
-}: {
-  activeIndex: number;
-  lines: PulseLyricsLine[];
-  onSeek: (time: number) => void;
-  progress: number;
-}) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const activeLineRef = useRef<HTMLButtonElement | null>(null);
-  const userScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current || !activeLineRef.current || userScrollingRef.current) return;
-
-    const container = containerRef.current;
-    const activeLine = activeLineRef.current;
-    const targetTop = activeLine.offsetTop - container.clientHeight / 2 + activeLine.clientHeight / 2;
-
-    container.scrollTo({
-      behavior: 'smooth',
-      top: Math.max(0, targetTop),
-    });
-  }, [activeIndex]);
-
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current !== null) {
-        window.clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleUserScroll = () => {
-    userScrollingRef.current = true;
-
-    if (scrollTimeoutRef.current !== null) {
-      window.clearTimeout(scrollTimeoutRef.current);
-    }
-
-    scrollTimeoutRef.current = window.setTimeout(() => {
-      userScrollingRef.current = false;
-      scrollTimeoutRef.current = null;
-    }, 3000);
-  };
-
-  return (
-    <div className="animate-opacity-fade-in hidden h-full lg:flex lg:pl-12 xl:pl-24 2xl:pl-32">
-      <div className="relative h-full max-w-screen-sm">
-        <div
-          ref={containerRef}
-          onWheel={handleUserScroll}
-          onTouchMove={handleUserScroll}
-          className="viewport flex h-full flex-col gap-3 overflow-y-auto overflow-x-hidden viewport px-3 py-32 text-center text-3xl font-bold"
-        >
-          {lines.map((line, lineIndex) => {
-            const isActive = lineIndex === activeIndex;
-            const nextProgress = isActive ? progress : 0;
-
-            return (
-              <PulseLyricLineDesktop
-                key={`${line.time}:${lineIndex}`}
-                ref={isActive ? activeLineRef : null}
-                isActive={isActive}
-                line={line}
-                onSeek={onSeek}
-                progress={nextProgress}
-              />
-            );
-          })}
-          <div className="h-[45vh] shrink-0"></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const EQ_BANDS = [60, 230, 910, 3600, 14000];
-type WebkitAudioWindow = Window & typeof globalThis & {
-  webkitAudioContext?: typeof AudioContext;
-};
-
-function hasCoarsePointer() {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-    return false;
-  }
-
-  try {
-    return window.matchMedia('(pointer: coarse)').matches;
-  } catch {
-    return false;
-  }
-}
-
-function shouldDisableWebAudioForDevice() {
-  if (typeof navigator === 'undefined') {
-    return false;
-  }
-
-  const userAgent = navigator.userAgent || '';
-  const maybeMobileByUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  const maybeTouchDesktop = userAgent.includes('Mac') && typeof document !== 'undefined' && 'ontouchend' in document;
-  const maybeMobileByPointer = typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 0 && hasCoarsePointer();
-
-  return maybeMobileByUA || maybeTouchDesktop || maybeMobileByPointer;
-}
-
-function readSavedEqGains() {
-  if (typeof window === 'undefined') return [0, 0, 0, 0, 0];
-  try {
-    const parsed = cache.get<number[]>('pulse-eq-bands');
-    if (Array.isArray(parsed) && parsed.length === 5) return parsed;
-  } catch { }
-  return [0, 0, 0, 0, 0];
-}
-
-const PulseEqualizerModal = ({ isOpen, onClose, eqGains, onGainChange, onReset }: {
-  isOpen: boolean;
-  onClose: () => void;
-  eqGains: number[];
-  onGainChange: (index: number, gain: number) => void;
-  onReset: () => void;
-}) => {
-  return (
-    <PulseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Эквалайзер"
-    >
-      <div className="flex flex-col gap-4 py-4 px-2">
-        <div className="flex justify-around items-center h-48 w-full">
-          {EQ_BANDS.map((freq, index) => (
-            <div key={freq} className="flex flex-col items-center justify-between h-full w-10">
-              <span className="text-xs text-zinc-400 font-medium h-4">
-                {eqGains[index] > 0 ? '+' : ''}{eqGains[index]}
-              </span>
-              <div className="flex-grow flex items-center justify-center w-full relative my-2">
-                <input
-                  type="range"
-                  min="-12"
-                  max="12"
-                  step="1"
-                  value={eqGains[index]}
-                  onChange={(e) => onGainChange(index, Number(e.target.value))}
-                  className="w-40 appearance-none h-1.5 rounded-full bg-zinc-800 accent-purple-500 absolute origin-center -rotate-90"
-                />
-              </div>
-              <span className="text-xs text-zinc-400 font-medium h-4">
-                {freq >= 1000 ? `${(freq / 1000).toFixed(1).replace('.0', '')}k` : freq}
-              </span>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={onReset}
-          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2.5 text-zinc-300 duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
-        >
-          <span>Сбросить настройки</span>
-        </button>
-      </div>
-    </PulseModal>
-  );
-};
 
 export function PulsePlayerProvider({
   children,
@@ -869,21 +235,23 @@ export function PulsePlayerProvider({
   const currentIsPlaylistRef = useRef(false);
   const playlistRef = useRef<PulseTrack[]>([]);
   const indexRef = useRef(0);
-  const likedSongIdsRef = useRef<number[]>(readInitialLikedSongIds());
   const seekingSliderRef = useRef<'desktop' | 'mobile' | null>(null);
-  const visualProgressFrameRef = useRef<number | null>(null);
-  const mobileSeekInputRef = useRef<HTMLInputElement | null>(null);
-  const desktopSeekInputRef = useRef<HTMLInputElement | null>(null);
-  const mobileCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
-  const desktopCurrentTimeLabelRef = useRef<HTMLDivElement | null>(null);
+
   const volumeSliderRef = useRef<HTMLInputElement | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
   const mediaSessionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const {
+    desktopCurrentTimeLabelRef,
+    desktopSeekInputRef,
+    mobileCurrentTimeLabelRef,
+    mobileSeekInputRef,
+    startVisualProgressLoop,
+    stopVisualProgressLoop,
+    syncVisualProgress,
+  } = useVisualAudioProgress(audioRef, seekingSliderRef);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const eqFiltersRef = useRef<BiquadFilterNode[]>([]);
-  const [eqGains, setEqGains] = useState<number[]>(() => readSavedEqGains());
+  const { changeEqGain, eqGains, initWebAudio, resetEqGains, resumeWebAudio } = useEqualizer(audioRef);
+  const likedSongIdsRef = useRef<number[]>([]);
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [canUseEqualizer, setCanUseEqualizer] = useState(false);
@@ -894,95 +262,6 @@ export function PulsePlayerProvider({
       setIsMobileDevice(isMobile);
       setCanUseEqualizer(!isMobile);
     }
-  }, []);
-  const eqGainsRef = useRef<number[]>(eqGains);
-
-  useEffect(() => {
-    eqGainsRef.current = eqGains;
-  }, [eqGains]);
-
-  const initWebAudio = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    if (shouldDisableWebAudioForDevice()) return;
-
-    if (!audioRef.current || audioContextRef.current) return;
-    try {
-      const AudioContextConstructor = window.AudioContext || (window as WebkitAudioWindow).webkitAudioContext;
-      if (!AudioContextConstructor) return;
-
-      const audioCtx = new AudioContextConstructor();
-      audioContextRef.current = audioCtx;
-      const source = audioCtx.createMediaElementSource(audioRef.current);
-      sourceNodeRef.current = source;
-
-      const filters = EQ_BANDS.map((freq, index) => {
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = index === 0 ? 'lowshelf' : index === EQ_BANDS.length - 1 ? 'highshelf' : 'peaking';
-        filter.frequency.value = freq;
-        filter.gain.value = eqGainsRef.current[index];
-        if (filter.type === 'peaking') {
-          filter.Q.value = 1;
-        }
-        return filter;
-      });
-
-      eqFiltersRef.current = filters;
-
-      source.connect(filters[0]);
-      for (let i = 0; i < filters.length - 1; i++) {
-        filters[i].connect(filters[i + 1]);
-      }
-      filters[filters.length - 1].connect(audioCtx.destination);
-    } catch (err) {
-      console.warn("Failed to initialize Web Audio API", err);
-    }
-  }, []);
-
-  const changeEqGain = useCallback((index: number, nextGain: number) => {
-    setEqGains(prev => {
-      const newGains = [...prev];
-      newGains[index] = nextGain;
-
-      cache.set('pulse-eq-bands', newGains, { category: 'pulse' });
-      return newGains;
-    });
-
-    if (eqFiltersRef.current[index]) {
-      eqFiltersRef.current[index].gain.value = nextGain;
-    }
-  }, []);
-
-  const resetEqGains = useCallback(() => {
-    const newGains = [0, 0, 0, 0, 0];
-    setEqGains(newGains);
-    cache.set('pulse-eq-bands', newGains, { category: 'pulse' });
-    eqFiltersRef.current.forEach((filter) => {
-      filter.gain.value = 0;
-    });
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      try {
-        sourceNodeRef.current?.disconnect();
-      } catch {
-        // ignore cleanup errors
-      }
-
-      eqFiltersRef.current.forEach((filter) => {
-        try {
-          filter.disconnect();
-        } catch {
-          // ignore cleanup errors
-        }
-      });
-
-      if (audioContextRef.current) {
-        void audioContextRef.current.close().catch(() => {
-          // ignore cleanup errors
-        });
-      }
-    };
   }, []);
 
   const [isVisible, setIsVisible] = useState(false);
@@ -999,22 +278,16 @@ export function PulsePlayerProvider({
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(() => readSavedVolume());
-  const [likedSongIds, setLikedSongIds] = useState<number[]>(() => readInitialLikedSongIds());
   const [lyricsLines, setLyricsLines] = useState<PulseLyricsLine[]>([]);
   const [lyricsSource, setLyricsSource] = useState('');
   const [seekValue, setSeekValue] = useState(0);
   const [activeSeekSlider, setActiveSeekSlider] = useState<'desktop' | 'mobile' | null>(null);
   const [listenCounted, setListenCounted] = useState(false);
   const [statusAudio, setStatusAudio] = useState('');
-  const [isAddToPlaylistOpen, setIsAddToPlaylistOpen] = useState(false);
-  const [isPlaylistEditorOpen, setIsPlaylistEditorOpen] = useState(false);
-  const [addToPlaylistSongId, setAddToPlaylistSongId] = useState(0);
-  const [playlistOptions, setPlaylistOptions] = useState<PulsePlaylistOption[]>([]);
-  const [playlistOptionsLoading, setPlaylistOptionsLoading] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
   const [isRadioMode, setIsRadioMode] = useState(false);
   // Статус принудительного сохранения текущего трека: 'idle' | 'saving' | 'saved' | 'already' | 'error'
-  const [offlineSaveStatus, setOfflineSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'already' | 'error'>('idle');
+
   const [radioSeedName, setRadioSeedName] = useState('');
 
   const touchStartXRef = useRef<number | null>(null);
@@ -1026,21 +299,13 @@ export function PulsePlayerProvider({
   const radioLoadingRef = useRef(false);
   const isRadioModeRef = useRef(false);
   const radioSeedNameRef = useRef('');
-  const audioCacheAbortControllerRef = useRef<AbortController | null>(null);
+
 
   const currentTrack = playlist[index] ?? null;
   const prevTrackObj = playlist[index - 1] ?? null;
   const nextTrackObj = playlist[index + 1] ?? null;
   const currentSongId = toNumber(currentTrack?.sid);
-  // При смене трека проверяем, есть ли он в офлайн-кэше
-  useEffect(() => {
-    if (!currentSongId) { setOfflineSaveStatus('idle'); return; }
-    let cancelled = false;
-    cache.audio.has(currentSongId).then((exists) => {
-      if (!cancelled) setOfflineSaveStatus(exists ? 'already' : 'idle');
-    }).catch(() => { if (!cancelled) setOfflineSaveStatus('idle'); });
-    return () => { cancelled = true; };
-  }, [currentSongId]);
+  const { cacheCurrentTrackInBackground, offlineSaveStatus, saveCurrentTrack } = useOfflineAudioSave(currentTrack);
   const userCountry = normalizeText(user?.country) || 'RU';
   const playerTitle = getTrackDisplayTitle(currentTrack, lang);
   const playerArtist = getTrackArtist(currentTrack, lang);
@@ -1063,10 +328,6 @@ export function PulsePlayerProvider({
   }, [isCinema]);
 
   const isPlayerAnimatingIn = isVisible && isMounted;
-  const isPlayingFromFavorites = playlistId === '-5' || currentCollectionIdRef.current === '-5' || currentCollectionIdRef.current === 'playlist_-5';
-  const activeLike = currentTrack
-    ? (isPlayingFromFavorites || (likedSongIds ? likedSongIds.includes(toNumber(currentTrack.sid)) : false))
-    : false;
   const activeLyricState = getActiveLyricState(lyricsLines, currentTime);
   const activeLyricLine = activeLyricState.activeIndex >= 0 ? lyricsLines[activeLyricState.activeIndex] : null;
   const mobileLyric = activeLyricLine ? splitLyricText(activeLyricLine.text) : null;
@@ -1162,6 +423,28 @@ export function PulsePlayerProvider({
   const forceUpdateMediaPositionState = () => {
     lastMediaPositionUpdateRef.current = Date.now();
     updateMediaPositionState();
+  };
+
+  const finishSeek = (commit: boolean) => {
+    if (!seekingSliderRef.current) return;
+
+    const audio = audioRef.current;
+    if (commit && audio) {
+      audio.currentTime = seekValue;
+    }
+
+    seekingSliderRef.current = null;
+    setActiveSeekSlider(null);
+
+    if (commit) {
+      setCurrentTime(seekValue);
+      forceUpdateMediaPositionState();
+    } else if (audio && Number.isFinite(audio.currentTime)) {
+      setCurrentTime(audio.currentTime);
+      setSeekValue(audio.currentTime);
+    }
+
+    syncVisualProgress();
   };
 
   const clearMediaSession = () => {
@@ -1308,53 +591,6 @@ export function PulsePlayerProvider({
     syncVisualProgress();
   };
 
-  const syncVisualProgress = () => {
-    const audio = audioRef.current;
-    if (!audio || seekingSliderRef.current) return;
-
-    const nextCurrentTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
-    const nextDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
-    const nextValue = String(nextCurrentTime);
-    const nextMax = String(nextDuration || 0);
-
-    [mobileSeekInputRef.current, desktopSeekInputRef.current].forEach((slider) => {
-      if (!slider) return;
-
-      slider.max = nextMax;
-      slider.value = nextValue;
-    });
-
-    const formattedTime = formatPlaybackTime(nextCurrentTime);
-    if (mobileCurrentTimeLabelRef.current) {
-      mobileCurrentTimeLabelRef.current.textContent = formattedTime;
-    }
-    if (desktopCurrentTimeLabelRef.current) {
-      desktopCurrentTimeLabelRef.current.textContent = formattedTime;
-    }
-  };
-
-  const stopVisualProgressLoop = () => {
-    if (visualProgressFrameRef.current !== null) {
-      window.cancelAnimationFrame(visualProgressFrameRef.current);
-      visualProgressFrameRef.current = null;
-    }
-  };
-
-  const startVisualProgressLoop = () => {
-    stopVisualProgressLoop();
-
-    const tick = () => {
-      syncVisualProgress();
-
-      if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
-        visualProgressFrameRef.current = window.requestAnimationFrame(tick);
-      } else {
-        visualProgressFrameRef.current = null;
-      }
-    };
-
-    visualProgressFrameRef.current = window.requestAnimationFrame(tick);
-  };
 
   const stopProgressLoop = () => {
     if (progressLoopRef.current !== null) {
@@ -1441,260 +677,45 @@ export function PulsePlayerProvider({
     }, 600);
   };
 
-  const openAddToPlaylist = (songId: number | string) => {
-    const resolvedSongId = toNumber(songId);
-    if (!resolvedSongId) return;
+  const {
+    addToPlaylistSongId,
+    isAddToPlaylistOpen,
+    isPlaylistEditorOpen,
+    openAddToPlaylist,
+    playlistOptions,
+    playlistOptionsLoading,
+    setIsAddToPlaylistOpen,
+    setIsPlaylistEditorOpen,
+    toggleSongInPlaylist,
+  } = useAddToPlaylist({ lang, navigate: router.push, notify });
 
-    setAddToPlaylistSongId(resolvedSongId);
-    setIsAddToPlaylistOpen(true);
-    setPlaylistOptions([]);
-    setPlaylistOptionsLoading(true);
-
-    void (async () => {
-      try {
-        const result = await AncialAPI.pulsePlaylistAction<{ data?: PulsePlaylistManageItem[]; error?: string }>('list', {});
-        if (!result || !Array.isArray(result.data)) {
-          notify({
-            content: result.error || (lang?.pulse_error_happened || 'Произошла ошибка =('),
-            type: 'error',
-            time: 5,
-          });
-          setPlaylistOptions([]);
-          return;
-        }
-
-        const nextOptions = Array.isArray(result.data)
-          ? result.data.map((item) => {
-            const parsedSongs = parsePlaylistSongs(item.songs);
-            const playlistId = normalizeText(String(item.id ?? ''));
-            return {
-              hasSong: parsedSongs.includes(resolvedSongId),
-              id: playlistId,
-              image: normalizeText(item.img),
-              name: normalizeText(item.name) || (lang?.pulse_unknown_playlist || 'Без названия'),
-              songs: parsedSongs,
-            } satisfies PulsePlaylistOption;
-          }).filter((item) => item.id)
-          : [];
-
-        setPlaylistOptions(nextOptions);
-      } catch {
-        notify({
-          content: lang?.pulse_error_happened || 'Произошла ошибка =(',
-          type: 'error',
-          time: 5,
-        });
-        setPlaylistOptions([]);
-      } finally {
-        setPlaylistOptionsLoading(false);
-      }
-    })();
-  };
-
-  const toggleSongInPlaylist = async (playlistId: string, hasSong: boolean) => {
-    if (!playlistId || !addToPlaylistSongId) return;
-
-    const option = playlistOptions.find((o) => o.id === playlistId);
-    if (!option) return;
-
-    let updatedSongs = [...option.songs];
-    if (hasSong) {
-      updatedSongs = updatedSongs.filter((id) => id !== addToPlaylistSongId);
-    } else {
-      updatedSongs.push(addToPlaylistSongId);
-    }
-
-    try {
-      await AncialAPI.pulsePlaylistAction('update', {
-        id: playlistId,
-        songs: updatedSongs.join('|'),
-      });
-
-      setPlaylistOptions((currentOptions) =>
-        currentOptions.map((item) =>
-          item.id === playlistId
-            ? {
-              ...item,
-              hasSong: !hasSong,
-              songs: updatedSongs,
-            }
-            : item,
-        ),
-      );
-
-      notify({
-        content: hasSong
-          ? lang?.pulse_removed_from_playlist || 'Удалено из плейлиста'
-          : lang?.pulse_added_to_playlist || 'Добавлено в плейлист',
-        type: 'success',
-        time: 2,
-      });
-
-      if (window._pagePlaylistConf?.type === 2 && normalizeText(String(window._pagePlaylistConf.id ?? '')) === playlistId) {
-        window.setTimeout(() => {
-          setIsAddToPlaylistOpen(false);
-          router.push(`/pulse/playlist/${playlistId}`);
-        }, 400);
-      }
-    } catch {
-      notify({
-        content: lang?.pulse_error_happened || 'Произошла ошибка =(',
-        type: 'error',
-        time: 5,
-      });
-    }
-  };
-
-  const ensureLikedSongsLoaded = async (force = false) => {
-    if (!isAuthenticated) {
-      likedSongIdsRef.current = [];
-      setLikedSongIds([]);
-      return [];
-    }
-
-    if (!force && likedSongIdsRef.current !== null && likedSongIdsRef.current.length > 0) {
-      return likedSongIdsRef.current;
-    }
-
-    try {
-      const result = await AncialAPI.pulseGetLibrary<{ ids?: unknown }>('favorites');
-      const nextIds = normalizeSongIds(result.ids);
-      setLikedSongsState(nextIds);
-      return nextIds;
-    } catch {
-      const cached = cache.get<number[]>('pulse_fav_ids', { category: 'pulse' })
-        || (typeof window !== 'undefined' ? (window._pulseLikedSongs as number[] | undefined) : undefined)
-        || [];
-      const nextIds = normalizeSongIds(cached);
-      setLikedSongsState(nextIds);
-      return nextIds;
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      void ensureLikedSongsLoaded(true);
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    const handleLikesUpdated = (e: CustomEvent) => {
-      likedSongIdsRef.current = e.detail;
-      setLikedSongIds(e.detail);
-      try {
-        cache.set('pulse_fav_ids', e.detail, { category: 'pulse', subcategory: 'favorites' });
-      } catch { }
-      if (typeof window !== 'undefined') {
-        window._pulseLikedSongs = e.detail;
-      }
-    };
-    window.addEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
-    return () => window.removeEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
-  }, []);
-
-  const setLikedSongsState = (nextIds: number[]) => {
-    likedSongIdsRef.current = nextIds;
-    setLikedSongIds(nextIds);
-    try {
-      cache.set('pulse_fav_ids', nextIds, { category: 'pulse', subcategory: 'favorites' });
-    } catch { }
-    if (typeof window !== 'undefined') {
-      window._pulseLikedSongs = nextIds;
-      window.dispatchEvent(new CustomEvent('pulse-likes-updated', { detail: nextIds }));
-    }
-  };
-
-  const toggleSongLike = async (
-    songId: number | string,
-    options?: {
-      playlistId?: number | string | null;
-      triggerPlaylistRedirect?: boolean;
-    },
-  ) => {
-    const resolvedSongId = toNumber(songId);
-    if (!resolvedSongId) return;
-
-    try {
-      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', resolvedSongId);
-      const result = response.message || '';
-      const currentIds = await ensureLikedSongsLoaded();
-
-      if (result === 'ADDED' || result === 'CREATED_ADDED') {
-        const nextIds = currentIds.includes(resolvedSongId)
-          ? currentIds
-          : [...currentIds, resolvedSongId];
-        setLikedSongsState(nextIds);
-
-        notify({
-          content:
-            result === 'CREATED_ADDED'
-              ? lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан, трек добавлен'
-              : lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!',
-          type: 'success',
-          time: 5,
-        });
-
-        if (options?.triggerPlaylistRedirect && options.playlistId) {
-          router.push(`/pulse/playlist/${options.playlistId}`);
-        }
-      } else if (result === 'REMOVED') {
-        const nextIds = currentIds.filter((id) => id !== resolvedSongId);
-        setLikedSongsState(nextIds);
-
-        notify({
-          content: lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!',
-          type: 'success',
-          time: 5,
-        });
-
-        if (options?.triggerPlaylistRedirect && options.playlistId) {
-          router.push(`/pulse/playlist/${options.playlistId}`);
-        }
-      } else if (result === 'UND_SONG') {
-        notify({
-          content: lang?.pulse_unknown_song || 'Неизвестная песня...',
-          type: 'error',
-          time: 5,
-        });
-      }
-    } catch {
-      notify({
-        content: lang?.pulse_error_happened || 'Произошла ошибка =(',
-        type: 'error',
-        time: 5,
-      });
-    }
-  };
+  const {
+    ensureLikedSongsLoaded,
+    likedSongIds,
+    refreshLikedSongs,
+    setLikedSongsState,
+    togglePlaylistLike,
+    toggleSongLike,
+  } = usePulseFavorites({
+    isAuthenticated,
+    lang,
+    navigate: router.push,
+    notify,
+  });
 
   const likeCurrentSong = async () => {
     if (!currentSongIdRef.current) return;
     await toggleSongLike(currentSongIdRef.current);
   };
 
-  const togglePlaylistLike = async (nextPlaylistId: number | string) => {
-    const resolvedPlaylistId = normalizeText(String(nextPlaylistId));
-    if (!resolvedPlaylistId) return;
+  useEffect(() => {
+    likedSongIdsRef.current = likedSongIds;
+  }, [likedSongIds]);
 
-    try {
-      const response = await AncialAPI.pulsePlaylistAction<{ message?: string }>('like', { id: resolvedPlaylistId });
-      const result = response.message || '';
-
-      window.dispatchEvent(
-        new CustomEvent('pulse:playlist-like-changed', {
-          detail: {
-            liked: result === 'like',
-            playlistId: resolvedPlaylistId,
-          },
-        }),
-      );
-    } catch {
-      notify({
-        content: lang?.pulse_error_happened || 'Произошла ошибка =(',
-        type: 'error',
-        time: 5,
-      });
-    }
-  };
+  const isPlayingFromFavorites = playlistId === '-5' || currentCollectionIdRef.current === '-5' || currentCollectionIdRef.current === 'playlist_-5';
+  const activeLike = currentTrack
+    ? (isPlayingFromFavorites || likedSongIds.includes(toNumber(currentTrack.sid)))
+    : false;
 
   const playLoadedTrack = async (track: PulseTrack | null, retryCount = 0): Promise<void> => {
     const audio = audioRef.current;
@@ -1719,20 +740,12 @@ export function PulsePlayerProvider({
     let isFromCache = false;
 
     // Освобождаем память от старого Blob URL перед загрузкой нового трека
-    if (activeBlobUrlRef.current) {
-      try {
-        URL.revokeObjectURL(activeBlobUrlRef.current);
-      } catch (e) {
-        console.error('Failed to revoke object URL before new track load', e);
-      }
-      activeBlobUrlRef.current = null;
-    }
+    activeBlobUrlRef.current = releaseObjectUrl(activeBlobUrlRef.current);
 
     if (trackId > 0) {
       try {
-        const cachedBlob = await cache.audio.get(trackId);
-        if (cachedBlob) {
-          const localBlobUrl = URL.createObjectURL(cachedBlob);
+        const localBlobUrl = await getCachedAudioObjectUrl(trackId);
+        if (localBlobUrl) {
           activeBlobUrlRef.current = localBlobUrl;
           finalSource = localBlobUrl;
           isFromCache = true;
@@ -1759,7 +772,7 @@ export function PulsePlayerProvider({
       preloadStartedRef.current = false;
       setLyricsLines([]);
       setLyricsSource('');
-      setOfflineSaveStatus('idle');
+
     }
     setStatusAudio('Loading');
 
@@ -1774,18 +787,7 @@ export function PulsePlayerProvider({
 
     // Если трек играет из сети, запускаем фоновое асинхронное кэширование с передачей метаданных
     if (!isFromCache && trackId > 0 && trackSource) {
-      if (audioCacheAbortControllerRef.current) {
-        audioCacheAbortControllerRef.current.abort();
-      }
-      audioCacheAbortControllerRef.current = new AbortController();
-      cache.audio.save(trackId, trackSource, {
-        title: track.title || undefined,
-        artist: track.artist || undefined
-      }, audioCacheAbortControllerRef.current.signal).catch((err) => {
-        if (err.name !== 'AbortError') {
-          console.error('Failed to auto-cache audio file in background', err);
-        }
-      });
+      cacheCurrentTrackInBackground(track);
     }
 
     showPlayer();
@@ -1811,23 +813,6 @@ export function PulsePlayerProvider({
     }
   };
 
-  /** Преобразует записи IndexedDB в объекты треков, проигрываемые через Blob URL */
-  const mapDownloadedToTracks = (
-    downloaded: Array<{ id: string; title?: string; artist?: string; savedAt: number }>,
-  ) =>
-    downloaded
-      .slice()
-      .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))
-      .map((dt) => ({
-        sid: String(dt.id),
-        title: dt.title || '',
-        artist: dt.artist || '',
-        src: 'offline-indexeddb', // fake source, will be overridden by ObjectURL
-        status: '1',
-        explicit: false,
-        artwork: [],
-      } as unknown as PulseTrack));
-
   const fetchTrackCollection = async (kind: PulseCollectionKind, id: number | string) => {
     const resolvedId = normalizeText(String(id));
     if (!resolvedId) return [];
@@ -1835,7 +820,7 @@ export function PulsePlayerProvider({
     // Виртуальная коллекция «Сохранённые» — целиком из IndexedDB, работает и офлайн
     if (kind === 'downloads') {
       try {
-        return mapDownloadedToTracks(await cache.audio.getDownloadedList());
+        return mapDownloadedAudioToTracks(await getDownloadedAudioTracks());
       } catch (e) {
         console.error('Failed to read downloaded tracks list', e);
         return [];
@@ -1897,10 +882,10 @@ export function PulsePlayerProvider({
           }
 
           // 3. Запасной выбор при офлайне: возвращаем список всех скачанных в IndexedDB треков
-          const downloadedTracks = await cache.audio.getDownloadedList();
+          const downloadedTracks = await getDownloadedAudioTracks();
           if (downloadedTracks.length > 0) {
             console.log(`[Pulse] Offline: playing downloaded tracks from IndexedDB (${downloadedTracks.length} tracks)`);
-            return mapDownloadedToTracks(downloadedTracks);
+            return mapDownloadedAudioToTracks(downloadedTracks);
           }
         } catch (e) {
           console.error('Failed to read collection cache', e);
@@ -1908,11 +893,11 @@ export function PulsePlayerProvider({
       } else if (kind === 'track') {
         // Если это одиночный трек — попробуем проверить метаданные в IndexedDB
         try {
-          const downloadedTracks = await cache.audio.getDownloadedList();
+          const downloadedTracks = await getDownloadedAudioTracks();
           const offlineTrack = downloadedTracks.find(t => String(t.id) === resolvedId);
           if (offlineTrack) {
             console.log(`[Pulse] Offline: playing single track from IndexedDB cache (${resolvedId})`);
-            return mapDownloadedToTracks([offlineTrack]);
+            return mapDownloadedAudioToTracks([offlineTrack]);
           }
         } catch (e) {
           console.error('Failed to read audio cache metadata for single track', e);
@@ -2224,73 +1209,6 @@ export function PulsePlayerProvider({
     });
   };
 
-  const fetchLyricsData = async (track: PulseTrack | null, signal?: AbortSignal) => {
-    if (!track) {
-      return {
-        lines: [] as PulseLyricsLine[],
-        source: '',
-      };
-    }
-
-    const title = normalizeText(track.title)
-      .replace('(Remix)', '')
-      .replace('(Sped Up Version)', '');
-    const artist = normalizeText(track.artist).split(',')[0];
-
-    if (!title || !artist) {
-      return {
-        lines: [] as PulseLyricsLine[],
-        source: '',
-      };
-    }
-
-    const cacheKey = `lyrics:${track.sid}`;
-    try {
-      const cached = cache.get<{ lines: PulseLyricsLine[]; source: string }>(cacheKey);
-      if (cached && Array.isArray(cached.lines) && cached.lines.length > 0) {
-        return cached;
-      }
-    } catch (e) {
-      console.error('Failed to get cached lyrics', e);
-    }
-
-    try {
-      const response = await fetch(
-        `${PULSE_LYRICS_BASE}/UniLyrics.php?a=${encodeURIComponent(artist)}&t=${encodeURIComponent(title)}&d=0&type=alternative`,
-        {
-          cache: 'no-store',
-          signal,
-        },
-      );
-      const result = await response.text();
-      const nextLyrics = parseLyricsText(result);
-
-      if (!nextLyrics.length) {
-        return {
-          lines: [] as PulseLyricsLine[],
-          source: '',
-        };
-      }
-
-      const lyricsData = {
-        lines: nextLyrics,
-        source: 'Pulse',
-      };
-
-      try {
-        cache.set(cacheKey, lyricsData, { category: 'pulse', subcategory: 'lyrics' });
-      } catch (e) {
-        console.error('Failed to cache lyrics', e);
-      }
-
-      return lyricsData;
-    } catch {
-      return {
-        lines: [] as PulseLyricsLine[],
-        source: '',
-      };
-    }
-  };
 
   useEffect(() => {
     playlistRef.current = playlist;
@@ -2349,7 +1267,7 @@ export function PulsePlayerProvider({
       stopProgressLoop();
       preloadAudioRef.current = null;
     };
-  }, []);
+  }, [stopVisualProgressLoop]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -2366,9 +1284,7 @@ export function PulsePlayerProvider({
     const handlePlay = () => {
       setIsPlaying(true);
       initWebAudio();
-      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
-      }
+      resumeWebAudio();
       bindMediaSession();
       if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
         try {
@@ -2468,7 +1384,7 @@ export function PulsePlayerProvider({
 
     void (async () => {
       try {
-        const lyricsData = await fetchLyricsData(currentTrack, controller.signal);
+        const lyricsData = await loadPulseLyrics(currentTrack, controller.signal);
         if (cancelled) return;
 
         setLyricsLines(lyricsData.lines);
@@ -2565,7 +1481,7 @@ export function PulsePlayerProvider({
       void ensureLikedSongsLoaded().then(() => {
         syncWindowState();
         if (toNumber(songId) === currentSongIdRef.current) {
-          setLikedSongIds([...(likedSongIdsRef.current ?? [])]);
+          refreshLikedSongs();
         }
       });
     };
@@ -2695,45 +1611,21 @@ export function PulsePlayerProvider({
                 }
               }}
             >
-              <div className="absolute top-3 z-[20] flex w-full items-center px-3">
-                <button
-                  type="button"
-                  onClick={closePlayer}
-                  className="cursor-pointer duration-300 active:scale-95"
-                >
-                  <PlayerIcon name="IC-times" className="h-10 w-10 fill-white" />
-                </button>
-
-                <div className="flex flex-grow flex-col items-center justify-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const albumId = normalizeText(String(currentTrack?.albumid ?? ''));
-                      if (!albumId) return;
-
-                      router.push(`/pulse/playlist/${albumId}`);
-                      setMode('mini');
-                    }}
-                    className={cn(
-                      'text-center text-sm text-white duration-300 lg:text-base',
-                      normalizeText(String(currentTrack?.albumid ?? '')) && 'cursor-pointer active:scale-95 hover:text-zinc-300',
-                    )}
-                  >
-                    {isRadioMode && radioSeedName
-                      ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
-                      : normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
-                  </button>
-                  <img alt="Pulse Logo" className="w-24 shrink-0 backdrop-shadow-lg" src="/img/branding/pulse.svg"></img>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setMode('mini')}
-                  className="cursor-pointer duration-300 hover:fill-zinc-300 active:scale-95"
-                >
-                  <PlayerIcon name="IC-chevron-down" className="h-10 w-10 fill-white" />
-                </button>
-              </div>
+              <PulsePlayerFullHeader
+                Icon={PlayerIcon}
+                albumLabel={isRadioMode && radioSeedName
+                  ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
+                  : normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
+                canOpenAlbum={Boolean(normalizeText(String(currentTrack?.albumid ?? '')))}
+                onClose={closePlayer}
+                onMinimize={() => setMode('mini')}
+                onOpenAlbum={() => {
+                  const albumId = normalizeText(String(currentTrack?.albumid ?? ''));
+                  if (!albumId) return;
+                  router.push(`/pulse/playlist/${albumId}`);
+                  setMode('mini');
+                }}
+              />
 
               <div className="flex h-full w-full flex-row items-center justify-center px-3">
                 <div className="flex flex-col items-center justify-center lg:items-start shrink-0">
@@ -2837,173 +1729,59 @@ export function PulsePlayerProvider({
                     </div>
                   </div>
 
-                  <div className="mt-3 flex w-full max-w-sm flex-col items-center justify-center gap-1 duration-300">
-                    <input
-                      min={0}
-                      max={duration || 0}
-                      step="0.01"
-                      type="range"
-                      value={displayedCurrentTime}
-                      onPointerDown={() => {
-                        seekingSliderRef.current = 'mobile';
-                        setActiveSeekSlider('mobile');
-                        setSeekValue(currentTime);
-                      }}
-                      onPointerUp={() => {
-                        if (audioRef.current) {
-                          audioRef.current.currentTime = seekValue;
-                        }
-                        seekingSliderRef.current = null;
-                        setActiveSeekSlider(null);
-                        setCurrentTime(seekValue);
-                        syncVisualProgress();
-                        forceUpdateMediaPositionState();
-                      }}
-                      onChange={(event) => {
-                        setSeekValue(Number(event.target.value));
-                      }}
-                      className="h-3 w-full appearance-none rounded-full bg-zinc-800 accent-purple-500"
-                      ref={mobileSeekInputRef}
-                    />
-                    <div className="flex w-full text-xs text-zinc-300 duration-300 lg:text-sm">
-                      <div ref={mobileCurrentTimeLabelRef} className="flex-grow">{formatPlaybackTime(displayedCurrentTime)}</div>
-                      <div>{formatPlaybackTime(duration)}</div>
-                    </div>
-                  </div>
+                  <PulsePlayerFullArtwork
+                    displayedCurrentTime={displayedCurrentTime}
+                    duration={duration}
+                    mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}
+                    mobileSeekInputRef={mobileSeekInputRef}
+                    onSeekCancel={() => finishSeek(false)}
+                    onSeekChange={setSeekValue}
+                    onSeekStart={() => {
+                      seekingSliderRef.current = 'mobile';
+                      setActiveSeekSlider('mobile');
+                      setSeekValue(currentTime);
+                    }}
+                    onSeekSubmit={() => finishSeek(true)}
+                  />
 
-                  <div className="flex w-full max-w-sm items-center justify-center">
-                    <div className="mt-3 flex items-center gap-3 duration-300 lg:gap-6">
-                      <div className="mr-6">
-                        {isAuthenticated && !isMobileDevice ? (
-                          <Dropdown
-                            position="top"
-                            align="start"
-                            triggerSize="sm"
-                            triggerNode={<PlayerIcon name="IC-more" className="h-9 w-9 fill-white duration-300 hover:fill-zinc-300" />}
-                            triggerClassName="cursor-pointer duration-300 active:scale-95 block !w-auto !h-auto !p-0 !bg-transparent hover:!bg-transparent"
-                          >
-                            <DropdownItem onClick={() => openAddToPlaylist(currentSongId)} icon="IC-plus">
-                              {lang?.add_to_playlist || 'В плейлист'}
-                            </DropdownItem>
-                            <DropdownItem
-                              icon="IC-download"
-                              onClick={() => {
-                                const track = currentTrack;
-                                if (!track?.src) return;
-                                const trackSource = normalizeTrackSource(track.src);
-                                if (!trackSource) return;
-                                const a = document.createElement('a');
-                                a.href = trackSource;
-                                a.download = `${playerArtist ? playerArtist + ' - ' : ''}${playerTitle || 'track'}.mp3`;
-                                a.target = '_blank';
-                                a.rel = 'noopener noreferrer';
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                              }}
-                            >
-                              {lang?.pulse_download_mp3 || 'Скачать MP3'}
-                            </DropdownItem>
-                            <DropdownItem
-                              icon={offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'IC-bookmark-filled' : 'IC-bookmark'}
-                              onClick={async () => {
-                                if (offlineSaveStatus === 'saving' || offlineSaveStatus === 'already') return;
-                                const track = currentTrack;
-                                if (!track?.src || !track?.sid) return;
-                                const trackId = Number(track.sid);
-                                const trackSource = normalizeTrackSource(track.src);
-                                if (!trackSource) return;
-                                setOfflineSaveStatus('saving');
-                                try {
-                                  const result = await cache.audio.save(
-                                    trackId,
-                                    trackSource,
-                                    { title: track.title || undefined, artist: track.artist || undefined },
-                                    undefined,
-                                    true
-                                  );
-                                  if (result === true) {
-                                    setOfflineSaveStatus('saved');
-                                    notify({
-                                      content: lang?.pulse_saved_offline || 'Сохранено!',
-                                      type: 'success',
-                                      time: 3,
-                                    });
-                                  } else {
-                                    setOfflineSaveStatus('error');
-                                    notify({
-                                      content: lang?.pulse_save_offline_error || 'Не удалось сохранить трек',
-                                      type: 'error',
-                                      time: 4,
-                                    });
-                                  }
-                                } catch {
-                                  setOfflineSaveStatus('error');
-                                }
-                                setTimeout(() => setOfflineSaveStatus('idle'), 4000);
-                              }}
-                            >
-                              {offlineSaveStatus === 'saving'
-                                ? (lang?.pulse_saving_offline || 'Сохраняется...')
-                                : offlineSaveStatus === 'saved'
-                                  ? (lang?.pulse_saved_offline || 'Сохранено!')
-                                  : offlineSaveStatus === 'already'
-                                    ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
-                                    : (lang?.pulse_save_offline || 'Сохранить офлайн')}
-                            </DropdownItem>
-                            {canUseEqualizer && (
-                              <DropdownItem onClick={() => setIsEqualizerOpen(true)} icon="IC-equalizer">
-                                Эквалайзер
-                              </DropdownItem>
-                            )}
-                          </Dropdown>
-                        ) : isAuthenticated && isMobileDevice ? (
-                          <button title={lang?.add_to_playlist || "В плейлист"} type="button" onClick={() => openAddToPlaylist(currentSongId)} className="cursor-pointer duration-300 active:scale-95 block group">
-                            <PlayerIcon name="IC-plus" className="h-9 w-9 fill-white duration-300 group-hover:fill-zinc-300" />
-                          </button>
-                        ) : !isAuthenticated && !isMobileDevice && canUseEqualizer ? (
-                          <button title="Эквалайзер" type="button" onClick={() => setIsEqualizerOpen(true)} className="cursor-pointer duration-300 active:scale-95 block group">
-                            <PlayerIcon name="IC-equalizer" className="h-9 w-9 fill-white duration-300 group-hover:fill-zinc-300" />
-                          </button>
-                        ) : null}
-                      </div>
-
-                      <button type="button" onClick={() => { void prevTrack(); }}>
-                        <PlayerIcon name="IC-moveback" className="h-10 w-10 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={togglePlay}
-                        className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-full bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95"
-                      >
-                        <PlayerIcon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-12 w-12 fill-white" />
-                      </button>
-
-                      <button type="button" onClick={() => { void nextTrack(); }}>
-                        <PlayerIcon name="IC-moveforward" className="h-10 w-10 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
-                      </button>
-
-                      {isAuthenticated ? (
-                        <button
-                          id="player_likebutton"
-                          type="button"
-                          onClick={() => {
-                            void likeCurrentSong();
-                          }}
-                          className="ml-6 cursor-pointer duration-300 active:scale-95"
-                        >
-                          <PlayerIcon
-                            name={activeLike ? 'IC-heart-filled' : 'IC-heart'}
-                            className={cn(
-                              'h-9 w-9 duration-300 hover:fill-zinc-300',
-                              activeLike ? 'fill-pink-400' : 'fill-white',
-                            )}
-                          />
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
+                  <PulsePlayerFullControls
+                    Icon={PlayerIcon}
+                    activeLike={activeLike}
+                    canUseEqualizer={canUseEqualizer}
+                    isAuthenticated={isAuthenticated}
+                    isMobileDevice={isMobileDevice}
+                    isPlaying={isPlaying}
+                    lang={lang}
+                    offlineSaveStatus={offlineSaveStatus}
+                    onAddToPlaylist={() => openAddToPlaylist(currentSongId)}
+                    onDownload={() => {
+                      const track = currentTrack;
+                      if (!track?.src) return;
+                      const trackSource = normalizeTrackSource(track.src);
+                      if (!trackSource) return;
+                      const link = document.createElement('a');
+                      link.href = trackSource;
+                      link.download = `${playerArtist ? `${playerArtist} - ` : ''}${playerTitle || 'track'}.mp3`;
+                      link.target = '_blank';
+                      link.rel = 'noopener noreferrer';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    onLike={() => { void likeCurrentSong(); }}
+                    onNext={() => { void nextTrack(); }}
+                    onOpenEqualizer={() => setIsEqualizerOpen(true)}
+                    onPrev={() => { void prevTrack(); }}
+                    onSaveOffline={async () => {
+                      const result = await saveCurrentTrack(currentTrack);
+                      if (result === 'saved') {
+                        notify({ content: lang?.pulse_saved_offline || 'Сохранено!', type: 'success', time: 3 });
+                      } else if (result === 'failed') {
+                        notify({ content: lang?.pulse_save_offline_error || 'Не удалось сохранить трек', type: 'error', time: 4 });
+                      }
+                    }}
+                    onTogglePlay={togglePlay}
+                  />
                 </div>
 
                 {lyricsLines.length ? (
@@ -3024,233 +1802,71 @@ export function PulsePlayerProvider({
             </div>
           </div>
 
-          <div
-            className={cn(
-              'absolute inset-x-0 bottom-16 flex justify-center px-1.5 pb-2.5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] lg:bottom-1.5 lg:justify-end lg:pb-1.5 z-[60]',
-              !isFullMode && isPlayerAnimatingIn
-                ? 'pointer-events-auto translate-y-0'
-                : 'pointer-events-none translate-y-[200%]',
-            )}
-          >
-            <div
-              id="NAVPmini"
-              className="pulse-player-mini-shell flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300 w-full touch-none"
-              onTouchStart={(e) => {
-                if (window.innerWidth >= 1024) return;
-                touchStartMiniRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-              }}
-              onTouchEnd={(e) => {
-                if (touchStartMiniRef.current && window.innerWidth < 1024) {
-                  const deltaY = e.changedTouches[0].clientY - touchStartMiniRef.current.y;
-                  const deltaX = e.changedTouches[0].clientX - touchStartMiniRef.current.x;
-                  if (deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
-                    setMode('full');
-                  }
-                  touchStartMiniRef.current = null;
-                }
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setMode('full')}
-                className="group relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-16 lg:w-16"
-              >
-                <PulseCoverImage
-                  alt={playerTitle}
-                  className="rounded-full"
-                  sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer}
-                  src={playerArtwork}
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90 opacity-0 duration-300 group-hover:opacity-100">
-                  <PlayerIcon name="IC-full-mode" className="h-10 w-10 fill-white" />
-                </div>
-              </button>
-
-              <div className="flex w-40 shrink-0 flex-col lg:w-64">
-                <span className="w-full truncate text-sm text-white lg:text-base">{playerTitle}</span>
-                <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{playerArtist}</span>
-              </div>
-
-              <div className="flex-grow"></div>
-
-              <div className="hidden flex-grow flex-col items-center justify-center gap-1 lg:flex">
-                <input
-                  min={0}
-                  max={duration || 0}
-                  step="0.01"
-                  type="range"
-                  value={activeSeekSlider === 'desktop' ? seekValue : currentTime}
-                  onPointerDown={() => {
-                    seekingSliderRef.current = 'desktop';
-                    setActiveSeekSlider('desktop');
-                    setSeekValue(currentTime);
-                  }}
-                  onPointerUp={() => {
-                    if (audioRef.current) {
-                      audioRef.current.currentTime = seekValue;
-                    }
-                    seekingSliderRef.current = null;
-                    setActiveSeekSlider(null);
-                    setCurrentTime(seekValue);
-                    syncVisualProgress();
-                    forceUpdateMediaPositionState();
-                  }}
-                  onChange={(event) => {
-                    setSeekValue(Number(event.target.value));
-                  }}
-                  className="h-3 w-full max-w-sm appearance-none rounded-full bg-zinc-800 accent-purple-500"
-                  ref={desktopSeekInputRef}
-                />
-                <div className="flex w-full max-w-sm text-xs text-zinc-300 lg:text-sm">
-                  <div ref={desktopCurrentTimeLabelRef} className="flex-grow">{formatPlaybackTime(activeSeekSlider === 'desktop' ? seekValue : currentTime)}</div>
-                  <div>{formatPlaybackTime(duration)}</div>
-                </div>
-              </div>
-
-              <div className="hidden flex-grow lg:block"></div>
-
-              <div className="flex shrink-0 items-center justify-end gap-1.5 lg:w-80 lg:gap-3">
-                <div className="hidden flex-col items-center justify-center gap-1 pr-1 lg:flex">
-                  <span className="text-sm text-zinc-300">{lang?.volume || 'Громкость'}</span>
-                  <input
-                    ref={volumeSliderRef}
-                    min={0}
-                    max={1}
-                    step="0.005"
-                    type="range"
-                    value={volume}
-                    onChange={(event) => {
-                      changeVolume(event.target.value);
-                    }}
-                    className="h-3 w-full appearance-none rounded-full bg-zinc-800 accent-purple-500"
-                  />
-                </div>
-
-                <button type="button" onClick={() => { void prevTrack(); }}>
-                  <PlayerIcon name="IC-moveback" className="h-8 w-8 shrink-0 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={togglePlay}
-                  className="flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95"
-                >
-                  <PlayerIcon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-10 w-10 fill-white" />
-                </button>
-
-                <button type="button" onClick={() => { void nextTrack(); }}>
-                  <PlayerIcon name="IC-moveforward" className="h-8 w-8 shrink-0 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <PulsePlayerMini
+            Icon={PlayerIcon}
+            activeSeekSlider={activeSeekSlider}
+            currentTime={currentTime}
+            desktopCurrentTimeLabelRef={desktopCurrentTimeLabelRef}
+            desktopSeekInputRef={desktopSeekInputRef}
+            duration={duration}
+            isPlaying={isPlaying}
+            isVisible={!isFullMode && isPlayerAnimatingIn}
+            lang={lang}
+            onChangeVolume={changeVolume}
+            onDesktopSeekCancel={() => finishSeek(false)}
+            onDesktopSeekChange={setSeekValue}
+            onDesktopSeekStart={() => {
+              seekingSliderRef.current = 'desktop';
+              setActiveSeekSlider('desktop');
+              setSeekValue(currentTime);
+            }}
+            onDesktopSeekSubmit={() => finishSeek(true)}
+            onNextTrack={() => { void nextTrack(); }}
+            onOpenFull={() => setMode('full')}
+            onPrevTrack={() => { void prevTrack(); }}
+            onTouchStart={(event) => {
+              if (window.innerWidth >= 1024) return;
+              touchStartMiniRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+            }}
+            onTouchEnd={(event) => {
+              if (touchStartMiniRef.current && window.innerWidth < 1024) {
+                const deltaY = event.changedTouches[0].clientY - touchStartMiniRef.current.y;
+                const deltaX = event.changedTouches[0].clientX - touchStartMiniRef.current.x;
+                if (deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) setMode('full');
+                touchStartMiniRef.current = null;
+              }
+            }}
+            onTogglePlay={togglePlay}
+            playerArtist={playerArtist}
+            playerArtwork={playerArtwork}
+            playerTitle={playerTitle}
+            seekValue={seekValue}
+            volume={volume}
+            volumeSliderRef={volumeSliderRef}
+          />
         </div>
       ) : null}
 
-      <PulseModal
-        isOpen={isAddToPlaylistOpen}
-        onClose={() => {
-          setIsAddToPlaylistOpen(false);
-        }}
-        scrollable
-        title={lang?.add_to_playlist || 'В плейлист'}
-      >
-        <div className="flex flex-col gap-1">
-          {playlistOptionsLoading ? (
-            <div className="py-6 text-center text-sm text-zinc-400">
-              {lang?.loading || 'Загрузка...'}
-            </div>
-          ) : null}
-
-          {!playlistOptionsLoading && !playlistOptions.length ? (
-            <div className="py-6 text-center text-sm text-zinc-500">
-              {lang?.pulse_no_playlists || 'Нет плейлистов. Создайте новый!'}
-            </div>
-          ) : null}
-
-          {!playlistOptionsLoading
-            ? playlistOptions.map((playlistOption) => (
-              <button
-                key={playlistOption.id}
-                type="button"
-                onClick={() => {
-                  void toggleSongInPlaylist(playlistOption.id, playlistOption.hasSong);
-                }}
-                className="flex w-full items-center gap-3 rounded-2xl px-1 py-1 text-left duration-300 hover:bg-zinc-800/60 hover:pr-3 active:scale-95"
-              >
-                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-800">
-                  {playlistOption.image ? (
-                    <PulseCoverImage
-                      alt={playlistOption.name}
-                      className="rounded-xl"
-                      sizes={PULSE_COVER_IMAGE_SIZES.modal}
-                      src={playlistOption.image}
-                    />
-                  ) : (
-                    <PlayerIcon name="IC-music" className="h-7 w-7 fill-zinc-600" />
-                  )}
-                </div>
-
-                <span className="flex-grow text-sm font-medium text-zinc-100">
-                  {playlistOption.name}
-                </span>
-
-                <span
-                  className={cn(
-                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 duration-300',
-                    playlistOption.hasSong
-                      ? 'border-purple-500 bg-purple-500'
-                      : 'border-zinc-600',
-                  )}
-                >
-                  {playlistOption.hasSong ? (
-                    <PlayerIcon name="IC-check" className="h-3 w-3 fill-white" />
-                  ) : null}
-                </span>
-              </button>
-            ))
-            : null}
-
-          <button
-            type="button"
-            onClick={() => {
-              setIsAddToPlaylistOpen(false);
-              setIsPlaylistEditorOpen(true);
-            }}
-            className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2.5 text-zinc-300 duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
-          >
-            <PlayerIcon name="IC-plus" className="h-4 w-4 fill-current" />
-            <span>{lang?.pulse_create_playlist || 'Создать новый плейлист'}</span>
-          </button>
-        </div>
-      </PulseModal>
-
-      <PulsePlaylistEditorModal
-        isOpen={isPlaylistEditorOpen}
-        onClose={() => {
-          setIsPlaylistEditorOpen(false);
-          if (addToPlaylistSongId) {
-            setIsAddToPlaylistOpen(true);
-          }
-        }}
-        onSaved={() => {
-          if (addToPlaylistSongId) {
-            openAddToPlaylist(addToPlaylistSongId);
-          }
-        }}
-        showNote={(content, type = 'info', time = 4) => {
-          notify({ content, type, time });
-        }}
+      <PulsePlayerModals
+        Icon={PlayerIcon}
+        addToPlaylistSongId={addToPlaylistSongId}
+        canUseEqualizer={canUseEqualizer}
+        changeEqGain={changeEqGain}
+        eqGains={eqGains}
+        isAddToPlaylistOpen={isAddToPlaylistOpen}
+        isEqualizerOpen={isEqualizerOpen}
+        isPlaylistEditorOpen={isPlaylistEditorOpen}
+        lang={lang}
+        notify={notify}
+        onOpenAddToPlaylist={openAddToPlaylist}
+        onResetEqualizer={resetEqGains}
+        playlistOptions={playlistOptions}
+        playlistOptionsLoading={playlistOptionsLoading}
+        setIsAddToPlaylistOpen={setIsAddToPlaylistOpen}
+        setIsEqualizerOpen={setIsEqualizerOpen}
+        setIsPlaylistEditorOpen={setIsPlaylistEditorOpen}
+        toggleSongInPlaylist={toggleSongInPlaylist}
       />
-      {canUseEqualizer && (
-        <PulseEqualizerModal
-          isOpen={isEqualizerOpen}
-          onClose={() => setIsEqualizerOpen(false)}
-          eqGains={eqGains}
-          onGainChange={changeEqGain}
-          onReset={resetEqGains}
-        />
-      )}
     </PulsePlayerContext.Provider>
   );
 }

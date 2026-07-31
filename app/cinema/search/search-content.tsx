@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { getCinemaMyList, setCinemaMyList } from '../../lib/cache-helpers';
 import { useNotification } from '../../context/NotificationContext';
 import CinemaHeader from '../components/cinema-header';
 import MovieCard from '../components/movie-card';
@@ -71,12 +72,8 @@ export default function SearchContent() {
 
   // Load My List & Initial Recommendations
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('frame_my_list');
-      if (stored) {
-        setMyListIds(JSON.parse(stored));
-      }
-    } catch (e) { }
+    const list = getCinemaMyList();
+    setMyListIds(list);
 
     // Check cached recommendations first for instant render
     const cachedRecs = getCinemaCache<Movie[]>('search', 'recommended');
@@ -148,25 +145,22 @@ export default function SearchContent() {
 
   const toggleMyList = (movieId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    let updated: string[];
-    if (myListIds.includes(movieId)) {
-      updated = myListIds.filter((id) => id !== movieId);
-      showNote({
-        content: lang?.frame_note_removed || 'Удалено из Моего списка',
-        type: 'info',
-        time: 3,
-      });
-    } else {
-      updated = [...myListIds, movieId];
-      showNote({
-        content: lang?.frame_note_added || 'Добавлено в Мой список',
-        type: 'success',
-        time: 3,
-      });
-    }
-    try {
-      localStorage.setItem('frame_my_list', JSON.stringify(updated));
-    } catch (err) { }
+    
+    const isInList = myListIds.includes(movieId);
+    const updated = isInList
+      ? myListIds.filter((id) => id !== movieId)
+      : [movieId, ...myListIds];
+    
+    setMyListIds(updated);
+    setCinemaMyList(updated);
+    
+    showNote({
+      content: isInList
+        ? (lang?.frame_note_removed || 'Удалено из Моего списка')
+        : (lang?.frame_note_added || 'Добавлено в Мой список'),
+      type: isInList ? 'info' : 'success',
+      time: 3,
+    });
   };
 
   const displayMovies = query.trim() ? searchResults : recommendedMovies;

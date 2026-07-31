@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
-import { cache } from '../lib/cache.ts';
+import { AncialAPI } from '../lib/api-v2';
+import { setAuthToken } from '../lib/cache-helpers';
 import { Button } from '../components/button';
 import { Input } from '../components/form';
 
@@ -55,26 +56,12 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const params = new URLSearchParams();
-      params.append('do_login', 'True');
-      params.append('login', login);
-      params.append('password', password);
+      const result = await AncialAPI.loginResponse<{ token?: string }>({ login, password });
 
-      const res = await fetch(`/api/V2/auth/Login.php`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: params.toString(),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        setError(data.error || (lang?.login_error || 'Ошибка авторизации'));
+      if (!result.success) {
+        setError(result.error || (lang?.login_error || 'Ошибка авторизации'));
       } else {
-        cache.set('token', data.data?.token || '', { category: 'profile' });
+        setAuthToken(result.data?.token || '');
         await checkAuth({ force: true });
         router.push('/');
       }

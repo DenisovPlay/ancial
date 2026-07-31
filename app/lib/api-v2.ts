@@ -176,9 +176,10 @@ export class AncialAPI {
   private static BASE_URL = '/api/V2';
 
   /**
-   * Generic request handler for V2 API
+   * Low-level V2 response for callers that need the legacy `{ success, data, error }` envelope.
+   * HTTP failures still reject; API-level failures remain available to the caller.
    */
-  public static async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  public static async requestRaw<T>(endpoint: string, options?: RequestInit): Promise<AncialV2Response<T>> {
     const url = endpoint.startsWith('/') ? `${this.BASE_URL}${endpoint}` : `${this.BASE_URL}/${endpoint}`;
     const response = await authFetch(url, options);
 
@@ -186,7 +187,14 @@ export class AncialAPI {
       throw new Error(`API request failed with status ${response.status}`);
     }
 
-    const result: AncialV2Response<T> = await response.json();
+    return response.json() as Promise<AncialV2Response<T>>;
+  }
+
+  /**
+   * Generic request handler for V2 API. Returns unwrapped payloads and rejects API-level errors.
+   */
+  public static async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    const result = await this.requestRaw<T>(endpoint, options);
 
     if (!result.success) {
       throw new Error(result.error || 'Unknown API error');
@@ -197,10 +205,31 @@ export class AncialAPI {
 
   // --- AUTH ---
 
-  static async login<T = unknown>(params: { login?: string, password?: string, token?: string }): Promise<T> {
-    return this.request<T>('/auth/Login.php', {
+  static async loginResponse<T = unknown>(params: { login?: string; password?: string; token?: string }): Promise<AncialV2Response<T>> {
+    return this.requestRaw<T>('/auth/Login.php', {
       method: 'POST',
-      body: new URLSearchParams(params as Record<string, string>)
+      body: new URLSearchParams({ do_login: 'True', ...params } as Record<string, string>),
+    });
+  }
+
+  static async login<T = unknown>(params: { login?: string; password?: string; token?: string }): Promise<T> {
+    const result = await this.loginResponse<T>(params);
+    if (!result.success) throw new Error(result.error || 'Unknown API error');
+    return result.data;
+  }
+
+  static async signupResponse<T = unknown>(params: {
+    login: string;
+    email: string;
+    fname: string;
+    lname: string;
+    phone: string;
+    password: string;
+    password_2: string;
+  }): Promise<AncialV2Response<T>> {
+    return this.requestRaw<T>('/auth/SignUp.php', {
+      method: 'POST',
+      body: new URLSearchParams({ do_signup: 'True', ...params }),
     });
   }
 
@@ -208,7 +237,9 @@ export class AncialAPI {
     return this.request<T>('/auth/LogOut.php');
   }
 
-
+  static async checkStatusResponse<T = unknown>(): Promise<AncialV2Response<T>> {
+    return this.requestRaw<T>('/auth/CheckStatus.php', { cache: 'no-store' });
+  }
 
   static async checkStatus<T = unknown>(): Promise<T> {
     return this.request<T>('/auth/CheckStatus.php');
@@ -327,6 +358,10 @@ export class AncialAPI {
   }
 
   // --- MESSAGES ---
+
+  static async getDialogListResponse<T = unknown>(): Promise<AncialV2Response<T>> {
+    return this.requestRaw<T>('/messages/GetDialogList.php');
+  }
 
   static async getDialogList<T = unknown>(): Promise<T> {
     return this.request<T>('/messages/GetDialogList.php');
@@ -488,8 +523,19 @@ export class AncialAPI {
     return this.request<{ message: string }>('/oauth/Yandex.php?action=disconnect', { method: 'POST' });
   }
 
+  static async getNotificationsResponse<T = unknown>(): Promise<AncialV2Response<T>> {
+    return this.requestRaw<T>('/user/Notifications.php');
+  }
+
   static async getNotifications<T = unknown>(): Promise<T> {
     return this.request<T>('/user/Notifications.php');
+  }
+
+  static async markNotificationsRead<T = unknown>(): Promise<T> {
+    return this.request<T>('/user/Notifications.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'mark_read' }),
+    });
   }
 
   static async clearNotifications<T = unknown>(): Promise<T> {

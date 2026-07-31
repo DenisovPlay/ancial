@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { getAuthToken, setAuthToken } from '../../lib/cache-helpers';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -59,7 +60,7 @@ export default function SocialsContent() {
       if (event.data && event.data.type === 'oauth_success') {
         const token = event.data.token;
         if (token) {
-          localStorage.setItem('token', token);
+          setAuthToken(token);
           checkAuth();
         }
       }
@@ -86,7 +87,7 @@ export default function SocialsContent() {
         tgInitializedRef.current = true;
         container.innerHTML = '';
 
-        const token = localStorage.getItem('token') || '';
+        const token = getAuthToken();
         const origin = window.location.origin;
         const authUrl = `${SITE_URL}/api/V2/oauth/Telegram.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
 
@@ -120,7 +121,7 @@ export default function SocialsContent() {
           yandexBtn.innerHTML = '';
           setYandexLoading(false);
 
-          const token = localStorage.getItem('token') || '';
+          const token = getAuthToken();
           const origin = window.location.origin;
           const redirectUri = `${SITE_URL}/api/V2/oauth/Yandex.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
 

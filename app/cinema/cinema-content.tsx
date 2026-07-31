@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import CinemaHeader from './components/cinema-header';
-import HeroSlider from './components/hero-slider';
+import { getCinemaMyList, setCinemaMyList } from '../lib/cache-helpers';
+import { goToMovieInfo } from './cinema-navigation';
 import MovieCard from './components/movie-card';
 import MovieRow from './components/movie-row';
 import AdblockBanner from './components/adblock-banner';
@@ -20,8 +20,9 @@ import {
   fetchCinemaByCountry,
 } from './cinema-api';
 import { CinemaPageSkeleton } from './components/cinema-skeleton';
-import { goToMovieInfo } from './cinema-navigation';
 import { useDragScroll } from '../hooks/useDragScroll';
+import CinemaHeader from './components/cinema-header';
+import HeroSlider from './components/hero-slider';
 
 import { getCinemaCache, setCinemaCache } from './cinema-cache';
 import { getWatchHistory, getMovieProgress, WatchHistoryItem } from './cinema-history';
@@ -61,12 +62,10 @@ export default function CinemaContent() {
   const [animeList, setAnimeList] = useState<Movie[]>([]);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
 
-  // Load user list & watch history via cache manager & subscribe to live updates
+  // Load user's My List from cache on mount
   useEffect(() => {
-    try {
-      const savedList = localStorage.getItem('frame_my_list');
-      if (savedList) setMyListIds(JSON.parse(savedList));
-    } catch (e) { }
+    const list = getCinemaMyList();
+    setMyListIds(list);
 
     const refreshHistory = () => {
       const list = getWatchHistory();

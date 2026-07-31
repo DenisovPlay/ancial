@@ -44,9 +44,7 @@ export default function NotificationsPage() {
 
           // Отмечаем уведомления прочитанными на сервере и в навигации
           try {
-            const formData = new FormData();
-            formData.append('action', 'mark_read');
-            fetch('/api/V2/user/Notifications.php', { method: 'POST', body: formData }).catch(() => null);
+            void AncialAPI.markNotificationsRead().catch(() => null);
             window.dispatchEvent(new CustomEvent('ancial:unread_update', { detail: { type: 'clear_notifications' } }));
           } catch (e) {}
         }

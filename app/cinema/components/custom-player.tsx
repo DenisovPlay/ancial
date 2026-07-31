@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { getCinemaProgress } from '../../lib/cache-helpers';
 import { FrameBrandLoader } from './cinema-skeleton';
 import { saveWatchHistoryItem } from '../cinema-history';
 
@@ -145,22 +146,15 @@ export default function CustomPlayer({
   const getSavedTime = useCallback((): number => {
     let saved = startTime && Number(startTime) > 5 ? Number(startTime) : 0;
     if (!saved && movieId) {
-      try {
-        const raw = localStorage.getItem(`cinema_progress_${movieId}`);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          const sMatch = !isSeries || !parsed.season || Number(parsed.season) === Number(season || 1);
-          const eMatch = !isSeries || !parsed.episode || Number(parsed.episode) === Number(episode || 1);
-          if (sMatch && eMatch) {
-            saved = Number(parsed.time || parsed.currentTime || 0);
-          }
-        }
-      } catch (e) {}
+      const progress = getCinemaProgress(movieId);
+      if (progress && progress.currentTime > 5) {
+        saved = progress.currentTime;
+      }
     }
     return saved;
-  }, [startTime, movieId, isSeries, season, episode]);
+  }, [startTime, movieId]);
 
-  // Listen to postMessage from FlixCDN iframe
+  // PostMessage listener for iframe player state events
   useEffect(() => {
     if (!isFlixCDN) return;
 

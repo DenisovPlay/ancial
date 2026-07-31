@@ -12,6 +12,7 @@ import { cache } from '../../../lib/cache.ts';
 import { SITE_CONFIG } from '../../../seo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
+import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import PulsePlaylistEditorModal from '../../pulse-playlist-editor-modal';
 import {
   ActionIcon,
@@ -53,15 +54,6 @@ type PlaylistPageResponse = {
 
 const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
 const FALLBACK_PLAYLIST_NAME = 'Неизвестный плейлист';
-
-function readFavoriteIds() {
-  const parsed = cache.get<unknown>(FAVORITES_CACHE_KEY, { category: 'pulse', subcategory: 'favorites' });
-  return Array.isArray(parsed) ? parsed.map((id) => toNumber(id)).filter(Boolean) : [];
-}
-
-function writeFavoriteIds(ids: number[]) {
-  cache.set(FAVORITES_CACHE_KEY, ids, { category: 'pulse', subcategory: 'favorites' });
-}
 
 function getPlaylistCover(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[]) {
   const fallbackCover = getPulseBuiltinPlaylistCover(playlistId)
@@ -108,7 +100,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [playlist, setPlaylist] = useState<PulsePlaylistMeta | null>(cachedPlaylist);
   const [playlistLiked, setPlaylistLiked] = useState(Boolean(cachedPlaylistResponse?.is_liked));
   const [tracks, setTracks] = useState<PulseTrack[]>(cachedTracks);
-  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => readFavoriteIds());
+  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [metaLoading, setMetaLoading] = useState(!cachedPlaylist && !isBuiltinPlaylist);
   const [tracksLoading, setTracksLoading] = useState(!cachedTracks.length);
   const [error, setError] = useState('');
@@ -155,32 +147,14 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     });
   }, [showNote]);
 
-  const updateFavoriteIds = useCallback((updater: (ids: number[]) => number[]) => {
-    setFavoriteIds((currentIds) => {
-      const nextIds = updater(currentIds);
-      writeFavoriteIds(nextIds);
-      if (typeof window !== 'undefined') {
-        window._pulseLikedSongs = nextIds;
-        window.dispatchEvent(new CustomEvent('pulse-likes-updated', { detail: nextIds }));
-      }
-      return nextIds;
-    });
-  }, []);
-
   useEffect(() => {
-    const handleLikesUpdated = (e: CustomEvent) => {
-      setFavoriteIds(e.detail);
+    const handleLikesUpdated = () => {
       if (window._pagePlaylistConf?.type === 3) {
-        setTracksReloadToken((t) => t + 1);
+        setTracksReloadToken((token) => token + 1);
       }
     };
-    window.addEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
-
-    if (typeof window !== 'undefined' && Array.isArray(window._pulseLikedSongs)) {
-      setFavoriteIds(window._pulseLikedSongs);
-    }
-
-    return () => window.removeEventListener('pulse-likes-updated', handleLikesUpdated as EventListener);
+    window.addEventListener('pulse-likes-updated', handleLikesUpdated);
+    return () => window.removeEventListener('pulse-likes-updated', handleLikesUpdated);
   }, []);
 
   useEffect(() => {
@@ -307,12 +281,11 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
           ? result.ids.map((id) => toNumber(id)).filter(Boolean)
           : [];
 
-        writeFavoriteIds(nextIds);
-        setFavoriteIds(nextIds);
+        replaceFavoriteIds(nextIds);
       })
       .catch(() => {
         if (!cancelled) {
-          setFavoriteIds(readFavoriteIds());
+          // Keep IDs from the shared cache/event source.
         }
       });
 
@@ -502,8 +475,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
         const nextIds = Array.isArray(result.ids)
           ? result.ids.map((id) => toNumber(id)).filter(Boolean)
           : [];
-        writeFavoriteIds(nextIds);
-        setFavoriteIds(nextIds);
+        replaceFavoriteIds(nextIds);
       })
       .catch(() => { });
   }, [playlist, playlistId]);

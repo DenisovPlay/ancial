@@ -1,6 +1,7 @@
 import { AncialAPI } from './api-v2';
 import { WS_BASE } from '../config';
-import { cache } from './cache';
+import { getAuthToken } from './cache-helpers';
+import { cache } from './cache.ts';
 
 export type NetStatusState = 'hidden' | 'reconnecting';
 
@@ -78,8 +79,8 @@ function normalizeUserId(value: number | string) {
   return Number.isFinite(nextValue) && nextValue > 0 ? nextValue : 0;
 }
 
-function getStoredToken() {
-  return (cache.get<string>('token') || '').trim();
+function getToken(): string {
+  return getAuthToken();
 }
 
 function hasBrowserWebSocket() {
@@ -388,7 +389,7 @@ function connect() {
     return;
   }
 
-  token = getStoredToken();
+  token = getToken();
   if (token.length < MIN_TOKEN_LENGTH) {
     return;
   }
@@ -444,7 +445,7 @@ function connect() {
     suppressCloseHandling = false;
 
     if (!shouldSuppress) {
-      const hasToken = getStoredToken().length >= MIN_TOKEN_LENGTH;
+      const hasToken = getToken().length >= MIN_TOKEN_LENGTH;
 
       if (hasConnectedOnce && hasToken) {
         setNetStatus('reconnecting');
@@ -461,7 +462,7 @@ function connect() {
 
 export const globalWS: GlobalWSClient = {
   init() {
-    const nextToken = getStoredToken();
+    const nextToken = getToken();
 
     if (nextToken.length < MIN_TOKEN_LENGTH || !hasBrowserWebSocket()) {
       token = nextToken;

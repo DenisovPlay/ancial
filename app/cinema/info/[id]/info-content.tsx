@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { getCinemaReferrer, removeCinemaReferrer, getCinemaMyList, setCinemaMyList } from '../../../lib/cache-helpers';
 import CinemaHeader from '../../components/cinema-header';
 import MovieRow from '../../components/movie-row';
 import { Movie } from '../../types';
@@ -26,13 +27,13 @@ export default function InfoContent({ id }: InfoContentProps) {
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [myListIds, setMyListIds] = useState<string[]>([]);
   const [fromUrl] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
+    
     try {
-      const saved = sessionStorage.getItem('ancial_cinema_info_referrer');
+      const saved = getCinemaReferrer();
       if (saved) {
-        sessionStorage.removeItem('ancial_cinema_info_referrer');
+        removeCinemaReferrer();
         if (!saved.includes('/cinema/info/') && !saved.includes('/cinema/watch/')) {
           return saved;
         }
@@ -72,8 +73,14 @@ export default function InfoContent({ id }: InfoContentProps) {
     if (typeof window === 'undefined') return [];
     return getCinemaCache<Movie[]>('similar', id) || [];
   });
+  
   const [isLoading, setIsLoading] = useState<boolean>(() => !infoMovie);
   const [isRevalidating, setIsRevalidating] = useState<boolean>(true);
+
+  const [myListIds, setMyListIds] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    return getCinemaMyList();
+  });
 
   // Watch state & selection
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
@@ -126,6 +133,22 @@ export default function InfoContent({ id }: InfoContentProps) {
 
   useEffect(() => {
     let isMounted = true;
+
+    // Refresh savedProgress when history updates
+    const refreshFromHistoryEvent = () => {
+      if (!infoMovie) return;
+      const prog = getMovieProgress(infoMovie.id);
+      if (prog) {
+        setSavedProgress({
+          season: prog.season,
+          episode: prog.episode,
+          translationId: prog.translationId,
+          playerId: prog.playerId,
+          currentTime: prog.currentTime,
+          duration: prog.duration,
+        });
+      }
+    };
 
     // 1. Read cached data first (check 'info' cache, then fallback to 'video' cache)
     let cachedMovie = getCinemaCache<Movie>('info', id);
@@ -218,38 +241,31 @@ export default function InfoContent({ id }: InfoContentProps) {
 
     loadMovieInfo();
 
-    try {
-      const savedList = localStorage.getItem('frame_my_list');
-      if (savedList) setMyListIds(JSON.parse(savedList));
-    } catch (e) { }
-
+    window.addEventListener('ancial:cinema_history_update', refreshFromHistoryEvent);
     return () => {
       isMounted = false;
+      window.removeEventListener('ancial:cinema_history_update', refreshFromHistoryEvent);
     };
   }, [id]);
 
   const toggleMyList = (movieId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    let updated: string[];
-    if (myListIds.includes(movieId)) {
-      updated = myListIds.filter((i) => i !== movieId);
-      showNote({
-        content: lang?.frame_note_removed || 'Удалено из Моего списка',
-        type: 'info',
-        time: 3,
-      });
-    } else {
-      updated = [...myListIds, movieId];
-      showNote({
-        content: lang?.frame_note_added || 'Добавлено в Мой список',
-        type: 'success',
-        time: 3,
-      });
-    }
+    
+    const isInList = myListIds.includes(movieId);
+    const updated = isInList
+      ? myListIds.filter((i) => i !== movieId)
+      : [...myListIds, movieId];
+    
+    setCinemaMyList(updated);
     setMyListIds(updated);
-    try {
-      localStorage.setItem('frame_my_list', JSON.stringify(updated));
-    } catch (err) { }
+
+    showNote({
+      content: isInList
+        ? (lang?.frame_note_removed || 'Удалено из Моего списка')
+        : (lang?.frame_note_added || 'Добавлено в Мой список'),
+      type: isInList ? 'info' : 'success',
+      time: 3,
+    });
   };
 
   const handleSelectSeason = (sNum: number) => {

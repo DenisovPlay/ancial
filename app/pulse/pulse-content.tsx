@@ -22,6 +22,7 @@ import {
 } from './pulse-components';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
+import { usePulseFavoriteIds } from './player/use-pulse-favorite-ids';
 import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigation';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-track-modal';
 import { PulseHeader } from './pulse-header';
@@ -629,12 +630,7 @@ export default function PulseContent() {
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
-  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => {
-    const cachedFavoriteIds = readJsonCache<number[]>(FAVORITES_CACHE_KEY);
-    return Array.isArray(cachedFavoriteIds)
-      ? cachedFavoriteIds.map((id) => toNumber(id)).filter(Boolean)
-      : [];
-  });
+  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [listened, setListened] = useState<RecentlyListenedState>(() => readListenedCache());
   const [fromPulse, setFromPulse] = useState<PulseHomePlaylistCard[] | null>(() => readJsonCache<PulseHomePlaylistCard[]>(HOME_CACHE_KEYS.fromPulse));
   const [artists, setArtists] = useState<PulseHomeArtist[] | null>(() => readJsonCache<PulseHomeArtist[]>(HOME_CACHE_KEYS.artists));
@@ -654,14 +650,6 @@ export default function PulseContent() {
 
     return nextCountry || 'RU';
   }, [user?.country]);
-
-  const updateFavoriteIds = useCallback((updater: (currentIds: number[]) => number[]) => {
-    setFavoriteIds((currentIds) => {
-      const nextIds = updater(currentIds);
-      writeJsonCache(FAVORITES_CACHE_KEY, nextIds);
-      return nextIds;
-    });
-  }, []);
 
   const showPulseNote = useCallback((content: string, type: NoteKind = 'info', time = 4) => {
     showNote({
@@ -854,12 +842,11 @@ export default function PulseContent() {
           ? result.ids.map((id) => toNumber(id)).filter(Boolean)
           : [];
 
-        writeJsonCache(FAVORITES_CACHE_KEY, nextFavoriteIds);
-        setFavoriteIds(nextFavoriteIds);
+        replaceFavoriteIds(nextFavoriteIds);
       })
       .catch(() => {
         if (!cachedFavoriteIds && !cancelled) {
-          setFavoriteIds([]);
+          replaceFavoriteIds([]);
         }
       });
 

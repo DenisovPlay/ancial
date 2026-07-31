@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useRef, useState, useEff
 import { useRouter } from 'next/navigation';
 import { getLangFromCache, saveLangToCache, locales, getStoredLangCode, saveStoredLangCode, SupportedLang } from '../lib/lang';
 import { restoreLegacyAuthSession } from '../lib/auth-fetch';
+import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 
 // Типизация пользователя на основе данных обоих методов (check.php и info.php)
@@ -176,18 +177,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const readSessionUser = async () => {
         try {
-          const checkRes = await fetch(`/api/V2/auth/CheckStatus.php`, {
-            cache: 'no-store',
-            credentials: 'include',
-          });
-
-          if (!checkRes.ok) {
-            return { auth: false, isNetworkError: true };
-          }
-
-          const json = await checkRes.json();
-          if (json.success && json.data) {
-            return json.data;
+          const result = await AncialAPI.checkStatusResponse<any>();
+          if (result.success && result.data) {
+            return result.data;
           }
           return { auth: false };
         } catch {
@@ -350,9 +342,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // ОБЯЗАТЕЛЬНО убиваем сессию на сервере (PHP cookie),
       // иначе CheckStatus.php будет продолжать возвращать auth: true
-      await fetch(`/api/V2/auth/LogOut.php`, {
-        credentials: 'include',
-      });
+      await AncialAPI.logout();
     } catch (e) {
       console.error('Ошибка при логауте на сервере', e);
     }

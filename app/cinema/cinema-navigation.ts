@@ -2,6 +2,7 @@
 
 import { setCinemaCache } from './cinema-cache';
 import { CacheManager } from '../lib/cache';
+import { setCinemaReferrer } from '../lib/cache-helpers';
 import { Movie } from './types';
 
 /**
@@ -12,7 +13,7 @@ export function goToMovieInfo(router: any, movieId: string | number, movieData?:
   const strId = String(movieId);
   if (typeof window !== 'undefined') {
     try {
-      sessionStorage.setItem('ancial_cinema_info_referrer', window.location.pathname + window.location.search);
+      setCinemaReferrer(window.location.pathname + window.location.search);
       if (movieData) {
         setCinemaCache('info', strId, movieData);
         CacheManager.set(`cinema_video_by_id_${strId}`, movieData, {

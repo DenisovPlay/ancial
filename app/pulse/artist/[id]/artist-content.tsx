@@ -13,6 +13,7 @@ import { SITE_CONFIG } from '../../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import { getPulsePlaylistTracksCacheKey } from '../../playlist/playlist-model';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
+import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -60,8 +61,6 @@ type PulseArtistTracksResponse = {
   popular_tracks?: PulseTrack[] | null;
 };
 
-const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
-
 function isGenlistPlaylist(card: PulsePlaylistCardData) {
   return String(card.type ?? '') === '4';
 }
@@ -70,14 +69,6 @@ function getCardPlayableId(card: PulsePlaylistCardData) {
   return isGenlistPlaylist(card)
     ? normalizeText(card.genlist)
     : normalizeText(String(card.id ?? ''));
-}
-
-function readFavoriteIds() {
-  return (readPulseJsonCache<number[]>(FAVORITES_CACHE_KEY) ?? []).map((id) => toNumber(id)).filter(Boolean);
-}
-
-function writeFavoriteIds(ids: number[]) {
-  writePulseJsonCache(FAVORITES_CACHE_KEY, ids);
 }
 
 function getExternalPulseUrl(path: string) {
@@ -105,7 +96,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const artistTracksCacheKey = getPulsePlaylistTracksCacheKey(cacheId, { genlist: '', type: '5' }, cacheId);
   const cachedTracks = readPulseJsonCache<PulseTrack[]>(artistTracksCacheKey) ?? [];
   const [artist, setArtist] = useState<PulseArtist | null>(() => readPulseJsonCache<PulseArtistResponse>(`artist_${cacheId}`)?.artist ?? null);
-  const [favoriteIds, setFavoriteIds] = useState<number[]>(() => readFavoriteIds());
+  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
@@ -188,8 +179,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
         const nextIds = Array.isArray(favoritesResult.ids)
           ? favoritesResult.ids.map((id) => toNumber(id)).filter(Boolean)
           : [];
-        writeFavoriteIds(nextIds);
-        setFavoriteIds(nextIds);
+        replaceFavoriteIds(nextIds);
       })
       .catch(() => {
         // ignore
@@ -231,21 +221,13 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
       const result = response.message || '';
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
-        setFavoriteIds((ids) => {
-          const nextIds = ids.includes(trackId) ? ids : [...ids, trackId];
-          writeFavoriteIds(nextIds);
-          return nextIds;
-        });
+        updateFavoriteIds((ids) => ids.includes(trackId) ? ids : [...ids, trackId]);
         showPulseNote(result === 'CREATED_ADDED' ? (lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!') : (lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!'), 'success');
         return;
       }
 
       if (result === 'REMOVED') {
-        setFavoriteIds((ids) => {
-          const nextIds = ids.filter((id) => id !== trackId);
-          writeFavoriteIds(nextIds);
-          return nextIds;
-        });
+        updateFavoriteIds((ids) => ids.filter((id) => id !== trackId));
         showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
         return;
       }
@@ -254,7 +236,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang?.pulse_error_happened, showPulseNote]);
+  }, [isAuthenticated, lang?.pulse_error_happened, showPulseNote, updateFavoriteIds]);
 
   const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
     const resolvedTrackId = toNumber(trackId);

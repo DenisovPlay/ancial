@@ -11,6 +11,7 @@ import { AncialAPI } from '../../../lib/api-v2';
 import { SITE_CONFIG } from '../../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import { readPulseJsonCache, writePulseJsonCache } from '../../pulse-cache';
+import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import {
   ActionIcon,
   getPulseBackgroundColorByMood,
@@ -26,8 +27,6 @@ import {
   toNumber,
   type PulseTrack,
 } from '../../pulse-components';
-
-const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
 
 type PulseTracksSearchResponse = {
   tracks?: PulseTrack[] | null;
@@ -60,9 +59,7 @@ export default function PulseSearchTracksContent() {
     const cached = readPulseJsonCache<PulseTracksSearchResponse>(getPulseTracksSearchCacheKey(query));
     return Array.isArray(cached?.tracks) ? cached.tracks : [];
   });
-  const [favoriteIds, setFavoriteIds] = useState<number[]>(() =>
-    (readPulseJsonCache<number[]>(FAVORITES_CACHE_KEY) ?? []).map((id) => toNumber(id)).filter(Boolean),
-  );
+  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [loading, setLoading] = useState(!tracks.length);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -116,8 +113,7 @@ export default function PulseSearchTracksContent() {
         const nextIds = Array.isArray(favResult.value.ids)
           ? favResult.value.ids.map((id) => toNumber(id)).filter(Boolean)
           : [];
-        writePulseJsonCache(FAVORITES_CACHE_KEY, nextIds);
-        setFavoriteIds(nextIds);
+        replaceFavoriteIds(nextIds);
       }
 
       if (searchResult.status === 'fulfilled') {
@@ -153,11 +149,7 @@ export default function PulseSearchTracksContent() {
         const result = response.message || '';
 
         if (result === 'ADDED' || result === 'CREATED_ADDED') {
-          setFavoriteIds((ids) => {
-            const nextIds = ids.includes(trackId) ? ids : [...ids, trackId];
-            writePulseJsonCache(FAVORITES_CACHE_KEY, nextIds);
-            return nextIds;
-          });
+          updateFavoriteIds((ids) => ids.includes(trackId) ? ids : [...ids, trackId]);
           showPulseNote(
             result === 'CREATED_ADDED'
               ? lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!'
@@ -168,11 +160,7 @@ export default function PulseSearchTracksContent() {
         }
 
         if (result === 'REMOVED') {
-          setFavoriteIds((ids) => {
-            const nextIds = ids.filter((id) => id !== trackId);
-            writePulseJsonCache(FAVORITES_CACHE_KEY, nextIds);
-            return nextIds;
-          });
+          updateFavoriteIds((ids) => ids.filter((id) => id !== trackId));
           showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
           return;
         }
@@ -182,7 +170,7 @@ export default function PulseSearchTracksContent() {
         showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
       }
     },
-    [isAuthenticated, lang, showPulseNote],
+    [isAuthenticated, lang, showPulseNote, updateFavoriteIds],
   );
 
   const copyTrackLink = useCallback(
