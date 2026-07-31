@@ -718,22 +718,24 @@ export default function CustomPlayer({
           )}
         </div>
 
-        {/* IFRAME PRELOADER (LOCATED AT Z-10 BEHIND TOP BAR Z-40) */}
-        {isIframeLoading && (
+        {/* IFRAME PRELOADER OR LOADING SPINNER (LOCATED AT Z-10 BEHIND TOP BAR Z-40) */}
+        {(isIframeLoading || !fallbackIframeSrc) && (
           <div className="absolute inset-0 z-10 bg-black flex flex-col items-center justify-center pointer-events-none">
             <FrameBrandLoader />
           </div>
         )}
 
-        <iframe
-          ref={iframeRef}
-          src={fallbackIframeSrc}
-          title={title}
-          className="w-full h-full border-0 relative z-20"
-          onLoad={() => setIsIframeLoading(false)}
-          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-          allowFullScreen
-        />
+        {Boolean(fallbackIframeSrc) && (
+          <iframe
+            ref={iframeRef}
+            src={fallbackIframeSrc}
+            title={title}
+            className="w-full h-full border-0 relative z-20"
+            onLoad={() => setIsIframeLoading(false)}
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            allowFullScreen
+          />
+        )}
 
         {/* FLIXCDN CUSTOM CONTROLS OVERLAY (BOTTOM BAR) */}
         {isFlixCDN && (

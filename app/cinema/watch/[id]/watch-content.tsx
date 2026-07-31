@@ -425,11 +425,13 @@ export default function WatchContent({ id }: WatchContentProps) {
     Boolean(movie.videoUrl && (movie.videoUrl.includes('tarantino') || movie.videoUrl.includes('flixcdn')));
 
   let activeIframeSrc = '';
-  if (selectedPlayerId === 'collaps') {
+  if (selectedPlayerId === 'videohub') {
+    activeIframeSrc = '';
+  } else if (selectedPlayerId === 'collaps') {
     activeIframeSrc = collapsIframeSrc;
   } else if (selectedPlayerId === 'cdnmovies') {
     activeIframeSrc = cdnMoviesIframeSrc;
-  } else if (isFlixCdnPlayer || activePlayerObj?.iframeUrl) {
+  } else if (isFlixCdnPlayer || (activePlayerObj?.iframeUrl && (activePlayerObj.iframeUrl.startsWith('http') || activePlayerObj.iframeUrl.startsWith('//')))) {
     const rawUrl = activePlayerObj?.iframeUrl || flixIframeSrc;
     try {
       const u = new URL(rawUrl, typeof window !== 'undefined' ? window.location.origin : 'https://localhost');
