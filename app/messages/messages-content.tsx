@@ -331,7 +331,16 @@ export default function MessagesContent() {
     ? normalizeAssetUrl(selectedDialog?.avatar || (dialogListItem as any)?.avatar, FALLBACK_AVATAR)
     : normalizeAssetUrl(effectiveForeignUser?.img, FALLBACK_AVATAR);
 
-  const dialogBackgroundUrl = normalizeAssetUrl(selectedDialog?.img, '');
+  const rawBg =
+    selectedDialog?.img ||
+    (selectedDialog as any)?.bg ||
+    (selectedDialog as any)?.background ||
+    (selectedDialog as any)?.image_url ||
+    (dialogListItem as any)?.img ||
+    (dialogListItem as any)?.bg ||
+    (dialogListItem as any)?.background;
+
+  const dialogBackgroundUrl = normalizeAssetUrl(rawBg, '');
   const selectedDialogId = toNumber(selectedDialog?.id);
   const wsPresencePayload = useSyncExternalStore<WsPayload | null>(
     globalWS.subscribePresenceStore,
@@ -1814,6 +1823,7 @@ export default function MessagesContent() {
   const handleDialogBackgroundSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     const dialogId = currentDialogIdRef.current;
+    const dialogHash = currentDialogHashRef.current || routeHash;
     if (!file || !dialogId) return;
 
     setUploadingDialogBackground(true);
@@ -1837,8 +1847,15 @@ export default function MessagesContent() {
           ? {
             ...currentDialog,
             img: imageUrl,
+            bg: imageUrl,
           }
           : currentDialog,
+      );
+
+      setDialogs((prevDialogs) =>
+        prevDialogs.map((d) =>
+          normalizeHash(d.hash) === dialogHash ? { ...d, img: imageUrl, bg: imageUrl } : d
+        )
       );
 
       setSettingsModalOpen(false);
@@ -1875,8 +1892,15 @@ export default function MessagesContent() {
           ? {
             ...currentDialog,
             img: '',
+            bg: '',
           }
           : currentDialog,
+      );
+
+      setDialogs((prevDialogs) =>
+        prevDialogs.map((d) =>
+          normalizeHash(d.hash) === dialogHash ? { ...d, img: '', bg: '' } : d
+        )
       );
       setSettingsModalOpen(false);
     } catch (error) {
@@ -2132,7 +2156,7 @@ export default function MessagesContent() {
 
       <div
         id="dialog-bg"
-        className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 duration-300 bg-cover bg-center"
+        className="fixed inset-0 z-0 w-full h-full object-cover opacity-30 duration-300 bg-cover bg-center pointer-events-none"
         style={
           dialogBackgroundUrl
             ? {
@@ -2394,6 +2418,13 @@ export default function MessagesContent() {
                   id="dialog-bg-old"
                   className="relative flex h-full w-full flex-col overflow-hidden bg-cover bg-center"
                 >
+                  {dialogBackgroundUrl && (
+                    <div
+                      id="dialog-bg-image"
+                      className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-40 duration-300"
+                      style={{ backgroundImage: `url(${dialogBackgroundUrl})` }}
+                    />
+                  )}
                   <div className="absolute inset-x-0 top-0 z-[20] flex items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent lg:from-transparent lg:via-transparent p-2">
                     <div className="flex w-23 shrink-0">
                       <button
@@ -2528,8 +2559,8 @@ export default function MessagesContent() {
 
                           {timelineItems.map((item, index) =>
                             item.kind === 'separator' ? (
-                              <div key={`sep:${item.dayKey}`} className="my-3 flex w-full justify-center">
-                                <span className="rounded-full border border-zinc-600/30 bg-zinc-900/70 px-3 py-1 text-xs text-zinc-200 shadow">
+                              <div key={`sep:${item.dayKey}`} className="relative z-10 my-3 flex w-full justify-center">
+                                <span className="rounded-full border border-zinc-600/40 bg-zinc-900/90 backdrop-blur-md px-3.5 py-1 text-xs font-semibold text-zinc-200 shadow-lg">
                                   {item.label}
                                 </span>
                               </div>
