@@ -1,50 +1,83 @@
 'use client';
 
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react';
+import React, { type CSSProperties, useEffect, useRef } from 'react';
+import { normalizeText } from './player-utils';
 
 export type PulseLyricsLine = {
   text: string;
   time: number;
 };
 
-const PLAYER_LYRIC_FILL_TRANSITION_MS = 250;
-
-function normalizeText(value: string | null | undefined) {
-  return String(value ?? '').trim();
-}
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function parseLyricsText(value: string) {
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
+
+/** Parses LRC or plain text lyrics into timestamped lines. */
+export function parseLyricsText(value: string): PulseLyricsLine[] {
+  if (!value || typeof value !== 'string') return [];
+
+  // Remove UTF-8 BOM if present
+  let cleanValue = value.replace(/^\uFEFF/, '').trim();
+
+  // If JSON encoded, extract text field
+  if (cleanValue.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(cleanValue);
+      cleanValue = parsed.lyrics || parsed.text || parsed.lrc || cleanValue;
+    } catch { /* ignore */ }
+  }
+
+  // Convert HTML breaks to newlines & strip HTML tags if present
+  cleanValue = cleanValue
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]*>/g, '');
+
+  const rawLines = cleanValue.split(/\r\n|\n/);
+  const lyricPattern = /^\s*\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
+
   const lines: PulseLyricsLine[] = [];
-  const rawLines = value.split(/\r\n|\n/);
-  const lyricPattern = /^\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
 
   rawLines.forEach((line) => {
     const match = line.match(lyricPattern);
     if (!match) return;
 
-    const time = Number.parseInt(match[1], 10) * 60 + Number.parseFloat(match[2]);
+    const minutes = Number.parseInt(match[1], 10);
+    const seconds = Number.parseFloat(match[2]);
+    const time = minutes * 60 + seconds;
     const text = normalizeText(match[3]);
     if (!text) return;
 
     lines.push({ text, time });
   });
 
-  lines.sort((left, right) => left.time - right.time);
+  if (lines.length > 0) {
+    lines.sort((left, right) => left.time - right.time);
 
-  if (lines.length > 0 && lines[0].time > 0.5) {
-    lines.unshift({ text: '♪', time: 0 });
+    if (lines[0].time > 0.5) {
+      lines.unshift({ text: '♪', time: 0 });
+    }
+
+    return lines;
   }
 
-  return lines;
+  // Fallback: If UniLyrics returned plain text without LRC timestamps
+  const plainLines = rawLines
+    .map((l) => normalizeText(l))
+    .filter((l) => l.length > 0 && !l.startsWith('[') && !l.startsWith('{'));
+
+  if (plainLines.length > 0) {
+    const generatedLines: PulseLyricsLine[] = [{ text: '♪', time: 0 }];
+    plainLines.forEach((text, i) => {
+      generatedLines.push({ text, time: (i + 1) * 3.5 });
+    });
+    return generatedLines;
+  }
+
+  return [];
 }
 
 export function getActiveLyricState(lines: PulseLyricsLine[], currentTime: number) {
@@ -58,7 +91,7 @@ export function getActiveLyricState(lines: PulseLyricsLine[], currentTime: numbe
     break;
   }
 
-  if (activeIndex === -1) {
+  if (activeIndex < 0) {
     return {
       activeIndex: -1,
       progress: 0,
@@ -89,10 +122,6 @@ export function splitLyricText(text: string) {
   };
 }
 
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
-
 function renderLyricWords(text: string, progress: number, isActive: boolean) {
   const words = text.split(' ').filter(Boolean);
   if (!words.length) {
@@ -114,16 +143,15 @@ function renderLyricWords(text: string, progress: number, isActive: boolean) {
       }
     }
 
-    const isCurrentWordFill = isActive && fill > 0 && fill < 100;
-    const style = isActive
-      ? ({
-        transition: isCurrentWordFill ? `--pulse-lyric-fill ${PLAYER_LYRIC_FILL_TRANSITION_MS}ms linear` : 'none',
-        '--pulse-lyric-fill': `${fill}%`,
-        backgroundImage: 'linear-gradient(90deg, #ffffff var(--pulse-lyric-fill), rgba(255,255,255,0.4) var(--pulse-lyric-fill))',
+    const fillVal = fill.toFixed(1);
+
+    const style: CSSProperties | undefined = isActive
+      ? {
+        backgroundImage: `linear-gradient(90deg, #ffffff ${fillVal}%, rgba(255,255,255,0.4) ${fillVal}%)`,
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         color: 'transparent',
-      } as CSSProperties)
+      }
       : undefined;
 
     return (
@@ -135,14 +163,7 @@ function renderLyricWords(text: string, progress: number, isActive: boolean) {
   });
 }
 
-type PulseMobileLyricEntry = {
-  activeIndex: number;
-  backText: string;
-  key: number;
-  mainText: string;
-  progress: number;
-};
-
+/** Mobile overlay lyrics displayed on top of artwork. */
 export function PulseLyricsMobile({
   activeIndex,
   lyric,
@@ -154,197 +175,26 @@ export function PulseLyricsMobile({
   progress: number;
   source: string;
 }) {
-  const [displayEntry, setDisplayEntry] = useState<PulseMobileLyricEntry | null>(null);
-  const [outgoingEntry, setOutgoingEntry] = useState<PulseMobileLyricEntry | null>(null);
-  const [displayPhase, setDisplayPhase] = useState<'enter' | 'exit' | 'idle'>('idle');
-  const animationFrameRef = useRef<number | null>(null);
-  const displayedEntryRef = useRef<PulseMobileLyricEntry | null>(null);
-  const enterTimerRef = useRef<number | null>(null);
-  const exitTimerRef = useRef<number | null>(null);
-  const latestEntryRef = useRef<PulseMobileLyricEntry | null>(null);
-  const motionKeyRef = useRef(0);
-
   const mainText = lyric?.mainText || '♪';
   const backText = lyric?.backText || '';
 
-  useEffect(() => {
-    latestEntryRef.current = activeIndex >= 0
-      ? {
-        activeIndex,
-        backText,
-        key: motionKeyRef.current,
-        mainText,
-        progress,
-      }
-      : null;
-  }, [activeIndex, backText, mainText, progress]);
-
-  useEffect(() => {
-    if (!displayedEntryRef.current || displayedEntryRef.current.activeIndex !== activeIndex) {
-      return;
-    }
-
-    displayedEntryRef.current = {
-      ...displayedEntryRef.current,
-      backText,
-      mainText,
-      progress,
-    };
-  }, [activeIndex, backText, mainText, progress]);
-
-  useEffect(() => {
-    const clearPendingAnimations = () => {
-      if (animationFrameRef.current !== null) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      if (exitTimerRef.current !== null) {
-        window.clearTimeout(exitTimerRef.current);
-        exitTimerRef.current = null;
-      }
-      if (enterTimerRef.current !== null) {
-        window.clearTimeout(enterTimerRef.current);
-        enterTimerRef.current = null;
-      }
-    };
-
-    const queueStateSync = (callback: () => void) => {
-      clearPendingAnimations();
-      animationFrameRef.current = window.requestAnimationFrame(() => {
-        animationFrameRef.current = null;
-        callback();
-      });
-    };
-
-    const nextEntry = latestEntryRef.current;
-    const previousEntry = displayedEntryRef.current;
-    const lineChanged = !!nextEntry && (
-      !previousEntry
-      || previousEntry.activeIndex !== nextEntry.activeIndex
-      || previousEntry.mainText !== nextEntry.mainText
-      || previousEntry.backText !== nextEntry.backText
-    );
-
-    if (!nextEntry) {
-      displayedEntryRef.current = null;
-      queueStateSync(() => {
-        setDisplayEntry(null);
-        setOutgoingEntry(null);
-        setDisplayPhase('idle');
-      });
-      return clearPendingAnimations;
-    }
-
-    if (!lineChanged) {
-      return clearPendingAnimations;
-    }
-
-    motionKeyRef.current += 1;
-    const enteringEntry: PulseMobileLyricEntry = {
-      ...nextEntry,
-      key: motionKeyRef.current,
-    };
-
-    if (!previousEntry) {
-      displayedEntryRef.current = enteringEntry;
-      queueStateSync(() => {
-        setOutgoingEntry(null);
-        setDisplayEntry(enteringEntry);
-        setDisplayPhase('enter');
-        enterTimerRef.current = window.setTimeout(() => {
-          setDisplayPhase('idle');
-          enterTimerRef.current = null;
-        }, 420);
-      });
-      return clearPendingAnimations;
-    }
-
-    const frozenOutgoingEntry: PulseMobileLyricEntry = {
-      ...previousEntry,
-      progress: previousEntry.progress,
-    };
-
-    queueStateSync(() => {
-      setDisplayEntry(null);
-      setOutgoingEntry(frozenOutgoingEntry);
-      setDisplayPhase('exit');
-
-      exitTimerRef.current = window.setTimeout(() => {
-        displayedEntryRef.current = enteringEntry;
-        setOutgoingEntry(null);
-        setDisplayEntry(enteringEntry);
-        setDisplayPhase('enter');
-        exitTimerRef.current = null;
-
-        enterTimerRef.current = window.setTimeout(() => {
-          setDisplayPhase('idle');
-          enterTimerRef.current = null;
-        }, 420);
-      }, 320);
-    });
-
-    return clearPendingAnimations;
-  }, [activeIndex, backText, mainText]);
-
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current !== null) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (exitTimerRef.current !== null) {
-        window.clearTimeout(exitTimerRef.current);
-      }
-      if (enterTimerRef.current !== null) {
-        window.clearTimeout(enterTimerRef.current);
-      }
-    };
-  }, []);
-
-  const visibleEntry = displayEntry;
-  const visibleProgress = visibleEntry?.activeIndex === activeIndex ? progress : (visibleEntry?.progress ?? 0);
-
   return (
-    <div className="animate-opacity-fade-in absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/70 p-3 backdrop-blur-sm backdrop-saturate-200 lg:hidden">
-      <div className="relative flex h-[180px] w-full items-center justify-center overflow-hidden text-center text-zinc-100 drop-shadow-lg">
-        {outgoingEntry ? (
-          <div
-            key={`mobile-lyric-out-${outgoingEntry.key}-${outgoingEntry.activeIndex}`}
-            className="pulse-mobile-lyric-exit absolute inset-x-0 flex flex-col items-center justify-center px-2"
-          >
-            <span className="block text-2xl font-bold">
-              {renderLyricWords(outgoingEntry.mainText, outgoingEntry.progress, true)}
+    <div className="animate-opacity-fade-in absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/80 p-4 backdrop-blur-md backdrop-saturate-200 lg:hidden">
+      <div className="relative flex min-h-[140px] w-full flex-col items-center justify-center text-center text-zinc-100 drop-shadow-lg">
+        <div key={`lyric-${activeIndex}-${mainText}`} className="animate-smooth-appear flex flex-col items-center justify-center px-2">
+          <span className="block text-2xl font-bold leading-tight">
+            {renderLyricWords(mainText, progress, true)}
+          </span>
+          {backText ? (
+            <span className="mt-2 block text-sm font-semibold text-white/60">
+              ({backText})
             </span>
-            {outgoingEntry.backText ? (
-              <span className="mt-1 block text-sm font-semibold text-white/60">
-                ({outgoingEntry.backText})
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-
-        {visibleEntry ? (
-          <div
-            key={`mobile-lyric-in-${visibleEntry.key}-${visibleEntry.activeIndex}`}
-            className={
-              displayPhase === 'enter'
-                ? 'pulse-mobile-lyric-enter absolute inset-x-0 flex flex-col items-center justify-center px-2'
-                : 'absolute inset-x-0 flex flex-col items-center justify-center px-2'
-            }
-          >
-            <span className="block text-2xl font-bold">
-              {renderLyricWords(visibleEntry.mainText, visibleProgress, true)}
-            </span>
-            {visibleEntry.backText ? (
-              <span className="mt-1 block text-sm font-semibold text-white/60">
-                ({visibleEntry.backText})
-              </span>
-            ) : null}
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
       {source ? (
-        <span className="absolute inset-x-0 bottom-0 text-center text-xs text-zinc-500">
+        <span className="absolute bottom-3 text-center text-xs text-zinc-500">
           Источник: {source}
         </span>
       ) : null}
@@ -365,7 +215,7 @@ const PulseLyricLineDesktop = React.memo(
         type="button"
         onClick={() => onSeek(line.time)}
         className={cn(
-          'block cursor-pointer py-1 text-center text-white/40 duration-300',
+          'block cursor-pointer py-1.5 text-center text-white/40 duration-300',
           isActive && 'pointer-events-none scale-[1.03] text-white',
           !isActive && 'hover:text-white/70',
         )}
@@ -384,9 +234,10 @@ const PulseLyricLineDesktop = React.memo(
       prevProps.progress === nextProps.progress &&
       prevProps.line === nextProps.line
     );
-  }
+  },
 );
 
+/** Desktop side panel synchronized lyrics. */
 export function PulseLyricsDesktop({
   activeIndex,
   lines,
@@ -438,13 +289,13 @@ export function PulseLyricsDesktop({
   };
 
   return (
-    <div className="animate-opacity-fade-in hidden h-full lg:flex lg:pl-12 xl:pl-24 2xl:pl-32">
-      <div className="relative h-full max-w-screen-sm">
+    <div className="animate-opacity-fade-in hidden h-full lg:flex lg:ml-12 lg:w-[500px] xl:w-[600px] 2xl:w-[700px] shrink-0">
+      <div className="relative h-full w-full">
         <div
           ref={containerRef}
           onWheel={handleUserScroll}
           onTouchMove={handleUserScroll}
-          className="viewport flex h-full flex-col gap-3 overflow-y-auto overflow-x-hidden viewport px-3 py-32 text-center text-3xl font-bold"
+          className="viewport flex h-full w-full flex-col gap-4 overflow-y-auto overflow-x-hidden px-3 py-32 text-center text-2xl font-bold lg:text-3xl"
         >
           {lines.map((line, lineIndex) => {
             const isActive = lineIndex === activeIndex;

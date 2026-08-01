@@ -22,9 +22,7 @@ import { useAddToPlaylist } from '../pulse/player/use-add-to-playlist';
 import { loadPulseLyrics } from '../pulse/player/lyrics-service';
 import { useOfflineAudioSave } from '../pulse/player/use-offline-audio-save';
 import { useVisualAudioProgress } from '../pulse/player/use-visual-audio-progress';
-import { PulsePlayerFullArtwork } from '../pulse/player/pulse-player-full-artwork';
-import { PulsePlayerFullControls } from '../pulse/player/pulse-player-full-controls';
-import { PulsePlayerFullHeader } from '../pulse/player/pulse-player-full-header';
+import { PulsePlayerFull } from '../pulse/player/pulse-player-full';
 import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
 import {
@@ -33,13 +31,10 @@ import {
   mapDownloadedAudioToTracks,
   releaseObjectUrl,
 } from '../pulse/player/offline-audio';
-import { Dropdown, DropdownItem } from '../components/navigation';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import {
   getActiveLyricState,
-  PulseLyricsDesktop,
-  PulseLyricsMobile,
   splitLyricText,
   type PulseLyricsLine,
 } from '../pulse/player/pulse-lyrics';
@@ -285,6 +280,7 @@ export function PulsePlayerProvider({
   const [listenCounted, setListenCounted] = useState(false);
   const [statusAudio, setStatusAudio] = useState('');
   const [swipeX, setSwipeX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
   const [isRadioMode, setIsRadioMode] = useState(false);
   // Статус принудительного сохранения текущего трека: 'idle' | 'saving' | 'saved' | 'already' | 'error'
 
@@ -762,15 +758,17 @@ export function PulsePlayerProvider({
       return;
     }
 
+    const isNewTrack = currentSongIdRef.current !== trackId;
     currentSongIdRef.current = trackId;
     if (retryCount === 0) {
       playbackSessionRef.current += 1;
       listenReportedSessionRef.current = null;
       setListenCounted(false);
       preloadStartedRef.current = false;
-      setLyricsLines([]);
-      setLyricsSource('');
-
+      if (isNewTrack) {
+        setLyricsLines([]);
+        setLyricsSource('');
+      }
     }
     setStatusAudio('Loading');
 
@@ -1343,7 +1341,9 @@ export function PulsePlayerProvider({
   }, [nextTrack, userCountry]);
 
   useEffect(() => {
-    if (!currentTrack) {
+    if (!currentSongId || !currentTrack) {
+      setLyricsLines([]);
+      setLyricsSource('');
       clearMediaSession();
       syncWindowState();
       return;
@@ -1379,10 +1379,11 @@ export function PulsePlayerProvider({
 
     let cancelled = false;
     const controller = new AbortController();
+    const capturedTrack = currentTrack;
 
     void (async () => {
       try {
-        const lyricsData = await loadPulseLyrics(currentTrack, controller.signal);
+        const lyricsData = await loadPulseLyrics(capturedTrack, controller.signal);
         if (cancelled) return;
 
         setLyricsLines(lyricsData.lines);
@@ -1406,9 +1407,36 @@ export function PulsePlayerProvider({
         mediaSessionDebounceRef.current = null;
       }
     };
-    // syncWindowState is intentionally omitted here so lyric loading only reacts to real track changes.
+    // Depend on currentSongId (primitive ID) rather than currentTrack (object reference)
+    // so that background re-renders don't cancel in-flight lyric loading.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrack, playerArtist, playerTitle]);
+  }, [currentSongId]);
+
+  useEffect(() => {
+    // Only run 60 FPS smooth lyrics progress updates when player is in full mode, playing, and has lyrics.
+    // When minimized, paused, or closed, this effect cancels the animation loop immediately (0% CPU load).
+    if (mode !== 'full' || !isPlaying || lyricsLines.length === 0) {
+      return undefined;
+    }
+
+    let animationFrameId: number | null = null;
+
+    const tick = () => {
+      const audio = audioRef.current;
+      if (audio && !audio.paused && Number.isFinite(audio.currentTime)) {
+        setCurrentTime(audio.currentTime);
+      }
+      animationFrameId = requestAnimationFrame(tick);
+    };
+
+    animationFrameId = requestAnimationFrame(tick);
+
+    return () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isPlaying, lyricsLines.length, mode]);
 
   useEffect(() => {
     syncWindowState();
@@ -1574,231 +1602,168 @@ export function PulsePlayerProvider({
               animation: animate-smooth-appear 0.6s cubic-bezier(0.32,0.72,0,1) forwards;
             }
           `}</style>
-          <div
-            className={cn(
-              'absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] z-[65]',
-              isFullMode && isPlayerAnimatingIn
-                ? 'pointer-events-auto translate-y-0'
-                : 'pointer-events-none translate-y-full',
-            )}
-            style={{
-              transitionDelay: '0ms',
+
+          <PulsePlayerFull
+            Icon={PlayerIcon}
+            mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}
+            mobileSeekInputRef={mobileSeekInputRef}
+
+            playerTitle={playerTitle}
+            playerArtist={playerArtist}
+            playerArtwork={playerArtwork}
+            prevArtwork={prevArtwork}
+            nextArtwork={nextArtwork}
+            prevTrackObj={prevTrackObj}
+            nextTrackObj={nextTrackObj}
+            currentTrack={currentTrack}
+            trackKey={String(currentSongId)}
+
+            swipeX={swipeX}
+            isSwiping={isSwiping}
+            touchStartXRef={touchStartXRef}
+
+            displayedCurrentTime={displayedCurrentTime}
+            duration={duration}
+            currentTime={currentTime}
+
+            isPlaying={isPlaying}
+            isVisible={isFullMode && isPlayerAnimatingIn}
+
+            activeLike={activeLike}
+            isAuthenticated={isAuthenticated}
+
+            lyricsLines={lyricsLines}
+            lyricsSource={lyricsSource}
+            activeLyricState={activeLyricState}
+            mobileLyric={mobileLyric}
+
+            albumLabel={isRadioMode && radioSeedName
+              ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
+              : normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
+            canOpenAlbum={Boolean(normalizeText(String(currentTrack?.albumid ?? '')))}
+
+            canUseEqualizer={canUseEqualizer}
+            isMobileDevice={isMobileDevice}
+            offlineSaveStatus={offlineSaveStatus}
+            lang={lang}
+
+            onClose={closePlayer}
+            onMinimize={() => setMode('mini')}
+            onOpenAlbum={() => {
+              const albumId = normalizeText(String(currentTrack?.albumid ?? ''));
+              if (!albumId) return;
+              router.push(`/pulse/playlist/${albumId}`);
+              setMode('mini');
             }}
-          >
-            <div
-              id="NAVPfull"
-              className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto overflow-x-hidden rounded-none bg-zinc-900/80 p-1 shadow lg:h-full lg:gap-3"
-              style={{
-                backdropFilter: 'blur(40px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                overscrollBehavior: 'none'
-              }}
-              onTouchStart={(e) => {
-                if (window.innerWidth >= 1024) return;
-                touchStartFullRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-              }}
-              onTouchEnd={(e) => {
-                if (touchStartFullRef.current && window.innerWidth < 1024) {
-                  const navpFull = e.currentTarget;
-                  const deltaY = e.changedTouches[0].clientY - touchStartFullRef.current.y;
-                  const deltaX = e.changedTouches[0].clientX - touchStartFullRef.current.x;
-                  if (deltaY > 50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5 && navpFull.scrollTop <= 0) {
-                    setMode('mini');
-                  }
-                  touchStartFullRef.current = null;
+
+            onTouchStartCover={(e) => {
+              touchStartXRef.current = e.touches[0].clientX;
+              setIsSwiping(false);
+            }}
+            onTouchMoveCover={(e) => {
+              if (touchStartXRef.current !== null) {
+                const delta = e.touches[0].clientX - touchStartXRef.current;
+                setSwipeX(delta);
+              }
+            }}
+            onTouchEndCover={() => {
+              if (touchStartXRef.current !== null) {
+                const threshold = 60;
+                const delta = swipeX;
+                touchStartXRef.current = null;
+
+                const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
+                // Distance to move incoming cover image exactly to center (0px) is (screenWidth - 12)
+                const slideDistance = screenWidth - 12;
+
+                if (delta < -threshold) {
+                  setIsSwiping(true);
+                  setSwipeX(-slideDistance);
+                  setTimeout(() => {
+                    void nextTrack();
+                    setIsSwiping(false);
+                    setSwipeX(0);
+                  }, 250);
+                } else if (delta > threshold) {
+                  setIsSwiping(true);
+                  setSwipeX(slideDistance);
+                  setTimeout(() => {
+                    void prevTrack();
+                    setIsSwiping(false);
+                    setSwipeX(0);
+                  }, 250);
+                } else {
+                  setIsSwiping(true);
+                  setSwipeX(0);
+                  setTimeout(() => {
+                    setIsSwiping(false);
+                  }, 250);
                 }
-              }}
-            >
-              <PulsePlayerFullHeader
-                Icon={PlayerIcon}
-                albumLabel={isRadioMode && radioSeedName
-                  ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
-                  : normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
-                canOpenAlbum={Boolean(normalizeText(String(currentTrack?.albumid ?? '')))}
-                onClose={closePlayer}
-                onMinimize={() => setMode('mini')}
-                onOpenAlbum={() => {
-                  const albumId = normalizeText(String(currentTrack?.albumid ?? ''));
-                  if (!albumId) return;
-                  router.push(`/pulse/playlist/${albumId}`);
+              }
+            }}
+
+            onTouchStartFull={(e) => {
+              if (window.innerWidth >= 1024) return;
+              touchStartFullRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }}
+            onTouchEndFull={(e) => {
+              if (touchStartFullRef.current && window.innerWidth < 1024) {
+                const navpFull = e.currentTarget;
+                const deltaY = e.changedTouches[0].clientY - touchStartFullRef.current.y;
+                const deltaX = e.changedTouches[0].clientX - touchStartFullRef.current.x;
+                if (deltaY > 50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5 && navpFull.scrollTop <= 0) {
                   setMode('mini');
-                }}
-              />
+                }
+                touchStartFullRef.current = null;
+              }
+            }}
 
-              <div className="flex h-full w-full flex-row items-center justify-center px-3">
-                <div className="flex flex-col items-center justify-center lg:items-start shrink-0">
-                  <div className="flex flex-col items-center duration-300 lg:items-start">
-                    <div className="flex items-center justify-center">
-                      <div
-                        className="relative flex h-80 w-80 items-center justify-center shrink-0 lg:h-96 lg:w-96"
-                        onTouchStart={(e) => {
-                          touchStartXRef.current = e.touches[0].clientX;
-                          setSwipeX(0);
-                        }}
-                        onTouchMove={(e) => {
-                          if (touchStartXRef.current !== null) {
-                            const delta = e.touches[0].clientX - touchStartXRef.current;
-                            setSwipeX(delta);
-                          }
-                        }}
-                        onTouchEnd={() => {
-                          if (touchStartXRef.current !== null) {
-                            if (swipeX > 100) {
-                              void prevTrack();
-                            } else if (swipeX < -100) {
-                              void nextTrack();
-                            }
-                            touchStartXRef.current = null;
-                            setSwipeX(0);
-                          }
-                        }}
-                      >
-                        {prevTrackObj ? (
-                          <div
-                            className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl lg:hidden"
-                            style={{
-                              transform: `translateX(calc(-100% - 24px + ${swipeX}px))`,
-                              transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1)' : 'none',
-                            }}
-                          >
-                            <PulseCoverImage
-                              alt="Previous Track"
-                              className="rounded-3xl"
-                              sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
-                              src={prevArtwork}
-                            />
-                          </div>
-                        ) : null}
+            onSeekCancel={() => finishSeek(false)}
+            onSeekChange={setSeekValue}
+            onSeekStart={() => {
+              seekingSliderRef.current = 'mobile';
+              setActiveSeekSlider('mobile');
+              setSeekValue(currentTime);
+            }}
+            onSeekSubmit={() => finishSeek(true)}
 
-                        <div
-                          className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl"
-                          style={{
-                            transform: `translateX(${swipeX}px)`,
-                            opacity: 1 - Math.abs(swipeX) / 800,
-                            transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1), opacity 0.4s' : 'none',
-                          }}
-                        >
-                          <PulseCoverImage
-                            alt={playerTitle}
-                            className="rounded-3xl"
-                            sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
-                            src={playerArtwork}
-                          />
+            onAddToPlaylist={() => openAddToPlaylist(currentSongId)}
+            onDownload={() => {
+              const track = currentTrack;
+              if (!track?.src) return;
+              const trackSource = normalizeTrackSource(track.src);
+              if (!trackSource) return;
+              const link = document.createElement('a');
+              link.href = trackSource;
+              link.download = `${playerArtist ? `${playerArtist} - ` : ''}${playerTitle || 'track'}.mp3`;
+              link.target = '_blank';
+              link.rel = 'noopener noreferrer';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+            onLike={() => { void likeCurrentSong(); }}
+            onNext={() => { void nextTrack(); }}
+            onOpenEqualizer={() => setIsEqualizerOpen(true)}
+            onPrev={() => { void prevTrack(); }}
+            onSaveOffline={async () => {
+              const result = await saveCurrentTrack(currentTrack);
+              if (result === 'saved') {
+                notify({ content: lang?.pulse_saved_offline || 'Сохранено!', type: 'success', time: 3 });
+              } else if (result === 'failed') {
+                notify({ content: lang?.pulse_save_offline_error || 'Не удалось сохранить трек', type: 'error', time: 4 });
+              }
+            }}
+            onTogglePlay={togglePlay}
 
-                          {lyricsLines.length ? (
-                            <PulseLyricsMobile
-                              activeIndex={activeLyricState.activeIndex}
-                              lyric={mobileLyric}
-                              progress={activeLyricState.progress}
-                              source={lyricsSource}
-                            />
-                          ) : null}
-                        </div>
-
-                        {nextTrackObj ? (
-                          <div
-                            className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-3xl lg:hidden"
-                            style={{
-                              transform: `translateX(calc(100% + 24px + ${swipeX}px))`,
-                              transition: touchStartXRef.current === null ? 'transform 0.4s cubic-bezier(0.32,0.72,0,1)' : 'none',
-                            }}
-                          >
-                            <PulseCoverImage
-                              alt="Next Track"
-                              className="rounded-3xl"
-                              sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
-                              src={nextArtwork}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div
-                      key={`text-${currentTrack}`}
-                      className="animate-smooth-appear mt-3 flex flex-col items-center justify-center gap-0.5"
-                    >
-                      <span className="w-80 text-center text-base font-bold text-white lg:w-96 lg:text-lg">
-                        {playerTitle}
-                      </span>
-                      <span className="w-80 text-center text-sm text-zinc-300 lg:w-96 lg:text-base">
-                        {playerArtist}
-                      </span>
-                    </div>
-                  </div>
-
-                  <PulsePlayerFullArtwork
-                    displayedCurrentTime={displayedCurrentTime}
-                    duration={duration}
-                    mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}
-                    mobileSeekInputRef={mobileSeekInputRef}
-                    onSeekCancel={() => finishSeek(false)}
-                    onSeekChange={setSeekValue}
-                    onSeekStart={() => {
-                      seekingSliderRef.current = 'mobile';
-                      setActiveSeekSlider('mobile');
-                      setSeekValue(currentTime);
-                    }}
-                    onSeekSubmit={() => finishSeek(true)}
-                  />
-
-                  <PulsePlayerFullControls
-                    Icon={PlayerIcon}
-                    activeLike={activeLike}
-                    canUseEqualizer={canUseEqualizer}
-                    isAuthenticated={isAuthenticated}
-                    isMobileDevice={isMobileDevice}
-                    isPlaying={isPlaying}
-                    lang={lang}
-                    offlineSaveStatus={offlineSaveStatus}
-                    onAddToPlaylist={() => openAddToPlaylist(currentSongId)}
-                    onDownload={() => {
-                      const track = currentTrack;
-                      if (!track?.src) return;
-                      const trackSource = normalizeTrackSource(track.src);
-                      if (!trackSource) return;
-                      const link = document.createElement('a');
-                      link.href = trackSource;
-                      link.download = `${playerArtist ? `${playerArtist} - ` : ''}${playerTitle || 'track'}.mp3`;
-                      link.target = '_blank';
-                      link.rel = 'noopener noreferrer';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                    onLike={() => { void likeCurrentSong(); }}
-                    onNext={() => { void nextTrack(); }}
-                    onOpenEqualizer={() => setIsEqualizerOpen(true)}
-                    onPrev={() => { void prevTrack(); }}
-                    onSaveOffline={async () => {
-                      const result = await saveCurrentTrack(currentTrack);
-                      if (result === 'saved') {
-                        notify({ content: lang?.pulse_saved_offline || 'Сохранено!', type: 'success', time: 3 });
-                      } else if (result === 'failed') {
-                        notify({ content: lang?.pulse_save_offline_error || 'Не удалось сохранить трек', type: 'error', time: 4 });
-                      }
-                    }}
-                    onTogglePlay={togglePlay}
-                  />
-                </div>
-
-                {lyricsLines.length ? (
-                  <PulseLyricsDesktop
-                    activeIndex={activeLyricState.activeIndex}
-                    lines={lyricsLines}
-                    onSeek={(nextTime) => {
-                      if (!audioRef.current) return;
-                      audioRef.current.currentTime = nextTime;
-                      setCurrentTime(nextTime);
-                      setSeekValue(nextTime);
-                      forceUpdateMediaPositionState();
-                    }}
-                    progress={activeLyricState.progress}
-                  />
-                ) : null}
-              </div>
-            </div>
-          </div>
+            onLyricsSeek={(nextTime) => {
+              if (!audioRef.current) return;
+              audioRef.current.currentTime = nextTime;
+              setCurrentTime(nextTime);
+              setSeekValue(nextTime);
+              forceUpdateMediaPositionState();
+            }}
+          />
 
           <PulsePlayerMini
             Icon={PlayerIcon}

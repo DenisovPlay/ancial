@@ -18,41 +18,69 @@ export type PulseLyricsData = {
 
 const EMPTY_LYRICS: PulseLyricsData = { lines: [], source: '' };
 
-/** Loads cached or remote synchronized lyrics for a playable Pulse track. */
-export async function loadPulseLyrics(track: LyricsTrack | null, signal?: AbortSignal): Promise<PulseLyricsData> {
+function cleanTrackTitle(rawTitle: string | null | undefined): string {
+  const title = normalizeText(rawTitle);
+  const cleaned = title
+    .replace(/[\(\[\{](?:Remix|Sped Up|Slowed|Explicit|Clean|Deluxe|Bonus Track|Live|Version|Ver\.|Prod\.|feat\.|ft\.).*?[\)\]\}]/gi, '')
+    .trim();
+  return cleaned || title;
+}
+
+/** Loads synchronized lyrics for a track. */
+export async function loadPulseLyrics(
+  track: LyricsTrack | null,
+  signal?: AbortSignal,
+): Promise<PulseLyricsData> {
   if (!track) return EMPTY_LYRICS;
 
-  const title = normalizeText(track.title)
-    .replace('(Remix)', '')
-    .replace('(Sped Up Version)', '');
-  const artist = normalizeText(track.artist).split(',')[0];
+  const rawTitle = normalizeText(track.title);
+  const title = cleanTrackTitle(rawTitle);
+  const rawArtist = normalizeText(track.artist);
+  const mainArtist = rawArtist.split(/[,/&]/)[0].trim();
 
-  if (!title || !artist) return EMPTY_LYRICS;
+  if (!rawTitle || !rawArtist) return EMPTY_LYRICS;
 
-  const cacheKey = `lyrics:${track.sid}`;
+  const cacheKey = `lyrics:${track.sid || `${mainArtist}_${title}`}`;
+
+  // 1. Try cache first
   try {
-    const cached = cache.get<PulseLyricsData>(cacheKey, { category: 'pulse', subcategory: 'lyrics' });
-    if (cached && Array.isArray(cached.lines) && cached.lines.length > 0) return cached;
-  } catch {
-    // A cache miss must not prevent network lyric loading.
-  }
-
-  try {
-    const response = await fetch(
-      `${PULSE_LYRICS_BASE}/UniLyrics.php?a=${encodeURIComponent(artist)}&t=${encodeURIComponent(title)}&d=0&type=alternative`,
-      { cache: 'no-store', signal },
-    );
-    const lines = parseLyricsText(await response.text());
-    if (!lines.length) return EMPTY_LYRICS;
-
-    const lyricsData: PulseLyricsData = { lines, source: 'Pulse' };
-    try {
-      cache.set(cacheKey, lyricsData, { category: 'pulse', subcategory: 'lyrics' });
-    } catch {
-      // Lyrics remain usable even when persistent cache is unavailable.
+    const hit = cache.get<PulseLyricsData>(cacheKey, { category: 'pulse', subcategory: 'lyrics' });
+    if (hit && Array.isArray(hit.lines) && hit.lines.length > 0) {
+      return hit;
     }
-    return lyricsData;
-  } catch {
-    return EMPTY_LYRICS;
+  } catch { /* ignore cache read error */ }
+
+  // 2. Fetch from UniLyrics API using fallback candidate queries
+  const artistCandidates = Array.from(new Set([mainArtist, rawArtist])).filter(Boolean);
+  const titleCandidates = Array.from(new Set([title, rawTitle])).filter(Boolean);
+
+  for (const artistQuery of artistCandidates) {
+    for (const titleQuery of titleCandidates) {
+      try {
+        const url = `${PULSE_LYRICS_BASE}/UniLyrics.php?a=${encodeURIComponent(artistQuery)}&t=${encodeURIComponent(titleQuery)}&d=0&type=alternative`;
+        const res = await fetch(url, { cache: 'no-store', signal });
+        const text = await res.text();
+        const lines = parseLyricsText(text);
+
+        if (lines.length > 0) {
+          const data: PulseLyricsData = { lines, source: 'Pulse' };
+          try {
+            cache.set(cacheKey, data, { category: 'pulse', subcategory: 'lyrics' });
+          } catch { /* ignore */ }
+          return data;
+        }
+      } catch (e: any) {
+        if (e?.name === 'AbortError') throw e;
+        // Continue trying fallback candidates on fetch failure
+      }
+    }
   }
+
+  // 3. Fallback: try cache even if stale
+  try {
+    const stale = cache.get<PulseLyricsData>(cacheKey, { category: 'pulse', subcategory: 'lyrics' });
+    if (stale && Array.isArray(stale.lines) && stale.lines.length > 0) return stale;
+  } catch { /* ignore */ }
+
+  return EMPTY_LYRICS;
 }

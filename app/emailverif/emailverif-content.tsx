@@ -88,13 +88,6 @@ function EmailVerifContentInner() {
   return (
     <main className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-3">
       <div className="w-full max-w-md bg-zinc-900/80 border border-zinc-800 backdrop-blur-2xl rounded-3xl p-3 flex flex-col items-center text-center gap-3 shadow-2xl transition-all duration-300">
-        {/* Brand Icon Header */}
-        <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-          <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-          </svg>
-        </div>
-
         <h1 className="text-2xl font-bold text-white tracking-tight">
           {lang?.verifimyemail || 'Подтвердить почту'}
         </h1>
@@ -111,14 +104,14 @@ function EmailVerifContentInner() {
 
         {/* SUCCESS STATE */}
         {status === 'success' && (
-          <div className="flex flex-col items-center gap-4 w-full">
+          <div className="flex flex-col items-center gap-3 w-full">
             <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
               <svg className="w-7 h-7 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
 
-            <div className="bg-emerald-950/40 border border-emerald-500/20 rounded-3xl p-4 text-emerald-200 text-sm leading-relaxed"
+            <div className="bg-emerald-950/40 border border-emerald-500/20 rounded-3xl p-3 text-emerald-200 text-sm leading-relaxed"
               dangerouslySetInnerHTML={{ __html: lang?.Pemailverified || 'Почта успешно подтверждена!' }} />
 
             <Link
@@ -132,14 +125,8 @@ function EmailVerifContentInner() {
 
         {/* ERROR STATE */}
         {status === 'error' && (
-          <div className="flex flex-col items-center gap-4 w-full">
-            <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-              <svg className="w-7 h-7 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-
-            <div className="bg-rose-950/40 border border-rose-500/20 rounded-3xl p-4 text-rose-200 text-sm">
+          <div className="flex flex-col items-center gap-3 w-full">
+            <div className="bg-rose-950/40 border border-rose-500/20 rounded-3xl p-3 text-rose-200 text-sm">
               {errorMessage || lang?.somethingwrong || 'Ошибка подтверждения'}
             </div>
 
@@ -154,7 +141,7 @@ function EmailVerifContentInner() {
 
         {/* IDLE / MANUAL INPUT FORM */}
         {status === 'idle' && (
-          <form onSubmit={handleManualVerify} className="w-full flex flex-col gap-4">
+          <form onSubmit={handleManualVerify} className="w-full flex flex-col gap-3">
             <p className="text-zinc-400 text-sm">
               Введи код подтверждения из электронного письма:
             </p>
@@ -164,12 +151,12 @@ function EmailVerifContentInner() {
               onChange={(e) => setManualCode(e.target.value)}
               placeholder="123456"
               maxLength={12}
-              className="w-full px-4 py-3.5 bg-zinc-950/60 border border-zinc-800 rounded-3xl text-center text-xl font-mono tracking-widest text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-all duration-300"
+              className="w-full px-4 py-3.5 bg-zinc-950/60 border border-zinc-600/30 rounded-full text-center text-xl font-mono tracking-widest text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-all duration-300"
             />
             <button
               type="submit"
               disabled={submitting || !manualCode.trim()}
-              className="w-full py-3.5 px-5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-white font-medium rounded-3xl transition-all duration-300 shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
+              className="border border-zinc-600/30 w-full py-3.5 px-5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-white font-medium rounded-full transition-all duration-300 shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -179,13 +166,6 @@ function EmailVerifContentInner() {
             </button>
           </form>
         )}
-
-        <div className="pt-2 border-t border-zinc-800/60 w-full flex items-center justify-between text-xs text-zinc-500">
-          <Link href="/" className="hover:text-zinc-300 transition-colors">
-            На главную
-          </Link>
-          <span>© Zypo</span>
-        </div>
       </div>
     </main>
   );
@@ -195,7 +175,7 @@ export default function EmailVerifContent() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-4">
+        <main className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-3">
           <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
         </main>
       }
