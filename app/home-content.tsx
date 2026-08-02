@@ -18,6 +18,7 @@ import {
 } from './lib/home-info-cache';
 import { safeFetchJson } from './lib/safe-fetch-json';
 import { cache } from './lib/cache';
+import WeatherMarkerOnboarding from './components/weather-marker-onboarding';
 
 interface HomeApiResponse<T> {
   success: boolean;
@@ -563,30 +564,32 @@ export default function HomeContent() {
           className="w-full max-w-screen-md flex items-center gap-3 opacity-80 z-10 text-sm"
         >
           {/* Weather Widget */}
-          <div
-            suppressHydrationWarning
-            onClick={() => router.push('/apps/overlay/weather')}
-            className="flex items-center justify-center gap-1.5 cursor-pointer duration-300 active:scale-95 hover:bg-zinc-800/70 hover:px-2 py-0.5 rounded-full border border-transparent hover:border-zinc-600/30 transition-all"
-          >
-            {weatherLoading ? (
-              <svg className="w-5 h-5 inline animate-spin fill-zinc-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                <use href="/icons.svg#IC-auth-loader"></use>
-              </svg>
-            ) : weather && weather.wfont ? (
-              <span
-                suppressHydrationWarning
-                className="flex items-center justify-center w-5 h-5 shrink-0 animate-fade-in"
-                dangerouslySetInnerHTML={{ __html: weather.wfont }}
-              />
-            ) : (
-              <svg suppressHydrationWarning className="w-5 h-5 fill-white inline animate-fade-in" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                <use href="/icons.svg#IC-weather-default"></use>
-              </svg>
-            )}
-            <span suppressHydrationWarning className="text-white font-medium">
-              {weatherLoading ? '' : (weather?.temp !== null && weather?.temp !== undefined ? `${weather.temp}°C` : '')}
-            </span>
-          </div>
+          <WeatherMarkerOnboarding>
+            <div
+              suppressHydrationWarning
+              onClick={() => router.push('/apps/overlay/weather')}
+              className="flex items-center justify-center gap-1.5 cursor-pointer duration-300 active:scale-95 hover:bg-zinc-800/70 hover:px-2 py-0.5 rounded-full border border-transparent hover:border-zinc-600/30 transition-all"
+            >
+              {weatherLoading ? (
+                <svg className="w-5 h-5 inline animate-spin fill-zinc-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                  <use href="/icons.svg#IC-auth-loader"></use>
+                </svg>
+              ) : weather && weather.wfont ? (
+                <span
+                  suppressHydrationWarning
+                  className="flex items-center justify-center w-5 h-5 shrink-0 animate-fade-in"
+                  dangerouslySetInnerHTML={{ __html: weather.wfont }}
+                />
+              ) : (
+                <svg suppressHydrationWarning className="w-5 h-5 fill-white inline animate-fade-in" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                  <use href="/icons.svg#IC-weather-default"></use>
+                </svg>
+              )}
+              <span suppressHydrationWarning className="text-white font-medium">
+                {weatherLoading ? '' : (weather?.temp !== null && weather?.temp !== undefined ? `${weather.temp}°C` : '')}
+              </span>
+            </div>
+          </WeatherMarkerOnboarding>
 
           {/* Currency Rates Widgets (ru language only) */}
           {lang?.langname === 'ru' && currencies && (

@@ -11,6 +11,7 @@ import { Movie } from '../../types';
 import { useTvNavigation } from '../../use-tv-navigation';
 import { fetchCinemaVideoById, fetchCinemaSearch, getOptimizedImageUrl } from '../../cinema-api';
 import { CinemaInfoSkeleton, FrameBrandLoader } from '../../components/cinema-skeleton';
+import CinemaIdleScreensaver from '../../components/cinema-idle-screensaver';
 
 import { CacheManager } from '../../../lib/cache';
 import { getCinemaCache, setCinemaCache } from '../../cinema-cache';
@@ -378,6 +379,7 @@ export default function InfoContent({ id }: InfoContentProps) {
 
   return (
     <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">
+      <CinemaIdleScreensaver movies={infoMovie ? [infoMovie, ...similarMovies] : []} />
       <CinemaHeader
         activeTab="all"
         searchQuery={searchQuery}

@@ -15,6 +15,7 @@
 /AncBot
 /DeployUbuntu
 /FRAME-APP
+/.agents
 
 # next.js
 /.next/

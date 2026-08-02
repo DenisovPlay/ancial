@@ -1431,7 +1431,10 @@ export const en: Record<string, string> = {
   "pay_less_than_month": "less than a month",
   "pay_support": "Support",
   "pay_terms": "Terms of Service",
-  "pay_connect": "Connect Merchant"
+  "pay_connect": "Connect Merchant",
+  "frame_idle_mode": "Idle Mode",
+  "frame_idle_exit_hint": "Move your mouse or press any key",
+  "weather_onboarding_hint": "Multi-day forecast and precipitation map"
 };
 
 

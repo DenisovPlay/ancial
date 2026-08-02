@@ -23,6 +23,7 @@ import { CinemaPageSkeleton } from './components/cinema-skeleton';
 import { useDragScroll } from '../hooks/useDragScroll';
 import CinemaHeader from './components/cinema-header';
 import HeroSlider from './components/hero-slider';
+import CinemaIdleScreensaver from './components/cinema-idle-screensaver';
 
 import { getCinemaCache, setCinemaCache } from './cinema-cache';
 import { getWatchHistory, getMovieProgress, WatchHistoryItem } from './cinema-history';
@@ -283,6 +284,7 @@ export default function CinemaContent() {
 
     return (
       <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">
+        <CinemaIdleScreensaver movies={topMovies.length > 0 ? topMovies : heroMovies} />
         <CinemaHeader
           activeTab="all"
           searchQuery={searchQuery}

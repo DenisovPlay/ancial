@@ -11,6 +11,7 @@ import { useTvNavigation } from '../use-tv-navigation';
 import { fetchCinemaSearch, fetchCinemaGetVideo } from '../cinema-api';
 import { CinemaGridSkeleton, CinemaRowSkeleton } from '../components/cinema-skeleton';
 import { getCinemaCache, setCinemaCache } from '../cinema-cache';
+import CinemaIdleScreensaver from '../components/cinema-idle-screensaver';
 
 import { goToMovieInfo } from '../cinema-navigation';
 
@@ -125,6 +126,7 @@ export default function MoviesContent() {
 
   return (
     <div className="min-h-screen bg-black text-white select-none pb-24 font-sans">
+      <CinemaIdleScreensaver movies={movies} />
       <CinemaHeader
         activeTab="movie"
         searchQuery={searchQuery}

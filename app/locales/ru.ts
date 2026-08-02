@@ -1431,7 +1431,10 @@ export const ru: Record<string, string> = {
     "pay_less_than_month": "менее месяца",
     "pay_support": "Поддержка",
     "pay_terms": "Условия использования",
-    "pay_connect": "Подключиться"
+    "pay_connect": "Подключиться",
+    "frame_idle_mode": "Режим бездействия",
+    "frame_idle_exit_hint": "Подвигайте мышкой или нажмите любую клавишу",
+    "weather_onboarding_hint": "Прогноз на несколько дней и карта осадков"
 };
 
 
