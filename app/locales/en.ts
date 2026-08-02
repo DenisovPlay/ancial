@@ -1321,6 +1321,7 @@ export const en: Record<string, string> = {
   "pulse_saved_offline": "Saved!",
   "pulse_saving_offline": "Saving...",
   "pulse_already_saved_offline": "Already saved",
+  "pulse_removed_offline": "Track removed from offline",
   "pulse_save_offline_error": "Failed to save track",
   "pulse_save_offline_disabled": "Enable cache in memory settings",
   "redirect_title": "External Link Safety Check",

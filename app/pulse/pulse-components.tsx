@@ -408,6 +408,7 @@ export function PulseTrackRow({
   const [isTrackMenuOpen, setIsTrackMenuOpen] = useState(false);
   const [isCached, setIsCached] = useState(false);
   const [isSavingOffline, setIsSavingOffline] = useState(false);
+  const [isDeletingOffline, setIsDeletingOffline] = useState(false);
   const trackMenuZIndex = getPulseTrackDropdownZIndex(trackIndex, isTrackMenuOpen);
 
   useEffect(() => {
@@ -421,7 +422,22 @@ export function PulseTrackRow({
   }, [trackId]);
 
   const handleSaveOffline = async () => {
-    if (isSavingOffline || isCached) return;
+    if (isSavingOffline || isDeletingOffline) return;
+
+    if (isCached) {
+      // Track is cached — delete it
+      setIsDeletingOffline(true);
+      try {
+        await cache.audio.remove(trackId);
+        setIsCached(false);
+      } catch (e) {
+        console.error('Failed to delete offline track:', e);
+      } finally {
+        setIsDeletingOffline(false);
+      }
+      return;
+    }
+
     setIsSavingOffline(true);
     try {
       const src = normalizeText(track.src);
@@ -605,11 +621,13 @@ export function PulseTrackRow({
           icon={isCached ? 'IC-bookmark-filled' : 'IC-bookmark'}
           onClick={handleSaveOffline}
         >
-          {isSavingOffline
-            ? (lang?.pulse_saving_offline || 'Сохраняется...')
-            : isCached
-              ? (lang?.pulse_already_saved_offline || 'Сохранено офлайн')
-              : (lang?.pulse_save_offline || 'Сохранить офлайн')}
+          {isDeletingOffline
+            ? (lang?.pulse_removing_offline || 'Удаляется...')
+            : isSavingOffline
+              ? (lang?.pulse_saving_offline || 'Сохраняется...')
+              : isCached
+                ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
+                : (lang?.pulse_save_offline || 'Сохранить офлайн')}
         </DropdownItem>
         <div className={cn('grid w-full gap-1.5', footerActions.length >= 3 ? 'grid-cols-3' : 'grid-cols-2')}>
           {footerActions.map((action) => (

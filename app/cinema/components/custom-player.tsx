@@ -120,9 +120,13 @@ export default function CustomPlayer({
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const currentTimeRef = useRef<number>(0);
+  // Keep a separate ref so unmount cleanup can always read the latest time
+  // regardless of stale closures (relevant for FlixCDN iframe where videoRef has no time)
+  const liveCurrentTimeRef = useRef<number>(0);
 
   const updateCurrentTime = useCallback((time: number) => {
     currentTimeRef.current = time;
+    liveCurrentTimeRef.current = time;
     setCurrentTime(time);
   }, []);
 
@@ -200,13 +204,24 @@ export default function CustomPlayer({
           setIsPlaying(false);
         } else if (data.event === 'play' || data.event === 'playing' || data.action === 'Video playing') {
           setIsPlaying(true);
+        } else if (
+          data.event === 'ended' ||
+          data.event === 'finished' ||
+          data.event === 'complete' ||
+          data.action === 'Video ended' ||
+          data.action === 'Video finished'
+        ) {
+          // Auto-advance to next episode when FlixCDN iframe signals playback ended
+          if (onNextEpisode) {
+            onNextEpisode();
+          }
         }
       } catch (err) {}
     };
 
     window.addEventListener('message', handleIframeMessage);
     return () => window.removeEventListener('message', handleIframeMessage);
-  }, [isFlixCDN, movieId, season, episode, updateCurrentTime, getSavedTime, sendIframeCommand]);
+  }, [isFlixCDN, movieId, season, episode, updateCurrentTime, getSavedTime, sendIframeCommand, onNextEpisode]);
 
   useEffect(() => {
     setIsIframeLoading(true);
@@ -281,9 +296,10 @@ export default function CustomPlayer({
 
   const saveCurrentProgress = (overrideTime?: number) => {
     if (!movieId) return;
-    // CRITICAL: Never overwrite progress during pre-roll / ads (when duration is uninitialized or <=30s)
-    if (!src && (!duration || duration <= 30)) return;
-    const curTime = overrideTime !== undefined ? overrideTime : (videoRef.current ? videoRef.current.currentTime : 0);
+    // For iframe mode (FlixCDN): skip the duration guard — duration may not be in scope.
+    // For native video: never overwrite progress during pre-roll / ads (duration <= 30s).
+    if (src && (!duration || duration <= 30)) return;
+    const curTime = overrideTime !== undefined ? overrideTime : (videoRef.current ? videoRef.current.currentTime : liveCurrentTimeRef.current);
     if (!curTime || curTime < 3) return;
     const dur = duration || (videoRef.current ? videoRef.current.duration || 0 : 0);
     const activeTransObj = translations?.find((t) => t.id === selectedTranslationId);
@@ -308,8 +324,13 @@ export default function CustomPlayer({
   // Save progress instantly when unmounting or changing episode
   useEffect(() => {
     return () => {
-      if (videoRef.current && videoRef.current.currentTime > 3) {
-        saveCurrentProgress(videoRef.current.currentTime);
+      // For FlixCDN iframe: videoRef has no time — use liveCurrentTimeRef updated from postMessages
+      // For native video: use videoRef.currentTime
+      const timeToSave = videoRef.current && videoRef.current.currentTime > 3
+        ? videoRef.current.currentTime
+        : liveCurrentTimeRef.current;
+      if (timeToSave > 3) {
+        saveCurrentProgress(timeToSave);
       }
     };
   }, [movieId, season, episode, selectedTranslationId, selectedPlayerId]);
@@ -517,14 +538,27 @@ export default function CustomPlayer({
         if (e.key === 'ArrowRight') {
           if (activeControl === 'back') {
             const picker = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="picker"]');
-            if (picker) picker.focus();
+            if (picker) { picker.focus(); return; }
+            // no picker — jump to timeline
+            const tl = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="timeline"]');
+            if (tl) tl.focus();
+          } else if (activeControl === 'picker') {
+            // nothing to the right in top bar
           } else if (activeControl === 'play') {
-            const rewind = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="rewind"]');
-            if (rewind) rewind.focus();
-          } else if (activeControl === 'rewind') {
-            const fwd = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="forward"]');
-            if (fwd) fwd.focus();
-          } else if (activeControl === 'forward') {
+            const prevEp = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="prev-episode"]');
+            if (prevEp) { prevEp.focus(); return; }
+            const nextEp = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="next-episode"]');
+            if (nextEp) { nextEp.focus(); return; }
+            const q = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="quality"]') ||
+                      containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="fullscreen"]');
+            if (q) q.focus();
+          } else if (activeControl === 'prev-episode') {
+            const nextEp = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="next-episode"]');
+            if (nextEp) { nextEp.focus(); return; }
+            const q = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="quality"]') ||
+                      containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="fullscreen"]');
+            if (q) q.focus();
+          } else if (activeControl === 'next-episode') {
             const q = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="quality"]') ||
                       containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="fullscreen"]');
             if (q) q.focus();
@@ -543,17 +577,27 @@ export default function CustomPlayer({
             if (back) back.focus();
           } else if (activeControl === 'fullscreen') {
             const q = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="quality"]') ||
-                      containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="forward"]');
+                      containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="next-episode"]') ||
+                      containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="prev-episode"]') ||
+                      containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="play"]');
             if (q) q.focus();
           } else if (activeControl === 'quality') {
-            const fwd = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="forward"]');
-            if (fwd) fwd.focus();
-          } else if (activeControl === 'forward') {
-            const r = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="rewind"]');
-            if (r) r.focus();
-          } else if (activeControl === 'rewind') {
-            const p = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="play"]');
-            if (p) p.focus();
+            const nextEp = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="next-episode"]');
+            if (nextEp) { nextEp.focus(); return; }
+            const prevEp = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="prev-episode"]');
+            if (prevEp) { prevEp.focus(); return; }
+            const play = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="play"]');
+            if (play) play.focus();
+          } else if (activeControl === 'next-episode') {
+            const prevEp = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="prev-episode"]');
+            if (prevEp) { prevEp.focus(); return; }
+            const play = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="play"]');
+            if (play) play.focus();
+          } else if (activeControl === 'prev-episode') {
+            const play = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="play"]');
+            if (play) play.focus();
+          } else if (activeControl === 'play') {
+            // play is the leftmost in bottom bar
           } else if (activeControl === 'timeline') {
             seekRelative(-10);
           }
@@ -565,7 +609,7 @@ export default function CustomPlayer({
             const back = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="back"]') ||
                          containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="picker"]');
             if (back) back.focus();
-          } else if (['play', 'rewind', 'forward', 'quality', 'fullscreen'].includes(activeControl || '')) {
+          } else if (['play', 'prev-episode', 'next-episode', 'quality', 'fullscreen'].includes(activeControl || '')) {
             const timeline = containerRef.current?.querySelector<HTMLElement>('[data-tv-player-control="timeline"]');
             if (timeline) timeline.focus();
           }
@@ -800,25 +844,35 @@ export default function CustomPlayer({
                   )}
                 </button>
 
-                <button
-                  onClick={() => seekRelative(-10)}
-                  tabIndex={0}
-                  data-tv-player-control="rewind"
-                  aria-label="-10 секунд"
-                  className="focusable-tv p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center gap-1 backdrop-blur-md border border-white/10 transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
-                >
-                  -10s
-                </button>
+                {/* PREV EPISODE — desktop only */}
+                {onPrevEpisode && (
+                  <button
+                    onClick={onPrevEpisode}
+                    tabIndex={0}
+                    data-tv-player-control="prev-episode"
+                    aria-label="Предыдущая серия"
+                    className="hidden md:flex focusable-tv p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
+                  >
+                    <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                      <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+                    </svg>
+                  </button>
+                )}
 
-                <button
-                  onClick={() => seekRelative(10)}
-                  tabIndex={0}
-                  data-tv-player-control="forward"
-                  aria-label="+10 секунд"
-                  className="focusable-tv p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center gap-1 backdrop-blur-md border border-white/10 transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
-                >
-                  +10s
-                </button>
+                {/* NEXT EPISODE — desktop only */}
+                {onNextEpisode && (
+                  <button
+                    onClick={onNextEpisode}
+                    tabIndex={0}
+                    data-tv-player-control="next-episode"
+                    aria-label="Следующая серия"
+                    className="hidden md:flex focusable-tv p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
+                  >
+                    <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                      <path d="M6 18l8.5-6L6 6v12zm2.5-6l8.5 6V6z" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-3">
@@ -866,6 +920,14 @@ export default function CustomPlayer({
         onPause={() => {
           setIsPlaying(false);
           if (videoRef.current) saveCurrentProgress(videoRef.current.currentTime);
+        }}
+        onEnded={() => {
+          setIsPlaying(false);
+          if (videoRef.current) saveCurrentProgress(videoRef.current.currentTime);
+          // Auto-advance to next episode when direct video stream ends
+          if (onNextEpisode) {
+            onNextEpisode();
+          }
         }}
         onTimeUpdate={() => {
           if (videoRef.current) {
@@ -1036,33 +1098,35 @@ export default function CustomPlayer({
               )}
             </button>
 
-            {/* REWIND -10S */}
-            <button
-              onClick={() => seekRelative(-10)}
-              tabIndex={0}
-              data-tv-player-control="rewind"
-              aria-label="Назад на 10 секунд"
-              className="focusable-tv flex p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
-            >
-              <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
-              </svg>
-              <span>-10s</span>
-            </button>
+            {/* PREV EPISODE — desktop only */}
+            {onPrevEpisode && (
+              <button
+                onClick={onPrevEpisode}
+                tabIndex={0}
+                data-tv-player-control="prev-episode"
+                aria-label="Предыдущая серия"
+                className="hidden md:flex focusable-tv p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
+              >
+                <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                  <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+                </svg>
+              </button>
+            )}
 
-            {/* FAST FORWARD +10S */}
-            <button
-              onClick={() => seekRelative(10)}
-              tabIndex={0}
-              data-tv-player-control="forward"
-              aria-label="Вперёд на 10 секунд"
-              className="focusable-tv flex p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
-            >
-              <span>+10s</span>
-              <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" />
-              </svg>
-            </button>
+            {/* NEXT EPISODE — desktop only */}
+            {onNextEpisode && (
+              <button
+                onClick={onNextEpisode}
+                tabIndex={0}
+                data-tv-player-control="next-episode"
+                aria-label="Следующая серия"
+                className="hidden md:flex focusable-tv p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
+              >
+                <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                  <path d="M6 18l8.5-6L6 6v12zm2.5-6l8.5 6V6z" />
+                </svg>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

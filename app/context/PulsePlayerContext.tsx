@@ -301,7 +301,7 @@ export function PulsePlayerProvider({
   const prevTrackObj = playlist[index - 1] ?? null;
   const nextTrackObj = playlist[index + 1] ?? null;
   const currentSongId = toNumber(currentTrack?.sid);
-  const { cacheCurrentTrackInBackground, offlineSaveStatus, saveCurrentTrack } = useOfflineAudioSave(currentTrack);
+  const { cacheCurrentTrackInBackground, deleteOfflineTrack, offlineSaveStatus, saveCurrentTrack } = useOfflineAudioSave(currentTrack);
   const userCountry = normalizeText(user?.country) || 'RU';
   const playerTitle = getTrackDisplayTitle(currentTrack, lang);
   const playerArtist = getTrackArtist(currentTrack, lang);
@@ -1381,6 +1381,10 @@ export function PulsePlayerProvider({
     const controller = new AbortController();
     const capturedTrack = currentTrack;
 
+    // Immediately clear lyrics for the old track so it never bleeds onto the new one
+    setLyricsLines([]);
+    setLyricsSource('');
+
     void (async () => {
       try {
         const lyricsData = await loadPulseLyrics(capturedTrack, controller.signal);
@@ -1747,6 +1751,16 @@ export function PulsePlayerProvider({
             onOpenEqualizer={() => setIsEqualizerOpen(true)}
             onPrev={() => { void prevTrack(); }}
             onSaveOffline={async () => {
+              if (offlineSaveStatus === 'already') {
+                // Track is already cached — delete it
+                const result = await deleteOfflineTrack(currentTrack);
+                if (result === 'deleted') {
+                  notify({ content: lang?.pulse_removed_offline || 'Трек удалён из офлайна', type: 'info', time: 3 });
+                } else if (result === 'failed') {
+                  notify({ content: lang?.pulse_save_offline_error || 'Не удалось удалить трек', type: 'error', time: 4 });
+                }
+                return;
+              }
               const result = await saveCurrentTrack(currentTrack);
               if (result === 'saved') {
                 notify({ content: lang?.pulse_saved_offline || 'Сохранено!', type: 'success', time: 3 });

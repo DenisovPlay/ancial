@@ -330,16 +330,14 @@ export function PulsePlayerFull({
                       {lang?.pulse_download_mp3 || 'Скачать MP3'}
                     </DropdownItem>
                     <DropdownItem
-                      icon={offlineSaveStatus === 'saved' || offlineSaveStatus === 'already' ? 'IC-bookmark-filled' : 'IC-bookmark'}
+                      icon={offlineSaveStatus === 'already' ? 'IC-bookmark-filled' : 'IC-bookmark'}
                       onClick={() => { void onSaveOffline(); }}
                     >
                       {offlineSaveStatus === 'saving'
                         ? (lang?.pulse_saving_offline || 'Сохраняется...')
-                        : offlineSaveStatus === 'saved'
-                          ? (lang?.pulse_saved_offline || 'Сохранено!')
-                          : offlineSaveStatus === 'already'
-                            ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
-                            : (lang?.pulse_save_offline || 'Сохранить офлайн')}
+                        : offlineSaveStatus === 'already'
+                          ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
+                          : (lang?.pulse_save_offline || 'Сохранить офлайн')}
                     </DropdownItem>
                     {canUseEqualizer ? (
                       <DropdownItem onClick={onOpenEqualizer} icon="IC-equalizer">Эквалайзер</DropdownItem>

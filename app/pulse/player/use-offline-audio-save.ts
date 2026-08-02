@@ -103,17 +103,30 @@ export function useOfflineAudioSave(currentTrack: OfflineAudioTrack | null) {
         undefined,
         true,
       );
-      setOfflineSaveStatus(saved === true ? 'saved' : 'error');
-      scheduleStatusReset();
+      // After success: go directly to 'already' (permanent) so repeated clicks delete, not re-save.
+      // The callback receives 'saved' string for showing a success notification.
+      setOfflineSaveStatus(saved === true ? 'already' : 'idle');
       return saved === true ? 'saved' as const : 'failed' as const;
     } catch {
-      setOfflineSaveStatus('error');
-      scheduleStatusReset();
+      setOfflineSaveStatus('idle');
       return 'failed' as const;
     } finally {
       isManualSaveInFlightRef.current = false;
     }
-  }, [clearStatusResetTimer, offlineSaveStatus, scheduleStatusReset]);
+  }, [clearStatusResetTimer, offlineSaveStatus]);
 
-  return { cacheCurrentTrackInBackground, offlineSaveStatus, saveCurrentTrack };
+  const deleteOfflineTrack = useCallback(async (track: OfflineAudioTrack | null): Promise<'deleted' | 'failed' | 'skipped'> => {
+    const trackId = toNumber(track?.sid);
+    if (!trackId) return 'skipped';
+
+    try {
+      await cache.audio.remove(trackId);
+      setOfflineSaveStatus('idle');
+      return 'deleted';
+    } catch {
+      return 'failed';
+    }
+  }, []);
+
+  return { cacheCurrentTrackInBackground, deleteOfflineTrack, offlineSaveStatus, saveCurrentTrack };
 }

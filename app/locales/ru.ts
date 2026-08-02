@@ -1321,6 +1321,7 @@ export const ru: Record<string, string> = {
     "pulse_saved_offline": "Сохранено!",
     "pulse_saving_offline": "Сохраняется...",
     "pulse_already_saved_offline": "Уже сохранено",
+    "pulse_removed_offline": "Трек удалён из офлайна",
     "pulse_save_offline_error": "Не удалось сохранить трек",
     "pulse_save_offline_disabled": "Включите кэш в настройках памяти",
     "redirect_title": "Переход на сторонний ресурс",
