@@ -23,6 +23,7 @@ import { loadPulseLyrics } from '../pulse/player/lyrics-service';
 import { useOfflineAudioSave } from '../pulse/player/use-offline-audio-save';
 import { useVisualAudioProgress } from '../pulse/player/use-visual-audio-progress';
 import { PulsePlayerFull } from '../pulse/player/pulse-player-full';
+import type { RepeatMode } from '../pulse/player/pulse-player-full-controls';
 import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
 import {
@@ -63,7 +64,7 @@ type PulseArtwork = {
   type?: string | null;
 };
 
-type PulseTrack = {
+export type PulseTrack = {
   album?: string | null;
   albumid?: number | string | null;
   artist?: string | null;
@@ -82,7 +83,7 @@ type PulseCollectionKind = 'artist' | 'downloads' | 'genlist' | 'playlist' | 'tr
 /** Идентификатор виртуальной коллекции «Сохранённые» (треки из IndexedDB) */
 export const DOWNLOADS_COLLECTION_ID = 'downloads';
 
-type PulsePlayerMode = 'full' | 'mini';
+export type PulsePlayerMode = 'full' | 'mini';
 
 type PulsePlayerState = {
   currentSongId: number;
@@ -109,6 +110,13 @@ type PulsePlayerContextValue = {
   playTrack: (trackId: number | string) => Promise<void>;
   setMode: (mode: PulsePlayerMode) => void;
   togglePlay: () => void;
+  repeatMode: RepeatMode;
+  toggleRepeatMode: () => void;
+  playlist: PulseTrack[];
+  currentIndex: number;
+  playQueueTrack: (index: number) => void;
+  removeQueueTrack: (index: number) => void;
+  moveQueueTrack: (fromIndex: number, toIndex: number) => void;
 };
 
 declare global {
@@ -282,6 +290,8 @@ export function PulsePlayerProvider({
   const [swipeX, setSwipeX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [isRadioMode, setIsRadioMode] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('none');
+  const repeatModeRef = useRef<RepeatMode>('none');
   // Статус принудительного сохранения текущего трека: 'idle' | 'saving' | 'saved' | 'already' | 'error'
 
   const [radioSeedName, setRadioSeedName] = useState('');
@@ -1205,6 +1215,85 @@ export function PulsePlayerProvider({
     });
   };
 
+  const toggleRepeatMode = useCallback(() => {
+    setRepeatMode((prevMode) => {
+      const nextMode: RepeatMode =
+        prevMode === 'none' ? 'all' : prevMode === 'all' ? 'one' : 'none';
+      repeatModeRef.current = nextMode;
+      return nextMode;
+    });
+  }, []);
+
+  const removeQueueTrack = useCallback((targetIndex: number) => {
+    const currentList = playlistRef.current;
+    if (targetIndex < 0 || targetIndex >= currentList.length) return;
+
+    const newPlaylist = currentList.filter((_, i) => i !== targetIndex);
+    if (newPlaylist.length === 0) {
+      setPlaylistState([]);
+      setPlaylistIndex(0);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      notify({
+        content: lang?.pulse_queue_empty || 'Очередь воспроизведения пуста',
+        type: 'info',
+        time: 3,
+      });
+      return;
+    }
+
+    setPlaylistState(newPlaylist);
+
+    if (targetIndex === indexRef.current) {
+      const nextIdx = Math.min(targetIndex, newPlaylist.length - 1);
+      setPlaylistIndex(nextIdx);
+      void playLoadedTrack(newPlaylist[nextIdx] ?? null);
+    } else if (targetIndex < indexRef.current) {
+      setPlaylistIndex(indexRef.current - 1);
+    }
+
+    notify({
+      content: lang?.pulse_track_removed_from_queue || 'Трек удалён из очереди',
+      type: 'success',
+      time: 3,
+    });
+  }, [lang, notify]);
+
+  const moveQueueTrack = useCallback((fromIndex: number, toIndex: number) => {
+    const list = playlistRef.current.slice();
+    if (
+      fromIndex < 0 ||
+      fromIndex >= list.length ||
+      toIndex < 0 ||
+      toIndex >= list.length ||
+      fromIndex === toIndex
+    ) {
+      return;
+    }
+
+    const [movedTrack] = list.splice(fromIndex, 1);
+    list.splice(toIndex, 0, movedTrack);
+
+    let newCurrentIndex = indexRef.current;
+    if (fromIndex === indexRef.current) {
+      newCurrentIndex = toIndex;
+    } else if (fromIndex < indexRef.current && toIndex >= indexRef.current) {
+      newCurrentIndex = indexRef.current - 1;
+    } else if (fromIndex > indexRef.current && toIndex <= indexRef.current) {
+      newCurrentIndex = indexRef.current + 1;
+    }
+
+    setPlaylistState(list);
+    setPlaylistIndex(newCurrentIndex);
+  }, []);
+
+  const playQueueTrack = useCallback((targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= playlistRef.current.length) return;
+    setPlaylistIndex(targetIndex);
+    void playLoadedTrack(playlistRef.current[targetIndex] ?? null);
+  }, []);
+
 
   useEffect(() => {
     playlistRef.current = playlist;
@@ -1307,6 +1396,26 @@ export function PulsePlayerProvider({
     const handleEnded = () => {
       stopProgressLoop();
       stopVisualProgressLoop();
+
+      if (repeatModeRef.current === 'one') {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          void audioRef.current.play().catch(() => {});
+        }
+        return;
+      }
+
+      if (
+        repeatModeRef.current === 'all' &&
+        !isRadioModeRef.current &&
+        playlistRef.current.length > 0 &&
+        indexRef.current >= playlistRef.current.length - 1
+      ) {
+        setPlaylistIndex(0);
+        void playLoadedTrack(playlistRef.current[0] ?? null);
+        return;
+      }
+
       void nextTrack();
     };
 
@@ -1564,6 +1673,13 @@ export function PulsePlayerProvider({
     playTrack,
     setMode,
     togglePlay,
+    repeatMode,
+    toggleRepeatMode,
+    playlist,
+    currentIndex: index,
+    playQueueTrack,
+    removeQueueTrack,
+    moveQueueTrack,
   };
 
   const isFullMode = mode === 'full';
@@ -1621,6 +1737,17 @@ export function PulsePlayerProvider({
             nextTrackObj={nextTrackObj}
             currentTrack={currentTrack}
             trackKey={String(currentSongId)}
+
+            repeatMode={repeatMode}
+            playlist={playlist}
+            currentIndex={index}
+            isRadioMode={isRadioMode}
+            radioSeedName={radioSeedName}
+
+            onToggleRepeat={toggleRepeatMode}
+            onPlayQueueTrack={playQueueTrack}
+            onRemoveQueueTrack={removeQueueTrack}
+            onMoveQueueTrack={moveQueueTrack}
 
             swipeX={swipeX}
             isSwiping={isSwiping}

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ComponentType, RefObject, TouchEventHandler } from 'react';
+import { useState, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import {
@@ -13,8 +13,10 @@ import {
 import { cn } from './player-utils';
 import { PulsePlayerFullHeader } from './pulse-player-full-header';
 import { PulsePlayerFullArtwork } from './pulse-player-full-artwork';
-import { PulsePlayerFullControls } from './pulse-player-full-controls';
+import { PulsePlayerFullControls, type RepeatMode } from './pulse-player-full-controls';
+import { PulseQueueModal } from './pulse-queue-modal';
 import { Dropdown, DropdownItem } from '../../components/navigation';
+import type { PulseTrack } from '../../context/PulsePlayerContext';
 
 type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 
@@ -35,6 +37,13 @@ export type PulsePlayerFullProps = {
   currentTrack: { src?: string | null; album?: string | null; albumid?: number | string | null } | null;
   // Unique string that changes when the track changes (used to reset animations)
   trackKey: string;
+
+  // Repeat & Queue
+  repeatMode?: RepeatMode;
+  playlist?: PulseTrack[];
+  currentIndex?: number;
+  isRadioMode?: boolean;
+  radioSeedName?: string;
 
   // Swipe state (full-player horizontal swipe)
   swipeX: number;
@@ -99,6 +108,12 @@ export type PulsePlayerFullProps = {
   onPrev: () => void;
   onSaveOffline: () => Promise<void>;
   onTogglePlay: () => void;
+  onToggleRepeat?: () => void;
+
+  // Callbacks – queue
+  onPlayQueueTrack?: (index: number) => void;
+  onRemoveQueueTrack?: (index: number) => void;
+  onMoveQueueTrack?: (fromIndex: number, toIndex: number) => void;
 
   // Lyrics seek
   onLyricsSeek: (nextTime: number) => void;
@@ -122,6 +137,12 @@ export function PulsePlayerFull({
   nextTrackObj,
   currentTrack,
   trackKey,
+
+  repeatMode = 'none',
+  playlist = [],
+  currentIndex = 0,
+  isRadioMode,
+  radioSeedName,
 
   swipeX,
   isSwiping,
@@ -174,9 +195,15 @@ export function PulsePlayerFull({
   onPrev,
   onSaveOffline,
   onTogglePlay,
+  onToggleRepeat,
+
+  onPlayQueueTrack,
+  onRemoveQueueTrack,
+  onMoveQueueTrack,
 
   onLyricsSeek,
 }: PulsePlayerFullProps) {
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
   return (
     <div
       className={cn(
@@ -371,9 +398,14 @@ export function PulsePlayerFull({
             <PulsePlayerFullControls
               Icon={Icon}
               isPlaying={isPlaying}
+              repeatMode={repeatMode}
               onNext={onNext}
               onPrev={onPrev}
               onTogglePlay={onTogglePlay}
+              onToggleRepeat={onToggleRepeat}
+              onOpenQueue={() => setIsQueueOpen(true)}
+              hasQueue={playlist.length > 0}
+              lang={lang}
             />
           </div>
 
@@ -387,6 +419,25 @@ export function PulsePlayerFull({
           ) : null}
         </div>
       </div>
+
+      <PulseQueueModal
+        isOpen={isQueueOpen}
+        onClose={() => setIsQueueOpen(false)}
+        playlist={playlist}
+        currentIndex={currentIndex}
+        isRadioMode={isRadioMode}
+        radioSeedName={radioSeedName}
+        lang={lang}
+        onPlayTrack={(idx) => {
+          onPlayQueueTrack?.(idx);
+        }}
+        onRemoveTrack={(idx) => {
+          onRemoveQueueTrack?.(idx);
+        }}
+        onMoveTrack={(fromIdx, toIdx) => {
+          onMoveQueueTrack?.(fromIdx, toIdx);
+        }}
+      />
     </div>
   );
 }
