@@ -535,10 +535,16 @@ export function extractMessageImages(value: string | null | undefined) {
   const imageTags = html.match(/<img\b[^>]*>/gi) ?? [];
 
   imageTags.forEach((tag) => {
-    const src = decodeHtml(
+    let src = decodeHtml(
       normalizeText(getHtmlAttribute(tag, 'data-src') || getHtmlAttribute(tag, 'src')),
     );
     if (!src) return;
+
+    if (src.includes('/includes/img/anlite/stickers/webp/')) {
+      src = src.replace('/includes/img/anlite/stickers/webp/', '/img/stickers/webp/').replace('?id=NEW', '');
+    } else if (src.includes('/includes/img/')) {
+      src = src.replace('/includes/img/', '/img/');
+    }
 
     images.push({
       alt: decodeHtml(normalizeText(getHtmlAttribute(tag, 'alt'))),

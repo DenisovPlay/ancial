@@ -218,7 +218,9 @@ export default function MessageBubble({
   const [loadedPosts, setLoadedPosts] = useState<string[]>([]);
   const [loadedTracks, setLoadedTracks] = useState<string[]>([]);
 
-  let messageBodyHtml = parseMessageLinks(messageBodyRaw);
+  let messageBodyHtml = parseMessageLinks(messageBodyRaw)
+    .replaceAll('/includes/img/anlite/stickers/webp/', '/img/stickers/webp/')
+    .replaceAll('?id=NEW', '');
 
   loadedPosts.forEach((id) => {
     const pattern = new RegExp(`<a href="[^"]*".*?>https?://${domain.replace(/\./g, '\\.')}/(?:feed/)?post/${id}</a>\\s*`, 'gi');

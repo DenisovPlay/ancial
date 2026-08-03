@@ -8,7 +8,9 @@ export function getVisibleLength(bbcode: string): number {
 
 export function parsePostContentToHtml(content: string | null | undefined, isPreview: boolean = false): string {
     if (!content) return '';
-    let html = content;
+    let html = content
+        .replaceAll('/includes/img/anlite/stickers/webp/', '/img/stickers/webp/')
+        .replaceAll('?id=NEW', '');
 
     // Если это превью или редактор, экранируем HTML, так как текст сырой.
     // Если это отрендеренный сервером пост, он УЖЕ экранирован сервером (htmlspecialchars),
