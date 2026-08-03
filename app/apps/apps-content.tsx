@@ -314,7 +314,7 @@ function AppsContentInner() {
 
       {!loading && error && (
         <div className="text-center w-full max-w-screen-2xl flex flex-col gap-0.5 justify-center items-center py-20 px-3">
-          <img alt="" className="h-56" src="/includes/img/stickers/sponge.gif" />
+          <img alt="" className="h-56" src="/img/stickers/sponge.gif" />
           <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
           <span className="text-content-600">{lang?.try_refresh || 'Попробуйте обновить страницу'}</span>
           <span className="text-xs text-zinc-400">{error}</span>
@@ -323,7 +323,7 @@ function AppsContentInner() {
 
       {!loading && !error && apps.length === 0 && (
         <div className="text-center w-full max-w-screen-2xl flex flex-col gap-0.5 justify-center items-center py-20 px-3">
-          <img alt="" className="h-56" src="/includes/img/anlite/nothingfound.webp" />
+          <img alt="" className="h-56" src="/img/load-placeholders/nothingfound.webp" />
           <span className="text-base text-zinc-100 w-full text-center font-black">
             {lang?.emptycomments ?? 'Ничего не найдено'}
           </span>

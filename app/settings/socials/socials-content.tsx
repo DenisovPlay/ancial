@@ -273,7 +273,7 @@ export default function SocialsContent() {
         {/* Telegram Card */}
         <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center min-h-[220px]">
           <div className="bg-blue-600 rounded-2xl p-3 h-12 w-12 text-white flex items-center justify-center relative">
-            <img className="w-10 object-contain" src="/includes/img/anlite/socials/tg.png" alt="Telegram logo" />
+            <img className="w-10 object-contain" src="/img/socials/tg.png" alt="Telegram logo" />
           </div>
           <div className="flex flex-col w-full h-full items-center justify-center gap-2 mt-3 flex-grow">
             {/* Connected State */}
@@ -310,7 +310,7 @@ export default function SocialsContent() {
         {/* Yandex Card */}
         <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center min-h-[220px]">
           <div className="rounded-2xl h-12 w-12 flex items-center justify-center overflow-hidden">
-            <img src="/includes/img/yandexlogo.png" className="w-12 h-12 shadow rounded-2xl object-cover" alt="Yandex logo" />
+            <img src="/img/socials/yandexlogo.png" className="w-12 h-12 shadow rounded-2xl object-cover" alt="Yandex logo" />
           </div>
           <div className="flex flex-col w-full items-center justify-center gap-2 mt-3 flex-grow">
             {/* Connected State */}

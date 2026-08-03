@@ -2213,7 +2213,7 @@ export default function MessagesContent() {
                       ) : dialogsError && dialogs.length === 0 ? (
                         <div className="flex h-full flex-col items-center justify-center px-4 text-center">
                           <img
-                            src="/includes/img/stickers/sponge.gif"
+                            src="/img/stickers/sponge.gif"
                             alt=""
                             className="mb-3 h-40 w-40 object-contain"
                           />

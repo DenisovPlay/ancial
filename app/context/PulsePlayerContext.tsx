@@ -182,7 +182,7 @@ declare global {
 
 const PulsePlayerContext = createContext<PulsePlayerContextValue | undefined>(undefined);
 
-const FALLBACK_TRACK_IMAGE = '/includes/img/pulse/track.png';
+const FALLBACK_TRACK_IMAGE = '/img/pulse/track.png';
 const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
 const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;

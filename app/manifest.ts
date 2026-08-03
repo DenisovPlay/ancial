@@ -17,17 +17,17 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['social', 'social networking'],
     screenshots: [
       {
-        src: '/includes/img/screenshots/1.png',
+        src: '/img/screenshots/1.png',
         sizes: '385x843',
         type: 'image/png',
       },
       {
-        src: '/includes/img/screenshots/2.png',
+        src: '/img/screenshots/2.png',
         sizes: '389x843',
         type: 'image/png',
       },
       {
-        src: '/includes/img/screenshots/3.png',
+        src: '/img/screenshots/3.png',
         sizes: '1915x944',
         type: 'image/png',
         form_factor: 'wide',

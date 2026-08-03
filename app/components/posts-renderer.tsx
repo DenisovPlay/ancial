@@ -648,7 +648,7 @@ function PostCardInner({
 
       const isPostImage = (img: HTMLImageElement) => {
         const src = img.src || '';
-        if (src.includes('betterttv.net') || src.includes('7tv.app') || src.includes('/api/7tv/')) {
+        if (src.includes('betterttv.net') || src.includes('7tv.app') || src.includes('/api/7tv/') || src.includes('/api/V2/7tv/')) {
           return false;
         }
         return img.classList.contains('object-cover') || img.classList.contains('object-contain');

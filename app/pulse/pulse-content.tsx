@@ -105,8 +105,8 @@ const TRACK_CACHE_KEYS: Record<HomeTrackCollectionId, string> = {
 };
 
 const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
-const DEFAULT_TRACK_IMAGE = '/includes/img/pulse/track.png';
-const THINKING_IMAGE = '/includes/img/anlite/thinking.webp';
+const DEFAULT_TRACK_IMAGE = '/img/pulse/track.png';
+const THINKING_IMAGE = '/img/load-placeholders/thinking.webp';
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');

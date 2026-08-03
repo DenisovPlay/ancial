@@ -72,7 +72,7 @@ export function DonateModal({
         setRecipientUser({
           id: 0,
           username: recipientUsername,
-          img: recipientImg || '/includes/img/noavatar.png',
+          img: recipientImg || '/img/placeholders/user.png',
           name: recipientName,
         });
       } else {
@@ -102,7 +102,7 @@ export function DonateModal({
               setRecipientUser({
                 id: profile.id,
                 username: profile.username || recipientUsername,
-                img: profile.img || recipientImg || '/includes/img/noavatar.png',
+                img: profile.img || recipientImg || '/img/placeholders/user.png',
                 name: profile.name || recipientName,
               });
             }
@@ -198,7 +198,7 @@ export function DonateModal({
                 {(recipientUser || recipientUsername) && (
                   <div className="flex items-center gap-3 bg-zinc-800/80 p-3 rounded-3xl border border-zinc-600/30 text-left w-full">
                     <img
-                      src={recipientUser?.img || recipientImg || '/includes/img/noavatar.png'}
+                      src={recipientUser?.img || recipientImg || '/img/placeholders/user.png'}
                       className="w-12 h-12 rounded-2xl object-cover border border-zinc-700"
                       alt="Avatar"
                     />

@@ -547,7 +547,7 @@ export default function CallClient() {
   }
 
   const fName = foreignUser ? `${foreignUser.fname || ''} ${foreignUser.lname || ''}`.trim() : '...';
-  const fAvatar = foreignUser?.img || '/includes/img/anlite/nothingfound.webp';
+  const fAvatar = foreignUser?.img || '/img/load-placeholders/nothingfound.webp';
 
   // Обложка: нет соединения, или партнёр выключил камеру (но не во время screen share)
   const showCover = !isRtcConnected || (remoteCamEnabled === false && !remoteScreenEnabled);

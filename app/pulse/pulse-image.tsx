@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 
-const DEFAULT_PULSE_COVER = '/includes/img/pulse/track.png';
+const DEFAULT_PULSE_COVER = '/img/pulse/track.png';
 const NEXT_IMAGE_REMOTE_HOSTS = new Set([
   'ancial.ru',
   'cdn.betterttv.net',

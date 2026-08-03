@@ -983,8 +983,8 @@ export default function UserProfileContent({ login }: { login: string }) {
     };
   }, [strings.accept, strings.add, strings.cancel, strings.delete, userData?.friend_button, userData?.full_data?.friend_status]);
 
-  const currentCover = userData?.cover || '/img/covers/placeholder.png';
-  const currentAvatar = userData?.img || '/includes/img/new_user.png';
+  const currentCover = userData?.cover || '/img/placeholders/cover.png';
+  const currentAvatar = userData?.img || '/img/placeholders/user.png';
 
   return (
     <div className="flex justify-center items-center md:pb-3">
@@ -993,7 +993,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       ) : error ? (
         <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
           <Image
-            src="/img/status/nothingfound.webp"
+            src="/img/load-placeholders/nothingfound.webp"
             alt="Profile error"
             width={224}
             height={224}
@@ -1178,7 +1178,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                   {(mappedFriends || []).slice(0, 6).map((friend) => (
                     <UserMiniCard
                       key={String(friend.id)}
-                      image={friend.img || '/includes/img/new_user.png'}
+                      image={friend.img || '/img/placeholders/user.png'}
                       isOnline={flag(friend.online)}
                       label={friend.fname || friend.name || ''}
                       onClick={() => navigateToUser(friend.username || friend.login)}
@@ -1198,7 +1198,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                   {(mappedSubscribers || []).slice(0, 6).map((subscriber) => (
                     <UserMiniCard
                       key={String(subscriber.id)}
-                      image={subscriber.img || '/includes/img/new_user.png'}
+                      image={subscriber.img || '/img/placeholders/user.png'}
                       isOnline={flag(subscriber.online)}
                       label={subscriber.fname || subscriber.name || ''}
                       onClick={() => navigateToUser(subscriber.username || subscriber.login)}
@@ -1216,7 +1216,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                   {(mappedGroups || []).slice(0, 6).map((group) => (
                     <GroupMiniCard
                       key={String(group.id)}
-                      image={group.img || '/includes/img/new_user.png'}
+                      image={group.img || '/img/placeholders/group.png'}
                       label={group.name || ''}
                       onClick={() => navigateToGroup(group.slnk)}
                     />

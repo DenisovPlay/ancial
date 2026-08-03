@@ -18,8 +18,8 @@ messaging.onBackgroundMessage((payload) => {
   const title = payload.data?.title || 'Zypo';
   const options = {
     body: payload.data?.body || 'Новое уведомление',
-    icon: payload.data?.icon || '/includes/img/anlite/anlogo.webp',
-    badge: '/includes/img/anlite/anlogo.webp',
+    icon: payload.data?.icon || '/img/zypo/logo-rounded.webp',
+    badge: '/img/zypo/logo-rounded.webp',
     tag: 'ancial-notification',
     data: {
       url: payload.data?.click_action || self.location.origin + '/'

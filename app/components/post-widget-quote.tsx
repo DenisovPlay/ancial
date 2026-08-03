@@ -58,7 +58,7 @@ export default function PostWidgetQuote({ post_id, quote_data }: PostWidgetQuote
           <div className="flex items-center gap-1.5 mb-1">
             <div
               className="w-7 h-7 rounded-full bg-cover bg-center shrink-0 border border-zinc-600/30"
-              style={{ backgroundImage: `url(${quote_data.author.img || '/includes/img/anlite/default_avatar.png'})` }}
+              style={{ backgroundImage: `url(${quote_data.author.img || '/img/placeholders/user.png'})` }}
             />
             <span className="text-zinc-300 text-xs font-semibold truncate">{quote_data.author.name}</span>
           </div>

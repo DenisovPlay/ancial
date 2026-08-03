@@ -19,10 +19,7 @@ function isAbsoluteUrl(value: string) {
 }
 
 function isLegacyAuthenticatedPath(pathname: string) {
-  return (
-    (pathname.startsWith('/api/') && pathname.endsWith('.php')) ||
-    (pathname.startsWith('/engine/') && pathname.endsWith('.php'))
-  );
+  return pathname.startsWith('/api/') && pathname.endsWith('.php');
 }
 
 function getUrl(input: string) {
@@ -45,7 +42,7 @@ function shouldTryLegacySessionRestore(input: string) {
     return false;
   }
 
-  return !url.pathname.startsWith('/api/auth/');
+  return !url.pathname.startsWith('/api/auth/') && !url.pathname.startsWith('/api/V2/auth/');
 }
 
 export function isLegacyNotLoggedInResponseText(value: string) {

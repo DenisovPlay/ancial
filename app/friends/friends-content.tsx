@@ -204,7 +204,7 @@ function FriendsContent() {
           </div>
         ) : friends.length === 0 ? (
           <div className="w-full flex flex-col gap-0.5 justify-center items-center py-10 duration-300">
-            <img src="/img/status/nothingfound.webp" className="w-48 lg:w-56" alt="Nothing found" />
+            <img src="/img/load-placeholders/nothingfound.webp" className="w-48 lg:w-56" alt="Nothing found" />
             <span className="text-base text-zinc-100 w-full text-center font-black">{lang?.nofriends}</span>
             <span className="text-sm text-zinc-300 w-full text-center font-medium">{lang?.nosfriendsdesc}</span>
           </div>
@@ -231,7 +231,7 @@ function FriendsContent() {
                   >
                     <div
                       className={`shadow w-16 h-16 rounded-full shrink-0 bg-cover bg-center border ${isOnline ? 'border-lime-500' : 'border-transparent'}`}
-                      style={{ backgroundImage: `url(${friend.img || '/includes/img/anlite/default_avatar.png'})` }}
+                      style={{ backgroundImage: `url(${friend.img || '/img/placeholders/user.png'})` }}
                     ></div>
                   </Link>
 

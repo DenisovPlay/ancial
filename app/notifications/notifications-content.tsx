@@ -161,7 +161,7 @@ export default function NotificationsPage() {
           ))
         ) : (
           <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center duration-300">
-            <img src="/includes/img/anlite/nothingfound.webp" className="h-56" alt="Nothing found" />
+            <img src="/img/load-placeholders/nothingfound.webp" className="h-56" alt="Nothing found" />
             <span className="text-base text-zinc-100 w-full text-center font-black">
               {lang?.notification_empty || 'Ничего нет'}
             </span>

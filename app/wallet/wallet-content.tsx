@@ -750,7 +750,7 @@ export default function WalletContent() {
             <span className="text-3xl font-bold">{lang?.startnow || 'Начните сейчас!'}</span>
             <span className="text-xl text-zinc-300 mt-2">{lang?.openfreeaccount || 'Откройте бесплатный счёт, переводите и получайте средства по всему миру.'}</span>
             <div className="w-full mt-4 flex justify-center absolute bottom-0 right-0">
-              <img src="/img/backgrounds/wallet-intro.webp" alt="Wallet Intro" className="w-full max-h-140 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <img src="/img/load-placeholders/wallet-intro.webp" alt="Wallet Intro" className="w-full max-h-140 object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             </div>
           </div>
           <div className="flex flex-col items-center justify-center gap-3 w-full max-w-md fixed bottom-20 lg:bottom-3 px-3">

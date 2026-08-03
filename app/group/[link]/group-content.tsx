@@ -138,7 +138,7 @@ function EmptyIllustration({
   return (
     <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6 border border-zinc-600/30">
       <Image
-        src="/img/status/nothingfound.webp"
+        src="/img/load-placeholders/nothingfound.webp"
         alt="Nothing found"
         width={224}
         height={224}
@@ -1102,8 +1102,8 @@ export default function GroupProfileContent({ link }: { link: string }) {
     }
   };
 
-  const currentCover = groupData?.cover || '/img/covers/placeholder.png';
-  const currentAvatar = groupData?.img || '/includes/img/new_user.png';
+  const currentCover = groupData?.cover || '/img/placeholders/cover.png';
+  const currentAvatar = groupData?.img || '/img/placeholders/group.png';
 
   return (
     <div className="flex justify-center items-center md:py-3">
@@ -1112,7 +1112,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       ) : blocked ? (
         <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
           <Image
-            src="/img/status/nothingfound.webp"
+            src="/img/load-placeholders/nothingfound.webp"
             alt="Blocked group"
             width={224}
             height={224}
@@ -1130,7 +1130,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       ) : error ? (
         <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
           <Image
-            src="/img/status/nothingfound.webp"
+            src="/img/load-placeholders/nothingfound.webp"
             alt="Group error"
             width={224}
             height={224}
@@ -1286,7 +1286,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                   {(groupData.subscribers || []).slice(0, 6).map((subscriber) => (
                     <UserMiniCard
                       key={String(subscriber.id)}
-                      image={subscriber.img || '/includes/img/new_user.png'}
+                      image={subscriber.img || '/img/placeholders/user.png'}
                       isOnline={flag(subscriber.online)}
                       label={subscriber.fname || ''}
                       onClick={() => navigateToUser(subscriber.username)}
@@ -1321,7 +1321,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                       {(groupData.official_groups || []).map((officialGroup) => (
                         <GroupMiniCard
                           key={String(officialGroup.id)}
-                          image={officialGroup.img || '/includes/img/new_user.png'}
+                          image={officialGroup.img || '/img/placeholders/group.png'}
                           label={officialGroup.name || ''}
                           onClick={() => navigateToGroup(officialGroup.slnk)}
                         />

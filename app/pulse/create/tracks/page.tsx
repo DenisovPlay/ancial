@@ -74,7 +74,7 @@ export default function PulseCreateTracksPage() {
               className="w-full p-3 relative gap-3 flex items-center hover:bg-zinc-700/50 duration-300 cursor-pointer active:scale-[0.99]"
               onClick={() => router.push(`/pulse/create/edit-track?id=${track.id}`)}
             >
-              <img className="rounded-2xl h-14 w-14 object-cover shrink-0" src={track.img || '/includes/img/Pulse_art.png'} alt={track.name} />
+              <img className="rounded-2xl h-14 w-14 object-cover shrink-0" src={track.img || '/img/pulse/artist.png'} alt={track.name} />
               <div className="flex-grow min-w-0 flex flex-col justify-center">
                 <span className="text-zinc-100 md:text-xl leading-tight truncate">{track.name}</span>
                 <span className="text-sm text-zinc-400 leading-tight truncate">{track.artist}</span>

@@ -79,7 +79,7 @@ export default function PulseCreateAlbumsPage() {
               className="w-full p-3 relative gap-3 flex items-center hover:bg-zinc-700/50 duration-300 cursor-pointer active:scale-[0.99]"
               onClick={() => router.push(`/pulse/create/edit-album?id=${album.id}`)}
             >
-              <img className="rounded-2xl h-14 w-14 object-cover shrink-0" src={album.img || '/includes/img/Pulse_art.png'} alt={album.name} />
+              <img className="rounded-2xl h-14 w-14 object-cover shrink-0" src={album.img || '/img/pulse/artist.png'} alt={album.name} />
               <div className="flex-grow min-w-0 flex flex-col justify-center">
                 <span className="text-zinc-100 md:text-xl leading-tight truncate">{album.name}</span>
                 <span className="text-sm text-zinc-400 leading-tight truncate">{album.desk}</span>

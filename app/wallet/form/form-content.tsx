@@ -201,7 +201,7 @@ function FormContentInner() {
           setRecipientUser({
             id: res.id,
             username: res.username || login,
-            img: res.img || '/includes/img/noavatar.png'
+            img: res.img || '/img/placeholders/user.png'
           });
         }
       } else {
@@ -293,7 +293,7 @@ function FormContentInner() {
           setRecipientUser({
             id: res.id,
             username: res.username || recipientValue.trim(),
-            img: res.img || '/includes/img/noavatar.png'
+            img: res.img || '/img/placeholders/user.png'
           });
           setStep('confirmsend');
         } else {

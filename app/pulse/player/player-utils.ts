@@ -16,7 +16,7 @@ export type PlayerTrack = {
 
 export type PlayerLang = Record<string, string> | null;
 
-const FALLBACK_TRACK_IMAGE = '/includes/img/pulse/track.png';
+const FALLBACK_TRACK_IMAGE = '/img/pulse/track.png';
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');

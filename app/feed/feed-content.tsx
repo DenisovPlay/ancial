@@ -154,7 +154,7 @@ function EmptyIllustration({
   return (
     <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-0.5 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
       <Image
-        src="/img/status/nothingfound.webp"
+        src="/img/load-placeholders/nothingfound.webp"
         alt="Nothing found"
         width={224}
         height={224}

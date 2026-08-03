@@ -74,7 +74,7 @@ export default function PulseCreateArtistsPage() {
               className="w-full p-3 relative gap-3 flex items-center hover:bg-zinc-700/50 duration-300 cursor-pointer active:scale-[0.99]"
               onClick={() => router.push(`/pulse/create/edit-artist?id=${artist.id}`)}
             >
-              <img className="h-14 w-14 rounded-2xl object-cover shrink-0" src={artist.img || '/includes/img/Pulse_art.png'} alt={artist.name} />
+              <img className="h-14 w-14 rounded-2xl object-cover shrink-0" src={artist.img || '/img/pulse/artist.png'} alt={artist.name} />
               <div className="flex-grow min-w-0">
                 <span className="md:text-xl text-zinc-100 truncate block">{artist.name}</span>
                 <span className="text-sm text-zinc-400 truncate block">{artist.desk?.length > 60 ? artist.desk.substring(0, 60) + '...' : artist.desk}</span>

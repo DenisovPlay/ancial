@@ -441,7 +441,7 @@ function SkeletonStat() {
 function AppInfoEmpty({ lang }: { lang: ReturnType<typeof useAuth>['lang'] }) {
   return (
     <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
-      <img alt="" className="h-56" src="/includes/img/anlite/nothingfound.webp" />
+      <img alt="" className="h-56" src="/img/load-placeholders/nothingfound.webp" />
       <span className="text-base text-zinc-100 w-full text-center font-black">
         {lang?.emptycomments ?? 'Ничего не найдено'}
       </span>
@@ -456,7 +456,7 @@ function AppInfoError({ error }: { error: string }) {
   const { lang } = useAuth();
   return (
     <div className="min-h-[70vh] flex flex-col justify-center items-center w-full h-full">
-      <img alt="" src="/includes/img/stickers/sponge.gif" />
+      <img alt="" src="/img/stickers/sponge.gif" />
       <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
       <span className="text-content-600">{lang?.try_refresh_page || 'Попробуйте обновить страницу'}</span>
       <span className="text-xs text-zinc-400">{error}</span>

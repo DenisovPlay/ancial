@@ -146,7 +146,7 @@ export function RelationGridModal({
       <div className="grid grid-cols-4 lg:grid-cols-5 gap-3">
         {items.length > 0 ? (
           items.map((item) => {
-            const image = item.img || '/includes/img/new_user.png';
+            const image = item.img || (type === 'groups' ? '/img/placeholders/group.png' : '/img/placeholders/user.png');
 
             if (type === 'groups') {
               const group = item as GroupPreview;
@@ -265,7 +265,7 @@ export function EmptyIllustration({
   return (
     <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6 border border-zinc-600/30">
       <Image
-        src="/img/status/nothingfound.webp"
+        src="/img/load-placeholders/nothingfound.webp"
         alt="Nothing found"
         width={224}
         height={224}

@@ -196,7 +196,7 @@ export default function MerchantContent() {
                 className="relative flex flex-col gap-3 justify-center w-full p-4 border border-zinc-600/30 bg-zinc-800/70 hover:bg-zinc-700/50 duration-300 cursor-pointer active:scale-95 rounded-3xl text-left"
               >
                 <div className="flex items-center gap-3">
-                  <img src={merchant.img || '/includes/img/noavatar.png'} className="rounded-2xl h-14 w-14 object-cover" alt="Merchant Avatar" />
+                  <img src={merchant.img || '/img/placeholders/user.png'} className="rounded-2xl h-14 w-14 object-cover" alt="Merchant Avatar" />
                   <div className="flex flex-col grow truncate">
                     <span className="text-lg font-bold text-white truncate">{merchant.name}</span>
                     <span className="text-zinc-400 text-xs truncate">ID: {merchant.id}</span>

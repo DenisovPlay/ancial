@@ -14,13 +14,13 @@ export default function GuidesPage() {
         <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-3 lg:px-0 pb-64">
             <div onClick={() => router.push("/about/guides/app")} className="bg-zinc-900 hover:bg-zinc-800 rounded-2xl flex flex-col duration-300 active:scale-95 cursor-pointer relative group border border-zinc-600/30">
                 <span className="text-sm px-2 py-1 shadow rounded-2xl animate-pulse bg-purple-500/90 backdrop-blur-lg text-white absolute top-1.5 right-1.5">Новое</span>
-                <img src="/img/covers/placeholder.png" className="w-full rounded-2xl"/>
+                <img src="/img/placeholders/cover.png" className="w-full rounded-2xl"/>
                 <span className="w-full text-lg font-bold mt-3 px-3 duration-300">Как установить приложение?</span>
                 <span className="w-full text-sm text-zinc-300 mb-3 px-3 duration-300">Показываем как быстро установить наше приложение.</span>
             </div>
             <div onClick={() => router.push("/about/guides/publish-song")} className="bg-zinc-900 hover:bg-zinc-800 rounded-2xl flex flex-col duration-300 active:scale-95 cursor-pointer relative group border border-zinc-600/30">
                 <span className="text-sm px-2 py-1 shadow rounded-2xl animate-pulse bg-purple-500/90 backdrop-blur-lg text-white absolute top-1.5 right-1.5">Новое</span>
-                <img src="/img/covers/placeholder.png" className="w-full rounded-2xl"/>
+                <img src="/img/placeholders/cover.png" className="w-full rounded-2xl"/>
                 <span className="w-full text-lg font-bold mt-3 px-3 duration-300">Как опубликовать песню?</span>
                 <span className="w-full text-sm text-zinc-300 mb-3 px-3 duration-300">Показываем как опубликовать свою песню или альбом.</span>
             </div>

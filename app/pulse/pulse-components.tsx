@@ -71,7 +71,7 @@ export type PulseTrackRowProps = {
   userCountry: string;
 };
 
-export const DEFAULT_TRACK_IMAGE = '/includes/img/pulse/track.png';
+export const DEFAULT_TRACK_IMAGE = '/img/pulse/track.png';
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');

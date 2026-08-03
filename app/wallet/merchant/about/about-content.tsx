@@ -269,7 +269,7 @@ function AboutContentInner() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 w-full max-w-screen-2xl">
         <div className="relative flex flex-col gap-3 justify-center w-full p-4 border border-zinc-700/30 bg-zinc-900/20 rounded-3xl text-left">
           <div className="flex items-center gap-3">
-            <img src={merchant.img || '/includes/img/noavatar.png'} className="rounded-2xl h-14 w-14 object-cover" alt="Merchant Avatar" />
+            <img src={merchant.img || '/img/placeholders/user.png'} className="rounded-2xl h-14 w-14 object-cover" alt="Merchant Avatar" />
             <div className="flex flex-col grow truncate">
               <span className="text-lg font-bold text-white truncate">{merchant.name}</span>
               <div className="flex items-center gap-1.5 text-zinc-400 text-xs">

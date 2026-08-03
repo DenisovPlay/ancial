@@ -510,17 +510,17 @@ export default function PayContent() {
       {/* Footer Branding & Links */}
       <div className="flex items-center justify-center mt-3 flex-wrap gap-6">
         <div className="flex items-center justify-center">
-          <img src="/includes/img/anlite/zeni.png" alt="ZeniFlow" className="w-10" />
+          <img src="/img/logos/zeni.png" alt="ZeniFlow" className="w-10" />
           <div className="flex flex-col items-start justify-center">
             <span className={`text-lg text-lime-500 ${nauryzFont.className}`} style={{ marginTop: 0 }}>zENIFLOW</span>
-            <span className="text-zinc-300 text-xs">leap ahead</span>
+            <span className="text-zinc-300 text-xs -mt-2">leap ahead</span>
           </div>
         </div>
 
         <div className="flex items-center justify-center gap-2">
-          <img src="/includes/img/anlite/anlogo.webp" alt="Ancial" className="w-8 rounded-xl" />
+          <img src="/img/zypo/logo-rounded.webp" alt="Zypo" className="w-8 rounded-xl" />
           <div className="flex flex-col items-start justify-center">
-            <span className={`text-lg text-purple-400 font-bold ${nauryzFont.className}`} style={{ marginTop: 0 }}>ancial</span>
+            <img src="/img/zypo/letter.svg" className="h-4 mt-1" />
             <span className="text-zinc-300 text-xs">flow as one</span>
           </div>
         </div>
@@ -528,7 +528,7 @@ export default function PayContent() {
 
       <div className="flex items-center justify-center gap-3 lg:gap-6 p-3 pt-1.5 text-xs flex-wrap">
         <span
-          onClick={() => router.push('/about/legal/contacts')}
+          onClick={() => router.push('/about/contacts')}
           className="shrink-0 text-zinc-500 hover:text-zinc-300 active:scale-95 cursor-pointer duration-300"
         >
           {lang?.pay_support || 'Поддержка'}

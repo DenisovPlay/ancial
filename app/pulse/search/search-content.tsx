@@ -418,7 +418,7 @@ export default function PulseSearchContent() {
 
         {empty ? (
           <div className="flex w-full flex-col items-center justify-center gap-0.5 text-center">
-            <img src="/includes/img/anlite/nothingfound.webp" className="h-56" alt="" />
+            <img src="/img/load-placeholders/nothingfound.webp" className="h-56" alt="" />
             <span className="w-full text-center text-base font-black text-content-600">{lang?.noposts || 'Ничего не найдено'}</span>
             <span className="w-full text-center text-sm font-medium text-content-400">{lang?.nopostsdesc || 'Попробуйте другой запрос'}</span>
           </div>

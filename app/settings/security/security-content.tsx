@@ -440,7 +440,7 @@ export default function SecuritySettingsPage() {
                   alt="Yandex"
                   className="w-12 h-12 shadow rounded-2xl"
                   height={48}
-                  src="/includes/img/yandexlogo.png"
+                  src="/img/socials/yandexlogo.png"
                   unoptimized
                   width={48}
                 />
@@ -478,7 +478,7 @@ export default function SecuritySettingsPage() {
                   alt="Yandex"
                   className="w-12 h-12 shadow rounded-full"
                   height={48}
-                  src="/includes/img/yandexlogo.png"
+                  src="/img/socials/yandexlogo.png"
                   unoptimized
                   width={48}
                 />

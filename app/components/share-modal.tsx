@@ -286,7 +286,7 @@ export default function ShareModal({
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-full bg-cover bg-center shrink-0 border border-zinc-600/30"
-                style={{ backgroundImage: `url(${(replyPostPreview || attachmentPreview)?.authorImg || '/includes/img/anlite/default_avatar.png'})` }}
+                style={{ backgroundImage: `url(${(replyPostPreview || attachmentPreview)?.authorImg || '/img/placeholders/user.png'})` }}
               />
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-sm font-medium text-white truncate">{(replyPostPreview || attachmentPreview)?.authorName}</span>

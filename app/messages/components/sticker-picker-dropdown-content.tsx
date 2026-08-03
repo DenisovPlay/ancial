@@ -152,7 +152,7 @@ export default function StickerPickerDropdownContent({
               className="cursor-pointer shrink-0 h-16 w-16 overflow-hidden hover:rounded-2xl duration-300 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
             >
               <img
-                src={`/includes/img/anlite/stickers/webp/${stickerName}.webp?id=NEW`}
+                src={`/img/stickers/webp/${stickerName}.webp`}
                 alt={stickerName}
                 className="h-16 w-16 object-contain"
               />
