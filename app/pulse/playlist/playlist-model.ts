@@ -88,7 +88,7 @@ const BUILTIN_PLAYLIST_META: Record<string, PulsePlaylistMeta> = {
     desk: 'Ваши избранные треки в Zypo Pulse.',
     genlist: 'Your',
     id: '-5',
-    img: '/img/pulse/cover/your.png',
+    img: '/img/pulse/favorite_pulse.png',
     likes: '0',
     name: 'Избранное',
     type: '4',
