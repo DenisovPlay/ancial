@@ -5,7 +5,7 @@
 export const API_BASE = 'https://backend.ru.zypo.cc/';
 
 /** WebSocket-endpoint (мессенджер, звонки) */
-export const WS_BASE = 'wss://http://ws.ru.zypo.cc/';
+export const WS_BASE = 'wss://ws.ru.zypo.cc/';
 
 /** Публичный (канонический) адрес сайта — SEO, ссылки-шары, OAuth redirect */
 export const SITE_URL = 'https://zypo.cc';
