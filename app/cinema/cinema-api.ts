@@ -2,7 +2,7 @@
 
 import { Movie, PlayerOption } from './types';
 import { CacheManager } from '../lib/cache';
-import { CINEMA_IMAGE_PROXY_BASE } from '../config';
+import { CINEMA_API_BASE, CINEMA_IMAGE_PROXY_BASE } from '../config';
 
 const API_BASE = '/api/V2/cinema';
 const CINEMA_CACHE_TTL = 3600; // 1 hour TTL

@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-import { API_BASE, SITE_DOMAIN } from './app/config';
+import { API_BASE, CINEMA_API_BASE, SITE_DOMAIN } from './app/config';
 
 // Хосты, с которых next/image может оптимизировать картинки.
 // insecure: true — дополнительно разрешает http (легаси-контент старого бэкенда).
@@ -82,6 +82,10 @@ const nextConfig: NextConfig = {
         },
       ],
       fallback: [
+        { // Proxy for Cinema API requests
+          source: '/api/V2/cinema/:path*',
+          destination: `${CINEMA_API_BASE.replace(/\/$/, '')}/:path*`,
+        },
         { // Proxy for API requests only when there is no local route handler
           source: '/api/:path*',
           destination: `${API_BASE}/api/:path*`,
