@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Movie } from '../../types';
+import { Movie, PlayerOption } from '../../types';
 import { fetchCinemaVideoById, fetchVideoHubStreamDirect } from '../../cinema-api';
 import { useTvNavigation } from '../../use-tv-navigation';
 import { FrameBrandLoader } from '../../components/cinema-skeleton';
 import CustomPlayer from '../../components/custom-player';
 import { CacheManager } from '../../../lib/cache';
 import { getCinemaCache } from '../../cinema-cache';
-import { saveWatchHistoryItem } from '../../cinema-history';
+import { getMovieProgress, saveWatchHistoryItem } from '../../cinema-history';
 
 interface WatchContentProps {
   id: string;
@@ -20,9 +20,11 @@ export default function WatchContent({ id }: WatchContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const season = searchParams.get('season');
-  const episode = searchParams.get('episode');
-  const translation = searchParams.get('translation');
+  const savedProgress = getMovieProgress(id);
+  const season = searchParams.get('season') || (savedProgress?.season ? String(savedProgress.season) : null);
+  const episode = searchParams.get('episode') || (savedProgress?.episode ? String(savedProgress.episode) : null);
+  const translation = searchParams.get('translation') || (savedProgress?.translationId ? String(savedProgress.translationId) : null);
+  const player = searchParams.get('player') || savedProgress?.playerId || 'flixcdn';
 
   const [movie, setMovie] = useState<Movie | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -87,7 +89,7 @@ export default function WatchContent({ id }: WatchContentProps) {
 
         // Update watch history & progress
         try {
-          const activePlayerId = searchParams.get('player') || 'flixcdn';
+          const activePlayerId = player;
           const activeTransId = translation ? Number(translation) : null;
           const transObj = target.translationsList?.find((t) => t.id === activeTransId);
           const playerObj = target.players?.find((p) => p.id === activePlayerId);
@@ -104,6 +106,11 @@ export default function WatchContent({ id }: WatchContentProps) {
             ageRating: target.ageRating,
             duration: target.duration,
             type: target.type,
+            isEpisodic:
+              target.type !== 'movie' ||
+              Boolean(target.counters?.episodes) ||
+              Boolean(target.counters?.seasons) ||
+              Boolean(target.episodesBySeason && Object.keys(target.episodesBySeason).length > 0),
             season: season ? Number(season) : 1,
             episode: episode ? Number(episode) : 1,
             translationId: activeTransId,
@@ -119,7 +126,7 @@ export default function WatchContent({ id }: WatchContentProps) {
     return () => {
       isMounted = false;
     };
-  }, [id, season, episode, translation]);
+  }, [id, season, episode, translation, player, searchParams]);
 
   // Sync currentSeason when season searchParam changes
   useEffect(() => {
@@ -162,20 +169,36 @@ export default function WatchContent({ id }: WatchContentProps) {
   // Fetch VideoHub stream directly on client before any early returns
   useEffect(() => {
     let isCancelled = false;
-    const selectedPlayerId = searchParams.get('player') || 'flixcdn';
+    const selectedPlayerId = player;
     const targetKpId = movie?.kinopoisk_id || movie?.id || id;
     const activeSeason = season ? Number(season) : 1;
     const activeEpisode = episode ? Number(episode) : 1;
+    const activeTranslationId = translation ? Number(translation) : movie?.translationsList?.[0]?.id;
+    const playerTranslations = movie?.players?.find((candidate) => candidate.id === selectedPlayerId)?.translations;
+    const activeTranslationTitle =
+      playerTranslations?.find((t) => t.id === activeTranslationId)?.title ||
+      movie?.translationsList?.find((t) => t.id === activeTranslationId)?.title;
 
     if (selectedPlayerId === 'videohub' && targetKpId) {
+      setVideoHubStreamUrl(undefined);
+      setVideoHubQualities([]);
       fetchVideoHubStreamDirect(
         targetKpId,
         activeSeason,
-        activeEpisode
+        activeEpisode,
+        activeTranslationTitle,
       ).then((res) => {
         if (!isCancelled && res?.url) {
           setVideoHubStreamUrl(res.url);
           setVideoHubQualities(res.qualities || []);
+        } else if (!isCancelled) {
+          setVideoHubStreamUrl(undefined);
+          setVideoHubQualities([]);
+          const fallbackParams = new URLSearchParams(searchParams.toString());
+          fallbackParams.set('player', 'flixcdn');
+          fallbackParams.delete('time');
+          fallbackParams.delete('t');
+          router.replace(`/cinema/watch/${id}?${fallbackParams.toString()}`);
         }
       });
     } else {
@@ -185,15 +208,15 @@ export default function WatchContent({ id }: WatchContentProps) {
     return () => {
       isCancelled = true;
     };
-  }, [movie, searchParams, id, season, episode]);
+  }, [movie, player, id, season, episode, translation, router, searchParams]);
 
   // Persist current watch selection (season, episode, translation, player) via cache manager
   useEffect(() => {
     if (!movie) return;
     const curSeason = season ? Number(season) : 1;
     const curEpisode = episode ? Number(episode) : 1;
-    const curTranslation = translation ? Number(translation) : null;
-    const curPlayerId = searchParams.get('player') || 'flixcdn';
+    const curTranslation = translation ? Number(translation) : (movie.translationsList?.[0]?.id || null);
+    const curPlayerId = player;
     const transObj = movie.translationsList?.find((t) => t.id === curTranslation);
     const playerObj = movie.players?.find((p) => p.id === curPlayerId);
 
@@ -210,6 +233,11 @@ export default function WatchContent({ id }: WatchContentProps) {
         ageRating: movie.ageRating,
         duration: movie.duration,
         type: movie.type,
+        isEpisodic:
+          movie.type !== 'movie' ||
+          Boolean(movie.counters?.episodes) ||
+          Boolean(movie.counters?.seasons) ||
+          Boolean(movie.episodesBySeason && Object.keys(movie.episodesBySeason).length > 0),
         season: curSeason,
         episode: curEpisode,
         translationId: curTranslation,
@@ -218,7 +246,7 @@ export default function WatchContent({ id }: WatchContentProps) {
         playerName: playerObj?.name || '',
       });
     } catch (e) {}
-  }, [movie, season, episode, translation, searchParams]);
+  }, [movie, season, episode, translation, player]);
 
   // Auto-focus active episode/season when picker modal opens
   useEffect(() => {
@@ -306,7 +334,7 @@ export default function WatchContent({ id }: WatchContentProps) {
     cdnParams.set('season', String(activeSeason));
     cdnParams.set('episode', String(activeEpisode));
   }
-  if (translation) cdnParams.set('translation_id', translation);
+  if (activeTranslation) cdnParams.set('translation_id', String(activeTranslation));
   if (cdnParams.toString()) {
     cdnMoviesIframeSrc += `?${cdnParams.toString()}`;
   }
@@ -321,7 +349,7 @@ export default function WatchContent({ id }: WatchContentProps) {
     iframeParams.set('season', String(activeSeason));
     iframeParams.set('episode', String(activeEpisode));
   }
-  if (translation) iframeParams.set('translation', translation);
+  if (activeTranslation) iframeParams.set('translation', String(activeTranslation));
   iframeParams.set('no_controls', '1');
   iframeParams.set('no_control', '1');
   iframeParams.set('no_control_translations', '1');
@@ -345,11 +373,21 @@ export default function WatchContent({ id }: WatchContentProps) {
     collapsIframeSrc += `?${collapsParams.toString()}`;
   }
 
-  const availablePlayers = movie.players || [
+  const defaultPlayers: PlayerOption[] = [
     { id: 'flixcdn', name: 'Плеер 1 (FlixCDN)', provider: 'FlixCDN', iframeUrl: flixIframeSrc, isAvailable: true },
-    { id: 'cdnmovies', name: 'Плеер 2 (CDNMovies)', provider: 'CDNMovies', iframeUrl: cdnMoviesIframeSrc, isAvailable: true },
-    { id: 'collaps', name: 'Плеер 3 (Collaps)', provider: 'Collaps', iframeUrl: collapsIframeSrc, isAvailable: true },
+    { id: 'videohub', name: 'Плеер 2 (VideoHub)', provider: 'VideoHub', iframeUrl: '', isAvailable: true },
+    { id: 'cdnmovies', name: 'Плеер 3 (CDNMovies)', provider: 'CDNMovies', iframeUrl: cdnMoviesIframeSrc, isAvailable: true },
+    { id: 'collaps', name: 'Плеер 4 (Collaps)', provider: 'Collaps', iframeUrl: collapsIframeSrc, isAvailable: true },
   ];
+  const configuredPlayers = movie.players?.length ? movie.players : defaultPlayers;
+  const requiredPlayers = defaultPlayers.filter(
+    (fallbackPlayer) =>
+      (fallbackPlayer.id === 'flixcdn' || fallbackPlayer.id === 'videohub') &&
+      !configuredPlayers.some((candidate) => candidate.id === fallbackPlayer.id),
+  );
+  const availablePlayers = [...configuredPlayers, ...requiredPlayers].filter(
+    (candidate) => candidate.isAvailable !== false,
+  );
 
   const hasMultipleSeasons = availableSeasonsCount > 1;
   const hasMultipleEpisodes = currentSeasonEpisodes.length > 1;
@@ -362,6 +400,8 @@ export default function WatchContent({ id }: WatchContentProps) {
     const params = new URLSearchParams(searchParams.toString());
     params.set('season', String(sNum));
     params.set('episode', String(epNum));
+    params.delete('time');
+    params.delete('t');
     if (transId) params.set('translation', String(transId));
     router.replace(`/cinema/watch/${movie.id}?${params.toString()}`);
     setShowPicker(false);
@@ -370,20 +410,35 @@ export default function WatchContent({ id }: WatchContentProps) {
   const handleSelectTranslation = (transId: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('translation', String(transId));
+    params.delete('time');
+    params.delete('t');
     router.replace(`/cinema/watch/${movie.id}?${params.toString()}`);
   };
 
+  const getEpisodesForSeason = (seasonNumber: number) =>
+    movie.episodesBySeason?.[seasonNumber]?.length
+      ? movie.episodesBySeason[seasonNumber]
+      : Array.from({ length: movie.counters?.episodes || 10 }, (_, i) => i + 1);
+  const activeSeasonEpisodes = isSeriesOrAnime ? getEpisodesForSeason(activeSeason) : [];
+  const activeEpisodeIndex = activeSeasonEpisodes.indexOf(activeEpisode);
+
   const handleNextEpisode = () => {
-    if (activeEpisode < (currentSeasonEpisodes.length || 100)) {
-      handleSelectEpisode(activeSeason, activeEpisode + 1, activeTranslation);
+    const nextEpisode = activeSeasonEpisodes[activeEpisodeIndex + 1];
+    if (nextEpisode !== undefined) {
+      handleSelectEpisode(activeSeason, nextEpisode, activeTranslation);
     } else if (activeSeason < availableSeasonsCount) {
-      handleSelectEpisode(activeSeason + 1, 1, activeTranslation);
+      const nextSeasonEpisodes = getEpisodesForSeason(activeSeason + 1);
+      handleSelectEpisode(activeSeason + 1, nextSeasonEpisodes[0] || 1, activeTranslation);
     }
   };
 
   const handlePrevEpisode = () => {
-    if (activeEpisode > 1) {
-      handleSelectEpisode(activeSeason, activeEpisode - 1, activeTranslation);
+    const previousEpisode = activeSeasonEpisodes[activeEpisodeIndex - 1];
+    if (previousEpisode !== undefined) {
+      handleSelectEpisode(activeSeason, previousEpisode, activeTranslation);
+    } else if (activeSeason > 1) {
+      const previousSeasonEpisodes = getEpisodesForSeason(activeSeason - 1);
+      handleSelectEpisode(activeSeason - 1, previousSeasonEpisodes.at(-1) || 1, activeTranslation);
     }
   };
 
@@ -393,7 +448,7 @@ export default function WatchContent({ id }: WatchContentProps) {
     const eMatch = !f.series_number || Number(f.series_number) === activeEpisode;
     const tMatch = !f.translation?.id || Number(f.translation.id) === activeTranslation;
     return sMatch && eMatch && tMatch;
-  }) || (movie.files || [])[0];
+  }) || (!isSeriesOrAnime ? (movie.files || [])[0] : undefined);
 
   // Only use directStreamUrl if matchedFile has an actual media stream URL (mp4, m3u8, webm, etc.)
   const candidateUrl = matchedFile?.url;
@@ -406,7 +461,9 @@ export default function WatchContent({ id }: WatchContentProps) {
     candidateUrl.includes('/stream/')
   );
 
-  const selectedPlayerId = searchParams.get('player') || 'flixcdn';
+  const selectedPlayerId = availablePlayers.some((candidate) => candidate.id === player)
+    ? player
+    : (availablePlayers[0]?.id || 'flixcdn');
   const activePlayerObj = (availablePlayers || []).find((p) => p.id === selectedPlayerId) || (availablePlayers || [])[0];
   const isCollapsPlayer = selectedPlayerId === 'collaps' || activePlayerObj?.id === 'collaps';
   const activePlayerTranslations = isCollapsPlayer
@@ -439,8 +496,8 @@ export default function WatchContent({ id }: WatchContentProps) {
         u.searchParams.set('season', String(activeSeason));
         u.searchParams.set('episode', String(activeEpisode));
       }
-      if (translation) {
-        u.searchParams.set('translation', String(translation));
+      if (activeTranslation) {
+        u.searchParams.set('translation', String(activeTranslation));
       }
       if (isFlixCdnPlayer) {
         u.searchParams.set('no_controls', '1');
@@ -463,6 +520,8 @@ export default function WatchContent({ id }: WatchContentProps) {
   const handleSelectPlayer = (pId: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('player', pId);
+    params.delete('time');
+    params.delete('t');
     const targetPlayerObj = (availablePlayers || []).find((p) => p.id === pId);
     if (targetPlayerObj?.translations && targetPlayerObj.translations.length > 0) {
       const hasMatch = targetPlayerObj.translations.some((t) => t.id === activeTranslation);
@@ -481,6 +540,7 @@ export default function WatchContent({ id }: WatchContentProps) {
       <style>{`#NAVP, [data-app-nav="mobile"], [data-app-nav="desktop"] { display: none !important; }`}</style>
       {/* CUSTOM PLAYER (HANDLES NATIVE HTML5 OR FALLBACK IFRAME WITH OUR CONTROLS) */}
       <CustomPlayer
+        key={`${movie.id}:${activeSeason}:${activeEpisode}:${activeTranslation ?? 'default'}:${selectedPlayerId}`}
         src={directStreamUrl}
         fallbackIframeSrc={activeIframeSrc}
         title={movie.title}

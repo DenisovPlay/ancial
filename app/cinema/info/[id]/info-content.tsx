@@ -16,6 +16,7 @@ import CinemaIdleScreensaver from '../../components/cinema-idle-screensaver';
 import { CacheManager } from '../../../lib/cache';
 import { getCinemaCache, setCinemaCache } from '../../cinema-cache';
 import { saveWatchHistoryItem, getMovieProgress } from '../../cinema-history';
+import { normalizeCinemaProgressState, selectCinemaProgressState } from '../../cinema-progress';
 
 interface InfoContentProps {
   id: string;
@@ -122,6 +123,11 @@ export default function InfoContent({ id }: InfoContentProps) {
         ageRating: infoMovie.ageRating,
         duration: infoMovie.duration,
         type: infoMovie.type,
+        isEpisodic:
+          infoMovie.type !== 'movie' ||
+          Boolean(infoMovie.counters?.episodes) ||
+          Boolean(infoMovie.counters?.seasons) ||
+          Boolean(infoMovie.episodesBySeason && Object.keys(infoMovie.episodesBySeason).length > 0),
         season: s,
         episode: e,
         translationId: tId,
@@ -140,14 +146,7 @@ export default function InfoContent({ id }: InfoContentProps) {
       if (!infoMovie) return;
       const prog = getMovieProgress(infoMovie.id);
       if (prog) {
-        setSavedProgress({
-          season: prog.season,
-          episode: prog.episode,
-          translationId: prog.translationId,
-          playerId: prog.playerId,
-          currentTime: prog.currentTime,
-          duration: prog.duration,
-        });
+        setSavedProgress(normalizeCinemaProgressState(prog));
       }
     };
 
@@ -167,8 +166,8 @@ export default function InfoContent({ id }: InfoContentProps) {
       try {
         const parsed = getMovieProgress(cachedMovie.id);
         if (parsed) {
-          if (!parsed.time && parsed.currentTime) parsed.time = parsed.currentTime;
-          setSavedProgress(parsed);
+          const normalizedProgress = normalizeCinemaProgressState(parsed);
+          setSavedProgress(normalizedProgress);
           if (parsed.season) setSelectedSeason(parsed.season);
           if (parsed.episode) setSelectedEpisode(parsed.episode);
           if (parsed.translationId) setSelectedTranslation(parsed.translationId);
@@ -199,10 +198,8 @@ export default function InfoContent({ id }: InfoContentProps) {
           try {
             const parsed = getMovieProgress(target.id);
             if (parsed) {
-              if (!parsed.time && parsed.currentTime) {
-                parsed.time = parsed.currentTime;
-              }
-              setSavedProgress(parsed);
+              const normalizedProgress = normalizeCinemaProgressState(parsed);
+              setSavedProgress(normalizedProgress);
               if (parsed.season) setSelectedSeason(parsed.season);
               if (parsed.episode) setSelectedEpisode(parsed.episode);
               if (parsed.translationId) setSelectedTranslation(parsed.translationId);
@@ -274,6 +271,8 @@ export default function InfoContent({ id }: InfoContentProps) {
     setSelectedEpisode(1);
     if (infoMovie) {
       saveMovieSelection(infoMovie.id, sNum, 1, selectedTranslation, selectedPlayerId);
+      const progress = getMovieProgress(infoMovie.id);
+      if (progress) setSavedProgress(selectCinemaProgressState(progress, true, sNum, 1));
     }
   };
 
@@ -281,6 +280,8 @@ export default function InfoContent({ id }: InfoContentProps) {
     setSelectedEpisode(epNum);
     if (infoMovie) {
       saveMovieSelection(infoMovie.id, selectedSeason, epNum, selectedTranslation, selectedPlayerId);
+      const progress = getMovieProgress(infoMovie.id);
+      if (progress) setSavedProgress(selectCinemaProgressState(progress, true, selectedSeason, epNum));
     }
   };
 
@@ -322,7 +323,12 @@ export default function InfoContent({ id }: InfoContentProps) {
     if (p) {
       queryParams.set('player', p);
     }
-    if (savedProgress?.time && savedProgress.time > 5) {
+    const progressMatchesSelection =
+      (!isSeriesOrAnime || (
+        Number(savedProgress?.season || 1) === s &&
+        Number(savedProgress?.episode || 1) === e
+      ));
+    if (progressMatchesSelection && savedProgress?.time && savedProgress.time > 5) {
       queryParams.set('time', String(Math.floor(savedProgress.time)));
     }
 
@@ -456,15 +462,27 @@ export default function InfoContent({ id }: InfoContentProps) {
                 data-watch-hero-btn
                 tabIndex={0}
                 onClick={() => {
-                  try {
-                    const raw = localStorage.getItem(`cinema_progress_${infoMovie.id}`);
-                    if (raw) {
-                      const parsed = JSON.parse(raw);
-                      delete parsed.time;
-                      delete parsed.currentTime;
-                      localStorage.setItem(`cinema_progress_${infoMovie.id}`, JSON.stringify(parsed));
-                    }
-                  } catch (e) {}
+                  saveWatchHistoryItem({
+                    id: infoMovie.id,
+                    title: infoMovie.title,
+                    type: infoMovie.type,
+                    isEpisodic: hasEpisodeSelection,
+                    season: 1,
+                    episode: 1,
+                    translationId: selectedTranslation,
+                    playerId: selectedPlayerId,
+                    time: 0,
+                    currentTime: 0,
+                    durationSeconds: 0,
+                  });
+                  setSavedProgress((prev) => ({
+                    ...prev,
+                    season: 1,
+                    episode: 1,
+                    time: 0,
+                    currentTime: 0,
+                    duration: 0,
+                  }));
                   handleWatch(1, 1, selectedTranslation);
                 }}
                 className="focusable-tv px-6 py-3 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800 text-white font-bold text-sm border border-zinc-700/50 backdrop-blur-md transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
@@ -581,8 +599,22 @@ export default function InfoContent({ id }: InfoContentProps) {
                           key={epNum}
                           tabIndex={0}
                           onClick={() => {
-                            handleSelectEpisode(epNum);
-                            handleWatch(selectedSeason, epNum, selectedTranslation);
+                            setSelectedEpisode(epNum);
+                            saveMovieSelection(infoMovie.id, selectedSeason, epNum, selectedTranslation, selectedPlayerId);
+                            const progress = getMovieProgress(infoMovie.id);
+                            const selectedProgress = progress
+                              ? selectCinemaProgressState(progress, true, selectedSeason, epNum)
+                              : null;
+                            if (selectedProgress) setSavedProgress(selectedProgress);
+
+                            const params = new URLSearchParams();
+                            params.set('season', String(selectedSeason));
+                            params.set('episode', String(epNum));
+                            if (selectedTranslation) params.set('translation', String(selectedTranslation));
+                            if (selectedPlayerId) params.set('player', selectedPlayerId);
+                            const episodeTime = selectedProgress?.time || 0;
+                            if (episodeTime > 5) params.set('time', String(Math.floor(episodeTime)));
+                            router.push(`/cinema/watch/${infoMovie.id}?${params.toString()}`);
                           }}
                           className={`focusable-tv py-2.5 rounded-2xl font-extrabold text-xs transition-all duration-200 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white ${
                             isCurrent

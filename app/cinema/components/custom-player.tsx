@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { getCinemaProgress } from '../../lib/cache-helpers';
 import { FrameBrandLoader } from './cinema-skeleton';
-import { saveWatchHistoryItem } from '../cinema-history';
+import { getMovieProgress, saveWatchHistoryItem } from '../cinema-history';
+import {
+  isLikelyCinemaContentDuration,
+  parseFlixPlaybackPayload,
+  resolveResumeTime,
+} from '../cinema-progress';
 
 interface CustomPlayerProps {
   src?: string;
@@ -131,6 +135,12 @@ export default function CustomPlayer({
   }, []);
 
   const [duration, setDuration] = useState<number>(0);
+  const durationRef = useRef<number>(0);
+
+  const updateDuration = useCallback((nextDuration: number) => {
+    durationRef.current = nextDuration;
+    setDuration(nextDuration);
+  }, []);
   const [buffered, setBuffered] = useState<number>(0);
   const [volume, setVolume] = useState<number>(1);
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -142,21 +152,18 @@ export default function CustomPlayer({
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const hasSeekedSavedTimeRef = useRef<boolean>(false);
-
-  useEffect(() => {
-    hasSeekedSavedTimeRef.current = false;
-  }, [movieId, season, episode, fallbackIframeSrc]);
+  const hasReceivedContentDurationRef = useRef<boolean>(false);
+  const hasHandledEndedRef = useRef<boolean>(false);
 
   const getSavedTime = useCallback((): number => {
-    let saved = startTime && Number(startTime) > 5 ? Number(startTime) : 0;
-    if (!saved && movieId) {
-      const progress = getCinemaProgress(movieId);
-      if (progress && progress.currentTime > 5) {
-        saved = progress.currentTime;
-      }
-    }
-    return saved;
-  }, [startTime, movieId]);
+    return resolveResumeTime(
+      startTime,
+      movieId ? getMovieProgress(movieId) : null,
+      isSeries,
+      season || 1,
+      episode || 1,
+    );
+  }, [startTime, movieId, isSeries, season, episode]);
 
   // PostMessage listener for iframe player state events
   useEffect(() => {
@@ -164,6 +171,11 @@ export default function CustomPlayer({
 
     const handleIframeMessage = (e: MessageEvent) => {
       try {
+        if (!iframeRef.current || e.source !== iframeRef.current.contentWindow) return;
+        if (fallbackIframeSrc) {
+          const expectedOrigin = new URL(fallbackIframeSrc, window.location.origin).origin;
+          if (e.origin && e.origin !== 'null' && e.origin !== expectedOrigin) return;
+        }
         let data = e.data;
         if (typeof data === 'string') {
           try {
@@ -171,14 +183,16 @@ export default function CustomPlayer({
           } catch (err) {}
         }
         if (!data || typeof data !== 'object') return;
+        const playback = parseFlixPlaybackPayload(data);
 
-        if (typeof data.duration === 'number' && data.duration > 0) {
-          setDuration(data.duration);
+        if (playback.duration !== undefined && isLikelyCinemaContentDuration(playback.duration)) {
+          hasReceivedContentDurationRef.current = true;
+          updateDuration(playback.duration);
 
           // Auto-restore saved progress as soon as ad finishes & real duration is received
           if (!hasSeekedSavedTimeRef.current) {
             const savedTime = getSavedTime();
-            if (savedTime > 5 && savedTime < data.duration - 15) {
+            if (savedTime > 5 && savedTime < playback.duration - 15) {
               hasSeekedSavedTimeRef.current = true;
               updateCurrentTime(savedTime);
               setTimeout(() => {
@@ -190,12 +204,12 @@ export default function CustomPlayer({
             }
           }
         }
-        if (typeof data.time === 'number') {
+        if (playback.time !== undefined && hasReceivedContentDurationRef.current) {
           if (!isSeekingRef.current) {
-            updateCurrentTime(data.time);
-            if (data.time > 3 && Math.abs(data.time - lastSavedTimeRef.current) >= 2) {
-              lastSavedTimeRef.current = data.time;
-              saveCurrentProgress(data.time);
+            updateCurrentTime(playback.time);
+            if (playback.time > 3 && Math.abs(playback.time - lastSavedTimeRef.current) >= 2) {
+              lastSavedTimeRef.current = playback.time;
+              saveCurrentProgress(playback.time);
             }
           }
         }
@@ -211,8 +225,9 @@ export default function CustomPlayer({
           data.action === 'Video ended' ||
           data.action === 'Video finished'
         ) {
-          // Auto-advance to next episode when FlixCDN iframe signals playback ended
-          if (onNextEpisode) {
+          // Ignore ad completion and duplicate provider completion events.
+          if (hasReceivedContentDurationRef.current && !hasHandledEndedRef.current && onNextEpisode) {
+            hasHandledEndedRef.current = true;
             onNextEpisode();
           }
         }
@@ -221,7 +236,7 @@ export default function CustomPlayer({
 
     window.addEventListener('message', handleIframeMessage);
     return () => window.removeEventListener('message', handleIframeMessage);
-  }, [isFlixCDN, movieId, season, episode, updateCurrentTime, getSavedTime, sendIframeCommand, onNextEpisode]);
+  }, [isFlixCDN, fallbackIframeSrc, movieId, season, episode, updateCurrentTime, updateDuration, getSavedTime, sendIframeCommand, onNextEpisode]);
 
   useEffect(() => {
     setIsIframeLoading(true);
@@ -237,20 +252,10 @@ export default function CustomPlayer({
 
   useEffect(() => {
     resetControlsTimer();
-    try {
-      const progRaw = localStorage.getItem(`cinema_progress_${movieId}`);
-      if (progRaw) {
-        const parsed = JSON.parse(progRaw);
-        if (parsed.currentTime && videoRef.current) {
-          videoRef.current.currentTime = parsed.currentTime;
-          updateCurrentTime(parsed.currentTime);
-        }
-      }
-    } catch (e) {}
     return () => {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
-  }, [movieId, resetControlsTimer, updateCurrentTime]);
+  }, [movieId, resetControlsTimer]);
 
   // Seek relative seconds with instant ref sync
   const seekRelative = (seconds: number) => {
@@ -296,12 +301,14 @@ export default function CustomPlayer({
 
   const saveCurrentProgress = (overrideTime?: number) => {
     if (!movieId) return;
-    // For iframe mode (FlixCDN): skip the duration guard — duration may not be in scope.
-    // For native video: never overwrite progress during pre-roll / ads (duration <= 30s).
-    if (src && (!duration || duration <= 30)) return;
+    const liveDuration = videoRef.current?.duration || durationRef.current;
+    const hasPlayableDuration = src
+      ? Number.isFinite(liveDuration) && liveDuration > 30
+      : isLikelyCinemaContentDuration(liveDuration);
+    if (!hasPlayableDuration) return;
     const curTime = overrideTime !== undefined ? overrideTime : (videoRef.current ? videoRef.current.currentTime : liveCurrentTimeRef.current);
     if (!curTime || curTime < 3) return;
-    const dur = duration || (videoRef.current ? videoRef.current.duration || 0 : 0);
+    const dur = liveDuration;
     const activeTransObj = translations?.find((t) => t.id === selectedTranslationId);
     const activePlayerObj = players?.find((p) => p.id === selectedPlayerId);
 
@@ -318,6 +325,7 @@ export default function CustomPlayer({
       currentTime: Math.floor(curTime),
       durationSeconds: Math.floor(dur),
       type: isSeries ? 'series' : 'movie',
+      preserveActiveSelection: true,
     });
   };
 
@@ -338,19 +346,13 @@ export default function CustomPlayer({
   const performRestoreTime = () => {
     if (restoredRef.current || !videoRef.current || !movieId) return;
     try {
-      let savedTime = startTime && startTime > 5 ? Number(startTime) : 0;
-
-      if (!savedTime) {
-        const raw = localStorage.getItem(`cinema_progress_${movieId}`);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          const sMatch = !isSeries || !parsed.season || Number(parsed.season) === Number(season || 1);
-          const eMatch = !isSeries || !parsed.episode || Number(parsed.episode) === Number(episode || 1);
-          if (sMatch && eMatch) {
-            savedTime = Number(parsed.time || parsed.currentTime || 0);
-          }
-        }
-      }
+      const savedTime = resolveResumeTime(
+        startTime,
+        getMovieProgress(movieId),
+        isSeries,
+        season || 1,
+        episode || 1,
+      );
 
       if (savedTime > 5) {
         const totalDur = videoRef.current.duration || 999999;
@@ -380,7 +382,7 @@ export default function CustomPlayer({
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setDuration(videoRef.current.duration || 0);
+      updateDuration(videoRef.current.duration || 0);
     }
     performRestoreTime();
   };
@@ -937,8 +939,8 @@ export default function CustomPlayer({
 
             const cur = videoRef.current.currentTime;
             const dur = videoRef.current.duration || 0;
-            setCurrentTime(cur);
-            setDuration(dur);
+            updateCurrentTime(cur);
+            updateDuration(dur);
 
             // Calculate buffer
             if (videoRef.current.buffered.length > 0) {
@@ -1164,6 +1166,7 @@ export default function CustomPlayer({
                           tabIndex={0}
                           data-tv-player-control="quality-item"
                           onClick={() => {
+                            if (videoRef.current) saveCurrentProgress(videoRef.current.currentTime);
                             if (onSelectQuality) onSelectQuality(q.url);
                             setShowQualityDropdown(false);
                             setTimeout(() => {

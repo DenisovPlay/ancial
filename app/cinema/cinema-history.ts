@@ -1,6 +1,10 @@
 'use client';
 
 import { cache } from '../lib/cache';
+import {
+  CinemaProgressState,
+  mergeCinemaProgress,
+} from './cinema-progress';
 
 export interface WatchHistoryItem {
   id: string;
@@ -23,6 +27,8 @@ export interface WatchHistoryItem {
   time?: number; // текущий таймкод остановки в секундах
   currentTime?: number;
   durationSeconds?: number;
+  isEpisodic?: boolean;
+  preserveActiveSelection?: boolean;
   timestamp: number;
 }
 
@@ -66,32 +72,10 @@ export function getWatchHistory(): WatchHistoryItem[] {
 /**
  * Получить сохраненный прогресс для конкретного видео.
  */
-export function getMovieProgress(movieId: string | number): {
-  season?: number;
-  episode?: number;
-  translationId?: number | null;
-  translationTitle?: string;
-  playerId?: string;
-  playerName?: string;
-  time?: number;
-  currentTime?: number;
-  duration?: number;
-  updatedAt?: number;
-} | null {
+export function getMovieProgress(movieId: string | number): CinemaProgressState | null {
   try {
     const rawKey = `cinema_progress_${movieId}`;
-    const data = cache.get<{
-      season?: number;
-      episode?: number;
-      translationId?: number | null;
-      translationTitle?: string;
-      playerId?: string;
-      playerName?: string;
-      time?: number;
-      currentTime?: number;
-      duration?: number;
-      updatedAt?: number;
-    }>(rawKey, {
+    const data = cache.get<CinemaProgressState>(rawKey, {
       category: 'cinema',
       subcategory: 'progress',
     });
@@ -113,34 +97,28 @@ export function saveWatchHistoryItem(item: Partial<WatchHistoryItem> & { id: str
   // 1. Считываем существующую информацию из прогресса для слияния
   const existingProg = getMovieProgress(targetId) || {};
 
-  const season = item.season !== undefined ? item.season : (existingProg.season || 1);
-  const episode = item.episode !== undefined ? item.episode : (existingProg.episode || 1);
-  const translationId = item.translationId !== undefined ? item.translationId : (existingProg.translationId || null);
-  const translationTitle = item.translationTitle || existingProg.translationTitle || '';
-  const playerId = item.playerId || existingProg.playerId || 'flixcdn';
-  const playerName = item.playerName || existingProg.playerName || '';
-  const incomingTime = item.time !== undefined ? item.time : item.currentTime;
-  const savedTime = (incomingTime !== undefined && incomingTime > 0)
-    ? incomingTime
-    : (existingProg.time || existingProg.currentTime || 0);
-
-  const durSeconds = (item.durationSeconds !== undefined && item.durationSeconds > 0)
-    ? item.durationSeconds
-    : (existingProg.duration || 0);
-
-  // 2. Сохраняем индивидуальный прогресс
-  const updatedProgress = {
-    season,
-    episode,
-    translationId,
-    translationTitle,
-    playerId,
-    playerName,
-    time: Math.floor(savedTime),
-    currentTime: Math.floor(savedTime),
-    duration: Math.floor(durSeconds),
-    updatedAt: now,
-  };
+  const updatedProgress = mergeCinemaProgress(existingProg, {
+    type: item.type,
+    isEpisodic: item.isEpisodic,
+    season: item.season,
+    episode: item.episode,
+    translationId: item.translationId,
+    translationTitle: item.translationTitle,
+    playerId: item.playerId,
+    playerName: item.playerName,
+    time: item.time,
+    currentTime: item.currentTime,
+    durationSeconds: item.durationSeconds,
+    preserveActiveSelection: item.preserveActiveSelection,
+  }, now);
+  const season = updatedProgress.season || 1;
+  const episode = updatedProgress.episode || 1;
+  const translationId = updatedProgress.translationId ?? null;
+  const translationTitle = updatedProgress.translationTitle || '';
+  const playerId = updatedProgress.playerId || 'flixcdn';
+  const playerName = updatedProgress.playerName || '';
+  const savedTime = updatedProgress.currentTime || 0;
+  const durSeconds = updatedProgress.duration || 0;
 
   cache.set(`cinema_progress_${targetId}`, updatedProgress, {
     category: 'cinema',
