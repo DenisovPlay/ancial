@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
+import { normalizeAvatarUrl } from '../lib/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function cn(...classes: Array<string | false | null | undefined>) {
@@ -41,11 +43,19 @@ const NavItem = ({
     : "hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30"
     }`;
 
+  const avatarSrc = imgSrc ? normalizeAvatarUrl(imgSrc) : '';
+
   const innerContent = (
     <>
-      {imgSrc ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={imgSrc} alt="Avatar" className="w-14 h-14 rounded-full object-cover" />
+      {avatarSrc ? (
+        <Image
+          src={avatarSrc}
+          alt="Avatar"
+          width={56}
+          height={56}
+          priority
+          className="w-14 h-14 rounded-full object-cover"
+        />
       ) : icon ? (
         <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
           <use href={`#${icon}`}></use>

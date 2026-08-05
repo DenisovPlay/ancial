@@ -618,18 +618,25 @@ export function buildDialogImageSlides(messages: DialogMessage[]) {
 }
 
 export function formatDialogPreview(messageValue: string | null | undefined, lang: LangMap) {
-  const sevenTvStickerTokenData = getSevenTvStickerTokenData(messageValue);
+  const rawText = normalizeText(messageValue);
+  if (!rawText) return '';
+
+  const prefixMatch = rawText.match(/^(Вы: |You: |[^:]+: )/);
+  const prefix = prefixMatch ? prefixMatch[0] : '';
+  const bodyText = prefix ? rawText.slice(prefix.length) : rawText;
+
+  const sevenTvStickerTokenData = getSevenTvStickerTokenData(bodyText);
   if (sevenTvStickerTokenData?.name) {
-    return `7TV: ${sevenTvStickerTokenData.name}`;
+    return `${prefix}${lang?.sticker || 'Стикер'}`;
   }
 
-  const previewText = decodeHtml(stripHtml(messageValue));
+  const previewText = decodeHtml(stripHtml(bodyText));
   if (previewText) {
-    return previewText;
+    return `${prefix}${previewText}`;
   }
 
-  if (extractMessageImages(messageValue).length > 0) {
-    return lang?.sticker || 'Стикер';
+  if (extractMessageImages(bodyText).length > 0) {
+    return `${prefix}${lang?.sticker || 'Стикер'}`;
   }
 
   return '';

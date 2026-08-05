@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { cn, SvgIcon } from '../feed/editor-shared';
 import Modal from './modal';
+import { normalizeAvatarUrl } from '../lib/avatar';
 
 export interface UserPreview {
   fname?: string | null;
@@ -34,6 +35,7 @@ export function UserMiniCard({
   label: string;
   onClick: () => void;
 }) {
+  const avatarSrc = normalizeAvatarUrl(image);
   return (
     <button
       type="button"
@@ -44,7 +46,7 @@ export function UserMiniCard({
         alt="User Profile"
         width={64}
         height={64}
-        src={image}
+        src={avatarSrc}
         className={cn(
           'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
           isOnline && 'border-lime-500',
@@ -221,16 +223,25 @@ export function ProfileAvatar({
   isOnline?: boolean;
   sizeClassName: string;
 }) {
+  const avatarSrc = normalizeAvatarUrl(image);
   return (
     <div
       className={cn(
-        'shadow duration-300 rounded-full bg-cover bg-center ring-2',
+        'relative shadow duration-300 rounded-full ring-2 overflow-hidden shrink-0',
         sizeClassName,
         isOnline && 'ring-lime-500',
         !isOnline && 'ring-transparent',
       )}
-      style={{ backgroundImage: `url('${image}')` }}
-    />
+    >
+      <Image
+        src={avatarSrc}
+        alt="Avatar"
+        fill
+        sizes="(max-width: 768px) 64px, 96px"
+        priority
+        className="object-cover rounded-full"
+      />
+    </div>
   );
 }
 

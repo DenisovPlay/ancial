@@ -1026,7 +1026,7 @@ export function PulsePlayerProvider({
     await playCollection('artist', artistId, forceReload, shuffle, startIndex, expectedSongId);
   };
 
-  const playDownloadedTracks = async (forceReload = true, shuffle = 0, startIndex = 0) => {
+  const playDownloadedTracks = async (forceReload = false, shuffle = 0, startIndex = 0) => {
     await playCollection('downloads', DOWNLOADS_COLLECTION_ID, forceReload, shuffle, startIndex);
   };
 

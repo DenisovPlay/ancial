@@ -1,19 +1,52 @@
 'use client';
 
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from './AuthContext';
 import { globalWS } from '../lib/global-ws';
 
+function subscribeBrowserOnline(onStoreChange: () => void) {
+  window.addEventListener('online', onStoreChange);
+  window.addEventListener('offline', onStoreChange);
+  return () => {
+    window.removeEventListener('online', onStoreChange);
+    window.removeEventListener('offline', onStoreChange);
+  };
+}
+
+function getBrowserOnlineSnapshot() {
+  return typeof navigator === 'undefined' ? true : navigator.onLine;
+}
+
+function getBrowserOnlineServerSnapshot() {
+  return true;
+}
+
 function NetStatusBanner() {
   const { lang } = useAuth();
-  const status = useSyncExternalStore(
+  const wsStatus = useSyncExternalStore(
     globalWS.subscribeNetStatus,
     globalWS.getNetStatus,
     globalWS.getNetStatus,
   );
+  const isBrowserOnline = useSyncExternalStore(
+    subscribeBrowserOnline,
+    getBrowserOnlineSnapshot,
+    getBrowserOnlineServerSnapshot,
+  );
 
-  const isVisible = status === 'reconnecting';
+  // Показываем плашку:
+  // 1) нет сети (navigator.offline) — всегда, до online
+  // 2) сеть есть, но WS переподключается после уже установленной сессии
+  const isVisible = !isBrowserOnline || wsStatus === 'reconnecting';
+
+  // Лёгкий «connected» flash не нужен — пользователь просил плашку до восстановления
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <div

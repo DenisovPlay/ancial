@@ -1,10 +1,12 @@
 'use client';
 
+import Image from 'next/image';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { SettingsItem } from '../components/settings-item';
 import { AncialAPI } from '../lib/api-v2';
 import AccountName from '../components/account-name';
+import { normalizeAvatarUrl } from '../lib/avatar';
 
 export default function SettingsPage() {
   const { showNote } = useNotification();
@@ -18,20 +20,18 @@ export default function SettingsPage() {
         await AncialAPI.updateProfile<any>({ lang: selectedLang });
       }
       showNote({
-        content: lang?.language_changed || 'Язык изменен',
-        html: true,
+        content: lang?.language_updated || 'Язык успешно изменён!',
         type: 'success',
-        time: 5
       });
-    } catch (error) {
-      console.error(error);
+    } catch {
       showNote({
-        content: lang?.errorhappend || 'Произошла ошибка =(',
+        content: lang?.language_update_error || 'Ошибка при смене языка',
         type: 'error',
-        time: 5
       });
     }
   };
+
+  const userAvatarSrc = normalizeAvatarUrl(user?.img);
 
   return (
     <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-blue-400/25 md:from-transparent via-transparent to-transparent">
@@ -42,7 +42,14 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-3 w-full max-w-3xl px-3 lg:px-0">
         {isAuthenticated && user && (
           <div className="flex items-center gap-3 w-full mb-2">
-            <img src={user.img || "/avatar.jpg"} className="w-16 h-16 lg:w-20 lg:h-20 rounded-full shadow border border-zinc-600/30 object-cover" alt="avatar" />
+            <Image
+              src={userAvatarSrc}
+              width={80}
+              height={80}
+              priority
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full shadow border border-zinc-600/30 object-cover"
+              alt="avatar"
+            />
             <div className="flex flex-col">
               <AccountName user={user as any} nameClassName="text-xl lg:text-2xl font-bold text-white" badgeClassName="w-6 h-6 lg:w-7 lg:h-7" />
               <span className="lg:text-lg text-zinc-300">{user.desk}</span>

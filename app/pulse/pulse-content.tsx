@@ -8,7 +8,7 @@ import { Dropdown, DropdownItem } from '../components/navigation';
 import ShareModal from '../components/share-modal';
 import { useAuth, type User } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { usePulsePlayer } from '../context/PulsePlayerContext';
+import { DOWNLOADS_COLLECTION_ID, usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
@@ -23,6 +23,7 @@ import {
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { usePulseFavoriteIds } from './player/use-pulse-favorite-ids';
+import { getDownloadedAudioCount } from './player/offline-audio';
 import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigation';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-track-modal';
 import { PulseHeader } from './pulse-header';
@@ -347,6 +348,35 @@ function RecentlyListenedPill({
   );
 }
 
+function OfflineDownloadsPill({
+  isPlaying,
+  lang,
+  onPlay,
+}: {
+  isPlaying: boolean;
+  lang: Record<string, string> | null;
+  onPlay: () => void;
+}) {
+  return (
+    <div className="flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95">
+      <button type="button" onClick={onPlay} className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full xl:h-16 xl:w-16 2xl:h-20 2xl:w-20">
+        <span className="flex h-full w-full items-center justify-center bg-zinc-800">
+          <ActionIcon className="h-7 w-7" name="IC-bookmark-filled" />
+        </span>
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 duration-300 hover:bg-black/20">
+          <ActionIcon className="h-7 w-7 opacity-0 duration-300 hover:opacity-100" name={isPlaying ? 'IC-pause' : 'IC-play'} />
+        </span>
+      </button>
+
+      <button type="button" onClick={onPlay} className="min-w-0 flex-grow cursor-pointer text-left">
+        <span className="block truncate text-base font-medium text-white lg:text-lg 2xl:text-xl">
+          {lang?.subcategory_offline_audio || 'Скачанные треки (офлайн)'}
+        </span>
+      </button>
+    </div>
+  );
+}
+
 function PulseTrackRow({
   currentSongId,
   favoriteIds,
@@ -626,6 +656,7 @@ export default function PulseContent() {
     currentTrackObj,
     isPlaying,
     openAddToPlaylist,
+    playDownloadedTracks,
     playGenlist,
     playNextTrack,
     playPlaylist,
@@ -650,6 +681,7 @@ export default function PulseContent() {
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
   const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [listened, setListened] = useState<RecentlyListenedState>(() => readListenedCache());
+  const [downloadedCount, setDownloadedCount] = useState(0);
   const [fromPulse, setFromPulse] = useState<PulseHomePlaylistCard[] | null>(() => readJsonCache<PulseHomePlaylistCard[]>(HOME_CACHE_KEYS.fromPulse));
   const [artists, setArtists] = useState<PulseHomeArtist[] | null>(() => readJsonCache<PulseHomeArtist[]>(HOME_CACHE_KEYS.artists));
   const [weLike, setWeLike] = useState<PulseHomePlaylistCard[] | null>(() => readJsonCache<PulseHomePlaylistCard[]>(HOME_CACHE_KEYS.weLike));
@@ -960,6 +992,35 @@ export default function PulseContent() {
   }, [tracksReloadToken]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const refreshDownloadedCount = () => {
+      void getDownloadedAudioCount()
+        .then((count) => {
+          if (!cancelled) setDownloadedCount(count);
+        })
+        .catch(() => {
+          if (!cancelled) setDownloadedCount(0);
+        });
+    };
+
+    refreshDownloadedCount();
+
+    // Refresh when tab becomes visible or network returns (user may have saved offline tracks)
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshDownloadedCount();
+    };
+    window.addEventListener('focus', refreshDownloadedCount);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', refreshDownloadedCount);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [tracksReloadToken, currentCollectionId]);
+
+  useEffect(() => {
     if (isLoading) return;
 
     if (!isAuthenticated) {
@@ -1007,7 +1068,9 @@ export default function PulseContent() {
   const topCollectionActive = currentCollectionId === 'Top' && isPlaying;
   const newCollectionActive = currentCollectionId === 'New' && isPlaying;
   const yourCollectionActive = currentCollectionId === 'Your' && isPlaying;
-  const shouldShowRecentListened = isLoading || isAuthenticated;
+  const downloadsCollectionActive = currentCollectionId === DOWNLOADS_COLLECTION_ID && isPlaying;
+  // Always show "Continue?)" section if there are offline downloads, even for guests
+  const shouldShowRecentListened = isLoading || isAuthenticated || downloadedCount > 0;
 
   const renderTrackRow = useCallback((collectionId: HomeTrackCollectionId, track: PulseTrack, index: number) => (
     <PulseTrackRow
@@ -1066,11 +1129,11 @@ export default function PulseContent() {
           <SectionTitle>{lang?.recentlis || 'Недавно слушали'}</SectionTitle>
 
           <div className="grid w-full max-w-screen-2xl grid-cols-2 gap-3 px-3 lg:px-0 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {isLoading || listened === null ? (
+            {isLoading || (isAuthenticated && listened === null) ? (
               Array.from({ length: 10 }).map((_, index) => <ListenedPillSkeleton key={index} />)
             ) : null}
 
-            {!isLoading && listened === 'empty' ? (
+            {!isLoading && isAuthenticated && listened === 'empty' && downloadedCount === 0 ? (
               <div className="col-span-2 flex w-full flex-col items-center justify-center gap-3 sm:col-span-3 lg:col-span-4 xl:col-span-5">
                 <img src={THINKING_IMAGE} alt="Nothing listened yet" className="w-32 opacity-90" />
                 <div className="text-center text-zinc-200">{lang?.startlistening || 'Начните уже что-нибудь слушать...'}</div>
@@ -1089,6 +1152,17 @@ export default function PulseContent() {
                 />
               );
             }) : null}
+
+            {!isLoading && downloadedCount > 0 ? (
+              <OfflineDownloadsPill
+                isPlaying={downloadsCollectionActive}
+                lang={lang}
+                onPlay={() => {
+                  // forceReload=false → same collection toggles pause/play like other pills
+                  void playDownloadedTracks(false);
+                }}
+              />
+            ) : null}
           </div>
         </>
       ) : null}

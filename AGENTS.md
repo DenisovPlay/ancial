@@ -60,16 +60,28 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ### Стратегии кэширования SW
 | Тип запроса | Стратегия | Кэш |
 |---|---|---|
-| HTML-навигация (`mode: navigate` или `Accept: text/html`) | **Network First** → shell `/` fallback | `ancial-pages-v*` |
+| HTML-навигация (`mode: navigate` или `Accept: text/html`) | **Network First** → shell `/` fallback (онлайн всегда свежий HTML без мёртвых чанков) | `ancial-pages-v*` |
 | RSC payloads (`_rsc=...`, заголовок `RSC: 1`, `/_next/data/`) | **Bypass** — напрямую в сеть | — |
-| JS/CSS/шрифты `/_next/static/` | **Network First + вычистка кэша по 404** (защита от чанков старых билдов) | `ancial-static-v*` |
-| Изображения (PNG, AVIF, WEBP, SVG, ...) | **Stale-While-Revalidate** | `ancial-images-v1` |
+| Hashed JS/CSS `/_next/static/` | **Cache First** + 404-eviction + фоновый revalidate (URL = content-hash) | `ancial-static-v*` |
+| Прочий static (`/img/`, `/fonts/`, `/includes/`) | **Network First + 404-eviction** | `ancial-static-v*` |
+| Изображения (PNG, AVIF, WEBP, SVG, ...) | **Stale-While-Revalidate** (сначала кэш, потом сеть) | `ancial-images-v1` |
 | Audio (.mp3) | **Bypass** — IndexedDB плеер | — |
 | `/api/V2/` PHP API (остальное) | **Bypass** — localStorage кэш | — |
 | Firebase/Google | **Bypass** | — |
 
+### Авто-обновление без кнопки
+- SW: `skipWaiting()` на install + `clients.claim()` на activate + message `SKIP_WAITING`.
+- Клиент (`sw-register.tsx`): `registration.update()` при старте / focus / каждые 5 мин; waiting → `SKIP_WAITING`; `controllerchange` → один hard-reload (с guard от loop).
+- `ChunkLoadError` / failed dynamic import → hard-reload за новым HTML (защита от «страница ссылается на удалённые чанки после деплоя»).
+
 ### Предварительное кэширование (при установке SW)
-SW при установке (`install`) кэширует только критический shell: `/manifest.webmanifest`, `/icons.svg`, `/img/branding/pulse.svg`. HTML-страницы не прекэшируются — они попадают в `ancial-pages-v*` по мере посещения (Network First).
+SW при установке (`install`) кэширует shell:
+- static: `/manifest.webmanifest`, `/icons.svg`, `/img/branding/pulse.svg`, `/img/zypo/logo-rounded.webp`
+- pages: `/`, `/pulse`, `/pulse/my`, `/pulse/library`, `/settings/cache`
+
+Клиент (`sw-register`) дополнительно шлёт `WARM_URLS` после online/focus, чтобы прогреть shell.
+Image-кэш (`ancial-images-v1`) имеет soft-limit ~280 записей (FIFO trim).
+HTML-навигация offline: page cache → preferred shells → minimal offline HTML («Переподключение...»).
 
 ### Кэширование на промежуточных прокси
 HTML отдаётся с `Cache-Control: no-store` (правило `headers()` в `next.config.ts`), чтобы Nginx/aapanel не запоминал разметку старого билда со ссылками на удалённые чанки. На reverse-proxy кэш для HTML должен быть выключен (см. `DeployUbuntu/README.md`).

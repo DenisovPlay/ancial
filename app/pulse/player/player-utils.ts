@@ -59,7 +59,15 @@ export function getTrackArtwork(track: PlayerTrack | null) {
 }
 
 export function normalizeTrackSource(trackSource: string | null | undefined) {
-  return normalizeText(trackSource) || '';
+  const next = normalizeText(trackSource);
+  // Virtual offline marker is not a playable network URL
+  if (!next || next === 'offline-indexeddb' || next.startsWith('blob:')) {
+    // blob: is valid only when already resolved; callers that need network should not pass blob
+    if (next.startsWith('blob:')) return next;
+    if (next === 'offline-indexeddb') return '';
+    return '';
+  }
+  return next;
 }
 
 export function isTrackPlayable(track: PlayerTrack | null, userCountry: string) {

@@ -4,17 +4,31 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { cache } from '../../lib/cache';
 import { cacheAudioInBackground } from './offline-audio';
-import { normalizeTrackSource, toNumber } from './player-utils';
+import { getTrackArtwork, normalizeTrackSource, toNumber } from './player-utils';
 
 export type OfflineSaveStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error';
 export type OfflineSaveResult = 'failed' | 'saved' | 'skipped';
 
 type OfflineAudioTrack = {
   artist?: string | null;
+  artwork?: Array<{ src?: string | null }> | null;
   sid?: number | string | null;
   src?: string | null;
   title?: string | null;
 };
+
+function resolveArtworkUrl(track: OfflineAudioTrack | null) {
+  if (!track) return undefined;
+  const fromHelper = getTrackArtwork(track);
+  // getTrackArtwork returns fallback placeholder when empty — don't store that as "cover"
+  if (!fromHelper || fromHelper.includes('/img/pulse/track.png') || fromHelper.includes('track.png')) {
+    const raw = Array.isArray(track.artwork)
+      ? track.artwork.map((item) => String(item?.src ?? '').trim()).find(Boolean)
+      : '';
+    return raw || undefined;
+  }
+  return fromHelper || undefined;
+}
 
 export function useOfflineAudioSave(currentTrack: OfflineAudioTrack | null) {
   const [offlineSaveStatus, setOfflineSaveStatus] = useState<OfflineSaveStatus>('idle');
@@ -78,6 +92,7 @@ export function useOfflineAudioSave(currentTrack: OfflineAudioTrack | null) {
     void cacheAudioInBackground(trackId, source, {
       artist: track?.artist || undefined,
       title: track?.title || undefined,
+      artwork: resolveArtworkUrl(track),
     }, controller.signal).catch((error) => {
       if (error?.name !== 'AbortError') {
         console.error('Failed to auto-cache audio file in background', error);
@@ -99,7 +114,11 @@ export function useOfflineAudioSave(currentTrack: OfflineAudioTrack | null) {
       const saved = await cache.audio.save(
         trackId,
         source,
-        { artist: track?.artist || undefined, title: track?.title || undefined },
+        {
+          artist: track?.artist || undefined,
+          title: track?.title || undefined,
+          artwork: resolveArtworkUrl(track),
+        },
         undefined,
         true,
       );

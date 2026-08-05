@@ -475,7 +475,7 @@ export const cache = {
     async save(
       trackId: number | string,
       url: string,
-      metadata?: { title?: string; artist?: string },
+      metadata?: { title?: string; artist?: string; artwork?: string },
       signal?: AbortSignal,
       force = false
     ): Promise<boolean> {
@@ -506,6 +506,7 @@ export const cache = {
               blob,
               title: metadata?.title,
               artist: metadata?.artist,
+              artwork: metadata?.artwork,
               savedAt: Date.now(),
             });
             request.onsuccess = () => resolve();
@@ -527,7 +528,7 @@ export const cache = {
       }
     },
 
-    async getDownloadedList(): Promise<Array<{ id: string; title?: string; artist?: string; size: number; savedAt: number }>> {
+    async getDownloadedList(): Promise<Array<{ id: string; title?: string; artist?: string; artwork?: string; size: number; savedAt: number }>> {
       const db = await getDB();
       if (!db) return [];
       return new Promise((resolve) => {
@@ -541,6 +542,7 @@ export const cache = {
               id: record.id,
               title: record.title,
               artist: record.artist,
+              artwork: typeof record.artwork === 'string' ? record.artwork : undefined,
               size: record.blob instanceof Blob ? record.blob.size : 0,
               savedAt: record.savedAt || 0,
             }));
