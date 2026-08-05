@@ -26,6 +26,7 @@ import { PulsePlayerFull } from '../pulse/player/pulse-player-full';
 import type { RepeatMode } from '../pulse/player/pulse-player-full-controls';
 import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
+import { shouldRunPulseFullPlayerWork } from '../pulse/player/pulse-player-visibility';
 import {
   getCachedAudioObjectUrl,
   getDownloadedAudioTracks,
@@ -332,8 +333,13 @@ export function PulsePlayerProvider({
   }, [isCinema]);
 
   const isPlayerAnimatingIn = isVisible && isMounted;
-  const activeLyricState = getActiveLyricState(lyricsLines, currentTime);
-  const activeLyricLine = activeLyricState.activeIndex >= 0 ? lyricsLines[activeLyricState.activeIndex] : null;
+  const isFullPlayerActive = shouldRunPulseFullPlayerWork(mode, isVisible, isMounted);
+  const activeLyricState = isFullPlayerActive
+    ? getActiveLyricState(lyricsLines, currentTime)
+    : { activeIndex: -1, progress: 0 };
+  const activeLyricLine = isFullPlayerActive && activeLyricState.activeIndex >= 0
+    ? lyricsLines[activeLyricState.activeIndex]
+    : null;
   const mobileLyric = activeLyricLine ? splitLyricText(activeLyricLine.text) : null;
   const displayedCurrentTime = activeSeekSlider ? seekValue : currentTime;
 
@@ -1494,6 +1500,17 @@ export function PulsePlayerProvider({
     setLyricsLines([]);
     setLyricsSource('');
 
+    if (!isFullPlayerActive) {
+      syncWindowState();
+      return () => {
+        controller.abort();
+        if (mediaSessionDebounceRef.current !== null) {
+          clearTimeout(mediaSessionDebounceRef.current);
+          mediaSessionDebounceRef.current = null;
+        }
+      };
+    }
+
     void (async () => {
       try {
         const lyricsData = await loadPulseLyrics(capturedTrack, controller.signal);
@@ -1523,12 +1540,12 @@ export function PulsePlayerProvider({
     // Depend on currentSongId (primitive ID) rather than currentTrack (object reference)
     // so that background re-renders don't cancel in-flight lyric loading.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSongId]);
+  }, [currentSongId, isFullPlayerActive]);
 
   useEffect(() => {
     // Only run 60 FPS smooth lyrics progress updates when player is in full mode, playing, and has lyrics.
     // When minimized, paused, or closed, this effect cancels the animation loop immediately (0% CPU load).
-    if (mode !== 'full' || !isPlaying || lyricsLines.length === 0) {
+    if (!isFullPlayerActive || !isPlaying || lyricsLines.length === 0) {
       return undefined;
     }
 
@@ -1549,7 +1566,7 @@ export function PulsePlayerProvider({
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isPlaying, lyricsLines.length, mode]);
+  }, [isFullPlayerActive, isPlaying, lyricsLines.length]);
 
   useEffect(() => {
     syncWindowState();
@@ -1723,7 +1740,8 @@ export function PulsePlayerProvider({
             }
           `}</style>
 
-          <PulsePlayerFull
+          {isPlayerAnimatingIn ? (
+            <PulsePlayerFull
             Icon={PlayerIcon}
             mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}
             mobileSeekInputRef={mobileSeekInputRef}
@@ -1763,7 +1781,7 @@ export function PulsePlayerProvider({
             activeLike={activeLike}
             isAuthenticated={isAuthenticated}
 
-            lyricsLines={lyricsLines}
+            lyricsLines={isFullPlayerActive ? lyricsLines : []}
             lyricsSource={lyricsSource}
             activeLyricState={activeLyricState}
             mobileLyric={mobileLyric}
@@ -1904,7 +1922,8 @@ export function PulsePlayerProvider({
               setSeekValue(nextTime);
               forceUpdateMediaPositionState();
             }}
-          />
+            />
+          ) : null}
 
           <PulsePlayerMini
             Icon={PlayerIcon}
