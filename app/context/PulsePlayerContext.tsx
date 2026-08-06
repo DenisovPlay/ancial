@@ -1702,15 +1702,27 @@ export function PulsePlayerProvider({
   const isFullMode = mode === 'full';
 
   useEffect(() => {
-    if (isFullMode) {
+    if (typeof document === 'undefined') return undefined;
+
+    const isFullActive = effectivePlayerVisible && isFullMode;
+    document.documentElement.classList.toggle('pulse-player-full', isFullActive);
+    document.body.classList.toggle('pulse-player-full', isFullActive);
+
+    if (isFullActive) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
+
     return () => {
+      document.documentElement.classList.remove('pulse-player-full');
+      document.body.classList.remove('pulse-player-full');
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
-  }, [isFullMode]);
+  }, [effectivePlayerVisible, isFullMode]);
 
   return (
     <PulsePlayerContext.Provider value={contextValue}>

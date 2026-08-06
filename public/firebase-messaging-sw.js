@@ -1,6 +1,6 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-// v10: event.waitUntil for SWR image bg fetch, explicitly handle /_next/image
-const SW_VERSION = '10';
+// v11: cacheFirstImages to eliminate navigation image flicker
+const SW_VERSION = '11';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -293,6 +293,30 @@ function staleWhileRevalidate(event, cacheName) {
   );
 }
 
+/** Cache-First для изображений: если в кэше есть — отдаём мгновенно (0ms),
+ *  без постоянного фонового перезапроса сети, чтобы картинки не моргали. */
+function cacheFirstImages(event, cacheName) {
+  event.respondWith(
+    caches.open(cacheName).then((cache) =>
+      cache.match(event.request).then((cached) => {
+        if (cached) {
+          return cached;
+        }
+
+        return fetch(event.request)
+          .then(async (res) => {
+            if (isCacheableResponse(res)) {
+              await cache.put(event.request, res.clone());
+              await trimImageCache(cache);
+            }
+            return res;
+          })
+          .catch(() => new Response('', { status: 504, statusText: 'Gateway Timeout' }));
+      })
+    )
+  );
+}
+
 /**
  * Cache-First для hashed /_next/static (immutable по URL).
  * Если в кэше есть — отдаём сразу (офлайн + скорость).
@@ -421,7 +445,7 @@ self.addEventListener('fetch', (event) => {
     /\.(png|jpe?g|webp|avif|gif|svg)(\?|$)/.test(url.pathname);
 
   if (isImage) {
-    staleWhileRevalidate(event, CACHE_IMAGES);
+    cacheFirstImages(event, CACHE_IMAGES);
     return;
   }
 

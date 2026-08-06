@@ -381,9 +381,8 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                 isAuthenticated={isAuthenticated}
                 isLoading={isSimilarLoading}
                 isPlaying={isPlaying && Boolean(currentSongId)}
-                onOpenCollection={() => { }}
-                onPlayCollection={() => { }}
                 buttonVisible={false}
+                titleClickable={false}
                 title={lang?.similar || 'Похожее'}
                 tracks={similarTracks}
                 onRenderTrack={(t, index) => (

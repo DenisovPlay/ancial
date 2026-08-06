@@ -61,16 +61,36 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // cache.set('user_profile', val, { category: 'profile' }) → key = 'ancial:profile:user_profile'
 const USER_PROFILE_STORAGE_KEY = 'ancial:profile:user_profile';
 
+function getInitialUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cachedUser = cache.get<User>('user_profile', { category: 'profile' });
+    if (cachedUser) return cachedUser;
+  } catch {}
+  return null;
+}
+
+function getInitialAuth(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const cachedUser = cache.get<User>('user_profile', { category: 'profile' });
+    const token = cache.get<string>('token');
+    return Boolean(cachedUser && token);
+  } catch {
+    return false;
+  }
+}
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(() => getInitialUser());
+  const [isAuthenticated, setIsAuthenticated] = useState(() => getInitialAuth());
   const [langCode, setLangCode] = useState<SupportedLang>(() => getStoredLangCode());
   const [lang, setLang] = useState<Record<string, string>>(() => locales[langCode] || locales['ru']);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !getInitialAuth());
   const authStateRef = useRef<{ isAuthenticated: boolean; user: User | null }>({
-    isAuthenticated: false,
-    user: null,
+    isAuthenticated: getInitialAuth(),
+    user: getInitialUser(),
   });
   // Флаг: идёт процесс выхода — блокирует любые повторные checkAuth до явного сброса
   const isLoggingOutRef = useRef(false);

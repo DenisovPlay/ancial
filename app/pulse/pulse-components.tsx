@@ -741,6 +741,7 @@ export function TrackCollectionPanel({
   onPlayCollection,
   onRenderTrack,
   title,
+  titleClickable = true,
   tracks,
 }: {
   buttonVisible?: boolean;
@@ -749,21 +750,29 @@ export function TrackCollectionPanel({
   isAuthenticated?: boolean;
   isLoading: boolean;
   isPlaying: boolean;
-  onOpenCollection: () => void;
-  onPlayCollection: () => void;
+  onOpenCollection?: () => void;
+  onPlayCollection?: () => void;
   onRenderTrack: (track: PulseTrack, index: number) => React.ReactNode;
   title: React.ReactNode;
+  titleClickable?: boolean;
   tracks: PulseTrack[] | null;
 }) {
   const { lang } = useAuth();
   const panelIsActive = currentCollectionId === collectionId && isPlaying;
+  const canClickTitle = titleClickable && Boolean(onOpenCollection);
 
   return (
     <div className="flex flex-col justify-center gap-3 rounded-2xl shadow">
       <div className="flex items-center gap-3 px-3 lg:px-0">
-        <button type="button" onClick={onOpenCollection} className="flex-grow cursor-pointer text-left text-2xl font-black cutetext duration-300 hover:text-zinc-300 active:scale-95 lg:text-3xl xl:text-4xl">
-          {title}
-        </button>
+        {canClickTitle ? (
+          <button type="button" onClick={onOpenCollection} className="flex-grow cursor-pointer text-left text-2xl font-black cutetext duration-300 hover:text-zinc-300 active:scale-95 lg:text-3xl xl:text-4xl">
+            {title}
+          </button>
+        ) : (
+          <span className="flex-grow text-left text-2xl font-black cutetext lg:text-3xl xl:text-4xl">
+            {title}
+          </span>
+        )}
         {buttonVisible && isAuthenticated !== false ? (
           <button
             type="button"
