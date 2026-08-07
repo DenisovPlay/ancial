@@ -311,7 +311,7 @@ export function PulsePlayerFull({
             </div>
 
             {/* Track title + artist + actions row — direct child of w-full column */}
-            <div className="flex w-full items-center justify-between gap-2 mt-3 px-3 lg:w-96 lg:px-0">
+            <div className="max-w-sm flex w-full items-center justify-between gap-2 mt-3 px-3 lg:w-96 lg:px-0">
               <div
                 key={`text-${trackKey}`}
                 className="animate-smooth-appear flex min-w-0 flex-col"
@@ -382,7 +382,7 @@ export function PulsePlayerFull({
               </div>
             </div>
 
-            <div className="w-full px-3 lg:px-0 lg:max-w-sm">
+            <div className="w-full px-3 lg:px-0 max-w-sm flex flex-col items-center justify-center">
               <PulsePlayerFullArtwork
                 displayedCurrentTime={displayedCurrentTime}
                 duration={duration}
