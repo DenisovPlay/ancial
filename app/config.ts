@@ -13,8 +13,8 @@ export const SITE_URL = 'https://zypo.cc';
 /** Домен сайта без протокола — используется в регэкспах и подписях */
 export const SITE_DOMAIN = 'zypo.cc';
 
-/** Внешний сервис текстов песен (Pulse) */
-export const PULSE_LYRICS_BASE = 'https://lyrics.pulse.zypo.cc';
+/** Тексты песен Pulse в едином PHP V2 API */
+export const PULSE_LYRICS_BASE = 'https://backend.ru.zypo.cc/api/V2';
 
 /** Базовый URL бэкенда Кинотеатра (Cinema / PHP V2 API) */
 export const CINEMA_API_BASE = 'https://backend.ru.zypo.cc/api/V2/cinema';

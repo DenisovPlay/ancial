@@ -59,6 +59,7 @@ export async function loadPulseLyrics(
       try {
         const url = `${PULSE_LYRICS_BASE}/UniLyrics.php?a=${encodeURIComponent(artistQuery)}&t=${encodeURIComponent(titleQuery)}&d=0&type=alternative`;
         const res = await fetch(url, { cache: 'no-store', signal });
+        if (!res.ok) continue;
         const text = await res.text();
         const lines = parseLyricsText(text);
 
@@ -69,8 +70,8 @@ export async function loadPulseLyrics(
           } catch { /* ignore */ }
           return data;
         }
-      } catch (e: any) {
-        if (e?.name === 'AbortError') throw e;
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'AbortError') throw e;
         // Continue trying fallback candidates on fetch failure
       }
     }
