@@ -207,7 +207,8 @@ export function PulsePlayerFull({
   return (
     <div
       className={cn(
-        'absolute inset-0 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] z-[65]',
+        'fixed inset-0 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] z-[65]',
+
         isVisible
           ? 'pointer-events-auto translate-y-0'
           : 'pointer-events-none translate-y-full',

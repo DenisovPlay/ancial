@@ -658,28 +658,14 @@ export class AncialAPI {
   }
 
   static async pulseTrackAction<T = unknown>(action: string, id: string | number): Promise<T> {
-    if (action === 'add_favorite') {
-      const response = await this.request<{ message?: string }>('/pulse/TrackAction.php', {
-        method: 'POST',
-        body: new URLSearchParams({ action: 'like', id: String(id) })
-      });
-      if (response?.message === 'Already in favorites') {
-        await this.request<{ message?: string }>('/pulse/TrackAction.php', {
-          method: 'POST',
-          body: new URLSearchParams({ action: 'unlike', id: String(id) })
-        });
-        return { message: 'REMOVED' } as T;
-      }
-      return { message: 'ADDED' } as T;
-    }
-
     const finalAction = action === 'listened' ? 'listen' : action;
 
     return this.request<T>('/pulse/TrackAction.php', {
       method: 'POST',
-      body: new URLSearchParams({ action: finalAction, id: String(id) })
+      body: new URLSearchParams({ action: finalAction, id: String(id) }),
     });
   }
+
 
   static async pulsePlaylistAction<T = unknown>(action: string, params: Record<string, string | number>): Promise<T> {
     const body = new URLSearchParams({ action });

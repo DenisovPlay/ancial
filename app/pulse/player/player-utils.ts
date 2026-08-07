@@ -27,6 +27,27 @@ export function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(nextValue) ? nextValue : 0;
 }
 
+export async function resolveTrackNumericId(value: number | string | null | undefined, fetchTrack?: (id: string) => Promise<{ track?: { id?: number | string } }>): Promise<number> {
+  const rawId = String(value ?? '').trim();
+  if (!rawId) return 0;
+
+  const numericId = toNumber(rawId);
+  if (numericId > 0) return numericId;
+
+  if (rawId.startsWith('ext_') && fetchTrack) {
+    try {
+      const res = await fetchTrack(rawId);
+      if (res?.track?.id) {
+        return toNumber(res.track.id);
+      }
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
+}
+
+
 export function normalizeText(value: string | null | undefined) {
   return String(value ?? '').trim();
 }

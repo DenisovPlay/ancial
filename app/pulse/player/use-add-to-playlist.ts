@@ -18,15 +18,31 @@ export function useAddToPlaylist({ lang, navigate, notify }: { lang: LangMap; na
   const [playlistOptionsLoading, setPlaylistOptionsLoading] = useState(false);
 
   const openAddToPlaylist = useCallback((songId: number | string) => {
-    const resolvedSongId = toNumber(songId);
-    if (!resolvedSongId) return;
-    setAddToPlaylistSongId(resolvedSongId);
+    const rawId = String(songId ?? '').trim();
+    if (!rawId) return;
+
     setIsAddToPlaylistOpen(true);
     setPlaylistOptions([]);
     setPlaylistOptionsLoading(true);
 
     void (async () => {
       try {
+        let resolvedSongId = toNumber(rawId);
+        if (!resolvedSongId && rawId.startsWith('ext_')) {
+          const trackRes = await AncialAPI.pulseGetTrack<{ track?: { id?: number | string } }>(rawId);
+          if (trackRes?.track?.id) {
+            resolvedSongId = toNumber(trackRes.track.id);
+          }
+        }
+
+        if (!resolvedSongId) {
+          notify({ content: lang?.pulse_error_happened || 'Произошла ошибка =(', type: 'error', time: 5 });
+          setIsAddToPlaylistOpen(false);
+          return;
+        }
+
+        setAddToPlaylistSongId(resolvedSongId);
+
         const result = await AncialAPI.pulsePlaylistAction<{ data?: PlaylistItem[]; error?: string }>('list', {});
         if (!result || !Array.isArray(result.data)) {
           notify({ content: result?.error || lang?.pulse_error_happened || 'Произошла ошибка =(', type: 'error', time: 5 });
@@ -51,6 +67,7 @@ export function useAddToPlaylist({ lang, navigate, notify }: { lang: LangMap; na
       }
     })();
   }, [lang, notify]);
+
 
   const toggleSongInPlaylist = useCallback(async (playlistId: string, hasSong: boolean) => {
     if (!playlistId || !addToPlaylistSongId) return;

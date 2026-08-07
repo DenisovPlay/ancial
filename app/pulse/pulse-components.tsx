@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
 import { useAuth, type User } from '../context/AuthContext';
+import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { cache } from '../lib/cache.ts';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
@@ -54,7 +55,7 @@ export type PulseArtistCardData = {
 
 export type PulseTrackRowProps = {
   currentSongId: number;
-  favoriteIds: number[];
+  favoriteIds: Array<number | string>;
   isAuthenticated: boolean;
   onAddToPlaylist: (trackId: number | string) => void;
   onCopyTrackLink: (trackId: number | string, track?: PulseTrack) => Promise<void>;
@@ -396,10 +397,25 @@ export function PulseTrackRow({
   userCountry,
 }: PulseTrackRowProps) {
   const { lang } = useAuth();
-  const trackId = toNumber(track.sid);
-  const isCurrentSong = currentSongId > 0 && currentSongId === trackId;
+  const { currentTrackObj, isPlaying } = usePulsePlayer();
+
+  const rawSid = String(track.sid ?? '').trim();
+  const numSid = toNumber(rawSid);
+  const trackId = numSid;
+
+  const isCurrentSong = Boolean(
+    isPlaying && (
+      (numSid > 0 && currentSongId === numSid) ||
+      (Boolean(rawSid) && currentTrackObj?.sid && String(currentTrackObj.sid) === rawSid) ||
+      (numSid > 0 && currentTrackObj?.sid && toNumber(currentTrackObj.sid) === numSid)
+    )
+  );
   const isOwnTrack = canManagePulseTrack(track, user);
-  const isLiked = trackId > 0 && favoriteIds.includes(trackId);
+  const isLiked = Boolean(
+    (numSid > 0 && favoriteIds.includes(numSid as any)) ||
+    (Boolean(rawSid) && favoriteIds.includes(rawSid as any))
+  );
+
   const isAvailable = isTrackAvailable(track, userCountry);
   const firstArtistId = getArtistIds(track)[0] ?? '';
   const coverUrl = getTrackArtwork(track);
@@ -494,8 +510,9 @@ export function PulseTrackRow({
       icon: 'IC-share',
       key: 'share',
       label: lang?.share || 'Поделиться',
-      onClick: () => onCopyTrackLink(trackId, track),
+      onClick: () => onCopyTrackLink(track.sid ?? trackId, track),
     },
+
     onReportTrack
       ? {
         icon: 'IC-report',

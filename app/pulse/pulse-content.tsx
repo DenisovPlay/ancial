@@ -745,15 +745,39 @@ export default function PulseContent() {
     openPulseSubpage(getArtistPath(artistId));
   }, [openPulseSubpage]);
 
-  const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
-    const resolvedTrackId = toNumber(trackId);
-    if (!resolvedTrackId) return;
 
-    setShareUrl(getPulseExternalUrl(getTrackPath(resolvedTrackId)));
+  const getResolvedId = useCallback(async (idValue: number | string | null | undefined): Promise<number> => {
+
+    const rawId = String(idValue ?? '').trim();
+    if (!rawId) return 0;
+    const num = toNumber(rawId);
+    if (num > 0) return num;
+    if (rawId.startsWith('ext_')) {
+      try {
+        const res = await AncialAPI.pulseGetTrack<{ track?: { id?: number | string } }>(rawId);
+        if (res?.track?.id) return toNumber(res.track.id);
+      } catch {
+        return 0;
+      }
+    }
+    return 0;
+  }, []);
+
+  const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
+    const rawId = String(trackId ?? '').trim();
+    if (!rawId) return;
+
+    let resolvedTrackId = toNumber(rawId);
+    if (!resolvedTrackId && rawId.startsWith('ext_')) {
+      resolvedTrackId = await getResolvedId(rawId);
+    }
+    const finalId = resolvedTrackId || rawId;
+
+    setShareUrl(getPulseExternalUrl(getTrackPath(finalId)));
     
     if (track) {
       setShareAttachment({
-        widgets: [{ type: 'music', track_id: resolvedTrackId.toString() }],
+        widgets: [{ type: 'music', track_id: finalId.toString() }],
         preview: {
           authorName: decodeHtmlEntities(track.artist) || lang?.artist || 'Исполнитель',
           authorImg: getImageUrl(getTrackArtwork(track), '/img/noimg.png'),
@@ -765,7 +789,7 @@ export default function PulseContent() {
     }
     
     setIsShareModalOpen(true);
-  }, [lang]);
+  }, [getResolvedId, lang]);
 
   const pulseTrackAddedText = lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!';
   const pulseTrackRemovedText = lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!';
@@ -779,16 +803,18 @@ export default function PulseContent() {
       return;
     }
 
-    const trackId = toNumber(track.sid);
+    const rawSid = String(track.sid ?? '').trim();
+    const trackId = await getResolvedId(rawSid);
     if (!trackId) return;
 
     try {
-      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', trackId);
+      const response = await AncialAPI.pulseTrackAction<{ id?: number | string; message?: string }>('add_favorite', rawSid);
       const result = response.message || '';
+      const finalId = response.id ? toNumber(response.id) : trackId;
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
         updateFavoriteIds((currentIds) => (
-          currentIds.includes(trackId) ? currentIds : [...currentIds, trackId]
+          currentIds.includes(finalId) ? currentIds : [...currentIds, finalId]
         ));
         showPulseNote(
           result === 'CREATED_ADDED' ? pulseFavoriteCreatedText : pulseTrackAddedText,
@@ -799,7 +825,7 @@ export default function PulseContent() {
       }
 
       if (result === 'REMOVED') {
-        updateFavoriteIds((currentIds) => currentIds.filter((id) => id !== trackId));
+        updateFavoriteIds((currentIds) => currentIds.filter((id) => id !== finalId));
         showPulseNote(pulseTrackRemovedText, 'success', 4);
         return;
       }
@@ -813,29 +839,32 @@ export default function PulseContent() {
     } catch {
       showPulseNote(pulseErrorText, 'error');
     }
-  }, [isAuthenticated, pulseErrorText, pulseFavoriteCreatedText, pulseTrackAddedText, pulseTrackRemovedText, pulseUnknownSongText, showPulseNote, updateFavoriteIds]);
+  }, [getResolvedId, isAuthenticated, pulseErrorText, pulseFavoriteCreatedText, pulseTrackAddedText, pulseTrackRemovedText, pulseUnknownSongText, showPulseNote, updateFavoriteIds]);
 
   const queueTrackNext = useCallback(async (trackId: number | string) => {
     await playNextTrack(trackId);
   }, [playNextTrack]);
 
-  const reportTrack = useCallback((track: PulseTrack) => {
+  const reportTrack = useCallback(async (track: PulseTrack) => {
     if (!isAuthenticated) {
       showPulseNote(lang?.logintoreport || 'Войдите, чтобы отправить жалобу', 'info');
       return;
     }
 
-    const trackId = toNumber(track.sid);
+    const rawId = String(track.sid ?? '').trim();
+    if (!rawId) return;
+
+    const trackId = await getResolvedId(rawId);
     if (!trackId) return;
 
-    setReportTrackTarget(track);
+    setReportTrackTarget({ ...track, sid: trackId });
     setIsReportModalOpen(true);
-  }, [isAuthenticated, showPulseNote]);
+  }, [getResolvedId, isAuthenticated, lang, showPulseNote]);
 
   const handleTrackReport = useCallback(async (reason: string) => {
     if (!reportTrackTarget) return;
 
-    const trackId = toNumber(reportTrackTarget.sid);
+    const trackId = await getResolvedId(reportTrackTarget.sid);
     if (!trackId) return;
 
     setIsReportModalOpen(false);

@@ -76,9 +76,9 @@ body.pulse-player-full [data-app-nav="mobile"] {
 html.pulse-player-full,
 body.pulse-player-full {
   overflow: hidden !important;
-  height: 100% !important;
   overscroll-behavior: none !important;
 }
+
 
 body.pulse-player-full #main-content {
   overflow: hidden !important;

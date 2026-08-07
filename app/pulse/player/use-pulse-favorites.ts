@@ -68,17 +68,25 @@ export function usePulseFavorites({
   }, [ensureLikedSongsLoaded, isAuthenticated]);
 
   const toggleSongLike = useCallback(async (songId: number | string, options?: ToggleSongLikeOptions) => {
-    const resolvedSongId = toNumber(songId);
-    if (!resolvedSongId) return;
+    const rawId = String(songId ?? '').trim();
+    if (!rawId) return;
 
     try {
-      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', resolvedSongId);
+      let resolvedSongId = toNumber(rawId);
+      const response = await AncialAPI.pulseTrackAction<{ id?: number | string; message?: string }>('add_favorite', rawId);
       const result = response.message || '';
+
+      if (response.id) {
+        resolvedSongId = toNumber(response.id) || resolvedSongId;
+      }
+
       const currentIds = getFavoriteIds();
       const shouldRedirect = Boolean(options?.triggerPlaylistRedirect && options.playlistId);
 
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
-        setLikedSongsState(currentIds.includes(resolvedSongId) ? currentIds : [...currentIds, resolvedSongId]);
+        if (resolvedSongId) {
+          setLikedSongsState(currentIds.includes(resolvedSongId) ? currentIds : [...currentIds, resolvedSongId]);
+        }
         notify({
           content: result === 'CREATED_ADDED'
             ? lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан, трек добавлен'
@@ -88,7 +96,9 @@ export function usePulseFavorites({
         });
         if (shouldRedirect) navigate(`/pulse/playlist/${options?.playlistId}`);
       } else if (result === 'REMOVED') {
-        setLikedSongsState(currentIds.filter((id) => id !== resolvedSongId));
+        if (resolvedSongId) {
+          setLikedSongsState(currentIds.filter((id) => id !== resolvedSongId));
+        }
         notify({ content: lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', type: 'success', time: 5 });
         if (shouldRedirect) navigate(`/pulse/playlist/${options?.playlistId}`);
       } else if (result === 'UND_SONG') {
@@ -98,6 +108,7 @@ export function usePulseFavorites({
       notify({ content: lang?.pulse_error_happened || 'Произошла ошибка =(', type: 'error', time: 5 });
     }
   }, [getFavoriteIds, lang, navigate, notify, setLikedSongsState]);
+
 
   const togglePlaylistLike = useCallback(async (playlistId: number | string) => {
     const resolvedPlaylistId = String(playlistId ?? '').trim();
