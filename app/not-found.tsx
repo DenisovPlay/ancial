@@ -36,7 +36,7 @@ export default function NotFound() {
   }, [router]);
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center">
+    <div className="home-route flex isolate h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-full flex-col items-center justify-center">
       <style jsx global>{`
         @font-face {
           font-family: 'NauryzRedKedsWeather';
