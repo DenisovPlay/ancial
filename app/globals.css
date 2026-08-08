@@ -177,6 +177,15 @@ body.pulse-player-full #main-content {
   display: none;
 }
 
+.dragscroll img,
+.drag-scroll img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+
 /* Отключаем drag-scroll на мобильных */
 @media (max-width: 768px) {
   .drag-scroll {

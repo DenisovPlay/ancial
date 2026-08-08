@@ -15,32 +15,52 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
   useEffect(() => {
     if (!enabled) return;
 
-    // Небольшая задержка чтобы Portal успел отрендериться (Modal.tsx использует rAF)
     const timer = setTimeout(() => {
       const el = ref.current;
       if (!el) return;
 
-      // На тач-устройствах нативный scroll работает лучше
+      // Touch devices use native smooth touch scroll
       if ('ontouchstart' in window && navigator.maxTouchPoints > 2) return;
 
       let isDown = false;
       let startX = 0;
+      let startY = 0;
       let scrollLeft = 0;
 
+      const onDragStart = (e: DragEvent) => {
+        e.preventDefault();
+      };
+
       const onMouseDown = (e: MouseEvent) => {
+        // Ignore form inputs where typing or text selection is required
         const target = e.target as HTMLElement;
-        if (target.closest('button, a, input, select, textarea')) return;
+        if (target.closest('input, select, textarea, [contenteditable="true"]')) return;
 
         isDown = true;
         didMoveRef.current = false;
         startX = e.clientX;
+        startY = e.clientY;
         scrollLeft = el.scrollLeft;
+      };
 
-        el.classList.add('dragging');
-        el.style.userSelect = 'none';
-        el.style.cursor = 'grabbing';
+      const onMouseMove = (e: MouseEvent) => {
+        if (!isDown) return;
 
-        e.preventDefault();
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        // Threshold of 6px to differentiate click/tap from drag scroll
+        if (!didMoveRef.current && Math.sqrt(dx * dx + dy * dy) > 6) {
+          didMoveRef.current = true;
+          el.classList.add('dragging');
+          el.style.userSelect = 'none';
+          el.style.cursor = 'grabbing';
+        }
+
+        if (didMoveRef.current) {
+          e.preventDefault();
+          el.scrollLeft = scrollLeft - dx * speed;
+        }
       };
 
       const onMouseUp = () => {
@@ -51,31 +71,25 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
         el.style.cursor = '';
       };
 
-      const onMouseMove = (e: MouseEvent) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const dx = e.clientX - startX;
-        el.scrollLeft = scrollLeft - dx * speed;
-        if (Math.abs(dx) > 3) {
-          didMoveRef.current = true;
-        }
-      };
-
       const onClickCapture = (e: MouseEvent) => {
         if (didMoveRef.current) {
           e.preventDefault();
           e.stopPropagation();
+          setTimeout(() => {
+            didMoveRef.current = false;
+          }, 0);
         }
       };
 
+      el.addEventListener('dragstart', onDragStart);
       el.addEventListener('mousedown', onMouseDown);
       el.addEventListener('click', onClickCapture, true);
       document.addEventListener('mouseup', onMouseUp);
       document.addEventListener('mousemove', onMouseMove);
 
-      // Сохраняем cleanup на элементе чтобы вызвать его из внешнего return
       type ElWithCleanup = HTMLDivElement & { _dragCleanup?: () => void };
       (el as ElWithCleanup)._dragCleanup = () => {
+        el.removeEventListener('dragstart', onDragStart);
         el.removeEventListener('mousedown', onMouseDown);
         el.removeEventListener('click', onClickCapture, true);
         document.removeEventListener('mouseup', onMouseUp);
@@ -96,3 +110,4 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
 
   return ref;
 }
+

@@ -76,7 +76,8 @@ export function PulseCoverImage({
       <img
         src={imageSrc}
         alt={alt}
-        className={cn('absolute inset-0 h-full w-full object-cover', className)}
+        draggable={false}
+        className={cn('absolute inset-0 h-full w-full object-cover select-none pointer-events-none', className)}
       />
     );
   }
@@ -84,10 +85,12 @@ export function PulseCoverImage({
   return (
     <Image
       alt={alt}
-      className={cn('object-cover', className)}
+      draggable={false}
+      className={cn('object-cover select-none pointer-events-none', className)}
       fill
       sizes={sizes}
       src={imageSrc}
     />
   );
 }
+
