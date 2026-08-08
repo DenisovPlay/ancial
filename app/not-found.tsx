@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./context/AuthContext";
+import Link from "next/link";
 
 export default function NotFound() {
   const { lang } = useAuth() as any;
@@ -27,7 +28,7 @@ export default function NotFound() {
         if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundwhy;
       }, 6500),
       setTimeout(() => {
-        router.push("/");
+        //router.push("/");
       }, 3000),
     ];
 
@@ -35,30 +36,38 @@ export default function NotFound() {
   }, [router]);
 
   return (
-    <div className="flex min-h-[100vh] w-full flex-col items-center justify-center">
-      <span className="error-code">404</span>
-      <span className="text-3xl font-bold text-white">{lang?.pagenotfound}</span>
-      <span className="text-xl text-zinc-300">{lang?.pagenotfoundredir}</span>
-      <span ref={timerRef} className="text-lg text-zinc-400">
-        {lang?.pagenotfoundtimer3}
-      </span>
-
-      <style>{`
-        .error-code {
-          font-size: 10rem;
-          font-weight: bold;
-          color: transparent;
-          background: linear-gradient(45deg, #a855f7, #3b82f6);
-          -webkit-background-clip: text;
-          background-clip: text;
-          text-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
-          animation: float 3s ease-in-out infinite;
+    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center">
+      <style jsx global>{`
+        @font-face {
+          font-family: 'NauryzRedKedsWeather';
+          src: url('/fonts/NauryzRedKeds.ttf');
         }
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(10deg); }
+
+        .cutetext {
+          font-family: 'NauryzRedKedsWeather', sans-serif;
+          font-style: normal;
+          font-weight: 700;
+          line-height: 100%;
+          margin-top: 0.75rem;
         }
       `}</style>
+      <video
+        id="videobackground"
+        autoPlay
+        muted
+
+        preload="none"
+        playsInline
+        className="z-[1] absolute inset-0 w-full h-full object-cover opacity-50 duration-300"
+        src="/img/backgrounds/404.webm"
+      />
+      <span className="z-10 text-[128px] font-bold cutetext">404</span>
+      <span className="z-10 text-3xl font-bold text-white">{lang?.pagenotfound}</span>
+      <span className="hidden z-10 text-xl text-zinc-300">{lang?.pagenotfoundredir}</span>
+      <span ref={timerRef} className="hidden z-10 text-lg text-zinc-400">
+        {lang?.pagenotfoundtimer3}
+      </span>
+      <Link href="/" className="z-10 px-3 py-2.5 hover:bg-zinc-800 backdrop-blur-md backdrop-hue-200 backdrop-saturate-200 mt-3 border border-zinc-600/30 rounded-3xl duration-300 cursor-pointer active:scale-95">{lang?.gotohome}</Link>
     </div>
   );
 }
