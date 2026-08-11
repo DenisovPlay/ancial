@@ -125,12 +125,12 @@ function TypingBubble({
   return (
     <motion.div
       key="typing-bubble"
-      initial={{ opacity: 0, y: 10, x: -10, scale: 0.8, paddingBottom: 0 }}
-      animate={{ opacity: 1, y: 0, x: 0, scale: 1, paddingBottom: 4 }}
-      exit={{ opacity: 0, y: 10, x: -10, scale: 0.8, paddingBottom: 0 }}
+      initial={{ opacity: 0, y: 10, x: -10, scale: 0.8 }}
+      animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 10, x: -10, scale: 0.8 }}
       transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
       style={{ originX: 0, originY: 1 }}
-      className="relative flex w-full gap-2 items-end justify-start"
+      className="relative flex w-full gap-2 items-end justify-start pb-1"
     >
       {isGroup && typingUsersList.length > 0 && (
         <div className="flex items-center mb-1 shrink-0">
@@ -138,11 +138,11 @@ function TypingBubble({
             {typingUsersList.map((user, i) => (
               <motion.div
                 key={user.id}
-                initial={{ opacity: 0, width: 0, scale: 0.5 }}
-                animate={{ opacity: 1, width: i === 0 ? 28 : 16, scale: 1 }}
-                exit={{ opacity: 0, width: 0, scale: 0.5 }}
+                initial={{ opacity: 0, x: -8, scale: 0.5 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -8, scale: 0.5 }}
                 transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                className="relative h-7 shrink-0"
+                className={`relative h-7 shrink-0 ${i === 0 ? 'w-7' : 'w-4'}`}
                 style={{ zIndex: typingUsersList.length - i }}
               >
                 <motion.img
@@ -739,11 +739,9 @@ export default function MessagesContent() {
       if (!preserveScroll) scrollActionRef.current = { type: 'bottom' };
       setMessages(cachedMessages);
       if (cached?.foreignUser) {
-        setForeignUser((currentForeignUser) => {
-          const nextForeignUser = mergeDialogUser(currentForeignUser, cached.foreignUser);
-          currentForeignUserRef.current = nextForeignUser;
-          return nextForeignUser;
-        });
+        const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, cached.foreignUser);
+        currentForeignUserRef.current = nextForeignUser;
+        setForeignUser(nextForeignUser);
       }
     } else {
       if (!preserveScroll) scrollActionRef.current = { type: 'bottom' };

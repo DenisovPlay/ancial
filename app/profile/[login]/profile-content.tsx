@@ -542,7 +542,9 @@ export default function UserProfileContent({ login }: { login: string }) {
     [],
   );
 
-  loadPostsRef.current = loadPosts;
+  useEffect(() => {
+    loadPostsRef.current = loadPosts;
+  }, [loadPosts]);
 
   useEffect(() => {
     if (authLoading) return;
