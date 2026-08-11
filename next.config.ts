@@ -19,6 +19,7 @@ const IMAGE_HOSTS: { hostname: string; insecure?: boolean }[] = [
   { hostname: '*.vk.com' },
   { hostname: '*.vkusercontent.com' },
   { hostname: '*.vk-cdn.net' },
+  { hostname: 'avatars.yandex.net' },
   { hostname: '*.avatars.yandex.net' },
   { hostname: 'tile.openstreetmap.org' },
   { hostname: 'cartodb-basemaps-a.global.ssl.fastly.net' },
