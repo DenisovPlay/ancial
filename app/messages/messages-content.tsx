@@ -27,7 +27,6 @@ import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
 import CreateGroupModal from './components/create-group-modal';
 import GroupInfoModal from './components/group-info-modal';
-import GroupVoiceRoomModal from './components/group-voice-room-modal';
 import MessageBubble from './components/message-bubble';
 import StickerPickerDropdownContent from './components/sticker-picker-dropdown-content';
 import {
@@ -214,7 +213,6 @@ export default function MessagesContent() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
   const [groupInfoModalOpen, setGroupInfoModalOpen] = useState(false);
-  const [groupVoiceModalOpen, setGroupVoiceModalOpen] = useState(false);
   const [voiceRoomParticipantCount, setVoiceRoomParticipantCount] = useState(0);
   const [deleteDialogModalOpen, setDeleteDialogModalOpen] = useState(false);
   const [editMessageModalOpen, setEditMessageModalOpen] = useState(false);
@@ -328,8 +326,16 @@ export default function MessagesContent() {
   const groupVoiceEnabled = isGroupDialog && !['0', 'false', 'off', 'no'].includes(
     String(selectedDialog?.voice_enabled ?? dialogListItem?.voice_enabled ?? 1).toLowerCase(),
   );
-  const handleVoiceRoomStatusChange = useCallback((participants: Array<{ user_id: number }>) => {
-    setVoiceRoomParticipantCount(participants.length);
+  const handleVoiceRoomSignal = useCallback((raw?: unknown) => {
+    const envelope = (raw || {}) as {
+      data?: { kind?: string; participants?: unknown[] };
+      dialog_id?: number | string;
+    };
+    if (Number(envelope.dialog_id || 0) !== currentDialogIdRef.current) return;
+    const signal = envelope.data || (raw as { kind?: string; participants?: unknown[] });
+    if (signal.kind === 'status' || signal.kind === 'snapshot') {
+      setVoiceRoomParticipantCount(Array.isArray(signal.participants) ? signal.participants.length : 0);
+    }
   }, []);
   const groupMembersCount = selectedDialog?.members?.length || (selectedDialog as any)?.members_count || (dialogListItem as any)?.members_count || 0;
 
@@ -559,6 +565,7 @@ export default function MessagesContent() {
     globalWS.removeDialogListener('message:edited', handleWsMessageEdited);
     globalWS.removeDialogListener('message:reaction', handleWsMessageReaction);
     globalWS.removeDialogListener('call:signal', handleWsCallSignal);
+    globalWS.removeDialogListener('voice:signal', handleVoiceRoomSignal);
 
     if (wsRefreshTimerRef.current !== null) {
       window.clearTimeout(wsRefreshTimerRef.current);
@@ -578,6 +585,7 @@ export default function MessagesContent() {
     setDialogError('');
     setMessages([]);
     setMessagesLoading(false);
+    setVoiceRoomParticipantCount(0);
     setLoadingOlder(false);
     setLoadingNewer(false);
     setHasMoreMessages(true);
@@ -585,8 +593,6 @@ export default function MessagesContent() {
     setSettingsModalOpen(false);
     setDeleteDialogModalOpen(false);
     setEditMessageModalOpen(false);
-    setGroupVoiceModalOpen(false);
-    setVoiceRoomParticipantCount(0);
     setEditingMessage(null);
     setEditingValue('');
     setActiveDialogImageKey(null);
@@ -1420,6 +1426,7 @@ export default function MessagesContent() {
     globalWS.addDialogListener('user:typing', handleWsTyping);
     globalWS.addDialogListener('typing', handleWsTyping);
     globalWS.addDialogListener('call:signal', handleWsCallSignal);
+    globalWS.addDialogListener('voice:signal', handleVoiceRoomSignal);
     globalWS.addGlobalPresenceListener(handlePresenceUpdate);
 
     const foreignUserId = currentForeignUserIdRef.current;
@@ -2462,7 +2469,12 @@ export default function MessagesContent() {
                         <button
                           id="group-voice-button"
                           type="button"
-                          onClick={() => setGroupVoiceModalOpen(true)}
+                          onClick={() => {
+                            const dialogHash = normalizeHash(selectedDialog?.hash || routeHash);
+                            if (!dialogHash) return;
+                            const returnPath = `/messages/${dialogHash}`;
+                            router.push(`/call/group/${encodeURIComponent(dialogHash)}?return=${encodeURIComponent(returnPath)}`);
+                          }}
                           aria-label={lang?.voice_room_title || 'Голосовая комната'}
                           className={cn(
                             'relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:border lg:border-zinc-600/30 lg:shadow',
@@ -2990,17 +3002,6 @@ export default function MessagesContent() {
           void loadDialogs({ force: true });
         }}
       />
-
-      {selectedDialog && selectedDialog.type === 'group' && groupVoiceEnabled && (
-        <GroupVoiceRoomModal
-          isOpen={groupVoiceModalOpen}
-          onClose={() => setGroupVoiceModalOpen(false)}
-          dialogId={Number(selectedDialog.id)}
-          title={selectedDialog.title || (lang?.group_chat || 'Групповой чат')}
-          members={selectedDialog.members || []}
-          onStatusChange={handleVoiceRoomStatusChange}
-        />
-      )}
 
       {selectedDialog && selectedDialog.type === 'group' && (
         <GroupInfoModal

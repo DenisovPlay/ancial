@@ -1,6 +1,5 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 
@@ -18,10 +17,6 @@ import {
   type CommunityChannel,
   type CommunityStructure,
 } from '../lib/community-types';
-
-const GroupVoiceRoomModal = dynamic(() => import('../../../messages/components/group-voice-room-modal'), {
-  ssr: false,
-});
 
 type Props = {
   communityId: number;
@@ -46,7 +41,6 @@ export default function CommunityChannelShell({ communityId, communityLink, init
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
-  const [voiceChannel, setVoiceChannel] = useState<CommunityChannel | null>(null);
   const [failed, setFailed] = useState(false);
 
   const loadStructure = useCallback(async () => {
@@ -54,9 +48,6 @@ export default function CommunityChannelShell({ communityId, communityLink, init
       const next = await AncialAPI.communityStructure(communityId);
       setStructure(next);
       setSelectedId((current) => retainCommunityChannelSelection(next.channels, current));
-      setVoiceChannel((current) => current && next.channels.some((channel) => channel.id === current.id)
-        ? next.channels.find((channel) => channel.id === current.id) ?? null
-        : null);
       setFailed(false);
     } catch (error) {
       console.error('Community channels loading failed', error);
@@ -83,12 +74,6 @@ export default function CommunityChannelShell({ communityId, communityLink, init
     };
   }, [communityId]);
 
-  useEffect(() => {
-    if (!voiceChannel) return;
-    globalWS.subscribeDialog(voiceChannel.id);
-    return () => globalWS.unsubscribeDialog(voiceChannel.id);
-  }, [voiceChannel]);
-
   const selectedChannel = useMemo(
     () => structure?.channels.find((channel) => channel.id === selectedId) ?? null,
     [selectedId, structure?.channels],
@@ -97,11 +82,12 @@ export default function CommunityChannelShell({ communityId, communityLink, init
   const openChannel = useCallback((channel: CommunityChannel) => {
     setSelectedId(channel.id);
     if (channel.channel_type === 'voice') {
-      setVoiceChannel(channel);
+      const returnPath = `/group/${communityLink}`;
+      router.push(`/call/group/${encodeURIComponent(channel.hash)}?return=${encodeURIComponent(returnPath)}`);
       return;
     }
     router.push(`/messages/${encodeURIComponent(channel.hash)}`);
-  }, [router]);
+  }, [communityLink, router]);
 
   const channelTypeLabel = (channel: CommunityChannel) => {
     if (channel.channel_type === 'voice') return lang?.community_channel_voice || '';
@@ -164,14 +150,6 @@ export default function CommunityChannelShell({ communityId, communityLink, init
       <Modal isOpen={mobileOpen} onClose={() => setMobileOpen(false)} title={lang?.community_channels}>
         {content}
       </Modal>
-      <GroupVoiceRoomModal
-        canSpeak={voiceChannel?.permissions.speak_voice === true}
-        dialogId={voiceChannel?.id ?? 0}
-        isOpen={voiceChannel !== null}
-        members={[]}
-        onClose={() => setVoiceChannel(null)}
-        title={voiceChannel?.title ?? ''}
-      />
       <CommunityManageModal
         communityId={communityId}
         isOpen={manageOpen}

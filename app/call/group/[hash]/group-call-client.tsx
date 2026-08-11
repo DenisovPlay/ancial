@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import Modal from '../../../components/modal';
@@ -99,7 +99,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   const [cameraMenuOpen, setCameraMenuOpen] = useState(false);
   const [members, setMembers] = useState(config.members);
   const title = config.dialog.title || lang?.voice_room_title || 'Групповой звонок';
-  const exitCall = () => router.push(returnPath);
+  const exitCall = useCallback(() => router.push(returnPath), [returnPath, router]);
   const call = useGroupCall({
     activityUrl: `/call/group/${encodeURIComponent(hash)}`,
     canPublish: config.canPublish,
