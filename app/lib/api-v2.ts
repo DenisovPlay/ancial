@@ -1,6 +1,14 @@
 'use client';
 
 import { authFetch } from './auth-fetch';
+import type {
+  CommunityAuditEntry,
+  CommunityChannelOverride,
+  CommunityLinkRequest,
+  CommunityPermissionMap,
+  CommunityRoleList,
+  CommunityStructure,
+} from '../group/[link]/lib/community-types';
 
 /**
  * Standard Ancial API V2 Response wrapper
@@ -201,6 +209,97 @@ export class AncialAPI {
     }
 
     return result.data;
+  }
+
+  private static communityMutation<T>(endpoint: string, payload: Record<string, unknown>): Promise<T> {
+    return this.request<T>(`/communities/${endpoint}.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // --- COMMUNITIES ---
+
+  static communityStructure(communityId: number): Promise<CommunityStructure> {
+    return this.request<CommunityStructure>(`/communities/Structure.php?community_id=${communityId}`);
+  }
+
+  static communityRoles(communityId: number): Promise<CommunityRoleList> {
+    return this.request<CommunityRoleList>(`/communities/Roles.php?community_id=${communityId}`);
+  }
+
+  static communityPermissions(
+    communityId: number,
+    dialogId?: number,
+  ): Promise<{ community_id: number; dialog_id: number | null; is_owner: boolean; highest_role_position: number | null; permissions: CommunityPermissionMap }> {
+    const query = new URLSearchParams({ community_id: String(communityId) });
+    if (dialogId !== undefined) query.set('dialog_id', String(dialogId));
+    return this.request(`/communities/Permissions.php?${query.toString()}`);
+  }
+
+  static mutateCommunityCategory(payload: Record<string, unknown>): Promise<{ category_id: number; action: string }> {
+    return this.communityMutation('Categories', payload);
+  }
+
+  static mutateCommunityChannel(payload: Record<string, unknown>): Promise<{ dialog_id: number; action: string }> {
+    return this.communityMutation('Channels', payload);
+  }
+
+  static mutateCommunityRole(payload: Record<string, unknown>): Promise<{ role_id: number; action: string }> {
+    return this.communityMutation('Roles', payload);
+  }
+
+  static mutateCommunityMemberRole(payload: {
+    community_id: number;
+    user_id: number;
+    role_id: number;
+    action: 'assign' | 'remove';
+  }): Promise<{ user_id: number; role_id: number; action: string }> {
+    return this.communityMutation('MemberRoles', payload);
+  }
+
+  static communityChannelOverrides(
+    communityId: number,
+    dialogId: number,
+  ): Promise<{ overrides: CommunityChannelOverride[] }> {
+    return this.request(`/communities/ChannelPermissions.php?community_id=${communityId}&dialog_id=${dialogId}`);
+  }
+
+  static mutateCommunityChannelOverride(payload: {
+    community_id: number;
+    dialog_id: number;
+    target_type: 'role' | 'member';
+    target_id: number;
+    action?: 'set' | 'delete';
+    allow?: CommunityPermissionMap;
+    deny?: CommunityPermissionMap;
+  }): Promise<{ action: string; dialog_id: number; target_type: string; target_id: number }> {
+    return this.communityMutation('ChannelPermissions', payload);
+  }
+
+  static communityLinkRequests(communityId: number): Promise<{ requests: CommunityLinkRequest[] }> {
+    return this.request(`/communities/LinkRequests.php?community_id=${communityId}`);
+  }
+
+  static mutateCommunityLinkRequest(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.communityMutation('LinkRequests', payload);
+  }
+
+  static moderateCommunity(payload: Record<string, unknown>): Promise<{ action: string; user_id?: number; message_id?: number }> {
+    return this.communityMutation('Moderation', payload);
+  }
+
+  static communityAudit(
+    communityId: number,
+    options: { beforeId?: number; limit?: number } = {},
+  ): Promise<{ entries: CommunityAuditEntry[]; has_more: boolean }> {
+    const query = new URLSearchParams({
+      community_id: String(communityId),
+      limit: String(options.limit ?? 30),
+    });
+    if (options.beforeId !== undefined) query.set('before_id', String(options.beforeId));
+    return this.request(`/communities/Audit.php?${query.toString()}`);
   }
 
   // --- AUTH ---
