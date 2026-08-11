@@ -32,6 +32,7 @@ import {
 } from '../../feed/editor-shared';
 import { uploadImage } from '../../lib/upload';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
+import CommunityChannelShell from './components/community-channel-shell';
 
 type Id = string | number;
 
@@ -40,6 +41,18 @@ interface OfficialGroupPreview {
   img?: string | null;
   name?: string | null;
   slnk?: string | null;
+}
+
+interface CommunityChatPreview {
+  id: Id;
+  hash: string;
+  title?: string | null;
+  avatar?: string | null;
+  description?: string | null;
+  join_policy?: 'open' | 'request' | string | null;
+  voice_enabled?: boolean | number | string | null;
+  members_count?: number | string | null;
+  is_joined?: boolean | number | string | null;
 }
 
 interface GroupPageData {
@@ -52,6 +65,7 @@ interface GroupPageData {
   is_subscribed?: boolean | number | string | null;
   name?: string | null;
   official_groups?: OfficialGroupPreview[] | null;
+  public_chats?: CommunityChatPreview[] | null;
   slnk?: string | null;
   status?: boolean | number | string | null;
   subscribers?: UserPreview[] | null;
@@ -308,6 +322,13 @@ export default function GroupProfileContent({ link }: { link: string }) {
       somethingwrong: 'Что-то пошло не так',
       spam: 'Спам',
       subscribers: 'Подписчики',
+      community_chats: 'Чаты сообщества',
+      community_chat_open: 'Открыть',
+      community_chat_join: 'Вступить',
+      community_chat_request: 'Подать заявку',
+      community_chat_requested: 'Заявка отправлена',
+      community_chat_members: 'участников',
+      community_chat_voice: 'Групповые звонки',
       successGroupUpdate: 'Это успех! Все готово, проверяйте!',
       tobookmarks: 'В закладки',
       translate: 'Перевести',
@@ -363,6 +384,13 @@ export default function GroupProfileContent({ link }: { link: string }) {
       somethingwrong: lang?.somethingwrong || fb.somethingwrong,
       spam: lang?.spam || fb.spam,
       subscribers: lang?.subscribers || fb.subscribers,
+      community_chats: lang?.community_chats || fb.community_chats,
+      community_chat_open: lang?.community_chat_open || fb.community_chat_open,
+      community_chat_join: lang?.community_chat_join || fb.community_chat_join,
+      community_chat_request: lang?.community_chat_request || fb.community_chat_request,
+      community_chat_requested: lang?.community_chat_requested || fb.community_chat_requested,
+      community_chat_members: lang?.community_chat_members || fb.community_chat_members,
+      community_chat_voice: lang?.community_chat_voice || fb.community_chat_voice,
       successGroupUpdate: fb.successGroupUpdate,
       tobookmarks: lang?.tobookmarks || fb.tobookmarks,
       translate: lang?.translate || fb.translate,
@@ -1001,6 +1029,30 @@ export default function GroupProfileContent({ link }: { link: string }) {
     }
   };
 
+  const handleCommunityChat = async (chat: CommunityChatPreview) => {
+    if (!isAuthenticated) {
+      router.push(`/login?backurl=${encodeURIComponent(`/$${groupData?.slnk || link}`)}`);
+      return;
+    }
+
+    if (flag(chat.is_joined)) {
+      router.push(`/messages/${chat.hash}`);
+      return;
+    }
+
+    try {
+      const result = await AncialAPI.joinPublicChat<{ status?: 'joined' | 'requested'; hash?: string | null }>(chat.id);
+      if (result.status === 'requested') {
+        showNote({ content: strings.community_chat_requested, type: 'success', time: 4 });
+        return;
+      }
+      router.push(`/messages/${result.hash || chat.hash}`);
+    } catch (nextError) {
+      console.error('Failed to join community chat', nextError);
+      showNote({ content: strings.somethingwrong, type: 'error', time: 5 });
+    }
+  };
+
   const updateGroupMedia = async (field: 'cover' | 'img', file: File | null) => {
     if (!file || !groupData) return;
 
@@ -1277,6 +1329,56 @@ export default function GroupProfileContent({ link }: { link: string }) {
             </div>
 
             <div className="flex flex-col md:gap-3 md:w-80 lg:w-96 shrink-0 -mt-3 md:mt-0 rounded-b-3xl md:rounded-b-none overflow-hidden">
+              {isAuthenticated && (flag(groupData.is_creator) || flag(groupData.is_subscribed)) ? (
+                <CommunityChannelShell
+                  communityId={toNumber(groupData.id)}
+                  communityLink={String(groupData.slnk || link)}
+                  initialCanManage={flag(groupData.is_creator)}
+                />
+              ) : null}
+
+              {groupData.public_chats?.length ? (
+                <section className="flex flex-col gap-1.5 border-x border-zinc-600/30 bg-zinc-900 p-3 md:rounded-3xl md:border">
+                  <span className="text-lg font-thin text-zinc-300">{strings.community_chats}</span>
+                  <div className="flex flex-col gap-1.5">
+                    {groupData.public_chats.map((chat) => (
+                      <button
+                        key={String(chat.id)}
+                        type="button"
+                        onClick={() => void handleCommunityChat(chat)}
+                        className="flex cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-1.5 text-left duration-300 hover:bg-zinc-800 active:scale-95"
+                      >
+                        <div
+                          className="h-12 w-12 shrink-0 rounded-full bg-zinc-700 bg-cover bg-center"
+                          style={{ backgroundImage: `url('${chat.avatar || '/img/placeholders/user.png'}')` }}
+                        />
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate text-sm font-semibold text-zinc-100">
+                            {chat.title || strings.community_chats}
+                          </span>
+                          {chat.description ? (
+                            <span className="truncate text-xs text-zinc-400">{chat.description}</span>
+                          ) : null}
+                          <span className="flex items-center gap-1 text-xs text-zinc-500">
+                            <span>{Number(chat.members_count || 0)} {strings.community_chat_members}</span>
+                            {flag(chat.voice_enabled) ? (
+                              <span title={strings.community_chat_voice}>• 🎙</span>
+                            ) : null}
+                          </span>
+                        </div>
+                        <span className="shrink-0 rounded-3xl bg-purple-500 px-2 py-1 text-xs text-white">
+                          {flag(chat.is_joined)
+                            ? strings.community_chat_open
+                            : chat.join_policy === 'request'
+                              ? strings.community_chat_request
+                              : strings.community_chat_join}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
               {hasSubscribers ? (
                 <PeopleSection
                   borderClassName={hasOfficialGroups ? 'border-x' : 'border-x border-b rounded-b-3xl'}
