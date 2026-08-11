@@ -125,6 +125,38 @@ export const COMMUNITY_CHANNEL_RENDERERS: Record<CommunityChannelType, 'messages
 
 export const COMMUNITY_INVALIDATION_DELAY_MS = 150;
 
+export function communityStructureCacheKey(
+  communityId: number,
+  viewerId: number | string | null | undefined,
+): string {
+  const rawViewerId = String(viewerId ?? '').trim();
+  const normalizedViewerId = Number(rawViewerId);
+  let viewer = 'guest';
+
+  if (Number.isInteger(normalizedViewerId) && normalizedViewerId > 0) {
+    viewer = `user-${normalizedViewerId}`;
+  } else if (rawViewerId !== '' && rawViewerId !== '0') {
+    const safeViewerId = rawViewerId.replace(/[^a-z0-9_-]/gi, '').slice(0, 40);
+    viewer = `user-${safeViewerId || 'authenticated'}`;
+  }
+
+  return `community_structure_cache:v1:${viewer}:${communityId}`;
+}
+
+export function validateCachedCommunityStructure(
+  value: unknown,
+  communityId: number,
+): CommunityStructure | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Partial<CommunityStructure>;
+  if (Number(candidate.community_id || 0) !== communityId) return null;
+  if (!Array.isArray(candidate.categories) || !Array.isArray(candidate.channels)) return null;
+  if (!candidate.permissions || typeof candidate.permissions !== 'object' || Array.isArray(candidate.permissions)) return null;
+  if (candidate.highest_role_position !== null && candidate.highest_role_position !== undefined
+    && !Number.isFinite(Number(candidate.highest_role_position))) return null;
+  return candidate as CommunityStructure;
+}
+
 export function canCommunity(
   permissions: CommunityPermissionMap | null | undefined,
   permission: CommunityPermissionName,

@@ -6,14 +6,17 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } fro
 import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
 import { AncialAPI } from '../../../lib/api-v2';
+import { cache } from '../../../lib/cache.ts';
 import { globalWS } from '../../../lib/global-ws';
 import CommunityChannelList from './community-channel-list';
 import CommunityChannelView from './community-channel-view';
 import CommunityManageModal from './community-manage-modal';
 import {
   COMMUNITY_INVALIDATION_DELAY_MS,
+  communityStructureCacheKey,
   communityEventMatches,
   retainCommunityChannelSelection,
+  validateCachedCommunityStructure,
   type CommunityChannel,
   type CommunityStructure,
 } from '../lib/community-types';
@@ -22,6 +25,10 @@ type Props = {
   communityId: number;
   communityLink: string;
   initialCanManage: boolean;
+};
+
+type StatefulProps = Props & {
+  cacheKey: string;
 };
 
 const COMMUNITY_EVENTS = [
@@ -33,12 +40,31 @@ const COMMUNITY_EVENTS = [
   'community:link_request_changed',
 ];
 
-export default function CommunityChannelShell({ communityId, communityLink, initialCanManage }: Props) {
+export default function CommunityChannelShell(props: Props) {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading) {
+    return <div className="h-28 animate-pulse rounded-3xl border border-zinc-600/30 bg-zinc-900" />;
+  }
+
+  const viewerId = isAuthenticated ? (user?.id || 'authenticated') : null;
+  const cacheKey = communityStructureCacheKey(props.communityId, viewerId);
+  return <CommunityChannelShellState key={cacheKey} {...props} cacheKey={cacheKey} />;
+}
+
+function CommunityChannelShellState({ cacheKey, communityId, communityLink, initialCanManage }: StatefulProps) {
   const router = useRouter();
   const { lang } = useAuth();
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [structure, setStructure] = useState<CommunityStructure | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [structure, setStructure] = useState<CommunityStructure | null>(() => (
+    validateCachedCommunityStructure(
+      cache.get<unknown>(cacheKey, { category: 'groups', subcategory: 'profile' }),
+      communityId,
+    )
+  ));
+  const hasUsableStructureRef = useRef(structure !== null);
+  const [selectedId, setSelectedId] = useState<number | null>(() => (
+    retainCommunityChannelSelection(structure?.channels ?? [], null)
+  ));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -46,14 +72,18 @@ export default function CommunityChannelShell({ communityId, communityLink, init
   const loadStructure = useCallback(async () => {
     try {
       const next = await AncialAPI.communityStructure(communityId);
-      setStructure(next);
-      setSelectedId((current) => retainCommunityChannelSelection(next.channels, current));
+      const validated = validateCachedCommunityStructure(next, communityId);
+      if (!validated) throw new Error('Invalid community structure response');
+      hasUsableStructureRef.current = true;
+      setStructure(validated);
+      setSelectedId((current) => retainCommunityChannelSelection(validated.channels, current));
+      cache.set(cacheKey, validated, { category: 'groups', subcategory: 'profile' });
       setFailed(false);
     } catch (error) {
       console.error('Community channels loading failed', error);
-      setFailed(true);
+      if (!hasUsableStructureRef.current) setFailed(true);
     }
-  }, [communityId]);
+  }, [cacheKey, communityId]);
   const refreshStructure = useEffectEvent(() => void loadStructure());
 
   useEffect(() => {
