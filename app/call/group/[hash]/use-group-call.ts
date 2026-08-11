@@ -372,7 +372,7 @@ export function useGroupCall({
   }, [lang?.camera, selectedCameraId]);
 
   const join = useCallback(async () => {
-    if (joining || joinedRef.current) return;
+    if (joining || joinedRef.current) return joinedRef.current;
     setJoining(true);
     try {
       const mediaPromise = canPublish
@@ -403,6 +403,7 @@ export function useGroupCall({
         activity_url: activityUrl,
         activity_meta: { dialog_id: dialogId, title, group: true },
       });
+      return true;
     } catch (error) {
       console.error('Group call join failed', error);
       showNote({
@@ -411,6 +412,7 @@ export function useGroupCall({
         time: 5,
       });
       leave(false);
+      return false;
     } finally {
       setJoining(false);
     }
