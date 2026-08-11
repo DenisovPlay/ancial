@@ -1550,5 +1550,6 @@ export const en: Record<string, string> = {
   "community_allow": "Allow",
   "community_deny": "Deny",
   "community_permission_error": "You no longer have permission for this action",
-  "community_stale_error": "The data changed. The list was refreshed; try again."
+  "community_stale_error": "The data changed. The list was refreshed; try again.",
+  "voice_listen_only": "Listen only"
 };

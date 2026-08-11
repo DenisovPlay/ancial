@@ -123,6 +123,8 @@ export const COMMUNITY_CHANNEL_RENDERERS: Record<CommunityChannelType, 'messages
   voice: 'voice',
 };
 
+export const COMMUNITY_INVALIDATION_DELAY_MS = 150;
+
 export function canCommunity(
   permissions: CommunityPermissionMap | null | undefined,
   permission: CommunityPermissionName,
@@ -144,4 +146,18 @@ export function communityErrorKey(status: number): 'community_permission_error' 
   if (status === 403) return 'community_permission_error';
   if (status === 409) return 'community_stale_error';
   return 'community_save_error';
+}
+
+export function communityEventMatches(payload: unknown, communityId: number): boolean {
+  if (!payload || typeof payload !== 'object') return false;
+  const event = payload as { community_id?: number | string; data?: { community_id?: number | string } };
+  return Number(event.community_id ?? event.data?.community_id ?? 0) === communityId;
+}
+
+export function retainCommunityChannelSelection(
+  channels: Array<{ id: number }>,
+  selectedId: number | null,
+): number | null {
+  if (selectedId !== null && channels.some((channel) => channel.id === selectedId)) return selectedId;
+  return channels[0]?.id ?? null;
 }

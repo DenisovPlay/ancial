@@ -20,6 +20,12 @@ interface FriendItem {
   verify?: number;
 }
 
+interface ManagedCommunity {
+  id: number;
+  name: string;
+  slnk?: string;
+}
+
 interface CreateGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -40,14 +46,22 @@ export default function CreateGroupModal({
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [creating, setCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibility, setVisibility] = useState<'private' | 'public'>('private');
+  const [joinPolicy, setJoinPolicy] = useState<'invite' | 'open' | 'request'>('invite');
+  const [description, setDescription] = useState('');
+  const [communityId, setCommunityId] = useState('');
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [managedCommunities, setManagedCommunities] = useState<ManagedCommunity[]>([]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setTitle('');
-    setSelectedUserIds(new Set());
-    setSearchQuery('');
-    void fetchFriends();
-  }, [isOpen]);
+  const fetchManagedCommunities = async () => {
+    try {
+      const res = await AncialAPI.getManagedCommunities<{ communities?: ManagedCommunity[] }>();
+      setManagedCommunities(Array.isArray(res?.communities) ? res.communities : []);
+    } catch (err) {
+      console.error('Failed to load managed communities', err);
+      setManagedCommunities([]);
+    }
+  };
 
   const fetchFriends = async () => {
     setLoadingFriends(true);
@@ -70,6 +84,20 @@ export default function CreateGroupModal({
       setLoadingFriends(false);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setTitle('');
+    setSelectedUserIds(new Set());
+    setSearchQuery('');
+    setVisibility('private');
+    setJoinPolicy('invite');
+    setDescription('');
+    setCommunityId('');
+    setVoiceEnabled(true);
+    void fetchFriends();
+    void fetchManagedCommunities();
+  }, [isOpen]);
 
   const toggleSelectUser = (id: number) => {
     const next = new Set(selectedUserIds);
@@ -98,6 +126,11 @@ export default function CreateGroupModal({
         body: JSON.stringify({
           title: title.trim(),
           user_ids: Array.from(selectedUserIds),
+          visibility,
+          join_policy: visibility === 'private' ? 'invite' : joinPolicy,
+          community_id: communityId ? Number(communityId) : null,
+          description: description.trim(),
+          voice_enabled: voiceEnabled,
         }),
       });
 
@@ -144,6 +177,78 @@ export default function CreateGroupModal({
               className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-3 placeholder-zinc-600 text-white"
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/50 p-3">
+          <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
+            <span>{lang?.chat_visibility || 'Доступ к чату'}</span>
+            <select
+              value={visibility}
+              onChange={(event) => {
+                const nextVisibility = event.target.value === 'public' ? 'public' : 'private';
+                setVisibility(nextVisibility);
+                if (nextVisibility === 'private') setJoinPolicy('invite');
+              }}
+              className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900 px-3 text-white outline-none"
+            >
+              <option value="private">{lang?.chat_visibility_private || 'Приватный — только по приглашению'}</option>
+              <option value="public">{lang?.chat_visibility_public || 'Публичный — виден всем'}</option>
+            </select>
+          </label>
+
+          {visibility === 'public' ? (
+            <>
+              <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
+                <span>{lang?.chat_join_policy || 'Как вступать'}</span>
+                <select
+                  value={joinPolicy}
+                  onChange={(event) => setJoinPolicy(event.target.value === 'request' ? 'request' : 'open')}
+                  className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900 px-3 text-white outline-none"
+                >
+                  <option value="open">{lang?.chat_join_open || 'Свободный вход'}</option>
+                  <option value="request">{lang?.chat_join_request || 'По заявке'}</option>
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
+                <span>{lang?.chat_community || 'Сообщество'}</span>
+                <select
+                  value={communityId}
+                  onChange={(event) => setCommunityId(event.target.value)}
+                  className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900 px-3 text-white outline-none"
+                >
+                  <option value="">{lang?.chat_without_community || 'Без привязки к сообществу'}</option>
+                  {managedCommunities.map((community) => (
+                    <option key={community.id} value={community.id}>{community.name}</option>
+                  ))}
+                </select>
+              </label>
+
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                maxLength={500}
+                rows={3}
+                placeholder={lang?.chat_description_placeholder || 'Коротко опишите тему чата'}
+                className="resize-none rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 text-sm text-white outline-none placeholder:text-zinc-600"
+              />
+            </>
+          ) : null}
+
+          <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-300">
+            <span>{lang?.chat_voice_enabled || 'Групповые звонки'}</span>
+            <span className="flex h-6 items-center">
+              <span className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  checked={voiceEnabled}
+                  onChange={(event) => setVoiceEnabled(event.target.checked)}
+                  className="peer sr-only"
+                />
+                <span className="group h-6 w-10 rounded-full bg-zinc-800 duration-300 after:absolute after:left-0 after:top-0 after:flex after:h-6 after:w-6 after:items-center after:justify-center after:rounded-full after:bg-red-500 after:duration-300 peer-checked:after:translate-x-4 peer-checked:after:bg-green-500 peer-hover:after:scale-105" />
+              </span>
+            </span>
+          </label>
         </div>
 
         {/* Поиск */}

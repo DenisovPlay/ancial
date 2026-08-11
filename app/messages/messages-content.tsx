@@ -2,6 +2,7 @@
 'use client';
 
 import React, {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -26,6 +27,7 @@ import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
 import CreateGroupModal from './components/create-group-modal';
 import GroupInfoModal from './components/group-info-modal';
+import GroupVoiceRoomModal from './components/group-voice-room-modal';
 import MessageBubble from './components/message-bubble';
 import StickerPickerDropdownContent from './components/sticker-picker-dropdown-content';
 import {
@@ -212,6 +214,8 @@ export default function MessagesContent() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [createGroupModalOpen, setCreateGroupModalOpen] = useState(false);
   const [groupInfoModalOpen, setGroupInfoModalOpen] = useState(false);
+  const [groupVoiceModalOpen, setGroupVoiceModalOpen] = useState(false);
+  const [voiceRoomParticipantCount, setVoiceRoomParticipantCount] = useState(0);
   const [deleteDialogModalOpen, setDeleteDialogModalOpen] = useState(false);
   const [editMessageModalOpen, setEditMessageModalOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState<DialogMessage | null>(null);
@@ -321,6 +325,12 @@ export default function MessagesContent() {
   const fallbackForeignUser = mapDialogListItemToUser(dialogListItem);
   const effectiveForeignUser = mergeDialogUser(fallbackForeignUser, foreignUser);
   const isGroupDialog = selectedDialog?.type === 'group' || dialogListItem?.type === 'group';
+  const groupVoiceEnabled = isGroupDialog && !['0', 'false', 'off', 'no'].includes(
+    String(selectedDialog?.voice_enabled ?? dialogListItem?.voice_enabled ?? 1).toLowerCase(),
+  );
+  const handleVoiceRoomStatusChange = useCallback((participants: Array<{ user_id: number }>) => {
+    setVoiceRoomParticipantCount(participants.length);
+  }, []);
   const groupMembersCount = selectedDialog?.members?.length || (selectedDialog as any)?.members_count || (dialogListItem as any)?.members_count || 0;
 
   const dialogTitle = isGroupDialog
@@ -575,6 +585,8 @@ export default function MessagesContent() {
     setSettingsModalOpen(false);
     setDeleteDialogModalOpen(false);
     setEditMessageModalOpen(false);
+    setGroupVoiceModalOpen(false);
+    setVoiceRoomParticipantCount(0);
     setEditingMessage(null);
     setEditingValue('');
     setActiveDialogImageKey(null);
@@ -2448,6 +2460,28 @@ export default function MessagesContent() {
                         </button>
                       )}
 
+                      {groupVoiceEnabled && (
+                        <button
+                          id="group-voice-button"
+                          type="button"
+                          onClick={() => setGroupVoiceModalOpen(true)}
+                          aria-label={lang?.voice_room_title || 'Голосовая комната'}
+                          className={cn(
+                            'relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:border lg:border-zinc-600/30 lg:shadow',
+                            voiceRoomParticipantCount > 0
+                              ? 'bg-green-600 hover:bg-green-500'
+                              : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 hover:bg-zinc-700',
+                          )}
+                        >
+                          <Icon name="IC-call" className="h-7 w-7 fill-white" />
+                          {voiceRoomParticipantCount > 0 && (
+                            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-black bg-purple-600 px-1 text-[10px] font-bold text-white">
+                              {voiceRoomParticipantCount}
+                            </span>
+                          )}
+                        </button>
+                      )}
+
                       <Dropdown
                         position="bottom"
                         align="end"
@@ -2959,6 +2993,17 @@ export default function MessagesContent() {
         }}
       />
 
+      {selectedDialog && selectedDialog.type === 'group' && groupVoiceEnabled && (
+        <GroupVoiceRoomModal
+          isOpen={groupVoiceModalOpen}
+          onClose={() => setGroupVoiceModalOpen(false)}
+          dialogId={Number(selectedDialog.id)}
+          title={selectedDialog.title || (lang?.group_chat || 'Групповой чат')}
+          members={selectedDialog.members || []}
+          onStatusChange={handleVoiceRoomStatusChange}
+        />
+      )}
+
       {selectedDialog && selectedDialog.type === 'group' && (
         <GroupInfoModal
           isOpen={groupInfoModalOpen}
@@ -2969,7 +3014,12 @@ export default function MessagesContent() {
           inviteCode={selectedDialog.invite_code || ''}
           myRole={(selectedDialog.my_role as any) || 'member'}
           members={selectedDialog.members || []}
-          onGroupUpdated={(partial) => {
+          visibility={selectedDialog.visibility}
+          joinPolicy={selectedDialog.join_policy}
+          communityId={selectedDialog.community_id}
+          description={selectedDialog.description}
+          voiceEnabled={selectedDialog.voice_enabled}
+          onGroupUpdated={() => {
             void reloadCurrentDialogMeta();
             void loadDialogs({ force: true });
             void loadMessagesNewer(dialogSessionRef.current);

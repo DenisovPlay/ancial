@@ -1550,5 +1550,6 @@ export const ru: Record<string, string> = {
     "community_allow": "Разрешить",
     "community_deny": "Запретить",
     "community_permission_error": "У вас больше нет прав на это действие",
-    "community_stale_error": "Данные изменились. Список обновлён, повторите действие."
+    "community_stale_error": "Данные изменились. Список обновлён, повторите действие.",
+    "voice_listen_only": "Только слушать"
 };

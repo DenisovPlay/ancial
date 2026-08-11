@@ -548,8 +548,64 @@ export class AncialAPI {
     return this.request<T>(`/messages/UpdateBackground.php?diid=${dialogId}&img=${encodeURIComponent(imageUrl)}`);
   }
 
+  static async getPublicChats<T = unknown>(params: { communityId?: string | number; query?: string } = {}): Promise<T> {
+    const query = new URLSearchParams();
+    if (params.communityId) query.set('community_id', String(params.communityId));
+    if (params.query?.trim()) query.set('q', params.query.trim());
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.request<T>(`/messages/PublicChats.php${suffix}`);
+  }
+
+  static async joinPublicChat<T = unknown>(dialogId: string | number): Promise<T> {
+    return this.request<T>('/messages/JoinPublic.php', {
+      method: 'POST',
+      body: JSON.stringify({ dialog_id: dialogId }),
+    });
+  }
+
+  static async getChatJoinRequests<T = unknown>(dialogId: string | number): Promise<T> {
+    return this.request<T>(`/messages/JoinRequests.php?dialog_id=${encodeURIComponent(String(dialogId))}`);
+  }
+
+  static async moderateChatJoinRequest<T = unknown>(
+    dialogId: string | number,
+    requestId: string | number,
+    action: 'approve' | 'reject',
+  ): Promise<T> {
+    return this.request<T>('/messages/JoinRequests.php', {
+      method: 'POST',
+      body: JSON.stringify({ dialog_id: dialogId, request_id: requestId, action }),
+    });
+  }
+
   static async getTurnConfig<T = unknown>(): Promise<T> {
     return this.request<T>('/calls/Turn.php');
+  }
+
+  static async updatePresence<T = unknown>(
+    params: Record<string, unknown>,
+    options: Pick<RequestInit, 'keepalive'> = {},
+  ): Promise<T> {
+    return this.request<T>('/presence/Update.php', {
+      method: 'POST',
+      body: JSON.stringify(params),
+      ...options,
+    });
+  }
+
+  static async getPresence<T = unknown>(userIds: Array<string | number>): Promise<T> {
+    return this.request<T>(`/presence/Status.php?ids=${encodeURIComponent(userIds.join(','))}`);
+  }
+
+  static async getPresencePrivacy<T = unknown>(): Promise<T> {
+    return this.request<T>('/presence/Privacy.php');
+  }
+
+  static async updatePresencePrivacy<T = unknown>(params: object): Promise<T> {
+    return this.request<T>('/presence/Privacy.php', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
   }
 
   // --- GROUPS ---
@@ -581,6 +637,10 @@ export class AncialAPI {
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
     return this.request<T>(`/groups/UpdateInfo.php${queryString}`, { method: 'POST', body });
+  }
+
+  static async getManagedCommunities<T = unknown>(): Promise<T> {
+    return this.request<T>('/groups/GetManaged.php');
   }
 
   // --- FRIENDS ---
@@ -969,4 +1029,3 @@ export class AncialAPI {
     });
   }
 }
-

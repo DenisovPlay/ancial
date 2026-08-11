@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 
 import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
@@ -11,7 +11,13 @@ import { globalWS } from '../../../lib/global-ws';
 import CommunityChannelList from './community-channel-list';
 import CommunityChannelView from './community-channel-view';
 import CommunityManageModal from './community-manage-modal';
-import type { CommunityChannel, CommunityStructure } from '../lib/community-types';
+import {
+  COMMUNITY_INVALIDATION_DELAY_MS,
+  communityEventMatches,
+  retainCommunityChannelSelection,
+  type CommunityChannel,
+  type CommunityStructure,
+} from '../lib/community-types';
 
 const GroupVoiceRoomModal = dynamic(() => import('../../../messages/components/group-voice-room-modal'), {
   ssr: false,
@@ -47,35 +53,35 @@ export default function CommunityChannelShell({ communityId, communityLink, init
     try {
       const next = await AncialAPI.communityStructure(communityId);
       setStructure(next);
-      setSelectedId((current) => current !== null && next.channels.some((channel) => channel.id === current)
-        ? current
-        : next.channels[0]?.id ?? null);
+      setSelectedId((current) => retainCommunityChannelSelection(next.channels, current));
+      setVoiceChannel((current) => current && next.channels.some((channel) => channel.id === current.id)
+        ? next.channels.find((channel) => channel.id === current.id) ?? null
+        : null);
       setFailed(false);
     } catch (error) {
       console.error('Community channels loading failed', error);
       setFailed(true);
     }
   }, [communityId]);
+  const refreshStructure = useEffectEvent(() => void loadStructure());
 
   useEffect(() => {
-    const timer = setTimeout(() => void loadStructure(), 0);
+    const timer = setTimeout(refreshStructure, 0);
     return () => clearTimeout(timer);
-  }, [loadStructure]);
+  }, []);
 
   useEffect(() => {
     const invalidate = (raw?: unknown) => {
-      const payload = (raw || {}) as { community_id?: number | string; data?: { community_id?: number | string } };
-      const eventCommunityId = Number(payload.community_id ?? payload.data?.community_id ?? 0);
-      if (eventCommunityId !== communityId) return;
+      if (!communityEventMatches(raw, communityId)) return;
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = setTimeout(() => void loadStructure(), 150);
+      refreshTimerRef.current = setTimeout(refreshStructure, COMMUNITY_INVALIDATION_DELAY_MS);
     };
     COMMUNITY_EVENTS.forEach((event) => globalWS.addDialogListener(event, invalidate));
     return () => {
       COMMUNITY_EVENTS.forEach((event) => globalWS.removeDialogListener(event, invalidate));
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
-  }, [communityId, loadStructure]);
+  }, [communityId]);
 
   useEffect(() => {
     if (!voiceChannel) return;
@@ -159,6 +165,7 @@ export default function CommunityChannelShell({ communityId, communityLink, init
         {content}
       </Modal>
       <GroupVoiceRoomModal
+        canSpeak={voiceChannel?.permissions.speak_voice === true}
         dialogId={voiceChannel?.id ?? 0}
         isOpen={voiceChannel !== null}
         members={[]}

@@ -5,6 +5,7 @@ import "./globals.css";
 import IconSprite from './components/icon-sprite';
 import MainContent from './components/main-content';
 import Navigation from './components/navigation';
+import RichPresenceReporter from './components/rich-presence-reporter';
 import SWRegister from './components/sw-register';
 import { AuthProvider } from './context/AuthContext';
 import { GlobalWSProvider } from './context/GlobalWSProvider';
@@ -96,6 +97,7 @@ export default function RootLayout({
           <AuthProvider>
             <GlobalWSProvider>
               <PulsePlayerProvider>
+                <RichPresenceReporter />
                 <Navigation />
                 <MainContent>
                   {children}

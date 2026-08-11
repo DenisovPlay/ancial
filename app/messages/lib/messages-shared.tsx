@@ -22,6 +22,11 @@ export type DialogListItem = {
   title?: string | null;
   avatar?: string | null;
   invite_code?: string | null;
+  visibility?: 'private' | 'unlisted' | 'public' | string | null;
+  join_policy?: 'invite' | 'open' | 'request' | string | null;
+  community_id?: number | string | null;
+  description?: string | null;
+  voice_enabled?: boolean | number | string | null;
   username?: string | null;
   Mmessage?: string | null;
   Mstatus?: number | string | null;
@@ -41,6 +46,11 @@ export type DialogMeta = {
   title?: string | null;
   avatar?: string | null;
   invite_code?: string | null;
+  visibility?: 'private' | 'unlisted' | 'public' | string | null;
+  join_policy?: 'invite' | 'open' | 'request' | string | null;
+  community_id?: number | string | null;
+  description?: string | null;
+  voice_enabled?: boolean | number | string | null;
   owner_id?: number | string | null;
   my_role?: 'owner' | 'admin' | 'member' | string | null;
   members?: GroupMember[] | null;

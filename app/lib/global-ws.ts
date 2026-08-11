@@ -6,6 +6,7 @@ import { cache } from './cache.ts';
 export type NetStatusState = 'hidden' | 'reconnecting';
 
 type WsPayload = {
+  community_id?: number | string;
   type?: string;
   event?: string;
   user_id?: number | string;
@@ -346,6 +347,10 @@ function handleMessage(payload: WsPayload) {
       authSent = false;
       return;
     case 'error':
+      if (payload.code && payload.code !== 'not_authed') {
+        notifyEvent('ws:error', payload);
+        return;
+      }
       isAuthed = false;
       authSent = false;
       try {
@@ -355,7 +360,7 @@ function handleMessage(payload: WsPayload) {
       }
       return;
     case 'subscribed':
-      notifyEvent('subscribed');
+      notifyEvent('subscribed', payload);
       return;
     case 'call:signal':
       notifyEvent('call:signal', { data: payload });

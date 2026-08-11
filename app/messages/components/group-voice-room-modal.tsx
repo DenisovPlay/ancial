@@ -35,6 +35,7 @@ type VoiceEnvelope = {
 };
 
 type Props = {
+  canSpeak?: boolean;
   dialogId: number;
   isOpen: boolean;
   members: GroupMember[];
@@ -64,6 +65,7 @@ function RemoteAudio({ muted, stream }: { muted: boolean; stream: MediaStream })
 }
 
 export default function GroupVoiceRoomModal({
+  canSpeak = true,
   dialogId,
   isOpen,
   members,
@@ -319,18 +321,20 @@ export default function GroupVoiceRoomModal({
     if (joining || joinedRef.current) return;
     setJoining(true);
     try {
-      const mediaPromise = navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: false,
-      });
+      const mediaPromise = canSpeak
+        ? navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            video: false,
+          })
+        : Promise.resolve(new MediaStream());
       const turnPromise = AncialAPI.getTurnConfig<{ iceServers?: RTCIceServer[] }>();
       const [stream, turn] = await Promise.all([mediaPromise, turnPromise]);
       localStreamRef.current = stream;
       iceServersRef.current = Array.isArray(turn?.iceServers) ? turn.iceServers : [];
       joinedRef.current = true;
       setJoined(true);
-      setMicEnabled(true);
-      sendSignal({ kind: 'join' });
+      setMicEnabled(canSpeak);
+      sendSignal({ kind: 'join', mic_enabled: canSpeak });
       setVoicePresence({
         activity_type: 'call',
         activity_key: String(dialogId),
@@ -352,6 +356,7 @@ export default function GroupVoiceRoomModal({
   };
 
   const toggleMicrophone = () => {
+    if (!canSpeak) return;
     const next = !micEnabled;
     localStreamRef.current?.getAudioTracks().forEach((track) => {
       track.enabled = next;
@@ -419,9 +424,10 @@ export default function GroupVoiceRoomModal({
             <button
               type="button"
               onClick={toggleMicrophone}
+              disabled={!canSpeak}
               className={`cursor-pointer rounded-3xl border p-3 text-sm font-semibold text-white duration-300 active:scale-95 ${micEnabled ? 'border-zinc-600/30 bg-zinc-700 hover:bg-zinc-600' : 'border-red-400/30 bg-red-600 hover:bg-red-500'}`}
             >
-              {micEnabled ? (lang?.voice_mute || 'Микрофон') : (lang?.voice_unmute || 'Включить')}
+              {!canSpeak ? (lang?.voice_listen_only || 'Только слушать') : micEnabled ? (lang?.voice_mute || 'Микрофон') : (lang?.voice_unmute || 'Включить')}
             </button>
             <button
               type="button"

@@ -9,6 +9,7 @@ import { AncialAPI } from '../../lib/api-v2';
 import { uploadImage } from '../../lib/upload';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
 import { SITE_URL } from '../../config';
+import { globalWS } from '../../lib/global-ws';
 
 interface GroupMember {
   id: number;
@@ -30,11 +31,31 @@ interface GroupInfoModalProps {
   inviteCode: string;
   myRole: 'owner' | 'admin' | 'member';
   members: GroupMember[];
+  visibility?: 'private' | 'unlisted' | 'public' | string | null;
+  joinPolicy?: 'invite' | 'open' | 'request' | string | null;
+  communityId?: number | string | null;
+  description?: string | null;
+  voiceEnabled?: boolean | number | string | null;
   onGroupUpdated: (partial?: { avatar?: string; title?: string }) => void;
   onLeave?: () => void;
 }
 
-type ModalView = 'main' | 'add_members' | 'edit_title';
+type ModalView = 'main' | 'add_members' | 'edit_title' | 'community_settings';
+
+interface ManagedCommunity {
+  id: number;
+  name: string;
+}
+
+interface ChatJoinRequest {
+  id: number;
+  user_id: number;
+  username?: string;
+  fname?: string;
+  lname?: string;
+  img?: string;
+  message?: string | null;
+}
 
 export default function GroupInfoModal({
   isOpen,
@@ -45,6 +66,11 @@ export default function GroupInfoModal({
   inviteCode: initialInviteCode,
   myRole,
   members,
+  visibility: initialVisibility = 'private',
+  joinPolicy: initialJoinPolicy = 'invite',
+  communityId: initialCommunityId = null,
+  description: initialDescription = '',
+  voiceEnabled: initialVoiceEnabled = true,
   onGroupUpdated,
   onLeave,
 }: GroupInfoModalProps) {
@@ -63,6 +89,17 @@ export default function GroupInfoModal({
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [selectedAddUserIds, setSelectedAddUserIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibility, setVisibility] = useState<'private' | 'public'>(initialVisibility === 'public' ? 'public' : 'private');
+  const [joinPolicy, setJoinPolicy] = useState<'invite' | 'open' | 'request'>(
+    initialJoinPolicy === 'request' ? 'request' : initialJoinPolicy === 'open' ? 'open' : 'invite',
+  );
+  const [communityId, setCommunityId] = useState(initialCommunityId ? String(initialCommunityId) : '');
+  const [description, setDescription] = useState(initialDescription || '');
+  const [voiceEnabled, setVoiceEnabled] = useState(
+    initialVoiceEnabled === true || initialVoiceEnabled === 1 || initialVoiceEnabled === '1',
+  );
+  const [managedCommunities, setManagedCommunities] = useState<ManagedCommunity[]>([]);
+  const [joinRequests, setJoinRequests] = useState<ChatJoinRequest[]>([]);
 
   const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
   const currentUserId = user?.id ? Number(user.id) : 0;
@@ -75,8 +112,101 @@ export default function GroupInfoModal({
       setInviteCode(initialInviteCode);
       setSelectedAddUserIds(new Set());
       setSearchQuery('');
+      setVisibility(initialVisibility === 'public' ? 'public' : 'private');
+      setJoinPolicy(initialJoinPolicy === 'request' ? 'request' : initialJoinPolicy === 'open' ? 'open' : 'invite');
+      setCommunityId(initialCommunityId ? String(initialCommunityId) : '');
+      setDescription(initialDescription || '');
+      setVoiceEnabled(initialVoiceEnabled === true || initialVoiceEnabled === 1 || initialVoiceEnabled === '1');
     }
-  }, [isOpen, title, avatar, initialInviteCode]);
+  }, [isOpen, title, avatar, initialInviteCode, initialVisibility, initialJoinPolicy, initialCommunityId, initialDescription, initialVoiceEnabled]);
+
+  useEffect(() => {
+    if (!isOpen || !isAdminOrOwner) return;
+
+    const refreshRequests = (payload?: unknown) => {
+      const eventPayload = payload && typeof payload === 'object'
+        ? payload as { data?: { dialog_id?: number | string }; dialog_id?: number | string }
+        : null;
+      const eventDialogId = Number(eventPayload?.data?.dialog_id ?? eventPayload?.dialog_id ?? 0);
+      if (eventDialogId > 0 && eventDialogId !== dialogId) return;
+
+      void AncialAPI.getChatJoinRequests<{ requests?: ChatJoinRequest[] }>(dialogId)
+        .then((result) => setJoinRequests(Array.isArray(result?.requests) ? result.requests : []))
+        .catch(() => { });
+    };
+
+    globalWS.addDialogListener('chat:join_request', refreshRequests);
+    globalWS.addDialogListener('chat:join_request_resolved', refreshRequests);
+    return () => {
+      globalWS.removeDialogListener('chat:join_request', refreshRequests);
+      globalWS.removeDialogListener('chat:join_request_resolved', refreshRequests);
+    };
+  }, [dialogId, isAdminOrOwner, isOpen]);
+
+  const openCommunitySettings = async () => {
+    setView('community_settings');
+    const [communitiesResult, requestsResult] = await Promise.allSettled([
+      myRole === 'owner'
+        ? AncialAPI.getManagedCommunities<{ communities?: ManagedCommunity[] }>()
+        : Promise.resolve({ communities: [] }),
+      AncialAPI.getChatJoinRequests<{ requests?: ChatJoinRequest[] }>(dialogId),
+    ]);
+    setManagedCommunities(
+      communitiesResult.status === 'fulfilled' && Array.isArray(communitiesResult.value?.communities)
+        ? communitiesResult.value.communities
+        : [],
+    );
+    setJoinRequests(
+      requestsResult.status === 'fulfilled' && Array.isArray(requestsResult.value?.requests)
+        ? requestsResult.value.requests
+        : [],
+    );
+  };
+
+  const moderateJoinRequest = async (requestId: number, action: 'approve' | 'reject') => {
+    setLoadingAction(true);
+    try {
+      await AncialAPI.moderateChatJoinRequest(dialogId, requestId, action);
+      setJoinRequests((current) => current.filter((request) => request.id !== requestId));
+      showNote({
+        content: action === 'approve'
+          ? (lang?.chat_request_approved || 'Заявка одобрена')
+          : (lang?.chat_request_rejected || 'Заявка отклонена'),
+        type: 'success',
+        time: 3,
+      });
+      onGroupUpdated();
+    } catch (err: any) {
+      showNote({ content: err?.message || (lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const saveCommunitySettings = async () => {
+    setLoadingAction(true);
+    try {
+      await AncialAPI.request('/messages/GroupAction.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          dialog_id: dialogId,
+          action: 'update_community_settings',
+          visibility,
+          join_policy: visibility === 'private' ? 'invite' : joinPolicy,
+          community_id: communityId ? Number(communityId) : null,
+          description: description.trim(),
+          voice_enabled: voiceEnabled,
+        }),
+      });
+      showNote({ content: lang?.chat_settings_saved || 'Настройки чата сохранены', type: 'success', time: 3 });
+      setView('main');
+      onGroupUpdated();
+    } catch (err: any) {
+      showNote({ content: err?.message || (lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
+    } finally {
+      setLoadingAction(false);
+    }
+  };
 
   const fetchFriends = async () => {
     setLoadingFriends(true);
@@ -310,6 +440,8 @@ export default function GroupInfoModal({
           ? (lang?.add_members || 'Добавление участников')
           : view === 'edit_title'
             ? (lang?.edit_chat || 'Изменить чат')
+            : view === 'community_settings'
+              ? (lang?.chat_settings || 'Настройки доступа')
             : ''
       }
       bodyClassName="!overflow-hidden p-3 pt-14 pb-3"
@@ -398,6 +530,17 @@ export default function GroupInfoModal({
                     <use href="#IC-edit"></use>
                   </svg>
                   <span className="text-sm sm:text-md">{lang?.edit_action || 'Изменить'}</span>
+                </button>
+              )}
+              {isAdminOrOwner && (
+                <button
+                  type="button"
+                  onClick={() => void openCommunitySettings()}
+                  className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
+                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
+                    <use href="#IC-settings"></use>
+                  </svg>
+                  <span className="text-sm sm:text-md">{lang?.chat_settings || 'Доступ'}</span>
                 </button>
               )}
               <button
@@ -541,6 +684,128 @@ export default function GroupInfoModal({
               >
                 {loadingAction ? (lang?.saving || 'Сохранение...') : (lang?.save || 'Сохранить')}
               </button>
+            </div>
+          </div>
+        )}
+
+        {view === 'community_settings' && (
+          <div className="flex flex-col gap-3">
+            {myRole === 'owner' ? (
+              <>
+            <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
+              <span>{lang?.chat_visibility || 'Доступ к чату'}</span>
+              <select
+                value={visibility}
+                onChange={(event) => {
+                  const nextVisibility = event.target.value === 'public' ? 'public' : 'private';
+                  setVisibility(nextVisibility);
+                  if (nextVisibility === 'private') setJoinPolicy('invite');
+                }}
+                className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 outline-none"
+              >
+                <option value="private">{lang?.chat_visibility_private || 'Приватный — только по приглашению'}</option>
+                <option value="public">{lang?.chat_visibility_public || 'Публичный — виден всем'}</option>
+              </select>
+            </label>
+
+            {visibility === 'public' ? (
+              <>
+                <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
+                  <span>{lang?.chat_join_policy || 'Как вступать'}</span>
+                  <select
+                    value={joinPolicy}
+                    onChange={(event) => setJoinPolicy(event.target.value === 'request' ? 'request' : 'open')}
+                    className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 outline-none"
+                  >
+                    <option value="open">{lang?.chat_join_open || 'Свободный вход'}</option>
+                    <option value="request">{lang?.chat_join_request || 'По заявке'}</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
+                  <span>{lang?.chat_community || 'Сообщество'}</span>
+                  <select
+                    value={communityId}
+                    onChange={(event) => setCommunityId(event.target.value)}
+                    className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 outline-none"
+                  >
+                    <option value="">{lang?.chat_without_community || 'Без привязки к сообществу'}</option>
+                    {managedCommunities.map((community) => (
+                      <option key={community.id} value={community.id}>{community.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  maxLength={500}
+                  rows={4}
+                  placeholder={lang?.chat_description_placeholder || 'Коротко опишите тему чата'}
+                  className="resize-none rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-sm outline-none placeholder:text-zinc-600"
+                />
+              </>
+            ) : null}
+
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-sm text-zinc-300">
+              <span>{lang?.chat_voice_enabled || 'Групповые звонки'}</span>
+              <span className="flex h-6 items-center">
+                <span className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={voiceEnabled}
+                    onChange={(event) => setVoiceEnabled(event.target.checked)}
+                    className="peer sr-only"
+                  />
+                  <span className="group h-6 w-10 rounded-full bg-zinc-800 duration-300 after:absolute after:left-0 after:top-0 after:flex after:h-6 after:w-6 after:items-center after:justify-center after:rounded-full after:bg-red-500 after:duration-300 peer-checked:after:translate-x-4 peer-checked:after:bg-green-500 peer-hover:after:scale-105" />
+                </span>
+              </span>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => void saveCommunitySettings()}
+              disabled={loadingAction}
+              className="w-full cursor-pointer rounded-3xl border border-zinc-600/30 bg-purple-600 p-3 text-sm text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50"
+            >
+              {loadingAction ? (lang?.saving || 'Сохранение...') : (lang?.save || 'Сохранить')}
+            </button>
+              </>
+            ) : null}
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm text-zinc-300">{lang?.chat_join_requests || 'Заявки на вступление'}</span>
+              {joinRequests.length ? joinRequests.map((request) => (
+                <div key={request.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800 p-1.5">
+                  <img
+                    src={normalizeAssetUrl(request.img, FALLBACK_AVATAR)}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
+                  />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-sm">{`${request.fname || ''} ${request.lname || ''}`.trim() || request.username}</span>
+                    {request.message ? <span className="truncate text-xs text-zinc-400">{request.message}</span> : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void moderateJoinRequest(request.id, 'approve')}
+                    disabled={loadingAction}
+                    aria-label={lang?.approve || 'Одобрить'}
+                    className="h-9 w-9 cursor-pointer rounded-full bg-emerald-600 text-lg duration-300 active:scale-95 disabled:opacity-50"
+                  >✓</button>
+                  <button
+                    type="button"
+                    onClick={() => void moderateJoinRequest(request.id, 'reject')}
+                    disabled={loadingAction}
+                    aria-label={lang?.decline || 'Отклонить'}
+                    className="h-9 w-9 cursor-pointer rounded-full bg-red-600 text-lg duration-300 active:scale-95 disabled:opacity-50"
+                  >×</button>
+                </div>
+              )) : (
+                <span className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-xs text-zinc-400">
+                  {lang?.chat_join_requests_empty || 'Новых заявок нет'}
+                </span>
+              )}
             </div>
           </div>
         )}

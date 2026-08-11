@@ -19,6 +19,26 @@ function hasValue(value: string | null | undefined) {
   return Boolean(value && value.trim() !== '' && value.trim() !== '0');
 }
 
+type PresenceVisibility = 'everyone' | 'friends' | 'nobody';
+
+interface PresencePrivacy {
+  online_visibility: PresenceVisibility;
+  page_visibility: PresenceVisibility;
+  music_visibility: PresenceVisibility;
+  chat_visibility: PresenceVisibility;
+  call_visibility: PresenceVisibility;
+  allow_call_join: PresenceVisibility;
+}
+
+const DEFAULT_PRESENCE_PRIVACY: PresencePrivacy = {
+  online_visibility: 'friends',
+  page_visibility: 'nobody',
+  music_visibility: 'friends',
+  chat_visibility: 'nobody',
+  call_visibility: 'friends',
+  allow_call_join: 'friends',
+};
+
 function guessNoteType(responseText: string) {
   const normalized = responseText.toLowerCase();
   if (
@@ -94,6 +114,7 @@ export default function SecuritySettingsPage() {
   const [isSavingContacts, setIsSavingContacts] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
+  const [presencePrivacy, setPresencePrivacy] = useState<PresencePrivacy>(DEFAULT_PRESENCE_PRIVACY);
 
   useEffect(() => {
     if (user) {
@@ -104,6 +125,19 @@ export default function SecuritySettingsPage() {
       setGroupAddPrivacy(user.group_add_privacy !== undefined ? Number(user.group_add_privacy) : 0);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let active = true;
+    void AncialAPI.getPresencePrivacy<PresencePrivacy>()
+      .then((privacy) => {
+        if (active) setPresencePrivacy(privacy);
+      })
+      .catch(() => { });
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -259,11 +293,14 @@ export default function SecuritySettingsPage() {
     setIsSavingPrivacy(true);
 
     try {
-      await AncialAPI.updateProfile({
-        searchshow: searchShow ? '1' : '2',
-        msgopen: messagesOpen ? '1' : '2',
-        group_add_privacy: String(groupAddPrivacy),
-      });
+      await Promise.all([
+        AncialAPI.updateProfile({
+          searchshow: searchShow ? '1' : '2',
+          msgopen: messagesOpen ? '1' : '2',
+          group_add_privacy: String(groupAddPrivacy),
+        }),
+        AncialAPI.updatePresencePrivacy(presencePrivacy),
+      ]);
 
       showNote({
         content: lang?.informupdated || 'Информация обновлена',
@@ -543,6 +580,34 @@ export default function SecuritySettingsPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/30 p-3">
+            <span className="text-lg text-zinc-200">{lang?.presence_privacy_title || 'Видимость активности'}</span>
+            {([
+              ['online_visibility', lang?.presence_online_visibility || 'Статус в сети'],
+              ['page_visibility', lang?.presence_page_visibility || 'Просматриваемая страница'],
+              ['music_visibility', lang?.presence_music_visibility || 'Прослушиваемая музыка'],
+              ['chat_visibility', lang?.presence_chat_visibility || 'Активность в чатах'],
+              ['call_visibility', lang?.presence_call_visibility || 'Участие в звонках'],
+              ['allow_call_join', lang?.presence_call_join_visibility || 'Кто может подключаться к звонкам'],
+            ] as Array<[keyof PresencePrivacy, string]>).map(([key, label]) => (
+              <label key={key} className="flex flex-col gap-1.5 text-sm text-zinc-300 sm:flex-row sm:items-center sm:justify-between">
+                <span>{label}</span>
+                <select
+                  value={presencePrivacy[key]}
+                  onChange={(event) => setPresencePrivacy((current) => ({
+                    ...current,
+                    [key]: event.target.value as PresenceVisibility,
+                  }))}
+                  className="h-10 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 text-white outline-none"
+                >
+                  <option value="everyone">{lang?.privacy_everyone || 'Все пользователи'}</option>
+                  <option value="friends">{lang?.privacy_friends || 'Только друзья'}</option>
+                  <option value="nobody">{lang?.privacy_nobody || 'Никто'}</option>
+                </select>
+              </label>
+            ))}
           </div>
 
           <button

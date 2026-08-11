@@ -3,6 +3,9 @@ import {
   COMMUNITY_CHANNEL_RENDERERS,
   canCommunity,
   communityErrorKey,
+  communityEventMatches,
+  COMMUNITY_INVALIDATION_DELAY_MS,
+  retainCommunityChannelSelection,
   visibleManagementTabs,
 } from './community-types.ts';
 
@@ -23,5 +26,12 @@ assert.deepEqual(Object.keys(COMMUNITY_CHANNEL_RENDERERS).sort(), ['announcement
 assert.equal(communityErrorKey(403), 'community_permission_error');
 assert.equal(communityErrorKey(409), 'community_stale_error');
 assert.equal(communityErrorKey(500), 'community_save_error');
+assert.equal(communityEventMatches({ community_id: 7 }, 7), true);
+assert.equal(communityEventMatches({ data: { community_id: '7' } }, 7), true);
+assert.equal(communityEventMatches({ community_id: 8 }, 7), false);
+assert.equal(retainCommunityChannelSelection([{ id: 2 }, { id: 3 }], 3), 3);
+assert.equal(retainCommunityChannelSelection([{ id: 2 }], 3), 2);
+assert.equal(retainCommunityChannelSelection([], 3), null);
+assert.equal(COMMUNITY_INVALIDATION_DELAY_MS, 150);
 
 console.log('community client permissions: ok');
