@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
@@ -9,14 +10,15 @@ import type { CommunityMember, CommunityRole } from '../lib/community-types';
 import { communityErrorText } from '../lib/community-error';
 
 type Props = { communityId: number; members: CommunityMember[]; onChanged: () => Promise<void>; roles: CommunityRole[] };
+type PendingModeration = { action: 'ban' | 'kick'; userId: number };
 
 export default function CommunityModeration({ communityId, members, onChanged, roles }: Props) {
   const { lang } = useAuth();
   const { showNote } = useNotification();
   const [selectedRoles, setSelectedRoles] = useState<Record<number, number>>({});
+  const [pendingModeration, setPendingModeration] = useState<PendingModeration | null>(null);
 
   const moderate = async (action: 'mute' | 'unmute' | 'kick' | 'ban', userId: number) => {
-    if ((action === 'kick' || action === 'ban') && !window.confirm(lang?.community_moderation_confirm || '')) return;
     try {
       await AncialAPI.moderateCommunity({ community_id: communityId, action, user_id: userId, ...(action === 'mute' ? { duration_seconds: 3600 } : {}) });
       await onChanged();
@@ -25,6 +27,12 @@ export default function CommunityModeration({ communityId, members, onChanged, r
       console.error('Community moderation failed', error);
       showNote({ content: communityErrorText(error, lang), type: 'error', time: 5 });
     }
+  };
+
+  const confirmModeration = () => {
+    const pending = pendingModeration;
+    setPendingModeration(null);
+    if (pending) void moderate(pending.action, pending.userId);
   };
 
   const changeRole = async (action: 'assign' | 'remove', userId: number, roleId: number) => {
@@ -56,12 +64,25 @@ export default function CommunityModeration({ communityId, members, onChanged, r
               </select>
               {selectedRoles[member.id] ? <button type="button" onClick={() => void changeRole('assign', member.id, selectedRoles[member.id])} className="cursor-pointer rounded-3xl bg-purple-600 px-3 py-1.5 text-xs text-white duration-300 hover:bg-purple-500 active:scale-95">{lang?.add}</button> : null}
               <button type="button" onClick={() => void moderate(member.is_muted ? 'unmute' : 'mute', member.id)} className="cursor-pointer rounded-3xl bg-amber-600 px-3 py-1.5 text-xs text-white duration-300 hover:bg-amber-500 active:scale-95">{member.is_muted ? lang?.community_unmute : lang?.community_mute}</button>
-              <button type="button" onClick={() => void moderate('kick', member.id)} className="cursor-pointer rounded-3xl bg-zinc-700 px-3 py-1.5 text-xs text-white duration-300 hover:bg-zinc-600 active:scale-95">{lang?.community_kick}</button>
-              <button type="button" onClick={() => void moderate('ban', member.id)} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-xs text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.community_ban}</button>
+              <button type="button" onClick={() => setPendingModeration({ action: 'kick', userId: member.id })} className="cursor-pointer rounded-3xl bg-zinc-700 px-3 py-1.5 text-xs text-white duration-300 hover:bg-zinc-600 active:scale-95">{lang?.community_kick}</button>
+              <button type="button" onClick={() => setPendingModeration({ action: 'ban', userId: member.id })} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-xs text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.community_ban}</button>
             </div>
           ) : null}
         </div>
       ))}
+      <ConfirmDeleteModal
+        isOpen={pendingModeration !== null}
+        onClose={() => setPendingModeration(null)}
+        onConfirm={confirmModeration}
+        title={pendingModeration?.action === 'ban'
+          ? (lang?.community_ban || '')
+          : (lang?.community_kick || '')}
+        description={lang?.community_moderation_confirm || ''}
+        confirmLabel={pendingModeration?.action === 'ban'
+          ? lang?.community_ban
+          : lang?.community_kick}
+        cancelLabel={lang?.cancel}
+      />
     </div>
   );
 }

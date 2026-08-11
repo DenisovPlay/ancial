@@ -1,4 +1,5 @@
 import type { CommunityCategory, CommunityChannel } from '../lib/community-types';
+import CommunityChannelIcon from './community-channel-icon';
 
 type Props = {
   categories: CommunityCategory[];
@@ -17,7 +18,6 @@ function ChannelButton({
   onSelect: (channel: CommunityChannel) => void;
   selected: boolean;
 }) {
-  const icon = channel.channel_type === 'voice' ? '◖))' : channel.channel_type === 'announcement' ? '◉' : '#';
   return (
     <button
       type="button"
@@ -28,7 +28,9 @@ function ChannelButton({
           : 'border-transparent text-zinc-300 hover:border-zinc-600/30 hover:bg-zinc-800/70'
       }`}
     >
-      <span className="w-7 shrink-0 text-center text-sm text-zinc-500">{icon}</span>
+      <span className="flex w-7 shrink-0 items-center justify-center text-zinc-400">
+        <CommunityChannelIcon type={channel.channel_type} />
+      </span>
       <span className="min-w-0 flex-1 truncate text-sm font-semibold">{channel.title}</span>
       {channel.channel_type === 'voice' && channel.members_count > 0 ? (
         <span className="rounded-full bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300">{channel.members_count}</span>

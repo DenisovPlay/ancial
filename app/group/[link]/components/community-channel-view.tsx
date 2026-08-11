@@ -1,4 +1,5 @@
 import type { CommunityChannel } from '../lib/community-types';
+import CommunityChannelIcon from './community-channel-icon';
 
 type Props = {
   actionLabel: string;
@@ -12,7 +13,7 @@ export default function CommunityChannelView({ actionLabel, channel, onOpen, typ
     <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/70 p-3">
       <div className="flex min-w-0 items-start gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xl text-purple-300">
-          {channel.channel_type === 'voice' ? '◖))' : channel.channel_type === 'announcement' ? '◉' : '#'}
+          <CommunityChannelIcon type={channel.channel_type} className="size-6 fill-current" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-bold text-zinc-100">{channel.title}</p>

@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 
+import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import type { CommunityPermissionMap, CommunityRole, CommunityStructure } from '../lib/community-types';
 import { communityErrorText } from '../lib/community-error';
+import { communityChannelTypeLabel } from '../lib/community-presentation';
 
 type Props = { communityId: number; onChanged: () => Promise<void>; roles: CommunityRole[]; structure: CommunityStructure };
+type PendingDelete = { id: number; kind: 'category' | 'channel' };
 
 export default function CommunityChannelEditor({ communityId, onChanged, roles, structure }: Props) {
   const { lang } = useAuth();
@@ -22,6 +25,12 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
   const [overrideAllow, setOverrideAllow] = useState<CommunityPermissionMap>({});
   const [overrideDeny, setOverrideDeny] = useState<CommunityPermissionMap>({});
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const channelTypeLabels = {
+    text: lang?.community_channel_text || '',
+    announcement: lang?.community_channel_announcement || '',
+    voice: lang?.community_channel_voice || '',
+  };
 
   const createChannel = async () => {
     if (!title.trim() || saving) return;
@@ -52,7 +61,6 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
   };
 
   const deleteCategory = async (id: number) => {
-    if (!window.confirm(lang?.community_category_delete_confirm || '')) return;
     try {
       await AncialAPI.mutateCommunityCategory({ community_id: communityId, action: 'delete', category_id: id });
       await onChanged();
@@ -82,7 +90,6 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
   };
 
   const deleteChannel = async (dialogId: number) => {
-    if (!window.confirm(lang?.community_channel_delete_confirm || '')) return;
     try {
       await AncialAPI.mutateCommunityChannel({ community_id: communityId, action: 'delete', dialog_id: dialogId });
       await onChanged();
@@ -90,6 +97,14 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
       console.error('Community channel deletion failed', error);
       showNote({ content: communityErrorText(error, lang), type: 'error', time: 5 });
     }
+  };
+
+  const confirmDelete = () => {
+    const pending = pendingDelete;
+    setPendingDelete(null);
+    if (!pending) return;
+    if (pending.kind === 'category') void deleteCategory(pending.id);
+    else void deleteChannel(pending.id);
   };
 
   return (
@@ -116,14 +131,14 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
           <button type="button" onClick={() => void createCategory()} className="cursor-pointer rounded-3xl bg-purple-600 px-4 text-white duration-300 hover:bg-purple-500 active:scale-95">+</button>
         </div>
         <div className="flex flex-wrap gap-2">
-          {structure.categories.map((category) => <button key={category.id} type="button" onClick={() => void deleteCategory(category.id)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 duration-300 hover:bg-red-500/30 active:scale-95">{category.name} ×</button>)}
+          {structure.categories.map((category) => <button key={category.id} type="button" onClick={() => setPendingDelete({ id: category.id, kind: 'category' })} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 duration-300 hover:bg-red-500/30 active:scale-95">{category.name} ×</button>)}
         </div>
       </div>
       {structure.channels.map((channel) => (
         <div key={channel.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3">
           <span className="min-w-0 flex-1 truncate font-semibold text-zinc-100">{channel.title}</span>
-          <span className="text-xs text-zinc-500">{channel.channel_type}</span>
-          <button type="button" onClick={() => void deleteChannel(channel.id)} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-sm text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.delete}</button>
+          <span className="text-xs text-zinc-500">{communityChannelTypeLabel(channel.channel_type, channelTypeLabels)}</span>
+          <button type="button" onClick={() => setPendingDelete({ id: channel.id, kind: 'channel' })} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-sm text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.delete}</button>
         </div>
       ))}
       <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
@@ -145,6 +160,17 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
         ))}
         <button type="button" onClick={() => void saveOverride()} disabled={!overrideDialogId || !overrideRoleId} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">{lang?.save}</button>
       </div>
+      <ConfirmDeleteModal
+        isOpen={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title={lang?.delete || ''}
+        description={pendingDelete?.kind === 'category'
+          ? (lang?.community_category_delete_confirm || '')
+          : (lang?.community_channel_delete_confirm || '')}
+        confirmLabel={lang?.delete}
+        cancelLabel={lang?.cancel}
+      />
     </div>
   );
 }

@@ -15,6 +15,15 @@ type Props = {
   stream?: MediaStream | null;
 };
 
+function MicrophoneStatusIcon({ off }: { off: boolean }) {
+  return (
+    <svg className="size-4 fill-current" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M24 2c-4.95 0-9 4.05-9 9v15c0 4.95 4.05 9 9 9s9-4.05 9-9V11c0-4.95-4.05-9-9-9M10.48 20.98A1.5 1.5 0 0 0 9 22.5V26c0 7.76 5.93 14.17 13.5 14.92v4.58a1.5 1.5 0 1 0 3 0v-4.58C33.07 40.17 39 33.76 39 26v-3.5a1.5 1.5 0 1 0-3 0V26c0 6.59-5.26 11.89-11.82 11.99h-.37C17.26 37.89 12 32.58 12 26v-3.5a1.5 1.5 0 0 0-1.52-1.52" />
+      {off ? <path d="m7.5 4.5 36 36-3 3-36-36z" /> : null}
+    </svg>
+  );
+}
+
 export default function GroupCallTile({ deafened, isLocal, member, participant, stream }: Props) {
   const { lang } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -66,7 +75,7 @@ export default function GroupCallTile({ deafened, isLocal, member, participant, 
             title={participant.mic_enabled ? (lang?.voice_mute || 'Микрофон') : (lang?.voice_unmute || 'Микрофон выключен')}
             className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs ${participant.mic_enabled ? 'border-green-400/30 bg-green-600/90 text-white' : 'border-red-400/30 bg-red-600/90 text-white'}`}
           >
-            {participant.mic_enabled ? '●' : '×'}
+            <MicrophoneStatusIcon off={!participant.mic_enabled} />
           </span>
         </div>
       </div>

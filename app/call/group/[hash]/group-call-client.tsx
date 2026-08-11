@@ -165,14 +165,14 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   };
 
   return (
-    <div className="group-call-route fixed inset-0 z-[3000] bg-black text-white">
+    <div className="group-call-route fixed inset-0 z-[3000] min-h-dvh bg-black text-white">
       <style>{`
         #NAVP, #NAVPmini, #NAVPfull, [data-app-nav="mobile"], [data-app-nav="desktop"], div:has(> .pulse-player-mini-shell) { display: none !important; }
         #main-content { padding: 0 !important; }
       `}</style>
 
-      <header className="absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-black via-black/90 to-transparent p-3 pb-8">
-        <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-3">
+      <header className="absolute inset-x-0 top-0 z-30 bg-gradient-to-b from-black via-black/90 to-transparent px-3 pb-8 pt-[max(env(safe-area-inset-top,0px),0.75rem)]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
@@ -199,7 +199,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
         </div>
       </header>
 
-      <main className="absolute inset-x-0 bottom-24 top-16 overflow-y-auto p-3 pt-6">
+      <main className="absolute inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] top-[calc(4rem+env(safe-area-inset-top,0px))] overflow-y-auto p-3 pt-6">
         {visibleParticipants.length > 0 ? (
           <div className={`mx-auto grid h-full min-h-[20rem] max-w-screen-2xl auto-rows-fr gap-3 ${getGroupCallGridClass(visibleParticipants.length)}`}>
             {visibleParticipants.map((participant) => (
@@ -220,7 +220,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
         )}
       </main>
 
-      <div className="absolute inset-x-0 bottom-3 z-40 flex justify-center px-3">
+      <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom,0px),0.75rem)]">
         <div className="flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200">
           <CallControlButton
             label={config.canPublish ? (call.micEnabled ? (lang?.voice_mute || 'Микрофон') : (lang?.voice_unmute || 'Включить')) : (lang?.voice_listen_only || 'Только слушать')}
@@ -379,7 +379,7 @@ export default function GroupCallClient() {
 
   if (error) {
     return (
-      <div className="fixed inset-0 z-[3000] flex flex-col items-center justify-center gap-3 bg-black p-3 text-center text-white">
+      <div className="fixed inset-0 z-[3000] flex min-h-dvh flex-col items-center justify-center gap-3 bg-black p-3 text-center text-white">
         <p>{error}</p>
         <button
           type="button"
@@ -394,7 +394,7 @@ export default function GroupCallClient() {
 
   if (!config) {
     return (
-      <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black">
+      <div className="fixed inset-0 z-[3000] flex min-h-dvh items-center justify-center bg-black">
         <svg className="h-12 w-12 animate-spin fill-purple-500" viewBox="0 0 48 48" aria-label={lang?.loading || 'Загрузка'}>
           <path d="M24 4a1.5 1.5 0 1 0 0 3c6.26 0 11.77 3.41 14.7 8.46a1.5 1.5 0 1 0 2.6-1.51A20 20 0 0 0 24 4" />
         </svg>

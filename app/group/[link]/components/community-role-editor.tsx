@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
@@ -22,6 +23,7 @@ export default function CommunityRoleEditor({ communityId, onChanged, roleList }
   const [name, setName] = useState('');
   const [permissions, setPermissions] = useState<CommunityPermissionMap>({ view_channel: true, send_messages: true });
   const [saving, setSaving] = useState(false);
+  const [pendingRoleId, setPendingRoleId] = useState<number | null>(null);
 
   const createRole = async () => {
     if (!name.trim() || saving) return;
@@ -40,7 +42,6 @@ export default function CommunityRoleEditor({ communityId, onChanged, roleList }
   };
 
   const deleteRole = async (roleId: number) => {
-    if (!window.confirm(lang?.community_role_delete_confirm || '')) return;
     try {
       await AncialAPI.mutateCommunityRole({ community_id: communityId, action: 'delete', role_id: roleId });
       await onChanged();
@@ -48,6 +49,12 @@ export default function CommunityRoleEditor({ communityId, onChanged, roleList }
       console.error('Community role deletion failed', error);
       showNote({ content: communityErrorText(error, lang), type: 'error', time: 5 });
     }
+  };
+
+  const confirmDeleteRole = () => {
+    const roleId = pendingRoleId;
+    setPendingRoleId(null);
+    if (roleId) void deleteRole(roleId);
   };
 
   return (
@@ -74,9 +81,18 @@ export default function CommunityRoleEditor({ communityId, onChanged, roleList }
           <span className="h-3 w-3 rounded-full" style={{ backgroundColor: role.color }} />
           <span className="min-w-0 flex-1 truncate font-semibold text-zinc-100">{role.name}</span>
           <span className="text-xs text-zinc-500">{role.member_count}</span>
-          {!role.is_system ? <button type="button" onClick={() => void deleteRole(role.id)} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-sm text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.delete}</button> : null}
+          {!role.is_system ? <button type="button" onClick={() => setPendingRoleId(role.id)} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-sm text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.delete}</button> : null}
         </div>
       ))}
+      <ConfirmDeleteModal
+        isOpen={pendingRoleId !== null}
+        onClose={() => setPendingRoleId(null)}
+        onConfirm={confirmDeleteRole}
+        title={lang?.delete || ''}
+        description={lang?.community_role_delete_confirm || ''}
+        confirmLabel={lang?.delete}
+        cancelLabel={lang?.cancel}
+      />
     </div>
   );
 }

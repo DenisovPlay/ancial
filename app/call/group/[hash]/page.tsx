@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function GroupCallPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-black text-white">Loading…</div>}>
+    <Suspense fallback={<div className="flex min-h-dvh w-full items-center justify-center bg-black text-white">Loading…</div>}>
       <GroupCallClient />
     </Suspense>
   );
