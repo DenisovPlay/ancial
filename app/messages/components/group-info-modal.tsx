@@ -508,7 +508,7 @@ export default function GroupInfoModal({
               </div>
             </div>
 
-            <div className={`grid grid-cols-${isAdminOrOwner ? 3 : 2} gap-3 w-full`}>
+            <div className={`grid ${isAdminOrOwner ? 'grid-cols-3' : 'grid-cols-2'} gap-3 w-full`}>
               <button
                 type="button"
                 onClick={copyInviteLink}
@@ -547,7 +547,7 @@ export default function GroupInfoModal({
                 type="button"
                 onClick={handleLeaveGroup}
                 disabled={loadingAction}
-                className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-red-800/25 hover:bg-red-800/50 text-red-500 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
+                className={`${isAdminOrOwner ? 'col-span-full' : ''} disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-red-800/25 hover:bg-red-800/50 text-red-500 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer`}>
                 <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
                   <use href="#IC-exit"></use>
                 </svg>
