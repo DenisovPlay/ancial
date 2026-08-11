@@ -5,6 +5,7 @@ import type {
   CommunityAuditEntry,
   CommunityChannelOverride,
   CommunityLinkRequest,
+  CommunityMember,
   CommunityPermissionMap,
   CommunityRoleList,
   CommunityStructure,
@@ -17,6 +18,17 @@ export interface AncialV2Response<T> {
   success: boolean;
   data: T;
   error: string | null;
+}
+
+export class AncialAPIError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly payload?: unknown,
+  ) {
+    super(message);
+    this.name = 'AncialAPIError';
+  }
 }
 
 // --- WALLET TYPINGS ---
@@ -192,7 +204,8 @@ export class AncialAPI {
     const response = await authFetch(url, options);
 
     if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      throw new AncialAPIError(payload?.error || `API request failed with status ${response.status}`, response.status, payload);
     }
 
     return response.json() as Promise<AncialV2Response<T>>;
@@ -280,6 +293,10 @@ export class AncialAPI {
 
   static communityLinkRequests(communityId: number): Promise<{ requests: CommunityLinkRequest[] }> {
     return this.request(`/communities/LinkRequests.php?community_id=${communityId}`);
+  }
+
+  static communityMembers(communityId: number): Promise<{ members: CommunityMember[] }> {
+    return this.request(`/communities/Members.php?community_id=${communityId}`);
   }
 
   static mutateCommunityLinkRequest(payload: Record<string, unknown>): Promise<Record<string, unknown>> {

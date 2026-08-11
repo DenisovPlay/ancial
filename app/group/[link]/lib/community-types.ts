@@ -105,6 +105,18 @@ export interface CommunityAuditEntry {
   img: string;
 }
 
+export interface CommunityMember {
+  id: number;
+  username: string;
+  fname: string;
+  lname: string;
+  img: string;
+  verify: number;
+  is_owner: boolean;
+  is_muted: boolean;
+  roles: Array<{ id: number; name: string }>;
+}
+
 export const COMMUNITY_CHANNEL_RENDERERS: Record<CommunityChannelType, 'messages' | 'voice'> = {
   text: 'messages',
   announcement: 'messages',
@@ -126,4 +138,10 @@ export function visibleManagementTabs(permissions: CommunityPermissionMap): Comm
   if (canCommunity(permissions, 'manage_channels')) tabs.push('link_requests');
   if (canCommunity(permissions, 'view_audit_log')) tabs.push('audit');
   return tabs;
+}
+
+export function communityErrorKey(status: number): 'community_permission_error' | 'community_stale_error' | 'community_save_error' {
+  if (status === 403) return 'community_permission_error';
+  if (status === 409) return 'community_stale_error';
+  return 'community_save_error';
 }

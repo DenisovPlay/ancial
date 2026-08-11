@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   COMMUNITY_CHANNEL_RENDERERS,
   canCommunity,
+  communityErrorKey,
   visibleManagementTabs,
 } from './community-types.ts';
 
@@ -19,5 +20,8 @@ assert.deepEqual(
 );
 assert.deepEqual(visibleManagementTabs({}), []);
 assert.deepEqual(Object.keys(COMMUNITY_CHANNEL_RENDERERS).sort(), ['announcement', 'text', 'voice']);
+assert.equal(communityErrorKey(403), 'community_permission_error');
+assert.equal(communityErrorKey(409), 'community_stale_error');
+assert.equal(communityErrorKey(500), 'community_save_error');
 
 console.log('community client permissions: ok');

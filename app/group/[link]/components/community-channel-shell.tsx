@@ -10,6 +10,7 @@ import { AncialAPI } from '../../../lib/api-v2';
 import { globalWS } from '../../../lib/global-ws';
 import CommunityChannelList from './community-channel-list';
 import CommunityChannelView from './community-channel-view';
+import CommunityManageModal from './community-manage-modal';
 import type { CommunityChannel, CommunityStructure } from '../lib/community-types';
 
 const GroupVoiceRoomModal = dynamic(() => import('../../../messages/components/group-voice-room-modal'), {
@@ -38,6 +39,7 @@ export default function CommunityChannelShell({ communityId, communityLink, init
   const [structure, setStructure] = useState<CommunityStructure | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [voiceChannel, setVoiceChannel] = useState<CommunityChannel | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -137,7 +139,8 @@ export default function CommunityChannelShell({ communityId, communityLink, init
         {initialCanManage || structure.permissions.manage_channels ? (
           <button
             type="button"
-            onClick={() => router.push(`/$${communityLink}?manage=community`)}
+            title={`$${communityLink}`}
+            onClick={() => setManageOpen(true)}
             className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 py-1 text-xs text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95"
           >
             {lang?.community_channel_manage}
@@ -161,6 +164,13 @@ export default function CommunityChannelShell({ communityId, communityLink, init
         members={[]}
         onClose={() => setVoiceChannel(null)}
         title={voiceChannel?.title ?? ''}
+      />
+      <CommunityManageModal
+        communityId={communityId}
+        isOpen={manageOpen}
+        onClose={() => setManageOpen(false)}
+        onStructureChanged={loadStructure}
+        structure={structure}
       />
     </section>
   );
