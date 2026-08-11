@@ -540,7 +540,7 @@ export default function GroupInfoModal({
                   <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
                     <use href="#IC-settings"></use>
                   </svg>
-                  <span className="text-sm sm:text-md">{lang?.chat_settings || 'Доступ'}</span>
+                  <span className="text-sm sm:text-md">{lang?.settings || 'Настройки'}</span>
                 </button>
               )}
               <button

@@ -16,5 +16,10 @@ assert.match(
   /isAdminOrOwner \? 'col-span-full' : ''/,
   'the administrator Leave button must span the complete action grid',
 );
+assert.match(
+  source,
+  /lang\?\.settings \|\| 'Настройки'/,
+  'the settings action must use the concise localized label',
+);
 
 console.log('group info modal layout: ok');
