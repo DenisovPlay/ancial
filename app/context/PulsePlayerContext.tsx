@@ -244,6 +244,7 @@ export function PulsePlayerProvider({
   const volumeSliderRef = useRef<HTMLInputElement | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
   const mediaSessionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playerCloseTimerRef = useRef<number | null>(null);
   const {
     desktopCurrentTimeLabelRef,
     desktopSeekInputRef,
@@ -259,6 +260,12 @@ export function PulsePlayerProvider({
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [canUseEqualizer, setCanUseEqualizer] = useState(false);
+
+  useEffect(() => () => {
+    if (playerCloseTimerRef.current !== null) {
+      window.clearTimeout(playerCloseTimerRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
@@ -626,6 +633,11 @@ export function PulsePlayerProvider({
   };
 
   const showPlayer = () => {
+    if (playerCloseTimerRef.current !== null) {
+      window.clearTimeout(playerCloseTimerRef.current);
+      playerCloseTimerRef.current = null;
+    }
+
     const savedVolume = readSavedVolume();
     setVolume(savedVolume);
     if (audioRef.current) {
@@ -660,27 +672,33 @@ export function PulsePlayerProvider({
 
     stopProgressLoop();
     stopVisualProgressLoop();
-    setStatusAudio('');
-    preloadStartedRef.current = false;
-    lastMediaPositionUpdateRef.current = 0;
-    currentSongIdRef.current = 0;
-    setPlaylistState([]);
-    setPlaylistIndex(0);
-    setPlaylistMode(false, '0');
-    seekingSliderRef.current = null;
-    setActiveSeekSlider(null);
-    setCurrentTime(0);
-    setDuration(0);
-    setSeekValue(0);
-    setListenCounted(false);
-    listenReportedSessionRef.current = null;
     setMode('mini');
-    setLyricsLines([]);
-    setLyricsSource('');
     setIsPlaying(false);
-
     setIsVisible(false);
-    setTimeout(() => {
+
+    if (playerCloseTimerRef.current !== null) {
+      window.clearTimeout(playerCloseTimerRef.current);
+    }
+
+    // Keep the full-player content mounted while its exit transition runs.
+    playerCloseTimerRef.current = window.setTimeout(() => {
+      playerCloseTimerRef.current = null;
+      setStatusAudio('');
+      preloadStartedRef.current = false;
+      lastMediaPositionUpdateRef.current = 0;
+      currentSongIdRef.current = 0;
+      setPlaylistState([]);
+      setPlaylistIndex(0);
+      setPlaylistMode(false, '0');
+      seekingSliderRef.current = null;
+      setActiveSeekSlider(null);
+      setCurrentTime(0);
+      setDuration(0);
+      setSeekValue(0);
+      setListenCounted(false);
+      listenReportedSessionRef.current = null;
+      setLyricsLines([]);
+      setLyricsSource('');
       setIsMounted(false);
       clearMediaSession();
       syncWindowState();
@@ -1752,7 +1770,7 @@ export function PulsePlayerProvider({
             }
           `}</style>
 
-          {isPlayerAnimatingIn ? (
+          {isMounted ? (
             <PulsePlayerFull
             Icon={PlayerIcon}
             mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}

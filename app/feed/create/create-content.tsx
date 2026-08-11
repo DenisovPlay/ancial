@@ -11,6 +11,7 @@ import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/po
 import PostBlockMediaModal from '../../components/post-block-media-modal';
 import PostBlockTableModal from '../../components/post-block-table-modal';
 import { FeedEditorUI } from '../editor-ui';
+import { serializePostWidgets } from '../post-widgets';
 import { getVisibleLength, VISIBLE_CHAR_LIMIT } from '../../components/rich-text-editor';
 
 import {
@@ -28,7 +29,7 @@ type AvailableAuthor = {
 };
 
 type TrackSearchResult = {
-  id: number;
+  id: number | string;
   name: string;
   artist: string;
   img: string;
@@ -43,10 +44,13 @@ type PollWidget = {
 
 type MusicWidget = {
   type: 'music';
-  track_id: number;
+  track_id: number | string;
   track_name: string;
   artist_name: string;
   track_img: string;
+  track_src?: string;
+  track_genre?: string | null;
+  track_explicit?: boolean | number | string | null;
 };
 
 type PostWidget = PollWidget | MusicWidget;
@@ -390,14 +394,7 @@ export default function CreatePostContent() {
         .map((image) => image.uploadedUrl as string)
         .join(',');
 
-      // Сериализуем виджеты
-      const serializedWidgets = JSON.stringify(
-        widgets.map((w) => {
-          if (w.type === 'poll') return { type: 'poll', question: w.question, options: w.options.filter(o => o.trim()) };
-          if (w.type === 'music') return { type: 'music', track_id: w.track_id };
-          return w;
-        })
-      );
+      const serializedWidgets = serializePostWidgets(widgets);
 
       const response = await AncialAPI.createPost<{ message?: string }>({
         author_type: authorType,

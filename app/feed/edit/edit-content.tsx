@@ -12,6 +12,7 @@ import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/po
 import PostBlockMediaModal from '../../components/post-block-media-modal';
 import PostBlockTableModal from '../../components/post-block-table-modal';
 import { FeedEditorUI } from '../editor-ui';
+import { serializePostWidgets } from '../post-widgets';
 import { getVisibleLength, VISIBLE_CHAR_LIMIT } from '../../components/rich-text-editor';
 
 import {
@@ -461,14 +462,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         .map((image) => image.uploadedUrl ?? image.previewUrl)
         .join(',');
 
-      // Сериализуем виджеты
-      const serializedWidgets = JSON.stringify(
-        widgets.map((w: any) => {
-          if (w.type === 'poll') return { type: 'poll', question: w.question, options: w.options.filter((o: string) => o.trim()) };
-          if (w.type === 'music') return { type: 'music', track_id: w.track_id };
-          return w;
-        })
-      );
+      const serializedWidgets = serializePostWidgets(widgets);
 
       const response = await AncialAPI.editPost<{ message?: string }>({
         data: content,

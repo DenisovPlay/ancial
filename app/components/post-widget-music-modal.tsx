@@ -7,28 +7,35 @@ import { useAuth } from '../context/AuthContext';
 import { SvgIcon } from '../feed/editor-shared';
 
 type TrackSearchResult = {
-  id: number;
+  id: number | string;
   name: string;
   artist: string;
   img: string;
   src: string;
+  genre?: string | null;
+  explicit?: boolean | number | string | null;
 };
 
 // Pulse API response format
 type PulseTrack = {
-  sid: number;
+  sid: number | string;
   title: string;
   artist: string;
   src: string;
+  genre?: string | null;
+  explicit?: boolean | number | string | null;
   artwork: { src: string }[];
 };
 
 export type MusicWidgetDraft = {
   type: 'music';
-  track_id: number;
+  track_id: number | string;
   track_name: string;
   artist_name: string;
   track_img: string;
+  track_src?: string;
+  track_genre?: string | null;
+  track_explicit?: boolean | number | string | null;
 };
 
 type PostWidgetMusicModalProps = {
@@ -55,7 +62,9 @@ export default function PostWidgetMusicModal({ isOpen, onClose, onAdd }: PostWid
           name: t.title,
           artist: t.artist,
           src: t.src,
-          img: t.artwork?.[0]?.src || '/img/noimg.png'
+          img: t.artwork?.[0]?.src || '/img/noimg.png',
+          genre: t.genre,
+          explicit: t.explicit,
         })));
       }
     } catch {
@@ -87,7 +96,9 @@ export default function PostWidgetMusicModal({ isOpen, onClose, onAdd }: PostWid
           name: t.title,
           artist: t.artist,
           src: t.src,
-          img: t.artwork?.[0]?.src || '/img/noimg.png'
+          img: t.artwork?.[0]?.src || '/img/noimg.png',
+          genre: t.genre,
+          explicit: t.explicit,
         })));
       } else {
         setResults([]);
@@ -106,6 +117,9 @@ export default function PostWidgetMusicModal({ isOpen, onClose, onAdd }: PostWid
       track_name: track.name,
       artist_name: track.artist,
       track_img: track.img,
+      track_src: track.src,
+      track_genre: track.genre,
+      track_explicit: track.explicit,
     });
     onClose();
   };

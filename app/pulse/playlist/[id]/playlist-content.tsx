@@ -539,7 +539,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const isLoading = isMetaLoading || tracksLoading || authLoading;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 pb-0 duration-300 lg:pb-64">
+    <div className="pulse-playlist-page flex flex-col items-center justify-center gap-3 pb-0 duration-300 lg:pb-64">
       <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
         <div className="w-full max-w-screen-2xl px-3 lg:px-0">
           <button

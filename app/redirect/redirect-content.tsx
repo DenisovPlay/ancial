@@ -70,6 +70,10 @@ function RedirectContentInner() {
 
   return (
     <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center p-3">
+      <style>{`
+        #NAVP, [data-app-nav="mobile"], [data-app-nav="desktop"] { display: none !important; }
+        #main-content { padding: 0 !important; }
+      `}</style>
       <div className="flex w-full max-w-xl flex-col gap-3">
         {/* Header box */}
         <div className="pb-20 flex items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-5 shadow-2xl backdrop-blur-xl">
@@ -177,8 +181,6 @@ function RedirectContentInner() {
             {canRedirect && targetUrl ? (
               <a
                 href={targetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="cursor-pointer flex h-12 items-center justify-center rounded-3xl bg-purple-600 text-sm font-bold text-white shadow-lg transition-all hover:bg-purple-500 active:scale-95"
               >
                 {lang?.redirect_proceed || 'Перейти на сайт'}
@@ -210,6 +212,10 @@ export default function RedirectContent() {
     <Suspense
       fallback={
         <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center">
+          <style>{`
+            #NAVP, [data-app-nav="mobile"], [data-app-nav="desktop"] { display: none !important; }
+            #main-content { padding: 0 !important; }
+          `}</style>
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
         </div>
       }

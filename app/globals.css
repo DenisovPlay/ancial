@@ -89,11 +89,21 @@ body.pulse-player-full #main-content {
   body.pulse-player-visible:not(.pulse-player-full) #main-content {
     padding-bottom: calc(9rem + env(safe-area-inset-bottom, 0px)) !important;
   }
+
+  /* Плейлист завершается юридическим футером, поэтому резерв под плавающий
+     плеер здесь создаёт заметную пустую область. */
+  body.pulse-player-visible:not(.pulse-player-full):has(.pulse-playlist-page) #main-content {
+    padding-bottom: 0 !important;
+  }
 }
 
 @media (min-width: 768px) {
   body.pulse-player-visible:not(.pulse-player-full):not(:has(#dialogs-pane)) #main-content {
     padding-bottom: 6.5rem !important;
+  }
+
+  body.pulse-player-visible:not(.pulse-player-full):has(.pulse-playlist-page) #main-content {
+    padding-bottom: 0 !important;
   }
 
   body.pulse-player-visible:not(.pulse-player-full) #dialog-list-container {
