@@ -10,10 +10,18 @@ import type { CommunityPermissionMap, CommunityRole, CommunityStructure } from '
 import { communityErrorText } from '../lib/community-error';
 import { communityChannelTypeLabel } from '../lib/community-presentation';
 
-type Props = { communityId: number; onChanged: () => Promise<void>; roles: CommunityRole[]; structure: CommunityStructure };
+type ChannelView = 'overview' | 'create_channel' | 'categories' | 'channel_permissions' | 'create_role';
+type Props = {
+  communityId: number;
+  onChanged: () => Promise<void>;
+  onOpenView: (view: ChannelView) => void;
+  roles: CommunityRole[];
+  structure: CommunityStructure;
+  view: ChannelView;
+};
 type PendingDelete = { id: number; kind: 'category' | 'channel' };
 
-export default function CommunityChannelEditor({ communityId, onChanged, roles, structure }: Props) {
+export default function CommunityChannelEditor({ communityId, onChanged, onOpenView, roles, structure, view }: Props) {
   const { lang } = useAuth();
   const { showNote } = useNotification();
   const [title, setTitle] = useState('');
@@ -39,6 +47,7 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
       await AncialAPI.mutateCommunityChannel({ community_id: communityId, action: 'create', title: title.trim(), channel_type: channelType, category_id: categoryId });
       setTitle('');
       await onChanged();
+      onOpenView('overview');
       showNote({ content: lang?.community_saved || '', type: 'success', time: 4 });
     } catch (error) {
       console.error('Community channel creation failed', error);
@@ -107,47 +116,77 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
     else void deleteChannel(pending.id);
   };
 
+  const workspaceHeader = (titleText: string) => (
+    <div className="flex items-center gap-3">
+      <button type="button" onClick={() => onOpenView('overview')} className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95" aria-label={lang?.back || ''} title={lang?.back || ''}>
+        <svg className="size-5 fill-current" viewBox="0 0 48 48" aria-hidden="true"><use href="#IC-chevron-left" /></svg>
+      </button>
+      <h3 className="text-lg font-semibold text-zinc-100">{titleText}</h3>
+    </div>
+  );
+
+  const overview = (
+    <>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <button type="button" onClick={() => onOpenView('create_channel')} className="cursor-pointer rounded-3xl border border-purple-400/30 bg-purple-600/20 p-3 text-left text-sm font-semibold text-purple-100 duration-300 hover:bg-purple-600/30 active:scale-95">{lang?.community_create_channel}</button>
+        <button type="button" onClick={() => onOpenView('categories')} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3 text-left text-sm font-semibold text-zinc-100 duration-300 hover:bg-zinc-700 active:scale-95">{lang?.community_create_category}</button>
+        <button type="button" onClick={() => onOpenView('channel_permissions')} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3 text-left text-sm font-semibold text-zinc-100 duration-300 hover:bg-zinc-700 active:scale-95">{lang?.community_channel_permissions}</button>
+      </div>
+      <div className="flex flex-col gap-2">
+        {structure.channels.map((channel) => (
+          <div key={channel.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3">
+            <span className="min-w-0 flex-1 truncate font-semibold text-zinc-100">{channel.title}</span>
+            <span className="hidden text-xs text-zinc-500 sm:block">{communityChannelTypeLabel(channel.channel_type, channelTypeLabels)}</span>
+            <button type="button" onClick={() => setPendingDelete({ id: channel.id, kind: 'channel' })} className="cursor-pointer rounded-3xl bg-red-600/20 px-3 py-1.5 text-sm text-red-300 duration-300 hover:bg-red-600 hover:text-white active:scale-95">{lang?.delete}</button>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
-        <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={lang?.community_channel_name} className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none focus:border-purple-400" />
-        <select value={channelType} onChange={(event) => setChannelType(event.target.value as typeof channelType)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
+      {view === 'overview' ? overview : null}
+      {view === 'create_channel' ? <div className="flex flex-col gap-3">
+        {workspaceHeader(lang?.community_create_channel || '')}
+        <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
+        <input aria-label={lang?.community_channel_name} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={lang?.community_channel_name} className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none focus:border-purple-400" />
+        <select aria-label={lang?.community_channel_text} value={channelType} onChange={(event) => setChannelType(event.target.value as typeof channelType)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
           <option value="text">{lang?.community_channel_text}</option>
           <option value="announcement">{lang?.community_channel_announcement}</option>
           <option value="voice">{lang?.community_channel_voice}</option>
         </select>
-        <select value={categoryId ?? ''} onChange={(event) => setCategoryId(event.target.value ? Number(event.target.value) : null)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
+        <select aria-label={lang?.community_categories} value={categoryId ?? ''} onChange={(event) => setCategoryId(event.target.value ? Number(event.target.value) : null)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
           <option value="">{lang?.community_channel_uncategorized}</option>
           {structure.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
         </select>
         <button type="button" disabled={saving || !title.trim()} onClick={() => void createChannel()} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">
           {lang?.community_create_channel}
         </button>
-      </div>
-      <div className="flex flex-col gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
+        </div>
+      </div> : null}
+      {view === 'categories' ? <div className="flex flex-col gap-3">
+        {workspaceHeader(lang?.community_categories || '')}
+        <div className="flex flex-col gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
         <p className="font-semibold text-zinc-100">{lang?.community_categories}</p>
         <div className="flex gap-2">
-          <input value={categoryName} onChange={(event) => setCategoryName(event.target.value)} placeholder={lang?.community_category_name} className="min-w-0 flex-1 rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none" />
-          <button type="button" onClick={() => void createCategory()} className="cursor-pointer rounded-3xl bg-purple-600 px-4 text-white duration-300 hover:bg-purple-500 active:scale-95">+</button>
+          <input aria-label={lang?.community_category_name} value={categoryName} onChange={(event) => setCategoryName(event.target.value)} placeholder={lang?.community_category_name} className="min-w-0 flex-1 rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none" />
+          <button type="button" aria-label={lang?.community_create_category} onClick={() => void createCategory()} className="cursor-pointer rounded-3xl bg-purple-600 px-4 text-white duration-300 hover:bg-purple-500 active:scale-95">+</button>
         </div>
         <div className="flex flex-wrap gap-2">
           {structure.categories.map((category) => <button key={category.id} type="button" onClick={() => setPendingDelete({ id: category.id, kind: 'category' })} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 duration-300 hover:bg-red-500/30 active:scale-95">{category.name} ×</button>)}
         </div>
-      </div>
-      {structure.channels.map((channel) => (
-        <div key={channel.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3">
-          <span className="min-w-0 flex-1 truncate font-semibold text-zinc-100">{channel.title}</span>
-          <span className="text-xs text-zinc-500">{communityChannelTypeLabel(channel.channel_type, channelTypeLabels)}</span>
-          <button type="button" onClick={() => setPendingDelete({ id: channel.id, kind: 'channel' })} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-sm text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.delete}</button>
         </div>
-      ))}
-      <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
+      </div> : null}
+      {view === 'channel_permissions' ? <div className="flex flex-col gap-3">
+        {workspaceHeader(lang?.community_channel_permissions || '')}
+        <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
         <p className="font-semibold text-zinc-100">{lang?.community_channel_permissions}</p>
-        <select value={overrideDialogId || ''} onChange={(event) => setOverrideDialogId(Number(event.target.value))} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
+        <select aria-label={lang?.community_select_channel} value={overrideDialogId || ''} onChange={(event) => setOverrideDialogId(Number(event.target.value))} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
           <option value="">{lang?.community_select_channel}</option>
           {structure.channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.title}</option>)}
         </select>
-        <select value={overrideRoleId || ''} onChange={(event) => setOverrideRoleId(Number(event.target.value))} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
+        <select aria-label={lang?.community_select_role} value={overrideRoleId || ''} onChange={(event) => setOverrideRoleId(Number(event.target.value))} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
           <option value="">{lang?.community_select_role}</option>
           {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
         </select>
@@ -159,7 +198,8 @@ export default function CommunityChannelEditor({ communityId, onChanged, roles, 
           </div>
         ))}
         <button type="button" onClick={() => void saveOverride()} disabled={!overrideDialogId || !overrideRoleId} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">{lang?.save}</button>
-      </div>
+        </div>
+      </div> : null}
       <ConfirmDeleteModal
         isOpen={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}

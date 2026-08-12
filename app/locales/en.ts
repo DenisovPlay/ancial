@@ -1562,6 +1562,7 @@ export const en: Record<string, string> = {
   "community_remove_role": "Remove role",
   "community_member_actions": "Member actions",
   "community_categories": "Channel categories",
+  "community_create_category": "Create category",
   "community_category_name": "Category name",
   "community_category_delete_confirm": "Delete this category? Its channels will remain uncategorized.",
   "community_channel_permissions": "Channel permissions",

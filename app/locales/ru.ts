@@ -1562,6 +1562,7 @@ export const ru: Record<string, string> = {
     "community_remove_role": "Убрать роль",
     "community_member_actions": "Действия с участником",
     "community_categories": "Категории каналов",
+    "community_create_category": "Создать категорию",
     "community_category_name": "Название категории",
     "community_category_delete_confirm": "Удалить категорию? Каналы останутся без категории.",
     "community_channel_permissions": "Права канала",

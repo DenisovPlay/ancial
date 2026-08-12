@@ -15,9 +15,16 @@ const EDITABLE_PERMISSIONS: CommunityPermissionName[] = [
   'add_reactions', 'connect_voice', 'speak_voice', 'mention_everyone', 'view_audit_log',
 ];
 
-type Props = { communityId: number; onChanged: () => Promise<void>; roleList: CommunityRoleList };
+type RoleView = 'overview' | 'create_channel' | 'categories' | 'channel_permissions' | 'create_role';
+type Props = {
+  communityId: number;
+  onChanged: () => Promise<void>;
+  onOpenView: (view: RoleView) => void;
+  roleList: CommunityRoleList;
+  view: RoleView;
+};
 
-export default function CommunityRoleEditor({ communityId, onChanged, roleList }: Props) {
+export default function CommunityRoleEditor({ communityId, onChanged, onOpenView, roleList, view }: Props) {
   const { lang } = useAuth();
   const { showNote } = useNotification();
   const [name, setName] = useState('');
@@ -32,6 +39,7 @@ export default function CommunityRoleEditor({ communityId, onChanged, roleList }
       await AncialAPI.mutateCommunityRole({ community_id: communityId, action: 'create', name: name.trim(), permissions });
       setName('');
       await onChanged();
+      onOpenView('overview');
       showNote({ content: lang?.community_saved || '', type: 'success', time: 4 });
     } catch (error) {
       console.error('Community role creation failed', error);
@@ -59,8 +67,20 @@ export default function CommunityRoleEditor({ communityId, onChanged, roleList }
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder={lang?.community_role_name} className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none focus:border-purple-400" />
+      {view === 'overview' ? (
+        <button type="button" onClick={() => onOpenView('create_role')} className="cursor-pointer rounded-3xl border border-purple-400/30 bg-purple-600/20 p-3 text-left text-sm font-semibold text-purple-100 duration-300 hover:bg-purple-600/30 active:scale-95">
+          {lang?.community_create_role}
+        </button>
+      ) : null}
+      {view === 'create_role' ? <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={() => onOpenView('overview')} className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95" aria-label={lang?.back || ''} title={lang?.back || ''}>
+            <svg className="size-5 fill-current" viewBox="0 0 48 48" aria-hidden="true"><use href="#IC-chevron-left" /></svg>
+          </button>
+          <h3 className="text-lg font-semibold text-zinc-100">{lang?.community_create_role}</h3>
+        </div>
+        <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
+        <input aria-label={lang?.community_role_name} value={name} onChange={(event) => setName(event.target.value)} placeholder={lang?.community_role_name} className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none focus:border-purple-400" />
         <div className="grid gap-2 sm:grid-cols-2">
           {EDITABLE_PERMISSIONS.map((permission) => (
             <label key={permission} className="flex cursor-pointer items-center gap-3 rounded-3xl bg-zinc-800/60 p-2 text-sm text-zinc-300">
@@ -75,15 +95,17 @@ export default function CommunityRoleEditor({ communityId, onChanged, roleList }
           ))}
         </div>
         <button type="button" disabled={saving || !name.trim()} onClick={() => void createRole()} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">{lang?.community_create_role}</button>
+        </div>
       </div>
-      {roleList.roles.map((role) => (
+      : null}
+      {view === 'overview' ? roleList.roles.map((role) => (
         <div key={role.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3">
           <span className="h-3 w-3 rounded-full" style={{ backgroundColor: role.color }} />
           <span className="min-w-0 flex-1 truncate font-semibold text-zinc-100">{role.name}</span>
           <span className="text-xs text-zinc-500">{role.member_count}</span>
           {!role.is_system ? <button type="button" onClick={() => setPendingRoleId(role.id)} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-sm text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.delete}</button> : null}
         </div>
-      ))}
+      )) : null}
       <ConfirmDeleteModal
         isOpen={pendingRoleId !== null}
         onClose={() => setPendingRoleId(null)}

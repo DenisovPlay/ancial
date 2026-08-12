@@ -30,5 +30,11 @@ assert.doesNotMatch(
 assert.match(channelShellSource, /AncialAPI\.joinPublicChat/, 'community channels must join before navigation');
 assert.match(channelShellSource, /result\.status === 'requested'/, 'request-only channels must stay on the community page');
 assert.match(channelShellSource, /channel\.channel_type === 'voice'/, 'the same membership gate must cover voice channels');
+assert.doesNotMatch(channelShellSource, /CommunityChannelView/, 'community pages must not duplicate the selected channel in a detail card');
+assert.match(channelShellSource, /onSelect=\{openChannel\}/, 'compact channel rows must perform the existing join-and-open flow directly');
+assert.match(managementSource, /width="xl"/, 'community management needs a wide desktop workspace');
+assert.match(managementSource, /hidden w-56 shrink-0 flex-col[^\"]*lg:flex/, 'desktop management needs a persistent navigation rail');
+assert.match(managementSource, /lg:hidden/, 'mobile management must retain compact horizontal tabs');
+assert.match(managementSource, /managementView/, 'management tools must open as internal workspaces');
 
 console.log('community management UI: ok');

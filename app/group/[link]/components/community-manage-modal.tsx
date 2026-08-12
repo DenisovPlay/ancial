@@ -31,6 +31,8 @@ type Props = {
   structure: CommunityStructure;
 };
 
+type ManagementView = 'overview' | 'create_channel' | 'categories' | 'channel_permissions' | 'create_role';
+
 export default function CommunityManageModal({ communityId, isOpen, onClose, onStructureChanged, structure }: Props) {
   const { lang } = useAuth();
   const { showNote } = useNotification();
@@ -41,6 +43,7 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
   const [linkRequests, setLinkRequests] = useState<CommunityLinkRequest[]>([]);
   const [audit, setAudit] = useState<CommunityAuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [managementView, setManagementView] = useState<ManagementView>('overview');
   const tabsScrollRef = useDragScroll({ speed: 2 });
 
   const loadManagement = useCallback(async () => {
@@ -76,6 +79,16 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
     return () => clearTimeout(timer);
   }, [activeTab, tabs]);
 
+  const selectTab = (tab: CommunityManagementTab) => {
+    setActiveTab(tab);
+    setManagementView('overview');
+  };
+
+  const closeManagement = useCallback(() => {
+    setManagementView('overview');
+    onClose();
+  }, [onClose]);
+
   const refreshAll = useCallback(async () => {
     await Promise.all([onStructureChanged(), loadManagement()]);
   }, [loadManagement, onStructureChanged]);
@@ -91,18 +104,27 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={lang?.community_management || ''}>
-      <div className="flex min-h-[50vh] flex-col gap-3">
-        <div ref={tabsScrollRef} className="drag-scroll viewport flex w-full flex-nowrap gap-1.5 overflow-x-auto rounded-3xl bg-zinc-900/70 p-1.5">
+    <Modal isOpen={isOpen} onClose={closeManagement} title={lang?.community_management || ''} width="xl" bodyClassName="lg:p-3 lg:pt-[64px]">
+      <div className="flex min-h-[58vh] gap-3 lg:h-[70vh] lg:min-h-0">
+        <aside className="hidden w-56 shrink-0 flex-col gap-1 rounded-3xl border border-zinc-600/30 bg-zinc-950/50 p-2 lg:flex">
           {tabs.map((tab) => (
-            <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`shrink-0 cursor-pointer rounded-3xl px-3 py-2 text-sm duration-300 active:scale-95 ${activeTab === tab ? 'bg-purple-600 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}>
+            <button key={tab} type="button" onClick={() => selectTab(tab)} className={`cursor-pointer rounded-3xl px-3 py-3 text-left text-sm duration-300 active:scale-95 ${activeTab === tab ? 'bg-purple-600 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'}`}>
+              {lang?.[`community_tab_${tab}`] || tab}
+            </button>
+          ))}
+        </aside>
+        <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden">
+        <div ref={tabsScrollRef} className="drag-scroll viewport flex w-full flex-nowrap gap-1.5 overflow-x-auto rounded-3xl bg-zinc-900/70 p-1.5 lg:hidden">
+          {tabs.map((tab) => (
+            <button key={tab} type="button" onClick={() => selectTab(tab)} className={`shrink-0 cursor-pointer rounded-3xl px-3 py-2 text-sm duration-300 active:scale-95 ${activeTab === tab ? 'bg-purple-600 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}>
               {lang?.[`community_tab_${tab}`] || tab}
             </button>
           ))}
         </div>
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         {loading ? <div className="h-40 animate-pulse rounded-3xl bg-zinc-800/60" /> : null}
-        {!loading && activeTab === 'channels' ? <CommunityChannelEditor communityId={communityId} onChanged={refreshAll} roles={roles?.roles ?? []} structure={structure} /> : null}
-        {!loading && activeTab === 'roles' && roles ? <CommunityRoleEditor communityId={communityId} onChanged={refreshAll} roleList={roles} /> : null}
+        {!loading && activeTab === 'channels' ? <CommunityChannelEditor communityId={communityId} onChanged={refreshAll} onOpenView={setManagementView} roles={roles?.roles ?? []} structure={structure} view={managementView} /> : null}
+        {!loading && activeTab === 'roles' && roles ? <CommunityRoleEditor communityId={communityId} onChanged={refreshAll} onOpenView={setManagementView} roleList={roles} view={managementView} /> : null}
         {!loading && activeTab === 'members' ? <CommunityModeration communityId={communityId} members={members} onChanged={refreshAll} roles={roles?.roles ?? []} /> : null}
         {!loading && activeTab === 'link_requests' ? (
           <div className="flex flex-col gap-3">
@@ -131,6 +153,8 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
             ))}
           </div>
         ) : null}
+        </div>
+        </div>
       </div>
     </Modal>
   );

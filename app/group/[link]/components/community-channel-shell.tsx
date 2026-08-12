@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
@@ -10,13 +10,11 @@ import { AncialAPI } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache.ts';
 import { globalWS } from '../../../lib/global-ws';
 import CommunityChannelList from './community-channel-list';
-import CommunityChannelView from './community-channel-view';
 import CommunityManageModal from './community-manage-modal';
 import {
   COMMUNITY_INVALIDATION_DELAY_MS,
   communityStructureCacheKey,
   communityEventMatches,
-  retainCommunityChannelSelection,
   validateCachedCommunityStructure,
   type CommunityChannel,
   type CommunityStructure,
@@ -64,9 +62,6 @@ function CommunityChannelShellState({ cacheKey, communityId, communityLink, init
     )
   ));
   const hasUsableStructureRef = useRef(structure !== null);
-  const [selectedId, setSelectedId] = useState<number | null>(() => (
-    retainCommunityChannelSelection(structure?.channels ?? [], null)
-  ));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -79,7 +74,6 @@ function CommunityChannelShellState({ cacheKey, communityId, communityLink, init
       if (!validated) throw new Error('Invalid community structure response');
       hasUsableStructureRef.current = true;
       setStructure(validated);
-      setSelectedId((current) => retainCommunityChannelSelection(validated.channels, current));
       cache.set(cacheKey, validated, { category: 'groups', subcategory: 'profile' });
       setFailed(false);
     } catch (error) {
@@ -107,14 +101,8 @@ function CommunityChannelShellState({ cacheKey, communityId, communityLink, init
     };
   }, [communityId]);
 
-  const selectedChannel = useMemo(
-    () => structure?.channels.find((channel) => channel.id === selectedId) ?? null,
-    [selectedId, structure?.channels],
-  );
-
   const openChannel = useCallback(async (channel: CommunityChannel) => {
     if (openingId !== null) return;
-    setSelectedId(channel.id);
     setOpeningId(channel.id);
     try {
       const result = await AncialAPI.joinPublicChat<{ status?: 'joined' | 'requested'; hash?: string | null }>(channel.id);
@@ -147,42 +135,20 @@ function CommunityChannelShellState({ cacheKey, communityId, communityLink, init
     }
   }, [communityLink, lang, openingId, router, showNote]);
 
-  const channelTypeLabel = (channel: CommunityChannel) => {
-    if (channel.channel_type === 'voice') return lang?.community_channel_voice || '';
-    if (channel.channel_type === 'announcement') return lang?.community_channel_announcement || '';
-    return lang?.community_channel_text || '';
-  };
-
   if (!structure && !failed) {
     return <div className="h-28 animate-pulse rounded-3xl border border-zinc-600/30 bg-zinc-900" />;
   }
   if (failed || !structure) return null;
 
   const content = structure.channels.length > 0 ? (
-    <div className="flex flex-col gap-3">
-      <CommunityChannelList
-        categories={structure.categories}
-        channels={structure.channels}
-        onSelect={(channel) => setSelectedId(channel.id)}
-        selectedId={selectedId}
-        uncategorizedLabel={lang?.community_channel_uncategorized || ''}
-      />
-      {selectedChannel ? (
-        <CommunityChannelView
-          actionLabel={selectedChannel.channel_type === 'voice'
-            ? (openingId === selectedChannel.id
-              ? lang?.community_channel_joining || ''
-              : lang?.community_channel_join_voice || '')
-            : (openingId === selectedChannel.id
-              ? lang?.community_channel_joining || ''
-              : lang?.community_channel_open_messages || '')}
-          channel={selectedChannel}
-          disabled={openingId !== null}
-          onOpen={() => void openChannel(selectedChannel)}
-          typeLabel={channelTypeLabel(selectedChannel)}
-        />
-      ) : null}
-    </div>
+    <CommunityChannelList
+      categories={structure.categories}
+      channels={structure.channels}
+      disabled={openingId !== null}
+      onSelect={openChannel}
+      selectedId={openingId}
+      uncategorizedLabel={lang?.community_channel_uncategorized || ''}
+    />
   ) : (
     <p className="p-3 text-sm text-zinc-400">{lang?.community_channels_empty}</p>
   );

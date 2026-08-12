@@ -5,29 +5,33 @@ import CommunityChannelIcon from './community-channel-icon';
 type Props = {
   categories: CommunityCategory[];
   channels: CommunityChannel[];
-  onSelect: (channel: CommunityChannel) => void;
+  disabled?: boolean;
+  onSelect: (channel: CommunityChannel) => void | Promise<void>;
   selectedId: number | null;
   uncategorizedLabel: string;
 };
 
 function ChannelButton({
   channel,
+  disabled,
   onSelect,
   selected,
 }: {
   channel: CommunityChannel;
-  onSelect: (channel: CommunityChannel) => void;
+  disabled: boolean;
+  onSelect: (channel: CommunityChannel) => void | Promise<void>;
   selected: boolean;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onSelect(channel)}
+      disabled={disabled}
+      onClick={() => void onSelect(channel)}
       className={`flex w-full cursor-pointer items-center gap-2 rounded-3xl border p-2 text-left duration-300 active:scale-95 ${
         selected
           ? 'border-purple-400/40 bg-purple-500/20 text-white'
           : 'border-transparent text-zinc-300 hover:border-zinc-600/30 hover:bg-zinc-800/70'
-      }`}
+      } disabled:cursor-wait disabled:opacity-60`}
     >
       <span className="flex w-7 shrink-0 items-center justify-center text-zinc-400">
         <CommunityChannelIcon type={channel.channel_type} />
@@ -40,7 +44,7 @@ function ChannelButton({
   );
 }
 
-export default function CommunityChannelList({ categories, channels, onSelect, selectedId, uncategorizedLabel }: Props) {
+export default function CommunityChannelList({ categories, channels, disabled = false, onSelect, selectedId, uncategorizedLabel }: Props) {
   const populatedCategories: Array<{ category: CommunityCategory; channels: CommunityChannel[] }> = [];
   for (const category of categories) {
     const categoryChannels = channels.filter((channel) => channel.category_id === category.id);
@@ -61,7 +65,7 @@ export default function CommunityChannelList({ categories, channels, onSelect, s
         <section key={category.id} className="flex flex-col gap-1">
           <span className="px-2 text-xs font-bold uppercase tracking-wide text-zinc-500">{category.name}</span>
           {categoryChannels.map((channel) => (
-              <ChannelButton key={channel.id} channel={channel} onSelect={onSelect} selected={selectedId === channel.id} />
+              <ChannelButton key={channel.id} channel={channel} disabled={disabled} onSelect={onSelect} selected={selectedId === channel.id} />
           ))}
         </section>
       ))}
@@ -71,7 +75,7 @@ export default function CommunityChannelList({ categories, channels, onSelect, s
             <span className="px-2 text-xs font-bold uppercase tracking-wide text-zinc-500">{uncategorizedLabel}</span>
           ) : null}
           {uncategorizedChannels.map((channel) => (
-            <ChannelButton key={channel.id} channel={channel} onSelect={onSelect} selected={selectedId === channel.id} />
+            <ChannelButton key={channel.id} channel={channel} disabled={disabled} onSelect={onSelect} selected={selectedId === channel.id} />
           ))}
         </section>
       ) : null}

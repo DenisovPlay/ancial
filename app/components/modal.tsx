@@ -11,7 +11,7 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   swipeable?: boolean;
-  width?: 'sm' | 'md' | 'lg' | 'full';
+  width?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   bodyClassName?: string;
   overlayClassName?: string;
   panelClassName?: string;
@@ -22,6 +22,14 @@ interface ModalProps {
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
+
+const MODAL_WIDTH_CLASSES = {
+  sm: 'w-full sm:w-[500px]',
+  md: 'w-full sm:w-[700px]',
+  lg: 'w-full sm:w-[900px]',
+  xl: 'w-full sm:w-[1180px]',
+  full: 'w-full',
+} as const;
 
 export default function Modal({
   align = 'responsive',
@@ -132,13 +140,6 @@ export default function Modal({
     startY.current = null;
   };
 
-  const widthClasses = {
-    sm: 'w-full sm:w-[500px]',
-    md: 'w-full sm:w-[700px]',
-    lg: 'w-full sm:w-[900px]',
-    full: 'w-full',
-  };
-
   const alignmentClasses =
     align === 'center' ? 'items-center' : 'items-end sm:items-center';
 
@@ -163,7 +164,7 @@ export default function Modal({
     >
       <div 
         className={cn(
-          widthClasses[width],
+          MODAL_WIDTH_CLASSES[width],
           'max-h-[90vh] flex flex-col transition-all ease-out duration-300 relative overflow-hidden',
           !unstyled && 'bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl',
           animationClasses,
@@ -189,6 +190,8 @@ export default function Modal({
               <div className="flex items-center justify-between px-3 pb-3 sm:pt-3 w-full">
                   <h2 className="text-xl font-bold text-white backdrop-shadow-lg">{title}</h2>
                   <button 
+                      type="button"
+                      aria-label="Close"
                       onClick={onClose}
                       className="cursor-pointer hidden sm:flex p-1.5 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-600/30 duration-300 active:scale-95"
                   >
