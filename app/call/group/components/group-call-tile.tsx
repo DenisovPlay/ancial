@@ -86,6 +86,7 @@ export default function GroupCallTile({
     const handleTrackRemoved = (event: MediaStreamTrackEvent) => {
       unobserveTrack(event.track);
       updateVideoReadiness();
+      attachStream();
     };
     stream?.getVideoTracks().forEach(observeTrack);
     stream?.addEventListener('addtrack', handleTrackAdded);
@@ -111,10 +112,9 @@ export default function GroupCallTile({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !stream) return;
-    if (video.srcObject !== stream) video.srcObject = stream;
+    if (!video || !video.srcObject) return;
     void video.play().catch(() => undefined);
-  }, [deafened, focused, stream]);
+  }, [focused]);
 
   return (
     <article className={`relative min-h-0 overflow-hidden rounded-3xl border bg-zinc-900 shadow-lg transition-[border-color,transform] duration-300 ${focused ? 'border-purple-400/50' : 'border-zinc-600/30'}`}>

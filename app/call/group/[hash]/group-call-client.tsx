@@ -142,9 +142,6 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
     }];
   }, [call.camEnabled, call.joined, call.micEnabled, call.participants, call.screenEnabled, config.currentUserId]);
   const activeFocusedParticipantId = resolveFocusedParticipantId(focusedParticipantId, visibleParticipants);
-  const renderedParticipants = activeFocusedParticipantId === null
-    ? visibleParticipants
-    : visibleParticipants.filter((participant) => participant.user_id === activeFocusedParticipantId);
 
   useEffect(() => {
     const known = new Set(members.map((member) => Number(member.id)));
@@ -225,19 +222,24 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
       </header>
 
       <main className="absolute inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] top-[calc(4rem+env(safe-area-inset-top,0px))] overflow-y-auto p-3 pt-6">
-        {renderedParticipants.length > 0 ? (
-          <div className={`mx-auto grid h-full min-h-[20rem] max-w-screen-2xl auto-rows-fr gap-3 ${getGroupCallGridClass(renderedParticipants.length)}`}>
-            {renderedParticipants.map((participant) => (
-              <GroupCallTile
+        {visibleParticipants.length > 0 ? (
+          <div className={`mx-auto grid h-full min-h-[20rem] max-w-screen-2xl auto-rows-fr gap-3 ${getGroupCallGridClass(activeFocusedParticipantId === null ? visibleParticipants.length : 1)}`}>
+            {visibleParticipants.map((participant) => (
+              <div
                 key={participant.user_id}
-                participant={participant}
-                member={memberById.get(participant.user_id)}
-                stream={participant.user_id === config.currentUserId ? call.localStream : call.remoteStreams[participant.user_id]}
-                isLocal={participant.user_id === config.currentUserId}
-                deafened={call.deafened}
-                focused={participant.user_id === activeFocusedParticipantId}
-                onFocusChange={(focused) => setFocusedParticipantId(focused ? participant.user_id : null)}
-              />
+                hidden={activeFocusedParticipantId !== null && participant.user_id !== activeFocusedParticipantId}
+                className={activeFocusedParticipantId !== null && participant.user_id !== activeFocusedParticipantId ? 'hidden' : 'contents'}
+              >
+                <GroupCallTile
+                  participant={participant}
+                  member={memberById.get(participant.user_id)}
+                  stream={participant.user_id === config.currentUserId ? call.localStream : call.remoteStreams[participant.user_id]}
+                  isLocal={participant.user_id === config.currentUserId}
+                  deafened={call.deafened}
+                  focused={participant.user_id === activeFocusedParticipantId}
+                  onFocusChange={(focused) => setFocusedParticipantId(focused ? participant.user_id : null)}
+                />
+              </div>
             ))}
           </div>
         ) : (
@@ -331,7 +333,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
         <div className="flex flex-col gap-3">
           <p className="text-sm text-zinc-300">
             {config.canPublish
-              ? (lang?.media_access_desc || 'Подтвердите доступ к микрофону. Камера останется выключенной.')
+              ? (lang?.media_access_desc || 'Нажмите кнопку ниже и подтвердите доступ к камере и микрофону.')
               : (lang?.voice_listen_only || 'Только слушать')}
           </p>
           <div className="grid grid-cols-2 gap-3">

@@ -14,6 +14,9 @@ assert.match(clientSource, /safe-area-inset-top/);
 assert.match(clientSource, /safe-area-inset-bottom/);
 assert.match(clientSource, /focusedParticipantId/);
 assert.match(clientSource, /resolveFocusedParticipantId/);
+assert.doesNotMatch(clientSource, /visibleParticipants\.filter/);
+assert.match(clientSource, /hidden=\{activeFocusedParticipantId !== null/);
+assert.match(clientSource, /lang\?\.media_access_desc/);
 assert.match(tileSource, /participant\.screen_enabled \? 'object-contain' : 'object-cover'/);
 assert.match(tileSource, /voice_focus_video/);
 assert.match(tileSource, /voice_return_to_grid/);
@@ -25,6 +28,7 @@ assert.match(tileSource, /video\.addEventListener\('loadedmetadata', attemptPlay
 assert.match(tileSource, /video\.addEventListener\('canplay', attemptPlayback\)/);
 assert.match(tileSource, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
 assert.match(tileSource, /attemptPlayback\(\);/);
+assert.doesNotMatch(tileSource, /const audioRef = useRef<HTMLAudioElement/);
 assert.match(ruLocale, /"voice_focus_video"/);
 assert.match(ruLocale, /"voice_return_to_grid"/);
 assert.match(enLocale, /"voice_focus_video"/);
@@ -44,5 +48,8 @@ assert.match(hookSource, /onnegotiationneeded/);
 assert.match(hookSource, /Promise\.allSettled/);
 assert.doesNotMatch(hookSource, /readOutboundVideoBytes/);
 assert.doesNotMatch(hookSource, /outboundVideoWatchdogsRef/);
+assert.match(hookSource, /video: true/);
+assert.match(hookSource, /cameraTrackRef\.current = stream\.getVideoTracks\(\)\[0\]/);
+assert.match(hookSource, /activeVideoTrackRef\.current = cameraTrackRef\.current/);
 
 console.log('group call layout: ok');

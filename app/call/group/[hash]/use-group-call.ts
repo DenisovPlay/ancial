@@ -609,14 +609,20 @@ export function useGroupCall({
       const mediaPromise = canPublish
         ? navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: false,
+            video: true,
           })
         : Promise.resolve(new MediaStream());
       const turnPromise = AncialAPI.getTurnConfig<{ iceServers?: RTCIceServer[] }>();
       const [stream, turn] = await Promise.all([mediaPromise, turnPromise]);
       audioTrackRef.current = stream.getAudioTracks()[0] ?? null;
+      cameraTrackRef.current = stream.getVideoTracks()[0] ?? null;
+      activeVideoTrackRef.current = cameraTrackRef.current;
       micEnabledRef.current = canPublish && Boolean(audioTrackRef.current);
+      camEnabledRef.current = canPublish && Boolean(cameraTrackRef.current);
       setMicEnabled(micEnabledRef.current);
+      setCamEnabled(camEnabledRef.current);
+      const initialCameraId = cameraTrackRef.current?.getSettings().deviceId;
+      if (initialCameraId) setSelectedCameraId(initialCameraId);
       iceServersRef.current = Array.isArray(turn?.iceServers) ? turn.iceServers : [];
       joinedRef.current = true;
       pendingJoinRef.current = true;
