@@ -51,7 +51,14 @@ export default function GroupCallTile({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.srcObject = stream ?? null;
+    const attemptPlayback = () => {
+      if (!stream || video.srcObject !== stream) return;
+      void video.play().catch(() => undefined);
+    };
+    const attachStream = () => {
+      if (video.srcObject !== stream) video.srcObject = stream ?? null;
+      attemptPlayback();
+    };
     const updateVideoReadiness = () => {
       setHasPlayableVideo(Boolean(stream && hasPlayableVideoTrack(stream.getTracks())));
     };
@@ -60,18 +67,21 @@ export default function GroupCallTile({
       if (track.kind !== 'video' || observedTracks.has(track)) return;
       observedTracks.add(track);
       track.addEventListener('mute', updateVideoReadiness);
+      track.addEventListener('unmute', attemptPlayback);
       track.addEventListener('unmute', updateVideoReadiness);
       track.addEventListener('ended', updateVideoReadiness);
     };
     const unobserveTrack = (track: MediaStreamTrack) => {
       observedTracks.delete(track);
       track.removeEventListener('mute', updateVideoReadiness);
+      track.removeEventListener('unmute', attemptPlayback);
       track.removeEventListener('unmute', updateVideoReadiness);
       track.removeEventListener('ended', updateVideoReadiness);
     };
     const handleTrackAdded = (event: MediaStreamTrackEvent) => {
       observeTrack(event.track);
       updateVideoReadiness();
+      attachStream();
     };
     const handleTrackRemoved = (event: MediaStreamTrackEvent) => {
       unobserveTrack(event.track);
@@ -80,15 +90,31 @@ export default function GroupCallTile({
     stream?.getVideoTracks().forEach(observeTrack);
     stream?.addEventListener('addtrack', handleTrackAdded);
     stream?.addEventListener('removetrack', handleTrackRemoved);
+    video.addEventListener('loadedmetadata', attemptPlayback);
+    video.addEventListener('canplay', attemptPlayback);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') attachStream();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     updateVideoReadiness();
-    if (stream) void video.play().catch(() => undefined);
+    attachStream();
     return () => {
       stream?.removeEventListener('addtrack', handleTrackAdded);
       stream?.removeEventListener('removetrack', handleTrackRemoved);
+      video.removeEventListener('loadedmetadata', attemptPlayback);
+      video.removeEventListener('canplay', attemptPlayback);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       observedTracks.forEach(unobserveTrack);
-      video.srcObject = null;
+      if (video.srcObject === stream) video.srcObject = null;
     };
   }, [stream]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !stream) return;
+    if (video.srcObject !== stream) video.srcObject = stream;
+    void video.play().catch(() => undefined);
+  }, [deafened, focused, stream]);
 
   return (
     <article className={`relative min-h-0 overflow-hidden rounded-3xl border bg-zinc-900 shadow-lg transition-[border-color,transform] duration-300 ${focused ? 'border-purple-400/50' : 'border-zinc-600/30'}`}>

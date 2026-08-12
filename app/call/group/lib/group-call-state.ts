@@ -110,13 +110,9 @@ export function resolveOfferCollision({
 
 export function hasPlayableVideoTrack(tracks: Iterable<MediaTrackHealth>): boolean {
   for (const track of tracks) {
-    if (track.kind === 'video' && track.readyState === 'live' && !track.muted) return true;
+    if (track.kind === 'video' && track.readyState === 'live') return true;
   }
   return false;
-}
-
-export function hasOutboundVideoProgress(beforeBytes: number | null, afterBytes: number | null): boolean {
-  return beforeBytes !== null && afterBytes !== null && afterBytes > beforeBytes;
 }
 
 export function shouldRecoverPeer(

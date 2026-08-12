@@ -7,7 +7,6 @@ import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import { globalWS } from '../../../lib/global-ws';
 import {
-  hasOutboundVideoProgress,
   isGroupCallOfferer,
   isPolitePeer,
   normalizeParticipant,
@@ -41,7 +40,6 @@ type UseGroupCallOptions = {
 
 const DISCONNECTED_RECOVERY_DELAY_MS = 4_000;
 const MISSING_VIDEO_RECOVERY_DELAY_MS = 8_000;
-const OUTBOUND_VIDEO_SAMPLE_DELAY_MS = 2_000;
 
 type PeerNegotiationState = {
   ignoreOffer: boolean;
@@ -85,7 +83,6 @@ export function useGroupCall({
   const remoteStreamsRef = useRef(new Map<number, MediaStream>());
   const recoveryTimersRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
   const videoWatchdogsRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
-  const outboundVideoWatchdogsRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
   const recoveryAttemptsRef = useRef(new Map<number, number>());
   const recoveryRequestRef = useRef<(userId: number, missingMedia?: boolean) => void>(() => undefined);
   const makeOfferRef = useRef<(userId: number, iceRestart?: boolean) => Promise<void>>(async () => undefined);
@@ -148,19 +145,12 @@ export function useGroupCall({
     videoWatchdogsRef.current.delete(userId);
   }, []);
 
-  const clearOutboundVideoWatchdog = useCallback((userId: number) => {
-    const timer = outboundVideoWatchdogsRef.current.get(userId);
-    if (timer) clearTimeout(timer);
-    outboundVideoWatchdogsRef.current.delete(userId);
-  }, []);
-
   const clearPeerSupervision = useCallback((userId: number, clearAttempts = true) => {
     clearRecoveryTimer(userId);
     clearVideoWatchdog(userId);
-    clearOutboundVideoWatchdog(userId);
     signalQueuesRef.current.delete(userId);
     if (clearAttempts) recoveryAttemptsRef.current.delete(userId);
-  }, [clearOutboundVideoWatchdog, clearRecoveryTimer, clearVideoWatchdog]);
+  }, [clearRecoveryTimer, clearVideoWatchdog]);
 
   const closePeer = useCallback((userId: number, clearAttempts = true) => {
     peersRef.current.get(userId)?.close();
@@ -177,48 +167,6 @@ export function useGroupCall({
       return next;
     });
   }, [clearPeerSupervision]);
-
-  const readOutboundVideoBytes = useCallback(async (sender: RTCRtpSender) => {
-    const reports = await sender.getStats();
-    let bytes = 0;
-    let found = false;
-    reports.forEach((report) => {
-      if (report.type !== 'outbound-rtp' || report.kind !== 'video' || report.isRemote) return;
-      const value = Number(report.bytesSent);
-      if (!Number.isFinite(value)) return;
-      bytes += value;
-      found = true;
-    });
-    return found ? bytes : null;
-  }, []);
-
-  const superviseOutboundVideo = useCallback(async (userId: number, track: MediaStreamTrack) => {
-    clearOutboundVideoWatchdog(userId);
-    const sender = videoSendersRef.current.get(userId);
-    if (!sender || sender.track !== track) return;
-    const beforeBytes = await readOutboundVideoBytes(sender).catch(() => null);
-    if (videoSendersRef.current.get(userId) !== sender || sender.track !== track) return;
-    const timer = setTimeout(() => {
-      outboundVideoWatchdogsRef.current.delete(userId);
-      const currentPeer = peersRef.current.get(userId);
-      const currentSender = videoSendersRef.current.get(userId);
-      if (
-        currentPeer?.connectionState !== 'connected'
-        || currentSender !== sender
-        || sender.track !== track
-        || track.readyState !== 'live'
-        || !track.enabled
-      ) return;
-      void readOutboundVideoBytes(sender).then((afterBytes) => {
-        if (!hasOutboundVideoProgress(beforeBytes, afterBytes)) {
-          recoveryRequestRef.current(userId, true);
-        } else {
-          recoveryAttemptsRef.current.delete(userId);
-        }
-      }).catch(() => recoveryRequestRef.current(userId, true));
-    }, OUTBOUND_VIDEO_SAMPLE_DELAY_MS);
-    outboundVideoWatchdogsRef.current.set(userId, timer);
-  }, [clearOutboundVideoWatchdog, readOutboundVideoBytes]);
 
   const replaceVideoTrack = useCallback(async (track: MediaStreamTrack | null) => {
     const senders = Array.from(videoSendersRef.current.entries());
@@ -237,12 +185,7 @@ export function useGroupCall({
       });
     }
 
-    outboundVideoWatchdogsRef.current.forEach(clearTimeout);
-    outboundVideoWatchdogsRef.current.clear();
-    if (track) {
-      senders.forEach(([userId]) => void superviseOutboundVideo(userId, track));
-    }
-  }, [closePeer, refreshLocalStream, superviseOutboundVideo]);
+  }, [closePeer, refreshLocalStream]);
 
   const enqueueSignal = useCallback((userId: number, operation: () => Promise<void>) => {
     const previous = signalQueuesRef.current.get(userId) ?? Promise.resolve();
@@ -364,8 +307,6 @@ export function useGroupCall({
     peer.onconnectionstatechange = () => {
       if (peer.connectionState === 'connected') {
         clearRecoveryTimer(targetUserId);
-        const localVideoTrack = activeVideoTrackRef.current;
-        if (localVideoTrack) void superviseOutboundVideo(targetUserId, localVideoTrack);
         const participant = participantsRef.current.find((item) => item.user_id === targetUserId);
         const expectsVideo = Boolean(participant?.cam_enabled || participant?.screen_enabled);
         if (expectsVideo && !hasLiveRemoteVideo(targetUserId)) {
@@ -385,7 +326,7 @@ export function useGroupCall({
       }
     };
     return peer;
-  }, [clearRecoveryTimer, clearVideoWatchdog, currentUserId, enqueueSignal, hasLiveRemoteVideo, sendSignal, superviseOutboundVideo, watchForRemoteVideo]);
+  }, [clearRecoveryTimer, clearVideoWatchdog, currentUserId, enqueueSignal, hasLiveRemoteVideo, sendSignal, watchForRemoteVideo]);
 
   const flushIce = useCallback(async (userId: number, peer: RTCPeerConnection) => {
     const candidates = pendingIceRef.current.get(userId) ?? [];
@@ -447,8 +388,6 @@ export function useGroupCall({
     recoveryTimersRef.current.clear();
     videoWatchdogsRef.current.forEach(clearTimeout);
     videoWatchdogsRef.current.clear();
-    outboundVideoWatchdogsRef.current.forEach(clearTimeout);
-    outboundVideoWatchdogsRef.current.clear();
     recoveryAttemptsRef.current.clear();
     setRemoteStreams({});
   }, []);
@@ -642,8 +581,6 @@ export function useGroupCall({
     recoveryTimersRef.current.clear();
     videoWatchdogsRef.current.forEach(clearTimeout);
     videoWatchdogsRef.current.clear();
-    outboundVideoWatchdogsRef.current.forEach(clearTimeout);
-    outboundVideoWatchdogsRef.current.clear();
     recoveryAttemptsRef.current.clear();
     audioTrackRef.current?.stop();
     cameraTrackRef.current?.stop();

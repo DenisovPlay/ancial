@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   canFocusParticipant,
   getGroupCallGridClass,
-  hasOutboundVideoProgress,
   hasPlayableVideoTrack,
   isPolitePeer,
   isGroupCallOfferer,
@@ -87,12 +86,10 @@ assert.deepEqual(
 
 assert.equal(hasPlayableVideoTrack([]), false);
 assert.equal(hasPlayableVideoTrack([{ kind: 'audio', readyState: 'live', muted: false }]), false);
-assert.equal(hasPlayableVideoTrack([{ kind: 'video', readyState: 'live', muted: true }]), false);
+// A temporary WebRTC mute is not the same as removing/stopping the video track.
+// Keeping the live track mounted avoids flashing the avatar during renegotiation/jitter.
+assert.equal(hasPlayableVideoTrack([{ kind: 'video', readyState: 'live', muted: true }]), true);
 assert.equal(hasPlayableVideoTrack([{ kind: 'video', readyState: 'ended', muted: false }]), false);
 assert.equal(hasPlayableVideoTrack([{ kind: 'video', readyState: 'live', muted: false }]), true);
-
-assert.equal(hasOutboundVideoProgress(120, 121), true);
-assert.equal(hasOutboundVideoProgress(120, 120), false);
-assert.equal(hasOutboundVideoProgress(null, 120), false);
 
 console.log('group call state: ok');
