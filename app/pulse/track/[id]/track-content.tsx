@@ -329,7 +329,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                       </DropdownItem>
                     ) : null}
                     {track?.src ? (
-                      <DropdownItem icon="IC-download" onClick={() => window.open(`${normalizeText(track.src)}?download=1`, '_blank', 'noopener,noreferrer')}>
+                      <DropdownItem icon="IC-download" onClick={() => window.open(`${normalizeText(track.src)}&download=1`, '_blank', 'noopener,noreferrer')}>
                         {lang?.download || 'Скачать'}
                       </DropdownItem>
                     ) : null}
