@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 
 import {
+  canFocusParticipant,
   getGroupCallGridClass,
   normalizeParticipant,
+  resolveFocusedParticipantId,
   updateParticipantMedia,
 } from './group-call-state.ts';
 
@@ -28,5 +30,17 @@ assert.deepEqual(
   ),
   [{ user_id: 7, mic_enabled: false, cam_enabled: true, screen_enabled: false }],
 );
+
+const cameraParticipant = { user_id: 7, mic_enabled: true, cam_enabled: true, screen_enabled: false };
+const screenParticipant = { user_id: 8, mic_enabled: true, cam_enabled: false, screen_enabled: true };
+const audioParticipant = { user_id: 9, mic_enabled: true, cam_enabled: false, screen_enabled: false };
+
+assert.equal(canFocusParticipant(cameraParticipant), true);
+assert.equal(canFocusParticipant(screenParticipant), true);
+assert.equal(canFocusParticipant(audioParticipant), false);
+assert.equal(resolveFocusedParticipantId(7, [cameraParticipant, screenParticipant]), 7);
+assert.equal(resolveFocusedParticipantId(7, [{ ...cameraParticipant, cam_enabled: false }]), null);
+assert.equal(resolveFocusedParticipantId(7, [screenParticipant]), null);
+assert.equal(resolveFocusedParticipantId(null, [cameraParticipant]), null);
 
 console.log('group call state: ok');

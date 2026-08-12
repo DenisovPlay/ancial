@@ -1328,6 +1328,8 @@ export const en: Record<string, string> = {
   "voice_room_leave": "Leave",
   "voice_room_connecting": "Connecting…",
   "voice_room_error": "Could not join the call",
+  "voice_focus_video": "Expand video",
+  "voice_return_to_grid": "Return to grid",
   "voice_microphone_denied": "Could not access the microphone",
   "voice_mute": "Microphone",
   "voice_unmute": "Unmute",

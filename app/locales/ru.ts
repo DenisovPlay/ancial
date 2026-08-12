@@ -1328,6 +1328,8 @@ export const ru: Record<string, string> = {
     "voice_room_leave": "Выйти",
     "voice_room_connecting": "Подключаемся…",
     "voice_room_error": "Не удалось подключиться к звонку",
+    "voice_focus_video": "Развернуть видео",
+    "voice_return_to_grid": "Вернуться к сетке",
     "voice_microphone_denied": "Не удалось получить доступ к микрофону",
     "voice_mute": "Микрофон",
     "voice_unmute": "Включить",

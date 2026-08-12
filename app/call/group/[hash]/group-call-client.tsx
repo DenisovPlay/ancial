@@ -9,7 +9,11 @@ import { useAuth } from '../../../context/AuthContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import type { DialogMeta, GroupMember } from '../../../messages/lib/messages-shared';
 import GroupCallTile from '../components/group-call-tile';
-import { getGroupCallGridClass, type GroupCallParticipant } from '../lib/group-call-state';
+import {
+  getGroupCallGridClass,
+  resolveFocusedParticipantId,
+  type GroupCallParticipant,
+} from '../lib/group-call-state';
 import { useGroupCall } from './use-group-call';
 
 type CommunityVoicePermissions = {
@@ -97,6 +101,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   const { lang } = useAuth();
   const [permissionsOpen, setPermissionsOpen] = useState(true);
   const [cameraMenuOpen, setCameraMenuOpen] = useState(false);
+  const [focusedParticipantId, setFocusedParticipantId] = useState<number | null>(null);
   const [members, setMembers] = useState(config.members);
   const title = config.dialog.title || lang?.voice_room_title || 'Групповой звонок';
   const exitCall = useCallback(() => router.push(returnPath), [returnPath, router]);
@@ -120,6 +125,10 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
       screen_enabled: call.screenEnabled,
     }];
   }, [call.camEnabled, call.joined, call.micEnabled, call.participants, call.screenEnabled, config.currentUserId]);
+  const activeFocusedParticipantId = resolveFocusedParticipantId(focusedParticipantId, visibleParticipants);
+  const renderedParticipants = activeFocusedParticipantId === null
+    ? visibleParticipants
+    : visibleParticipants.filter((participant) => participant.user_id === activeFocusedParticipantId);
 
   useEffect(() => {
     const known = new Set(members.map((member) => Number(member.id)));
@@ -200,9 +209,9 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
       </header>
 
       <main className="absolute inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] top-[calc(4rem+env(safe-area-inset-top,0px))] overflow-y-auto p-3 pt-6">
-        {visibleParticipants.length > 0 ? (
-          <div className={`mx-auto grid h-full min-h-[20rem] max-w-screen-2xl auto-rows-fr gap-3 ${getGroupCallGridClass(visibleParticipants.length)}`}>
-            {visibleParticipants.map((participant) => (
+        {renderedParticipants.length > 0 ? (
+          <div className={`mx-auto grid h-full min-h-[20rem] max-w-screen-2xl auto-rows-fr gap-3 ${getGroupCallGridClass(renderedParticipants.length)}`}>
+            {renderedParticipants.map((participant) => (
               <GroupCallTile
                 key={participant.user_id}
                 participant={participant}
@@ -210,6 +219,8 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
                 stream={participant.user_id === config.currentUserId ? call.localStream : call.remoteStreams[participant.user_id]}
                 isLocal={participant.user_id === config.currentUserId}
                 deafened={call.deafened}
+                focused={participant.user_id === activeFocusedParticipantId}
+                onFocusChange={(focused) => setFocusedParticipantId(focused ? participant.user_id : null)}
               />
             ))}
           </div>

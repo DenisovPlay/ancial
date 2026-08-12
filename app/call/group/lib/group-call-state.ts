@@ -59,6 +59,19 @@ export function updateParticipantMedia(
     : participant);
 }
 
+export function canFocusParticipant(participant: GroupCallParticipant): boolean {
+  return participant.cam_enabled || participant.screen_enabled;
+}
+
+export function resolveFocusedParticipantId(
+  focusedUserId: number | null,
+  participants: GroupCallParticipant[],
+): number | null {
+  if (focusedUserId === null) return null;
+  const participant = participants.find((item) => item.user_id === focusedUserId);
+  return participant && canFocusParticipant(participant) ? focusedUserId : null;
+}
+
 export function getGroupCallGridClass(count: number): string {
   const normalized = Math.max(1, Math.min(8, Math.floor(count)));
   if (normalized === 1) return 'grid-cols-1';
