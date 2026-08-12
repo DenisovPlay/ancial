@@ -489,6 +489,16 @@ export function useGroupCall({
   useEffect(() => () => {
     if (joinedRef.current && roomIdRef.current) sendSignal({ kind: 'leave' });
     peersRef.current.forEach((peer) => peer.close());
+    peersRef.current.clear();
+    videoSendersRef.current.clear();
+    pendingIceRef.current.clear();
+    signalQueuesRef.current.clear();
+    remoteStreamsRef.current.clear();
+    recoveryTimersRef.current.forEach(clearTimeout);
+    recoveryTimersRef.current.clear();
+    videoWatchdogsRef.current.forEach(clearTimeout);
+    videoWatchdogsRef.current.clear();
+    recoveryAttemptsRef.current.clear();
     audioTrackRef.current?.stop();
     cameraTrackRef.current?.stop();
     screenTrackRef.current?.stop();
@@ -497,12 +507,14 @@ export function useGroupCall({
 
   const loadCameras = useCallback(async () => {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    const next = devices
-      .filter((device) => device.kind === 'videoinput')
-      .map((device, index) => ({
+    const next: CameraDevice[] = [];
+    devices.forEach((device) => {
+      if (device.kind !== 'videoinput') return;
+      next.push({
         deviceId: device.deviceId,
-        label: device.label || `${lang?.camera || 'Камера'} ${index + 1}`,
-      }));
+        label: device.label || `${lang?.camera || 'Камера'} ${next.length + 1}`,
+      });
+    });
     setCameras(next);
     if (!selectedCameraId && next[0]) setSelectedCameraId(next[0].deviceId);
   }, [lang?.camera, selectedCameraId]);
