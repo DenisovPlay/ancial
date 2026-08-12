@@ -1,11 +1,11 @@
 /* eslint-disable @next/next/no-img-element -- participant avatars may use user-configured remote hosts */
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '../../../context/AuthContext';
 import { FALLBACK_AVATAR, normalizeAssetUrl, type GroupMember } from '../../../messages/lib/messages-shared';
-import type { GroupCallParticipant } from '../lib/group-call-state';
+import { hasPlayableVideoTrack, type GroupCallParticipant } from '../lib/group-call-state';
 
 type Props = {
   deafened: boolean;
@@ -37,7 +37,10 @@ export default function GroupCallTile({
 }: Props) {
   const { lang } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const hasVideo = participant.cam_enabled || participant.screen_enabled;
+  const advertisedVideo = participant.cam_enabled || participant.screen_enabled;
+  const [hasPlayableVideo, setHasPlayableVideo] = useState(() => (
+    stream ? hasPlayableVideoTrack(stream.getTracks()) : false
+  ));
   const focusLabel = focused
     ? (lang?.voice_return_to_grid || 'Вернуться к сетке')
     : (lang?.voice_focus_video || 'Развернуть видео');
@@ -49,8 +52,40 @@ export default function GroupCallTile({
     const video = videoRef.current;
     if (!video) return;
     video.srcObject = stream ?? null;
+    const updateVideoReadiness = () => {
+      setHasPlayableVideo(Boolean(stream && hasPlayableVideoTrack(stream.getTracks())));
+    };
+    const observedTracks = new Set<MediaStreamTrack>();
+    const observeTrack = (track: MediaStreamTrack) => {
+      if (track.kind !== 'video' || observedTracks.has(track)) return;
+      observedTracks.add(track);
+      track.addEventListener('mute', updateVideoReadiness);
+      track.addEventListener('unmute', updateVideoReadiness);
+      track.addEventListener('ended', updateVideoReadiness);
+    };
+    const unobserveTrack = (track: MediaStreamTrack) => {
+      observedTracks.delete(track);
+      track.removeEventListener('mute', updateVideoReadiness);
+      track.removeEventListener('unmute', updateVideoReadiness);
+      track.removeEventListener('ended', updateVideoReadiness);
+    };
+    const handleTrackAdded = (event: MediaStreamTrackEvent) => {
+      observeTrack(event.track);
+      updateVideoReadiness();
+    };
+    const handleTrackRemoved = (event: MediaStreamTrackEvent) => {
+      unobserveTrack(event.track);
+      updateVideoReadiness();
+    };
+    stream?.getVideoTracks().forEach(observeTrack);
+    stream?.addEventListener('addtrack', handleTrackAdded);
+    stream?.addEventListener('removetrack', handleTrackRemoved);
+    updateVideoReadiness();
     if (stream) void video.play().catch(() => undefined);
     return () => {
+      stream?.removeEventListener('addtrack', handleTrackAdded);
+      stream?.removeEventListener('removetrack', handleTrackRemoved);
+      observedTracks.forEach(unobserveTrack);
       video.srcObject = null;
     };
   }, [stream]);
@@ -62,10 +97,10 @@ export default function GroupCallTile({
         autoPlay
         playsInline
         muted={isLocal || deafened}
-        className={`absolute inset-0 h-full w-full ${participant.screen_enabled ? 'object-contain' : 'object-cover'} transition-opacity duration-300 ${hasVideo && stream ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 h-full w-full ${participant.screen_enabled ? 'object-contain' : 'object-cover'} transition-opacity duration-300 ${advertisedVideo && hasPlayableVideo ? 'opacity-100' : 'opacity-0'}`}
       />
 
-      <div className={`absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950 transition-opacity duration-300 ${hasVideo && stream ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+      <div className={`absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950 transition-opacity duration-300 ${advertisedVideo && hasPlayableVideo ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <img
           src={normalizeAssetUrl(member?.img, FALLBACK_AVATAR)}
           alt=""
@@ -74,7 +109,7 @@ export default function GroupCallTile({
         <span className="max-w-[85%] truncate text-base font-semibold text-zinc-100 sm:text-lg">{displayName}</span>
       </div>
 
-      {hasVideo && onFocusChange ? (
+      {advertisedVideo && hasPlayableVideo && onFocusChange ? (
         <button
           type="button"
           aria-label={focusLabel}
@@ -84,7 +119,7 @@ export default function GroupCallTile({
         />
       ) : null}
 
-      {hasVideo ? (
+      {advertisedVideo && hasPlayableVideo ? (
         <span className="pointer-events-none absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-zinc-600/30 bg-black/55 text-white shadow backdrop-blur-md">
           <svg className="h-5 w-5 fill-current" viewBox="0 0 48 48" aria-hidden="true">
             {focused ? (

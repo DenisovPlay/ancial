@@ -21,6 +21,15 @@ export type VoiceSignal = Partial<ParticipantMediaState> & {
   user_id?: number | string;
 };
 
+type OfferCollisionState = {
+  isPolite: boolean;
+  isSettingRemoteAnswerPending: boolean;
+  makingOffer: boolean;
+  signalingState: RTCSignalingState;
+};
+
+type MediaTrackHealth = Pick<MediaStreamTrack, 'kind' | 'muted' | 'readyState'>;
+
 const MAX_RECOVERY_ATTEMPTS = 3;
 
 export function normalizeParticipant(raw: unknown): GroupCallParticipant | null {
@@ -76,6 +85,38 @@ export function resolveFocusedParticipantId(
 
 export function isGroupCallOfferer(currentUserId: number, remoteUserId: number): boolean {
   return currentUserId > 0 && remoteUserId > 0 && currentUserId < remoteUserId;
+}
+
+export function isPolitePeer(currentUserId: number, remoteUserId: number): boolean {
+  return currentUserId > remoteUserId;
+}
+
+export function resolveOfferCollision({
+  isPolite,
+  isSettingRemoteAnswerPending,
+  makingOffer,
+  signalingState,
+}: OfferCollisionState) {
+  const readyForOffer = !makingOffer
+    && (signalingState === 'stable' || isSettingRemoteAnswerPending);
+  const collision = !readyForOffer;
+  const ignore = !isPolite && collision;
+  return {
+    collision,
+    ignore,
+    rollback: isPolite && collision,
+  };
+}
+
+export function hasPlayableVideoTrack(tracks: Iterable<MediaTrackHealth>): boolean {
+  for (const track of tracks) {
+    if (track.kind === 'video' && track.readyState === 'live' && !track.muted) return true;
+  }
+  return false;
+}
+
+export function hasOutboundVideoProgress(beforeBytes: number | null, afterBytes: number | null): boolean {
+  return beforeBytes !== null && afterBytes !== null && afterBytes > beforeBytes;
 }
 
 export function shouldRecoverPeer(

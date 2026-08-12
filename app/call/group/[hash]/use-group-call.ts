@@ -7,9 +7,12 @@ import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import { globalWS } from '../../../lib/global-ws';
 import {
+  hasOutboundVideoProgress,
   isGroupCallOfferer,
+  isPolitePeer,
   normalizeParticipant,
   normalizeParticipants,
+  resolveOfferCollision,
   shouldRecoverPeer,
   updateParticipantMedia,
   type GroupCallParticipant,
@@ -38,6 +41,14 @@ type UseGroupCallOptions = {
 
 const DISCONNECTED_RECOVERY_DELAY_MS = 4_000;
 const MISSING_VIDEO_RECOVERY_DELAY_MS = 8_000;
+const OUTBOUND_VIDEO_SAMPLE_DELAY_MS = 2_000;
+
+type PeerNegotiationState = {
+  ignoreOffer: boolean;
+  isPolite: boolean;
+  isSettingRemoteAnswerPending: boolean;
+  makingOffer: boolean;
+};
 
 function setCallPresence(activity: Record<string, unknown> | null) {
   window.dispatchEvent(new CustomEvent('zypo:presence-activity', { detail: activity }));
@@ -68,11 +79,13 @@ export function useGroupCall({
   const participantsRef = useRef<GroupCallParticipant[]>([]);
   const peersRef = useRef(new Map<number, RTCPeerConnection>());
   const videoSendersRef = useRef(new Map<number, RTCRtpSender>());
+  const negotiationStateRef = useRef(new Map<number, PeerNegotiationState>());
   const pendingIceRef = useRef(new Map<number, RTCIceCandidateInit[]>());
   const signalQueuesRef = useRef(new Map<number, Promise<void>>());
   const remoteStreamsRef = useRef(new Map<number, MediaStream>());
   const recoveryTimersRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
   const videoWatchdogsRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const outboundVideoWatchdogsRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
   const recoveryAttemptsRef = useRef(new Map<number, number>());
   const recoveryRequestRef = useRef<(userId: number, missingMedia?: boolean) => void>(() => undefined);
   const makeOfferRef = useRef<(userId: number, iceRestart?: boolean) => Promise<void>>(async () => undefined);
@@ -123,14 +136,6 @@ export function useGroupCall({
     sendSignal({ kind: 'media', ...currentMediaState() });
   }, [currentMediaState, sendSignal]);
 
-  const replaceVideoTrack = useCallback(async (track: MediaStreamTrack | null) => {
-    activeVideoTrackRef.current = track;
-    await Promise.all(Array.from(videoSendersRef.current.values()).map((sender) => (
-      sender.replaceTrack(track).catch((error) => console.error('Group video track replacement failed', error))
-    )));
-    refreshLocalStream();
-  }, [refreshLocalStream]);
-
   const clearRecoveryTimer = useCallback((userId: number) => {
     const timer = recoveryTimersRef.current.get(userId);
     if (timer) clearTimeout(timer);
@@ -143,17 +148,25 @@ export function useGroupCall({
     videoWatchdogsRef.current.delete(userId);
   }, []);
 
+  const clearOutboundVideoWatchdog = useCallback((userId: number) => {
+    const timer = outboundVideoWatchdogsRef.current.get(userId);
+    if (timer) clearTimeout(timer);
+    outboundVideoWatchdogsRef.current.delete(userId);
+  }, []);
+
   const clearPeerSupervision = useCallback((userId: number, clearAttempts = true) => {
     clearRecoveryTimer(userId);
     clearVideoWatchdog(userId);
+    clearOutboundVideoWatchdog(userId);
     signalQueuesRef.current.delete(userId);
     if (clearAttempts) recoveryAttemptsRef.current.delete(userId);
-  }, [clearRecoveryTimer, clearVideoWatchdog]);
+  }, [clearOutboundVideoWatchdog, clearRecoveryTimer, clearVideoWatchdog]);
 
   const closePeer = useCallback((userId: number, clearAttempts = true) => {
     peersRef.current.get(userId)?.close();
     peersRef.current.delete(userId);
     videoSendersRef.current.delete(userId);
+    negotiationStateRef.current.delete(userId);
     pendingIceRef.current.delete(userId);
     remoteStreamsRef.current.delete(userId);
     clearPeerSupervision(userId, clearAttempts);
@@ -164,6 +177,82 @@ export function useGroupCall({
       return next;
     });
   }, [clearPeerSupervision]);
+
+  const readOutboundVideoBytes = useCallback(async (sender: RTCRtpSender) => {
+    const reports = await sender.getStats();
+    let bytes = 0;
+    let found = false;
+    reports.forEach((report) => {
+      if (report.type !== 'outbound-rtp' || report.kind !== 'video' || report.isRemote) return;
+      const value = Number(report.bytesSent);
+      if (!Number.isFinite(value)) return;
+      bytes += value;
+      found = true;
+    });
+    return found ? bytes : null;
+  }, []);
+
+  const superviseOutboundVideo = useCallback(async (userId: number, track: MediaStreamTrack) => {
+    clearOutboundVideoWatchdog(userId);
+    const sender = videoSendersRef.current.get(userId);
+    if (!sender || sender.track !== track) return;
+    const beforeBytes = await readOutboundVideoBytes(sender).catch(() => null);
+    if (videoSendersRef.current.get(userId) !== sender || sender.track !== track) return;
+    const timer = setTimeout(() => {
+      outboundVideoWatchdogsRef.current.delete(userId);
+      const currentPeer = peersRef.current.get(userId);
+      const currentSender = videoSendersRef.current.get(userId);
+      if (
+        currentPeer?.connectionState !== 'connected'
+        || currentSender !== sender
+        || sender.track !== track
+        || track.readyState !== 'live'
+        || !track.enabled
+      ) return;
+      void readOutboundVideoBytes(sender).then((afterBytes) => {
+        if (!hasOutboundVideoProgress(beforeBytes, afterBytes)) {
+          recoveryRequestRef.current(userId, true);
+        } else {
+          recoveryAttemptsRef.current.delete(userId);
+        }
+      }).catch(() => recoveryRequestRef.current(userId, true));
+    }, OUTBOUND_VIDEO_SAMPLE_DELAY_MS);
+    outboundVideoWatchdogsRef.current.set(userId, timer);
+  }, [clearOutboundVideoWatchdog, readOutboundVideoBytes]);
+
+  const replaceVideoTrack = useCallback(async (track: MediaStreamTrack | null) => {
+    const senders = Array.from(videoSendersRef.current.entries());
+    const results = await Promise.allSettled(senders.map(([, sender]) => sender.replaceTrack(track)));
+    const failedUserIds = results.flatMap((result, index) => (
+      result.status === 'rejected' ? [senders[index][0]] : []
+    ));
+
+    activeVideoTrackRef.current = track;
+    refreshLocalStream();
+
+    if (failedUserIds.length > 0) {
+      failedUserIds.forEach((userId) => {
+        closePeer(userId, false);
+        recoveryRequestRef.current(userId, true);
+      });
+    }
+
+    outboundVideoWatchdogsRef.current.forEach(clearTimeout);
+    outboundVideoWatchdogsRef.current.clear();
+    if (track) {
+      senders.forEach(([userId]) => void superviseOutboundVideo(userId, track));
+    }
+  }, [closePeer, refreshLocalStream, superviseOutboundVideo]);
+
+  const enqueueSignal = useCallback((userId: number, operation: () => Promise<void>) => {
+    const previous = signalQueuesRef.current.get(userId) ?? Promise.resolve();
+    const next = previous.catch(() => undefined).then(operation);
+    signalQueuesRef.current.set(userId, next);
+    void next.catch((error) => console.error('Group call signal failed', error)).finally(() => {
+      if (signalQueuesRef.current.get(userId) === next) signalQueuesRef.current.delete(userId);
+    });
+    return next;
+  }, []);
 
   const hasLiveRemoteVideo = useCallback((userId: number) => (
     remoteStreamsRef.current.get(userId)?.getVideoTracks().some((track) => (
@@ -187,6 +276,13 @@ export function useGroupCall({
 
     const peer = new RTCPeerConnection({ iceServers: iceServersRef.current });
     peersRef.current.set(targetUserId, peer);
+    const negotiationState: PeerNegotiationState = {
+      ignoreOffer: false,
+      isPolite: isPolitePeer(currentUserId, targetUserId),
+      isSettingRemoteAnswerPending: false,
+      makingOffer: false,
+    };
+    negotiationStateRef.current.set(targetUserId, negotiationState);
 
     const mediaStream = new MediaStream();
     const audioTrack = audioTrackRef.current;
@@ -212,6 +308,25 @@ export function useGroupCall({
         kind: 'ice',
         target_user_id: targetUserId,
         candidate: event.candidate.toJSON(),
+      });
+    };
+    peer.onnegotiationneeded = () => {
+      void enqueueSignal(targetUserId, async () => {
+        if (peer.signalingState === 'closed' || peersRef.current.get(targetUserId) !== peer) return;
+        const state = negotiationStateRef.current.get(targetUserId);
+        if (!state || state.makingOffer || peer.signalingState !== 'stable') return;
+        try {
+          state.makingOffer = true;
+          await peer.setLocalDescription();
+          if (peer.localDescription?.type !== 'offer') return;
+          sendSignal({
+            kind: 'offer',
+            target_user_id: targetUserId,
+            sdp: peer.localDescription.sdp,
+          });
+        } finally {
+          state.makingOffer = false;
+        }
       });
     };
     peer.ontrack = (event) => {
@@ -249,6 +364,8 @@ export function useGroupCall({
     peer.onconnectionstatechange = () => {
       if (peer.connectionState === 'connected') {
         clearRecoveryTimer(targetUserId);
+        const localVideoTrack = activeVideoTrackRef.current;
+        if (localVideoTrack) void superviseOutboundVideo(targetUserId, localVideoTrack);
         const participant = participantsRef.current.find((item) => item.user_id === targetUserId);
         const expectsVideo = Boolean(participant?.cam_enabled || participant?.screen_enabled);
         if (expectsVideo && !hasLiveRemoteVideo(targetUserId)) {
@@ -268,7 +385,7 @@ export function useGroupCall({
       }
     };
     return peer;
-  }, [clearRecoveryTimer, clearVideoWatchdog, hasLiveRemoteVideo, sendSignal, watchForRemoteVideo]);
+  }, [clearRecoveryTimer, clearVideoWatchdog, currentUserId, enqueueSignal, hasLiveRemoteVideo, sendSignal, superviseOutboundVideo, watchForRemoteVideo]);
 
   const flushIce = useCallback(async (userId: number, peer: RTCPeerConnection) => {
     const candidates = pendingIceRef.current.get(userId) ?? [];
@@ -277,11 +394,20 @@ export function useGroupCall({
   }, []);
 
   const makeOffer = useCallback(async (targetUserId: number, iceRestart = false) => {
-    const peer = await createPeer(targetUserId);
-    const offer = await peer.createOffer({ iceRestart });
-    await peer.setLocalDescription(offer);
-    sendSignal({ kind: 'offer', target_user_id: targetUserId, sdp: offer.sdp });
-  }, [createPeer, sendSignal]);
+    await enqueueSignal(targetUserId, async () => {
+      const peer = await createPeer(targetUserId);
+      const state = negotiationStateRef.current.get(targetUserId);
+      if (!state || state.makingOffer || peer.signalingState !== 'stable') return;
+      try {
+        state.makingOffer = true;
+        const offer = await peer.createOffer({ iceRestart });
+        await peer.setLocalDescription(offer);
+        sendSignal({ kind: 'offer', target_user_id: targetUserId, sdp: peer.localDescription?.sdp });
+      } finally {
+        state.makingOffer = false;
+      }
+    });
+  }, [createPeer, enqueueSignal, sendSignal]);
 
   const requestPeerRecovery = useCallback((targetUserId: number, missingMedia = false) => {
     if (!joinedRef.current || !roomIdRef.current) return;
@@ -309,19 +435,11 @@ export function useGroupCall({
     recoveryRequestRef.current = requestPeerRecovery;
   }, [makeOffer, requestPeerRecovery]);
 
-  const enqueueSignal = useCallback((userId: number, operation: () => Promise<void>) => {
-    const previous = signalQueuesRef.current.get(userId) ?? Promise.resolve();
-    const next = previous.catch(() => undefined).then(operation);
-    signalQueuesRef.current.set(userId, next);
-    void next.catch((error) => console.error('Group call signal failed', error)).finally(() => {
-      if (signalQueuesRef.current.get(userId) === next) signalQueuesRef.current.delete(userId);
-    });
-  }, []);
-
   const resetPeers = useCallback(() => {
     peersRef.current.forEach((peer) => peer.close());
     peersRef.current.clear();
     videoSendersRef.current.clear();
+    negotiationStateRef.current.clear();
     pendingIceRef.current.clear();
     signalQueuesRef.current.clear();
     remoteStreamsRef.current.clear();
@@ -329,6 +447,8 @@ export function useGroupCall({
     recoveryTimersRef.current.clear();
     videoWatchdogsRef.current.forEach(clearTimeout);
     videoWatchdogsRef.current.clear();
+    outboundVideoWatchdogsRef.current.forEach(clearTimeout);
+    outboundVideoWatchdogsRef.current.clear();
     recoveryAttemptsRef.current.clear();
     setRemoteStreams({});
   }, []);
@@ -431,18 +551,41 @@ export function useGroupCall({
           return;
         }
         const peer = await createPeer(fromUserId);
+        const negotiationState = negotiationStateRef.current.get(fromUserId);
+        if (!negotiationState) return;
         if (kind === 'offer' && signal.sdp) {
-          await peer.setRemoteDescription({ type: 'offer', sdp: signal.sdp });
+          const collision = resolveOfferCollision({
+            isPolite: negotiationState.isPolite,
+            isSettingRemoteAnswerPending: negotiationState.isSettingRemoteAnswerPending,
+            makingOffer: negotiationState.makingOffer,
+            signalingState: peer.signalingState,
+          });
+          negotiationState.ignoreOffer = collision.ignore;
+          if (collision.ignore) return;
+          if (collision.rollback) {
+            await Promise.all([
+              peer.setLocalDescription({ type: 'rollback' }),
+              peer.setRemoteDescription({ type: 'offer', sdp: signal.sdp }),
+            ]);
+          } else {
+            await peer.setRemoteDescription({ type: 'offer', sdp: signal.sdp });
+          }
           await flushIce(fromUserId, peer);
-          const answer = await peer.createAnswer();
-          await peer.setLocalDescription(answer);
-          sendSignal({ kind: 'answer', target_user_id: fromUserId, sdp: answer.sdp });
+          await peer.setLocalDescription();
+          sendSignal({ kind: 'answer', target_user_id: fromUserId, sdp: peer.localDescription?.sdp });
         } else if (kind === 'answer' && signal.sdp) {
-          await peer.setRemoteDescription({ type: 'answer', sdp: signal.sdp });
-          await flushIce(fromUserId, peer);
+          negotiationState.isSettingRemoteAnswerPending = true;
+          try {
+            await peer.setRemoteDescription({ type: 'answer', sdp: signal.sdp });
+            await flushIce(fromUserId, peer);
+          } finally {
+            negotiationState.isSettingRemoteAnswerPending = false;
+          }
         } else if (kind === 'ice' && signal.candidate) {
           if (peer.remoteDescription) {
-            await peer.addIceCandidate(signal.candidate);
+            await peer.addIceCandidate(signal.candidate).catch((error) => {
+              if (!negotiationState.ignoreOffer) throw error;
+            });
           } else {
             const queue = pendingIceRef.current.get(fromUserId) ?? [];
             pendingIceRef.current.set(fromUserId, [...queue, signal.candidate].slice(-50));
@@ -491,6 +634,7 @@ export function useGroupCall({
     peersRef.current.forEach((peer) => peer.close());
     peersRef.current.clear();
     videoSendersRef.current.clear();
+    negotiationStateRef.current.clear();
     pendingIceRef.current.clear();
     signalQueuesRef.current.clear();
     remoteStreamsRef.current.clear();
@@ -498,6 +642,8 @@ export function useGroupCall({
     recoveryTimersRef.current.clear();
     videoWatchdogsRef.current.forEach(clearTimeout);
     videoWatchdogsRef.current.clear();
+    outboundVideoWatchdogsRef.current.forEach(clearTimeout);
+    outboundVideoWatchdogsRef.current.clear();
     recoveryAttemptsRef.current.clear();
     audioTrackRef.current?.stop();
     cameraTrackRef.current?.stop();
@@ -576,35 +722,39 @@ export function useGroupCall({
   }, [canPublish, currentMediaState, currentUserId, sendMediaState, setParticipants]);
 
   const disableCamera = useCallback(async () => {
-    cameraTrackRef.current?.stop();
+    const cameraTrack = cameraTrackRef.current;
+    if (!screenEnabledRef.current) await replaceVideoTrack(null);
+    cameraTrack?.stop();
     cameraTrackRef.current = null;
     camEnabledRef.current = false;
     setCamEnabled(false);
-    if (!screenEnabledRef.current) await replaceVideoTrack(null);
     setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
     sendMediaState();
   }, [currentMediaState, currentUserId, replaceVideoTrack, sendMediaState, setParticipants]);
 
   const enableCamera = useCallback(async (deviceId?: string) => {
     if (!canPublish || screenEnabledRef.current) return;
+    let track: MediaStreamTrack | null = null;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: deviceId ? { deviceId: { exact: deviceId } } : true,
       });
-      const track = stream.getVideoTracks()[0];
+      track = stream.getVideoTracks()[0] ?? null;
       if (!track) return;
-      cameraTrackRef.current?.stop();
+      const previousCameraTrack = cameraTrackRef.current;
+      await replaceVideoTrack(track);
+      previousCameraTrack?.stop();
       cameraTrackRef.current = track;
       const actualDeviceId = track.getSettings().deviceId;
       if (actualDeviceId) setSelectedCameraId(actualDeviceId);
       camEnabledRef.current = true;
       setCamEnabled(true);
-      await replaceVideoTrack(track);
       setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
       sendMediaState();
       void loadCameras().catch(() => undefined);
     } catch (error) {
+      if (track && activeVideoTrackRef.current !== track) track.stop();
       console.error('Group camera access failed', error);
       showNote({
         content: lang?.camera_access_denied || lang?.camera_off || 'Не удалось включить камеру',
@@ -627,6 +777,7 @@ export function useGroupCall({
   const stopScreenShare = useCallback(async () => {
     const shouldRestoreCamera = cameraBeforeScreenRef.current && Boolean(cameraTrackRef.current);
     const screenTrack = screenTrackRef.current;
+    await replaceVideoTrack(shouldRestoreCamera ? cameraTrackRef.current : null);
     screenTrackRef.current = null;
     if (screenTrack) {
       screenTrack.onended = null;
@@ -636,17 +787,18 @@ export function useGroupCall({
     camEnabledRef.current = shouldRestoreCamera;
     setScreenEnabled(false);
     setCamEnabled(shouldRestoreCamera);
-    await replaceVideoTrack(shouldRestoreCamera ? cameraTrackRef.current : null);
     setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
     sendMediaState();
   }, [currentMediaState, currentUserId, replaceVideoTrack, sendMediaState, setParticipants]);
 
   const startScreenShare = useCallback(async () => {
     if (!canPublish) return;
+    let track: MediaStreamTrack | null = null;
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-      const track = stream.getVideoTracks()[0];
+      track = stream.getVideoTracks()[0] ?? null;
       if (!track) return;
+      await replaceVideoTrack(track);
       cameraBeforeScreenRef.current = camEnabledRef.current;
       screenTrackRef.current = track;
       screenEnabledRef.current = true;
@@ -654,10 +806,10 @@ export function useGroupCall({
       setScreenEnabled(true);
       setCamEnabled(false);
       track.onended = () => void stopScreenShare();
-      await replaceVideoTrack(track);
       setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
       sendMediaState();
     } catch (error) {
+      if (track && activeVideoTrackRef.current !== track) track.stop();
       console.error('Group screen share failed', error);
       showNote({
         content: lang?.screen_share_failed || lang?.screen_share || 'Не удалось начать демонстрацию',

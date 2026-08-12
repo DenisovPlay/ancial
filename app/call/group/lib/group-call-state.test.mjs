@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import {
   canFocusParticipant,
   getGroupCallGridClass,
+  hasOutboundVideoProgress,
+  hasPlayableVideoTrack,
+  isPolitePeer,
   isGroupCallOfferer,
+  resolveOfferCollision,
   shouldRecoverPeer,
   normalizeParticipant,
   resolveFocusedParticipantId,
@@ -50,5 +54,45 @@ assert.equal(shouldRecoverPeer('failed', 0), true);
 assert.equal(shouldRecoverPeer('disconnected', 2), true);
 assert.equal(shouldRecoverPeer('connected', 2), false);
 assert.equal(shouldRecoverPeer('failed', 3), false);
+
+assert.equal(isPolitePeer(8, 3), true);
+assert.equal(isPolitePeer(3, 8), false);
+assert.deepEqual(
+  resolveOfferCollision({
+    isPolite: true,
+    makingOffer: true,
+    signalingState: 'have-local-offer',
+    isSettingRemoteAnswerPending: false,
+  }),
+  { collision: true, ignore: false, rollback: true },
+);
+assert.deepEqual(
+  resolveOfferCollision({
+    isPolite: false,
+    makingOffer: true,
+    signalingState: 'have-local-offer',
+    isSettingRemoteAnswerPending: false,
+  }),
+  { collision: true, ignore: true, rollback: false },
+);
+assert.deepEqual(
+  resolveOfferCollision({
+    isPolite: true,
+    makingOffer: false,
+    signalingState: 'stable',
+    isSettingRemoteAnswerPending: true,
+  }),
+  { collision: false, ignore: false, rollback: false },
+);
+
+assert.equal(hasPlayableVideoTrack([]), false);
+assert.equal(hasPlayableVideoTrack([{ kind: 'audio', readyState: 'live', muted: false }]), false);
+assert.equal(hasPlayableVideoTrack([{ kind: 'video', readyState: 'live', muted: true }]), false);
+assert.equal(hasPlayableVideoTrack([{ kind: 'video', readyState: 'ended', muted: false }]), false);
+assert.equal(hasPlayableVideoTrack([{ kind: 'video', readyState: 'live', muted: false }]), true);
+
+assert.equal(hasOutboundVideoProgress(120, 121), true);
+assert.equal(hasOutboundVideoProgress(120, 120), false);
+assert.equal(hasOutboundVideoProgress(null, 120), false);
 
 console.log('group call state: ok');
