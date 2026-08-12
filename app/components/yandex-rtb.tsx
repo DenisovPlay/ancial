@@ -71,7 +71,7 @@ export default function YandexRtb({
     <div
       className={
         className ??
-        'hidden w-full max-h-24 block overflow-hidden shadow-lg duration-300 cursor-pointer'
+        'w-full max-h-24 block overflow-hidden shadow-lg duration-300 cursor-pointer'
       }
     >
       <a
