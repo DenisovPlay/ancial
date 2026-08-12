@@ -1532,6 +1532,7 @@ export const en: Record<string, string> = {
   "community_permission_manage_roles": "Manage roles",
   "community_permission_manage_members": "Manage members",
   "community_permission_manage_messages": "Moderate messages",
+  "community_permission_manage_posts": "Manage posts",
   "community_permission_manage_invites": "Manage invites",
   "community_permission_manage_join_requests": "Manage join requests",
   "community_permission_manage_voice": "Moderate voice channels",

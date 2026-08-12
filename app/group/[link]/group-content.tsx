@@ -43,18 +43,6 @@ interface OfficialGroupPreview {
   slnk?: string | null;
 }
 
-interface CommunityChatPreview {
-  id: Id;
-  hash: string;
-  title?: string | null;
-  avatar?: string | null;
-  description?: string | null;
-  join_policy?: 'open' | 'request' | string | null;
-  voice_enabled?: boolean | number | string | null;
-  members_count?: number | string | null;
-  is_joined?: boolean | number | string | null;
-}
-
 interface GroupPageData {
   cover?: string | null;
   creator?: Id | null;
@@ -62,10 +50,10 @@ interface GroupPageData {
   id: Id;
   img?: string | null;
   is_creator?: boolean | number | string | null;
+  is_community_member?: boolean | number | string | null;
   is_subscribed?: boolean | number | string | null;
   name?: string | null;
   official_groups?: OfficialGroupPreview[] | null;
-  public_chats?: CommunityChatPreview[] | null;
   slnk?: string | null;
   status?: boolean | number | string | null;
   subscribers?: UserPreview[] | null;
@@ -619,7 +607,9 @@ export default function GroupProfileContent({ link }: { link: string }) {
     [],
   );
 
-  loadPostsRef.current = loadPosts;
+  useEffect(() => {
+    loadPostsRef.current = loadPosts;
+  }, [loadPosts]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -1029,30 +1019,6 @@ export default function GroupProfileContent({ link }: { link: string }) {
     }
   };
 
-  const handleCommunityChat = async (chat: CommunityChatPreview) => {
-    if (!isAuthenticated) {
-      router.push(`/login?backurl=${encodeURIComponent(`/$${groupData?.slnk || link}`)}`);
-      return;
-    }
-
-    if (flag(chat.is_joined)) {
-      router.push(`/messages/${chat.hash}`);
-      return;
-    }
-
-    try {
-      const result = await AncialAPI.joinPublicChat<{ status?: 'joined' | 'requested'; hash?: string | null }>(chat.id);
-      if (result.status === 'requested') {
-        showNote({ content: strings.community_chat_requested, type: 'success', time: 4 });
-        return;
-      }
-      router.push(`/messages/${result.hash || chat.hash}`);
-    } catch (nextError) {
-      console.error('Failed to join community chat', nextError);
-      showNote({ content: strings.somethingwrong, type: 'error', time: 5 });
-    }
-  };
-
   const updateGroupMedia = async (field: 'cover' | 'img', file: File | null) => {
     if (!file || !groupData) return;
 
@@ -1253,40 +1219,42 @@ export default function GroupProfileContent({ link }: { link: string }) {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-3 items-center shrink-0">
-                {isAuthenticated && flag(groupData.is_creator) ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
-                  >
-                    <SvgIcon className="w-6 h-6 fill-white inline mr-2" id="IC-edit" />
-                    <span>{strings.edit}</span>
-                  </button>
-                ) : null}
+              {isAuthenticated ? (
+                <div className="flex flex-col md:flex-row gap-3 items-center shrink-0">
+                  {flag(groupData.is_creator) ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
+                    >
+                      <SvgIcon className="w-6 h-6 fill-white inline mr-2" id="IC-edit" />
+                      <span>{strings.edit}</span>
+                    </button>
+                  ) : null}
 
-                {isAuthenticated && !flag(groupData.is_subscribed) ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleSubscription('sub')}
-                    className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-emerald-500 hover:bg-emerald-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
-                  >
-                    <SvgIcon className="w-6 h-6 inline fill-white mr-2" id="IC-plus" />
-                    <span>{strings.follow}</span>
-                  </button>
-                ) : null}
+                  {!flag(groupData.is_subscribed) ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleSubscription('sub')}
+                      className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-emerald-500 hover:bg-emerald-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
+                    >
+                      <SvgIcon className="w-6 h-6 inline fill-white mr-2" id="IC-plus" />
+                      <span>{strings.follow}</span>
+                    </button>
+                  ) : null}
 
-                {isAuthenticated && flag(groupData.is_subscribed) ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleSubscription('unsub')}
-                    className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-red-500 hover:bg-red-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
-                  >
-                    <SvgIcon className="w-6 h-6 inline fill-white mr-2" id="IC-times" />
-                    <span>{strings.unfollow}</span>
-                  </button>
-                ) : null}
-              </div>
+                  {flag(groupData.is_subscribed) ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleSubscription('unsub')}
+                      className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-red-500 hover:bg-red-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
+                    >
+                      <SvgIcon className="w-6 h-6 inline fill-white mr-2" id="IC-times" />
+                      <span>{strings.unfollow}</span>
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -1329,54 +1297,12 @@ export default function GroupProfileContent({ link }: { link: string }) {
             </div>
 
             <div className="flex flex-col md:gap-3 md:w-80 lg:w-96 shrink-0 -mt-3 md:mt-0 rounded-b-3xl md:rounded-b-none overflow-hidden">
-              {isAuthenticated && (flag(groupData.is_creator) || flag(groupData.is_subscribed)) ? (
+              {isAuthenticated && flag(groupData.is_community_member) ? (
                 <CommunityChannelShell
                   communityId={toNumber(groupData.id)}
                   communityLink={String(groupData.slnk || link)}
                   initialCanManage={flag(groupData.is_creator)}
                 />
-              ) : null}
-
-              {groupData.public_chats?.length ? (
-                <section className="flex flex-col gap-1.5 border-x border-zinc-600/30 bg-zinc-900 p-3 md:rounded-3xl md:border">
-                  <span className="text-lg font-thin text-zinc-300">{strings.community_chats}</span>
-                  <div className="flex flex-col gap-1.5">
-                    {groupData.public_chats.map((chat) => (
-                      <button
-                        key={String(chat.id)}
-                        type="button"
-                        onClick={() => void handleCommunityChat(chat)}
-                        className="flex cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-1.5 text-left duration-300 hover:bg-zinc-800 active:scale-95"
-                      >
-                        <div
-                          className="h-12 w-12 shrink-0 rounded-full bg-zinc-700 bg-cover bg-center"
-                          style={{ backgroundImage: `url('${chat.avatar || '/img/placeholders/user.png'}')` }}
-                        />
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <span className="truncate text-sm font-semibold text-zinc-100">
-                            {chat.title || strings.community_chats}
-                          </span>
-                          {chat.description ? (
-                            <span className="truncate text-xs text-zinc-400">{chat.description}</span>
-                          ) : null}
-                          <span className="flex items-center gap-1 text-xs text-zinc-500">
-                            <span>{Number(chat.members_count || 0)} {strings.community_chat_members}</span>
-                            {flag(chat.voice_enabled) ? (
-                              <span title={strings.community_chat_voice}>• 🎙</span>
-                            ) : null}
-                          </span>
-                        </div>
-                        <span className="shrink-0 rounded-3xl bg-purple-500 px-2 py-1 text-xs text-white">
-                          {flag(chat.is_joined)
-                            ? strings.community_chat_open
-                            : chat.join_policy === 'request'
-                              ? strings.community_chat_request
-                              : strings.community_chat_join}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
               ) : null}
 
               {hasSubscribers ? (

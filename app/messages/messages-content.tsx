@@ -3011,6 +3011,12 @@ export default function MessagesContent() {
           title={selectedDialog.title || 'Групповой чат'}
           avatar={selectedDialog.avatar || ''}
           inviteCode={selectedDialog.invite_code || ''}
+          canManageInvites={
+            selectedDialog.can_manage_invites === true
+            || selectedDialog.can_manage_invites === 1
+            || selectedDialog.can_manage_invites === '1'
+            || selectedDialog.can_manage_invites === 'true'
+          }
           myRole={(selectedDialog.my_role as any) || 'member'}
           members={selectedDialog.members || []}
           visibility={selectedDialog.visibility}

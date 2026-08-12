@@ -8,13 +8,23 @@ const source = readFileSync(
 
 assert.match(
   source,
-  /isAdminOrOwner \? 'grid-cols-3' : 'grid-cols-2'/,
-  'the action grid must use explicit Tailwind column classes',
+  /canManageInvites/,
+  'invite controls must depend on the invite permission returned by the backend',
 );
 assert.match(
   source,
-  /isAdminOrOwner \? 'col-span-full' : ''/,
-  'the administrator Leave button must span the complete action grid',
+  /hasInvitePermission && Boolean/,
+  'cached invite codes must stay hidden unless the backend explicitly grants permission',
+);
+assert.match(
+  source,
+  /\{canManageInvites \? \(/,
+  'the invite action must not render for members without invite permission',
+);
+assert.match(
+  source,
+  /className="col-span-full/,
+  'the Leave button must span the complete action grid',
 );
 assert.match(
   source,

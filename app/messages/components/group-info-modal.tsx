@@ -29,6 +29,7 @@ interface GroupInfoModalProps {
   title: string;
   avatar: string;
   inviteCode: string;
+  canManageInvites?: boolean;
   myRole: 'owner' | 'admin' | 'member';
   members: GroupMember[];
   visibility?: 'private' | 'unlisted' | 'public' | string | null;
@@ -64,6 +65,7 @@ export default function GroupInfoModal({
   title,
   avatar,
   inviteCode: initialInviteCode,
+  canManageInvites: hasInvitePermission = false,
   myRole,
   members,
   visibility: initialVisibility = 'private',
@@ -102,6 +104,7 @@ export default function GroupInfoModal({
   const [joinRequests, setJoinRequests] = useState<ChatJoinRequest[]>([]);
 
   const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
+  const canManageInvites = hasInvitePermission && Boolean(inviteCode || initialInviteCode);
   const currentUserId = user?.id ? Number(user.id) : 0;
 
   useEffect(() => {
@@ -508,16 +511,18 @@ export default function GroupInfoModal({
               </div>
             </div>
 
-            <div className={`grid ${isAdminOrOwner ? 'grid-cols-3' : 'grid-cols-2'} gap-3 w-full`}>
-              <button
-                type="button"
-                onClick={copyInviteLink}
-                className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
-                  <use href="#IC-plus"></use>
-                </svg>
-                <span className="text-sm sm:text-md">{lang?.invite || 'Пригласить'}</span>
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+              {canManageInvites ? (
+                <button
+                  type="button"
+                  onClick={copyInviteLink}
+                  className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
+                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
+                    <use href="#IC-plus"></use>
+                  </svg>
+                  <span className="text-sm sm:text-md">{lang?.invite || 'Пригласить'}</span>
+                </button>
+              ) : null}
               {isAdminOrOwner && (
                 <button
                   type="button"
@@ -547,7 +552,7 @@ export default function GroupInfoModal({
                 type="button"
                 onClick={handleLeaveGroup}
                 disabled={loadingAction}
-                className={`${isAdminOrOwner ? 'col-span-full' : ''} disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-red-800/25 hover:bg-red-800/50 text-red-500 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer`}>
+                className="col-span-full disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-red-800/25 hover:bg-red-800/50 text-red-500 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
                 <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
                   <use href="#IC-exit"></use>
                 </svg>
@@ -665,8 +670,8 @@ export default function GroupInfoModal({
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 w-full items-center justify-center">
-              {isAdminOrOwner && (
+            <div className={`grid ${canManageInvites ? 'grid-cols-2' : 'grid-cols-1'} gap-3 w-full items-center justify-center`}>
+              {canManageInvites && (
                 <button
                   type="button"
                   onClick={handleResetInviteCode}

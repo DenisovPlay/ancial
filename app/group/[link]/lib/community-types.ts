@@ -4,6 +4,7 @@ export type CommunityPermissionName =
   | 'manage_roles'
   | 'manage_members'
   | 'manage_messages'
+  | 'manage_posts'
   | 'manage_invites'
   | 'manage_join_requests'
   | 'manage_voice'
@@ -57,7 +58,7 @@ export interface CommunityRole {
   position: number;
   permissions: CommunityPermissionMap;
   is_system: boolean;
-  system_key: 'administrator' | 'member' | null;
+  system_key: 'administrator' | 'editor' | 'member' | null;
   member_count: number;
 }
 

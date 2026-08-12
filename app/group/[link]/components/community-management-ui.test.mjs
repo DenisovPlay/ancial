@@ -4,6 +4,7 @@ import { shouldShowUncategorizedHeading } from '../lib/community-presentation.ts
 
 const moderationSource = readFileSync(new URL('./community-moderation.tsx', import.meta.url), 'utf8');
 const managementSource = readFileSync(new URL('./community-manage-modal.tsx', import.meta.url), 'utf8');
+const groupPageSource = readFileSync(new URL('../group-content.tsx', import.meta.url), 'utf8');
 
 assert.match(moderationSource, /import \{ Dropdown, DropdownItem \}/, 'member actions must use the shared dropdown');
 assert.match(moderationSource, /triggerIcon="IC-more"/, 'member actions need one compact more trigger');
@@ -17,5 +18,13 @@ assert.match(managementSource, /drag-scroll viewport/, 'management tabs must hid
 assert.equal(shouldShowUncategorizedHeading(0, 4), false, 'all-uncategorized channel lists need no redundant heading');
 assert.equal(shouldShowUncategorizedHeading(2, 2), true, 'mixed channel lists need an uncategorized heading');
 assert.equal(shouldShowUncategorizedHeading(2, 0), false, 'lists without uncategorized channels need no heading');
+
+assert.match(groupPageSource, /flag\(groupData\.is_community_member\)/, 'role-only editors must see community channels');
+assert.doesNotMatch(groupPageSource, /groupData\.public_chats\?\.length/, 'linked channels must not render in a duplicate public-chat block');
+assert.doesNotMatch(
+  groupPageSource,
+  /<div className="flex flex-col md:flex-row gap-3 items-center shrink-0">\s*\{isAuthenticated/,
+  'guest pages must not render an empty action wrapper',
+);
 
 console.log('community management UI: ok');

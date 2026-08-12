@@ -22,6 +22,7 @@ export type DialogListItem = {
   title?: string | null;
   avatar?: string | null;
   invite_code?: string | null;
+  can_manage_invites?: boolean | number | string | null;
   visibility?: 'private' | 'unlisted' | 'public' | string | null;
   join_policy?: 'invite' | 'open' | 'request' | string | null;
   community_id?: number | string | null;
@@ -46,6 +47,7 @@ export type DialogMeta = {
   title?: string | null;
   avatar?: string | null;
   invite_code?: string | null;
+  can_manage_invites?: boolean | number | string | null;
   visibility?: 'private' | 'unlisted' | 'public' | string | null;
   join_policy?: 'invite' | 'open' | 'request' | string | null;
   community_id?: number | string | null;

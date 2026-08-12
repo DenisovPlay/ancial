@@ -1532,6 +1532,7 @@ export const ru: Record<string, string> = {
     "community_permission_manage_roles": "Управление ролями",
     "community_permission_manage_members": "Управление участниками",
     "community_permission_manage_messages": "Модерация сообщений",
+    "community_permission_manage_posts": "Управление постами",
     "community_permission_manage_invites": "Управление приглашениями",
     "community_permission_manage_join_requests": "Заявки на вступление",
     "community_permission_manage_voice": "Модерация голосовых каналов",
