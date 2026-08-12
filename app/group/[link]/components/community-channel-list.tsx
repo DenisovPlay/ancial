@@ -1,4 +1,5 @@
 import type { CommunityCategory, CommunityChannel } from '../lib/community-types';
+import { shouldShowUncategorizedHeading } from '../lib/community-presentation';
 import CommunityChannelIcon from './community-channel-icon';
 
 type Props = {
@@ -40,30 +41,38 @@ function ChannelButton({
 }
 
 export default function CommunityChannelList({ categories, channels, onSelect, selectedId, uncategorizedLabel }: Props) {
-  const renderedCategoryIds = new Set<number>();
+  const populatedCategories: Array<{ category: CommunityCategory; channels: CommunityChannel[] }> = [];
+  for (const category of categories) {
+    const categoryChannels = channels.filter((channel) => channel.category_id === category.id);
+    if (categoryChannels.length > 0) {
+      populatedCategories.push({ category, channels: categoryChannels });
+    }
+  }
+  const renderedCategoryIds = new Set(populatedCategories.map((entry) => entry.category.id));
+  const uncategorizedChannels = channels.filter(
+    (channel) => channel.category_id === null || !renderedCategoryIds.has(channel.category_id),
+  );
+  const categorizedChannelCount = populatedCategories.reduce((total, entry) => total + entry.channels.length, 0);
+  const showUncategorizedHeading = shouldShowUncategorizedHeading(categorizedChannelCount, uncategorizedChannels.length);
+
   return (
     <div className="flex flex-col gap-3">
-      {categories.map((category) => {
-        const categoryChannels = channels.filter((channel) => channel.category_id === category.id);
-        if (categoryChannels.length === 0) return null;
-        renderedCategoryIds.add(category.id);
-        return (
-          <section key={category.id} className="flex flex-col gap-1">
-            <span className="px-2 text-xs font-bold uppercase tracking-wide text-zinc-500">{category.name}</span>
-            {categoryChannels.map((channel) => (
+      {populatedCategories.map(({ category, channels: categoryChannels }) => (
+        <section key={category.id} className="flex flex-col gap-1">
+          <span className="px-2 text-xs font-bold uppercase tracking-wide text-zinc-500">{category.name}</span>
+          {categoryChannels.map((channel) => (
               <ChannelButton key={channel.id} channel={channel} onSelect={onSelect} selected={selectedId === channel.id} />
-            ))}
-          </section>
-        );
-      })}
-      {channels.some((channel) => channel.category_id === null || !renderedCategoryIds.has(channel.category_id)) ? (
+          ))}
+        </section>
+      ))}
+      {uncategorizedChannels.length > 0 ? (
         <section className="flex flex-col gap-1">
-          <span className="px-2 text-xs font-bold uppercase tracking-wide text-zinc-500">{uncategorizedLabel}</span>
-          {channels
-            .filter((channel) => channel.category_id === null || !renderedCategoryIds.has(channel.category_id))
-            .map((channel) => (
-              <ChannelButton key={channel.id} channel={channel} onSelect={onSelect} selected={selectedId === channel.id} />
-            ))}
+          {showUncategorizedHeading ? (
+            <span className="px-2 text-xs font-bold uppercase tracking-wide text-zinc-500">{uncategorizedLabel}</span>
+          ) : null}
+          {uncategorizedChannels.map((channel) => (
+            <ChannelButton key={channel.id} channel={channel} onSelect={onSelect} selected={selectedId === channel.id} />
+          ))}
         </section>
       ) : null}
     </div>

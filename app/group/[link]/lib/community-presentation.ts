@@ -17,6 +17,10 @@ export function communityChannelTypeLabel(
   return labels[type];
 }
 
+export function shouldShowUncategorizedHeading(categoryChannelCount: number, uncategorizedChannelCount: number) {
+  return categoryChannelCount > 0 && uncategorizedChannelCount > 0;
+}
+
 export function formatCommunityAuditDate(value: string, languageName?: string) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return value;
