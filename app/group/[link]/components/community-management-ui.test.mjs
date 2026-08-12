@@ -5,6 +5,7 @@ import { shouldShowUncategorizedHeading } from '../lib/community-presentation.ts
 const moderationSource = readFileSync(new URL('./community-moderation.tsx', import.meta.url), 'utf8');
 const managementSource = readFileSync(new URL('./community-manage-modal.tsx', import.meta.url), 'utf8');
 const groupPageSource = readFileSync(new URL('../group-content.tsx', import.meta.url), 'utf8');
+const channelShellSource = readFileSync(new URL('./community-channel-shell.tsx', import.meta.url), 'utf8');
 
 assert.match(moderationSource, /import \{ Dropdown, DropdownItem \}/, 'member actions must use the shared dropdown');
 assert.match(moderationSource, /triggerIcon="IC-more"/, 'member actions need one compact more trigger');
@@ -26,5 +27,8 @@ assert.doesNotMatch(
   /<div className="flex flex-col md:flex-row gap-3 items-center shrink-0">\s*\{isAuthenticated/,
   'guest pages must not render an empty action wrapper',
 );
+assert.match(channelShellSource, /AncialAPI\.joinPublicChat/, 'community channels must join before navigation');
+assert.match(channelShellSource, /result\.status === 'requested'/, 'request-only channels must stay on the community page');
+assert.match(channelShellSource, /channel\.channel_type === 'voice'/, 'the same membership gate must cover voice channels');
 
 console.log('community management UI: ok');

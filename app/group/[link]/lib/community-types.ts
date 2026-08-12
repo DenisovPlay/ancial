@@ -40,6 +40,7 @@ export interface CommunityChannel {
   read_only: boolean;
   voice_enabled: boolean;
   members_count: number;
+  is_joined: boolean;
   permissions: CommunityPermissionMap;
 }
 

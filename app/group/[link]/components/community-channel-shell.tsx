@@ -5,6 +5,7 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } fro
 
 import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache.ts';
 import { globalWS } from '../../../lib/global-ws';
@@ -54,6 +55,7 @@ export default function CommunityChannelShell(props: Props) {
 function CommunityChannelShellState({ cacheKey, communityId, communityLink, initialCanManage }: StatefulProps) {
   const router = useRouter();
   const { lang } = useAuth();
+  const { showNote } = useNotification();
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [structure, setStructure] = useState<CommunityStructure | null>(() => (
     validateCachedCommunityStructure(
@@ -68,6 +70,7 @@ function CommunityChannelShellState({ cacheKey, communityId, communityLink, init
   const [mobileOpen, setMobileOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [openingId, setOpeningId] = useState<number | null>(null);
 
   const loadStructure = useCallback(async () => {
     try {
@@ -109,15 +112,40 @@ function CommunityChannelShellState({ cacheKey, communityId, communityLink, init
     [selectedId, structure?.channels],
   );
 
-  const openChannel = useCallback((channel: CommunityChannel) => {
+  const openChannel = useCallback(async (channel: CommunityChannel) => {
+    if (openingId !== null) return;
     setSelectedId(channel.id);
-    if (channel.channel_type === 'voice') {
-      const returnPath = `/group/${communityLink}`;
-      router.push(`/call/group/${encodeURIComponent(channel.hash)}?return=${encodeURIComponent(returnPath)}`);
-      return;
+    setOpeningId(channel.id);
+    try {
+      const result = await AncialAPI.joinPublicChat<{ status?: 'joined' | 'requested'; hash?: string | null }>(channel.id);
+      if (result.status === 'requested') {
+        showNote({
+          content: lang?.community_channel_request_sent || 'Заявка на вступление отправлена',
+          type: 'success',
+          time: 4,
+        });
+        return;
+      }
+      const dialogHash = result.hash || channel.hash;
+      if (channel.channel_type === 'voice') {
+        const returnPath = `/group/${communityLink}`;
+        router.push(`/call/group/${encodeURIComponent(dialogHash)}?return=${encodeURIComponent(returnPath)}`);
+        return;
+      }
+      router.push(`/messages/${encodeURIComponent(dialogHash)}`);
+    } catch (error) {
+      console.error('Community channel join failed', error);
+      showNote({
+        content: error instanceof Error
+          ? error.message
+          : (lang?.community_channel_join_error || 'Не удалось вступить в канал'),
+        type: 'error',
+        time: 5,
+      });
+    } finally {
+      setOpeningId(null);
     }
-    router.push(`/messages/${encodeURIComponent(channel.hash)}`);
-  }, [communityLink, router]);
+  }, [communityLink, lang, openingId, router, showNote]);
 
   const channelTypeLabel = (channel: CommunityChannel) => {
     if (channel.channel_type === 'voice') return lang?.community_channel_voice || '';
@@ -142,10 +170,15 @@ function CommunityChannelShellState({ cacheKey, communityId, communityLink, init
       {selectedChannel ? (
         <CommunityChannelView
           actionLabel={selectedChannel.channel_type === 'voice'
-            ? lang?.community_channel_join_voice || ''
-            : lang?.community_channel_open_messages || ''}
+            ? (openingId === selectedChannel.id
+              ? lang?.community_channel_joining || ''
+              : lang?.community_channel_join_voice || '')
+            : (openingId === selectedChannel.id
+              ? lang?.community_channel_joining || ''
+              : lang?.community_channel_open_messages || '')}
           channel={selectedChannel}
-          onOpen={() => openChannel(selectedChannel)}
+          disabled={openingId !== null}
+          onOpen={() => void openChannel(selectedChannel)}
           typeLabel={channelTypeLabel(selectedChannel)}
         />
       ) : null}

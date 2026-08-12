@@ -2524,6 +2524,18 @@ export default function MessagesContent() {
                             {lang?.userpage || 'Страница'}
                           </DropdownItem>
                         )}
+                        {isGroupDialog && selectedDialog?.community_link ? (
+                          <DropdownItem
+                            icon="IC-groups"
+                            onClick={() => {
+                              const communityLink = normalizeText(selectedDialog?.community_link);
+                              if (!communityLink) return;
+                              router.push(`/group/${encodeURIComponent(communityLink)}`);
+                            }}
+                          >
+                            {lang?.open_community || 'Открыть сообщество'}
+                          </DropdownItem>
+                        ) : null}
                         {!blockedDialog && (
                           <DropdownItem
                             icon="IC-settings"

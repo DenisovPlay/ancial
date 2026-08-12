@@ -26,6 +26,7 @@ export type DialogListItem = {
   visibility?: 'private' | 'unlisted' | 'public' | string | null;
   join_policy?: 'invite' | 'open' | 'request' | string | null;
   community_id?: number | string | null;
+  community_link?: string | null;
   description?: string | null;
   voice_enabled?: boolean | number | string | null;
   username?: string | null;
@@ -51,6 +52,7 @@ export type DialogMeta = {
   visibility?: 'private' | 'unlisted' | 'public' | string | null;
   join_policy?: 'invite' | 'open' | 'request' | string | null;
   community_id?: number | string | null;
+  community_link?: string | null;
   description?: string | null;
   voice_enabled?: boolean | number | string | null;
   owner_id?: number | string | null;

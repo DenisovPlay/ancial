@@ -3,12 +3,13 @@ import CommunityChannelIcon from './community-channel-icon';
 
 type Props = {
   actionLabel: string;
+  disabled?: boolean;
   channel: CommunityChannel;
   onOpen: () => void;
   typeLabel: string;
 };
 
-export default function CommunityChannelView({ actionLabel, channel, onOpen, typeLabel }: Props) {
+export default function CommunityChannelView({ actionLabel, channel, disabled = false, onOpen, typeLabel }: Props) {
   return (
     <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/70 p-3">
       <div className="flex min-w-0 items-start gap-3">
@@ -24,7 +25,8 @@ export default function CommunityChannelView({ actionLabel, channel, onOpen, typ
       <button
         type="button"
         onClick={onOpen}
-        className="cursor-pointer rounded-3xl border border-purple-400/30 bg-purple-600 p-2.5 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95"
+        disabled={disabled}
+        className="cursor-pointer rounded-3xl border border-purple-400/30 bg-purple-600 p-2.5 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:cursor-wait disabled:opacity-60"
       >
         {actionLabel}
       </button>
