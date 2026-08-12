@@ -21,5 +21,15 @@ assert.match(ruLocale, /"voice_focus_video"/);
 assert.match(ruLocale, /"voice_return_to_grid"/);
 assert.match(enLocale, /"voice_focus_video"/);
 assert.match(enLocale, /"voice_return_to_grid"/);
+assert.match(clientSource, /call\.cameras\.length > 1/);
+assert.match(clientSource, /ScreenIcon active=/);
+assert.match(clientSource, /SpeakerIcon off=/);
+
+const hookSource = readFileSync(new URL('./[hash]/use-group-call.ts', import.meta.url), 'utf8');
+assert.match(hookSource, /signalQueuesRef/);
+assert.match(hookSource, /recoveryTimersRef/);
+assert.match(hookSource, /videoWatchdogsRef/);
+assert.match(hookSource, /kind: 'restart'/);
+assert.match(hookSource, /isGroupCallOfferer/);
 
 console.log('group call layout: ok');

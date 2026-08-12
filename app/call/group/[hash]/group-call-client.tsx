@@ -45,6 +45,7 @@ function CallControlButton({
   active = false,
   danger = false,
   disabled = false,
+  off = false,
   label,
   onClick,
   children,
@@ -54,6 +55,7 @@ function CallControlButton({
   danger?: boolean;
   disabled?: boolean;
   label: string;
+  off?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -63,7 +65,7 @@ function CallControlButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-14 w-14 cursor-pointer items-center justify-center rounded-full transition-[color,background-color,transform,opacity] duration-300 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${danger ? 'bg-red-600 text-white hover:bg-red-500' : active ? 'bg-purple-600 text-white hover:bg-purple-500' : 'text-zinc-200 hover:bg-zinc-700/95'}`}
+      className={`flex h-14 w-14 cursor-pointer items-center justify-center rounded-full transition-[color,background-color,transform,opacity] duration-300 active:scale-95 disabled:cursor-not-allowed disabled:text-zinc-500 disabled:opacity-40 ${danger ? 'bg-red-600 text-white hover:bg-red-500' : active ? 'bg-purple-600 text-white hover:bg-purple-500' : off ? 'text-red-500 hover:bg-red-950/50' : 'text-zinc-200 hover:bg-zinc-700/95'}`}
     >
       {children}
     </button>
@@ -88,10 +90,24 @@ function CameraIcon({ off }: { off: boolean }) {
   );
 }
 
-function ScreenIcon() {
+function ScreenIcon({ active }: { active: boolean }) {
   return (
     <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M7 8a4 4 0 0 0-4 4v21a4 4 0 0 0 4 4h13v4h-6a1.5 1.5 0 1 0 0 3h20a1.5 1.5 0 1 0 0-3h-6v-4h13a4 4 0 0 0 4-4V12a4 4 0 0 0-4-4zm0 3h34a1 1 0 0 1 1 1v21a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V12a1 1 0 0 1 1-1m17 5-6 6h4v9h4v-9h4z" />
+      <path d="M7 8a4 4 0 0 0-4 4v21a4 4 0 0 0 4 4h13v4h-6a1.5 1.5 0 1 0 0 3h20a1.5 1.5 0 1 0 0-3h-6v-4h13a4 4 0 0 0 4-4V12a4 4 0 0 0-4-4zm0 3h34a1 1 0 0 1 1 1v21a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V12a1 1 0 0 1 1-1" />
+      {active ? (
+        <path d="M18 17.5A2.5 2.5 0 0 1 20.5 15h7a2.5 2.5 0 0 1 2.5 2.5v7a2.5 2.5 0 0 1-2.5 2.5h-7a2.5 2.5 0 0 1-2.5-2.5z" />
+      ) : (
+        <path d="m24 15-7 7h5v8h4v-8h5z" />
+      )}
+    </svg>
+  );
+}
+
+function SpeakerIcon({ off }: { off: boolean }) {
+  return (
+    <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M27.22 6.1c-.7 0-1.37.25-1.88.7L16.12 15H9.5A4.5 4.5 0 0 0 5 19.5v9A4.5 4.5 0 0 0 9.5 33h6.62l9.22 8.2c1.82 1.61 4.66.32 4.66-2.1V8.9a2.8 2.8 0 0 0-2.78-2.8M27 9.34v29.32l-9.32-8.28A1.5 1.5 0 0 0 16.69 30H9.5A1.5 1.5 0 0 1 8 28.5v-9A1.5 1.5 0 0 1 9.5 18h7.19c.37 0 .72-.14.99-.38zM38.76 11.98a1.5 1.5 0 0 0-1.33 2.21c3.46 6.63 3.46 12.99 0 19.62a1.5 1.5 0 1 0 2.66 1.38c3.84-7.35 3.84-15.03 0-22.38a1.5 1.5 0 0 0-1.33-.83" />
+      {off ? <path d="m7.5 4.5 36 36-3 3-36-36z" /> : null}
     </svg>
   );
 }
@@ -234,8 +250,8 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
       <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom,0px),0.75rem)]">
         <div className="flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200">
           <CallControlButton
-            label={config.canPublish ? (call.micEnabled ? (lang?.voice_mute || 'Микрофон') : (lang?.voice_unmute || 'Включить')) : (lang?.voice_listen_only || 'Только слушать')}
-            active={!call.micEnabled}
+            label={config.canPublish ? (call.micEnabled ? (lang?.voice_mic_on || 'Микрофон включён — выключить') : (lang?.voice_mic_off || 'Микрофон выключен — включить')) : (lang?.voice_listen_only || 'Только слушать')}
+            off={!call.micEnabled}
             disabled={!config.canPublish}
             onClick={call.toggleMic}
           >
@@ -243,37 +259,38 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
           </CallControlButton>
 
           <div className="relative h-14 w-14">
-            <Dropdown
-              renderTrigger={false}
-              open={cameraMenuOpen}
-              onOpenChange={setCameraMenuOpen}
-              position="top"
-              align="center"
-              width="auto"
-              closeOnChildClick
-              wrapperClassName="absolute inset-0"
-            >
-              {call.cameras.map((camera) => (
-                <DropdownItem
-                  key={camera.deviceId}
-                  onClick={() => void call.switchCamera(camera.deviceId)}
-                  className={call.selectedCameraId === camera.deviceId ? 'text-purple-300' : ''}
-                >
-                  {camera.label}
-                </DropdownItem>
-              ))}
-              {call.camEnabled ? (
+            {call.cameras.length > 1 ? (
+              <Dropdown
+                renderTrigger={false}
+                open={cameraMenuOpen}
+                onOpenChange={setCameraMenuOpen}
+                position="top"
+                align="center"
+                width="auto"
+                closeOnChildClick
+                wrapperClassName="absolute inset-0"
+              >
+                {call.cameras.map((camera) => (
+                  <DropdownItem
+                    key={camera.deviceId}
+                    onClick={() => void call.switchCamera(camera.deviceId)}
+                    className={call.selectedCameraId === camera.deviceId ? 'text-purple-300' : ''}
+                  >
+                    {camera.label}
+                  </DropdownItem>
+                ))}
                 <DropdownItem className="text-red-400" onClick={() => void call.toggleCamera()}>
                   {lang?.camera_off || 'Выключить камеру'}
                 </DropdownItem>
-              ) : null}
-            </Dropdown>
+              </Dropdown>
+            ) : null}
             <CallControlButton
-              label={call.camEnabled ? (lang?.camera || 'Камера') : (lang?.camera_off || 'Камера выключена')}
-              active={call.camEnabled}
+              label={call.camEnabled ? (lang?.voice_camera_on || 'Камера включена — выключить или выбрать') : (lang?.voice_camera_off || 'Камера выключена — включить')}
+              off={!call.camEnabled}
               disabled={!config.canPublish || call.screenEnabled}
               onClick={() => {
-                if (call.camEnabled) setCameraMenuOpen(true);
+                if (call.camEnabled && call.cameras.length > 1) setCameraMenuOpen((current) => !current);
+                else if (call.camEnabled) void call.toggleCamera();
                 else void call.toggleCamera();
               }}
             >
@@ -282,22 +299,20 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
           </div>
 
           <CallControlButton
-            label={call.screenEnabled ? (lang?.stop_screen_share || 'Остановить демонстрацию') : (lang?.screen_share || 'Демонстрация экрана')}
+            label={call.screenEnabled ? (lang?.voice_screen_on || 'Демонстрация включена — остановить') : (lang?.voice_screen_off || 'Демонстрация выключена — включить')}
             active={call.screenEnabled}
             disabled={!config.canPublish}
             onClick={() => void call.toggleScreenShare()}
           >
-            <ScreenIcon />
+            <ScreenIcon active={call.screenEnabled} />
           </CallControlButton>
 
           <CallControlButton
-            label={call.deafened ? (lang?.voice_undeafen || 'Вернуть звук') : (lang?.voice_deafen || 'Заглушить')}
-            active={call.deafened}
+            label={call.deafened ? (lang?.voice_sound_off || 'Звук выключен — включить') : (lang?.voice_sound_on || 'Звук включён — выключить')}
+            off={call.deafened}
             onClick={call.toggleDeafen}
           >
-            <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-              <use href="/icons.svg#IC-speaker" />
-            </svg>
+            <SpeakerIcon off={call.deafened} />
           </CallControlButton>
 
           <CallControlButton danger label={lang?.voice_room_leave || 'Выйти'} onClick={handleLeave}>

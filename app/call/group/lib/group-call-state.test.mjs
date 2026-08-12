@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   canFocusParticipant,
   getGroupCallGridClass,
+  isGroupCallOfferer,
+  shouldRecoverPeer,
   normalizeParticipant,
   resolveFocusedParticipantId,
   updateParticipantMedia,
@@ -42,5 +44,11 @@ assert.equal(resolveFocusedParticipantId(7, [cameraParticipant, screenParticipan
 assert.equal(resolveFocusedParticipantId(7, [{ ...cameraParticipant, cam_enabled: false }]), null);
 assert.equal(resolveFocusedParticipantId(7, [screenParticipant]), null);
 assert.equal(resolveFocusedParticipantId(null, [cameraParticipant]), null);
+assert.equal(isGroupCallOfferer(3, 8), true);
+assert.equal(isGroupCallOfferer(8, 3), false);
+assert.equal(shouldRecoverPeer('failed', 0), true);
+assert.equal(shouldRecoverPeer('disconnected', 2), true);
+assert.equal(shouldRecoverPeer('connected', 2), false);
+assert.equal(shouldRecoverPeer('failed', 3), false);
 
 console.log('group call state: ok');

@@ -21,6 +21,8 @@ export type VoiceSignal = Partial<ParticipantMediaState> & {
   user_id?: number | string;
 };
 
+const MAX_RECOVERY_ATTEMPTS = 3;
+
 export function normalizeParticipant(raw: unknown): GroupCallParticipant | null {
   if (!raw || typeof raw !== 'object') return null;
 
@@ -70,6 +72,18 @@ export function resolveFocusedParticipantId(
   if (focusedUserId === null) return null;
   const participant = participants.find((item) => item.user_id === focusedUserId);
   return participant && canFocusParticipant(participant) ? focusedUserId : null;
+}
+
+export function isGroupCallOfferer(currentUserId: number, remoteUserId: number): boolean {
+  return currentUserId > 0 && remoteUserId > 0 && currentUserId < remoteUserId;
+}
+
+export function shouldRecoverPeer(
+  connectionState: RTCPeerConnectionState,
+  recoveryAttempts: number,
+): boolean {
+  return recoveryAttempts < MAX_RECOVERY_ATTEMPTS
+    && (connectionState === 'failed' || connectionState === 'disconnected');
 }
 
 export function getGroupCallGridClass(count: number): string {

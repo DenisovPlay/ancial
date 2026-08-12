@@ -7,8 +7,10 @@ import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import { globalWS } from '../../../lib/global-ws';
 import {
+  isGroupCallOfferer,
   normalizeParticipant,
   normalizeParticipants,
+  shouldRecoverPeer,
   updateParticipantMedia,
   type GroupCallParticipant,
   type ParticipantMediaState,
@@ -33,6 +35,9 @@ type UseGroupCallOptions = {
   onDisconnected: () => void;
   title: string;
 };
+
+const DISCONNECTED_RECOVERY_DELAY_MS = 4_000;
+const MISSING_VIDEO_RECOVERY_DELAY_MS = 8_000;
 
 function setCallPresence(activity: Record<string, unknown> | null) {
   window.dispatchEvent(new CustomEvent('zypo:presence-activity', { detail: activity }));
@@ -64,7 +69,13 @@ export function useGroupCall({
   const peersRef = useRef(new Map<number, RTCPeerConnection>());
   const videoSendersRef = useRef(new Map<number, RTCRtpSender>());
   const pendingIceRef = useRef(new Map<number, RTCIceCandidateInit[]>());
+  const signalQueuesRef = useRef(new Map<number, Promise<void>>());
   const remoteStreamsRef = useRef(new Map<number, MediaStream>());
+  const recoveryTimersRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const videoWatchdogsRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const recoveryAttemptsRef = useRef(new Map<number, number>());
+  const recoveryRequestRef = useRef<(userId: number, missingMedia?: boolean) => void>(() => undefined);
+  const makeOfferRef = useRef<(userId: number, iceRestart?: boolean) => Promise<void>>(async () => undefined);
   const iceServersRef = useRef<RTCIceServer[]>([]);
   const roomIdRef = useRef('');
   const joinedRef = useRef(false);
@@ -120,19 +131,55 @@ export function useGroupCall({
     refreshLocalStream();
   }, [refreshLocalStream]);
 
-  const closePeer = useCallback((userId: number) => {
+  const clearRecoveryTimer = useCallback((userId: number) => {
+    const timer = recoveryTimersRef.current.get(userId);
+    if (timer) clearTimeout(timer);
+    recoveryTimersRef.current.delete(userId);
+  }, []);
+
+  const clearVideoWatchdog = useCallback((userId: number) => {
+    const timer = videoWatchdogsRef.current.get(userId);
+    if (timer) clearTimeout(timer);
+    videoWatchdogsRef.current.delete(userId);
+  }, []);
+
+  const clearPeerSupervision = useCallback((userId: number, clearAttempts = true) => {
+    clearRecoveryTimer(userId);
+    clearVideoWatchdog(userId);
+    signalQueuesRef.current.delete(userId);
+    if (clearAttempts) recoveryAttemptsRef.current.delete(userId);
+  }, [clearRecoveryTimer, clearVideoWatchdog]);
+
+  const closePeer = useCallback((userId: number, clearAttempts = true) => {
     peersRef.current.get(userId)?.close();
     peersRef.current.delete(userId);
     videoSendersRef.current.delete(userId);
     pendingIceRef.current.delete(userId);
     remoteStreamsRef.current.delete(userId);
+    clearPeerSupervision(userId, clearAttempts);
     setRemoteStreams((current) => {
       if (!current[userId]) return current;
       const next = { ...current };
       delete next[userId];
       return next;
     });
-  }, []);
+  }, [clearPeerSupervision]);
+
+  const hasLiveRemoteVideo = useCallback((userId: number) => (
+    remoteStreamsRef.current.get(userId)?.getVideoTracks().some((track) => (
+      track.readyState === 'live' && !track.muted
+    )) ?? false
+  ), []);
+
+  const watchForRemoteVideo = useCallback((userId: number, expectsVideo: boolean) => {
+    clearVideoWatchdog(userId);
+    if (!expectsVideo || hasLiveRemoteVideo(userId)) return;
+    const timer = setTimeout(() => {
+      videoWatchdogsRef.current.delete(userId);
+      if (!hasLiveRemoteVideo(userId)) recoveryRequestRef.current(userId, true);
+    }, MISSING_VIDEO_RECOVERY_DELAY_MS);
+    videoWatchdogsRef.current.set(userId, timer);
+  }, [clearVideoWatchdog, hasLiveRemoteVideo]);
 
   const createPeer = useCallback(async (targetUserId: number) => {
     const existing = peersRef.current.get(targetUserId);
@@ -174,18 +221,54 @@ export function useGroupCall({
       }
       remoteStreamsRef.current.set(targetUserId, stream);
       setRemoteStreams((current) => ({ ...current, [targetUserId]: stream }));
+      if (event.track.kind === 'video') {
+        if (event.track.muted) {
+          watchForRemoteVideo(targetUserId, true);
+        } else {
+          clearVideoWatchdog(targetUserId);
+          recoveryAttemptsRef.current.delete(targetUserId);
+        }
+        event.track.onunmute = () => {
+          clearVideoWatchdog(targetUserId);
+          recoveryAttemptsRef.current.delete(targetUserId);
+        };
+        event.track.onmute = () => {
+          const participant = participantsRef.current.find((item) => item.user_id === targetUserId);
+          watchForRemoteVideo(targetUserId, Boolean(participant?.cam_enabled || participant?.screen_enabled));
+        };
+      }
       event.track.onended = () => {
         stream.removeTrack(event.track);
         setRemoteStreams((current) => ({ ...current, [targetUserId]: stream }));
+        if (event.track.kind === 'video') {
+          const participant = participantsRef.current.find((item) => item.user_id === targetUserId);
+          watchForRemoteVideo(targetUserId, Boolean(participant?.cam_enabled || participant?.screen_enabled));
+        }
       };
     };
     peer.onconnectionstatechange = () => {
-      if (peer.connectionState === 'failed' || peer.connectionState === 'closed') {
-        closePeer(targetUserId);
+      if (peer.connectionState === 'connected') {
+        clearRecoveryTimer(targetUserId);
+        const participant = participantsRef.current.find((item) => item.user_id === targetUserId);
+        const expectsVideo = Boolean(participant?.cam_enabled || participant?.screen_enabled);
+        if (expectsVideo && !hasLiveRemoteVideo(targetUserId)) {
+          watchForRemoteVideo(targetUserId, true);
+        } else {
+          recoveryAttemptsRef.current.delete(targetUserId);
+        }
+      } else if (peer.connectionState === 'failed') {
+        recoveryRequestRef.current(targetUserId);
+      } else if (peer.connectionState === 'disconnected') {
+        clearRecoveryTimer(targetUserId);
+        const timer = setTimeout(() => {
+          recoveryTimersRef.current.delete(targetUserId);
+          if (peer.connectionState === 'disconnected') recoveryRequestRef.current(targetUserId);
+        }, DISCONNECTED_RECOVERY_DELAY_MS);
+        recoveryTimersRef.current.set(targetUserId, timer);
       }
     };
     return peer;
-  }, [closePeer, sendSignal]);
+  }, [clearRecoveryTimer, clearVideoWatchdog, hasLiveRemoteVideo, sendSignal, watchForRemoteVideo]);
 
   const flushIce = useCallback(async (userId: number, peer: RTCPeerConnection) => {
     const candidates = pendingIceRef.current.get(userId) ?? [];
@@ -193,19 +276,60 @@ export function useGroupCall({
     await Promise.all(candidates.map((candidate) => peer.addIceCandidate(candidate).catch(() => undefined)));
   }, []);
 
-  const makeOffer = useCallback(async (targetUserId: number) => {
+  const makeOffer = useCallback(async (targetUserId: number, iceRestart = false) => {
     const peer = await createPeer(targetUserId);
-    const offer = await peer.createOffer();
+    const offer = await peer.createOffer({ iceRestart });
     await peer.setLocalDescription(offer);
     sendSignal({ kind: 'offer', target_user_id: targetUserId, sdp: offer.sdp });
   }, [createPeer, sendSignal]);
+
+  const requestPeerRecovery = useCallback((targetUserId: number, missingMedia = false) => {
+    if (!joinedRef.current || !roomIdRef.current) return;
+    const peer = peersRef.current.get(targetUserId);
+    const attempts = recoveryAttemptsRef.current.get(targetUserId) ?? 0;
+    const state = missingMedia ? 'failed' : (peer?.connectionState ?? 'failed');
+    if (!shouldRecoverPeer(state, attempts)) return;
+
+    recoveryAttemptsRef.current.set(targetUserId, attempts + 1);
+    clearRecoveryTimer(targetUserId);
+    clearVideoWatchdog(targetUserId);
+    if (isGroupCallOfferer(currentUserId, targetUserId)) {
+      closePeer(targetUserId, false);
+      void makeOfferRef.current(targetUserId, true).catch((error) => {
+        console.error('Group call recovery offer failed', error);
+      });
+    } else {
+      closePeer(targetUserId, false);
+      sendSignal({ kind: 'restart', target_user_id: targetUserId });
+    }
+  }, [clearRecoveryTimer, clearVideoWatchdog, closePeer, currentUserId, sendSignal]);
+
+  useEffect(() => {
+    makeOfferRef.current = makeOffer;
+    recoveryRequestRef.current = requestPeerRecovery;
+  }, [makeOffer, requestPeerRecovery]);
+
+  const enqueueSignal = useCallback((userId: number, operation: () => Promise<void>) => {
+    const previous = signalQueuesRef.current.get(userId) ?? Promise.resolve();
+    const next = previous.catch(() => undefined).then(operation);
+    signalQueuesRef.current.set(userId, next);
+    void next.catch((error) => console.error('Group call signal failed', error)).finally(() => {
+      if (signalQueuesRef.current.get(userId) === next) signalQueuesRef.current.delete(userId);
+    });
+  }, []);
 
   const resetPeers = useCallback(() => {
     peersRef.current.forEach((peer) => peer.close());
     peersRef.current.clear();
     videoSendersRef.current.clear();
     pendingIceRef.current.clear();
+    signalQueuesRef.current.clear();
     remoteStreamsRef.current.clear();
+    recoveryTimersRef.current.forEach(clearTimeout);
+    recoveryTimersRef.current.clear();
+    videoWatchdogsRef.current.forEach(clearTimeout);
+    videoWatchdogsRef.current.clear();
+    recoveryAttemptsRef.current.clear();
     setRemoteStreams({});
   }, []);
 
@@ -261,8 +385,11 @@ export function useGroupCall({
         const next = normalizeParticipants(signal.participants);
         setParticipants(next);
         next.forEach((participant) => {
-          if (participant.user_id !== currentUserId) {
+          if (isGroupCallOfferer(currentUserId, participant.user_id)) {
             void makeOffer(participant.user_id).catch((error) => console.error('Group call offer failed', error));
+          }
+          if (participant.user_id !== currentUserId) {
+            watchForRemoteVideo(participant.user_id, participant.cam_enabled || participant.screen_enabled);
           }
         });
         return;
@@ -277,6 +404,10 @@ export function useGroupCall({
         const participant = normalizeParticipant(signal);
         if (participant && !participantsRef.current.some((item) => item.user_id === participant.user_id)) {
           setParticipants([...participantsRef.current, participant]);
+          watchForRemoteVideo(participant.user_id, participant.cam_enabled || participant.screen_enabled);
+          if (isGroupCallOfferer(currentUserId, participant.user_id)) {
+            void makeOffer(participant.user_id).catch((error) => console.error('Group call offer failed', error));
+          }
         }
         return;
       }
@@ -290,10 +421,15 @@ export function useGroupCall({
           screen_enabled: Boolean(signal.screen_enabled),
         };
         setParticipants(updateParticipantMedia(participantsRef.current, fromUserId, media));
+        watchForRemoteVideo(fromUserId, media.cam_enabled || media.screen_enabled);
         return;
       }
 
-      void (async () => {
+      enqueueSignal(fromUserId, async () => {
+        if (kind === 'restart') {
+          if (isGroupCallOfferer(currentUserId, fromUserId)) requestPeerRecovery(fromUserId, true);
+          return;
+        }
         const peer = await createPeer(fromUserId);
         if (kind === 'offer' && signal.sdp) {
           await peer.setRemoteDescription({ type: 'offer', sdp: signal.sdp });
@@ -312,7 +448,7 @@ export function useGroupCall({
             pendingIceRef.current.set(fromUserId, [...queue, signal.candidate].slice(-50));
           }
         }
-      })().catch((error) => console.error('Group call signal failed', error));
+      });
     };
 
     const handleSubscribed = (raw?: unknown) => {
@@ -348,7 +484,7 @@ export function useGroupCall({
       globalWS.unsubscribeDialog(dialogId);
       subscribedRef.current = false;
     };
-  }, [closePeer, createPeer, currentMediaState, currentUserId, dialogId, flushIce, lang?.voice_room_disconnected, lang?.voice_room_error, leave, makeOffer, onDisconnected, resetPeers, sendSignal, setParticipants, showNote]);
+  }, [closePeer, createPeer, currentMediaState, currentUserId, dialogId, enqueueSignal, flushIce, lang?.voice_room_disconnected, lang?.voice_room_error, leave, makeOffer, onDisconnected, requestPeerRecovery, resetPeers, sendSignal, setParticipants, showNote, watchForRemoteVideo]);
 
   useEffect(() => () => {
     if (joinedRef.current && roomIdRef.current) sendSignal({ kind: 'leave' });
