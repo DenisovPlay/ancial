@@ -37,6 +37,7 @@ export default function GroupCallTile({
 }: Props) {
   const { lang } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const advertisedVideo = participant.cam_enabled || participant.screen_enabled;
   const [hasPlayableVideo, setHasPlayableVideo] = useState(() => (
     stream ? hasPlayableVideoTrack(stream.getTracks()) : false
@@ -50,14 +51,25 @@ export default function GroupCallTile({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    const audio = audioRef.current;
+    if (!video || !audio) return;
+    let videoOnlyStream: MediaStream | null = null;
+    let audioOnlyStream: MediaStream | null = null;
     const attemptPlayback = () => {
-      if (!stream || video.srcObject !== stream) return;
+      if (!videoOnlyStream || video.srcObject !== videoOnlyStream) return;
       void video.play().catch(() => undefined);
     };
+    const attemptAudioPlayback = () => {
+      if (!audioOnlyStream || audio.srcObject !== audioOnlyStream || isLocal || deafened) return;
+      void audio.play().catch(() => undefined);
+    };
     const attachStream = () => {
-      if (video.srcObject !== stream) video.srcObject = stream ?? null;
+      videoOnlyStream = stream ? new MediaStream(stream.getVideoTracks()) : null;
+      audioOnlyStream = stream ? new MediaStream(stream.getAudioTracks()) : null;
+      video.srcObject = videoOnlyStream;
+      audio.srcObject = audioOnlyStream;
       attemptPlayback();
+      attemptAudioPlayback();
     };
     const updateVideoReadiness = () => {
       setHasPlayableVideo(Boolean(stream && hasPlayableVideoTrack(stream.getTracks())));
@@ -93,6 +105,8 @@ export default function GroupCallTile({
     stream?.addEventListener('removetrack', handleTrackRemoved);
     video.addEventListener('loadedmetadata', attemptPlayback);
     video.addEventListener('canplay', attemptPlayback);
+    audio.addEventListener('loadedmetadata', attemptAudioPlayback);
+    audio.addEventListener('canplay', attemptAudioPlayback);
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') attachStream();
     };
@@ -104,11 +118,14 @@ export default function GroupCallTile({
       stream?.removeEventListener('removetrack', handleTrackRemoved);
       video.removeEventListener('loadedmetadata', attemptPlayback);
       video.removeEventListener('canplay', attemptPlayback);
+      audio.removeEventListener('loadedmetadata', attemptAudioPlayback);
+      audio.removeEventListener('canplay', attemptAudioPlayback);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       observedTracks.forEach(unobserveTrack);
-      if (video.srcObject === stream) video.srcObject = null;
+      if (video.srcObject === videoOnlyStream) video.srcObject = null;
+      if (audio.srcObject === audioOnlyStream) audio.srcObject = null;
     };
-  }, [stream]);
+  }, [deafened, isLocal, stream]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -122,9 +139,10 @@ export default function GroupCallTile({
         ref={videoRef}
         autoPlay
         playsInline
-        muted={isLocal || deafened}
+        muted
         className={`absolute inset-0 h-full w-full ${participant.screen_enabled ? 'object-contain' : 'object-cover'} transition-opacity duration-300 ${advertisedVideo && hasPlayableVideo ? 'opacity-100' : 'opacity-0'}`}
       />
+      <audio ref={audioRef} autoPlay muted={isLocal || deafened} />
 
       <div className={`absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950 transition-opacity duration-300 ${advertisedVideo && hasPlayableVideo ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <img

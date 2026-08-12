@@ -236,13 +236,14 @@ export function useGroupCall({
       peer.addTransceiver('audio', { direction: 'recvonly' });
     }
 
-    const videoTransceiver = peer.addTransceiver('video', {
-      direction: 'sendrecv',
-      streams: [mediaStream],
-    });
-    videoSendersRef.current.set(targetUserId, videoTransceiver.sender);
-    if (activeVideoTrackRef.current) {
-      await videoTransceiver.sender.replaceTrack(activeVideoTrackRef.current);
+    const activeVideoTrack = activeVideoTrackRef.current;
+    if (activeVideoTrack) {
+      mediaStream.addTrack(activeVideoTrack);
+      const videoSender = peer.addTrack(activeVideoTrack, mediaStream);
+      videoSendersRef.current.set(targetUserId, videoSender);
+    } else {
+      const videoTransceiver = peer.addTransceiver('video', { direction: 'recvonly' });
+      videoSendersRef.current.set(targetUserId, videoTransceiver.sender);
     }
 
     peer.onicecandidate = (event) => {

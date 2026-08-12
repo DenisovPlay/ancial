@@ -28,7 +28,11 @@ assert.match(tileSource, /video\.addEventListener\('loadedmetadata', attemptPlay
 assert.match(tileSource, /video\.addEventListener\('canplay', attemptPlayback\)/);
 assert.match(tileSource, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
 assert.match(tileSource, /attemptPlayback\(\);/);
-assert.doesNotMatch(tileSource, /const audioRef = useRef<HTMLAudioElement/);
+assert.match(tileSource, /const audioRef = useRef<HTMLAudioElement/);
+assert.match(tileSource, /videoOnlyStream = stream \? new MediaStream\(stream\.getVideoTracks\(\)\)/);
+assert.match(tileSource, /audioOnlyStream = stream \? new MediaStream\(stream\.getAudioTracks\(\)\)/);
+assert.match(tileSource, /<audio ref=\{audioRef\}/);
+assert.match(tileSource, /muted\s*$/m);
 assert.match(ruLocale, /"voice_focus_video"/);
 assert.match(ruLocale, /"voice_return_to_grid"/);
 assert.match(enLocale, /"voice_focus_video"/);
@@ -51,5 +55,8 @@ assert.doesNotMatch(hookSource, /outboundVideoWatchdogsRef/);
 assert.match(hookSource, /video: true/);
 assert.match(hookSource, /cameraTrackRef\.current = stream\.getVideoTracks\(\)\[0\]/);
 assert.match(hookSource, /activeVideoTrackRef\.current = cameraTrackRef\.current/);
+assert.match(hookSource, /peer\.addTrack\(activeVideoTrack, mediaStream\)/);
+assert.match(hookSource, /videoSendersRef\.current\.set\(targetUserId, videoSender\)/);
+assert.doesNotMatch(hookSource, /addTransceiver\('video', \{\s*direction: 'sendrecv'/);
 
 console.log('group call layout: ok');
