@@ -1544,6 +1544,8 @@ export const en: Record<string, string> = {
   "community_permission_mention_everyone": "Mention everyone",
   "community_permission_view_audit_log": "View audit log",
   "community_add_role": "Add role",
+  "community_remove_role": "Remove role",
+  "community_member_actions": "Member actions",
   "community_categories": "Channel categories",
   "community_category_name": "Category name",
   "community_category_delete_confirm": "Delete this category? Its channels will remain uncategorized.",

@@ -6,6 +6,7 @@ import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
+import { useDragScroll } from '../../../hooks/useDragScroll';
 import CommunityChannelEditor from './community-channel-editor';
 import CommunityModeration from './community-moderation';
 import CommunityRoleEditor from './community-role-editor';
@@ -40,6 +41,7 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
   const [linkRequests, setLinkRequests] = useState<CommunityLinkRequest[]>([]);
   const [audit, setAudit] = useState<CommunityAuditEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const tabsScrollRef = useDragScroll({ speed: 2 });
 
   const loadManagement = useCallback(async () => {
     setLoading(true);
@@ -91,7 +93,7 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={lang?.community_management || ''}>
       <div className="flex min-h-[50vh] flex-col gap-3">
-        <div className="flex gap-1.5 overflow-x-auto rounded-3xl bg-zinc-900/70 p-1.5">
+        <div ref={tabsScrollRef} className="drag-scroll viewport flex w-full flex-nowrap gap-1.5 overflow-x-auto rounded-3xl bg-zinc-900/70 p-1.5">
           {tabs.map((tab) => (
             <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`shrink-0 cursor-pointer rounded-3xl px-3 py-2 text-sm duration-300 active:scale-95 ${activeTab === tab ? 'bg-purple-600 text-white' : 'text-zinc-400 hover:bg-zinc-800'}`}>
               {lang?.[`community_tab_${tab}`] || tab}

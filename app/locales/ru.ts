@@ -1544,6 +1544,8 @@ export const ru: Record<string, string> = {
     "community_permission_mention_everyone": "Упоминание всех",
     "community_permission_view_audit_log": "Просмотр журнала действий",
     "community_add_role": "Добавить роль",
+    "community_remove_role": "Убрать роль",
+    "community_member_actions": "Действия с участником",
     "community_categories": "Категории каналов",
     "community_category_name": "Название категории",
     "community_category_delete_confirm": "Удалить категорию? Каналы останутся без категории.",
