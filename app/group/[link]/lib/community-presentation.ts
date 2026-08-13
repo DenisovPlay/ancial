@@ -28,3 +28,17 @@ export function formatCommunityAuditDate(value: string, languageName?: string) {
     timeStyle: 'short',
   }).format(date);
 }
+
+export function communityAuditActionLabel(
+  action: string,
+  dictionary?: Record<string, unknown> | null,
+) {
+  const normalized = action.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  const key = `community_audit_action_${normalized}`;
+  const translated = dictionary?.[key];
+  if (typeof translated === 'string' && translated.trim()) return translated;
+
+  const readable = action.trim().replace(/[._-]+/g, ' ').replace(/\s+/g, ' ');
+  if (!readable) return '—';
+  return readable.charAt(0).toUpperCase() + readable.slice(1);
+}

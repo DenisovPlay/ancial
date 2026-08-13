@@ -22,7 +22,7 @@ import {
   type CommunityStructure,
 } from '../lib/community-types';
 import { communityErrorText } from '../lib/community-error';
-import { formatCommunityAuditDate } from '../lib/community-presentation';
+import { communityAuditActionLabel, formatCommunityAuditDate } from '../lib/community-presentation';
 
 type Props = {
   communityId: number;
@@ -208,7 +208,7 @@ export default function CommunityManageModal({ communityDescription, communityId
           ) : null}
           {audit.map((entry) => (
             <div key={entry.id} className="rounded-3xl border border-zinc-700/40 bg-zinc-800/50 p-3">
-              <p className="text-sm font-semibold text-zinc-100">{entry.action}</p>
+              <p className="text-sm font-semibold text-zinc-100">{communityAuditActionLabel(entry.action, lang)}</p>
               <p className="mt-0.5 text-xs text-zinc-500">@{entry.username} · {formatCommunityAuditDate(entry.created_at, lang?.langname)}</p>
               {entry.reason ? <p className="mt-1.5 text-sm text-zinc-300">{entry.reason}</p> : null}
             </div>

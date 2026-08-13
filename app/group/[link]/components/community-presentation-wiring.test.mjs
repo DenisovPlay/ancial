@@ -15,6 +15,8 @@ assert.doesNotMatch(editorSource, /\{channel\.channel_type\}/);
 assert.doesNotMatch(editorSource, /communityChannelTypeLabel/);
 assert.match(editorSource, /channel\.voice_enabled/);
 assert.match(manageSource, /formatCommunityAuditDate/);
+assert.match(manageSource, /communityAuditActionLabel\(entry\.action, lang\)/);
+assert.doesNotMatch(manageSource, />\{entry\.action\}</);
 assert.doesNotMatch(callTileSource, />\s*[●×]\s*</);
 assert.match(callTileSource, /MicrophoneStatusIcon/);
 
