@@ -10,6 +10,7 @@ import { useDragScroll } from '../../../hooks/useDragScroll';
 import CommunityChannelEditor from './community-channel-editor';
 import CommunityModeration from './community-moderation';
 import CommunityRoleEditor from './community-role-editor';
+import CommunitySettingsEditor from './community-settings-editor';
 import {
   canCommunity,
   visibleManagementTabs,
@@ -25,19 +26,24 @@ import { formatCommunityAuditDate } from '../lib/community-presentation';
 
 type Props = {
   communityId: number;
+  communityDescription: string;
+  communityLink: string;
+  communityName: string;
+  initialTab?: CommunityManagementTab;
   isOpen: boolean;
   onClose: () => void;
+  onCommunitySaved: (nextLink: string) => Promise<void>;
   onStructureChanged: () => Promise<void>;
   structure: CommunityStructure;
 };
 
 type ManagementView = 'overview' | 'create_channel' | 'categories' | 'channel_permissions' | 'create_role';
 
-export default function CommunityManageModal({ communityId, isOpen, onClose, onStructureChanged, structure }: Props) {
+export default function CommunityManageModal({ communityDescription, communityId, communityLink, communityName, initialTab = 'community', isOpen, onClose, onCommunitySaved, onStructureChanged, structure }: Props) {
   const { lang } = useAuth();
   const { showNote } = useNotification();
   const tabs = useMemo(() => visibleManagementTabs(structure.permissions), [structure.permissions]);
-  const [activeTab, setActiveTab] = useState<CommunityManagementTab>(tabs[0] ?? 'channels');
+  const [activeTab, setActiveTab] = useState<CommunityManagementTab>(initialTab);
   const [roles, setRoles] = useState<CommunityRoleList | null>(null);
   const [members, setMembers] = useState<CommunityMember[]>([]);
   const [linkRequests, setLinkRequests] = useState<CommunityLinkRequest[]>([]);
@@ -103,9 +109,10 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
 
   useEffect(() => {
     if (!isOpen) return;
+    if (tabs.includes(initialTab)) setActiveTab(initialTab);
     const timer = setTimeout(() => void loadManagement(), 0);
     return () => clearTimeout(timer);
-  }, [isOpen, loadManagement]);
+  }, [initialTab, isOpen, loadManagement, tabs]);
 
   useEffect(() => {
     if (tabs.includes(activeTab)) return;
@@ -157,12 +164,15 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
 
   const tabContent = (
     <>
-      {loading ? (
+      {loading && activeTab !== 'community' ? (
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-3xl bg-zinc-800/60" style={{ animationDelay: `${i * 100}ms` }} />
           ))}
         </div>
+      ) : null}
+      {activeTab === 'community' ? (
+        <CommunitySettingsEditor communityId={communityId} description={communityDescription} link={communityLink} name={communityName} onSaved={onCommunitySaved} />
       ) : null}
       {!loading && activeTab === 'channels' ? (
         <CommunityChannelEditor communityId={communityId} onChanged={refreshAll} onOpenView={setManagementView} roles={roles?.roles ?? []} structure={structure} view={managementView} />
@@ -280,7 +290,7 @@ export default function CommunityManageModal({ communityId, isOpen, onClose, onS
         {/* ── Тело: flex row, заполняет оставшееся место ── */}
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {/* Десктопный сайдбар */}
-          <aside className="hidden w-52 shrink-0 flex-col gap-1 overflow-y-auto border-r border-zinc-800/60 p-3 pt-[72px] lg:flex">
+          <aside className="hidden w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-zinc-800/60 p-3 pt-[72px] lg:flex">
             {tabs.map((tab) => (
               <button
                 key={tab}

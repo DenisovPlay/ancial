@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Modal from '../../components/modal';
 import DeletePostModal from '../../components/delete-post-modal';
@@ -33,6 +33,9 @@ import {
 import { uploadImage } from '../../lib/upload';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
 import CommunityChannelShell from './components/community-channel-shell';
+import CommunityManageModal from './components/community-manage-modal';
+import { useCommunityStructure } from './hooks/use-community-structure';
+import { canCommunity } from './lib/community-types';
 
 type Id = string | number;
 
@@ -122,10 +125,6 @@ function writeGroupProfileCache(key: string, value: GroupProfileCacheEntry) {
 
 function clearGroupProfileCache(key: string) {
   cache.remove(key, { category: 'groups', subcategory: 'profile' });
-}
-
-function sanitizeGroupLink(value: string) {
-  return value.replace(/[-_*/+=()~!@#$%^&*.<>|]/g, '');
 }
 
 // Local helpers removed
@@ -238,15 +237,11 @@ export default function GroupProfileContent({ link }: { link: string }) {
   const [isSubscribersModalOpen, setIsSubscribersModalOpen] = useState(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCommunityManageOpen, setIsCommunityManageOpen] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [isSavingGroupInfo, setIsSavingGroupInfo] = useState(false);
-  const [editForm, setEditForm] = useState({
-    desk: '',
-    name: '',
-    slnk: '',
-  });
+  const communityId = toNumber(groupData?.id);
+  const { failed: communityStructureFailed, refreshStructure, structure: communityStructure } = useCommunityStructure(communityId);
 
   const officialGroupsScrollRef = useDragScroll({ speed: 2 });
 
@@ -496,11 +491,6 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
         setGroupData(data);
         groupIdRef.current = data.id;
-        setEditForm({
-          desk: data.description || '',
-          name: data.name || '',
-          slnk: data.slnk || '',
-        });
         setBlocked(false);
         setError(null);
 
@@ -619,11 +609,6 @@ export default function GroupProfileContent({ link }: { link: string }) {
       setError(null);
       setBlocked(false);
       setGroupData(cached.groupData);
-      setEditForm({
-        desk: cached.groupData.description || '',
-        name: cached.groupData.name || '',
-        slnk: cached.groupData.slnk || '',
-      });
       groupIdRef.current = cached.groupData.id;
       setPosts(cached.posts);
       setPostsLoading(false);
@@ -1067,59 +1052,6 @@ export default function GroupProfileContent({ link }: { link: string }) {
     }
   };
 
-  const handleEditFieldChange = (field: 'desk' | 'name' | 'slnk', value: string) => {
-    setEditForm((current) => ({
-      ...current,
-      [field]: field === 'slnk' ? sanitizeGroupLink(value) : value,
-    }));
-  };
-
-  const handleSaveGroupInfo = async () => {
-    if (!groupData) return;
-
-    setIsSavingGroupInfo(true);
-
-    try {
-      const response = (await AncialAPI.updateGroupInfo({
-        desk: editForm.desk,
-        gid: String(groupData.id),
-        name: editForm.name,
-        slnk: editForm.slnk,
-      })) as { message: string };
-
-      const message = response.message || 'Данные обновлены!';
-
-      showNote({
-        content: message,
-        html: true,
-        type: 'success',
-        time: 5,
-      });
-
-      if (message.trim() === 'Данные обновлены!') {
-        clearGroupProfileCache(groupCacheKey);
-        setIsEditModalOpen(false);
-
-        const nextLink = editForm.slnk.trim() || String(groupData.slnk || link);
-        if (nextLink !== String(groupData.slnk || link)) {
-          router.push(`/$${nextLink}`);
-          return;
-        }
-
-        await loadGroup({ preserveExisting: true });
-      }
-    } catch (nextError) {
-      console.error('Save group info failed', nextError);
-      showNote({
-        content: strings.errorhappend,
-        type: 'error',
-        time: 5,
-      });
-    } finally {
-      setIsSavingGroupInfo(false);
-    }
-  };
-
   const currentCover = groupData?.cover || '/img/placeholders/cover.png';
   const currentAvatar = groupData?.img || '/img/placeholders/group.png';
 
@@ -1221,10 +1153,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
               {isAuthenticated ? (
                 <div className="flex flex-col md:flex-row gap-3 items-center shrink-0">
-                  {flag(groupData.is_creator) ? (
+                  {flag(groupData.is_creator) || canCommunity(communityStructure?.permissions, 'manage_community') ? (
                     <button
                       type="button"
-                      onClick={() => setIsEditModalOpen(true)}
+                      onClick={() => setIsCommunityManageOpen(true)}
                       className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
                     >
                       <SvgIcon className="w-6 h-6 fill-white inline mr-2" id="IC-edit" />
@@ -1299,9 +1231,8 @@ export default function GroupProfileContent({ link }: { link: string }) {
             <div className="flex flex-col md:gap-3 md:w-80 lg:w-96 shrink-0 -mt-3 md:mt-0 rounded-b-3xl md:rounded-b-none overflow-hidden">
               {isAuthenticated && flag(groupData.is_community_member) ? (
                 <CommunityChannelShell
-                  communityId={toNumber(groupData.id)}
-                  communityLink={String(groupData.slnk || link)}
-                  initialCanManage={flag(groupData.is_creator)}
+                  failed={communityStructureFailed}
+                  structure={communityStructure}
                 />
               ) : null}
 
@@ -1418,86 +1349,28 @@ export default function GroupProfileContent({ link }: { link: string }) {
         />
       </Modal>
 
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title={strings.editgroup}
-        width="sm"
-      >
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void handleSaveGroupInfo();
+      {groupData && communityStructure ? (
+        <CommunityManageModal
+          communityDescription={groupData.description || ''}
+          communityId={toNumber(groupData.id)}
+          communityLink={String(groupData.slnk || link)}
+          communityName={groupData.name || ''}
+          initialTab="community"
+          isOpen={isCommunityManageOpen}
+          onClose={() => setIsCommunityManageOpen(false)}
+          onCommunitySaved={async (nextLink) => {
+            clearGroupProfileCache(groupCacheKey);
+            if (nextLink !== String(groupData.slnk || link)) {
+              setIsCommunityManageOpen(false);
+              router.push(`/$${nextLink}`);
+              return;
+            }
+            await Promise.all([loadGroup({ preserveExisting: true }), refreshStructure()]);
           }}
-          className="flex flex-col gap-3"
-        >
-          <div
-            className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-400 shadow rounded-3xl w-full"
-            dangerouslySetInnerHTML={{ __html: strings.editgroupWARN }}
-          />
-
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">{strings.linktogroup}</span>
-            </label>
-            <div className="flex">
-              <span className="border border-zinc-600/30 bg-zinc-700 p-2 text-zinc-300 placeholder-zinc-500 rounded-l-3xl h-12 w-40 sm:w-48 cursor-not-allowed flex items-center justify-start">
-                zypo.cc/$
-              </span>
-              <input
-                type="text"
-                value={editForm.slnk}
-                onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                  handleEditFieldChange('slnk', event.target.value)
-                }
-                className="border border-zinc-600/30 bg-zinc-800 p-2 text-zinc-100 placeholder-zinc-500 rounded-r-3xl h-12 w-full"
-                autoComplete="off"
-              />
-            </div>
-          </div>
-
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">{strings.groupname}</span>
-            </label>
-            <input
-              type="text"
-              value={editForm.name}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handleEditFieldChange('name', event.target.value)
-              }
-              className="border border-zinc-600/30 bg-zinc-800 p-2 text-zinc-100 placeholder-zinc-500 rounded-3xl h-12 w-full"
-              autoComplete="off"
-            />
-          </div>
-
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">{strings.groupdesc}</span>
-            </label>
-            <input
-              type="text"
-              value={editForm.desk}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handleEditFieldChange('desk', event.target.value)
-              }
-              className="border border-zinc-600/30 bg-zinc-800 p-2 text-zinc-100 placeholder-zinc-500 rounded-3xl h-12 w-full"
-              autoComplete="off"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSavingGroupInfo}
-            className={cn(
-              'border border-zinc-600/30 cursor-pointer w-full rounded-3xl flex items-center justify-center bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 px-3 py-2',
-              isSavingGroupInfo && 'opacity-60 cursor-not-allowed',
-            )}
-          >
-            {strings.apply}
-          </button>
-        </form>
-      </Modal>
+          onStructureChanged={refreshStructure}
+          structure={communityStructure}
+        />
+      ) : null}
 
       <CommentsModal
         isOpen={isCommentsModalOpen}

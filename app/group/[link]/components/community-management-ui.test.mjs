@@ -29,12 +29,18 @@ assert.doesNotMatch(
 );
 assert.match(channelShellSource, /AncialAPI\.joinPublicChat/, 'community channels must join before navigation');
 assert.match(channelShellSource, /result\.status === 'requested'/, 'request-only channels must stay on the community page');
-assert.match(channelShellSource, /channel\.channel_type === 'voice'/, 'the same membership gate must cover voice channels');
+assert.doesNotMatch(channelShellSource, /channel\.channel_type === 'voice'/, 'all channels must open messages');
 assert.doesNotMatch(channelShellSource, /CommunityChannelView/, 'community pages must not duplicate the selected channel in a detail card');
 assert.match(channelShellSource, /onSelect=\{openChannel\}/, 'compact channel rows must perform the existing join-and-open flow directly');
-assert.match(managementSource, /width="xl"/, 'community management needs a wide desktop workspace');
+assert.match(managementSource, /sm:w-\[1180px\]/, 'community management needs a wide desktop workspace');
 assert.match(managementSource, /hidden w-56 shrink-0 flex-col[^\"]*lg:flex/, 'desktop management needs a persistent navigation rail');
 assert.match(managementSource, /lg:hidden/, 'mobile management must retain compact horizontal tabs');
 assert.match(managementSource, /managementView/, 'management tools must open as internal workspaces');
+assert.match(groupPageSource, /initialTab="community"/, 'edit must open unified management on community tab');
+assert.match(groupPageSource, /<CommunityManageModal/, 'page must own unified management modal');
+assert.doesNotMatch(groupPageSource, /isEditModalOpen/, 'legacy edit modal state must be removed');
+assert.doesNotMatch(channelShellSource, /CommunityManageModal/, 'channel shell must not own management UI');
+assert.doesNotMatch(channelShellSource, /community_channel_manage/, 'channel block must not render manage button');
+assert.match(managementSource, /activeTab === 'community'/, 'management modal must render community settings');
 
 console.log('community management UI: ok');
