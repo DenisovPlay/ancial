@@ -72,40 +72,53 @@ export default function CommunityRoleEditor({ communityId, onChanged, onOpenView
           {lang?.community_create_role}
         </button>
       ) : null}
-      {view === 'create_role' ? <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => onOpenView('overview')} className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95" aria-label={lang?.back || ''} title={lang?.back || ''}>
-            <svg className="size-5 fill-current" viewBox="0 0 48 48" aria-hidden="true"><use href="#IC-chevron-left" /></svg>
-          </button>
-          <h3 className="text-lg font-semibold text-zinc-100">{lang?.community_create_role}</h3>
-        </div>
+
+      {view === 'create_role' ? (
         <div className="flex flex-col gap-3">
-          <input aria-label={lang?.community_role_name} value={name} onChange={(event) => setName(event.target.value)} placeholder={lang?.community_role_name} className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none focus:border-purple-400" />
-          <div className="grid gap-2 sm:grid-cols-2">
-            {EDITABLE_PERMISSIONS.map((permission) => (
-              <label key={permission} className="flex cursor-pointer items-center gap-3 rounded-3xl bg-zinc-800/60 p-2 text-sm text-zinc-300">
-                <span className="min-w-0 flex-1 truncate">{lang?.[`community_permission_${permission}`] || permission}</span>
-                <span className="flex h-5 items-center">
-                  <span className="relative inline-flex items-center cursor-pointer">
-                    <input className="sr-only peer" type="checkbox" checked={permissions[permission] === true} onChange={(event) => setPermissions((current) => ({ ...current, [permission]: event.target.checked }))} />
-                    <span className="group peer bg-zinc-800 rounded-full duration-300 w-10 h-6 after:duration-300 after:bg-red-500 peer-checked:after:bg-green-500 after:rounded-full after:absolute after:h-6 after:w-6 after:top-0 after:left-0 after:flex after:justify-center after:items-center peer-checked:after:translate-x-4 peer-hover:after:scale-105" />
-                  </span>
-                </span>
-              </label>
-            ))}
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => onOpenView('overview')} className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95" aria-label={lang?.back || ''} title={lang?.back || ''}>
+              <svg className="size-5 fill-current" viewBox="0 0 48 48" aria-hidden="true"><use href="#IC-chevron-left" /></svg>
+            </button>
+            <h3 className="text-lg font-semibold text-zinc-100">{lang?.community_create_role}</h3>
           </div>
-          <button type="button" disabled={saving || !name.trim()} onClick={() => void createRole()} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">{lang?.community_create_role}</button>
+          <input aria-label={lang?.community_role_name} value={name} onChange={(e) => setName(e.target.value)} placeholder={lang?.community_role_name} className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none focus:border-purple-400" />
+          <div className="grid gap-2 sm:grid-cols-2">
+            {EDITABLE_PERMISSIONS.map((permission) => {
+              const isOn = permissions[permission] === true;
+              return (
+                <label key={permission} className="flex cursor-pointer items-center gap-3 rounded-3xl bg-zinc-800/60 p-2 text-sm text-zinc-300">
+                  <span className="min-w-0 flex-1 truncate">{lang?.[`community_permission_${permission}`] || permission}</span>
+                  <span className="flex h-5 items-center">
+                  <span className="relative inline-flex cursor-pointer items-center">
+                      <input className="sr-only peer" type="checkbox" checked={isOn} onChange={(e) => setPermissions((c) => ({ ...c, [permission]: e.target.checked }))} />
+                      <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors duration-200 ${isOn ? 'bg-green-500' : 'bg-zinc-600'}`}>
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${isOn ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </span>
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <button type="button" disabled={saving || !name.trim()} onClick={() => void createRole()} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">
+            {lang?.community_create_role}
+          </button>
         </div>
-      </div>
-        : null}
-      {view === 'overview' ? roleList.roles.map((role) => (
-        <div key={role.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3">
-          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: role.color }} />
-          <span className="min-w-0 flex-1 truncate font-semibold text-zinc-100">{role.name}</span>
-          <span className="text-xs text-zinc-500">{role.member_count}</span>
-          {!role.is_system ? <button type="button" onClick={() => setPendingRoleId(role.id)} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-sm text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.delete}</button> : null}
-        </div>
-      )) : null}
+      ) : null}
+
+      {view === 'overview' ? (
+        roleList.roles.map((role) => (
+          <div key={role.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3">
+            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: role.color }} />
+            <span className="min-w-0 flex-1 truncate font-semibold text-zinc-100">{role.name}</span>
+            <span className="text-xs text-zinc-500">{role.member_count}</span>
+            {!role.is_system ? (
+              <button type="button" onClick={() => setPendingRoleId(role.id)} className="cursor-pointer rounded-3xl bg-red-600 px-3 py-1.5 text-sm text-white duration-300 hover:bg-red-500 active:scale-95">{lang?.delete}</button>
+            ) : null}
+          </div>
+        ))
+      ) : null}
+
       <ConfirmDeleteModal
         isOpen={pendingRoleId !== null}
         onClose={() => setPendingRoleId(null)}

@@ -27,7 +27,7 @@ function ChannelButton({
       type="button"
       disabled={disabled}
       onClick={() => void onSelect(channel)}
-      className={`flex w-full cursor-pointer items-center gap-2 rounded-3xl border hover:px-2 py-2 text-left duration-300 active:scale-95 ${selected
+      className={`flex w-full cursor-pointer items-center gap-2 rounded-3xl border py-2 text-left duration-300 active:scale-95 hover:px-2 ${selected
         ? 'border-purple-400/40 bg-purple-500/20 text-white'
         : 'border-transparent text-zinc-300 hover:border-zinc-600/30 hover:bg-zinc-800/70'
         } disabled:cursor-wait disabled:opacity-60`}
