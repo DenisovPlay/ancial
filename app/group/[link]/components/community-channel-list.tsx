@@ -27,11 +27,10 @@ function ChannelButton({
       type="button"
       disabled={disabled}
       onClick={() => void onSelect(channel)}
-      className={`flex w-full cursor-pointer items-center gap-2 rounded-3xl border p-2 text-left duration-300 active:scale-95 ${
-        selected
-          ? 'border-purple-400/40 bg-purple-500/20 text-white'
-          : 'border-transparent text-zinc-300 hover:border-zinc-600/30 hover:bg-zinc-800/70'
-      } disabled:cursor-wait disabled:opacity-60`}
+      className={`flex w-full cursor-pointer items-center gap-2 rounded-3xl border hover:px-2 py-2 text-left duration-300 active:scale-95 ${selected
+        ? 'border-purple-400/40 bg-purple-500/20 text-white'
+        : 'border-transparent text-zinc-300 hover:border-zinc-600/30 hover:bg-zinc-800/70'
+        } disabled:cursor-wait disabled:opacity-60`}
     >
       <span className="flex w-7 shrink-0 items-center justify-center text-zinc-400">
         <CommunityChannelIcon type={channel.channel_type} />
@@ -65,7 +64,7 @@ export default function CommunityChannelList({ categories, channels, disabled = 
         <section key={category.id} className="flex flex-col gap-1">
           <span className="px-2 text-xs font-bold uppercase tracking-wide text-zinc-500">{category.name}</span>
           {categoryChannels.map((channel) => (
-              <ChannelButton key={channel.id} channel={channel} disabled={disabled} onSelect={onSelect} selected={selectedId === channel.id} />
+            <ChannelButton key={channel.id} channel={channel} disabled={disabled} onSelect={onSelect} selected={selectedId === channel.id} />
           ))}
         </section>
       ))}

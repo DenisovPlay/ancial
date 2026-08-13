@@ -127,10 +127,10 @@ export default function CommunityChannelEditor({ communityId, onChanged, onOpenV
 
   const overview = (
     <>
-      <div className="grid gap-2 sm:grid-cols-3">
-        <button type="button" onClick={() => onOpenView('create_channel')} className="cursor-pointer rounded-3xl border border-purple-400/30 bg-purple-600/20 p-3 text-left text-sm font-semibold text-purple-100 duration-300 hover:bg-purple-600/30 active:scale-95">{lang?.community_create_channel}</button>
-        <button type="button" onClick={() => onOpenView('categories')} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3 text-left text-sm font-semibold text-zinc-100 duration-300 hover:bg-zinc-700 active:scale-95">{lang?.community_create_category}</button>
-        <button type="button" onClick={() => onOpenView('channel_permissions')} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3 text-left text-sm font-semibold text-zinc-100 duration-300 hover:bg-zinc-700 active:scale-95">{lang?.community_channel_permissions}</button>
+      <div className="grid gap-3 grid-cols-3">
+        <button type="button" onClick={() => onOpenView('create_channel')} className="cursor-pointer rounded-3xl border border-purple-400/30 bg-purple-600/20 p-3 text-center text-sm font-semibold text-purple-100 duration-300 hover:bg-purple-600/30 active:scale-95">{lang?.community_create_channel}</button>
+        <button type="button" onClick={() => onOpenView('categories')} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3 text-center text-sm font-semibold text-zinc-100 duration-300 hover:bg-zinc-700 active:scale-95">{lang?.community_create_category}</button>
+        <button type="button" onClick={() => onOpenView('channel_permissions')} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3 text-center text-sm font-semibold text-zinc-100 duration-300 hover:bg-zinc-700 active:scale-95">{lang?.community_channel_permissions}</button>
       </div>
       <div className="flex flex-col gap-2">
         {structure.channels.map((channel) => (
@@ -149,55 +149,53 @@ export default function CommunityChannelEditor({ communityId, onChanged, onOpenV
       {view === 'overview' ? overview : null}
       {view === 'create_channel' ? <div className="flex flex-col gap-3">
         {workspaceHeader(lang?.community_create_channel || '')}
-        <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
-        <input aria-label={lang?.community_channel_name} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={lang?.community_channel_name} className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none focus:border-purple-400" />
-        <select aria-label={lang?.community_channel_text} value={channelType} onChange={(event) => setChannelType(event.target.value as typeof channelType)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
-          <option value="text">{lang?.community_channel_text}</option>
-          <option value="announcement">{lang?.community_channel_announcement}</option>
-          <option value="voice">{lang?.community_channel_voice}</option>
-        </select>
-        <select aria-label={lang?.community_categories} value={categoryId ?? ''} onChange={(event) => setCategoryId(event.target.value ? Number(event.target.value) : null)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
-          <option value="">{lang?.community_channel_uncategorized}</option>
-          {structure.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-        </select>
-        <button type="button" disabled={saving || !title.trim()} onClick={() => void createChannel()} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">
-          {lang?.community_create_channel}
-        </button>
+        <div className="flex flex-col gap-3">
+          <input aria-label={lang?.community_channel_name} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={lang?.community_channel_name} className="rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none focus:border-purple-400" />
+          <select aria-label={lang?.community_channel_text} value={channelType} onChange={(event) => setChannelType(event.target.value as typeof channelType)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
+            <option value="text">{lang?.community_channel_text}</option>
+            <option value="announcement">{lang?.community_channel_announcement}</option>
+            <option value="voice">{lang?.community_channel_voice}</option>
+          </select>
+          <select aria-label={lang?.community_categories} value={categoryId ?? ''} onChange={(event) => setCategoryId(event.target.value ? Number(event.target.value) : null)} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
+            <option value="">{lang?.community_channel_uncategorized}</option>
+            {structure.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
+          <button type="button" disabled={saving || !title.trim()} onClick={() => void createChannel()} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">
+            {lang?.community_create_channel}
+          </button>
         </div>
       </div> : null}
       {view === 'categories' ? <div className="flex flex-col gap-3">
         {workspaceHeader(lang?.community_categories || '')}
-        <div className="flex flex-col gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
-        <p className="font-semibold text-zinc-100">{lang?.community_categories}</p>
-        <div className="flex gap-2">
-          <input aria-label={lang?.community_category_name} value={categoryName} onChange={(event) => setCategoryName(event.target.value)} placeholder={lang?.community_category_name} className="min-w-0 flex-1 rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none" />
-          <button type="button" aria-label={lang?.community_create_category} onClick={() => void createCategory()} className="cursor-pointer rounded-3xl bg-purple-600 px-4 text-white duration-300 hover:bg-purple-500 active:scale-95">+</button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {structure.categories.map((category) => <button key={category.id} type="button" onClick={() => setPendingDelete({ id: category.id, kind: 'category' })} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 duration-300 hover:bg-red-500/30 active:scale-95">{category.name} ×</button>)}
-        </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-1.5">
+            <input aria-label={lang?.community_category_name} value={categoryName} onChange={(event) => setCategoryName(event.target.value)} placeholder={lang?.community_category_name} className="min-w-0 flex-1 rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none" />
+            <button type="button" aria-label={lang?.community_create_category} onClick={() => void createCategory()} className="flex w-[50px] h-[50px] items-center justify-center shrink-0 cursor-pointer rounded-3xl bg-purple-600 px-4 text-white duration-300 hover:bg-purple-500 active:scale-95"><svg className="w-7 h-7 fill-current" viewBox="0 0 48 48" aria-hidden="true"><use href="#IC-plus" /></svg></button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {structure.categories.map((category) => <button key={category.id} type="button" onClick={() => setPendingDelete({ id: category.id, kind: 'category' })} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 duration-300 hover:bg-red-500/30 active:scale-95">{category.name} ×</button>)}
+          </div>
         </div>
       </div> : null}
       {view === 'channel_permissions' ? <div className="flex flex-col gap-3">
         {workspaceHeader(lang?.community_channel_permissions || '')}
-        <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 p-3">
-        <p className="font-semibold text-zinc-100">{lang?.community_channel_permissions}</p>
-        <select aria-label={lang?.community_select_channel} value={overrideDialogId || ''} onChange={(event) => setOverrideDialogId(Number(event.target.value))} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
-          <option value="">{lang?.community_select_channel}</option>
-          {structure.channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.title}</option>)}
-        </select>
-        <select aria-label={lang?.community_select_role} value={overrideRoleId || ''} onChange={(event) => setOverrideRoleId(Number(event.target.value))} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
-          <option value="">{lang?.community_select_role}</option>
-          {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
-        </select>
-        {(['view_channel', 'send_messages'] as const).map((permission) => (
-          <div key={permission} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-3xl bg-zinc-800/60 p-2 text-sm text-zinc-300">
-            <span>{lang?.[`community_permission_${permission}`]}</span>
-            <button type="button" onClick={() => { setOverrideAllow((current) => ({ ...current, [permission]: !current[permission] })); setOverrideDeny((current) => ({ ...current, [permission]: false })); }} className={`cursor-pointer rounded-3xl px-3 py-1 duration-300 active:scale-95 ${overrideAllow[permission] ? 'bg-green-600 text-white' : 'bg-zinc-700'}`}>{lang?.community_allow}</button>
-            <button type="button" onClick={() => { setOverrideDeny((current) => ({ ...current, [permission]: !current[permission] })); setOverrideAllow((current) => ({ ...current, [permission]: false })); }} className={`cursor-pointer rounded-3xl px-3 py-1 duration-300 active:scale-95 ${overrideDeny[permission] ? 'bg-red-600 text-white' : 'bg-zinc-700'}`}>{lang?.community_deny}</button>
-          </div>
-        ))}
-        <button type="button" onClick={() => void saveOverride()} disabled={!overrideDialogId || !overrideRoleId} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">{lang?.save}</button>
+        <div className="flex flex-col gap-3">
+          <select aria-label={lang?.community_select_channel} value={overrideDialogId || ''} onChange={(event) => setOverrideDialogId(Number(event.target.value))} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
+            <option value="">{lang?.community_select_channel}</option>
+            {structure.channels.map((channel) => <option key={channel.id} value={channel.id}>{channel.title}</option>)}
+          </select>
+          <select aria-label={lang?.community_select_role} value={overrideRoleId || ''} onChange={(event) => setOverrideRoleId(Number(event.target.value))} className="cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100">
+            <option value="">{lang?.community_select_role}</option>
+            {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+          </select>
+          {(['view_channel', 'send_messages'] as const).map((permission) => (
+            <div key={permission} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-3xl bg-zinc-800/60 p-2 text-sm text-zinc-300">
+              <span>{lang?.[`community_permission_${permission}`]}</span>
+              <button type="button" onClick={() => { setOverrideAllow((current) => ({ ...current, [permission]: !current[permission] })); setOverrideDeny((current) => ({ ...current, [permission]: false })); }} className={`cursor-pointer rounded-3xl px-3 py-1 duration-300 active:scale-95 ${overrideAllow[permission] ? 'bg-green-600 text-white' : 'bg-zinc-700'}`}>{lang?.community_allow}</button>
+              <button type="button" onClick={() => { setOverrideDeny((current) => ({ ...current, [permission]: !current[permission] })); setOverrideAllow((current) => ({ ...current, [permission]: false })); }} className={`cursor-pointer rounded-3xl px-3 py-1 duration-300 active:scale-95 ${overrideDeny[permission] ? 'bg-red-600 text-white' : 'bg-zinc-700'}`}>{lang?.community_deny}</button>
+            </div>
+          ))}
+          <button type="button" onClick={() => void saveOverride()} disabled={!overrideDialogId || !overrideRoleId} className="cursor-pointer rounded-3xl bg-purple-600 p-3 font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:opacity-50">{lang?.save}</button>
         </div>
       </div> : null}
       <ConfirmDeleteModal
