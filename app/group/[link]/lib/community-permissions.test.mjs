@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   COMMUNITY_CHANNEL_RENDERERS,
+  COMMUNITY_CHANNEL_PERMISSION_NAMES,
   canCommunity,
   communityErrorKey,
   communityEventMatches,
@@ -11,18 +12,23 @@ import {
 
 assert.equal(canCommunity({ manage_channels: true }, 'manage_channels'), true);
 assert.equal(canCommunity({}, 'manage_channels'), false);
+assert.deepEqual(visibleManagementTabs({ manage_community: true }), ['community']);
 assert.deepEqual(visibleManagementTabs({ manage_roles: true }), ['roles']);
 assert.deepEqual(
   visibleManagementTabs({
-    manage_channels: true,
+    manage_community: true, manage_channels: true,
     manage_roles: true,
     manage_members: true,
     view_audit_log: true,
   }),
-  ['channels', 'roles', 'members', 'link_requests', 'audit'],
+  ['community', 'channels', 'roles', 'members', 'link_requests', 'audit'],
 );
 assert.deepEqual(visibleManagementTabs({}), []);
-assert.deepEqual(Object.keys(COMMUNITY_CHANNEL_RENDERERS).sort(), ['announcement', 'text', 'voice']);
+assert.deepEqual(Object.keys(COMMUNITY_CHANNEL_RENDERERS), ['text']);
+assert.deepEqual(COMMUNITY_CHANNEL_PERMISSION_NAMES, [
+  'view_channel', 'send_messages', 'add_reactions', 'mention_everyone',
+  'connect_voice', 'speak_voice', 'manage_messages', 'manage_voice',
+]);
 assert.equal(communityErrorKey(403), 'community_permission_error');
 assert.equal(communityErrorKey(409), 'community_stale_error');
 assert.equal(communityErrorKey(500), 'community_save_error');

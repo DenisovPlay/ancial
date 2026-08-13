@@ -115,11 +115,6 @@ function CommunityChannelShellState({ cacheKey, communityId, communityLink, init
         return;
       }
       const dialogHash = result.hash || channel.hash;
-      if (channel.channel_type === 'voice') {
-        const returnPath = `/group/${communityLink}`;
-        router.push(`/call/group/${encodeURIComponent(dialogHash)}?return=${encodeURIComponent(returnPath)}`);
-        return;
-      }
       router.push(`/messages/${encodeURIComponent(dialogHash)}`);
     } catch (error) {
       console.error('Community channel join failed', error);

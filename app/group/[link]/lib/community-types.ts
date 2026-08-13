@@ -10,7 +10,6 @@ export type CommunityPermissionName =
   | 'manage_voice'
   | 'view_channel'
   | 'send_messages'
-  | 'attach_files'
   | 'add_reactions'
   | 'connect_voice'
   | 'speak_voice'
@@ -18,8 +17,8 @@ export type CommunityPermissionName =
   | 'view_audit_log';
 
 export type CommunityPermissionMap = Partial<Record<CommunityPermissionName, boolean>>;
-export type CommunityChannelType = 'text' | 'announcement' | 'voice';
-export type CommunityManagementTab = 'channels' | 'roles' | 'members' | 'link_requests' | 'audit';
+export type CommunityChannelType = 'text';
+export type CommunityManagementTab = 'community' | 'channels' | 'roles' | 'members' | 'link_requests' | 'audit';
 
 export interface CommunityCategory {
   id: number;
@@ -121,9 +120,18 @@ export interface CommunityMember {
 
 export const COMMUNITY_CHANNEL_RENDERERS: Record<CommunityChannelType, 'messages' | 'voice'> = {
   text: 'messages',
-  announcement: 'messages',
-  voice: 'voice',
 };
+
+export const COMMUNITY_CHANNEL_PERMISSION_NAMES: CommunityPermissionName[] = [
+  'view_channel',
+  'send_messages',
+  'add_reactions',
+  'mention_everyone',
+  'connect_voice',
+  'speak_voice',
+  'manage_messages',
+  'manage_voice',
+];
 
 export const COMMUNITY_INVALIDATION_DELAY_MS = 150;
 
@@ -156,7 +164,13 @@ export function validateCachedCommunityStructure(
   if (!candidate.permissions || typeof candidate.permissions !== 'object' || Array.isArray(candidate.permissions)) return null;
   if (candidate.highest_role_position !== null && candidate.highest_role_position !== undefined
     && !Number.isFinite(Number(candidate.highest_role_position))) return null;
-  return candidate as CommunityStructure;
+  return {
+    ...candidate,
+    channels: candidate.channels.map((channel) => ({
+      ...channel,
+      channel_type: 'text' as const,
+    })),
+  } as CommunityStructure;
 }
 
 export function canCommunity(
@@ -168,6 +182,7 @@ export function canCommunity(
 
 export function visibleManagementTabs(permissions: CommunityPermissionMap): CommunityManagementTab[] {
   const tabs: CommunityManagementTab[] = [];
+  if (canCommunity(permissions, 'manage_community')) tabs.push('community');
   if (canCommunity(permissions, 'manage_channels')) tabs.push('channels');
   if (canCommunity(permissions, 'manage_roles')) tabs.push('roles');
   if (canCommunity(permissions, 'manage_members')) tabs.push('members');

@@ -2,8 +2,6 @@ import type { CommunityChannelType } from './community-types';
 
 const CHANNEL_ICON_IDS: Record<CommunityChannelType, 'IC-chats' | 'IC-news' | 'IC-call'> = {
   text: 'IC-chats',
-  announcement: 'IC-news',
-  voice: 'IC-call',
 };
 
 export function communityChannelIconId(type: CommunityChannelType) {

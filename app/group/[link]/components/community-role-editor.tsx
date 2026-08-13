@@ -11,7 +11,7 @@ import { communityErrorText } from '../lib/community-error';
 
 const EDITABLE_PERMISSIONS: CommunityPermissionName[] = [
   'manage_channels', 'manage_roles', 'manage_members', 'manage_messages', 'manage_posts', 'manage_invites',
-  'manage_join_requests', 'manage_voice', 'view_channel', 'send_messages', 'attach_files',
+  'manage_join_requests', 'manage_voice', 'view_channel', 'send_messages',
   'add_reactions', 'connect_voice', 'speak_voice', 'mention_everyone', 'view_audit_log',
 ];
 

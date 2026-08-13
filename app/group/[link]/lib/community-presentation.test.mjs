@@ -7,16 +7,12 @@ import {
 } from './community-presentation.ts';
 
 assert.equal(communityChannelIconId('text'), 'IC-chats');
-assert.equal(communityChannelIconId('announcement'), 'IC-news');
-assert.equal(communityChannelIconId('voice'), 'IC-call');
 
 assert.equal(
-  communityChannelTypeLabel('voice', {
+  communityChannelTypeLabel('text', {
     text: 'Текстовый канал',
-    announcement: 'Канал объявлений',
-    voice: 'Голосовой канал',
   }),
-  'Голосовой канал',
+  'Текстовый канал',
 );
 
 assert.equal(formatCommunityAuditDate('not-a-date', 'ru'), 'not-a-date');
