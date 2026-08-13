@@ -2473,6 +2473,7 @@ export default function MessagesContent() {
                             const dialogHash = normalizeHash(selectedDialog?.hash || routeHash);
                             if (!dialogHash) return;
                             const returnPath = `/messages/${dialogHash}`;
+                            if (isPlaying) togglePlay();
                             router.push(`/call/group/${encodeURIComponent(dialogHash)}?return=${encodeURIComponent(returnPath)}`);
                           }}
                           aria-label={lang?.voice_room_title || 'Голосовая комната'}
