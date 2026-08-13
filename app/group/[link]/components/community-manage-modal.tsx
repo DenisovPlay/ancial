@@ -109,10 +109,9 @@ export default function CommunityManageModal({ communityDescription, communityId
 
   useEffect(() => {
     if (!isOpen) return;
-    if (tabs.includes(initialTab)) setActiveTab(initialTab);
     const timer = setTimeout(() => void loadManagement(), 0);
     return () => clearTimeout(timer);
-  }, [initialTab, isOpen, loadManagement, tabs]);
+  }, [isOpen, loadManagement]);
 
   useEffect(() => {
     if (tabs.includes(activeTab)) return;
@@ -128,8 +127,9 @@ export default function CommunityManageModal({ communityDescription, communityId
 
   const closeManagement = useCallback(() => {
     setManagementView('overview');
+    setActiveTab(initialTab);
     onClose();
-  }, [onClose]);
+  }, [initialTab, onClose]);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([onStructureChanged(), loadManagement()]);

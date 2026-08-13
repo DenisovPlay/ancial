@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -24,8 +24,6 @@ export default function CommunitySettingsEditor({ communityId, description, link
   const { showNote } = useNotification();
   const [form, setForm] = useState({ desk: description, name, slnk: link });
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => setForm({ desk: description, name, slnk: link }), [description, link, name]);
 
   const save = async () => {
     if (saving || !form.name.trim() || !form.slnk.trim()) return;

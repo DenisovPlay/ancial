@@ -67,7 +67,9 @@ export function useCommunityStructure(communityId: number) {
     );
     if (cached) {
       hasUsableStructureRef.current = true;
-      setStructure(cached);
+      const cachedTimer = setTimeout(() => setStructure(cached), 0);
+      const timer = setTimeout(refresh, 0);
+      return () => { clearTimeout(cachedTimer); clearTimeout(timer); };
     }
     const timer = setTimeout(refresh, 0);
     return () => clearTimeout(timer);

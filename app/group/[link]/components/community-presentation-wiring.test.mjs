@@ -12,7 +12,8 @@ const callTileSource = readFileSync(
 assert.doesNotMatch(listSource, /◖\)\)|◉/);
 assert.match(listSource, /CommunityChannelIcon/);
 assert.doesNotMatch(editorSource, /\{channel\.channel_type\}/);
-assert.match(editorSource, /communityChannelTypeLabel/);
+assert.doesNotMatch(editorSource, /communityChannelTypeLabel/);
+assert.match(editorSource, /channel\.voice_enabled/);
 assert.match(manageSource, /formatCommunityAuditDate/);
 assert.doesNotMatch(callTileSource, />\s*[●×]\s*</);
 assert.match(callTileSource, /MicrophoneStatusIcon/);

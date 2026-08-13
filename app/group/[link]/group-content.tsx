@@ -35,7 +35,7 @@ import FeedPostSkeleton from '../../feed/feed-post-skeleton';
 import CommunityChannelShell from './components/community-channel-shell';
 import CommunityManageModal from './components/community-manage-modal';
 import { useCommunityStructure } from './hooks/use-community-structure';
-import { canCommunity } from './lib/community-types';
+import { visibleManagementTabs } from './lib/community-types';
 
 type Id = string | number;
 
@@ -1153,7 +1153,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
               {isAuthenticated ? (
                 <div className="flex flex-col md:flex-row gap-3 items-center shrink-0">
-                  {flag(groupData.is_creator) || canCommunity(communityStructure?.permissions, 'manage_community') ? (
+                  {flag(groupData.is_creator) || visibleManagementTabs(communityStructure?.permissions || {}).length > 0 ? (
                     <button
                       type="button"
                       onClick={() => setIsCommunityManageOpen(true)}
@@ -1351,6 +1351,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
       {groupData && communityStructure ? (
         <CommunityManageModal
+          key={`${groupData.id}:${groupData.slnk}:${groupData.name}:${groupData.description}`}
           communityDescription={groupData.description || ''}
           communityId={toNumber(groupData.id)}
           communityLink={String(groupData.slnk || link)}
