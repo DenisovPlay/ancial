@@ -15,7 +15,7 @@ const EDITABLE_PERMISSIONS: CommunityPermissionName[] = [
   'add_reactions', 'connect_voice', 'speak_voice', 'mention_everyone', 'view_audit_log',
 ];
 
-type RoleView = 'overview' | 'create_channel' | 'categories' | 'channel_permissions' | 'create_role';
+type RoleView = 'overview' | 'create_channel' | 'edit_channel' | 'categories' | 'channel_permissions' | 'create_role' | 'edit_role';
 type Props = {
   communityId: number;
   onChanged: () => Promise<void>;

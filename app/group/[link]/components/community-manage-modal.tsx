@@ -37,7 +37,7 @@ type Props = {
   structure: CommunityStructure;
 };
 
-type ManagementView = 'overview' | 'create_channel' | 'categories' | 'channel_permissions' | 'create_role';
+type ManagementView = 'overview' | 'create_channel' | 'edit_channel' | 'categories' | 'channel_permissions' | 'create_role' | 'edit_role';
 
 export default function CommunityManageModal({ communityDescription, communityId, communityLink, communityName, initialTab = 'community', isOpen, onClose, onCommunitySaved, onStructureChanged, structure }: Props) {
   const { lang } = useAuth();
