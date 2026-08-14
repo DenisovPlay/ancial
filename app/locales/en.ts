@@ -1532,6 +1532,7 @@ export const en: Record<string, string> = {
   "community_create_channel": "Create channel",
   "community_channel_delete_confirm": "Remove this channel from the community? Messages will remain in the chat.",
   "community_role_name": "Role name",
+  "community_role_color": "Role color",
   "community_create_role": "Create role",
   "community_role_delete_confirm": "Delete this role?",
   "community_moderation_confirm": "Apply this action to the member?",

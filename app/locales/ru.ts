@@ -1532,6 +1532,7 @@ export const ru: Record<string, string> = {
     "community_create_channel": "Создать канал",
     "community_channel_delete_confirm": "Удалить канал из сообщества? Сообщения останутся в чате.",
     "community_role_name": "Название роли",
+    "community_role_color": "Цвет роли",
     "community_create_role": "Создать роль",
     "community_role_delete_confirm": "Удалить эту роль?",
     "community_moderation_confirm": "Применить действие к участнику?",

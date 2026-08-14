@@ -15,13 +15,15 @@ Make channel, category, permission, and role controls in the community managemen
 ## Role overview and form
 
 - Style the create-role action with the same primary purple button treatment used by the channel, category, and channel-permission actions.
+- Match the create-role label size to the compact channel actions: `text-xs` on mobile and `sm:text-sm` on larger screens.
+- Replace the role edit and delete text buttons with the same compact `IC-edit` and `IC-trash` icon buttons used by channel rows.
 - Replace the browser's visually inconsistent native color field with a Zypo-styled color control.
 - The styled control displays a color swatch and current hexadecimal value while an overlaid native color input retains the system color picker and keyboard interaction.
 - Keep role saving, permission checks, and API requests unchanged.
 
 ## Category form
 
-- Add a localized category-name placeholder in Russian and English.
+- Use the existing localized category-name string as the input placeholder in Russian and English.
 - Replace the wide text submit button with a compact `IC-plus` icon button.
 - Disable the add button while the trimmed category name is empty.
 - Preserve the existing create-category request and list refresh behavior.
