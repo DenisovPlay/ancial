@@ -42,6 +42,9 @@ export type DialogListItem = {
   Uverify?: number | string | null;
   Ubadges?: string | null;
   unread_count?: number | string | null;
+  img?: string | null;
+  bg?: string | null;
+  background?: string | null;
 };
 
 export type DialogMeta = {
@@ -62,6 +65,8 @@ export type DialogMeta = {
   my_role?: 'owner' | 'admin' | 'member' | string | null;
   members?: GroupMember[] | null;
   img?: string | null;
+  bg?: string | null;
+  background?: string | null;
   blocked?: boolean | number | string | null;
   active_mute?: boolean | Record<string, unknown> | null;
   community_permissions?: CommunityPermissionMap | null;

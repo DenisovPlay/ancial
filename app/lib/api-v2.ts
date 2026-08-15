@@ -545,7 +545,14 @@ export class AncialAPI {
   }
 
   static async updateDialogBackground<T = unknown>(dialogId: string | number, imageUrl: string): Promise<T> {
-    return this.request<T>(`/messages/UpdateBackground.php?diid=${dialogId}&img=${encodeURIComponent(imageUrl)}`);
+    return this.request<T>('/messages/UpdateBackground.php', {
+      method: 'POST',
+      body: JSON.stringify({
+        dialog_id: Number(dialogId),
+        image_url: imageUrl,
+        clear: imageUrl === '',
+      }),
+    });
   }
 
   static async getPublicChats<T = unknown>(params: { communityId?: string | number; query?: string } = {}): Promise<T> {

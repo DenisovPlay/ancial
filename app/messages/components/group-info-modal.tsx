@@ -36,6 +36,7 @@ interface GroupInfoModalProps {
   dialogId: number;
   title: string;
   avatar: string;
+  background?: string;
   inviteCode: string;
   canManageInvites?: boolean;
   myRole: 'owner' | 'admin' | 'member';
@@ -46,7 +47,7 @@ interface GroupInfoModalProps {
   communityPermissions?: CommunityPermissionMap | null;
   description?: string | null;
   voiceEnabled?: boolean | number | string | null;
-  onGroupUpdated: (partial?: { avatar?: string; title?: string }) => void;
+  onGroupUpdated: (partial?: { avatar?: string; title?: string; background?: string }) => void;
   onLeave?: () => void;
 }
 
@@ -73,6 +74,7 @@ export default function GroupInfoModal({
   dialogId,
   title,
   avatar,
+  background = '',
   inviteCode: initialInviteCode,
   canManageInvites: hasInvitePermission = false,
   myRole,
@@ -95,7 +97,9 @@ export default function GroupInfoModal({
   const [currentAvatar, setCurrentAvatar] = useState(avatar);
   const [loadingAction, setLoadingAction] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBackground, setUploadingBackground] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
 
   const [friendsList, setFriendsList] = useState<Array<{ id: number; username?: string; name?: string; fname?: string; lname?: string; img?: string; verify?: number }>>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
@@ -367,6 +371,51 @@ export default function GroupInfoModal({
     }
   };
 
+  const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !canManageChannel) return;
+
+    setUploadingBackground(true);
+    showNote({ content: lang?.['loading...'] || 'Загрузка...', type: 'info', time: 3 });
+    try {
+      const uploadedUrl = await uploadImage(file);
+      if (!uploadedUrl) throw new Error(lang?.error_uploading_image || 'Ошибка загрузки изображения');
+
+      const result = await AncialAPI.updateDialogBackground<{ image_url?: string }>(dialogId, uploadedUrl);
+      const nextBackground = result?.image_url || uploadedUrl;
+      onGroupUpdated({ background: nextBackground });
+      showNote({ content: lang?.backgroundupdated || 'Фон обновлён', type: 'success', time: 3 });
+    } catch (err: unknown) {
+      showNote({
+        content: err instanceof Error ? err.message : (lang?.failed_to_update_background || 'Не удалось обновить фон'),
+        type: 'error',
+        time: 4,
+      });
+    } finally {
+      setUploadingBackground(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleBackgroundClear = async () => {
+    if (!canManageChannel || uploadingBackground) return;
+
+    setUploadingBackground(true);
+    try {
+      await AncialAPI.updateDialogBackground(dialogId, '');
+      onGroupUpdated({ background: '' });
+      showNote({ content: lang?.done || 'Готово', type: 'success', time: 3 });
+    } catch (err: unknown) {
+      showNote({
+        content: err instanceof Error ? err.message : (lang?.failed_to_update_background || 'Не удалось обновить фон'),
+        type: 'error',
+        time: 4,
+      });
+    } finally {
+      setUploadingBackground(false);
+    }
+  };
+
   const handleSaveTitle = async () => {
     if (!editTitle.trim() || editTitle.trim() === title) {
       setView('main');
@@ -476,6 +525,13 @@ export default function GroupInfoModal({
           accept="image/*"
           className="hidden"
           onChange={handleAvatarUpload}
+        />
+        <input
+          ref={backgroundInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleBackgroundUpload}
         />
 
         {/* Кнопка «Назад» при нахождении во вложенном табе */}
@@ -721,6 +777,41 @@ export default function GroupInfoModal({
                 {loadingAction ? (lang?.saving || 'Сохранение...') : (lang?.save || 'Сохранить')}
               </button>
             </div>
+
+            {canManageChannel && (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm text-zinc-300">{lang?.change_bg || 'Изменить фон'}</span>
+                <div className="drag-scroll viewport -my-3 flex gap-3 overflow-x-auto px-1 py-3">
+                  <button
+                    type="button"
+                    disabled={uploadingBackground}
+                    onClick={() => void handleBackgroundClear()}
+                    className={`flex h-32 w-20 shrink-0 cursor-pointer flex-col items-center rounded-2xl bg-zinc-800 p-3 shadow duration-300 disabled:opacity-50 active:scale-95 ${!background ? 'ring-2 ring-purple-500' : ''}`}
+                  >
+                    <span className="mb-1.5 w-full rounded-2xl rounded-bl-none bg-zinc-700 px-1.5 text-left text-sm text-zinc-200">Hello</span>
+                    <span className="w-full rounded-2xl rounded-br-none bg-purple-700 px-1.5 text-left text-sm text-white">Hi!</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={uploadingBackground}
+                    onClick={() => backgroundInputRef.current?.click()}
+                    className={`flex h-32 w-20 shrink-0 cursor-pointer flex-col items-center rounded-2xl bg-gradient-to-br from-purple-700 to-blue-700 bg-cover bg-center p-3 shadow duration-300 disabled:opacity-50 active:scale-95 ${background ? 'ring-2 ring-purple-500' : ''}`}
+                    style={background ? { backgroundImage: `url(${background})` } : undefined}
+                  >
+                    <span className="mb-1.5 w-full rounded-2xl rounded-bl-none bg-zinc-800/80 px-1.5 text-left text-sm text-zinc-200">Hello</span>
+                    <span className="w-full rounded-2xl rounded-br-none bg-purple-700/80 px-1.5 text-left text-sm text-white">Hi!</span>
+                    <span className="flex h-full flex-grow items-end">
+                      {uploadingBackground ? (
+                        <svg className="h-10 w-10 animate-spin fill-purple-100" viewBox="0 0 48 48"><use href="#IC-loader" /></svg>
+                      ) : (
+                        <svg className="h-10 w-10 fill-purple-100" viewBox="0 0 48 48"><use href="#IC-image" /></svg>
+                      )}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

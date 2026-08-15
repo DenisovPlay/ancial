@@ -1876,25 +1876,25 @@ export default function MessagesContent() {
     try {
       const imageUrl = await uploadImage(file);
 
-      const result = await AncialAPI.updateDialogBackground<{ success?: boolean; error?: string }>(dialogId, imageUrl);
-      const isSuccess = (result as any).success !== false;
-      if (!isSuccess) {
-        throw new Error((result as any).error || (lang?.failed_to_update_background || 'Не удалось обновить фон'));
-      }
+      const result = await AncialAPI.updateDialogBackground<{ image_url?: string }>(dialogId, imageUrl);
+      const nextBackground = result?.image_url || imageUrl;
 
       setSelectedDialog((currentDialog) =>
         currentDialog
           ? {
             ...currentDialog,
-            img: imageUrl,
-            bg: imageUrl,
+            img: nextBackground,
+            bg: nextBackground,
+            background: nextBackground,
           }
           : currentDialog,
       );
 
       setDialogs((prevDialogs) =>
         prevDialogs.map((d) =>
-          normalizeHash(d.hash) === dialogHash ? { ...d, img: imageUrl, bg: imageUrl } : d
+          normalizeHash(d.hash) === dialogHash
+            ? { ...d, img: nextBackground, bg: nextBackground, background: nextBackground }
+            : d
         )
       );
 
@@ -1925,7 +1925,7 @@ export default function MessagesContent() {
     if (!dialogId || !dialogHash) return;
 
     try {
-      await AncialAPI.updateDialogBackground(dialogId, '""');
+      await AncialAPI.updateDialogBackground(dialogId, '');
 
       setSelectedDialog((currentDialog) =>
         currentDialog
@@ -1933,13 +1933,14 @@ export default function MessagesContent() {
             ...currentDialog,
             img: '',
             bg: '',
+            background: '',
           }
           : currentDialog,
       );
 
       setDialogs((prevDialogs) =>
         prevDialogs.map((d) =>
-          normalizeHash(d.hash) === dialogHash ? { ...d, img: '', bg: '' } : d
+          normalizeHash(d.hash) === dialogHash ? { ...d, img: '', bg: '', background: '' } : d
         )
       );
       setSettingsModalOpen(false);
@@ -3074,6 +3075,7 @@ export default function MessagesContent() {
           dialogId={Number(selectedDialog.id)}
           title={selectedDialog.title || 'Групповой чат'}
           avatar={selectedDialog.avatar || ''}
+          background={dialogBackgroundUrl}
           inviteCode={selectedDialog.invite_code || ''}
           canManageInvites={
             selectedDialog.can_manage_invites === true
@@ -3089,7 +3091,21 @@ export default function MessagesContent() {
           description={selectedDialog.description}
           voiceEnabled={selectedDialog.voice_enabled}
           communityPermissions={selectedDialog.community_permissions}
-          onGroupUpdated={() => {
+          onGroupUpdated={(partial) => {
+            if (partial?.background !== undefined) {
+              const nextBackground = partial.background;
+              setSelectedDialog((current) => current ? {
+                ...current,
+                img: nextBackground,
+                bg: nextBackground,
+                background: nextBackground,
+              } : current);
+              setDialogs((current) => current.map((dialog) =>
+                normalizeHash(dialog.hash) === currentDialogHashRef.current
+                  ? { ...dialog, img: nextBackground, bg: nextBackground, background: nextBackground }
+                  : dialog
+              ));
+            }
             void reloadCurrentDialogMeta();
             void loadDialogs({ force: true });
             void loadMessagesNewer(dialogSessionRef.current);
