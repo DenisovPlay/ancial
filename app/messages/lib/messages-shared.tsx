@@ -1,6 +1,7 @@
 import type { ImageViewerSlide } from '../../components/image-viewer-modal';
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import type { CommunityDisplayRole } from './community-role';
 
 export type DialogImageSlide = ImageViewerSlide & { key: string };
 export type LangMap = Record<string, string> | null;
@@ -13,6 +14,7 @@ export type GroupMember = {
   img: string;
   verify: number;
   role: 'owner' | 'admin' | 'member';
+  community_role?: CommunityDisplayRole | null;
 };
 
 export type DialogListItem = {

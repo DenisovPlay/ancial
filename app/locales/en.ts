@@ -1295,6 +1295,7 @@ export const en: Record<string, string> = {
   "add_member_btn": "+ Add",
   "role_owner": "Owner",
   "role_admin": "Admin",
+  "role_editor": "Editor",
   "role_member": "Member",
   "user_fallback": "User",
   "remove_from_group": "Remove from group",

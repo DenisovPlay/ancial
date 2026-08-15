@@ -1295,6 +1295,7 @@ export const ru: Record<string, string> = {
     "add_member_btn": "+ Добавить",
     "role_owner": "Создатель",
     "role_admin": "Администратор",
+    "role_editor": "Редактор",
     "role_member": "Участник",
     "user_fallback": "Пользователь",
     "remove_from_group": "Исключить из группы",

@@ -10,6 +10,11 @@ import { uploadImage } from '../../lib/upload';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
 import { SITE_URL } from '../../config';
 import { globalWS } from '../../lib/global-ws';
+import {
+  getCommunityRoleBadgeStyle,
+  getCommunityRoleLabel,
+  type CommunityDisplayRole,
+} from '../lib/community-role';
 
 interface GroupMember {
   id: number;
@@ -20,6 +25,7 @@ interface GroupMember {
   img?: string;
   verify?: number;
   role: 'owner' | 'admin' | 'member';
+  community_role?: CommunityDisplayRole | null;
 }
 
 interface GroupInfoModalProps {
@@ -585,13 +591,14 @@ export default function GroupInfoModal({
                     img: member.img,
                     verify: member.verify,
                   };
+                  const communityRoleLabel = getCommunityRoleLabel(member.community_role, lang);
 
                   return (
                     <div
                       key={member.id}
                       className="flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 hover:bg-zinc-800/40 duration-300"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img
                           src={normalizeAssetUrl(member.img, FALLBACK_AVATAR)}
                           alt=""
@@ -602,25 +609,35 @@ export default function GroupInfoModal({
                         </div>
                       </div>
 
-                      {member.role === 'owner' && (
-                        <span className="text-xs text-purple-400 bg-purple-500/25 p-1 rounded-3xl border border-zinc-600/30">
-                          {lang?.role_owner || 'Создатель'}
-                        </span>
-                      )}
+                      <div className="flex items-center justify-end gap-2 shrink-0 min-w-0">
+                        {communityRoleLabel ? (
+                          <span
+                            className="max-w-32 truncate text-xs px-2 py-1 rounded-3xl border"
+                            style={getCommunityRoleBadgeStyle(member.community_role!)}
+                            title={communityRoleLabel}
+                          >
+                            {communityRoleLabel}
+                          </span>
+                        ) : (!initialCommunityId && member.role === 'owner' ? (
+                          <span className="text-xs text-purple-400 bg-purple-500/25 px-2 py-1 rounded-3xl border border-zinc-600/30">
+                            {lang?.role_owner || 'Создатель'}
+                          </span>
+                        ) : null)}
 
-                      {isAdminOrOwner && member.id !== currentUserId && member.role !== 'owner' && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveMember(member.id)}
-                          disabled={loadingAction}
-                          className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-full duration-300 active:scale-95 cursor-pointer shrink-0"
-                          title={lang?.remove_from_group || 'Исключить из группы'}
-                        >
-                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                          </svg>
-                        </button>
-                      )}
+                        {isAdminOrOwner && member.id !== currentUserId && member.role !== 'owner' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMember(member.id)}
+                            disabled={loadingAction}
+                            className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-full transition-[color,background-color,transform] duration-300 active:scale-95 cursor-pointer shrink-0"
+                            title={lang?.remove_from_group || 'Исключить из группы'}
+                          >
+                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
