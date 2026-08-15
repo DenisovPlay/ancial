@@ -13,7 +13,7 @@ assert.match(
 );
 assert.match(
   source,
-  /hasInvitePermission && Boolean/,
+  /access\.canManageInvites && Boolean/,
   'cached invite codes must stay hidden unless the backend explicitly grants permission',
 );
 assert.match(

@@ -131,6 +131,8 @@ export default function MessageBubble({
   foreignUser,
   lang,
   message,
+  canAddReactions,
+  canDeleteAnyMessage,
   onAddReaction,
   onReply,
   onDeleteMessage,
@@ -150,6 +152,8 @@ export default function MessageBubble({
   foreignUser: DialogUser | null;
   lang: LangMap;
   message: DialogMessage;
+  canAddReactions: boolean;
+  canDeleteAnyMessage: boolean;
   onAddReaction: (messageId: number, reaction: string) => void;
   onReply: (message: DialogMessage) => void;
   onDeleteMessage: (message: DialogMessage) => void;
@@ -432,7 +436,7 @@ export default function MessageBubble({
                   </div>
                 ) : null}
 
-                {!message.isSending && (
+                {!message.isSending && canAddReactions && (
                   <div className="flex items-center justify-center gap-1 px-1.5 py-1 text-3xl">
                     {['😀', '👍', '😍', '💖', '😲', '🤬'].map((emoji) => (
                       <button
@@ -483,7 +487,7 @@ export default function MessageBubble({
                   </DropdownItem>
                 ) : null}
 
-                {isOwn ? (
+                {isOwn || canDeleteAnyMessage ? (
                   <DropdownItem
                     icon="IC-times"
                     className="h-8"
@@ -664,12 +668,12 @@ export default function MessageBubble({
                                   key={`${reaction.userId}:${reaction.emoji}:${index}`}
                                   type="button"
                                   onClick={() => {
-                                    if (!ownReaction) return;
+                                    if (!ownReaction || !canAddReactions) return;
                                     onDeleteReaction(messageId, reaction.emoji);
                                   }}
                                   className={cn(
                                     'flex items-center justify-center rounded-full bg-zinc-700/80 shadow',
-                                    ownReaction && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
+                                    ownReaction && canAddReactions && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
                                   )}
                                 >
                                   <img

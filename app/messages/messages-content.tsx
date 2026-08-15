@@ -29,6 +29,7 @@ import CreateGroupModal from './components/create-group-modal';
 import GroupInfoModal from './components/group-info-modal';
 import MessageBubble from './components/message-bubble';
 import StickerPickerDropdownContent from './components/sticker-picker-dropdown-content';
+import { resolveCommunityChatAccess, resolveSlowModeRemaining } from './lib/community-chat-access';
 import {
   applyCachedDialogs,
   buildDialogImageSlides,
@@ -223,6 +224,7 @@ export default function MessagesContent() {
   const [activeDialogImageKey, setActiveDialogImageKey] = useState<string | null>(null);
   const [dayLabelTick, setDayLabelTick] = useState(Date.now());
   const [stickerDropdownOpen, setStickerDropdownOpen] = useState(false);
+  const [slowModeNow, setSlowModeNow] = useState(() => Date.now());
 
   const [hasActiveCall, setHasActiveCall] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -326,6 +328,41 @@ export default function MessagesContent() {
   const groupVoiceEnabled = isGroupDialog && !['0', 'false', 'off', 'no'].includes(
     String(selectedDialog?.voice_enabled ?? dialogListItem?.voice_enabled ?? 1).toLowerCase(),
   );
+  const communityChatAccess = useMemo(() => resolveCommunityChatAccess({
+    activeMute: Boolean(selectedDialog?.active_mute),
+    communityId: selectedDialog?.community_id,
+    legacyCanManageInvites: Boolean(selectedDialog?.can_manage_invites),
+    legacyRole: selectedDialog?.my_role,
+    permissions: selectedDialog?.community_permissions,
+    readOnly: ['1', 'true', 'yes', 'on'].includes(String(selectedDialog?.read_only ?? false).toLowerCase()),
+  }), [selectedDialog]);
+  const slowModeSeconds = toNumber(selectedDialog?.slow_mode_seconds);
+  const latestOwnMessageAtMs = useMemo(() => messages.reduce((latest, message) => {
+    if (toNumber(message.sender_id) !== currentUserId || message.isSending) return latest;
+    const rawDate = message.created_at || message.createdAt || message.datetime || message.date;
+    if (!rawDate) return latest;
+    const parsed = Date.parse(String(rawDate).replace(' ', 'T'));
+    return Number.isFinite(parsed) ? Math.max(latest, parsed) : latest;
+  }, 0) || null, [currentUserId, messages]);
+  const slowModeRemaining = communityChatAccess.canDeleteAnyMessage ? 0 : resolveSlowModeRemaining({
+    lastMessageAtMs: latestOwnMessageAtMs,
+    nowMs: slowModeNow,
+    slowModeSeconds,
+  });
+  const canUseComposer = communityChatAccess.canSendMessages && slowModeRemaining === 0;
+  const composerPlaceholder = selectedDialog?.active_mute
+    ? (lang?.community_chat_muted || 'Вы временно не можете писать')
+    : !communityChatAccess.canSendMessages
+      ? (lang?.community_chat_read_only || 'Канал доступен только для чтения')
+      : slowModeRemaining > 0
+        ? `${lang?.community_chat_slow_mode || 'Следующее сообщение через'} ${slowModeRemaining}с`
+        : (lang?.write_message || 'Напишите сообщение');
+
+  useEffect(() => {
+    if (slowModeSeconds <= 0 || communityChatAccess.canDeleteAnyMessage) return;
+    const timer = window.setInterval(() => setSlowModeNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [communityChatAccess.canDeleteAnyMessage, slowModeSeconds]);
   const handleVoiceRoomSignal = useCallback((raw?: unknown) => {
     const envelope = (raw || {}) as {
       data?: { kind?: string; participants?: unknown[] };
@@ -691,6 +728,8 @@ export default function MessagesContent() {
       const serverImg = (dialogMetaRaw as any).img || (dialogMetaRaw as any).bg || '';
       const dialogMeta = {
         ...dialogMetaRaw,
+        active_mute: payload.active_mute ?? null,
+        community_permissions: payload.community_permissions ?? null,
         img: normalizeAssetUrl(serverImg, ''),
       };
       setSelectedDialog(dialogMeta);
@@ -1109,6 +1148,8 @@ export default function MessagesContent() {
       const serverImg = (dialogMetaRaw as any).img || (dialogMetaRaw as any).bg || (cachedDialogMeta as any)?.img || '';
       const dialogMeta: DialogMeta = {
         ...dialogMetaRaw,
+        active_mute: payload.active_mute ?? null,
+        community_permissions: payload.community_permissions ?? null,
         img: normalizeAssetUrl(serverImg, ''),
       };
 
@@ -1533,6 +1574,7 @@ export default function MessagesContent() {
   };
 
   const sendReaction = async (messageId: number, reaction: string, action: 'add' | 'delete') => {
+    if (!communityChatAccess.canAddReactions) return;
     const currentUserIdStr = String(currentUserId);
     let targetAction: 'add' | 'delete' = action;
 
@@ -1732,6 +1774,10 @@ export default function MessagesContent() {
   };
 
   const handleMessageImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canUseComposer) {
+      event.target.value = '';
+      return;
+    }
     const file = event.target.files?.[0];
     const dialogId = currentDialogIdRef.current;
     if (!file || !dialogId) return;
@@ -1908,6 +1954,7 @@ export default function MessagesContent() {
 
   const handleMessageSend = async (event?: React.FormEvent) => {
     event?.preventDefault();
+    if (!canUseComposer) return;
 
     const dialogId = currentDialogIdRef.current;
     const nextValue = composerText.trim();
@@ -1994,6 +2041,7 @@ export default function MessagesContent() {
   };
 
   const handleStickerSend = async (stickerName: string) => {
+    if (!canUseComposer) return;
     const dialogId = currentDialogIdRef.current;
     if (!dialogId) return;
 
@@ -2053,6 +2101,7 @@ export default function MessagesContent() {
   };
 
   const handleSevenTvStickerSend = async (sticker: SevenTvSticker) => {
+    if (!canUseComposer) return;
     const dialogId = currentDialogIdRef.current;
     const normalizedStickerName = normalizeText(sticker.name);
     if (!dialogId || !normalizedStickerName) return;
@@ -2465,7 +2514,7 @@ export default function MessagesContent() {
                         </button>
                       )}
 
-                      {groupVoiceEnabled && (
+                      {groupVoiceEnabled && communityChatAccess.canConnectVoice && (
                         <button
                           id="group-voice-button"
                           type="button"
@@ -2638,6 +2687,8 @@ export default function MessagesContent() {
                                     foreignUser={foreignUser}
                                     lang={lang}
                                     message={item.message}
+                                    canAddReactions={communityChatAccess.canAddReactions}
+                                    canDeleteAnyMessage={communityChatAccess.canDeleteAnyMessage}
                                     isGroupChat={isGroupDialog}
                                     senderName={groupSenderName}
                                     senderAvatarUrl={groupSenderAvatarUrl}
@@ -2774,13 +2825,13 @@ export default function MessagesContent() {
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' && !event.shiftKey) {
                               event.preventDefault();
-                              if (composerText.trim() && selectedDialog) {
+                              if (composerText.trim() && selectedDialog && canUseComposer) {
                                 void handleMessageSend(event);
                               }
                             }
                           }}
-                          placeholder={lang?.write_message || 'Напишите сообщение'}
-                          disabled={!selectedDialog}
+                          placeholder={composerPlaceholder}
+                          disabled={!selectedDialog || !canUseComposer}
                           className="relative z-[1] w-full h-[40px] max-h-32 min-h-[40px] resize-none bg-transparent py-2 pl-3 pr-1 text-white placeholder-zinc-600/80 focus:border-0 focus:outline-none focus:ring-0 leading-6 scrollbar-none"
                         />
 
@@ -2795,7 +2846,7 @@ export default function MessagesContent() {
                         <button
                           type="button"
                           onClick={() => imageInputRef.current?.click()}
-                          disabled={!selectedDialog || uploadingMessageImage}
+                          disabled={!selectedDialog || !canUseComposer || uploadingMessageImage}
                           className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 mb-[1px]"
                         >
                           {uploadingMessageImage ? (
@@ -2805,7 +2856,7 @@ export default function MessagesContent() {
                           )}
                         </button>
 
-                        {!selectedDialog ? (
+                        {!selectedDialog || !canUseComposer ? (
                           <button
                             type="button"
                             disabled
@@ -2842,7 +2893,7 @@ export default function MessagesContent() {
 
                         <button
                           type="submit"
-                          disabled={!selectedDialog}
+                          disabled={!selectedDialog || !canUseComposer}
                           className="relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-purple-500 disabled:cursor-not-allowed disabled:bg-zinc-500/50 disabled:opacity-70 active:scale-95 mb-[1px]"
                         >
                           <Icon name="IC-send" className="h-8 w-8 fill-white" />
@@ -3037,6 +3088,7 @@ export default function MessagesContent() {
           communityId={selectedDialog.community_id}
           description={selectedDialog.description}
           voiceEnabled={selectedDialog.voice_enabled}
+          communityPermissions={selectedDialog.community_permissions}
           onGroupUpdated={() => {
             void reloadCurrentDialogMeta();
             void loadDialogs({ force: true });

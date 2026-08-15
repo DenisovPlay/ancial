@@ -30,14 +30,19 @@ export function useCommunityStructure(communityId: number) {
     () => communityStructureCacheKey(communityId, viewerId),
     [communityId, viewerId],
   );
-  const [structure, setStructure] = useState<CommunityStructure | null>(() => (
-    communityId > 0
+  const [structureEntry, setStructureEntry] = useState<{
+    cacheKey: string;
+    structure: CommunityStructure | null;
+  }>(() => ({
+    cacheKey,
+    structure: communityId > 0
       ? validateCachedCommunityStructure(
         cache.get<unknown>(cacheKey, { category: 'groups', subcategory: 'profile' }),
         communityId,
       )
-      : null
-  ));
+      : null,
+  }));
+  const structure = structureEntry.cacheKey === cacheKey ? structureEntry.structure : null;
   const hasUsableStructureRef = useRef(structure !== null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [failed, setFailed] = useState(false);
@@ -49,7 +54,7 @@ export function useCommunityStructure(communityId: number) {
       const validated = validateCachedCommunityStructure(next, communityId);
       if (!validated) throw new Error('Invalid community structure response');
       hasUsableStructureRef.current = true;
-      setStructure(validated);
+      setStructureEntry({ cacheKey, structure: validated });
       cache.set(cacheKey, validated, { category: 'groups', subcategory: 'profile' });
       setFailed(false);
     } catch (error) {
@@ -67,12 +72,17 @@ export function useCommunityStructure(communityId: number) {
     );
     if (cached) {
       hasUsableStructureRef.current = true;
-      const cachedTimer = setTimeout(() => setStructure(cached), 0);
+      const cachedTimer = setTimeout(() => setStructureEntry({ cacheKey, structure: cached }), 0);
       const timer = setTimeout(refresh, 0);
       return () => { clearTimeout(cachedTimer); clearTimeout(timer); };
     }
+    hasUsableStructureRef.current = false;
+    const resetTimer = setTimeout(() => {
+      setFailed(false);
+      setStructureEntry({ cacheKey, structure: null });
+    }, 0);
     const timer = setTimeout(refresh, 0);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(resetTimer); clearTimeout(timer); };
   }, [cacheKey, communityId]);
 
   useEffect(() => {

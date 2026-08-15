@@ -7,18 +7,40 @@ import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
-import type { CommunityMember, CommunityRole } from '../lib/community-types';
+import {
+  canManageCommunityMember,
+  canManageCommunityRole,
+  type CommunityMember,
+  type CommunityPermissionMap,
+  type CommunityRole,
+} from '../lib/community-types';
 import { communityErrorText } from '../lib/community-error';
+import { communityRoleBadgeStyle, communityRoleLabel } from '../lib/community-presentation';
 
-type Props = { communityId: number; members: CommunityMember[]; onChanged: () => Promise<void>; roles: CommunityRole[] };
+type Props = {
+  actorIsOwner: boolean;
+  actorPosition: number | null;
+  communityId: number;
+  members: CommunityMember[];
+  onChanged: () => Promise<void>;
+  permissions: CommunityPermissionMap;
+  roles: CommunityRole[];
+};
 type PendingModeration = { action: 'ban' | 'kick'; userId: number };
 
-export default function CommunityModeration({ communityId, members, onChanged, roles }: Props) {
+export default function CommunityModeration({ actorIsOwner, actorPosition, communityId, members, onChanged, permissions, roles }: Props) {
   const { lang } = useAuth();
   const { showNote } = useNotification();
   const [selectedRoles, setSelectedRoles] = useState<Record<number, number>>({});
   const [pendingModeration, setPendingModeration] = useState<PendingModeration | null>(null);
   const [openActionsFor, setOpenActionsFor] = useState<number | null>(null);
+  const canManageMembers = permissions.manage_members === true;
+  const canManageRoles = permissions.manage_roles === true;
+
+  const canAssignRole = (role: CommunityRole) => canManageRoles
+    && role.system_key !== 'member'
+    && canManageCommunityRole({ actorIsOwner, actorPosition, roleIsSystem: false, rolePosition: role.position })
+    && Object.entries(role.permissions).every(([permission, enabled]) => !enabled || permissions[permission as keyof CommunityPermissionMap] === true);
 
   const moderate = async (action: 'mute' | 'unmute' | 'kick' | 'ban', userId: number) => {
     try {
@@ -66,13 +88,26 @@ export default function CommunityModeration({ communityId, members, onChanged, r
 
   return (
     <div className="flex flex-col gap-3">
-      {members.map((member) => (
+      {members.map((member) => {
+        const canManageTarget = canManageCommunityMember({
+          actorIsOwner,
+          actorPosition,
+          targetIsOwner: member.is_owner,
+          targetPosition: member.highest_role_position,
+        });
+        const displayRole = member.roles.find((role) => role.system_key !== 'member') ?? null;
+        const hasActions = canManageTarget && (canManageMembers || canManageRoles);
+        return (
         <div key={member.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3">
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold text-zinc-100">{[member.fname, member.lname].filter(Boolean).join(' ') || member.username}</p>
-            <p className="truncate text-xs text-zinc-500">{member.roles.map((role) => role.name).join(', ') || (member.is_owner ? lang?.community_owner : lang?.community_member)}</p>
+            {member.is_owner ? (
+              <span className="inline-flex rounded-3xl border border-purple-400/30 bg-purple-500/20 px-2 py-1 text-xs text-purple-300">{lang?.community_owner}</span>
+            ) : displayRole ? (
+              <span className="inline-flex max-w-full truncate rounded-3xl border px-2 py-1 text-xs" style={communityRoleBadgeStyle(displayRole.color)}>{communityRoleLabel(displayRole, lang)}</span>
+            ) : null}
           </div>
-          {!member.is_owner ? (
+          {hasActions ? (
             <Dropdown
               open={openActionsFor === member.id}
               onOpenChange={(isOpen) => setOpenActionsFor(isOpen ? member.id : null)}
@@ -86,7 +121,7 @@ export default function CommunityModeration({ communityId, members, onChanged, r
               width="auto"
               menuClassName="z-[70] w-64 max-w-[calc(100vw-3rem)] bg-zinc-900/95 p-1.5"
             >
-              <div className="flex flex-col gap-1.5 p-1">
+              {canManageRoles ? <div className="flex flex-col gap-1.5 p-1">
                 <span className="px-1 text-xs font-medium text-zinc-500">{lang?.community_add_role}</span>
                 <div className="flex items-center gap-1.5">
                   <select
@@ -96,7 +131,7 @@ export default function CommunityModeration({ communityId, members, onChanged, r
                     className="h-10 min-w-0 flex-1 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 text-sm text-zinc-200 outline-none"
                   >
                     <option value="">{lang?.community_select_role}</option>
-                    {roles.filter((role) => role.system_key !== 'member' && !member.roles.some((assigned) => assigned.id === role.id)).map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+                    {roles.filter((role) => canAssignRole(role) && !member.roles.some((assigned) => assigned.id === role.id)).map((role) => <option key={role.id} value={role.id}>{communityRoleLabel(role, lang)}</option>)}
                   </select>
                   <button
                     type="button"
@@ -108,8 +143,8 @@ export default function CommunityModeration({ communityId, members, onChanged, r
                     <svg className="h-5 w-5 fill-current" viewBox="0 0 48 48"><use href="#IC-plus" /></svg>
                   </button>
                 </div>
-              </div>
-              {member.roles.map((role) => (
+              </div> : null}
+              {canManageRoles ? member.roles.filter((role) => role.system_key !== 'member' && canManageCommunityRole({ actorIsOwner, actorPosition, roleIsSystem: false, rolePosition: role.position })).map((role) => (
                 <DropdownItem
                   key={role.id}
                   onClick={() => {
@@ -120,10 +155,11 @@ export default function CommunityModeration({ communityId, members, onChanged, r
                   className="text-sm text-zinc-300"
                   iconClassName="h-5 w-5 fill-zinc-400"
                 >
-                  {lang?.community_remove_role}: {role.name}
+                  {lang?.community_remove_role}: {communityRoleLabel(role, lang)}
                 </DropdownItem>
-              ))}
-              <div className="my-0.5 h-px bg-zinc-700/60" />
+              )) : null}
+              {canManageRoles && canManageMembers ? <div className="my-0.5 h-px bg-zinc-700/60" /> : null}
+              {canManageMembers ? <>
               <DropdownItem
                 onClick={() => startModeration(member.is_muted ? 'unmute' : 'mute', member.id)}
                 icon="IC-clock"
@@ -148,10 +184,12 @@ export default function CommunityModeration({ communityId, members, onChanged, r
               >
                 {lang?.community_ban}
               </DropdownItem>
+              </> : null}
             </Dropdown>
           ) : null}
         </div>
-      ))}
+        );
+      })}
       <ConfirmDeleteModal
         isOpen={pendingModeration !== null}
         onClose={() => setPendingModeration(null)}

@@ -13,6 +13,7 @@ type Props = {
   isLocal: boolean;
   member?: GroupMember;
   onFocusChange?: (focused: boolean) => void;
+  onDisconnect?: () => void;
   participant: GroupCallParticipant;
   stream?: MediaStream | null;
 };
@@ -32,6 +33,7 @@ export default function GroupCallTile({
   isLocal,
   member,
   onFocusChange,
+  onDisconnect,
   participant,
   stream,
 }: Props) {
@@ -173,6 +175,21 @@ export default function GroupCallTile({
             )}
           </svg>
         </span>
+      ) : null}
+
+      {onDisconnect ? (
+        <button
+          type="button"
+          aria-label={lang?.community_disconnect_voice || 'Отключить от звонка'}
+          title={lang?.community_disconnect_voice || 'Отключить от звонка'}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDisconnect();
+          }}
+          className="absolute left-3 top-3 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-red-400/30 bg-red-600/80 text-white shadow backdrop-blur-md duration-300 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-red-300 active:scale-95"
+        >
+          <svg className="h-5 w-5 fill-current" viewBox="0 0 48 48" aria-hidden="true"><use href="/icons.svg#IC-exit" /></svg>
+        </button>
       ) : null}
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-2 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-10">

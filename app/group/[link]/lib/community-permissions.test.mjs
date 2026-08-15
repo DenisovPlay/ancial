@@ -13,7 +13,7 @@ import {
 assert.equal(canCommunity({ manage_channels: true }, 'manage_channels'), true);
 assert.equal(canCommunity({}, 'manage_channels'), false);
 assert.deepEqual(visibleManagementTabs({ manage_community: true }), ['community']);
-assert.deepEqual(visibleManagementTabs({ manage_roles: true }), ['roles']);
+assert.deepEqual(visibleManagementTabs({ manage_roles: true }), ['roles', 'members']);
 assert.deepEqual(
   visibleManagementTabs({
     manage_community: true, manage_channels: true,

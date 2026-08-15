@@ -1,4 +1,5 @@
 import type { ImageViewerSlide } from '../../components/image-viewer-modal';
+import type { CommunityPermissionMap } from '../../group/[link]/lib/community-types';
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 import type { CommunityDisplayRole } from './community-role';
@@ -62,6 +63,10 @@ export type DialogMeta = {
   members?: GroupMember[] | null;
   img?: string | null;
   blocked?: boolean | number | string | null;
+  active_mute?: boolean | Record<string, unknown> | null;
+  community_permissions?: CommunityPermissionMap | null;
+  read_only?: boolean | number | string | null;
+  slow_mode_seconds?: number | string | null;
 };
 
 export type DialogUser = {
@@ -82,7 +87,10 @@ export type DialogListResponse = {
 };
 
 export type DialogByHashResponse = {
+  active_mute?: boolean | Record<string, unknown> | null;
   blocked?: boolean;
+  community_permissions?: CommunityPermissionMap | null;
+  currentUserId?: number | string | null;
   dialog?: DialogMeta | null;
   error?: string;
   foreignUser?: DialogUser | null;

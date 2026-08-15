@@ -1,4 +1,4 @@
-import type { CommunityChannelType } from './community-types';
+import type { CommunityChannelType, CommunityRole } from './community-types';
 
 const CHANNEL_ICON_IDS: Record<CommunityChannelType, 'IC-chats' | 'IC-news' | 'IC-call'> = {
   text: 'IC-chats',
@@ -41,4 +41,29 @@ export function communityAuditActionLabel(
   const readable = action.trim().replace(/[._-]+/g, ' ').replace(/\s+/g, ' ');
   if (!readable) return '—';
   return readable.charAt(0).toUpperCase() + readable.slice(1);
+}
+
+export function communityRoleLabel(
+  role: Pick<CommunityRole, 'name' | 'system_key'>,
+  dictionary?: Record<string, unknown> | null,
+) {
+  if (role.system_key === 'administrator') {
+    return String(dictionary?.role_admin || role.name);
+  }
+  if (role.system_key === 'editor') {
+    return String(dictionary?.role_editor || role.name);
+  }
+  if (role.system_key === 'member') {
+    return String(dictionary?.community_member || role.name);
+  }
+  return role.name;
+}
+
+export function communityRoleBadgeStyle(colorValue: string) {
+  const color = /^#[0-9a-f]{6}$/i.test(colorValue) ? colorValue.toLowerCase() : '#a855f7';
+  return {
+    color,
+    backgroundColor: `${color}26`,
+    borderColor: `${color}4d`,
+  };
 }

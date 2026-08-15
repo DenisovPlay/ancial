@@ -10,6 +10,8 @@ import { uploadImage } from '../../lib/upload';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
 import { SITE_URL } from '../../config';
 import { globalWS } from '../../lib/global-ws';
+import type { CommunityPermissionMap } from '../../group/[link]/lib/community-types';
+import { resolveCommunityChatAccess } from '../lib/community-chat-access';
 import {
   getCommunityRoleBadgeStyle,
   getCommunityRoleLabel,
@@ -41,6 +43,7 @@ interface GroupInfoModalProps {
   visibility?: 'private' | 'unlisted' | 'public' | string | null;
   joinPolicy?: 'invite' | 'open' | 'request' | string | null;
   communityId?: number | string | null;
+  communityPermissions?: CommunityPermissionMap | null;
   description?: string | null;
   voiceEnabled?: boolean | number | string | null;
   onGroupUpdated: (partial?: { avatar?: string; title?: string }) => void;
@@ -77,6 +80,7 @@ export default function GroupInfoModal({
   visibility: initialVisibility = 'private',
   joinPolicy: initialJoinPolicy = 'invite',
   communityId: initialCommunityId = null,
+  communityPermissions = null,
   description: initialDescription = '',
   voiceEnabled: initialVoiceEnabled = true,
   onGroupUpdated,
@@ -109,8 +113,16 @@ export default function GroupInfoModal({
   const [managedCommunities, setManagedCommunities] = useState<ManagedCommunity[]>([]);
   const [joinRequests, setJoinRequests] = useState<ChatJoinRequest[]>([]);
 
-  const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
-  const canManageInvites = hasInvitePermission && Boolean(inviteCode || initialInviteCode);
+  const access = resolveCommunityChatAccess({
+    communityId: initialCommunityId,
+    legacyCanManageInvites: hasInvitePermission,
+    legacyRole: myRole,
+    permissions: communityPermissions,
+  });
+  const canManageChannel = access.canManageChannel;
+  const canManageMembers = access.canManageMembers;
+  const canManageJoinRequests = access.canManageJoinRequests;
+  const canManageInvites = access.canManageInvites && Boolean(inviteCode || initialInviteCode);
   const currentUserId = user?.id ? Number(user.id) : 0;
 
   useEffect(() => {
@@ -130,7 +142,7 @@ export default function GroupInfoModal({
   }, [isOpen, title, avatar, initialInviteCode, initialVisibility, initialJoinPolicy, initialCommunityId, initialDescription, initialVoiceEnabled]);
 
   useEffect(() => {
-    if (!isOpen || !isAdminOrOwner) return;
+    if (!isOpen || !canManageJoinRequests) return;
 
     const refreshRequests = (payload?: unknown) => {
       const eventPayload = payload && typeof payload === 'object'
@@ -150,15 +162,17 @@ export default function GroupInfoModal({
       globalWS.removeDialogListener('chat:join_request', refreshRequests);
       globalWS.removeDialogListener('chat:join_request_resolved', refreshRequests);
     };
-  }, [dialogId, isAdminOrOwner, isOpen]);
+  }, [canManageJoinRequests, dialogId, isOpen]);
 
   const openCommunitySettings = async () => {
     setView('community_settings');
     const [communitiesResult, requestsResult] = await Promise.allSettled([
-      myRole === 'owner'
+      !initialCommunityId && myRole === 'owner'
         ? AncialAPI.getManagedCommunities<{ communities?: ManagedCommunity[] }>()
         : Promise.resolve({ communities: [] }),
-      AncialAPI.getChatJoinRequests<{ requests?: ChatJoinRequest[] }>(dialogId),
+      canManageJoinRequests
+        ? AncialAPI.getChatJoinRequests<{ requests?: ChatJoinRequest[] }>(dialogId)
+        : Promise.resolve({ requests: [] }),
     ]);
     setManagedCommunities(
       communitiesResult.status === 'fulfilled' && Array.isArray(communitiesResult.value?.communities)
@@ -484,16 +498,16 @@ export default function GroupInfoModal({
             {/* Единая шапка группы */}
             <div className="flex flex-col items-center gap-3 -mt-9 sm:-mt-13 z-[1000] sm:mr-10 sm:pl-10">
               <div
-                className={`relative group shrink-0 ${isAdminOrOwner ? 'cursor-pointer active:scale-95 duration-300' : ''}`}
-                onClick={() => isAdminOrOwner && avatarInputRef.current?.click()}
-                title={isAdminOrOwner ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
+                className={`relative group shrink-0 ${canManageChannel ? 'cursor-pointer active:scale-95 duration-300' : ''}`}
+                onClick={() => canManageChannel && avatarInputRef.current?.click()}
+                title={canManageChannel ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
               >
                 <img
                   src={normalizeAssetUrl(currentAvatar || avatar, FALLBACK_AVATAR)}
                   alt=""
                   className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30 group-hover:opacity-85 duration-300"
                 />
-                {isAdminOrOwner && (
+                {canManageChannel && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 duration-300">
                     {uploadingAvatar ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -529,7 +543,7 @@ export default function GroupInfoModal({
                   <span className="text-sm sm:text-md">{lang?.invite || 'Пригласить'}</span>
                 </button>
               ) : null}
-              {isAdminOrOwner && (
+              {canManageChannel && (
                 <button
                   type="button"
                   onClick={() => {
@@ -543,7 +557,7 @@ export default function GroupInfoModal({
                   <span className="text-sm sm:text-md">{lang?.edit_action || 'Изменить'}</span>
                 </button>
               )}
-              {isAdminOrOwner && (
+              {(canManageChannel || canManageJoinRequests) && (
                 <button
                   type="button"
                   onClick={() => void openCommunitySettings()}
@@ -570,7 +584,7 @@ export default function GroupInfoModal({
             <div className="flex flex-col gap-2 -mb-1.5">
               <div className="z-[30] flex items-center justify-between bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
                 <span className="text-sm text-zinc-300">{lang?.members || 'Участники'} ({members.length})</span>
-                {isAdminOrOwner && (
+                {(canManageMembers || canManageInvites) && (
                   <button
                     type="button"
                     onClick={handleOpenAddMembers}
@@ -624,7 +638,7 @@ export default function GroupInfoModal({
                           </span>
                         ) : null)}
 
-                        {isAdminOrOwner && member.id !== currentUserId && member.role !== 'owner' && (
+                        {canManageMembers && member.id !== currentUserId && member.role !== 'owner' && (
                           <button
                             type="button"
                             onClick={() => handleRemoveMember(member.id)}
@@ -651,16 +665,16 @@ export default function GroupInfoModal({
           <div className="flex flex-col w-full gap-3">
             <div className="flex items-center justify-center gap-3 w-full">
               <div
-                className={`relative group shrink-0 ${isAdminOrOwner ? 'cursor-pointer' : ''}`}
-                onClick={() => isAdminOrOwner && avatarInputRef.current?.click()}
-                title={isAdminOrOwner ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
+                className={`relative group shrink-0 ${canManageChannel ? 'cursor-pointer' : ''}`}
+                onClick={() => canManageChannel && avatarInputRef.current?.click()}
+                title={canManageChannel ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
               >
                 <img
                   src={normalizeAssetUrl(currentAvatar || avatar, FALLBACK_AVATAR)}
                   alt=""
                   className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30 group-hover:opacity-85 duration-300"
                 />
-                {isAdminOrOwner && (
+                {canManageChannel && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 duration-300">
                     {uploadingAvatar ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -712,7 +726,7 @@ export default function GroupInfoModal({
 
         {view === 'community_settings' && (
           <div className="flex flex-col gap-3">
-            {myRole === 'owner' ? (
+            {canManageChannel ? (
               <>
             <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
               <span>{lang?.chat_visibility || 'Доступ к чату'}</span>
@@ -795,7 +809,7 @@ export default function GroupInfoModal({
               </>
             ) : null}
 
-            <div className="flex flex-col gap-1.5">
+            {canManageJoinRequests ? <div className="flex flex-col gap-1.5">
               <span className="text-sm text-zinc-300">{lang?.chat_join_requests || 'Заявки на вступление'}</span>
               {joinRequests.length ? joinRequests.map((request) => (
                 <div key={request.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800 p-1.5">
@@ -828,7 +842,7 @@ export default function GroupInfoModal({
                   {lang?.chat_join_requests_empty || 'Новых заявок нет'}
                 </span>
               )}
-            </div>
+            </div> : null}
           </div>
         )}
 

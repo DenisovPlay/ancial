@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useId, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ModalProps {
@@ -17,6 +17,7 @@ interface ModalProps {
   panelClassName?: string;
   showHeader?: boolean;
   unstyled?: boolean;
+  closeLabel?: string;
 }
 
 function cn(...classes: Array<string | false | null | undefined>) {
@@ -45,17 +46,26 @@ export default function Modal({
   panelClassName,
   showHeader = true,
   unstyled = false,
+  closeLabel = 'Close',
 }: ModalProps) {
   const [offsetY, setOffsetY] = useState(0);
   const [render, setRender] = useState(isOpen);
   const [visible, setVisible] = useState(false);
   const startY = useRef<number | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+  const overflowBeforeOpenRef = useRef('');
+  const titleId = useId();
 
   // Блокировка прокрутки фона при открытом окне и управление анимацией
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
     if (isOpen) {
+      previouslyFocusedElementRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+      overflowBeforeOpenRef.current = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
 
       let visibleFrame = 0;
@@ -72,7 +82,8 @@ export default function Modal({
       };
     }
 
-    document.body.style.overflow = '';
+    document.body.style.overflow = overflowBeforeOpenRef.current;
+    previouslyFocusedElementRef.current?.focus();
 
     const frame = requestAnimationFrame(() => {
       setVisible(false);
@@ -94,20 +105,51 @@ export default function Modal({
     if (typeof document === 'undefined') return;
 
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = overflowBeforeOpenRef.current;
+      previouslyFocusedElementRef.current?.focus();
     };
   }, []);
 
   // Закрытие по Escape
   useEffect(() => {
+    const focusableElements = () => Array.from(panelRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ) ?? []).filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      if (e.key !== 'Tab') return;
+      const elements = focusableElements();
+      if (elements.length === 0) {
+        e.preventDefault();
+        panelRef.current?.focus();
+        return;
+      }
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
     }
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen || !render || !visible) return;
+    const focusFrame = requestAnimationFrame(() => {
+      const focusableElements = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? []).filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
+      (focusableElements[0] ?? panelRef.current)?.focus();
+    });
+    return () => cancelAnimationFrame(focusFrame);
+  }, [isOpen, render, visible]);
 
   if (typeof document === 'undefined' || !render) return null;
 
@@ -152,6 +194,8 @@ export default function Modal({
         ? 'translate-y-0 sm:scale-100 opacity-100'
         : 'translate-y-full sm:translate-y-8 sm:scale-95 opacity-0';
 
+  const hasRenderedTitle = showHeader && Boolean(title);
+
   const modalContent = (
     <div 
       className={cn(
@@ -163,16 +207,22 @@ export default function Modal({
       onClick={onClose}
     >
       <div 
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={hasRenderedTitle ? titleId : undefined}
+        aria-label={hasRenderedTitle ? undefined : (title || closeLabel)}
+        tabIndex={-1}
         className={cn(
           MODAL_WIDTH_CLASSES[width],
-          'max-h-[90vh] flex flex-col transition-all ease-out duration-300 relative overflow-hidden',
+          'max-h-[90dvh] flex flex-col transition-[transform,opacity] ease-out duration-300 relative overflow-hidden outline-none',
           !unstyled && 'bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl',
           animationClasses,
           panelClassName,
         )}
         style={{ 
           transform: offsetY > 0 ? `translateY(${offsetY}px)` : undefined,
-          transition: offsetY === 0 ? 'all 0.3s cubic-bezier(0.32, 0.72, 0, 1)' : 'none' 
+          transition: offsetY === 0 ? 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)' : 'none'
         }}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={handleTouchStart}
@@ -188,10 +238,10 @@ export default function Modal({
               )}
               
               <div className="flex items-center justify-between px-3 pb-3 sm:pt-3 w-full">
-                  <h2 className="text-xl font-bold text-white backdrop-shadow-lg">{title}</h2>
+                  <h2 id={titleId} className="text-xl font-bold text-white backdrop-shadow-lg">{title}</h2>
                   <button 
                       type="button"
-                      aria-label="Close"
+                      aria-label={closeLabel}
                       onClick={onClose}
                       className="cursor-pointer hidden sm:flex p-1.5 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-600/30 duration-300 active:scale-95"
                   >

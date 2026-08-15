@@ -49,6 +49,7 @@ export interface CommunityStructure {
   channels: CommunityChannel[];
   permissions: CommunityPermissionMap;
   highest_role_position: number | null;
+  is_owner?: boolean;
 }
 
 export interface CommunityRole {
@@ -66,6 +67,7 @@ export interface CommunityRoleList {
   roles: CommunityRole[];
   permissions: CommunityPermissionMap;
   highest_role_position: number | null;
+  is_owner: boolean;
 }
 
 export interface CommunityChannelOverride {
@@ -115,7 +117,14 @@ export interface CommunityMember {
   verify: number;
   is_owner: boolean;
   is_muted: boolean;
-  roles: Array<{ id: number; name: string }>;
+  highest_role_position: number | null;
+  roles: Array<{
+    id: number;
+    name: string;
+    color: string;
+    position: number;
+    system_key: CommunityRole['system_key'];
+  }>;
 }
 
 export const COMMUNITY_CHANNEL_RENDERERS: Record<CommunityChannelType, 'messages' | 'voice'> = {
@@ -185,10 +194,41 @@ export function visibleManagementTabs(permissions: CommunityPermissionMap): Comm
   if (canCommunity(permissions, 'manage_community')) tabs.push('community');
   if (canCommunity(permissions, 'manage_channels')) tabs.push('channels');
   if (canCommunity(permissions, 'manage_roles')) tabs.push('roles');
-  if (canCommunity(permissions, 'manage_members')) tabs.push('members');
+  if (canCommunity(permissions, 'manage_members') || canCommunity(permissions, 'manage_roles')) tabs.push('members');
   if (canCommunity(permissions, 'manage_channels')) tabs.push('link_requests');
   if (canCommunity(permissions, 'view_audit_log')) tabs.push('audit');
   return tabs;
+}
+
+export function canManageCommunityMember({
+  actorIsOwner,
+  actorPosition,
+  targetIsOwner,
+  targetPosition,
+}: {
+  actorIsOwner: boolean;
+  actorPosition: number | null;
+  targetIsOwner: boolean;
+  targetPosition: number | null;
+}): boolean {
+  if (targetIsOwner || actorPosition === null || targetPosition === null) return false;
+  return actorIsOwner || targetPosition > actorPosition;
+}
+
+export function canManageCommunityRole({
+  actorIsOwner,
+  actorPosition,
+  roleIsSystem,
+  rolePosition,
+}: {
+  actorIsOwner: boolean;
+  actorPosition: number | null;
+  roleIsSystem: boolean;
+  rolePosition: number;
+}): boolean {
+  if (roleIsSystem) return actorIsOwner;
+  if (actorIsOwner) return true;
+  return actorPosition !== null && rolePosition > actorPosition;
 }
 
 export function communityErrorKey(status: number): 'community_permission_error' | 'community_stale_error' | 'community_save_error' {

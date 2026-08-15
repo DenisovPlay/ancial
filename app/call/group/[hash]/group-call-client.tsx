@@ -6,8 +6,10 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Modal from '../../../components/modal';
 import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import type { DialogMeta, GroupMember } from '../../../messages/lib/messages-shared';
+import { canManageCommunityMember } from '../../../group/[link]/lib/community-types';
 import GroupCallTile from '../components/group-call-tile';
 import {
   getGroupCallGridClass,
@@ -18,6 +20,7 @@ import { useGroupCall } from './use-group-call';
 
 type CommunityVoicePermissions = {
   connect_voice?: boolean;
+  manage_voice?: boolean;
   speak_voice?: boolean;
 };
 
@@ -28,7 +31,9 @@ type GroupCallDialogResponse = {
 };
 
 type GroupCallConfig = {
+  canManageVoice: boolean;
   canPublish: boolean;
+  communityId: number;
   currentUserId: number;
   dialog: DialogMeta;
   members: GroupMember[];
@@ -43,6 +48,7 @@ function safeReturnPath(value: string | null, hash: string) {
 
 function CallControlButton({
   active = false,
+  className = '',
   danger = false,
   disabled = false,
   off = false,
@@ -52,6 +58,7 @@ function CallControlButton({
 }: {
   active?: boolean;
   children: React.ReactNode;
+  className?: string;
   danger?: boolean;
   disabled?: boolean;
   label: string;
@@ -65,7 +72,7 @@ function CallControlButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-14 w-14 cursor-pointer items-center justify-center rounded-full transition-[color,background-color,transform,opacity] duration-300 active:scale-95 disabled:cursor-not-allowed disabled:text-zinc-500 disabled:opacity-40 ${danger ? 'bg-red-600 text-white hover:bg-red-500' : active ? 'bg-purple-600 text-white hover:bg-purple-500' : off ? 'text-red-500 hover:bg-red-950/50' : 'text-zinc-200 hover:bg-zinc-700/95'}`}
+      className={`${className || 'flex'} h-14 w-14 cursor-pointer items-center justify-center rounded-full transition-[color,background-color,transform,opacity] duration-300 active:scale-95 disabled:cursor-not-allowed disabled:text-zinc-500 disabled:opacity-40 ${danger ? 'bg-red-600 text-white hover:bg-red-500' : active ? 'bg-purple-600 text-white hover:bg-purple-500' : off ? 'text-red-500 hover:bg-red-950/50' : 'text-zinc-200 hover:bg-zinc-700/95'}`}
     >
       {children}
     </button>
@@ -115,6 +122,7 @@ function SpeakerIcon({ off }: { off: boolean }) {
 function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; hash: string; returnPath: string }) {
   const router = useRouter();
   const { lang } = useAuth();
+  const { showNote } = useNotification();
   const [permissionsOpen, setPermissionsOpen] = useState(true);
   const [cameraMenuOpen, setCameraMenuOpen] = useState(false);
   const [focusedParticipantId, setFocusedParticipantId] = useState<number | null>(null);
@@ -142,6 +150,23 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
     }];
   }, [call.camEnabled, call.joined, call.micEnabled, call.participants, call.screenEnabled, config.currentUserId]);
   const activeFocusedParticipantId = resolveFocusedParticipantId(focusedParticipantId, visibleParticipants);
+  const currentMember = memberById.get(config.currentUserId);
+  const actorIsOwner = currentMember?.community_role?.is_owner === true;
+  const actorPosition = currentMember?.community_role?.position ?? (actorIsOwner ? -2147483648 : null);
+
+  const disconnectParticipant = async (userId: number) => {
+    try {
+      await AncialAPI.moderateCommunity({
+        action: 'disconnect_voice',
+        community_id: config.communityId,
+        dialog_id: Number(config.dialog.id),
+        user_id: userId,
+      });
+    } catch (error) {
+      console.error('Community voice moderation failed', error);
+      showNote({ content: lang?.community_permission_error || 'Недостаточно прав', type: 'error', time: 4 });
+    }
+  };
 
   useEffect(() => {
     const known = new Set(members.map((member) => Number(member.id)));
@@ -238,6 +263,16 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
                   deafened={call.deafened}
                   focused={participant.user_id === activeFocusedParticipantId}
                   onFocusChange={(focused) => setFocusedParticipantId(focused ? participant.user_id : null)}
+                  onDisconnect={config.canManageVoice
+                    && participant.user_id !== config.currentUserId
+                    && canManageCommunityMember({
+                      actorIsOwner,
+                      actorPosition,
+                      targetIsOwner: memberById.get(participant.user_id)?.community_role?.is_owner === true,
+                      targetPosition: memberById.get(participant.user_id)?.community_role?.position ?? 10000,
+                    })
+                    ? () => void disconnectParticipant(participant.user_id)
+                    : undefined}
                 />
               </div>
             ))}
@@ -301,6 +336,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
           </div>
 
           <CallControlButton
+            className="hidden md:flex"
             label={call.screenEnabled ? (lang?.voice_screen_on || 'Демонстрация включена — остановить') : (lang?.voice_screen_off || 'Демонстрация выключена — включить')}
             active={call.screenEnabled}
             disabled={!config.canPublish}
@@ -390,7 +426,9 @@ export default function GroupCallClient() {
           return;
         }
         setConfig({
+          canManageVoice: response.community_permissions?.manage_voice === true,
           dialog,
+          communityId: Number(dialog.community_id || 0),
           members: Array.isArray(dialog.members) ? dialog.members : [],
           currentUserId: Number(response.currentUserId || user?.id || 0),
           canPublish: response.community_permissions ? response.community_permissions.speak_voice === true : true,

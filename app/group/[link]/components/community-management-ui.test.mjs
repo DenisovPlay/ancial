@@ -32,7 +32,8 @@ assert.match(channelShellSource, /result\.status === 'requested'/, 'request-only
 assert.doesNotMatch(channelShellSource, /channel\.channel_type === 'voice'/, 'all channels must open messages');
 assert.doesNotMatch(channelShellSource, /CommunityChannelView/, 'community pages must not duplicate the selected channel in a detail card');
 assert.match(channelShellSource, /onSelect=\{openChannel\}/, 'compact channel rows must perform the existing join-and-open flow directly');
-assert.match(managementSource, /sm:w-\[1180px\]/, 'community management needs a wide desktop workspace');
+assert.match(managementSource, /width="xl"/, 'community management needs the shared wide desktop workspace');
+assert.match(managementSource, /import Modal from/, 'community management must use the shared modal shell');
 assert.match(managementSource, /hidden w-56 shrink-0 flex-col[^\"]*lg:flex/, 'desktop management needs a persistent navigation rail');
 assert.match(managementSource, /lg:hidden/, 'mobile management must retain compact horizontal tabs');
 assert.match(managementSource, /managementView/, 'management tools must open as internal workspaces');
@@ -41,6 +42,6 @@ assert.match(groupPageSource, /<CommunityManageModal/, 'page must own unified ma
 assert.doesNotMatch(groupPageSource, /isEditModalOpen/, 'legacy edit modal state must be removed');
 assert.doesNotMatch(channelShellSource, /CommunityManageModal/, 'channel shell must not own management UI');
 assert.doesNotMatch(channelShellSource, /community_channel_manage/, 'channel block must not render manage button');
-assert.match(managementSource, /activeTab === 'community'/, 'management modal must render community settings');
+assert.match(managementSource, /resolvedActiveTab === 'community'/, 'management modal must render only an authorized community settings tab');
 
 console.log('community management UI: ok');

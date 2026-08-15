@@ -575,7 +575,7 @@ export default function CallClient() {
         {showCover && (
           <div id="call-cover" className="absolute inset-0 flex items-center justify-center" style={{ pointerEvents: 'none' }}>
             <div className="w-full max-w-screen-sm px-6 text-center">
-              <img src={fAvatar} className="w-28 h-28 rounded-full shadow object-cover mx-auto" />
+              <img src={fAvatar} alt="" className="w-28 h-28 rounded-full shadow object-cover mx-auto" />
               <div className="mt-4 text-zinc-100 text-2xl font-semibold">{fName}</div>
               <div className="mt-2 text-zinc-300">{coverStatusText}</div>
             </div>
@@ -611,7 +611,7 @@ export default function CallClient() {
                 </svg>
               </button>
               <div className="flex items-start gap-2">
-                <img src={fAvatar} className="w-10 h-10 rounded-full shadow object-cover" />
+                <img src={fAvatar} alt="" className="w-10 h-10 rounded-full shadow object-cover" />
                 <div className="flex flex-col leading-tight">
                   <div className="text-zinc-100 font-medium">{fName}</div>
                   <div className="text-zinc-300 text-sm max-w-48 lg:max-w-80">{callStatus}</div>
@@ -760,10 +760,13 @@ export default function CallClient() {
               </div>
 
               {/* Демонстрация экрана */}
-              <div
+              <button
+                type="button"
+                data-screen-share-control
                 onClick={toggleScreenShare}
+                aria-label={isScreenSharing ? (lang?.stop_screen_share || 'Остановить') : (lang?.screen_share || 'Демонстрация экрана')}
                 title={isScreenSharing ? (lang?.stop_screen_share || 'Остановить') : (lang?.screen_share || 'Демонстрация экрана')}
-                className={`border-zinc-600/30 w-14 h-14 rounded-full ${isScreenSharing ? 'text-purple-400' : 'text-zinc-200'} hover:bg-zinc-700/95 cursor-pointer active:scale-95 flex items-center justify-center duration-300`}
+                className={`hidden border-zinc-600/30 w-14 h-14 rounded-full ${isScreenSharing ? 'text-purple-400' : 'text-zinc-200'} hover:bg-zinc-700/95 cursor-pointer active:scale-95 md:flex items-center justify-center duration-300`}
               >
                 {isScreenSharing ? (
                   /* Иконка «остановить демонстрацию» */
@@ -776,7 +779,7 @@ export default function CallClient() {
                     <path d="M 7 8 C 4.7940678 8 3 9.7940678 3 12 L 3 33 C 3 35.205932 4.7940678 37 7 37 L 20 37 L 20 41 L 14 41 A 1.50015 1.50015 0 1 0 14 44 L 34 44 A 1.50015 1.50015 0 1 0 34 41 L 28 41 L 28 37 L 41 37 C 43.205932 37 45 35.205932 45 33 L 45 12 C 45 9.7940678 43.205932 8 41 8 L 7 8 z M 7 11 L 41 11 C 41.551068 11 42 11.448932 42 12 L 42 33 C 42 33.551068 41.551068 34 41 34 L 7 34 C 6.4489322 34 6 33.551068 6 33 L 6 12 C 6 11.448932 6.4489322 11 7 11 z M 23 41 L 25 41 L 25 44 L 23 44 L 23 41 z M 24 16 L 18 22 L 22 22 L 22 31 L 26 31 L 26 22 L 30 22 L 24 16 z"/>
                   </svg>
                 )}
-              </div>
+              </button>
 
             </div>
           </div>
