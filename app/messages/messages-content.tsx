@@ -2462,13 +2462,6 @@ export default function MessagesContent() {
                   id="dialog-bg-old"
                   className="relative flex h-full w-full flex-col overflow-hidden bg-cover bg-center"
                 >
-                  {dialogBackgroundUrl && (
-                    <div
-                      id="dialog-bg-image"
-                      className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-40 duration-300"
-                      style={{ backgroundImage: `url(${dialogBackgroundUrl})` }}
-                    />
-                  )}
                   <div className="absolute inset-x-0 top-0 z-[20] flex items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent lg:from-transparent lg:via-transparent p-2">
                     <div className="flex w-23 shrink-0">
                       <button
