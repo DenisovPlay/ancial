@@ -523,27 +523,13 @@ export default function HomeContent() {
           initial={false}
           animate={{ opacity: queryParam ? 0 : 1, y: queryParam ? -20 : 0 }}
           transition={{ duration: 0.3 }}
-          className="-mt-32 /hidden bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-3xl w-full max-w-screen-md p-3 flex items-center gap-3 shadow relative z-10"
+          className="-mt-32 /hidden w-full max-w-screen-md flex items-center gap-3 shadow relative z-10"
         >
-          <div className="flex flex-col w-full">
-            <span className="text-lg lg:text-2xl font-bold">С 1 августа Ancial начинает постепенный переход к Zypo.</span>
+          <div className="flex flex-col items-center justify-center text-center w-full">
+            <span className="text-lg lg:text-2xl font-bold">Теперь мы - <img src="/img/zypo/letter.svg" className='h-6 lg:h-8 inline' /></span>
             <span className="text-sm lg:text-base text-zinc-300">
-              Всё продолжает работать как обычно, но вы можете сталкиваться с двойным написанием Ancial/Zypo и старыми логотипами. Не пугайтесь, это нормально - мы в процессе переезда.
+              Всё так же, но даже лучше.
             </span>
-            <span className="text-xs lg:text-sm text-zinc-400 pt-3">
-              <b>Что-то случилось?</b><br />
-              Да, из-за действий КЦД .RU/.РФ, с 1 сентября мы теряем доступ к нашему привычному Ancial.RU, поэтому решили двигаться дальше.
-            </span>
-            <div className="hidden flex items-center justify-end gap-3 mt-1.5">
-              <a
-                href="https://t.me/zypocc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-400 hover:bg-blue-500 duration-300 active:scale-95 shadow border border-zinc-600/30"
-              >
-                <img className="w-3.5 h-3.5" src="/img/socials/tg.png" alt="Telegram" />
-              </a>
-            </div>
           </div>
         </motion.div>
 

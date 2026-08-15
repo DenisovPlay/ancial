@@ -278,7 +278,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   <strong>Вы несёте полную ответственность</strong> за
-                  нарушения. Блокировка аккаунта во всех сервисах Ancial без
+                  нарушения. Блокировка аккаунта во всех сервисах Zypo без
                   возврата токенов anci.
                 </li>
               </ol>
@@ -408,7 +408,7 @@ export default function LegalPage() {
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>1 нарушение = удаление трека + предупреждение</li>
                     <li>2 = временная блокировка (7 дней)</li>
-                    <li>3+ = бессрочная блокировка всех сервисов Ancial</li>
+                    <li>3+ = бессрочная блокировка всех сервисов Zypo</li>
                   </ul>
                 </li>
                 <li>
@@ -714,7 +714,7 @@ export default function LegalPage() {
             </section>
             {/*  FOOTER  */}
             <footer className="text-center py-8 text-zinc-500 text-sm border-t border-zinc-800 mt-12">
-              <p>© 2026 Ancial Pulse. Все права защищены. Версия 2.0</p>
+              <p>© 2026 Zypo Pulse. Все права защищены. Версия 2.0</p>
             </footer>
           </div>
         </div>
@@ -792,7 +792,7 @@ export default function LegalPage() {
               <ol className="list-decimal list-inside space-y-4">
                 <li>
                   Настоящие Правила регулируют отношения между Пользователями и
-                  Администрацией платформы Ancial (зарегистрированной в
+                  Администрацией платформы Zypo (зарегистрированной в
                   Российской Федерации), предоставляющей доступ к сервисам:
                   Лента (посты с медиа), Чаты (личные и групповые сообщения),
                   Pulse (музыкальный раздел), ClickPlay/Stream (видеоагрегатор),
@@ -800,7 +800,7 @@ export default function LegalPage() {
                   13).
                 </li>
                 <li>
-                  Используя любой из сервисов Ancial, Пользователь безоговорочно
+                  Используя любой из сервисов Zypo, Пользователь безоговорочно
                   принимает настоящие Правила, Политику конфиденциальности и
                   иные официальные документы платформы.
                 </li>
@@ -1095,7 +1095,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Если видео на исходной платформе (например, YouTube) удалено
-                  или заблокировано — оно становится недоступным и на Ancial.
+                  или заблокировано — оно становится недоступным и на Zypo.
                 </li>
                 <li>
                   При жалобе правообладателя (на contact@zypo.cc с темой
@@ -1208,7 +1208,7 @@ export default function LegalPage() {
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>Своих контактных данных;</li>
                     <li>Описания нарушенного произведения;</li>
-                    <li>Ссылки на контент на Ancial;</li>
+                    <li>Ссылки на контент на Zypo;</li>
                     <li>Заявления о добросовестности претензии;</li>
                     <li>Подписи (электронной или скан-копии).</li>
                   </ul>
@@ -1480,7 +1480,7 @@ export default function LegalPage() {
               </h2>
               <p className="mb-6">
                 Настоящие Правила являются публичной офертой и вступают в силу с
-                момента начала использования Платформы Ancial.
+                момента начала использования Платформы Zypo.
                 <br />
                 Полная версия всегда доступна по адресу:
                 <a
@@ -1518,7 +1518,7 @@ export default function LegalPage() {
             </section>
             {/*  FOOTER  */}
             <footer className="text-center py-8 text-zinc-500 text-sm border-t border-zinc-800 mt-12">
-              <p>© 2025 Ancial. Все права защищены.</p>
+              <p>© 2025 Zypo. Все права защищены.</p>
               <p className="mt-2">
                 Версия правил: 1.3 | Опубликовано:{" "}
                 <a
@@ -1605,7 +1605,7 @@ export default function LegalPage() {
               <ol className="list-decimal list-inside space-y-4">
                 <li>
                   These Terms regulate the relationship between Users and the
-                  Administration of the Ancial platform (registered in the
+                  Administration of the Zypo platform (registered in the
                   Russian Federation), which provides access to the following
                   services: Feed (posts with media), Chats (private and group
                   messages), Pulse (music section), ClickPlay/Stream (video
@@ -1613,7 +1613,7 @@ export default function LegalPage() {
                   (section 13).
                 </li>
                 <li>
-                  By using any of the Ancial services, the User unconditionally
+                  By using any of the Zypo services, the User unconditionally
                   accepts these Terms, Privacy Policy, and other official
                   platform documents.
                 </li>
@@ -1902,7 +1902,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   If a video on the original platform (for example, YouTube) is
-                  deleted or blocked, it becomes unavailable on Ancial as well.
+                  deleted or blocked, it becomes unavailable on Zypo as well.
                 </li>
                 <li>
                   Upon a copyright holder's complaint (to contact@zypo.cc with
@@ -2013,7 +2013,7 @@ export default function LegalPage() {
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>Their contact information;</li>
                     <li>Description of the infringed work;</li>
-                    <li>Link to the content on Ancial;</li>
+                    <li>Link to the content on Zypo;</li>
                     <li>Statement of good faith of the claim;</li>
                     <li>Signature (electronic or scanned copy).</li>
                   </ul>
@@ -2279,7 +2279,7 @@ export default function LegalPage() {
               </h2>
               <p className="mb-6">
                 These Terms constitute a public offer and take effect from the
-                moment you start using the Ancial Platform.
+                moment you start using the Zypo Platform.
                 <br />
                 The full version is always available at:
                 <a
@@ -2317,7 +2317,7 @@ export default function LegalPage() {
             </section>
             {/*  FOOTER  */}
             <footer className="text-center py-8 text-zinc-500 text-sm border-t border-zinc-800 mt-12">
-              <p>© 2025 Ancial. All rights reserved.</p>
+              <p>© 2025 Zypo. All rights reserved.</p>
               <p className="mt-2">
                 Terms version: 1.3 | Published:{" "}
                 <a

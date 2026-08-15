@@ -3,7 +3,7 @@
 
 React-клиент для социальной сети Zypo. Современный веб-интерфейс с использованием Next.js 16 и React 19.
 
-[Этот же репозиторий на Vercel](https://ancial.vercel.app)
+[Этот же репозиторий на Vercel](https://zypo.cc)
 
 ## Описание
 
@@ -47,7 +47,7 @@ cp .env.example .env.local
 
 ```bash
 # Базовый URL API для проксирования запросов
-NEXT_PUBLIC_API_BASE=https://ancial.ru
+NEXT_PUBLIC_API_BASE=https://zypo.cc
 ```
 
 ## Запуск
@@ -100,7 +100,7 @@ ancial/
 
 | Переменная | Описание | По умолчанию |
 |------------|----------|--------------|
-| `NEXT_PUBLIC_API_BASE` | Базовый URL бэкенд-API | `https://ancial.ru` |
+| `NEXT_PUBLIC_API_BASE` | Базовый URL бэкенд-API | `https://zypo.cc` |
 
 ## Проксирование API
 
@@ -144,6 +144,6 @@ ancial/
 
 ## Контакты
 
-- Официальный сайт: [ancial.ru](https://ancial.ru)
-- Telegram: [t.me/ancialru](https://t.me/ancialru)
+- Официальный сайт: [zypo.cc](https://zypo.cc)
+- Telegram: [t.me/zypocc](https://t.me/zypocc)
 - Email: [contact@zypo.cc](mailto:contact@zypo.cc)
