@@ -28,7 +28,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  fontFamily: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
 @keyframes page-enter {

@@ -51,7 +51,7 @@ export default function HomeContent() {
   const searchParams = useSearchParams();
   const queryParam = searchParams.get('q') || '';
 
-  const { lang } = useAuth();
+  const { lang, langCode } = useAuth();
   const { showNote } = useNotification();
 
   const [searchVal, setSearchVal] = useState(queryParam);
@@ -70,35 +70,37 @@ export default function HomeContent() {
   const isNavigatingRef = useRef(false);
   const gnameRef = useRef(`gcs-${Math.round(Math.random() * 1000000)}`);
 
-  if (!cseControllerRef.current && typeof window !== 'undefined') {
-    cseControllerRef.current = createGoogleCseSearchController({
-      getElement: () => {
-        const google = (window as HomeWindow).google;
-        if (!google?.search?.cse?.element) return null;
+  useEffect(() => {
+    if (!cseControllerRef.current && typeof window !== 'undefined') {
+      cseControllerRef.current = createGoogleCseSearchController({
+        getElement: () => {
+          const google = (window as HomeWindow).google;
+          if (!google?.search?.cse?.element) return null;
 
-        const gname = gnameRef.current;
-        let cse = google.search.cse.element.getElement(gname);
+          const gname = gnameRef.current;
+          let cse = google.search.cse.element.getElement(gname);
 
-        if (!cse) {
-          try {
-            const container = document.getElementById('gcs-container');
-            if (container && container.innerHTML === '') {
-              google.search.cse.element.render({
-                div: 'gcs-container',
-                tag: 'searchresults-only',
-                gname: gname
-              });
-              cse = google.search.cse.element.getElement(gname);
+          if (!cse) {
+            try {
+              const container = document.getElementById('gcs-container');
+              if (container && container.innerHTML === '') {
+                google.search.cse.element.render({
+                  div: 'gcs-container',
+                  tag: 'searchresults-only',
+                  gname: gname
+                });
+                cse = google.search.cse.element.getElement(gname);
+              }
+            } catch (e) {
+              console.error('Failed to render GCS', e);
             }
-          } catch (e) {
-            console.error('Failed to render GCS', e);
           }
-        }
 
-        return cse as GoogleCseElement | null;
-      },
-    });
-  }
+          return cse as GoogleCseElement | null;
+        },
+      });
+    }
+  }, []);
 
   // Sync state if URL query param changes
   useEffect(() => {
@@ -578,7 +580,7 @@ export default function HomeContent() {
           </WeatherMarkerOnboarding>
 
           {/* Currency Rates Widgets (ru language only) */}
-          {lang?.langname === 'ru' && currencies && (
+          {langCode === 'ru' && currencies && (
             <>
               {/* USD Widget */}
               <div className="flex items-center justify-center gap-1">

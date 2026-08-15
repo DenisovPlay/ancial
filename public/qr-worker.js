@@ -1,7 +1,7 @@
 // QR decode Web Worker
-// jsQR is imported as a self-contained script from CDN inside the worker scope
+// jsQR is imported as a self-contained local script inside the worker scope
 
-importScripts('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js');
+importScripts('/jsQR.js');
 
 let busy = false;
 

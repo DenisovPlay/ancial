@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useRef, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getLangFromCache, saveLangToCache, locales, getStoredLangCode, saveStoredLangCode, SupportedLang } from '../lib/lang';
 import { restoreLegacyAuthSession } from '../lib/auth-fetch';
@@ -375,8 +375,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.replace('/login');
   }, [publishAuthState, router]);
 
+  const value = useMemo(() => ({
+    user,
+    isAuthenticated,
+    isLoading,
+    lang,
+    langCode,
+    setLanguage,
+    checkAuth,
+    logout,
+    updateLang,
+  }), [
+    user,
+    isAuthenticated,
+    isLoading,
+    lang,
+    langCode,
+    setLanguage,
+    checkAuth,
+    logout,
+    updateLang,
+  ]);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, lang, langCode, setLanguage, checkAuth, logout, updateLang }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

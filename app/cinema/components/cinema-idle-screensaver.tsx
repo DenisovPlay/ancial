@@ -17,7 +17,7 @@ export default function CinemaIdleScreensaver({
   idleTimeoutMs = 45000, // 45 seconds default idle time
   disabled = false,
 }: CinemaIdleScreensaverProps) {
-  const { lang } = useAuth();
+  const { lang, langCode } = useAuth();
   const [isIdle, setIsIdle] = useState<boolean>(false);
   const [activeMovies, setActiveMovies] = useState<Movie[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -44,26 +44,32 @@ export default function CinemaIdleScreensaver({
             ...(bundle.newReleases || []),
             ...(bundle.popularSeries || []),
           ];
-          // Filter duplicates and valid items with backdrop or poster
           const seen = new Set<string>();
-          list = combined.filter((m) => {
-            if (!m || !m.id || seen.has(String(m.id))) return false;
+          list = combined.filter((m: Movie) => {
+            if (!m?.id || seen.has(String(m.id))) return false;
             seen.add(String(m.id));
             return Boolean(m.backdropUrl || m.posterUrl);
           });
         }
       } catch (e) {
-        console.error('Failed to parse cinema cache for screensaver:', e);
+        console.error('Failed to load cache in screensaver', e);
       }
     }
 
-    if (list.length > 0) {
-      setActiveMovies(list);
-    }
+    // Shuffle active movies for variety
+    const shuffled = [...list].sort(() => 0.5 - Math.random());
+    setActiveMovies(shuffled);
   }, [movies]);
 
   // 2. Real-time Clock update
   useEffect(() => {
+    const locale = langCode === 'en' ? 'en-US' : 'ru-RU';
+    const formatter = new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+
     const updateClock = () => {
       const now = new Date();
       const h = String(now.getHours()).padStart(2, '0');
@@ -73,21 +79,13 @@ export default function CinemaIdleScreensaver({
       setTimeHours(h);
       setTimeMinutes(m);
       setTimeSeconds(s);
-
-      const locale = lang?.langname === 'en' ? 'en-US' : 'ru-RU';
-      const options: Intl.DateTimeFormatOptions = {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      };
-      const formatted = now.toLocaleDateString(locale, options);
-      setDateFormatted(formatted);
+      setDateFormatted(formatter.format(now));
     };
 
     updateClock();
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
-  }, [lang]);
+  }, [langCode]);
 
   // 3. Slideshow Rotation when Idle
   useEffect(() => {

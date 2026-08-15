@@ -100,6 +100,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
               src={post.images[0].url}
               alt="Post preview"
               fill
+              sizes="(max-width: 768px) 80vw, 360px"
               className="object-cover"
             />
           </div>

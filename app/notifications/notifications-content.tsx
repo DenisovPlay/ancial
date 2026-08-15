@@ -15,7 +15,7 @@ interface Notification {
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading, lang } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, lang, langCode } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,9 +38,9 @@ export default function NotificationsPage() {
         const data = await AncialAPI.getNotifications<any>();
         
         if (data?.status === 'success' || data?.notifications || Array.isArray(data)) {
-          const notifs = data.notifications || (Array.isArray(data) ? data : []);
-          setNotifications(notifs);
-          cache.set('notifications_cache', notifs, { category: 'notifications', subcategory: 'list' });
+          const list = Array.isArray(data) ? data : (data.notifications || []);
+          setNotifications(list);
+          cache.set('notifications_cache', list, { category: 'notifications', subcategory: 'list' });
 
           // Отмечаем уведомления прочитанными на сервере и в навигации
           try {
@@ -72,7 +72,7 @@ export default function NotificationsPage() {
   };
 
   const translateContent = (text: string) => {
-    if (lang?.langname === 'en') {
+    if (langCode === 'en') {
       return text
         .replace('написал вам!', 'wrote to you!')
         .replace('хочет добавить вас в друзья', 'wants you to become friends')

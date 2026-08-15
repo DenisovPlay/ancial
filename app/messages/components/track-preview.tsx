@@ -116,6 +116,7 @@ export default function TrackPreview({ trackId, onLoadSuccess, className }: Trac
           src={coverSrc}
           alt={track.title || 'Track cover'}
           fill
+          sizes="40px"
           className="object-cover"
         />
       </div>

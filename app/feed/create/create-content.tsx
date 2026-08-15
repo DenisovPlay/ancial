@@ -333,6 +333,8 @@ export default function CreatePostContent() {
     try {
       const uploadedUrl = await uploadImage(file);
 
+      safeRevokeObjectUrl(previewUrl);
+
       setImages((currentImages) =>
         currentImages.map((currentImage) =>
           currentImage.id === draftId

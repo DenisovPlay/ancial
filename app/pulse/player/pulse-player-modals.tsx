@@ -1,13 +1,15 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import type { ComponentType, ReactNode } from 'react';
 
-import PulsePlaylistEditorModal from '../pulse-playlist-editor-modal';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { PulseModal } from '../pulse-modal';
 import { cn } from '../pulse-components';
-import { PulseEqualizerModal } from './pulse-equalizer-modal';
 import type { PulsePlaylistOption } from './use-add-to-playlist';
+
+const PulsePlaylistEditorModal = dynamic(() => import('../pulse-playlist-editor-modal'), { ssr: false });
+const PulseEqualizerModal = dynamic(() => import('./pulse-equalizer-modal').then((m) => m.PulseEqualizerModal), { ssr: false });
 
 type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 type Notice = (notice: { content: ReactNode; time?: number; type?: 'error' | 'info' | 'success' }) => void;

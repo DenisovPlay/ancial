@@ -33,6 +33,8 @@ const nextConfig: NextConfig = {
   transpilePackages: ['gradualblur'],
   images: {
     dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: IMAGE_HOSTS.flatMap(({ hostname, insecure }) =>
       (insecure ? (['https', 'http'] as const) : (['https'] as const)).map((protocol) => ({
         protocol,

@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { AncialAPI } from '../../../lib/api-v2';
 import { uploadImage } from '../../../lib/upload';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function PulseCreateEditArtistPage() {
+function EditArtistContent() {
   const { lang, isAuthenticated } = useAuth();
   const { showNote } = useNotification();
   const router = useRouter();
@@ -158,5 +158,17 @@ export default function PulseCreateEditArtistPage() {
         </form>
       )}
     </div>
+  );
+}
+
+export default function PulseCreateEditArtistPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center p-8">
+        <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+      </div>
+    }>
+      <EditArtistContent />
+    </Suspense>
   );
 }

@@ -13,9 +13,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse/pulse-image';
-import PulsePlaylistEditorModal from '../pulse/pulse-playlist-editor-modal';
-import { PulseModal } from '../pulse/pulse-modal';
-import { PulseEqualizerModal } from '../pulse/player/pulse-equalizer-modal';
 import { shouldDisableWebAudioForDevice, useEqualizer } from '../pulse/player/use-equalizer';
 import { usePulseFavorites } from '../pulse/player/use-pulse-favorites';
 import { useAddToPlaylist } from '../pulse/player/use-add-to-playlist';
@@ -277,9 +274,12 @@ export function PulsePlayerProvider({
 
   const [isVisible, setIsVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [mode, setMode] = useState<PulsePlayerMode>('mini');
+  const [mode, setModeState] = useState<PulsePlayerMode>('mini');
   const modeRef = useRef<PulsePlayerMode>('mini');
-  if (modeRef.current !== mode) modeRef.current = mode;
+  const setMode = useCallback((nextMode: PulsePlayerMode) => {
+    modeRef.current = nextMode;
+    setModeState(nextMode);
+  }, []);
 
   const [playlist, setPlaylist] = useState<PulseTrack[]>([]);
   const [index, setIndex] = useState(0);
@@ -1240,12 +1240,11 @@ export function PulsePlayerProvider({
   };
 
   const toggleRepeatMode = useCallback(() => {
-    setRepeatMode((prevMode) => {
-      const nextMode: RepeatMode =
-        prevMode === 'none' ? 'all' : prevMode === 'all' ? 'one' : 'none';
-      repeatModeRef.current = nextMode;
-      return nextMode;
-    });
+    const currentMode = repeatModeRef.current;
+    const nextMode: RepeatMode =
+      currentMode === 'none' ? 'all' : currentMode === 'all' ? 'one' : 'none';
+    repeatModeRef.current = nextMode;
+    setRepeatMode(nextMode);
   }, []);
 
   const removeQueueTrack = useCallback((targetIndex: number) => {

@@ -615,7 +615,9 @@ export default function FeedContent() {
     }
   };
 
-  loadPostsRef.current = loadPosts;
+  useEffect(() => {
+    loadPostsRef.current = loadPosts;
+  });
 
   useEffect(() => {
     if (authLoading) return;

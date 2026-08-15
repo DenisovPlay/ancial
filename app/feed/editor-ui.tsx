@@ -1,8 +1,15 @@
 import type { ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { Dropdown } from '../components/navigation';
 import CreatePostPreview from './create/create-post-preview';
-import RichTextEditor from '../components/rich-text-editor';
 import { getVisibleLength } from '../components/post-parser';
+
+const RichTextEditor = dynamic(() => import('../components/rich-text-editor'), {
+    ssr: false,
+    loading: () => (
+        <div className="min-h-[220px] bg-zinc-900/60 rounded-3xl p-4 animate-pulse" />
+    ),
+});
 import {
     type DraftImage,
     STICKERS,

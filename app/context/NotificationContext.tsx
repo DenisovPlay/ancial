@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 type NoteType = 'success' | 'error' | 'warning' | 'info';
@@ -194,8 +194,10 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     setNotes((prev) => prev.filter((note) => note.id !== id));
   }, []);
 
+  const contextValue = useMemo(() => ({ showNote }), [showNote]);
+
   return (
-    <NotificationContext.Provider value={{ showNote }}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
       {mounted
         ? createPortal(

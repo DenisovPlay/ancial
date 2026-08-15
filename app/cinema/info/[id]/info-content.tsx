@@ -401,6 +401,8 @@ export default function InfoContent({ id }: InfoContentProps) {
           src={getOptimizedImageUrl(infoMovie.backdropUrl || infoMovie.posterUrl, '@w700', infoMovie.id)}
           alt={infoMovie.title}
           referrerPolicy="no-referrer"
+          fetchPriority="high"
+          loading="eager"
           onError={(e) => {
             const target = e.currentTarget;
             if (infoMovie.id && !target.src.includes('yandex.net')) {

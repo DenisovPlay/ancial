@@ -105,7 +105,7 @@ export default function ShareModal({
     window.open(
       getShareServiceUrl(shareUrl, service),
       'Поделиться',
-      'width=800, height=600',
+      'width=800,height=600,noopener,noreferrer',
     );
   };
 

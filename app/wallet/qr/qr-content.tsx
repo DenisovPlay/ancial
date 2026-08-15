@@ -525,7 +525,7 @@ export default function QRContent() {
       buttons.push(
         <button
           key="open-link"
-          onClick={() => window.open(scannedData, '_blank')}
+          onClick={() => window.open(scannedData, '_blank', 'noopener,noreferrer')}
           className="flex items-center justify-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-3xl duration-300 active:scale-95 border border-zinc-600/30"
         >
           <span>{strings.openlink}</span>

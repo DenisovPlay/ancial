@@ -304,28 +304,38 @@ export default function CacheSettingsPage() {
       let imagesSize = 0;
       if (typeof window !== 'undefined' && 'caches' in window) {
         const cacheKeys = await window.caches.keys();
-        for (const cacheKey of cacheKeys) {
-          const swCache = await window.caches.open(cacheKey);
-          const requests = await swCache.keys();
-          let currentSize = 0;
-          for (const req of requests) {
-            const res = await swCache.match(req);
-            if (res) {
-              const len = res.headers.get('content-length');
-              if (len) {
-                currentSize += parseInt(len, 10);
-              } else {
-                currentSize += 5120; // 5KB fallback
+        await Promise.all(
+          cacheKeys.map(async (cacheKey) => {
+            try {
+              const swCache = await window.caches.open(cacheKey);
+              const requests = await swCache.keys();
+              const matchedResponses = await Promise.all(
+                requests.map((req) => swCache.match(req).catch(() => null))
+              );
+
+              let currentSize = 0;
+              for (const res of matchedResponses) {
+                if (res) {
+                  const len = res.headers.get('content-length');
+                  if (len) {
+                    currentSize += parseInt(len, 10);
+                  } else {
+                    currentSize += 5120; // 5KB fallback
+                  }
+                }
               }
+
+              // Имена по префиксу, чтобы не разъезжаться с версиями кэшей в firebase-messaging-sw.js
+              if (cacheKey.startsWith('ancial-images-')) {
+                imagesSize += currentSize;
+              } else if (cacheKey.startsWith('ancial-')) {
+                pwaSize += currentSize;
+              }
+            } catch (err) {
+              console.error('Failed to calculate size for cacheKey', cacheKey, err);
             }
-          }
-          // Имена по префиксу, чтобы не разъезжаться с версиями кэшей в firebase-messaging-sw.js
-          if (cacheKey.startsWith('ancial-images-')) {
-            imagesSize += currentSize;
-          } else if (cacheKey.startsWith('ancial-')) {
-            pwaSize += currentSize;
-          }
-        }
+          })
+        );
       }
 
       if (pwaSize > 0) {
@@ -510,9 +520,7 @@ export default function CacheSettingsPage() {
         }
         if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
           const regs = await navigator.serviceWorker.getRegistrations();
-          for (const reg of regs) {
-            await reg.unregister();
-          }
+          await Promise.all(regs.map((reg) => reg.unregister()));
         }
       } catch (err) {
         console.error('Failed to clear Service Worker cache', err);

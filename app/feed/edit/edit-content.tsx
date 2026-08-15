@@ -419,6 +419,8 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     try {
       const uploadedUrl = await uploadImage(file);
 
+      safeRevokeObjectUrl(previewUrl);
+
       setImages((currentImages) =>
         currentImages.map((currentImage) =>
           currentImage.id === draftId
