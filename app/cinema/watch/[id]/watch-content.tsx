@@ -438,7 +438,8 @@ export default function WatchContent({ id }: WatchContentProps) {
       handleSelectEpisode(activeSeason, previousEpisode, activeTranslation);
     } else if (activeSeason > 1) {
       const previousSeasonEpisodes = getEpisodesForSeason(activeSeason - 1);
-      handleSelectEpisode(activeSeason - 1, previousSeasonEpisodes.at(-1) || 1, activeTranslation);
+      const lastEpisode = previousSeasonEpisodes.length > 0 ? previousSeasonEpisodes[previousSeasonEpisodes.length - 1] : 1;
+      handleSelectEpisode(activeSeason - 1, lastEpisode, activeTranslation);
     }
   };
 

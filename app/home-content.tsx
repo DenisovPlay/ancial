@@ -496,7 +496,7 @@ export default function HomeContent() {
   );
 
   return (
-    <div className="home-route relative isolate h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-full flex flex-col items-center overflow-hidden overscroll-none duration-300">
+    <div className="home-route relative isolate h-screen min-h-screen max-h-screen h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-full flex flex-col items-center overflow-hidden overscroll-none duration-300">
 
       {/* 1. Landing page view (hidden when queryParam is set) */}
       <div className={`w-full h-full flex flex-col items-center justify-center p-3 md:p-0 gap-3 absolute inset-0 duration-300 transition-opacity ${queryParam ? 'opacity-0 pointer-events-none z-0' : 'opacity-100 z-10'}`}>

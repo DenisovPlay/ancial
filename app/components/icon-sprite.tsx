@@ -19,7 +19,8 @@ export default function IconSprite() {
     <div
       aria-hidden="true"
       dangerouslySetInnerHTML={{ __html: getIconSpriteMarkup() }}
-      className="hidden"
+      className="absolute w-0 h-0 overflow-hidden pointer-events-none -z-50 opacity-0"
+      style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none', opacity: 0 }}
     />
   );
 }

@@ -677,8 +677,8 @@ export function parseMessageLinks(text: string) {
   let html = text;
 
   html = html.replace(
-    /(?<=^|[\s\n])(?:\[url\|(.*?)\]|((?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))(?=$|[\s\n])/gi,
-    (match, m1, m2) => {
+    /(^|[\s\n])(?:\[url\|(.*?)\]|((?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))(?=$|[\s\n])/gi,
+    (match, prefix, m1, m2) => {
       let url = '';
       let linkText = '';
 
@@ -701,16 +701,16 @@ export function parseMessageLinks(text: string) {
         finalUrl = `https://${url}`;
       }
 
-      return `<a href="/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" class="text-purple-300 hover:text-purple-200 underline duration-300">${linkText}</a>`;
+      return `${prefix || ''}<a href="/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" class="text-purple-300 hover:text-purple-200 underline duration-300">${linkText}</a>`;
     },
   );
 
   html = html.replace(
-    /(?<=^|[\s\n])([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(?=$|[\s\n])/gi,
-    (match, email) => {
+    /(^|[\s\n])([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(?=$|[\s\n])/gi,
+    (match, prefix, email) => {
       const cleanEmail = email ? email.trim() : '';
       if (!cleanEmail) return match;
-      return `<a href="mailto:${cleanEmail}" class="text-purple-300 hover:text-purple-200 underline duration-300">${cleanEmail}</a>`;
+      return `${prefix || ''}<a href="mailto:${cleanEmail}" class="text-purple-300 hover:text-purple-200 underline duration-300">${cleanEmail}</a>`;
     },
   );
 
