@@ -96,9 +96,11 @@ html.android-glass-off * {
   backdrop-filter: none !important;
 }
 
-/* 2. Навигационные панели (desktop и mobile) */
+/* 2. Навигационные панели (desktop и mobile: все пиллы, включая юзера и компас) */
 html.android-glass-off [data-app-nav="desktop"],
-html.android-glass-off [data-app-nav="mobile"] > div:first-child {
+html.android-glass-off [data-app-nav="mobile-pill"],
+html.android-glass-off [data-app-nav="mobile"] [data-app-nav="mobile-pill"],
+html.android-glass-off [data-app-nav="mobile"] > div:not(.flex-grow) {
   background-color: rgba(9, 9, 11, 0.97) !important;
 }
 

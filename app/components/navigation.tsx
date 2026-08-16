@@ -498,7 +498,7 @@ export default function Navigation() {
 
       {!isCinemaWatchContext && (
         <nav data-app-nav="mobile" className="lg:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
-          <motion.div layoutRoot layout className="flex p-1 bg-zinc-900/50 rounded-full border border-zinc-600/30 gap-1 relative overflow-visible">
+          <motion.div data-app-nav="mobile-pill" layoutRoot layout className="flex p-1 bg-zinc-900/50 rounded-full border border-zinc-600/30 gap-1 relative overflow-visible">
             <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
             {/* PULSE CONTEXT */}
             <MotionNavItem id="pulse" isVisible={isPulseContext}>
@@ -551,7 +551,7 @@ export default function Navigation() {
             </MotionNavItem>
           </motion.div>
           <div className="flex-grow"></div>
-          <motion.div layoutRoot layout className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30 gap-1">
+          <motion.div data-app-nav="mobile-pill" layoutRoot layout className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30 gap-1">
             <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
 
             <MotionNavItem id="mobile-login" isVisible={!isAuthenticated}>
