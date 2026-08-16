@@ -68,7 +68,7 @@ export default function ContactsPage() {
                     </div>
                 </a>
 
-                <a target="_blank" href="https://x.com/ancialru" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
+                <a target="_blank" href="https://x.com/zypo_cc" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
                     <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative" style={{ backgroundImage: 'url(/img/zypo/logo.webp)' }}>
                         <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-slate-900 shadow">
                             <img className="w-3.5 h-3.5" src="/img/socials/x.png" />
@@ -76,7 +76,7 @@ export default function ContactsPage() {
                     </div>
                     <div className="flex flex-col">
                         <span className="text-lg font-bold">Zypo</span>
-                        <span className="text-zinc-300">@ancialru</span>
+                        <span className="text-zinc-300">@zypo_cc</span>
                     </div>
                 </a>
 
