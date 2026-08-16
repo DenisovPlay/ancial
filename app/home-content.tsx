@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore, FormEvent, KeyboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Script from 'next/script';
@@ -19,6 +19,7 @@ import {
 import { safeFetchJson } from './lib/safe-fetch-json';
 import { cache } from './lib/cache';
 import WeatherMarkerOnboarding from './components/weather-marker-onboarding';
+import { GLASS_MODE_CHANGE_EVENT, GLASS_MODE_STORAGE_KEY, readGlassMode } from './lib/android-glass';
 
 interface HomeApiResponse<T> {
   success: boolean;
@@ -53,6 +54,24 @@ export default function HomeContent() {
 
   const { lang, langCode } = useAuth();
   const { showNote } = useNotification();
+
+  const glassMode = useSyncExternalStore(
+    (cb) => {
+      const handle = (e: StorageEvent | Event) => {
+        if (e instanceof StorageEvent && e.key !== GLASS_MODE_STORAGE_KEY) return;
+        cb();
+      };
+      window.addEventListener('storage', handle);
+      window.addEventListener(GLASS_MODE_CHANGE_EVENT, handle);
+      return () => {
+        window.removeEventListener('storage', handle);
+        window.removeEventListener(GLASS_MODE_CHANGE_EVENT, handle);
+      };
+    },
+    readGlassMode,
+    () => 'auto' as const,
+  );
+  const glassOff = glassMode === 'off';
 
   const [searchVal, setSearchVal] = useState(queryParam);
   const [imageModal, setImageModal] = useState<{ src: string; title: string; url: string; pageUrl: string } | null>(null);
@@ -664,8 +683,7 @@ export default function HomeContent() {
               font-size:0.875rem !important;
               line-height:1.5 !important;
               cursor:pointer !important;
-              backdrop-filter:blur(8px) !important;
-              -webkit-backdrop-filter:blur(8px) !important;
+              ${glassOff ? '' : 'backdrop-filter:blur(8px) !important; -webkit-backdrop-filter:blur(8px) !important;'}
               transition:all 0.3s !important;
               box-shadow:none !important;
           }
@@ -695,8 +713,7 @@ export default function HomeContent() {
               background:rgba(24,24,27,0.58) !important;
               border:1px solid rgba(82,82,91,0.3) !important;
               border-radius:1.5rem !important;
-              backdrop-filter:blur(12px) !important;
-              -webkit-backdrop-filter:blur(12px) !important;
+              ${glassOff ? '' : 'backdrop-filter:blur(12px) !important; -webkit-backdrop-filter:blur(12px) !important;'}
               padding:0.875rem 1.125rem !important;
               transition:all 0.3s !important;
               overflow:hidden !important;
@@ -759,8 +776,7 @@ export default function HomeContent() {
               background:rgba(24,24,27,0.58) !important;
               border:1px solid rgba(82,82,91,0.3) !important;
               border-radius:1.5rem !important;
-              backdrop-filter:blur(12px) !important;
-              -webkit-backdrop-filter:blur(12px) !important;
+              ${glassOff ? '' : 'backdrop-filter:blur(12px) !important; -webkit-backdrop-filter:blur(12px) !important;'}
               padding:0 !important;
               margin:0 !important;
               overflow:hidden !important;
@@ -854,7 +870,7 @@ export default function HomeContent() {
               border:1px solid rgba(234,179,8,0.3) !important;
               border-radius:1.5rem !important;
               padding:1rem 1.25rem !important;
-              backdrop-filter:blur(8px) !important;
+              ${glassOff ? '' : 'backdrop-filter:blur(8px) !important;'}
           }
 
           /* === Misc text styles === */
@@ -897,7 +913,7 @@ export default function HomeContent() {
           }
           .gsc-inline-block{
               border-radius:999px !important;
-              backdrop-filter:blur(8px) !important;
+              ${glassOff ? '' : 'backdrop-filter:blur(8px) !important;'}
               background:transparent !important;
           }
         ` }} />

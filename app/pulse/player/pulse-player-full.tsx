@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
+import { useState, useSyncExternalStore, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
+import { GLASS_MODE_CHANGE_EVENT, GLASS_MODE_STORAGE_KEY, readGlassMode } from '../../lib/android-glass';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import {
@@ -204,6 +205,22 @@ export function PulsePlayerFull({
   onLyricsSeek,
 }: PulsePlayerFullProps) {
   const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const glassMode = useSyncExternalStore(
+    (cb) => {
+      const handle = (e: StorageEvent | Event) => {
+        if (e instanceof StorageEvent && e.key !== GLASS_MODE_STORAGE_KEY) return;
+        cb();
+      };
+      window.addEventListener('storage', handle);
+      window.addEventListener(GLASS_MODE_CHANGE_EVENT, handle);
+      return () => {
+        window.removeEventListener('storage', handle);
+        window.removeEventListener(GLASS_MODE_CHANGE_EVENT, handle);
+      };
+    },
+    readGlassMode,
+    () => 'auto' as const,
+  );
   return (
     <div
       className={cn(
@@ -219,8 +236,8 @@ export function PulsePlayerFull({
         id="NAVPfull"
         className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto overflow-x-hidden rounded-none bg-zinc-900/80 p-1 shadow lg:h-full lg:gap-3"
         style={{
-          backdropFilter: 'blur(40px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+          backdropFilter: glassMode === 'off' ? 'none' : 'blur(40px) saturate(180%)',
+          WebkitBackdropFilter: glassMode === 'off' ? 'none' : 'blur(40px) saturate(180%)',
           overscrollBehavior: 'none',
         }}
         onTouchStart={onTouchStartFull}

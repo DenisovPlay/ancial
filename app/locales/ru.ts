@@ -1619,5 +1619,10 @@ export const ru: Record<string, string> = {
     "community_audit_action_moderation_ban": "Участник заблокирован",
     "community_audit_action_moderation_unban": "Блокировка участника снята",
     "community_audit_action_moderation_disconnect_voice": "Участник отключён от звонка",
-    "voice_listen_only": "Только слушать"
+    "voice_listen_only": "Только слушать",
+    "glass_effects": "Эффекты стекла",
+    "glass_mode_auto": "Авто",
+    "glass_mode_full": "Полное",
+    "glass_mode_lite": "Облегчённое",
+    "glass_mode_off": "Отключено"
 };

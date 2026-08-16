@@ -1619,5 +1619,10 @@ export const en: Record<string, string> = {
   "community_audit_action_moderation_ban": "Member banned",
   "community_audit_action_moderation_unban": "Member unbanned",
   "community_audit_action_moderation_disconnect_voice": "Member disconnected from call",
-  "voice_listen_only": "Listen only"
+  "voice_listen_only": "Listen only",
+  "glass_effects": "Glass effects",
+  "glass_mode_auto": "Auto",
+  "glass_mode_full": "Full",
+  "glass_mode_lite": "Reduced",
+  "glass_mode_off": "Disabled"
 };

@@ -31,6 +31,132 @@ body {
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
+/* Android Chromium can spend most of a frame repainting large or nested
+   backdrop filters. Keep the glass design, but cap shader complexity without
+   changing desktop/iOS rendering or touching every Tailwind call site. */
+html.android-glass [class*="backdrop-blur"] {
+  --tw-backdrop-blur: blur(4px) !important;
+}
+
+html.android-glass [class*="backdrop-saturate"] {
+  --tw-backdrop-saturate: saturate(120%) !important;
+}
+
+html.android-glass [class*="backdrop-hue"] {
+  --tw-backdrop-hue-rotate: hue-rotate(0deg) !important;
+}
+
+html.android-glass-lite [class*="backdrop-blur"] {
+  --tw-backdrop-blur: blur(2px) !important;
+}
+
+html.android-glass-lite [class*="backdrop-saturate"] {
+  --tw-backdrop-saturate: saturate(105%) !important;
+}
+
+html.android-glass .pulse-player-full-shell {
+  -webkit-backdrop-filter: blur(8px) saturate(120%) !important;
+  backdrop-filter: blur(8px) saturate(120%) !important;
+}
+
+html.android-glass-lite .pulse-player-full-shell {
+  background-color: rgb(24 24 27 / 94%) !important;
+  -webkit-backdrop-filter: blur(3px) saturate(105%) !important;
+  backdrop-filter: blur(3px) saturate(105%) !important;
+}
+
+html.android-glass .notion-block-toolbar,
+html.android-glass .carousel-count-badge,
+html.android-glass .gsc-tabHeader,
+html.android-glass .gsc-webResult.gsc-result,
+html.android-glass .gsc-imageResult.gsc-result,
+html.android-glass .gs-no-results-result > .gs-snippet {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+html.android-glass-lite .notion-block-toolbar,
+html.android-glass-lite .carousel-count-badge,
+html.android-glass-lite .gsc-tabHeader,
+html.android-glass-lite .gsc-webResult.gsc-result,
+html.android-glass-lite .gsc-imageResult.gsc-result,
+html.android-glass-lite .gs-no-results-result > .gs-snippet {
+  -webkit-backdrop-filter: blur(2px) !important;
+  backdrop-filter: blur(2px) !important;
+}
+
+/* ── Режим «Стекло отключено» — отключение размытия и адаптация только стеклянных контейнеров ── */
+
+/* 1. Полное отключение шейдеров размытия для всех элементов */
+html.android-glass-off * {
+  --tw-backdrop-blur: blur(0px) !important;
+  --tw-backdrop-saturate: saturate(100%) !important;
+  --tw-backdrop-hue-rotate: hue-rotate(0deg) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 2. Навигационные панели (desktop и mobile) */
+html.android-glass-off [data-app-nav="desktop"],
+html.android-glass-off [data-app-nav="mobile"] > div:first-child {
+  background-color: rgba(9, 9, 11, 0.97) !important;
+}
+
+/* 3. Стеклянные выпадающие меню Dropdown */
+html.android-glass-off .backdrop-blur-lg.bg-zinc-900\/50 {
+  background-color: rgba(9, 9, 11, 0.97) !important;
+}
+
+/* 4. Стеклянные поисковые строки и поле ввода в чате */
+html.android-glass-off form.bg-zinc-900\/20,
+html.android-glass-off .bg-zinc-900\/20.backdrop-blur-md {
+  background-color: rgba(24, 24, 27, 0.95) !important;
+}
+
+/* 5. Карточки погоды со стеклом */
+html.android-glass-off .bg-black\/10.backdrop-blur-md {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* 6. Кнопка Play в плейлистах Pulse */
+html.android-glass-off .bg-purple-500\/50.backdrop-blur-md {
+  background-color: rgba(147, 51, 234, 0.90) !important;
+}
+
+/* 7. Адаптивная левая панель чатов на десктопе */
+@media (min-width: 1024px) {
+  html.android-glass-off .lg\:bg-zinc-900\/50.lg\:backdrop-blur-lg {
+    background-color: rgba(24, 24, 27, 0.95) !important;
+  }
+}
+
+/* 8. Полноэкранные затемняющие оверлеи модальных окон */
+html.android-glass-off .fixed.inset-0[class*="bg-black/"] {
+  background-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+/* 9. Специальные компоненты с кастомными CSS-классами */
+html.android-glass-off .pulse-player-full-shell {
+  background-color: rgba(9, 9, 11, 0.97) !important;
+}
+
+html.android-glass-off .notion-block-toolbar {
+  background-color: rgba(24, 24, 27, 0.98) !important;
+}
+
+html.android-glass-off .carousel-count-badge {
+  background-color: rgba(9, 9, 11, 0.95) !important;
+}
+
+html.android-glass-off .gsc-tabHeader,
+html.android-glass-off .gsc-webResult.gsc-result,
+html.android-glass-off .gsc-imageResult.gsc-result {
+  background-color: rgba(24, 24, 27, 0.96) !important;
+}
+
+
+
+
 @keyframes page-enter {
   from {
     opacity: 0;
