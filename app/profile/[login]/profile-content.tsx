@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -1037,13 +1038,12 @@ export default function UserProfileContent({ login }: { login: string }) {
             className="h-56 w-auto"
           />
           <div className="text-center text-zinc-200" dangerouslySetInnerHTML={{ __html: error }} />
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase"
+          <Link
+            href="/"
+            className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase inline-block text-white"
           >
             {strings.home}
-          </button>
+          </Link>
         </div>
       ) : userData ? (
         <div className="flex flex-col gap-3 items-center flex-grow w-full max-w-screen-2xl">
@@ -1159,14 +1159,13 @@ export default function UserProfileContent({ login }: { login: string }) {
                 ) : null}
 
                 {isAuthenticated && flag(userData.is_owner) ? (
-                  <button
-                    type="button"
-                    onClick={() => router.push('/settings/account')}
-                    className="border border-zinc-600/30 flex items-center justify-center px-3 py-1 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto cursor-pointer"
+                  <Link
+                    href="/settings/account"
+                    className="border border-zinc-600/30 flex items-center justify-center px-3 py-1 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto cursor-pointer text-white"
                   >
                     <SvgIcon className="w-6 h-6 fill-white inline mr-2" id="IC-edit" />
                     <span>{strings.edit}</span>
-                  </button>
+                  </Link>
                 ) : null}
               </div>
             </div>

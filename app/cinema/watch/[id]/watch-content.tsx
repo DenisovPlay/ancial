@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Movie, PlayerOption } from '../../types';
 import { fetchCinemaVideoById, fetchVideoHubStreamDirect } from '../../cinema-api';
@@ -293,12 +294,12 @@ export default function WatchContent({ id }: WatchContentProps) {
     return (
       <div className="w-screen h-screen bg-black text-white flex flex-col items-center justify-center gap-4">
         <h2 className="text-2xl font-bold">Видео не найдено</h2>
-        <button
-          onClick={() => router.push('/cinema')}
+        <Link
+          href="/cinema"
           className="px-6 py-2 rounded-full bg-white text-black font-bold"
         >
           Вернуться на главную
-        </button>
+        </Link>
       </div>
     );
   }

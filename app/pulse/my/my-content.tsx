@@ -235,16 +235,15 @@ export default function PulseMyContent() {
     <div className="flex flex-col items-center justify-center gap-3 pb-64 duration-300">
       <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
         <div className="flex w-full max-w-screen-2xl items-center px-3 lg:px-0">
-          <button
-            type="button"
-            onClick={() => router.push('/pulse')}
+          <Link
+            href="/pulse"
             className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
           >
             <div className="hidden lg:block">
               <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
             </div>
             <PulseLogo className="w-32 md:w-48" />
-          </button>
+          </Link>
           <div className="flex-grow" />
           <Link
             href="/pulse/create"
@@ -284,14 +283,13 @@ export default function PulseMyContent() {
         <div className="flex w-full flex-col gap-3">
           <div className={cn('flex w-full items-center justify-center gap-3 px-3 lg:px-0', !libraryItems.length && !libraryLoading && 'hidden')}>
             <span className="cutetext flex-grow text-2xl font-black lg:text-3xl xl:text-4xl">{lang?.mylibrary || 'Моя библиотека'}</span>
-            <button
-              type="button"
-              onClick={() => router.push('/pulse/library')}
+            <Link
+              href="/pulse/library"
               className="flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/20 px-3 py-1.5 text-zinc-300 shadow duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
             >
               <ActionIcon className="h-5 w-5" name="IC-chevron-right" />
               <span>{lang?.all || 'Все'}</span>
-            </button>
+            </Link>
           </div>
 
           <div className={cn('viewport dragscroll flex overflow-auto px-3 lg:px-0', !libraryItems.length && !libraryLoading && 'hidden')}>

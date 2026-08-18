@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { Inter, Montserrat } from 'next/font/google';
@@ -527,18 +528,18 @@ export default function PayContent() {
       </div>
 
       <div className="flex items-center justify-center gap-3 lg:gap-6 p-3 pt-1.5 text-xs flex-wrap">
-        <span
-          onClick={() => router.push('/about/contacts')}
+        <Link
+          href="/about/contacts"
           className="shrink-0 text-zinc-500 hover:text-zinc-300 active:scale-95 cursor-pointer duration-300"
         >
           {lang?.pay_support || 'Поддержка'}
-        </span>
-        <span
-          onClick={() => router.push('/about/legal')}
+        </Link>
+        <Link
+          href="/about/legal"
           className="shrink-0 text-zinc-500 hover:text-zinc-300 active:scale-95 cursor-pointer duration-300"
         >
           {lang?.pay_terms || 'Условия использования'}
-        </span>
+        </Link>
         <a
           target="_blank"
           rel="noopener noreferrer"

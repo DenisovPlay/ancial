@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -200,15 +201,15 @@ export default function HistoryContent() {
   return (
     <div className="flex flex-col w-full items-center justify-start pb-6 gap-3 bg-gradient-to-b from-black to-black via-black min-h-screen text-white">
       <div className="w-full max-w-screen-2xl min-h-14 flex flex-col lg:flex-row lg:items-center gap-3 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[99]">
-        <span
-          onClick={() => router.push('/wallet')}
+        <Link
+          href="/wallet"
           className="shrink-0 px-3 lg:px-0 w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
         >
           <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
             <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
           </svg>
           {strings.history}
-        </span>
+        </Link>
         <div className="flex-grow hidden lg:flex" />
         <div ref={filterButtonsRef} className="overflow-auto px-3 md:px-0 py-3 -my-3 flex viewport duration-300">
           <div className="flex flex-row flex-nowrap gap-3">

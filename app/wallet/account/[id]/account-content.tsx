@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
@@ -260,9 +261,9 @@ export default function AccountContent({ accountId }: AccountContentProps) {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-zinc-300 gap-3">
         <span className="text-xl font-bold text-red-500">{error || (lang?.error_loading_account || 'Ошибка загрузки счёта')}</span>
-        <button onClick={() => router.push('/wallet')} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition duration-300">
+        <Link href="/wallet" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition duration-300">
           {lang?.back_to_wallet || 'Назад в кошелёк'}
-        </button>
+        </Link>
       </div>
     );
   }
@@ -271,15 +272,15 @@ export default function AccountContent({ accountId }: AccountContentProps) {
     <div className="flex flex-col w-full items-center justify-start min-h-screen pb-3 lg:pb-6 gap-3 bg-gradient-to-b from-black to-black via-black text-white">
 
       <div className="w-full max-w-screen-2xl h-14 flex items-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[99]">
-        <span
-          onClick={() => handleTopage('/wallet')}
+        <Link
+          href="/wallet"
           className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
         >
           <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
             <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
           </svg>
           {strings.bankaccount}
-        </span>
+        </Link>
       </div>
 
       <div className="flex max-w-screen-2xl flex-col lg:flex-row gap-3 w-full duration-300">

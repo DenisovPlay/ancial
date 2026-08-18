@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -1069,13 +1070,12 @@ export default function GroupProfileContent({ link }: { link: string }) {
             className="h-56 w-auto"
           />
           <div className="text-center text-zinc-200">{strings.blockedgroupdesc}</div>
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase"
+          <Link
+            href="/"
+            className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase inline-block text-white"
           >
             {strings.home}
-          </button>
+          </Link>
         </div>
       ) : error ? (
         <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
@@ -1087,13 +1087,12 @@ export default function GroupProfileContent({ link }: { link: string }) {
             className="h-56 w-auto"
           />
           <div className="text-center text-zinc-200">{error}</div>
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase"
+          <Link
+            href="/"
+            className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase inline-block text-white"
           >
             {strings.home}
-          </button>
+          </Link>
         </div>
       ) : groupData ? (
         <div className="flex flex-col gap-3 items-center flex-grow w-screen md:max-w-screen-2xl">

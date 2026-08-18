@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -344,12 +345,12 @@ export default function InfoContent({ id }: InfoContentProps) {
     return (
       <div className="min-h-screen bg-black text-white p-12 flex flex-col items-center justify-center gap-4">
         <h2 className="text-2xl font-bold">Видео не найдено</h2>
-        <button
-          onClick={() => router.push('/cinema')}
+        <Link
+          href="/cinema"
           className="px-6 py-2 rounded-full bg-white text-black font-bold"
         >
           Вернуться на главную
-        </button>
+        </Link>
       </div>
     );
   }
@@ -684,12 +685,12 @@ export default function InfoContent({ id }: InfoContentProps) {
             {infoMovie.director && (
               <div>
                 <span className="text-zinc-500 block mb-1 text-xs font-semibold">{lang?.frame_director || 'Режиссер'}</span>
-                <button
-                  onClick={() => router.push(`/cinema/person/${encodeURIComponent(infoMovie.director || '')}`)}
-                  className="text-indigo-400 font-bold hover:underline cursor-pointer bg-transparent p-0 border-0 text-left"
+                <Link
+                  href={`/cinema/person/${encodeURIComponent(infoMovie.director || '')}`}
+                  className="text-indigo-400 font-bold hover:underline cursor-pointer bg-transparent p-0 border-0 text-left inline-block"
                 >
                   {infoMovie.director}
-                </button>
+                </Link>
               </div>
             )}
             {infoMovie.translationsList && infoMovie.translationsList.length > 0 && (
@@ -716,47 +717,47 @@ export default function InfoContent({ id }: InfoContentProps) {
 
             <div className="viewport dragscroll flex items-center gap-3 overflow-x-auto scrollbar-none -mx-3 px-3 lg:-mx-6 lg:px-6 py-2 select-none">
               {infoMovie.actorsList && infoMovie.actorsList.length > 0
-                ? infoMovie.actorsList.slice(0, 12).map((actor, idx) => (
-                    <button
-                      key={idx}
-                      tabIndex={0}
-                      onClick={() => {
-                        const pid = actor.id || actor.kinopoisk_id || actor.name;
-                        const nameQuery = encodeURIComponent(actor.name);
-                        const posterQuery = actor.posterUrl ? `&poster=${encodeURIComponent(actor.posterUrl)}` : '';
-                        router.push(`/cinema/person/${encodeURIComponent(String(pid))}?name=${nameQuery}${posterQuery}`);
-                      }}
-                      className="focusable-tv group flex-none w-28 sm:w-32 bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/10 hover:border-indigo-500/50 p-2.5 rounded-2xl flex flex-col items-center text-center gap-2 cursor-pointer transition-all duration-300 active:scale-95 shadow-md outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20"
-                    >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-zinc-950 border border-white/10 shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={getOptimizedImageUrl(actor.posterUrl, '@w300')}
-                          alt={actor.name}
-                          referrerPolicy="no-referrer"
-                          onError={(e) => {
-                            e.currentTarget.src = '/img/branding/frame.svg';
-                          }}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                      </div>
-                      <div className="w-full space-y-0.5">
-                        <p className="text-xs font-bold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors">
-                          {actor.name}
-                        </p>
-                        {actor.character && (
-                          <p className="text-[10px] text-zinc-400 font-medium line-clamp-1">
-                            {actor.character}
+                ? infoMovie.actorsList.slice(0, 12).map((actor, idx) => {
+                    const pid = actor.id || actor.kinopoisk_id || actor.name;
+                    const nameQuery = encodeURIComponent(actor.name);
+                    const posterQuery = actor.posterUrl ? `&poster=${encodeURIComponent(actor.posterUrl)}` : '';
+                    return (
+                      <Link
+                        key={idx}
+                        tabIndex={0}
+                        href={`/cinema/person/${encodeURIComponent(String(pid))}?name=${nameQuery}${posterQuery}`}
+                        className="focusable-tv group flex-none w-28 sm:w-32 bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/10 hover:border-indigo-500/50 p-2.5 rounded-2xl flex flex-col items-center text-center gap-2 cursor-pointer transition-all duration-300 active:scale-95 shadow-md outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20"
+                      >
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-zinc-950 border border-white/10 shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={getOptimizedImageUrl(actor.posterUrl, '@w300')}
+                            alt={actor.name}
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.src = '/img/branding/frame.svg';
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="w-full space-y-0.5">
+                          <p className="text-xs font-bold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors">
+                            {actor.name}
                           </p>
-                        )}
-                      </div>
-                    </button>
-                  ))
+                          {actor.character && (
+                            <p className="text-[10px] text-zinc-400 font-medium line-clamp-1">
+                              {actor.character}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })
                 : (infoMovie.cast || []).slice(0, 12).map((actorName, idx) => (
-                    <button
+                    <Link
                       key={idx}
                       tabIndex={0}
-                      onClick={() => router.push(`/cinema/person/${encodeURIComponent(actorName)}`)}
+                      href={`/cinema/person/${encodeURIComponent(actorName)}`}
                       className="focusable-tv group flex-none w-28 sm:w-32 bg-zinc-900/60 hover:bg-zinc-800/80 border border-white/10 hover:border-indigo-500/50 p-2.5 rounded-2xl flex flex-col items-center text-center gap-2 cursor-pointer transition-all duration-300 active:scale-95 shadow-md outline-none focus:outline-none focus:ring-2 focus:ring-white focus:scale-105 focus:z-20"
                     >
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-zinc-950 border border-white/10 shrink-0 flex items-center justify-center text-zinc-500 font-black text-xl">
@@ -767,7 +768,7 @@ export default function InfoContent({ id }: InfoContentProps) {
                           {actorName}
                         </p>
                       </div>
-                    </button>
+                    </Link>
                   ))}
             </div>
           </section>

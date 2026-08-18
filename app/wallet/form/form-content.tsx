@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -388,12 +389,12 @@ function FormContentInner() {
       {/* Header (hidden if embeded) */}
       {!embeded && (
         <div className="w-full max-w-3xl h-14 flex items-center gap-3 px-3 lg:px-0 sticky top-0 bg-gradient-to-b from-zinc-950 via-zinc-950/90 to-transparent" style={{ zIndex: 99 }}>
-          <span onClick={() => router.push('/wallet')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer">
+          <Link href="/wallet" className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer">
             <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
               <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
             </svg>
             {lang?.payment_form || 'Платёжная форма'}
-          </span>
+          </Link>
         </div>
       )}
 
@@ -405,9 +406,9 @@ function FormContentInner() {
               <span className="text-pink-500 text-6xl font-black">:(</span>
               <span className="text-zinc-300 text-lg text-center font-medium">{lookupError}</span>
               {!embeded && (
-                <button onClick={() => router.push('/wallet')} className="px-6 py-2.5 bg-purple-700 hover:bg-purple-600 rounded-full font-bold active:scale-95 duration-300">
+                <Link href="/wallet" className="px-6 py-2.5 bg-purple-700 hover:bg-purple-600 rounded-full font-bold active:scale-95 duration-300">
                   {lang?.to_wallet || 'В кошелёк'}
-                </button>
+                </Link>
               )}
             </div>
           ) : (
@@ -724,12 +725,12 @@ function FormContentInner() {
                 {lang?.receipt || 'Чек'}
               </button>
             )}
-            <button
-              onClick={() => router.push('/wallet')}
+            <Link
+              href="/wallet"
               className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-600/30"
             >
               {lang?.to_wallet || 'В кошелёк'}
-            </button>
+            </Link>
           </div>
         </div>
       )}
@@ -740,7 +741,7 @@ function FormContentInner() {
 
           {/* Crossmark */}
           <div className="relative pt-6">
-            <svg className="crossmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{ width: 120, height: 120 }}>
+            <svg className="crossmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 52 52" style={{ width: 120, height: 120 }}>
               <circle cx="26" cy="26" r="25" fill="none" stroke="#EF4444" strokeWidth="2" />
               <path fill="none" stroke="#EF4444" strokeWidth="3" d="M16 16l20 20M36 16L16 36" />
             </svg>
@@ -758,12 +759,12 @@ function FormContentInner() {
             >
               {lang?.try_again || 'Попробовать снова'}
             </button>
-            <button
-              onClick={() => router.push('/wallet')}
+            <Link
+              href="/wallet"
               className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-600/30"
             >
               {lang?.to_wallet || 'В кошелёк'}
-            </button>
+            </Link>
           </div>
         </div>
       )}

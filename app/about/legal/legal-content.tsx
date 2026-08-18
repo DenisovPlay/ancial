@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import Modal from "../../components/modal";
@@ -17,8 +18,8 @@ export default function LegalPage() {
     <>
       <div className="flex flex-col jusitify-center items-center gap-3 py-3">
         <div className="w-full max-w-4xl flex sm:items-center flex-col sm:flex-row">
-          <span
-            onClick={() => router.push("/about")}
+          <Link
+            href="/about"
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"
           >
             <svg
@@ -29,7 +30,7 @@ export default function LegalPage() {
               <use href={`#IC-chevron-left`}></use>
             </svg>
             {lang?.documents || "Документы"}
-          </span>
+          </Link>
           <div className="flex-grow"></div>
           <div className="shrink-0 w-fit rounded-3xl bg-zinc-900/95 ring ring-zinc-600/30 duration-300 flex mx-3 mt-3 sm:mt-0 sm:mx-0 gap-0.5 sm:mr-3 lg:mr-0">
             <button

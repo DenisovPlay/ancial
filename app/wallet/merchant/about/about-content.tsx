@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../../context/AuthContext';
@@ -233,9 +234,9 @@ function AboutContentInner() {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-zinc-350 gap-3 px-4">
         <span className="text-xl font-bold text-red-500">{error || (lang?.error_loading_merchant || 'Ошибка загрузки мерчанта')}</span>
-        <button onClick={() => router.push('/wallet/merchant')} className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition duration-300">
+        <Link href="/wallet/merchant" className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition duration-300">
           {lang?.back_to_merchants || 'Назад к мерчантам'}
-        </button>
+        </Link>
       </div>
     );
   }
@@ -247,8 +248,8 @@ function AboutContentInner() {
 
       {/* Header bar */}
       <div className="flex items-center gap-3 max-w-screen-2xl w-full pt-3">
-        <span
-          onClick={() => router.push('/wallet/merchant')}
+        <Link
+          href="/wallet/merchant"
           className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer text-zinc-100"
         >
           <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -257,7 +258,7 @@ function AboutContentInner() {
           <span style={{ marginTop: '0.1rem' }} className="shrink-0 text-3xl font-bold bg-gradient-to-br from-lime-500 to-emerald-500 text-transparent bg-clip-text cutetext">
             {lang?.merchant || 'Мерчант'}
           </span>
-        </span>
+        </Link>
         <div className="flex-grow" />
       </div>
 

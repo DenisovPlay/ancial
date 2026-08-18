@@ -18,7 +18,7 @@ export default function Home() {
     return (
         <div className="flex flex-col jusitify-center items-center gap-3 py-3">
             <div className="w-full max-w-3xl flex items-center">
-                <span onClick={() => router.push('/settings')} className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Zypo`}</span>
+                <Link href="/settings" className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Zypo`}</Link>
             </div>
 
             <div className="px-3 lg:px-0 w-full max-w-3xl">

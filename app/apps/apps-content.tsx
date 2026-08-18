@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { FormEvent, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '../context/AuthContext';
@@ -217,14 +218,13 @@ function AppsContentInner() {
         className="w-full max-w-screen-2xl flex items-center px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent"
         style={{ zIndex: 99 }}
       >
-        <button
+        <Link
           aria-label="Zynt"
           className={`shrink-0 overflow-hidden duration-300 active:scale-95 ${focused ? 'w-0 opacity-0 scale-95' : 'mr-3 w-28 opacity-100 scale-100'}`}
-          onClick={() => router.push('/apps')}
-          type="button"
+          href="/apps"
         >
           <img alt="Zynt" className="w-28 hover:opacity-80 duration-300 cursor-pointer" src="/img/logos/zynt.svg" />
-        </button>
+        </Link>
         <form
           className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12"
           onSubmit={handleSearch}
@@ -244,13 +244,12 @@ function AppsContentInner() {
             <SearchIcon className="inline w-8 h-8 fill-white" />
           </button>
         </form>
-        <button
+        <Link
           className="ml-3 cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full"
-          onClick={() => router.push('/settings/account')}
-          type="button"
+          href="/settings/account"
         >
           <UserIcon className="inline w-8 h-8 fill-white" />
-        </button>
+        </Link>
       </div>
 
       <div ref={categoryScrollRef} className="overflow-auto flex lg:rounded-box viewport dragscroll w-full px-3 lg:px-0 max-w-screen-2xl">
@@ -258,7 +257,7 @@ function AppsContentInner() {
           {categories.map((item) => {
             const isActive = category === item.href;
             return (
-              <button
+              <Link
                 className={cn(
                   item.animationClass ?? '',
                   "bg-zinc-900/20 border border-zinc-600/30 rounded-3xl p-1.5 flex flex-col gap-0.5 cursor-pointer duration-300 w-36 h-24 overflow-hidden justify-center items-center shadow group active:scale-95 shrink-0",
@@ -266,8 +265,7 @@ function AppsContentInner() {
                 )}
                 data-category-active={isActive ? "true" : "false"}
                 key={item.key}
-                onClick={() => router.push(`/apps?category=${encodeURIComponent(item.href)}`)}
-                type="button"
+                href={`/apps?category=${encodeURIComponent(item.href)}`}
               >
                 <div className="flex justify-center items-center relative z-0">
                   <div className={cn(
@@ -289,7 +287,7 @@ function AppsContentInner() {
                 )}>
                   {lang?.[item.langKey] ?? item.labelFallback}
                 </span>
-              </button>
+              </Link>
             );
           })}
         </div>

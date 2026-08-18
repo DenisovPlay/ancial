@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -184,15 +185,15 @@ export default function ContactsSecurityContent() {
         {/* Sticky Header */}
         <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40">
           <div className="w-full max-w-3xl flex items-center gap-3">
-            <span
-              onClick={() => router.push('/settings/security')}
+            <Link
+              href="/settings/security"
               className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                 <use href="#IC-chevron-left"></use>
               </svg>
               {lang?.phoneandnumber || 'Телефон и почта'}
-            </span>
+            </Link>
           </div>
         </div>
 
@@ -271,13 +272,12 @@ export default function ContactsSecurityContent() {
                 <StatusBadge iconId="IC-check" tone="green" />
               </div>
 
-              <button
+              <Link
                 className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow mt-3"
-                onClick={() => router.push('/settings/socials')}
-                type="button"
+                href="/settings/socials"
               >
                 {lang?.unlink || 'Отвязать'}
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center">
@@ -294,13 +294,12 @@ export default function ContactsSecurityContent() {
               <span className="text-zinc-300 text-center my-auto">
                 {lang?.connyandextover || 'Привяжите Яндекс для подтверждения данных'}
               </span>
-              <button
+              <Link
                 className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow mt-3"
-                onClick={() => router.push('/settings/socials')}
-                type="button"
+                href="/settings/socials"
               >
                 {lang?.yalink || 'Привязать Яндекс'}
-              </button>
+              </Link>
             </div>
           )}
         </div>

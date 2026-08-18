@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import AccountName from '../../components/account-name';
 import { useAuth } from '../../context/AuthContext';
@@ -110,13 +111,12 @@ export default function InvitePage() {
               </svg>
             </div>
             <span className="text-lg font-bold text-white">{error}</span>
-            <button
-              type="button"
-              onClick={() => router.push('/messages')}
-              className="p-3 px-6 rounded-3xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/30 text-sm font-medium duration-300 active:scale-95 cursor-pointer"
+            <Link
+              href="/messages"
+              className="p-3 px-6 rounded-3xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/30 text-sm font-medium duration-300 active:scale-95 cursor-pointer text-white inline-block"
             >
               Перейти к сообщениям
-            </button>
+            </Link>
           </div>
         ) : inviteData ? (
           <>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useSyncExternalStore, FormEvent, KeyboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import Script from 'next/script';
 import { motion } from 'framer-motion';
@@ -572,9 +573,9 @@ export default function HomeContent() {
         >
           {/* Weather Widget */}
           <WeatherMarkerOnboarding>
-            <div
+            <Link
               suppressHydrationWarning
-              onClick={() => router.push('/apps/overlay/weather')}
+              href="/apps/overlay/weather"
               className="flex items-center justify-center gap-1.5 cursor-pointer duration-300 active:scale-95 hover:bg-zinc-800/70 hover:px-2 py-0.5 rounded-full border border-transparent hover:border-zinc-600/30 transition-all"
             >
               {weatherLoading ? (
@@ -595,7 +596,7 @@ export default function HomeContent() {
               <span suppressHydrationWarning className="text-white font-medium">
                 {weatherLoading ? '' : (weather?.temp !== null && weather?.temp !== undefined ? `${weather.temp}°C` : '')}
               </span>
-            </div>
+            </Link>
           </WeatherMarkerOnboarding>
 
           {/* Currency Rates Widgets (ru language only) */}
@@ -924,11 +925,15 @@ export default function HomeContent() {
             initial={false}
             animate={{ opacity: queryParam ? 1 : 0 }}
             transition={{ duration: 0.4 }}
-            onClick={() => router.push('/')}
-            className="cursor-pointer hover:opacity-90 active:scale-95 duration-300 shrink-0"
+            className="shrink-0"
           >
-            {/* Multi-gradient ancial text logo */}
-            <Image alt="Ancial Logo" className="h-12" width={120} height={120} src="/img/zypo/letter.svg" />
+            <Link
+              href="/"
+              className="cursor-pointer hover:opacity-90 active:scale-95 duration-300 block"
+            >
+              {/* Multi-gradient ancial text logo */}
+              <Image alt="Ancial Logo" className="h-12" width={120} height={120} src="/img/zypo/letter.svg" />
+            </Link>
           </motion.div>
 
           {queryParam && (

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -674,9 +675,8 @@ export default function SinglePostContent({ postId }: { postId: string }) {
   return (
     <div className="flex flex-col jusitify-center items-center gap-3 pb-64">
       <div className="max-w-3xl w-full flex pt-3 pl-3 md:pl-0 -mb-3 z-[30]">
-        <button
-          type="button"
-          onClick={() => router.push('/feed')}
+        <Link
+          href="/feed"
           className="text-3xl font-extralight flex items-center gap-1.5 duration-300 active:scale-95 cursor-pointer"
         >
           <SvgIcon
@@ -684,7 +684,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
             id="IC-chevron-left"
           />
           <span>{strings.post}</span>
-        </button>
+        </Link>
       </div>
 
       <div className="w-full flex flex-col gap-3 justify-center items-center pt-3">

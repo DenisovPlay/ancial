@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -940,15 +941,15 @@ export default function FeedContent() {
         >
           <div className="flex flex-row flex-nowrap gap-3 flex-shrink-0">
             {isAuthenticated && (
-              <div
-                onClick={() => router.push('/feed/create')}
-                className="w-max flex-none lg:flex-grow rounded-full"
+              <Link
+                href="/feed/create"
+                className="w-max flex-none lg:flex-grow rounded-full block"
               >
                 <div className="w-full relative flex rounded-full p-2 shadow border border-purple-500 bg-zinc-900 text-white fill-white hover:bg-zinc-200 hover:text-zinc-800 hover:fill-zinc-800 duration-300 cursor-pointer jusitfy-center items-center gap-1.5 active:scale-95">
                   <SvgIcon className="w-8 h-8" id="IC-plus" />
                   <span className="text-lg font-bold">{strings.post}</span>
                 </div>
-              </div>
+              </Link>
             )}
 
             {isAuthenticated && (

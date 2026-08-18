@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '../../context/AuthContext';
@@ -118,14 +119,13 @@ export default function PulseLibraryContent() {
     <div className="flex flex-col items-center justify-center gap-3 pb-64 duration-300">
       <div className="sticky top-0 z-[101] flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
         <div className="w-full max-w-screen-2xl px-3 lg:px-0">
-          <button
-            type="button"
-            onClick={() => router.push('/pulse/my')}
+          <Link
+            href="/pulse/my"
             className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
           >
             <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
             <PulseLogo className="w-32 sm:w-48" />
-          </button>
+          </Link>
         </div>
       </div>
 

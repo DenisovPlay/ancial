@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useMemo, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNotification } from '../../context/NotificationContext';
@@ -129,15 +130,15 @@ export default function UiSettingsContent() {
       {/* Sticky Header */}
       <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40">
         <div className="w-full max-w-3xl flex items-center gap-3">
-          <span
-            onClick={() => router.push('/settings')}
+          <Link
+            href="/settings"
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
             <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
               <use href="#IC-chevron-left"></use>
             </svg>
             {lang?.interface_settings || 'Интерфейс'}
-          </span>
+          </Link>
         </div>
       </div>
 
