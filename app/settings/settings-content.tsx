@@ -1,70 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { useSyncExternalStore } from 'react';
-import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
 import { SettingsItem } from '../components/settings-item';
-import { AncialAPI } from '../lib/api-v2';
 import AccountName from '../components/account-name';
 import { normalizeAvatarUrl } from '../lib/avatar';
-import {
-  GLASS_MODE_CHANGE_EVENT,
-  GLASS_MODE_STORAGE_KEY,
-  applyGlassProfile,
-  readGlassMode,
-  type GlassMode,
-} from '../lib/android-glass';
-
-function subscribeGlassMode(onStoreChange: () => void) {
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === GLASS_MODE_STORAGE_KEY) onStoreChange();
-  };
-  window.addEventListener('storage', handleStorage);
-  window.addEventListener(GLASS_MODE_CHANGE_EVENT, onStoreChange);
-  return () => {
-    window.removeEventListener('storage', handleStorage);
-    window.removeEventListener(GLASS_MODE_CHANGE_EVENT, onStoreChange);
-  };
-}
-
-const getServerGlassMode = (): GlassMode => 'auto';
 
 export default function SettingsPage() {
-  const { showNote } = useNotification();
-  const { user, isAuthenticated, lang, langCode, setLanguage } = useAuth();
-  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-
-  const selectLanguage = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedLang = e.target.value as 'ru' | 'en';
-    setLanguage(selectedLang);
-    try {
-      if (isAuthenticated) {
-        await AncialAPI.updateProfile<any>({ lang: selectedLang });
-      }
-      showNote({
-        content: lang?.language_updated || 'Язык успешно изменён!',
-        type: 'success',
-      });
-    } catch {
-      showNote({
-        content: lang?.language_update_error || 'Ошибка при смене языка',
-        type: 'error',
-      });
-    }
-  };
-
-  const selectGlassMode = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedMode = event.target.value as GlassMode;
-    try {
-      window.localStorage.setItem(GLASS_MODE_STORAGE_KEY, selectedMode);
-    } catch {
-      // The mode still applies for the current page if storage is unavailable.
-    }
-    applyGlassProfile(selectedMode);
-    window.dispatchEvent(new Event(GLASS_MODE_CHANGE_EVENT));
-  };
-
+  const { user, isAuthenticated, lang } = useAuth();
   const userAvatarSrc = normalizeAvatarUrl(user?.img);
 
   return (
@@ -90,103 +33,75 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+        <div className="rounded-3xl flex flex-col border border-zinc-600/30 bg-zinc-900 overflow-hidden">
+          {isAuthenticated && (
+            <>
+              <SettingsItem
+                href="/settings/account"
+                title={lang?.account || 'Аккаунт'}
+                iconBgClass="bg-pink-500/10"
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-pink-500" viewBox="0 0 48 48"><use href={`#IC-me`}></use></svg>
+                }
+              />
 
-        {isAuthenticated && (
-          <>
-            <SettingsItem
-              href="/settings/account"
-              title={lang?.account || 'Аккаунт'}
-              iconBgClass="bg-pink-500/10"
-              icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-pink-500" viewBox="0 0 48 48"><use href={`#IC-me`}></use></svg>
-              }
-            />
+              <SettingsItem
+                href="/settings/security"
+                title={lang?.security || 'Безопасность'}
+                iconBgClass="bg-blue-500/10"
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-blue-500" viewBox="0 0 48 48"><use href={`#IC-lock`}></use></svg>
+                }
+              />
 
-            <SettingsItem
-              href="/settings/security"
-              title={lang?.security || 'Безопасность'}
-              iconBgClass="bg-blue-500/10"
-              icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-blue-500" viewBox="0 0 48 48"><use href={`#IC-lock`}></use></svg>
-              }
-            />
+              <SettingsItem
+                href="/settings/socials"
+                title={lang?.socialnetworks || 'Социальные сети'}
+                iconBgClass="bg-lime-500/10"
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-lime-500" viewBox="0 0 48 48"><use href={`#IC-socials`}></use></svg>
+                }
+              />
 
-            <SettingsItem
-              href="/settings/socials"
-              title={lang?.socialnetworks || 'Социальные сети'}
-              iconBgClass="bg-lime-500/10"
-              icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-lime-500" viewBox="0 0 48 48"><use href={`#IC-socials`}></use></svg>
-              }
-            />
+              <SettingsItem
+                href="/settings/notifications"
+                title={lang?.notif || 'Уведомления'}
+                iconBgClass="bg-amber-500/10"
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-amber-500" viewBox="0 0 48 48"><use href={`#IC-notification`}></use></svg>
+                }
+              />
 
-            <SettingsItem
-              href="/settings/notifications"
-              title={lang?.notif || 'Уведомления'}
-              iconBgClass="bg-amber-500/10"
-              icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-amber-500" viewBox="0 0 48 48"><use href={`#IC-notification`}></use></svg>
-              }
-            />
+              <SettingsItem
+                href="/settings/cache"
+                title={lang?.cache_settings || 'Память'}
+                iconBgClass="bg-purple-500/10"
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-purple-500" viewBox="0 0 48 48"><use href={`#IC-database`}></use></svg>
+                }
+              />
+            </>
+          )}
 
-            <SettingsItem
-              href="/settings/cache"
-              title={lang?.cache_settings || 'Память'}
-              iconBgClass="bg-purple-500/10"
-              icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-purple-500" viewBox="0 0 48 48"><use href={`#IC-database`}></use></svg>
-              }
-            />
-          </>
-        )}
+          <SettingsItem
+            href="/settings/ui"
+            title={lang?.interface_settings || 'Интерфейс'}
+            iconBgClass="bg-cyan-500/10"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-cyan-400" viewBox="0 0 48 48"><use href="#IC-full-mode"></use></svg>
+            }
+          />
 
-        <SettingsItem
-          title={lang?.language || 'Язык'}
-          iconBgClass="bg-red-500/10"
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-red-500" viewBox="0 0 48 48"><use href={`#IC-globe`}></use></svg>
-          }
-          rightContent={
-            <select
-              onChange={selectLanguage}
-              value={langCode}
-              className="focus:outline-0 focus:ring-0 bg-zinc-700/70 hover:bg-zinc-700/60 duration-300 p-1 rounded-2xl mr-2 shadow cursor-pointer text-white border-0 focus:ring-0"
-            >
-              <option value="ru">Русский</option>
-              <option value="en">English</option>
-            </select>
-          }
-        />
+          <SettingsItem
+            href="/about"
+            title={`${lang?.about || 'О'} Zypo`}
+            iconBgClass="bg-emerald-500/10"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-emerald-500" viewBox="0 0 48 48"><use href={`#IC-book`}></use></svg>
+            }
+          />
 
-        <SettingsItem
-          title={lang?.glass_effects || 'Эффекты стекла'}
-          iconBgClass="bg-cyan-500/10"
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-cyan-400" viewBox="0 0 48 48"><use href="#IC-full-mode"></use></svg>
-          }
-          rightContent={
-            <select
-              aria-label={lang?.glass_effects || 'Эффекты стекла'}
-              onChange={selectGlassMode}
-              value={glassMode}
-              className="focus:outline-0 focus:ring-0 bg-zinc-700/70 hover:bg-zinc-700/60 duration-300 p-1 rounded-2xl mr-2 shadow cursor-pointer text-white border-0"
-            >
-              <option value="auto">{lang?.glass_mode_auto || 'Авто'}</option>
-              <option value="full">{lang?.glass_mode_full || 'Полное'}</option>
-              <option value="lite">{lang?.glass_mode_lite || 'Облегчённое'}</option>
-              <option value="off">{lang?.glass_mode_off || 'Отключено'}</option>
-            </select>
-          }
-        />
-
-        <SettingsItem
-          href="/about"
-          title={`${lang?.about || 'О'} Zypo`}
-          iconBgClass="bg-emerald-500/10"
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-emerald-500" viewBox="0 0 48 48"><use href={`#IC-book`}></use></svg>
-          }
-        />
+        </div>
       </div>
 
       <div className="lg:hidden"><br /><br /><br /><br /></div>

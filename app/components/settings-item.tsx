@@ -20,9 +20,8 @@ export function SettingsItem({
   const content = (
     <div
       onClick={!href ? onClick : undefined}
-      className={`border border-zinc-600/30 bg-zinc-800/50 p-1 rounded-full flex items-center gap-1.5 w-full duration-300 ${
-        href || onClick ? 'hover:bg-zinc-700/60 active:scale-95 cursor-pointer group' : ''
-      }`}
+      className={`p-1.5 flex items-center active:rounded-3xl gap-1.5 w-full duration-300 ${href || onClick ? 'hover:bg-zinc-800/60 active:scale-95 cursor-pointer group' : ''
+        }`}
     >
       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBgClass}`}>
         {icon}

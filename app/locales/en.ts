@@ -1621,8 +1621,17 @@ export const en: Record<string, string> = {
   "community_audit_action_moderation_disconnect_voice": "Member disconnected from call",
   "voice_listen_only": "Listen only",
   "glass_effects": "Glass effects",
+  "glass_effects_desc": "Configure blur and frosted glass visual effects.",
+  "glass_preview": "Glass preview",
   "glass_mode_auto": "Auto",
+  "glass_mode_auto_desc": "Automatically adjusts to your device's performance.",
   "glass_mode_full": "Full",
+  "glass_mode_full_desc": "Maximum blur and transparency effects.",
   "glass_mode_lite": "Reduced",
-  "glass_mode_off": "Disabled"
+  "glass_mode_lite_desc": "Optimized blur for smoother performance.",
+  "glass_mode_off": "Disabled",
+  "glass_mode_off_desc": "Blur is turned off for maximum performance.",
+  "interface_settings": "Interface",
+  "interface_settings_desc": "Interface settings — choose language and glass effects.",
+  "currently_active": "currently"
 };
