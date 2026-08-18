@@ -162,11 +162,11 @@ const NavItem = ({
         style={
           isFullGlass
             ? {
-                x: springX,
-                y: springY,
-                scaleX: springPressScaleX,
-                scaleY: springPressScaleY,
-              }
+              x: springX,
+              y: springY,
+              scaleX: springPressScaleX,
+              scaleY: springPressScaleY,
+            }
             : undefined
         }
       >
@@ -191,11 +191,11 @@ const NavItem = ({
       style={
         isFullGlass
           ? {
-              x: springX,
-              y: springY,
-              scaleX: springPressScaleX,
-              scaleY: springPressScaleY,
-            }
+            x: springX,
+            y: springY,
+            scaleX: springPressScaleX,
+            scaleY: springPressScaleY,
+          }
           : undefined
       }
     >
@@ -428,9 +428,9 @@ export const Dropdown = ({
             style={
               isFullGlass
                 ? {
-                    x: menuSpringX,
-                    y: menuSpringY,
-                  }
+                  x: menuSpringX,
+                  y: menuSpringY,
+                }
                 : undefined
             }
             data-dropdown-menu="true"
@@ -438,7 +438,7 @@ export const Dropdown = ({
               'absolute overflow-hidden',
               getPositionClasses(),
               getOriginClass(),
-              'p-1.5',
+              'p-1',
               direction === 'col' ? 'flex-col rounded-3xl' : 'flex-row rounded-full',
               widthClasses,
               isGlassOff
@@ -623,11 +623,11 @@ export const DropdownItem = ({
         style={
           isFullGlass
             ? {
-                x: springX,
-                y: springY,
-                scaleX: springPressScaleX,
-                scaleY: springPressScaleY,
-              }
+              x: springX,
+              y: springY,
+              scaleX: springPressScaleX,
+              scaleY: springPressScaleY,
+            }
             : undefined
         }
         className="w-full"
@@ -653,11 +653,11 @@ export const DropdownItem = ({
       style={
         isFullGlass
           ? {
-              x: springX,
-              y: springY,
-              scaleX: springPressScaleX,
-              scaleY: springPressScaleY,
-            }
+            x: springX,
+            y: springY,
+            scaleX: springPressScaleX,
+            scaleY: springPressScaleY,
+          }
           : undefined
       }
       className="w-full"
