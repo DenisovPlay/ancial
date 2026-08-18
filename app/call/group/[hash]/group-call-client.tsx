@@ -10,7 +10,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import type { DialogMeta, GroupMember } from '../../../messages/lib/messages-shared';
 import { canManageCommunityMember } from '../../../group/[link]/lib/community-types';
-import { subscribeGlassMode, readGlassMode, getServerGlassMode } from '../../../lib/android-glass';
+import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../../../lib/android-glass';
 import { motion, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 import GroupCallTile from '../components/group-call-tile';
 import {
@@ -73,7 +73,7 @@ function CallControlButton({
   onClick: () => void;
 }) {
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = glassMode === 'full';
+  const isFullGlass = isEffectiveFullGlass(glassMode);
 
   const itemRef = useRef<HTMLDivElement | null>(null);
   const rawX = useMotionValue(0);
@@ -217,7 +217,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   const exitCall = useCallback(() => router.push(returnPath), [returnPath, router]);
 
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = glassMode === 'full';
+  const isFullGlass = isEffectiveFullGlass(glassMode);
   const isGlassOff = glassMode === 'off';
 
   const pillRef = useRef<HTMLDivElement>(null);

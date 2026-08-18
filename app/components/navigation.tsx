@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
 import { normalizeAvatarUrl } from '../lib/avatar';
-import { subscribeGlassMode, readGlassMode, getServerGlassMode } from '../lib/android-glass';
+import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../lib/android-glass';
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 
 function cn(...classes: Array<string | false | null | undefined>) {
@@ -40,7 +40,7 @@ const NavItem = ({
     );
 
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = glassMode === 'full';
+  const isFullGlass = isEffectiveFullGlass(glassMode);
 
   const itemRef = useRef<HTMLDivElement | null>(null);
   const rawX = useMotionValue(0);
@@ -237,7 +237,7 @@ export const Dropdown = ({
 
   // Эффект Apple Liquid Glass активен эксклюзивно для режима "Полное"
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = glassMode === 'full';
+  const isFullGlass = isEffectiveFullGlass(glassMode);
   const isGlassOff = glassMode === 'off';
 
   // Liquid glass cursor tracking for menu container
@@ -477,7 +477,7 @@ export const DropdownItem = ({
 
   // Эффект Liquid Glass активен эксклюзивно для режима "Полное"
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = glassMode === 'full';
+  const isFullGlass = isEffectiveFullGlass(glassMode);
 
   // Magnetic Jelly Physics (сверхмягкая физика, не выходящая за пределы контейнера)
   const rawX = useMotionValue(0);
@@ -641,7 +641,7 @@ export default function Navigation() {
   const isCinemaWatchContext = pathname?.startsWith('/cinema/watch');
 
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = glassMode === 'full';
+  const isFullGlass = isEffectiveFullGlass(glassMode);
   const isGlassOff = glassMode === 'off';
 
   // Desktop dock tracking

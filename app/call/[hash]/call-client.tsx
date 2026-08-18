@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AncialAPI } from '../../lib/api-v2';
 import Modal from '../../components/modal';
 import { Dropdown, DropdownItem } from '../../components/navigation';
-import { subscribeGlassMode, readGlassMode, getServerGlassMode } from '../../lib/android-glass';
+import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../../lib/android-glass';
 import { motion, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 
 interface CameraDevice {
@@ -36,7 +36,7 @@ function CallControlButton({
   children: React.ReactNode;
 }) {
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = glassMode === 'full';
+  const isFullGlass = isEffectiveFullGlass(glassMode);
 
   const itemRef = useRef<HTMLDivElement | null>(null);
   const rawX = useMotionValue(0);
@@ -163,7 +163,7 @@ export default function CallClient() {
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
 
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = glassMode === 'full';
+  const isFullGlass = isEffectiveFullGlass(glassMode);
   const isGlassOff = glassMode === 'off';
 
   const pillRef = useRef<HTMLDivElement>(null);

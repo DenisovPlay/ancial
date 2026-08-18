@@ -100,4 +100,22 @@ export function applyGlassProfile(
   return true;
 }
 
+export function isEffectiveFullGlass(
+  mode: GlassMode,
+  navigatorValue?: AndroidGlassNavigator,
+): boolean {
+  if (mode === 'off' || mode === 'lite') return false;
+  if (mode === 'full') return true;
+  const nav = navigatorValue || (typeof navigator !== 'undefined' ? navigator : {});
+  const userAgent = nav.userAgent || '';
+  const isAndroid = /Android/i.test(userAgent);
+  if (!isAndroid) return true;
+  const navObj = nav as AndroidGlassNavigator;
+  const deviceMemory = Number(navObj.deviceMemory || 0);
+  const hardwareConcurrency = Number(navObj.hardwareConcurrency || 0);
+  const hasLowMemory = deviceMemory > 0 && deviceMemory <= LITE_DEVICE_MEMORY_GB;
+  const hasFewCores = hardwareConcurrency > 0 && hardwareConcurrency <= LITE_HARDWARE_CONCURRENCY;
+  return !hasLowMemory && !hasFewCores;
+}
+
 

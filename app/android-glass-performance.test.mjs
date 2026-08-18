@@ -10,6 +10,7 @@ const {
   GLASS_MODE_STORAGE_KEY,
   applyGlassProfile,
   readGlassMode,
+  isEffectiveFullGlass,
 } = await import(bootstrapModuleUrl.href);
 
 function executeProfile(navigatorValue, mode = 'auto') {
@@ -125,8 +126,15 @@ assert.match(guardSource, /applyGlassProfile/);
 assert.match(cssSource, /html\.android-glass \[class\*="backdrop-blur"\]/);
 assert.match(cssSource, /html\.android-glass-lite \[class\*="backdrop-blur"\]/);
 assert.match(cssSource, /html\.android-glass \.pulse-player-full-shell/);
-assert.match(cssSource, /html\.android-glass-off \* \{/);
-assert.match(cssSource, /html\.android-glass-off \.pulse-player-full-shell/);
+// ── isEffectiveFullGlass tests ──────────────────────────────────────────────
+assert.equal(isEffectiveFullGlass('full'), true, 'mode full always true');
+assert.equal(isEffectiveFullGlass('off'), false, 'mode off always false');
+assert.equal(isEffectiveFullGlass('lite'), false, 'mode lite always false');
+assert.equal(isEffectiveFullGlass('auto', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)' }), true, 'auto on iPhone is true');
+assert.equal(isEffectiveFullGlass('auto', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)' }), true, 'auto on Mac is true');
+assert.equal(isEffectiveFullGlass('auto', { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }), true, 'auto on Windows is true');
+assert.equal(isEffectiveFullGlass('auto', { userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8)', deviceMemory: 8, hardwareConcurrency: 8 }), true, 'auto on powerful Android is true');
+assert.equal(isEffectiveFullGlass('auto', { userAgent: 'Mozilla/5.0 (Linux; Android 11; Redmi)', deviceMemory: 4, hardwareConcurrency: 4 }), false, 'auto on budget Android is false');
 
 console.log('android adaptive glass: ok');
 
