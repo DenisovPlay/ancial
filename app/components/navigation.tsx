@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
 import { normalizeAvatarUrl } from '../lib/avatar';
-import { motion, AnimatePresence } from 'framer-motion';
+import { subscribeGlassMode, readGlassMode, getServerGlassMode } from '../lib/android-glass';
+import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -134,8 +135,50 @@ export const Dropdown = ({
   const pathname = usePathname();
   const [internalOpen, setInternalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
   const isControlled = typeof open === 'boolean';
   const isOpen = isControlled ? open : internalOpen;
+
+  // Эффект Apple Liquid Glass активен эксклюзивно для режима "Полное"
+  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
+  const isFullGlass = glassMode === 'full';
+
+  // Liquid glass cursor tracking for menu container
+  const mouseX = useMotionValue(-200);
+  const mouseY = useMotionValue(-200);
+
+  // Micro magnetic elastic pull on the menu container (max +/- 1.5px)
+  const rawMenuX = useMotionValue(0);
+  const rawMenuY = useMotionValue(0);
+  const menuSpringX = useSpring(rawMenuX, { stiffness: 350, damping: 25 });
+  const menuSpringY = useSpring(rawMenuY, { stiffness: 350, damping: 25 });
+
+  const sheenBackground = useMotionTemplate`radial-gradient(140px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.01) 40%, transparent 80%)`;
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isFullGlass || !menuContainerRef.current) return;
+    const rect = menuContainerRef.current.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const relY = e.clientY - rect.top;
+    mouseX.set(relX);
+    mouseY.set(relY);
+
+    // Мягкое микро-смещение меню к курсору (не более 1.5px)
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const dx = relX - centerX;
+    const dy = relY - centerY;
+    rawMenuX.set(Math.max(-1.5, Math.min(1.5, dx * 0.015)));
+    rawMenuY.set(Math.max(-1.5, Math.min(1.5, dy * 0.015)));
+  };
+
+  const handleMouseLeave = () => {
+    if (!isFullGlass) return;
+    mouseX.set(-200);
+    mouseY.set(-200);
+    rawMenuX.set(0);
+    rawMenuY.set(0);
+  };
 
   const setOpen = useCallback((nextOpen: boolean) => {
     if (!isControlled) {
@@ -163,7 +206,6 @@ export const Dropdown = ({
   }, [isOpen, setOpen]);
 
   // Вычисляем позицию дропдауна относительно кнопки (сверху, снизу, слева, справа)
-  // И выравнивание относительно оси (например, если position="top", то align="end" прижмет меню к правому краю кнопки)
   const getPositionClasses = () => {
     switch (position) {
       case 'right':
@@ -242,34 +284,67 @@ export const Dropdown = ({
           isActive={isActive}
         />
       ) : null}
-      <div
-        className={`${cn(
-          'absolute',
-          getPositionClasses(),
-          getOriginClass(),
-          'p-1',
-          direction === 'col' ? 'flex-col rounded-3xl' : 'flex-row rounded-full',
-          widthClasses,
-          'bg-zinc-900/50 backdrop-blur-lg backdrop-saturate-200 border border-zinc-600/30 shadow-xl flex gap-1 z-50 transition-all duration-200 ease-out',
-          menuClassName,
-        )}
-          ${isOpen ? 'opacity-100 scale-100 visible pointer-events-auto' : 'opacity-0 scale-95 invisible pointer-events-none'}
-        `}
-      >
-        {React.Children.map(children, (child) => {
-          if (React.isValidElement<{ onClick?: () => void }>(child)) {
-            return React.cloneElement(child, {
-              onClick: () => {
-                if (child.props.onClick) child.props.onClick();
-                if (closeOnChildClick) {
-                  setOpen(false);
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            ref={menuContainerRef}
+            onMouseMove={isFullGlass ? handleMouseMove : undefined}
+            onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+            initial={{ opacity: 0, scale: 0.94, filter: isFullGlass ? 'blur(4px)' : 'none' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.94, filter: isFullGlass ? 'blur(4px)' : 'none' }}
+            transition={
+              isFullGlass
+                ? { type: 'spring', stiffness: 420, damping: 28, mass: 0.8 }
+                : { duration: 0.18, ease: 'easeOut' }
+            }
+            style={
+              isFullGlass
+                ? {
+                    x: menuSpringX,
+                    y: menuSpringY,
+                  }
+                : undefined
+            }
+            className={cn(
+              'absolute overflow-hidden',
+              getPositionClasses(),
+              getOriginClass(),
+              'p-1.5',
+              direction === 'col' ? 'flex-col rounded-3xl' : 'flex-row rounded-full',
+              widthClasses,
+              'bg-zinc-900/60 backdrop-blur-xl backdrop-saturate-200 border border-zinc-600/30 shadow-2xl shadow-black/60 flex gap-1 z-50',
+              menuClassName,
+            )}
+          >
+            {/* Apple Liquid Glass Specular Sheen (только в режиме "Полное") */}
+            {isFullGlass && (
+              <motion.div
+                className="pointer-events-none absolute inset-0 z-0 rounded-3xl opacity-80"
+                style={{
+                  background: sheenBackground,
+                }}
+              />
+            )}
+
+            <div className={cn('relative z-10 flex gap-1 w-full', direction === 'col' ? 'flex-col' : 'flex-row items-center')}>
+              {React.Children.map(children, (child) => {
+                if (React.isValidElement<{ onClick?: () => void }>(child)) {
+                  return React.cloneElement(child, {
+                    onClick: () => {
+                      if (child.props.onClick) child.props.onClick();
+                      if (closeOnChildClick) {
+                        setOpen(false);
+                      }
+                    }
+                  });
                 }
-              }
-            });
-          }
-          return child;
-        })}
-      </div>
+                return child;
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -297,10 +372,65 @@ export const DropdownItem = ({
 }: DropdownItemProps) => {
   const pathname = usePathname();
   const isActive = href ? pathname === href : false;
+  const itemRef = useRef<HTMLDivElement | null>(null);
+
+  // Эффект Liquid Glass активен эксклюзивно для режима "Полное"
+  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
+  const isFullGlass = glassMode === 'full';
+
+  // Magnetic Jelly Physics (сверхмягкая физика, не выходящая за пределы контейнера)
+  const rawX = useMotionValue(0);
+  const rawY = useMotionValue(0);
+  const rawScaleX = useMotionValue(1);
+  const rawScaleY = useMotionValue(1);
+  const mouseX = useMotionValue(-100);
+  const mouseY = useMotionValue(-100);
+
+  const springX = useSpring(rawX, { stiffness: 400, damping: 24 });
+  const springY = useSpring(rawY, { stiffness: 400, damping: 24 });
+  const springScaleX = useSpring(rawScaleX, { stiffness: 420, damping: 25 });
+  const springScaleY = useSpring(rawScaleY, { stiffness: 420, damping: 25 });
+
+  const itemSheen = useMotionTemplate`radial-gradient(60px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.12), transparent 70%)`;
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isFullGlass) return;
+    const el = itemRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const relY = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const dx = relX - centerX;
+    const dy = relY - centerY;
+
+    mouseX.set(relX);
+    mouseY.set(relY);
+
+    // Микро-магнитное смещение: строго ограничено не более +/- 2px по X и +/- 1.5px по Y
+    rawX.set(Math.max(-2, Math.min(2, dx * 0.05)));
+    rawY.set(Math.max(-1.5, Math.min(1.5, dy * 0.05)));
+
+    // Нежная упругость: не более 0.6% растяжения
+    const distNorm = Math.min(1, Math.hypot(dx, dy) / Math.max(centerX, centerY));
+    rawScaleX.set(1 + distNorm * 0.006);
+    rawScaleY.set(1 - distNorm * 0.004);
+  };
+
+  const handleMouseLeave = () => {
+    if (!isFullGlass) return;
+    rawX.set(0);
+    rawY.set(0);
+    rawScaleX.set(1);
+    rawScaleY.set(1);
+    mouseX.set(-100);
+    mouseY.set(-100);
+  };
 
   const itemClassName = cn(
-    'w-full text-left font-medium hover:shadow cursor-pointer rounded-3xl duration-150 p-2 text-white flex items-center gap-2 border hover:border-zinc-600/30',
-    isActive ? 'bg-zinc-700/80 border-zinc-600/30' : 'bg-zinc-700/0 hover:bg-zinc-700/95 border-transparent',
+    'relative overflow-hidden w-full text-left font-medium hover:shadow cursor-pointer rounded-3xl p-2 text-white flex items-center gap-2 border duration-150',
+    isActive ? 'bg-zinc-700/80 border-zinc-600/30' : 'bg-zinc-700/0 hover:bg-zinc-700/80 border-transparent hover:border-zinc-500/20 active:scale-95',
     className,
   );
 
@@ -308,16 +438,23 @@ export const DropdownItem = ({
 
   const content = (
     <>
-      <div className="relative inline-flex items-center shrink-0">
+      {/* Specular sheen inside item (только в режиме "Полное") */}
+      {isFullGlass && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-0 rounded-3xl opacity-75"
+          style={{ background: itemSheen }}
+        />
+      )}
+      <div className="relative inline-flex items-center shrink-0 z-10">
         {iconNode ?? (
           <svg className={cn('inline w-6 h-6', !hasCustomFill && 'fill-white', iconClassName)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
             <use href={`#${icon}`}></use>
           </svg>
         )}
       </div>
-      <span className="flex-grow truncate">{children}</span>
+      <span className="flex-grow truncate z-10">{children}</span>
       {Boolean(badgeCount && badgeCount > 0) && (
-        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full shrink-0">
+        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full shrink-0 z-10">
           {badgeCount! > 99 ? '99+' : badgeCount}
         </span>
       )}
@@ -326,16 +463,52 @@ export const DropdownItem = ({
 
   if (href) {
     return (
-      <Link href={href} className={itemClassName} onClick={onClick}>
-        {content}
-      </Link>
+      <motion.div
+        ref={itemRef}
+        onMouseMove={isFullGlass ? handleMouseMove : undefined}
+        onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+        whileTap={isFullGlass ? { scale: 0.97, scaleX: 1.01, scaleY: 0.97 } : undefined}
+        style={
+          isFullGlass
+            ? {
+                x: springX,
+                y: springY,
+                scaleX: springScaleX,
+                scaleY: springScaleY,
+              }
+            : undefined
+        }
+        className="w-full"
+      >
+        <Link href={href} className={itemClassName} onClick={onClick}>
+          {content}
+        </Link>
+      </motion.div>
     );
   }
 
   return (
-    <button type="button" onClick={onClick} className={itemClassName}>
-      {content}
-    </button>
+    <motion.div
+      ref={itemRef}
+      onMouseMove={isFullGlass ? handleMouseMove : undefined}
+      onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+      whileTap={isFullGlass ? { scale: 0.97, scaleX: 1.01, scaleY: 0.97 } : undefined}
+      style={
+        isFullGlass
+          ? {
+              x: springX,
+              y: springY,
+              scaleX: springScaleX,
+              scaleY: springScaleY,
+            }
+          : undefined
+      }
+      className="w-full"
+    >
+      <button type="button" onClick={onClick} className={itemClassName}>
+        {content}
+      </button>
+    </motion.div>
   );
 };
 

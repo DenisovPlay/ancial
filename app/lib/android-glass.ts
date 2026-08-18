@@ -46,6 +46,21 @@ function setProfileClass(
   if (!enabled && isEnabled) classList.remove?.(className);
 }
 
+export function subscribeGlassMode(onStoreChange: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === GLASS_MODE_STORAGE_KEY) onStoreChange();
+  };
+  window.addEventListener('storage', handleStorage);
+  window.addEventListener(GLASS_MODE_CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener('storage', handleStorage);
+    window.removeEventListener(GLASS_MODE_CHANGE_EVENT, onStoreChange);
+  };
+}
+
+export const getServerGlassMode = (): GlassMode => 'auto';
+
 export function applyGlassProfile(
   mode: GlassMode,
   navigatorValue: AndroidGlassNavigator = navigator,
@@ -84,4 +99,5 @@ export function applyGlassProfile(
 
   return true;
 }
+
 
