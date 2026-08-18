@@ -136,6 +136,8 @@ const NavItem = ({
         ref={itemRef}
         onMouseMove={isFullGlass ? handleMouseMove : undefined}
         onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+        onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
+        onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
         whileTap={isFullGlass ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
         style={
           isFullGlass
@@ -160,6 +162,8 @@ const NavItem = ({
       ref={itemRef}
       onMouseMove={isFullGlass ? handleMouseMove : undefined}
       onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+      onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
+      onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
       whileTap={isFullGlass ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
       style={
         isFullGlass
@@ -388,6 +392,8 @@ export const Dropdown = ({
             ref={menuContainerRef}
             onMouseMove={isFullGlass ? handleMouseMove : undefined}
             onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+            onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
+            onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
             initial={{ opacity: 0, scale: 0.94, filter: isFullGlass ? 'blur(4px)' : 'none' }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, scale: 0.94, filter: isFullGlass ? 'blur(4px)' : 'none' }}
@@ -568,6 +574,8 @@ export const DropdownItem = ({
         ref={itemRef}
         onMouseMove={isFullGlass ? handleMouseMove : undefined}
         onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+        onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
+        onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
         whileTap={isFullGlass ? { scale: 0.97, scaleX: 1.01, scaleY: 0.97 } : undefined}
         style={
           isFullGlass
@@ -593,6 +601,8 @@ export const DropdownItem = ({
       ref={itemRef}
       onMouseMove={isFullGlass ? handleMouseMove : undefined}
       onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+      onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
+      onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
       whileTap={isFullGlass ? { scale: 0.97, scaleX: 1.01, scaleY: 0.97 } : undefined}
       style={
         isFullGlass
@@ -757,6 +767,8 @@ export default function Navigation() {
           ref={desktopDockRef}
           onMouseMove={isFullGlass ? handleDesktopMouseMove : undefined}
           onMouseLeave={isFullGlass ? handleDesktopMouseLeave : undefined}
+          onTouchEnd={isFullGlass ? handleDesktopMouseLeave : undefined}
+          onTouchCancel={isFullGlass ? handleDesktopMouseLeave : undefined}
           layoutRoot
           layout
           data-app-nav="desktop"
@@ -855,6 +867,8 @@ export default function Navigation() {
             ref={mobilePillRef}
             onMouseMove={isFullGlass ? handleMobileMouseMove : undefined}
             onMouseLeave={isFullGlass ? handleMobileMouseLeave : undefined}
+            onTouchEnd={isFullGlass ? handleMobileMouseLeave : undefined}
+            onTouchCancel={isFullGlass ? handleMobileMouseLeave : undefined}
             data-app-nav="mobile-pill"
             layoutRoot
             layout
@@ -927,6 +941,8 @@ export default function Navigation() {
             ref={mobileRightPillRef}
             onMouseMove={isFullGlass ? handleMobileRightMouseMove : undefined}
             onMouseLeave={isFullGlass ? handleMobileRightMouseLeave : undefined}
+            onTouchEnd={isFullGlass ? handleMobileRightMouseLeave : undefined}
+            onTouchCancel={isFullGlass ? handleMobileRightMouseLeave : undefined}
             data-app-nav="mobile-pill"
             layoutRoot
             layout

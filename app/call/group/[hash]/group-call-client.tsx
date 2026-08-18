@@ -130,6 +130,8 @@ function CallControlButton({
       ref={itemRef}
       onMouseMove={isFullGlass ? handleMouseMove : undefined}
       onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+      onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
+      onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
       whileTap={isFullGlass && !disabled ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
       style={
         isFullGlass
@@ -441,6 +443,8 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
           data-app-nav="call-pill"
           onMouseMove={isFullGlass ? handlePillMouseMove : undefined}
           onMouseLeave={isFullGlass ? handlePillMouseLeave : undefined}
+          onTouchEnd={isFullGlass ? handlePillMouseLeave : undefined}
+          onTouchCancel={isFullGlass ? handlePillMouseLeave : undefined}
           className={`flex items-center gap-1 p-1 rounded-full h-fit relative shadow-2xl overflow-visible border ${
             isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
           }`}

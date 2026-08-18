@@ -775,6 +775,19 @@ body:has(.apps-overlay-route) #main-content {
   transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1), visibility 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Предотвращение «залипания» hover-эффектов при клике/тапе на сенсорных экранах (iOS/Android) */
+@media (hover: none) and (pointer: coarse) {
+  nav .hover\:bg-zinc-700\/95:not(:active),
+  nav .hover\:border-zinc-600\/30:not(:active),
+  [data-dropdown-menu] .hover\:bg-zinc-700\/80:not(:active),
+  [data-dropdown-menu] .hover\:border-zinc-500\/20:not(:active),
+  [data-app-nav="call-pill"] .hover\:bg-zinc-700\/95:not(:active),
+  [data-app-nav="call-pill"] .hover\:border-zinc-600\/30:not(:active) {
+    background-color: transparent !important;
+    border-color: transparent !important;
+  }
+}
+
 @media (hover: none),
 (max-width: 768px) {
   .carousel-count-badge.is-preview {

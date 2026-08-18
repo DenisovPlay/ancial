@@ -1,6 +1,6 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-// v12: unify glass off navigation colors and rotate static cache
-const SW_VERSION = '12';
+// v13: touch handlers on navigation/dropdown items to prevent stuck state on mobile
+const SW_VERSION = '13';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
