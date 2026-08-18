@@ -49,11 +49,16 @@ const NavItem = ({
   const rawScaleY = useMotionValue(1);
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
+  // Press animation values (replaces whileTap — whileTap gets stuck on iOS Safari)
+  const pressScaleX = useMotionValue(1);
+  const pressScaleY = useMotionValue(1);
 
   const springX = useSpring(rawX, { stiffness: 420, damping: 22 });
   const springY = useSpring(rawY, { stiffness: 420, damping: 22 });
   const springScaleX = useSpring(rawScaleX, { stiffness: 440, damping: 24 });
   const springScaleY = useSpring(rawScaleY, { stiffness: 440, damping: 24 });
+  const springPressScaleX = useSpring(pressScaleX, { stiffness: 500, damping: 30 });
+  const springPressScaleY = useSpring(pressScaleY, { stiffness: 500, damping: 30 });
 
   const itemSheen = useMotionTemplate`radial-gradient(45px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.20), transparent 70%)`;
 
@@ -88,6 +93,18 @@ const NavItem = ({
     rawScaleY.set(1);
     mouseX.set(-100);
     mouseY.set(-100);
+  };
+
+  const handlePressStart = () => {
+    if (!isFullGlass) return;
+    pressScaleX.set(1.05);
+    pressScaleY.set(0.90);
+  };
+
+  const handlePressEnd = () => {
+    if (!isFullGlass) return;
+    pressScaleX.set(1);
+    pressScaleY.set(1);
   };
 
   const className = `relative overflow-hidden w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 ${active
@@ -138,14 +155,17 @@ const NavItem = ({
         onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
         onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
         onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-        whileTap={isFullGlass ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
+        onPointerDown={isFullGlass ? handlePressStart : undefined}
+        onPointerUp={isFullGlass ? handlePressEnd : undefined}
+        onPointerCancel={isFullGlass ? handlePressEnd : undefined}
+        onPointerLeave={isFullGlass ? handlePressEnd : undefined}
         style={
           isFullGlass
             ? {
                 x: springX,
                 y: springY,
-                scaleX: springScaleX,
-                scaleY: springScaleY,
+                scaleX: springPressScaleX,
+                scaleY: springPressScaleY,
               }
             : undefined
         }
@@ -164,14 +184,17 @@ const NavItem = ({
       onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
       onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
       onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-      whileTap={isFullGlass ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
+      onPointerDown={isFullGlass ? handlePressStart : undefined}
+      onPointerUp={isFullGlass ? handlePressEnd : undefined}
+      onPointerCancel={isFullGlass ? handlePressEnd : undefined}
+      onPointerLeave={isFullGlass ? handlePressEnd : undefined}
       style={
         isFullGlass
           ? {
               x: springX,
               y: springY,
-              scaleX: springScaleX,
-              scaleY: springScaleY,
+              scaleX: springPressScaleX,
+              scaleY: springPressScaleY,
             }
           : undefined
       }
@@ -497,6 +520,11 @@ export const DropdownItem = ({
   const springY = useSpring(rawY, { stiffness: 400, damping: 24 });
   const springScaleX = useSpring(rawScaleX, { stiffness: 420, damping: 25 });
   const springScaleY = useSpring(rawScaleY, { stiffness: 420, damping: 25 });
+  // Press animation (replaces whileTap — whileTap gets stuck on iOS Safari)
+  const pressScaleX = useMotionValue(1);
+  const pressScaleY = useMotionValue(1);
+  const springPressScaleX = useSpring(pressScaleX, { stiffness: 500, damping: 30 });
+  const springPressScaleY = useSpring(pressScaleY, { stiffness: 500, damping: 30 });
 
   const itemSheen = useMotionTemplate`radial-gradient(60px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.12), transparent 70%)`;
 
@@ -533,6 +561,18 @@ export const DropdownItem = ({
     rawScaleY.set(1);
     mouseX.set(-100);
     mouseY.set(-100);
+  };
+
+  const handlePressStart = () => {
+    if (!isFullGlass) return;
+    pressScaleX.set(1.01);
+    pressScaleY.set(0.97);
+  };
+
+  const handlePressEnd = () => {
+    if (!isFullGlass) return;
+    pressScaleX.set(1);
+    pressScaleY.set(1);
   };
 
   const itemClassName = cn(
@@ -576,14 +616,17 @@ export const DropdownItem = ({
         onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
         onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
         onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-        whileTap={isFullGlass ? { scale: 0.97, scaleX: 1.01, scaleY: 0.97 } : undefined}
+        onPointerDown={isFullGlass ? handlePressStart : undefined}
+        onPointerUp={isFullGlass ? handlePressEnd : undefined}
+        onPointerCancel={isFullGlass ? handlePressEnd : undefined}
+        onPointerLeave={isFullGlass ? handlePressEnd : undefined}
         style={
           isFullGlass
             ? {
                 x: springX,
                 y: springY,
-                scaleX: springScaleX,
-                scaleY: springScaleY,
+                scaleX: springPressScaleX,
+                scaleY: springPressScaleY,
               }
             : undefined
         }
@@ -603,14 +646,17 @@ export const DropdownItem = ({
       onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
       onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
       onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-      whileTap={isFullGlass ? { scale: 0.97, scaleX: 1.01, scaleY: 0.97 } : undefined}
+      onPointerDown={isFullGlass ? handlePressStart : undefined}
+      onPointerUp={isFullGlass ? handlePressEnd : undefined}
+      onPointerCancel={isFullGlass ? handlePressEnd : undefined}
+      onPointerLeave={isFullGlass ? handlePressEnd : undefined}
       style={
         isFullGlass
           ? {
               x: springX,
               y: springY,
-              scaleX: springScaleX,
-              scaleY: springScaleY,
+              scaleX: springPressScaleX,
+              scaleY: springPressScaleY,
             }
           : undefined
       }

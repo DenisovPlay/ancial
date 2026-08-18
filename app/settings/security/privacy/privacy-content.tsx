@@ -204,8 +204,8 @@ export default function PrivacySecurityContent() {
             ['call_visibility', lang?.presence_call_visibility || 'Участие в звонках'],
             ['allow_call_join', lang?.presence_call_join_visibility || 'Кто может подключаться к звонкам'],
           ] as Array<[keyof PresencePrivacy, string]>).map(([key, label]) => (
-            <label key={key} className="flex flex-col gap-1.5 text-zinc-300 sm:flex-row sm:items-center sm:justify-between">
-              <span>{label}</span>
+            <label key={key} className="flex gap-1.5 text-zinc-300 items-center justify-between">
+              <span className="flex-grow">{label}</span>
               <select
                 value={presencePrivacy[key]}
                 onChange={(event) =>

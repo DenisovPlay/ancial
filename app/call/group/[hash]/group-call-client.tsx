@@ -82,11 +82,16 @@ function CallControlButton({
   const rawScaleY = useMotionValue(1);
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
+  // Press animation (replaces whileTap — whileTap gets stuck on iOS Safari)
+  const pressScaleX = useMotionValue(1);
+  const pressScaleY = useMotionValue(1);
 
   const springX = useSpring(rawX, { stiffness: 420, damping: 22 });
   const springY = useSpring(rawY, { stiffness: 420, damping: 22 });
   const springScaleX = useSpring(rawScaleX, { stiffness: 440, damping: 24 });
   const springScaleY = useSpring(rawScaleY, { stiffness: 440, damping: 24 });
+  const springPressScaleX = useSpring(pressScaleX, { stiffness: 500, damping: 30 });
+  const springPressScaleY = useSpring(pressScaleY, { stiffness: 500, damping: 30 });
 
   const itemSheen = useMotionTemplate`radial-gradient(45px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.20), transparent 70%)`;
 
@@ -123,6 +128,18 @@ function CallControlButton({
     mouseY.set(-100);
   };
 
+  const handlePressStart = () => {
+    if (!isFullGlass || disabled) return;
+    pressScaleX.set(1.05);
+    pressScaleY.set(0.90);
+  };
+
+  const handlePressEnd = () => {
+    if (!isFullGlass) return;
+    pressScaleX.set(1);
+    pressScaleY.set(1);
+  };
+
   const baseClassName = `relative overflow-hidden ${className || 'flex'} h-14 w-14 cursor-pointer items-center justify-center rounded-full border transition-[color,background-color,border-color,transform,opacity] duration-300 ${disabled ? 'cursor-not-allowed text-zinc-500 opacity-40' : ''} ${danger ? 'border-red-500/30 bg-red-600/90 text-white hover:bg-red-500 shadow' : active ? 'border-purple-500/30 bg-purple-600/90 text-white hover:bg-purple-500 shadow' : off ? 'border-transparent text-red-500 hover:border-red-600/30 hover:bg-red-950/50' : 'border-transparent text-zinc-200 hover:border-zinc-600/30 hover:bg-zinc-700/95'} ${!isFullGlass ? 'active:scale-95' : ''}`;
 
   return (
@@ -132,14 +149,17 @@ function CallControlButton({
       onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
       onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
       onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-      whileTap={isFullGlass && !disabled ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
+      onPointerDown={isFullGlass ? handlePressStart : undefined}
+      onPointerUp={isFullGlass ? handlePressEnd : undefined}
+      onPointerCancel={isFullGlass ? handlePressEnd : undefined}
+      onPointerLeave={isFullGlass ? handlePressEnd : undefined}
       style={
         isFullGlass
           ? {
               x: springX,
               y: springY,
-              scaleX: springScaleX,
-              scaleY: springScaleY,
+              scaleX: springPressScaleX,
+              scaleY: springPressScaleY,
             }
           : undefined
       }
