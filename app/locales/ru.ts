@@ -1633,5 +1633,14 @@ export const ru: Record<string, string> = {
     "glass_mode_off_desc": "Размытие выключено для наилучшей производительности.",
     "interface_settings": "Интерфейс",
     "interface_settings_desc": "Настройки интерфейса — выберите язык и эффекты стекла.",
-    "currently_active": "сейчас"
+    "currently_active": "сейчас",
+    "change_password": "Смена пароля",
+    "change_password_desc": "Придумайте надежный пароль длиной не менее 6 символов.",
+    "passwords_dont_match": "Пароли не совпадают",
+    "showinsearch_desc": "Разрешить другим пользователям находить ваш профиль в поиске.",
+    "openmessages_desc": "Разрешить писать вам тем, кто не добавлен в друзья.",
+    "presence_privacy_desc": "Настройте, кто видит ваш статус, страницу и действия.",
+    "privacy_everyone": "Все",
+    "privacy_friends": "Друзья",
+    "privacy_nobody": "Никто"
 };

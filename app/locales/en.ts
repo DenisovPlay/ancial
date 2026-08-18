@@ -1633,5 +1633,14 @@ export const en: Record<string, string> = {
   "glass_mode_off_desc": "Blur is turned off for maximum performance.",
   "interface_settings": "Interface",
   "interface_settings_desc": "Interface settings — choose language and glass effects.",
-  "currently_active": "currently"
+  "currently_active": "currently",
+  "change_password": "Change password",
+  "change_password_desc": "Create a strong password with at least 6 characters.",
+  "passwords_dont_match": "Passwords do not match",
+  "showinsearch_desc": "Allow other users to find your profile in search.",
+  "openmessages_desc": "Allow users who are not friends to message you.",
+  "presence_privacy_desc": "Configure who can see your status, page, and actions.",
+  "privacy_everyone": "Everyone",
+  "privacy_friends": "Friends",
+  "privacy_nobody": "Nobody"
 };

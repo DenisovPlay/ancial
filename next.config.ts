@@ -70,6 +70,16 @@ const nextConfig: NextConfig = {
         destination: '/about/legal',
         permanent: true, // or false if it's temporary
       },
+      {
+        source: '/security',
+        destination: '/settings/security',
+        permanent: true,
+      },
+      {
+        source: '/security/:path*',
+        destination: '/settings/security/:path*',
+        permanent: true,
+      },
     ];
   },
   async rewrites() {
