@@ -1,15 +1,140 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { AncialAPI } from '../../lib/api-v2';
 import Modal from '../../components/modal';
 import { Dropdown, DropdownItem } from '../../components/navigation';
+import { subscribeGlassMode, readGlassMode, getServerGlassMode } from '../../lib/android-glass';
+import { motion, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 
 interface CameraDevice {
   deviceId: string;
   label: string;
+}
+
+function CallControlButton({
+  onClick,
+  active = false,
+  off = false,
+  danger = false,
+  disabled = false,
+  className = '',
+  label,
+  title,
+  children,
+}: {
+  onClick?: () => void;
+  active?: boolean;
+  off?: boolean;
+  danger?: boolean;
+  disabled?: boolean;
+  className?: string;
+  label?: string;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
+  const isFullGlass = glassMode === 'full';
+
+  const itemRef = useRef<HTMLDivElement | null>(null);
+  const rawX = useMotionValue(0);
+  const rawY = useMotionValue(0);
+  const rawScaleX = useMotionValue(1);
+  const rawScaleY = useMotionValue(1);
+  const mouseX = useMotionValue(-100);
+  const mouseY = useMotionValue(-100);
+
+  const springX = useSpring(rawX, { stiffness: 420, damping: 22 });
+  const springY = useSpring(rawY, { stiffness: 420, damping: 22 });
+  const springScaleX = useSpring(rawScaleX, { stiffness: 440, damping: 24 });
+  const springScaleY = useSpring(rawScaleY, { stiffness: 440, damping: 24 });
+
+  const itemSheen = useMotionTemplate`radial-gradient(45px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.20), transparent 70%)`;
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isFullGlass || disabled) return;
+    const el = itemRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const relY = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const dx = relX - centerX;
+    const dy = relY - centerY;
+
+    mouseX.set(relX);
+    mouseY.set(relY);
+
+    rawX.set(Math.max(-2.5, Math.min(2.5, dx * 0.08)));
+    rawY.set(Math.max(-2.5, Math.min(2.5, dy * 0.08)));
+
+    const distNorm = Math.min(1, Math.hypot(dx, dy) / Math.max(centerX, centerY));
+    rawScaleX.set(1 + distNorm * 0.015);
+    rawScaleY.set(1 - distNorm * 0.012);
+  };
+
+  const handleMouseLeave = () => {
+    if (!isFullGlass) return;
+    rawX.set(0);
+    rawY.set(0);
+    rawScaleX.set(1);
+    rawScaleY.set(1);
+    mouseX.set(-100);
+    mouseY.set(-100);
+  };
+
+  const baseClassName = `relative overflow-hidden w-14 h-14 rounded-full cursor-pointer flex items-center justify-center border duration-300 ${
+    disabled ? 'cursor-not-allowed opacity-40 text-zinc-500' : ''
+  } ${
+    danger
+      ? 'bg-red-600/90 text-white hover:bg-red-500 border-red-500/30 shadow'
+      : active
+        ? 'bg-purple-600/90 text-white hover:bg-purple-500 border-purple-500/30 shadow'
+        : off
+          ? 'text-red-500 hover:bg-red-950/50 border-transparent hover:border-red-600/30'
+          : 'text-zinc-200 hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30'
+  } ${!isFullGlass ? 'active:scale-95' : ''} ${className}`;
+
+  return (
+    <motion.div
+      ref={itemRef}
+      onMouseMove={isFullGlass ? handleMouseMove : undefined}
+      onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+      whileTap={isFullGlass && !disabled ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
+      style={
+        isFullGlass
+          ? {
+              x: springX,
+              y: springY,
+              scaleX: springScaleX,
+              scaleY: springScaleY,
+            }
+          : undefined
+      }
+    >
+      <button
+        type="button"
+        aria-label={label}
+        title={title || label}
+        disabled={disabled}
+        onClick={onClick}
+        className={baseClassName}
+      >
+        {isFullGlass && (
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
+            style={{ background: itemSheen }}
+          />
+        )}
+        <div className="relative z-10 flex items-center justify-center">
+          {children}
+        </div>
+      </button>
+    </motion.div>
+  );
 }
 
 export default function CallClient() {
@@ -36,6 +161,28 @@ export default function CallClient() {
   const [camDropdownOpen, setCamDropdownOpen] = useState(false);
   const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
+
+  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
+  const isFullGlass = glassMode === 'full';
+  const isGlassOff = glassMode === 'off';
+
+  const pillRef = useRef<HTMLDivElement>(null);
+  const pillMouseX = useMotionValue(-200);
+  const pillMouseY = useMotionValue(-200);
+  const pillSheen = useMotionTemplate`radial-gradient(130px circle at ${pillMouseX}px ${pillMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
+
+  const handlePillMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isFullGlass || !pillRef.current) return;
+    const rect = pillRef.current.getBoundingClientRect();
+    pillMouseX.set(e.clientX - rect.left);
+    pillMouseY.set(e.clientY - rect.top);
+  };
+
+  const handlePillMouseLeave = () => {
+    if (!isFullGlass) return;
+    pillMouseX.set(-200);
+    pillMouseY.set(-200);
+  };
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -284,6 +431,7 @@ export default function CallClient() {
           sendWsSignal({ kind: 'answer', sdp: pc.localDescription?.sdp });
         } else if (msg.kind === 'answer') {
           if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
+          if (pc.signalingState !== 'have-local-offer') return;
           await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
         } else if (msg.kind === 'candidate' || msg.kind === 'ice') {
           if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
@@ -337,6 +485,11 @@ export default function CallClient() {
       toggleCam();
       return;
     }
+    // Камера включена: если дропдаун уже открыт — закрываем
+    if (camDropdownOpen) {
+      setCamDropdownOpen(false);
+      return;
+    }
     // Камера включена — подгружаем список камер
     let cameras: CameraDevice[] = [];
     try {
@@ -360,7 +513,7 @@ export default function CallClient() {
     }
 
     setAvailableCameras(cameras);
-    setCamDropdownOpen(prev => !prev);
+    setCamDropdownOpen(true);
   };
 
   const switchCamera = async (deviceId: string) => {
@@ -676,112 +829,132 @@ export default function CallClient() {
 
 
         {/* Панель управления */}
-        <div className="absolute inset-x-0 bottom-3">
+        <div className="absolute inset-x-0 bottom-3 z-40">
           <div className="max-w-screen-lg mx-auto flex items-center justify-center">
-            <div className="flex items-center gap-1 p-1 bg-zinc-900/20 border border-zinc-600/30 rounded-full h-fit relative backdrop-blur-md backdrop-saturate-200">
+            <motion.div
+              ref={pillRef}
+              data-app-nav="call-pill"
+              onMouseMove={isFullGlass ? handlePillMouseMove : undefined}
+              onMouseLeave={isFullGlass ? handlePillMouseLeave : undefined}
+              className={`flex items-center gap-1 p-1 rounded-full h-fit relative shadow-2xl overflow-visible border ${
+                isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+              }`}
+            >
+              {!isGlassOff && (
+                <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+              )}
+              {isFullGlass && (
+                <motion.div
+                  className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
+                  style={{ background: pillSheen }}
+                />
+              )}
 
               {/* Микрофон */}
-              <div
+              <CallControlButton
                 onClick={toggleMic}
-                className={`border-zinc-600/30 w-14 h-14 rounded-full ${micEnabled ? 'text-zinc-200' : 'text-red-500'} hover:bg-zinc-700/95 hover:text-content-100 cursor-pointer active:scale-95 flex items-center justify-center duration-300`}
+                off={!micEnabled}
+                label={micEnabled ? (lang?.voice_mic_on || 'Микрофон включён') : (lang?.voice_mic_off || 'Микрофон выключен')}
               >
                 {micEnabled ? (
                   <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 2 C 19.047281 2 15 6.0472805 15 11 L 15 26 C 15 30.952719 19.047281 35 24 35 C 28.952719 35 33 30.952719 33 26 L 33 11 C 33 6.0472805 28.952719 2 24 2 z M 24 5 C 27.331281 5 30 7.6687195 30 11 L 30 26 C 30 29.331281 27.331281 32 24 32 C 20.668719 32 18 29.331281 18 26 L 18 11 C 18 7.6687195 20.668719 5 24 5 z M 10.476562 20.978516 A 1.50015 1.50015 0 0 0 9 22.5 L 9 26 C 9 33.760508 14.934038 40.16812 22.5 40.923828 L 22.5 45.5 A 1.50015 1.50015 0 1 0 25.5 45.5 L 25.5 40.923828 C 33.065962 40.16812 39 33.760508 39 26 L 39 22.5 A 1.50015 1.50015 0 1 0 36 22.5 L 36 26 C 36 32.585372 30.739679 37.894735 24.177734 37.990234 A 1.50015 1.50015 0 0 0 23.976562 37.978516 A 1.50015 1.50015 0 0 0 23.8125 37.990234 C 17.255134 37.889572 12 32.582085 12 26 L 12 22.5 A 1.50015 1.50015 0 0 0 10.476562 20.978516 z"/></svg>
                 ) : (
                   <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 2 C 19.047281 2 15 6.0472805 15 11 L 15 26 C 15 30.952719 19.047281 35 24 35 C 28.952719 35 33 30.952719 33 26 L 33 11 C 33 6.0472805 28.952719 2 24 2 M 10.476562 20.978516 A 1.50015 1.50015 0 0 0 9 22.5 L 9 26 C 9 33.760508 14.934038 40.16812 22.5 40.923828 L 22.5 45.5 A 1.50015 1.50015 0 1 0 25.5 45.5 L 25.5 40.923828 C 33.065962 40.16812 39 33.760508 39 26 L 39 22.5 A 1.50015 1.50015 0 1 0 36 22.5 L 36 26 C 36 32.585372 30.739679 37.894735 24.177734 37.990234 A 1.50015 1.50015 0 0 0 23.976562 37.978516 A 1.50015 1.50015 0 0 0 23.8125 37.990234 C 17.255134 37.889572 12 32.582085 12 26 L 12 22.5 A 1.50015 1.50015 0 0 0 10.476562 20.978516 M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/></svg>
                 )}
-              </div>
+              </CallControlButton>
 
-              {/* Камера: одна кнопка + дропдаун, оба в одном relative-контейнере */}
-              <div className="relative w-14 h-14">
-
-                {/* Dropdown якорится к этому w-14 h-14 контейнеру */}
-                <Dropdown
-                  renderTrigger={false}
-                  open={camDropdownOpen}
-                  onOpenChange={setCamDropdownOpen}
-                  position="top"
-                  align="center"
-                  width="auto"
-                  closeOnChildClick={true}
-                  wrapperClassName="absolute inset-0"
-                >
-                  {availableCameras.map((cam) => (
-                    <DropdownItem
-                      key={cam.deviceId}
-                      onClick={() => switchCamera(cam.deviceId)}
-                      iconNode={
-                        selectedCameraId === cam.deviceId ? (
-                          <svg className="inline w-6 h-6 fill-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                            <path d="M 40.980469 8.9902344 A 2.0002 2.0002 0 0 0 39.585938 9.5859375 L 19 30.171875 L 8.4140625 19.585938 A 2.0002 2.0002 0 1 0 5.5859375 22.414062 L 17.585938 34.414062 A 2.0002 2.0002 0 0 0 20.414062 34.414062 L 42.414062 12.414062 A 2.0002 2.0002 0 0 0 40.980469 8.9902344 z"/>
-                          </svg>
-                        ) : (
-                          <svg className="inline w-6 h-6 fill-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                            <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z"/>
-                          </svg>
-                        )
-                      }
-                      className={selectedCameraId === cam.deviceId ? 'text-purple-300' : ''}
-                    >
-                      {cam.label}
-                    </DropdownItem>
-                  ))}
-
-                  <DropdownItem
-                    onClick={disableCamFromDropdown}
-                    iconNode={
-                      <svg className="inline w-6 h-6 fill-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                        <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/>
-                      </svg>
-                    }
-                    className="text-red-400"
+              {/* Камера: кнопка с выпадающим меню */}
+              <Dropdown
+                customTrigger={
+                  <CallControlButton
+                    onClick={handleCamButtonClick}
+                    label={camEnabled && !isScreenSharing ? (lang?.voice_camera_on || 'Камера включена') : (lang?.voice_camera_off || 'Камера выключена')}
+                    off={!camEnabled || isScreenSharing}
+                    active={Boolean(camEnabled && !isScreenSharing && camDropdownOpen)}
+                    disabled={isScreenSharing}
+                    className="relative z-10"
                   >
-                    {lang?.camera_off || 'Выключить камеру'}
+                    {camEnabled && !isScreenSharing ? (
+                      <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z"/></svg>
+                    ) : (
+                      <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/></svg>
+                    )}
+                  </CallControlButton>
+                }
+                renderTrigger={false}
+                open={camDropdownOpen}
+                onOpenChange={setCamDropdownOpen}
+                position="top"
+                align="center"
+                width="auto"
+                closeOnChildClick={true}
+                wrapperClassName="relative w-14 h-14"
+              >
+                {availableCameras.map((cam) => (
+                  <DropdownItem
+                    key={cam.deviceId}
+                    onClick={() => switchCamera(cam.deviceId)}
+                    iconNode={
+                      selectedCameraId === cam.deviceId ? (
+                        <svg className="inline w-6 h-6 fill-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                          <path d="M 40.980469 8.9902344 A 2.0002 2.0002 0 0 0 39.585938 9.5859375 L 19 30.171875 L 8.4140625 19.585938 A 2.0002 2.0002 0 1 0 5.5859375 22.414062 L 17.585938 34.414062 A 2.0002 2.0002 0 0 0 20.414062 34.414062 L 42.414062 12.414062 A 2.0002 2.0002 0 0 0 40.980469 8.9902344 z"/>
+                        </svg>
+                      ) : (
+                        <svg className="inline w-6 h-6 fill-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                          <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z"/>
+                        </svg>
+                      )
+                    }
+                    className={selectedCameraId === cam.deviceId ? 'text-purple-300' : ''}
+                  >
+                    {cam.label}
                   </DropdownItem>
-                </Dropdown>
+                ))}
 
-                {/* Кнопка камеры поверх — z-index выше чем invisible меню */}
-                <div
-                  onClick={handleCamButtonClick}
-                  className={`relative z-10 w-14 h-14 rounded-full cursor-pointer active:scale-95 flex items-center justify-center duration-300 hover:bg-zinc-700/95 ${
-                    camEnabled && !isScreenSharing
-                      ? camDropdownOpen ? 'text-white bg-zinc-700/60' : 'text-zinc-200'
-                      : isScreenSharing ? 'text-zinc-500'
-                      : 'text-red-500'
-                  }`}
+                <DropdownItem
+                  onClick={disableCamFromDropdown}
+                  iconNode={
+                    <svg className="inline w-6 h-6 fill-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                      <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/>
+                    </svg>
+                  }
+                  className="text-red-400"
                 >
-                  {camEnabled && !isScreenSharing ? (
-                    <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z"/></svg>
-                  ) : (
-                    <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/></svg>
-                  )}
-                </div>
-
-              </div>
+                  {lang?.camera_off || 'Выключить камеру'}
+                </DropdownItem>
+              </Dropdown>
 
               {/* Демонстрация экрана */}
-              <button
-                type="button"
-                data-screen-share-control
+              <CallControlButton
                 onClick={toggleScreenShare}
-                aria-label={isScreenSharing ? (lang?.stop_screen_share || 'Остановить') : (lang?.screen_share || 'Демонстрация экрана')}
+                active={isScreenSharing}
+                label={isScreenSharing ? (lang?.stop_screen_share || 'Остановить') : (lang?.screen_share || 'Демонстрация экрана')}
                 title={isScreenSharing ? (lang?.stop_screen_share || 'Остановить') : (lang?.screen_share || 'Демонстрация экрана')}
-                className={`hidden border-zinc-600/30 w-14 h-14 rounded-full ${isScreenSharing ? 'text-purple-400' : 'text-zinc-200'} hover:bg-zinc-700/95 cursor-pointer active:scale-95 md:flex items-center justify-center duration-300`}
+                className="hidden md:flex"
               >
                 {isScreenSharing ? (
-                  /* Иконка «остановить демонстрацию» */
                   <svg className="h-7 w-7 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                     <path d="M 7 8 C 4.7940678 8 3 9.7940678 3 12 L 3 33 C 3 35.205932 4.7940678 37 7 37 L 20 37 L 20 41 L 14 41 A 1.50015 1.50015 0 1 0 14 44 L 34 44 A 1.50015 1.50015 0 1 0 34 41 L 28 41 L 28 37 L 41 37 C 43.205932 37 45 35.205932 45 33 L 45 12 C 45 9.7940678 43.205932 8 41 8 L 7 8 z M 7 11 L 41 11 C 41.551068 11 42 11.448932 42 12 L 42 33 C 42 33.551068 41.551068 34 41 34 L 7 34 C 6.4489322 34 6 33.551068 6 33 L 6 12 C 6 11.448932 6.4489322 11 7 11 z M 20 18 L 20 28 L 28 23 L 20 18 z M 23 41 L 25 41 L 25 44 L 23 44 L 23 41 z"/>
                   </svg>
                 ) : (
-                  /* Иконка «начать демонстрацию» */
                   <svg className="h-7 w-7 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                     <path d="M 7 8 C 4.7940678 8 3 9.7940678 3 12 L 3 33 C 3 35.205932 4.7940678 37 7 37 L 20 37 L 20 41 L 14 41 A 1.50015 1.50015 0 1 0 14 44 L 34 44 A 1.50015 1.50015 0 1 0 34 41 L 28 41 L 28 37 L 41 37 C 43.205932 37 45 35.205932 45 33 L 45 12 C 45 9.7940678 43.205932 8 41 8 L 7 8 z M 7 11 L 41 11 C 41.551068 11 42 11.448932 42 12 L 42 33 C 42 33.551068 41.551068 34 41 34 L 7 34 C 6.4489322 34 6 33.551068 6 33 L 6 12 C 6 11.448932 6.4489322 11 7 11 z M 23 41 L 25 41 L 25 44 L 23 44 L 23 41 z M 24 16 L 18 22 L 22 22 L 22 31 L 26 31 L 26 22 L 30 22 L 24 16 z"/>
                   </svg>
                 )}
-              </button>
+              </CallControlButton>
 
-            </div>
+              {/* Завершить звонок */}
+              <CallControlButton
+                danger
+                label={lang?.voice_room_leave || 'Завершить'}
+                title={lang?.voice_room_leave || 'Завершить'}
+                onClick={() => router.back()}
+              >
+                <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
+                  <use href="/icons.svg#IC-exit" />
+                </svg>
+              </CallControlButton>
+            </motion.div>
           </div>
         </div>
       </div>

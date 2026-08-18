@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import "./globals.css";
+import "./globals.css"; // force HMR css update
 import AndroidGlassProfile from './components/android-glass-profile';
 import IconSprite from './components/icon-sprite';
 import MainContent from './components/main-content';

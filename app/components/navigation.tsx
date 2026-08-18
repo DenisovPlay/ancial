@@ -39,31 +39,91 @@ const NavItem = ({
       ),
     );
 
-  const className = `relative w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 active:scale-95 ${active
+  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
+  const isFullGlass = glassMode === 'full';
+
+  const itemRef = useRef<HTMLDivElement | null>(null);
+  const rawX = useMotionValue(0);
+  const rawY = useMotionValue(0);
+  const rawScaleX = useMotionValue(1);
+  const rawScaleY = useMotionValue(1);
+  const mouseX = useMotionValue(-100);
+  const mouseY = useMotionValue(-100);
+
+  const springX = useSpring(rawX, { stiffness: 420, damping: 22 });
+  const springY = useSpring(rawY, { stiffness: 420, damping: 22 });
+  const springScaleX = useSpring(rawScaleX, { stiffness: 440, damping: 24 });
+  const springScaleY = useSpring(rawScaleY, { stiffness: 440, damping: 24 });
+
+  const itemSheen = useMotionTemplate`radial-gradient(45px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.20), transparent 70%)`;
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isFullGlass) return;
+    const el = itemRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const relY = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const dx = relX - centerX;
+    const dy = relY - centerY;
+
+    mouseX.set(relX);
+    mouseY.set(relY);
+
+    rawX.set(Math.max(-2.5, Math.min(2.5, dx * 0.08)));
+    rawY.set(Math.max(-2.5, Math.min(2.5, dy * 0.08)));
+
+    const distNorm = Math.min(1, Math.hypot(dx, dy) / Math.max(centerX, centerY));
+    rawScaleX.set(1 + distNorm * 0.015);
+    rawScaleY.set(1 - distNorm * 0.012);
+  };
+
+  const handleMouseLeave = () => {
+    if (!isFullGlass) return;
+    rawX.set(0);
+    rawY.set(0);
+    rawScaleX.set(1);
+    rawScaleY.set(1);
+    mouseX.set(-100);
+    mouseY.set(-100);
+  };
+
+  const className = `relative overflow-hidden w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 ${active
     ? "bg-zinc-700/90 border-zinc-600/30"
     : "hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30"
-    }`;
+    } ${!isFullGlass ? 'active:scale-95' : ''}`;
 
   const avatarSrc = imgSrc ? normalizeAvatarUrl(imgSrc) : '';
 
   const innerContent = (
     <>
-      {avatarSrc ? (
-        <Image
-          src={avatarSrc}
-          alt="Avatar"
-          width={56}
-          height={56}
-          priority
-          className="w-14 h-14 rounded-full object-cover"
+      {/* Specular sheen inside round NavItem in full glass mode */}
+      {isFullGlass && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
+          style={{ background: itemSheen }}
         />
-      ) : icon ? (
-        <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href={`#${icon}`}></use>
-        </svg>
-      ) : null}
+      )}
+      <div className="relative z-10 flex items-center justify-center w-full h-full">
+        {avatarSrc ? (
+          <Image
+            src={avatarSrc}
+            alt="Avatar"
+            width={56}
+            height={56}
+            priority
+            className="w-14 h-14 rounded-full object-cover"
+          />
+        ) : icon ? (
+          <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+            <use href={`#${icon}`}></use>
+          </svg>
+        ) : null}
+      </div>
       {Boolean(badgeCount && badgeCount > 0) && (
-        <span className="absolute top-1 right-1 min-w-[18px] h-4.5 px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-zinc-900 shadow-md">
+        <span className="absolute top-1 right-1 min-w-[18px] h-4.5 px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-zinc-900 shadow-md z-20">
           {badgeCount! > 99 ? '99+' : badgeCount}
         </span>
       )}
@@ -72,16 +132,50 @@ const NavItem = ({
 
   if (href) {
     return (
-      <Link href={href} className={className} onClick={onClick}>
-        {innerContent}
-      </Link>
+      <motion.div
+        ref={itemRef}
+        onMouseMove={isFullGlass ? handleMouseMove : undefined}
+        onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+        whileTap={isFullGlass ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
+        style={
+          isFullGlass
+            ? {
+                x: springX,
+                y: springY,
+                scaleX: springScaleX,
+                scaleY: springScaleY,
+              }
+            : undefined
+        }
+      >
+        <Link href={href} className={className} onClick={onClick}>
+          {innerContent}
+        </Link>
+      </motion.div>
     );
   }
 
   return (
-    <button onClick={onClick} className={className}>
-      {innerContent}
-    </button>
+    <motion.div
+      ref={itemRef}
+      onMouseMove={isFullGlass ? handleMouseMove : undefined}
+      onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+      whileTap={isFullGlass ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
+      style={
+        isFullGlass
+          ? {
+              x: springX,
+              y: springY,
+              scaleX: springScaleX,
+              scaleY: springScaleY,
+            }
+          : undefined
+      }
+    >
+      <button type="button" onClick={onClick} className={className}>
+        {innerContent}
+      </button>
+    </motion.div>
   );
 };
 
@@ -90,6 +184,7 @@ type DropdownProps = {
   align?: 'start' | 'end' | 'center';
   children: React.ReactNode;
   closeOnChildClick?: boolean;
+  customTrigger?: React.ReactNode;
   direction?: 'row' | 'col';
   icon?: string;
   imgSrc?: string;
@@ -117,6 +212,7 @@ export const Dropdown = ({
   direction = 'col',
   activePaths = [],
   children,
+  customTrigger,
   triggerSize = 'default',
   triggerIcon,
   triggerAriaLabel = 'Open menu',
@@ -142,6 +238,7 @@ export const Dropdown = ({
   // Эффект Apple Liquid Glass активен эксклюзивно для режима "Полное"
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
   const isFullGlass = glassMode === 'full';
+  const isGlassOff = glassMode === 'off';
 
   // Liquid glass cursor tracking for menu container
   const mouseX = useMotionValue(-200);
@@ -257,6 +354,7 @@ export const Dropdown = ({
       ref={dropdownRef}
       style={wrapperStyle}
     >
+      {customTrigger}
       {renderTrigger && isCompactTrigger ? (
         <button
           type="button"
@@ -306,6 +404,7 @@ export const Dropdown = ({
                   }
                 : undefined
             }
+            data-dropdown-menu="true"
             className={cn(
               'absolute overflow-hidden',
               getPositionClasses(),
@@ -313,7 +412,9 @@ export const Dropdown = ({
               'p-1.5',
               direction === 'col' ? 'flex-col rounded-3xl' : 'flex-row rounded-full',
               widthClasses,
-              'bg-zinc-900/60 backdrop-blur-xl backdrop-saturate-200 border border-zinc-600/30 shadow-2xl shadow-black/60 flex gap-1 z-50',
+              isGlassOff
+                ? '!bg-zinc-900 !border !border-zinc-700/60 shadow-2xl shadow-black/80 flex gap-1 z-50'
+                : 'bg-zinc-900/60 backdrop-blur-xl backdrop-saturate-200 border border-zinc-600/30 shadow-2xl shadow-black/60 flex gap-1 z-50',
               menuClassName,
             )}
           >
@@ -539,6 +640,66 @@ export default function Navigation() {
   const isCinemaContext = pathname === '/cinema' || pathname?.startsWith('/cinema/');
   const isCinemaWatchContext = pathname?.startsWith('/cinema/watch');
 
+  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
+  const isFullGlass = glassMode === 'full';
+  const isGlassOff = glassMode === 'off';
+
+  // Desktop dock tracking
+  const desktopDockRef = useRef<HTMLElement>(null);
+  const desktopMouseX = useMotionValue(-200);
+  const desktopMouseY = useMotionValue(-200);
+  const desktopSheen = useMotionTemplate`radial-gradient(130px circle at ${desktopMouseX}px ${desktopMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
+
+  const handleDesktopMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (!isFullGlass || !desktopDockRef.current) return;
+    const rect = desktopDockRef.current.getBoundingClientRect();
+    desktopMouseX.set(e.clientX - rect.left);
+    desktopMouseY.set(e.clientY - rect.top);
+  };
+
+  const handleDesktopMouseLeave = () => {
+    if (!isFullGlass) return;
+    desktopMouseX.set(-200);
+    desktopMouseY.set(-200);
+  };
+
+  // Mobile pill tracking
+  const mobilePillRef = useRef<HTMLDivElement>(null);
+  const mobileMouseX = useMotionValue(-200);
+  const mobileMouseY = useMotionValue(-200);
+  const mobileSheen = useMotionTemplate`radial-gradient(120px circle at ${mobileMouseX}px ${mobileMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
+
+  const handleMobileMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isFullGlass || !mobilePillRef.current) return;
+    const rect = mobilePillRef.current.getBoundingClientRect();
+    mobileMouseX.set(e.clientX - rect.left);
+    mobileMouseY.set(e.clientY - rect.top);
+  };
+
+  const handleMobileMouseLeave = () => {
+    if (!isFullGlass) return;
+    mobileMouseX.set(-200);
+    mobileMouseY.set(-200);
+  };
+
+  // Mobile right pill tracking
+  const mobileRightPillRef = useRef<HTMLDivElement>(null);
+  const mobileRightMouseX = useMotionValue(-200);
+  const mobileRightMouseY = useMotionValue(-200);
+  const mobileRightSheen = useMotionTemplate`radial-gradient(120px circle at ${mobileRightMouseX}px ${mobileRightMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
+
+  const handleMobileRightMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isFullGlass || !mobileRightPillRef.current) return;
+    const rect = mobileRightPillRef.current.getBoundingClientRect();
+    mobileRightMouseX.set(e.clientX - rect.left);
+    mobileRightMouseY.set(e.clientY - rect.top);
+  };
+
+  const handleMobileRightMouseLeave = () => {
+    if (!isFullGlass) return;
+    mobileRightMouseX.set(-200);
+    mobileRightMouseY.set(-200);
+  };
 
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
@@ -587,13 +748,32 @@ export default function Navigation() {
 
     window.addEventListener('ancial:unread_update', handleCustomUnread);
     return () => window.removeEventListener('ancial:unread_update', handleCustomUnread);
-  }, [isAuthenticated, user, lang]);
+  }, [isAuthenticated, user]);
 
   return (
     <>
       {!isCinemaContext && (
-        <motion.nav layoutRoot layout data-app-nav="desktop" className="hidden lg:flex flex-col p-1 fixed gap-1 top-3 left-3 bg-zinc-900/50 rounded-full border border-zinc-600/30 z-[50]">
-          <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+        <motion.nav
+          ref={desktopDockRef}
+          onMouseMove={isFullGlass ? handleDesktopMouseMove : undefined}
+          onMouseLeave={isFullGlass ? handleDesktopMouseLeave : undefined}
+          layoutRoot
+          layout
+          data-app-nav="desktop"
+          className={cn(
+            'hidden lg:flex flex-col p-1 fixed gap-1 top-3 left-3 rounded-full border z-[50]',
+            isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+          )}
+        >
+          {!isGlassOff && (
+            <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+          )}
+          {isFullGlass && (
+            <motion.div
+              className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
+              style={{ background: desktopSheen }}
+            />
+          )}
 
           <MotionNavItem id="desktop-home" isVisible={true}>
             <NavItem href="/" icon="IC-home" />
@@ -671,8 +851,27 @@ export default function Navigation() {
 
       {!isCinemaWatchContext && (
         <nav data-app-nav="mobile" className="lg:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
-          <motion.div data-app-nav="mobile-pill" layoutRoot layout className="flex p-1 bg-zinc-900/50 rounded-full border border-zinc-600/30 gap-1 relative overflow-visible">
-            <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+          <motion.div
+            ref={mobilePillRef}
+            onMouseMove={isFullGlass ? handleMobileMouseMove : undefined}
+            onMouseLeave={isFullGlass ? handleMobileMouseLeave : undefined}
+            data-app-nav="mobile-pill"
+            layoutRoot
+            layout
+            className={cn(
+              'flex p-1 rounded-full border gap-1 relative overflow-visible',
+              isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+            )}
+          >
+            {!isGlassOff && (
+              <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+            )}
+            {isFullGlass && (
+              <motion.div
+                className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
+                style={{ background: mobileSheen }}
+              />
+            )}
             {/* PULSE CONTEXT */}
             <MotionNavItem id="pulse" isVisible={isPulseContext}>
               <NavItem href="/pulse" icon="IC-home" isActive={pathname === '/pulse'} />
@@ -724,8 +923,27 @@ export default function Navigation() {
             </MotionNavItem>
           </motion.div>
           <div className="flex-grow"></div>
-          <motion.div data-app-nav="mobile-pill" layoutRoot layout className="flex p-1 bg-zinc-900/50 relative rounded-full border border-zinc-600/30 gap-1">
-            <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+          <motion.div
+            ref={mobileRightPillRef}
+            onMouseMove={isFullGlass ? handleMobileRightMouseMove : undefined}
+            onMouseLeave={isFullGlass ? handleMobileRightMouseLeave : undefined}
+            data-app-nav="mobile-pill"
+            layoutRoot
+            layout
+            className={cn(
+              'flex p-1 relative rounded-full border gap-1',
+              isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+            )}
+          >
+            {!isGlassOff && (
+              <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+            )}
+            {isFullGlass && (
+              <motion.div
+                className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
+                style={{ background: mobileRightSheen }}
+              />
+            )}
 
             <MotionNavItem id="mobile-login" isVisible={!isAuthenticated}>
               <NavItem href="/login" icon="IC-login" />
@@ -780,3 +998,4 @@ export default function Navigation() {
     </>
   );
 }
+

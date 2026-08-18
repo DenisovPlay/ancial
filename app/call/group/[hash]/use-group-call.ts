@@ -514,6 +514,7 @@ export function useGroupCall({
           await peer.setLocalDescription();
           sendSignal({ kind: 'answer', target_user_id: fromUserId, sdp: peer.localDescription?.sdp });
         } else if (kind === 'answer' && signal.sdp) {
+          if (peer.signalingState !== 'have-local-offer') return;
           negotiationState.isSettingRemoteAnswerPending = true;
           try {
             await peer.setRemoteDescription({ type: 'answer', sdp: signal.sdp });
@@ -772,6 +773,8 @@ export function useGroupCall({
     camEnabled,
     cameras,
     deafened,
+    disableCamera,
+    enableCamera,
     joined,
     joining,
     join,

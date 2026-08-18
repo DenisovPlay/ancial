@@ -96,18 +96,22 @@ html.android-glass-off * {
   backdrop-filter: none !important;
 }
 
-/* 2. Навигационные панели и блок превью стекла (desktop и mobile: все пиллы, включая юзера и компас) */
+/* 2. Навигационные панели, пиллы звонков и блок превью стекла (все пиллы) */
 html.android-glass-off [data-app-nav="desktop"],
 html.android-glass-off [data-app-nav="mobile-pill"],
+html.android-glass-off [data-app-nav="call-pill"],
 html.android-glass-off [data-app-nav="glass-preview"],
 html.android-glass-off [data-app-nav="mobile"] [data-app-nav="mobile-pill"],
 html.android-glass-off [data-app-nav="mobile"] > div:not(.flex-grow) {
-  background-color: rgba(9, 9, 11, 0.97) !important;
+  background-color: rgba(24, 24, 27, 1) !important;
 }
 
 /* 3. Стеклянные выпадающие меню Dropdown и блоки превью */
+html.android-glass-off [data-dropdown-menu],
+html.android-glass-off .backdrop-blur-xl.bg-zinc-900\/60,
 html.android-glass-off .backdrop-blur-lg.bg-zinc-900\/50,
 html.android-glass-off .backdrop-blur-md.bg-zinc-900\/50,
+html.android-glass-off .bg-zinc-900\/60,
 html.android-glass-off .bg-zinc-900\/50.backdrop-blur-md {
   background-color: rgba(24, 24, 27, 1) !important;
 }

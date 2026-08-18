@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 import Modal from '../../../components/modal';
@@ -10,6 +10,8 @@ import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import type { DialogMeta, GroupMember } from '../../../messages/lib/messages-shared';
 import { canManageCommunityMember } from '../../../group/[link]/lib/community-types';
+import { subscribeGlassMode, readGlassMode, getServerGlassMode } from '../../../lib/android-glass';
+import { motion, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 import GroupCallTile from '../components/group-call-tile';
 import {
   getGroupCallGridClass,
@@ -41,6 +43,11 @@ type GroupCallConfig = {
 
 type ProfileResponse = Partial<GroupMember> & { id?: number | string };
 
+type CameraDevice = {
+  deviceId: string;
+  label: string;
+};
+
 function safeReturnPath(value: string | null, hash: string) {
   if (value?.startsWith('/') && !value.startsWith('//')) return value;
   return `/messages/${encodeURIComponent(hash)}`;
@@ -65,17 +72,95 @@ function CallControlButton({
   off?: boolean;
   onClick: () => void;
 }) {
+  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
+  const isFullGlass = glassMode === 'full';
+
+  const itemRef = useRef<HTMLDivElement | null>(null);
+  const rawX = useMotionValue(0);
+  const rawY = useMotionValue(0);
+  const rawScaleX = useMotionValue(1);
+  const rawScaleY = useMotionValue(1);
+  const mouseX = useMotionValue(-100);
+  const mouseY = useMotionValue(-100);
+
+  const springX = useSpring(rawX, { stiffness: 420, damping: 22 });
+  const springY = useSpring(rawY, { stiffness: 420, damping: 22 });
+  const springScaleX = useSpring(rawScaleX, { stiffness: 440, damping: 24 });
+  const springScaleY = useSpring(rawScaleY, { stiffness: 440, damping: 24 });
+
+  const itemSheen = useMotionTemplate`radial-gradient(45px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.20), transparent 70%)`;
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isFullGlass || disabled) return;
+    const el = itemRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const relY = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const dx = relX - centerX;
+    const dy = relY - centerY;
+
+    mouseX.set(relX);
+    mouseY.set(relY);
+
+    rawX.set(Math.max(-2.5, Math.min(2.5, dx * 0.08)));
+    rawY.set(Math.max(-2.5, Math.min(2.5, dy * 0.08)));
+
+    const distNorm = Math.min(1, Math.hypot(dx, dy) / Math.max(centerX, centerY));
+    rawScaleX.set(1 + distNorm * 0.015);
+    rawScaleY.set(1 - distNorm * 0.012);
+  };
+
+  const handleMouseLeave = () => {
+    if (!isFullGlass) return;
+    rawX.set(0);
+    rawY.set(0);
+    rawScaleX.set(1);
+    rawScaleY.set(1);
+    mouseX.set(-100);
+    mouseY.set(-100);
+  };
+
+  const baseClassName = `relative overflow-hidden ${className || 'flex'} h-14 w-14 cursor-pointer items-center justify-center rounded-full border transition-[color,background-color,border-color,transform,opacity] duration-300 ${disabled ? 'cursor-not-allowed text-zinc-500 opacity-40' : ''} ${danger ? 'border-red-500/30 bg-red-600/90 text-white hover:bg-red-500 shadow' : active ? 'border-purple-500/30 bg-purple-600/90 text-white hover:bg-purple-500 shadow' : off ? 'border-transparent text-red-500 hover:border-red-600/30 hover:bg-red-950/50' : 'border-transparent text-zinc-200 hover:border-zinc-600/30 hover:bg-zinc-700/95'} ${!isFullGlass ? 'active:scale-95' : ''}`;
+
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      onClick={onClick}
-      className={`${className || 'flex'} h-14 w-14 cursor-pointer items-center justify-center rounded-full transition-[color,background-color,transform,opacity] duration-300 active:scale-95 disabled:cursor-not-allowed disabled:text-zinc-500 disabled:opacity-40 ${danger ? 'bg-red-600 text-white hover:bg-red-500' : active ? 'bg-purple-600 text-white hover:bg-purple-500' : off ? 'text-red-500 hover:bg-red-950/50' : 'text-zinc-200 hover:bg-zinc-700/95'}`}
+    <motion.div
+      ref={itemRef}
+      onMouseMove={isFullGlass ? handleMouseMove : undefined}
+      onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
+      whileTap={isFullGlass && !disabled ? { scale: 0.90, scaleX: 1.05, scaleY: 0.90 } : undefined}
+      style={
+        isFullGlass
+          ? {
+              x: springX,
+              y: springY,
+              scaleX: springScaleX,
+              scaleY: springScaleY,
+            }
+          : undefined
+      }
     >
-      {children}
-    </button>
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        disabled={disabled}
+        onClick={onClick}
+        className={baseClassName}
+      >
+        {isFullGlass && (
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
+            style={{ background: itemSheen }}
+          />
+        )}
+        <div className="relative z-10 flex items-center justify-center">
+          {children}
+        </div>
+      </button>
+    </motion.div>
   );
 }
 
@@ -125,10 +210,34 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   const { showNote } = useNotification();
   const [permissionsOpen, setPermissionsOpen] = useState(true);
   const [cameraMenuOpen, setCameraMenuOpen] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
   const [focusedParticipantId, setFocusedParticipantId] = useState<number | null>(null);
   const [members, setMembers] = useState(config.members);
   const title = config.dialog.title || lang?.voice_room_title || 'Групповой звонок';
   const exitCall = useCallback(() => router.push(returnPath), [returnPath, router]);
+
+  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
+  const isFullGlass = glassMode === 'full';
+  const isGlassOff = glassMode === 'off';
+
+  const pillRef = useRef<HTMLDivElement>(null);
+  const pillMouseX = useMotionValue(-200);
+  const pillMouseY = useMotionValue(-200);
+  const pillSheen = useMotionTemplate`radial-gradient(130px circle at ${pillMouseX}px ${pillMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
+
+  const handlePillMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isFullGlass || !pillRef.current) return;
+    const rect = pillRef.current.getBoundingClientRect();
+    pillMouseX.set(e.clientX - rect.left);
+    pillMouseY.set(e.clientY - rect.top);
+  };
+
+  const handlePillMouseLeave = () => {
+    if (!isFullGlass) return;
+    pillMouseX.set(-200);
+    pillMouseY.set(-200);
+  };
+
   const call = useGroupCall({
     activityUrl: `/call/group/${encodeURIComponent(hash)}`,
     canPublish: config.canPublish,
@@ -137,6 +246,48 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
     onDisconnected: exitCall,
     title,
   });
+
+  const handleCamButtonClick = async () => {
+    if (!call.camEnabled) {
+      await call.toggleCamera();
+      return;
+    }
+    if (cameraMenuOpen) {
+      setCameraMenuOpen(false);
+      return;
+    }
+    let camerasList: CameraDevice[] = [];
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      camerasList = devices
+        .filter(d => d.kind === 'videoinput')
+        .map((d, i) => ({
+          deviceId: d.deviceId,
+          label: (d.label || `${lang?.select_camera || 'Камера'} ${i + 1}`)
+            .replace(/\s*\([0-9a-fA-F]{4}:[0-9a-fA-F]{4}\)\s*$/, '').trim(),
+        }));
+    } catch (e) {
+      console.error('enumerateDevices failed', e);
+    }
+
+    if (camerasList.length <= 1) {
+      await call.toggleCamera();
+      return;
+    }
+
+    setAvailableCameras(camerasList);
+    setCameraMenuOpen(true);
+  };
+
+  const switchCamera = async (deviceId: string) => {
+    setCameraMenuOpen(false);
+    await call.switchCamera(deviceId);
+  };
+
+  const disableCamFromDropdown = async () => {
+    setCameraMenuOpen(false);
+    await call.disableCamera();
+  };
 
   const memberById = useMemo(() => new Map(members.map((member) => [Number(member.id), member])), [members]);
   const visibleParticipants = useMemo<GroupCallParticipant[]>(() => {
@@ -285,7 +436,24 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
       </main>
 
       <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom,0px),0.75rem)]">
-        <div className="flex items-center gap-1 rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 shadow backdrop-blur-md backdrop-saturate-200">
+        <motion.div
+          ref={pillRef}
+          data-app-nav="call-pill"
+          onMouseMove={isFullGlass ? handlePillMouseMove : undefined}
+          onMouseLeave={isFullGlass ? handlePillMouseLeave : undefined}
+          className={`flex items-center gap-1 p-1 rounded-full h-fit relative shadow-2xl overflow-visible border ${
+            isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+          }`}
+        >
+          {!isGlassOff && (
+            <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
+          )}
+          {isFullGlass && (
+            <motion.div
+              className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
+              style={{ background: pillSheen }}
+            />
+          )}
           <CallControlButton
             label={config.canPublish ? (call.micEnabled ? (lang?.voice_mic_on || 'Микрофон включён — выключить') : (lang?.voice_mic_off || 'Микрофон выключен — включить')) : (lang?.voice_listen_only || 'Только слушать')}
             off={!call.micEnabled}
@@ -295,45 +463,61 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
             <MicIcon off={!call.micEnabled} />
           </CallControlButton>
 
-          <div className="relative h-14 w-14">
-            {call.cameras.length > 1 ? (
-              <Dropdown
-                renderTrigger={false}
-                open={cameraMenuOpen}
-                onOpenChange={setCameraMenuOpen}
-                position="top"
-                align="center"
-                width="auto"
-                closeOnChildClick
-                wrapperClassName="absolute inset-0"
+          <Dropdown
+            customTrigger={
+              <CallControlButton
+                onClick={handleCamButtonClick}
+                label={call.camEnabled && !call.screenEnabled ? (lang?.voice_camera_on || 'Камера включена — выключить или выбрать') : (lang?.voice_camera_off || 'Камера выключена — включить')}
+                off={!call.camEnabled || call.screenEnabled}
+                active={Boolean(call.camEnabled && !call.screenEnabled && cameraMenuOpen)}
+                disabled={!config.canPublish || call.screenEnabled}
+                className="relative z-10"
               >
-                {call.cameras.map((camera) => (
-                  <DropdownItem
-                    key={camera.deviceId}
-                    onClick={() => void call.switchCamera(camera.deviceId)}
-                    className={call.selectedCameraId === camera.deviceId ? 'text-purple-300' : ''}
-                  >
-                    {camera.label}
-                  </DropdownItem>
-                ))}
-                <DropdownItem className="text-red-400" onClick={() => void call.toggleCamera()}>
-                  {lang?.camera_off || 'Выключить камеру'}
-                </DropdownItem>
-              </Dropdown>
-            ) : null}
-            <CallControlButton
-              label={call.camEnabled ? (lang?.voice_camera_on || 'Камера включена — выключить или выбрать') : (lang?.voice_camera_off || 'Камера выключена — включить')}
-              off={!call.camEnabled}
-              disabled={!config.canPublish || call.screenEnabled}
-              onClick={() => {
-                if (call.camEnabled && call.cameras.length > 1) setCameraMenuOpen((current) => !current);
-                else if (call.camEnabled) void call.toggleCamera();
-                else void call.toggleCamera();
-              }}
+                <CameraIcon off={!call.camEnabled || call.screenEnabled} />
+              </CallControlButton>
+            }
+            renderTrigger={false}
+            open={cameraMenuOpen}
+            onOpenChange={setCameraMenuOpen}
+            position="top"
+            align="center"
+            width="auto"
+            closeOnChildClick={true}
+            wrapperClassName="relative w-14 h-14"
+          >
+            {availableCameras.map((cam) => (
+              <DropdownItem
+                key={cam.deviceId}
+                onClick={() => void switchCamera(cam.deviceId)}
+                iconNode={
+                  call.selectedCameraId === cam.deviceId ? (
+                    <svg className="inline w-6 h-6 fill-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                      <path d="M 40.980469 8.9902344 A 2.0002 2.0002 0 0 0 39.585938 9.5859375 L 19 30.171875 L 8.4140625 19.585938 A 2.0002 2.0002 0 1 0 5.5859375 22.414062 L 17.585938 34.414062 A 2.0002 2.0002 0 0 0 20.414062 34.414062 L 42.414062 12.414062 A 2.0002 2.0002 0 0 0 40.980469 8.9902344 z"/>
+                    </svg>
+                  ) : (
+                    <svg className="inline w-6 h-6 fill-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                      <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z"/>
+                    </svg>
+                  )
+                }
+                className={call.selectedCameraId === cam.deviceId ? 'text-purple-300' : ''}
+              >
+                {cam.label}
+              </DropdownItem>
+            ))}
+
+            <DropdownItem
+              onClick={() => void disableCamFromDropdown()}
+              iconNode={
+                <svg className="inline w-6 h-6 fill-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                  <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/>
+                </svg>
+              }
+              className="text-red-400"
             >
-              <CameraIcon off={!call.camEnabled} />
-            </CallControlButton>
-          </div>
+              {lang?.camera_off || 'Выключить камеру'}
+            </DropdownItem>
+          </Dropdown>
 
           <CallControlButton
             className="hidden md:flex"
@@ -358,7 +542,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
               <use href="/icons.svg#IC-exit" />
             </svg>
           </CallControlButton>
-        </div>
+        </motion.div>
       </div>
 
       <Modal

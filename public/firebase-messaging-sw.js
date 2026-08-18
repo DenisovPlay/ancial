@@ -1,6 +1,6 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-// v11: cacheFirstImages to eliminate navigation image flicker
-const SW_VERSION = '11';
+// v12: unify glass off navigation colors and rotate static cache
+const SW_VERSION = '12';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
