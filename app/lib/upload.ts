@@ -3,6 +3,16 @@
  * Все вызовы загрузки аватарок, постов, треков и обложек используют этот эндпоинт.
  */
 
+import { API_BASE } from '../config';
+import { isCapacitorNative } from './capacitor';
+
+export const getUploadImageEndpoint = () => {
+  if (isCapacitorNative()) {
+    return `${API_BASE.replace(/\/$/, '')}/api/V2/upload/Image.php`;
+  }
+  return '/api/V2/upload/Image.php';
+};
+
 export const UPLOAD_IMAGE_ENDPOINT = '/api/V2/upload/Image.php';
 
 export interface UploadImageResponse {
@@ -25,7 +35,8 @@ export async function uploadImage(file: File | Blob, filename?: string): Promise
     formData.append('image', file, filename || 'image.jpg');
   }
 
-  const response = await fetch(UPLOAD_IMAGE_ENDPOINT, {
+  const endpoint = getUploadImageEndpoint();
+  const response = await fetch(endpoint, {
     method: 'POST',
     body: formData,
   });

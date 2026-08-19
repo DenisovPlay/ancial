@@ -54,3 +54,7 @@ export default async function PulseArtistPage({ params }: PulseArtistPageProps) 
 
   return <PulseArtistContent artistId={id} />;
 }
+
+export function generateStaticParams() {
+  return [{ id: "1" }];
+}

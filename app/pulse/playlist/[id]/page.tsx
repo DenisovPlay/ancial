@@ -65,3 +65,7 @@ export default async function PulsePlaylistPage({ params }: PulsePlaylistPagePro
 
   return <PulsePlaylistContent playlistId={id} />;
 }
+
+export function generateStaticParams() {
+  return [{ id: "1" }];
+}

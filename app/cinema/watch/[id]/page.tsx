@@ -19,3 +19,7 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
     </Suspense>
   );
 }
+
+export function generateStaticParams() {
+  return [{ id: "1" }];
+}

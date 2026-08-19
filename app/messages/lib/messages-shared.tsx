@@ -2,6 +2,8 @@ import type { ImageViewerSlide } from '../../components/image-viewer-modal';
 import type { CommunityPermissionMap } from '../../group/[link]/lib/community-types';
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import { API_BASE } from '../../config';
+import { isCapacitorNative } from '../../lib/capacitor';
 import type { CommunityDisplayRole } from './community-role';
 
 export type DialogImageSlide = ImageViewerSlide & { key: string };
@@ -331,7 +333,11 @@ export function buildSevenTvStickerProxyUrl(stickerId: string) {
     return '';
   }
 
-  return `/api/V2/7tv/Image.php?id=${encodeURIComponent(normalizedStickerId)}`;
+  const endpoint = `/api/V2/7tv/Image.php?id=${encodeURIComponent(normalizedStickerId)}`;
+  if (isCapacitorNative()) {
+    return `${API_BASE.replace(/\/$/, '')}${endpoint}`;
+  }
+  return endpoint;
 }
 
 export function getSevenTvStickerTokenData(value: string | null | undefined) {

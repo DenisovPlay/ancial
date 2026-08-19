@@ -58,3 +58,7 @@ export default async function PulseTrackPage({ params }: PulseTrackPageProps) {
 
   return <PulseTrackContent trackId={id} />;
 }
+
+export function generateStaticParams() {
+  return [{ id: "1" }];
+}

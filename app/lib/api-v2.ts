@@ -1,6 +1,8 @@
 'use client';
 
 import { authFetch } from './auth-fetch';
+import { API_BASE } from '../config';
+import { isCapacitorNative } from './capacitor';
 import type {
   CommunityAuditEntry,
   CommunityChannelOverride,
@@ -193,7 +195,12 @@ export interface LinkGuardAnalysis {
  * Centralized client for Ancial API V2
  */
 export class AncialAPI {
-  private static BASE_URL = '/api/V2';
+  private static get BASE_URL() {
+    if (isCapacitorNative()) {
+      return `${API_BASE.replace(/\/$/, '')}/api/V2`;
+    }
+    return '/api/V2';
+  }
 
   /**
    * Low-level V2 response for callers that need the legacy `{ success, data, error }` envelope.

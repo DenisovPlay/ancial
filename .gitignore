@@ -10,7 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# testing & submodules / extra repos
 /coverage
 /AncBot
 /DeployUbuntu
@@ -26,6 +26,7 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
 # debug
@@ -34,8 +35,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -47,6 +49,41 @@ next-env.d.ts
 # AI trash
 /.qwen/
 
+# backend / docs repos
 /php-v2-api/
-
 /docs/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Android build & local files
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+/android/.idea/
+/android/app/src/main/assets/public/
+/android/app/src/main/assets/capacitor.config.json
+/android/app/src/main/assets/capacitor.plugins.json
+/android/app/src/main/res/xml/config.xml
+*.apk
+*.aab
+*.dex
+
+# iOS build & local files
+/ios/App/build/
+/ios/App/Pods/
+/ios/App/output/
+/ios/App/App/public/
+/ios/App/App/capacitor.config.json
+/ios/App/App/config.xml
+/ios/DerivedData/
+*.xcodeproj/**/xcuserdata/
+*.xcworkspace/**/xcuserdata/
+/ios/**/xcuserdata/

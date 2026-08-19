@@ -1,3 +1,6 @@
+import { API_BASE } from '../../config';
+import { isCapacitorNative } from '../../lib/capacitor';
+
 export type PlayerArtwork = {
   sizes?: string | null;
   src?: string | null;
@@ -87,6 +90,9 @@ export function normalizeTrackSource(trackSource: string | null | undefined) {
     if (next.startsWith('blob:')) return next;
     if (next === 'offline-indexeddb') return '';
     return '';
+  }
+  if (isCapacitorNative() && next.startsWith('/')) {
+    return `${API_BASE.replace(/\/$/, '')}${next}`;
   }
   return next;
 }

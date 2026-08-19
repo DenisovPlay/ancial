@@ -28,3 +28,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return <UserProfileContent login={login} />;
 }
+
+export function generateStaticParams() {
+  return [{ login: "default" }];
+}

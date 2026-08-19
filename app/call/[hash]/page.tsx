@@ -12,3 +12,7 @@ export default function CallPage() {
     </Suspense>
   );
 }
+
+export function generateStaticParams() {
+  return [{ hash: "default" }];
+}

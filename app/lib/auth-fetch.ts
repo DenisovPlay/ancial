@@ -1,4 +1,6 @@
 import { getAuthToken } from './cache-helpers';
+import { API_BASE } from '../config';
+import { isCapacitorNative } from './capacitor';
 
 const FALLBACK_ORIGIN = 'https://ancial.local';
 export const AUTH_SESSION_RESTORED_EVENT = 'ancial-auth-session-restored';
@@ -79,7 +81,11 @@ export async function restoreLegacyAuthSession(token = getStoredAuthToken()) {
     params.set('token', nextToken);
 
     try {
-      const response = await fetch('/api/V2/auth/Login.php', {
+      const loginEndpoint = isCapacitorNative()
+        ? `${API_BASE.replace(/\/$/, '')}/api/V2/auth/Login.php`
+        : '/api/V2/auth/Login.php';
+
+      const response = await fetch(loginEndpoint, {
         body: params.toString(),
         cache: 'no-store',
         credentials: 'include',
@@ -109,6 +115,14 @@ export async function restoreLegacyAuthSession(token = getStoredAuthToken()) {
   })();
 
   return authSessionRefreshPromise;
+}
+
+export function resolveRequestUrl(input: string): string {
+  const withToken = withAuthToken(input);
+  if (isCapacitorNative() && withToken.startsWith('/')) {
+    return `${API_BASE.replace(/\/$/, '')}${withToken}`;
+  }
+  return withToken;
 }
 
 export function withAuthToken(input: string, token = getStoredAuthToken()) {
@@ -151,7 +165,8 @@ async function fetchWithLegacySessionRestore(input: string, init?: RequestInit) 
     credentials: 'include',
     ...init,
   } satisfies RequestInit;
-  const response = await fetch(withAuthToken(input), fetchInit);
+  const targetUrl = resolveRequestUrl(input);
+  const response = await fetch(targetUrl, fetchInit);
 
   if (!shouldTryLegacySessionRestore(input)) {
     return response;
@@ -175,7 +190,7 @@ async function fetchWithLegacySessionRestore(input: string, init?: RequestInit) 
     return response;
   }
 
-  return fetch(withAuthToken(input), fetchInit);
+  return fetch(targetUrl, fetchInit);
 }
 
 export async function authFetchJson<T>(input: string, init?: RequestInit) {

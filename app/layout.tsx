@@ -8,6 +8,7 @@ import MainContent from './components/main-content';
 import Navigation from './components/navigation';
 import RichPresenceReporter from './components/rich-presence-reporter';
 import SWRegister from './components/sw-register';
+import CapacitorInit from './components/capacitor-init';
 import { AuthProvider } from './context/AuthContext';
 import { GlobalWSProvider } from './context/GlobalWSProvider';
 import { NotificationProvider } from './context/NotificationContext';
@@ -94,6 +95,7 @@ export default function RootLayout({
         </noscript>
         <IconSprite />
         <SWRegister />
+        <CapacitorInit />
         <NotificationProvider>
           <AuthProvider>
             <GlobalWSProvider>

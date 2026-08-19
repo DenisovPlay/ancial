@@ -18,3 +18,7 @@ export default function PayPage() {
     </Suspense>
   );
 }
+
+export function generateStaticParams() {
+  return [{ order: [] }];
+}

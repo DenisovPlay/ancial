@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { createPageMetadata } from '../../seo';
 import EditPostContent from './edit-content';
@@ -9,17 +10,10 @@ export const metadata: Metadata = createPageMetadata({
   canonical: '/feed/edit',
 });
 
-type EditPageProps = {
-  searchParams: Promise<{
-    id?: string | string[] | undefined;
-  }>;
-};
-
-export default async function EditPostPage({ searchParams }: EditPageProps) {
-  const resolvedSearchParams = await searchParams;
-  const postId = Array.isArray(resolvedSearchParams.id)
-    ? (resolvedSearchParams.id[0] ?? null)
-    : (resolvedSearchParams.id ?? null);
-
-  return <EditPostContent postId={postId} />;
+export default function EditPostPage() {
+  return (
+    <Suspense fallback={null}>
+      <EditPostContent />
+    </Suspense>
+  );
 }

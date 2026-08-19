@@ -1,24 +1,28 @@
-import type { Metadata } from 'next';
+'use client';
 
-import { createPageMetadata } from '../../seo';
-import { redirect } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-type AppsSearchPageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+function AppsSearchRedirect() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-export const metadata: Metadata = createPageMetadata({
-  canonical: '/apps/search',
-  description: 'Поиск игр и веб-приложений в ZYNT.',
-  title: 'Поиск ZYNT',
-});
+  useEffect(() => {
+    const q = searchParams.get('q') || '';
+    router.replace(`/apps?q=${encodeURIComponent(q)}`);
+  }, [router, searchParams]);
 
-export default async function AppsSearchPage({
-  searchParams,
-}: AppsSearchPageProps) {
-  const params = await searchParams;
-  const queryValue = params.q;
-  const query = Array.isArray(queryValue) ? queryValue[0] : queryValue;
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+    </div>
+  );
+}
 
-  redirect(`/apps?q=${query ?? ''}`);
+export default function AppsSearchPage() {
+  return (
+    <Suspense fallback={null}>
+      <AppsSearchRedirect />
+    </Suspense>
+  );
 }
