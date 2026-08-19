@@ -219,9 +219,9 @@ function ArtistCardSkeleton() {
   );
 }
 
-function ListenedPillSkeleton() {
+function ListenedPillSkeleton({ className }: { className?: string }) {
   return (
-    <div className="flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow">
+    <div className={cn('flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow', className)}>
       <div className="h-14 w-14 rounded-full bg-zinc-700/80 xl:h-16 xl:w-16 2xl:h-20 2xl:w-20" />
     </div>
   );
@@ -276,18 +276,20 @@ function PulseArtistCard({
 
 function RecentlyListenedPill({
   card,
+  className,
   isPlaying,
   onOpen,
   onPlay,
 }: {
   card: PulseHomePlaylistCard;
+  className?: string;
   isPlaying: boolean;
   onOpen: () => void;
   onPlay: () => void;
 }) {
   const { lang } = useAuth();
   return (
-    <div className="flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95">
+    <div className={cn('flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95', className)}>
       <button type="button" onClick={onPlay} className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full xl:h-16 xl:w-16 2xl:h-20 2xl:w-20">
         <PulseCoverImage
           alt={decodeHtmlEntities(card.name) || 'Playlist cover'}
@@ -310,16 +312,18 @@ function RecentlyListenedPill({
 }
 
 function OfflineDownloadsPill({
+  className,
   isPlaying,
   lang,
   onPlay,
 }: {
+  className?: string;
   isPlaying: boolean;
   lang: Record<string, string> | null;
   onPlay: () => void;
 }) {
   return (
-    <div className="flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95">
+    <div className={cn('flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95', className)}>
       <button type="button" onClick={onPlay} className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full xl:h-16 xl:w-16 2xl:h-20 2xl:w-20">
         <span className="flex h-full w-full items-center justify-center bg-zinc-800">
           <ActionIcon className="h-7 w-7" name="IC-bookmark-filled" />
@@ -845,7 +849,12 @@ export default function PulseContent() {
 
           <div className="grid w-full max-w-screen-2xl grid-cols-2 gap-3 px-3 lg:px-0 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {isLoading || (isAuthenticated && listened === null) ? (
-              Array.from({ length: 10 }).map((_, index) => <ListenedPillSkeleton key={index} />)
+              Array.from({ length: 10 }).map((_, index) => (
+                <ListenedPillSkeleton
+                  key={index}
+                  className={index >= 6 ? 'hidden sm:flex' : ''}
+                />
+              ))
             ) : null}
 
             {!isLoading && isAuthenticated && listened === 'empty' && downloadedCount === 0 ? (
@@ -855,18 +864,28 @@ export default function PulseContent() {
               </div>
             ) : null}
 
-            {!isLoading && Array.isArray(listened) ? listened.map((card) => {
-              const cardPlayId = getPlayableCardId(card);
-              return (
-                <RecentlyListenedPill
-                  key={`listened-${card.id ?? card.genlist ?? card.name}`}
-                  card={card}
-                  isPlaying={Boolean(cardPlayId && currentCollectionId === cardPlayId && isPlaying)}
-                  onOpen={() => openPlaylistCard(card)}
-                  onPlay={() => playPlaylistCard(card)}
-                />
-              );
-            }) : null}
+            {!isLoading && Array.isArray(listened) ? (() => {
+              const hasDownloads = downloadedCount > 0;
+              const desktopMaxCards = hasDownloads ? 9 : 10;
+              const mobileMaxCards = hasDownloads ? 5 : 6;
+              const displayedCards = listened.slice(0, desktopMaxCards);
+
+              return displayedCards.map((card, index) => {
+                const cardPlayId = getPlayableCardId(card);
+                const isHiddenOnMobile = index >= mobileMaxCards;
+
+                return (
+                  <RecentlyListenedPill
+                    key={`listened-${card.id ?? card.genlist ?? card.name}`}
+                    card={card}
+                    className={isHiddenOnMobile ? 'hidden sm:flex' : ''}
+                    isPlaying={Boolean(cardPlayId && currentCollectionId === cardPlayId && isPlaying)}
+                    onOpen={() => openPlaylistCard(card)}
+                    onPlay={() => playPlaylistCard(card)}
+                  />
+                );
+              });
+            })() : null}
 
             {!isLoading && downloadedCount > 0 ? (
               <OfflineDownloadsPill

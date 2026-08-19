@@ -1,6 +1,6 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-// v17: pulse unavailable track title formatting
-const SW_VERSION = '17';
+// v18: pulse recently listened pills responsive limit
+const SW_VERSION = '18';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");

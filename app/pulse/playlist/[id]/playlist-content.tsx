@@ -706,7 +706,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
           </div>
         </div>
 
-        <div className="relative z-[19] h-full w-full max-w-screen-2xl rounded-3xl rounded-b-none border border-zinc-600/30 bg-zinc-900 duration-300 lg:rounded-b-3xl">
+        <div className="relative z-[19] h-full w-full max-w-screen-2xl rounded-3xl rounded-b-none border-t lg:border border-zinc-600/30 bg-zinc-900 duration-300 lg:rounded-b-3xl">
           <div className="flex h-full w-full max-w-screen-2xl flex-col gap-3 p-3 lg:pb-3">
             {isLoading ? <TracksPanelSkeleton rows={6} /> : null}
 
