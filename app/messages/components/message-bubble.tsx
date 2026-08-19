@@ -330,6 +330,64 @@ export default function MessageBubble({
     blocks.push({ type: 'main', id: 'main' });
   }
 
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    // Снимаем любое активное выделение текста, чтобы избежать случайного drag-select
+    try {
+      window.getSelection()?.removeAllRanges();
+    } catch {
+      // ignore
+    }
+
+    const msgScrollEl = document.getElementById('msg-scroll');
+    const prevMsgScrollOverflow = msgScrollEl ? msgScrollEl.style.overflow : '';
+    const prevMsgScrollTouchAction = msgScrollEl ? msgScrollEl.style.touchAction : '';
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevBodyUserSelect = document.body.style.userSelect;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+
+    if (msgScrollEl) {
+      msgScrollEl.style.overflow = 'hidden';
+      msgScrollEl.style.touchAction = 'none';
+    }
+    document.body.style.overflow = 'hidden';
+    document.body.style.userSelect = 'none';
+    document.documentElement.style.overflow = 'hidden';
+
+    const handleWheelOrTouch = (e: Event) => {
+      // Разрешаем скролл внутри меню, если оно само имеет прокрутку
+      if (e.target instanceof Node && containerRef.current?.contains(e.target)) {
+        return;
+      }
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('wheel', handleWheelOrTouch, { passive: false });
+    window.addEventListener('touchmove', handleWheelOrTouch, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      if (msgScrollEl) {
+        msgScrollEl.style.overflow = prevMsgScrollOverflow;
+        msgScrollEl.style.touchAction = prevMsgScrollTouchAction;
+      }
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.userSelect = prevBodyUserSelect;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+
+      window.removeEventListener('wheel', handleWheelOrTouch);
+      window.removeEventListener('touchmove', handleWheelOrTouch);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuOpen]);
+
   return (
     <>
       <AnimatePresence>
@@ -339,8 +397,12 @@ export default function MessageBubble({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[40] bg-black/60 backdrop-blur-lg"
+            className="fixed inset-0 z-[40] bg-black/60 backdrop-blur-lg select-none touch-none overscroll-none"
             onClick={() => setMenuOpen(false)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setMenuOpen(false);
+            }}
           />
         ) : null}
       </AnimatePresence>

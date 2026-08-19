@@ -614,7 +614,7 @@ export const ru: Record<string, string> = {
     "videolikeplaced": "Вы поставили лайк на это видео!",
     "commentvideopublished": "Опубликовано!",
     "my_acc": "Мои счета",
-    "edit": "Редактировать",
+    "edit": "Изменить",
     "old_ver": "Старая версия",
     "recive": "Получить",
     "trans_browser": "Браузер операций",
