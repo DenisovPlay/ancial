@@ -435,7 +435,8 @@ export const Dropdown = ({
             }
             data-dropdown-menu="true"
             className={cn(
-              'absolute overflow-hidden',
+              'absolute',
+              direction === 'col' ? 'overflow-hidden' : 'overflow-visible',
               getPositionClasses(),
               getOriginClass(),
               'p-1',
@@ -457,21 +458,39 @@ export const Dropdown = ({
               />
             )}
 
-            <div className={cn('relative z-10 flex gap-1 w-full', direction === 'col' ? 'flex-col' : 'flex-row items-center')}>
-              {React.Children.map(children, (child) => {
-                if (React.isValidElement<{ onClick?: () => void }>(child)) {
-                  return React.cloneElement(child, {
-                    onClick: () => {
-                      if (child.props.onClick) child.props.onClick();
-                      if (closeOnChildClick) {
-                        setOpen(false);
+            {direction === 'col' ? (
+              <div className="relative z-10 flex flex-col gap-1 w-full">
+                {React.Children.map(children, (child) => {
+                  if (React.isValidElement<{ onClick?: () => void }>(child)) {
+                    return React.cloneElement(child, {
+                      onClick: () => {
+                        if (child.props.onClick) child.props.onClick();
+                        if (closeOnChildClick) {
+                          setOpen(false);
+                        }
                       }
-                    }
-                  });
-                }
-                return child;
-              })}
-            </div>
+                    });
+                  }
+                  return child;
+                })}
+              </div>
+            ) : (
+              <>
+                {React.Children.map(children, (child) => {
+                  if (React.isValidElement<{ onClick?: () => void }>(child)) {
+                    return React.cloneElement(child, {
+                      onClick: () => {
+                        if (child.props.onClick) child.props.onClick();
+                        if (closeOnChildClick) {
+                          setOpen(false);
+                        }
+                      }
+                    });
+                  }
+                  return child;
+                })}
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
