@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import type { PostAuthor, PostData, PostImage } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
@@ -42,7 +42,7 @@ type GetPostResponse = {
 };
 
 type EditPostContentProps = {
-  postId?: string | null;
+  postId: string | null;
 };
 
 function flag(value: boolean | number | string | null | undefined) {
@@ -58,10 +58,7 @@ function normalizePost(post: EditablePostData): EditablePostData {
       ...post.author,
       name: decodeHtmlEntities(post.author.name),
     },
-    images: (post.images ?? []).map((img) => ({
-      ...img,
-      url: decodeHtmlEntities(img.url),
-    })),
+    images: Array.isArray(post.images) ? post.images : [],
   };
 }
 
@@ -74,10 +71,8 @@ function toDraftImages(images: PostImage[] | null | undefined): DraftImage[] {
   }));
 }
 
-export default function EditPostContent({ postId: propPostId }: EditPostContentProps) {
+export default function EditPostContent({ postId }: EditPostContentProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const postId = propPostId ?? searchParams?.get('id') ?? null;
   const { isAuthenticated, isLoading, lang } = useAuth();
   const { showNote } = useNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);

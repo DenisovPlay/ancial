@@ -13,7 +13,3 @@ export default function GroupCallPage() {
     </Suspense>
   );
 }
-
-export function generateStaticParams() {
-  return [{ hash: "default" }];
-}

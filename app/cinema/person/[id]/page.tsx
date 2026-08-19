@@ -19,7 +19,3 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     </Suspense>
   );
 }
-
-export function generateStaticParams() {
-  return [{ id: "1" }];
-}

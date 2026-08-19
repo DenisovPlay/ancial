@@ -4,7 +4,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { cache } from '../../../lib/cache';
 import { safeFetchJson } from '../../../lib/safe-fetch-json';
@@ -240,10 +239,8 @@ type WeatherContentProps = {
 export default function WeatherContent({ initialCity = '' }: WeatherContentProps) {
   const { lang, langCode } = useAuth();
   const [isNavigating, startTransition] = useTransition();
-  const searchParams = useSearchParams();
-  const cityFromParams = searchParams?.get('city') || '';
 
-  const [searchCity, setSearchCity] = useState(initialCity.trim() || cityFromParams.trim());
+  const [searchCity, setSearchCity] = useState(initialCity.trim());
   const locale = langCode === 'en' ? 'en' : 'ru';
   const [weatherData, setWeatherData] = useState<WeatherAppData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

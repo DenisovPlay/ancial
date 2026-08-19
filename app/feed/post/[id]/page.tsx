@@ -27,7 +27,3 @@ export default async function SinglePostPage({ params }: SinglePostPageProps) {
 
   return <SinglePostContent postId={id} />;
 }
-
-export function generateStaticParams() {
-  return [{ id: "1" }];
-}

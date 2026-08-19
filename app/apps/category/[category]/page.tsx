@@ -27,7 +27,3 @@ export default async function AppsCategoryPage({
   
   redirect(`/apps?category=${category}`);
 }
-
-export function generateStaticParams() {
-  return [{ category: "all" }];
-}

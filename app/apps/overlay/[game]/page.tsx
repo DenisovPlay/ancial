@@ -28,7 +28,3 @@ export default async function AppsOverlayGamePage({
 
   return <AppsOverlay gameId={game} />;
 }
-
-export function generateStaticParams() {
-  return [{ game: "pb" }];
-}

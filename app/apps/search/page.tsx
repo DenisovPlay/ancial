@@ -1,28 +1,24 @@
-'use client';
+import type { Metadata } from 'next';
 
-import { Suspense, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { createPageMetadata } from '../../seo';
+import { redirect } from 'next/navigation';
 
-function AppsSearchRedirect() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+type AppsSearchPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-  useEffect(() => {
-    const q = searchParams.get('q') || '';
-    router.replace(`/apps?q=${encodeURIComponent(q)}`);
-  }, [router, searchParams]);
+export const metadata: Metadata = createPageMetadata({
+  canonical: '/apps/search',
+  description: 'Поиск игр и веб-приложений в ZYNT.',
+  title: 'Поиск ZYNT',
+});
 
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
-    </div>
-  );
-}
+export default async function AppsSearchPage({
+  searchParams,
+}: AppsSearchPageProps) {
+  const params = await searchParams;
+  const queryValue = params.q;
+  const query = Array.isArray(queryValue) ? queryValue[0] : queryValue;
 
-export default function AppsSearchPage() {
-  return (
-    <Suspense fallback={null}>
-      <AppsSearchRedirect />
-    </Suspense>
-  );
+  redirect(`/apps?q=${query ?? ''}`);
 }

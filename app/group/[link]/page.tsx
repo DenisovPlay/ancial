@@ -25,7 +25,3 @@ export default async function GroupPage({ params }: GroupPageProps) {
 
   return <GroupProfileContent link={link} />;
 }
-
-export function generateStaticParams() {
-  return [{ link: "default" }];
-}

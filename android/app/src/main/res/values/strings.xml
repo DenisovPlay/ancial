@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Zypo</string>
-    <string name="title_activity_main">Zypo</string>
-    <string name="package_name">cc.zypo.app</string>
-    <string name="custom_url_scheme">cc.zypo.app</string>
-</resources>

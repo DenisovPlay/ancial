@@ -17,7 +17,3 @@ export default async function CinemaInfoPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   return <InfoContent id={id} />;
 }
-
-export function generateStaticParams() {
-  return [{ id: "1" }];
-}

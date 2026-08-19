@@ -1,32 +1,15 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { Suspense, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+type AppsOverlayPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-function AppsOverlayRedirect() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default async function AppsOverlayPage({
+  searchParams,
+}: AppsOverlayPageProps) {
+  const params = await searchParams;
+  const gameValue = params.gm;
+  const game = Array.isArray(gameValue) ? gameValue[0] : gameValue;
 
-  useEffect(() => {
-    const game = searchParams.get('gm');
-    if (game) {
-      router.replace(`/apps/overlay/${encodeURIComponent(game)}`);
-    } else {
-      router.replace('/apps');
-    }
-  }, [router, searchParams]);
-
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
-    </div>
-  );
-}
-
-export default function AppsOverlayPage() {
-  return (
-    <Suspense fallback={null}>
-      <AppsOverlayRedirect />
-    </Suspense>
-  );
+  redirect(game ? `/apps/overlay/${encodeURIComponent(game)}` : '/apps');
 }

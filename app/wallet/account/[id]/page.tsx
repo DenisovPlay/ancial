@@ -20,7 +20,3 @@ export default async function AccountPage({ params }: PageProps) {
   const { id } = await params;
   return <AccountContent accountId={parseInt(id, 10)} />;
 }
-
-export function generateStaticParams() {
-  return [{ id: "1" }];
-}
