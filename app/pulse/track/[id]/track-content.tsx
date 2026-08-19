@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Dropdown, DropdownItem } from '../../../components/navigation';
@@ -25,11 +25,13 @@ import {
   decodeHtmlEntities,
   getImageUrl,
   getTrackArtwork,
+  isTrackAvailable,
   normalizeText,
   toNumber,
 } from '../../pulse-components';
 import { getPulseExternalUrl } from '../../pulse-navigation';
 import { PulseHeader } from '../../pulse-header';
+import { useUserCountry } from '../../../lib/user-geo';
 
 type PulseTrackPageTrack = {
   artist?: string | null;
@@ -57,21 +59,7 @@ type TrackShareAttachment = {
   widgets: Array<Record<string, unknown>>;
 };
 
-function getBlockedCountries(blockedIn: PulseTrackPageTrack['blockedin']) {
-  if (Array.isArray(blockedIn)) {
-    return blockedIn.map((item) => normalizeText(item)).filter(Boolean);
-  }
 
-  return normalizeText(String(blockedIn ?? ''))
-    .split(/[|,]/)
-    .map((item) => normalizeText(item))
-    .filter(Boolean);
-}
-
-function isTrackAvailable(track: PulseTrackPageTrack | null, userCountry: string) {
-  if (!track || String(track.status ?? '0') !== '1') return false;
-  return !getBlockedCountries(track.blockedin).includes(userCountry);
-}
 
 export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: string }) {
   const router = useRouter();
@@ -101,15 +89,8 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   const [shareUrl, setShareUrl] = useState('');
   const [shareAttachment, setShareAttachment] = useState<TrackShareAttachment | null>(null);
 
-  const userCountry = useMemo(() => {
-    const nextCountry = normalizeText(
-      typeof window !== 'undefined'
-        ? String((window as Window & { userCountry?: string }).userCountry ?? user?.country ?? '')
-        : String(user?.country ?? ''),
-    );
-
-    return nextCountry || 'RU';
-  }, [user?.country]);
+  // Страна пользователя: мгновенно из кэша, затем обновляем из GetCountry.php
+  const userCountry = useUserCountry();
 
   const trackNumericId = toNumber(track?.id ?? trackId);
   const available = isTrackAvailable(track, userCountry);
@@ -278,26 +259,34 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
         </div>
       ) : null}
 
-      {!loading && !available ? (
+      {!loading && !track ? (
         <PulseEmptyState description={lang?.nopostsdesc || 'Трек недоступен или удалён'} title={lang?.emptytopic || 'Пусто'} />
       ) : null}
 
-      {!loading && available ? (
+      {!loading && track ? (
         <>
           <div className="flex w-full max-w-screen-2xl flex-col items-center justify-center gap-6 px-3 lg:flex-row lg:justify-start lg:px-0">
-            <div className="relative flex h-72 w-72 shrink-0 rounded-3xl shadow lg:h-96 lg:w-96">
+            <div className="relative flex h-72 w-72 shrink-0 rounded-3xl shadow lg:h-96 lg:w-96 overflow-hidden">
               <PulseCoverImage
                 alt=""
-                className="rounded-2xl blur-xl"
+                className={cn('rounded-2xl blur-xl', !available && 'opacity-30')}
                 sizes={PULSE_COVER_IMAGE_SIZES.hero}
                 src={image}
               />
               <PulseCoverImage
                 alt={title}
-                className="rounded-2xl"
+                className={cn('rounded-2xl', !available && 'opacity-30')}
                 sizes={PULSE_COVER_IMAGE_SIZES.hero}
                 src={image}
               />
+              {!available && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-black/60 backdrop-blur-[2px] gap-2 p-4 text-center">
+                  <ActionIcon className="h-14 w-14 fill-zinc-300" name="IC-lock" />
+                  <span className="text-base font-semibold text-rose-400">
+                    {lang?.track_unavailable || 'Трек недоступен'}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col items-center gap-3 lg:items-start">
@@ -305,6 +294,11 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                 <h1 className="flex max-w-[92vw] flex-col break-words text-2xl font-black leading-none md:text-4xl lg:max-w-4xl lg:text-7xl">
                   {title}
                   <span className="text-sm font-thin text-content-600 lg:text-lg">{artist}</span>
+                  {!available && (
+                    <span className="mt-2 text-sm font-semibold text-rose-400">
+                      {lang?.track_unavailable || 'Трек недоступен'}
+                    </span>
+                  )}
                 </h1>
                 <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
                   <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-speaker" />
@@ -328,7 +322,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                         {lang?.add_to_playlist || 'В плейлист'}
                       </DropdownItem>
                     ) : null}
-                    {track?.src ? (
+                    {track?.src && available ? (
                       <DropdownItem icon="IC-download" onClick={() => window.open(`${normalizeText(track.src)}&download=1`, '_blank', 'noopener,noreferrer')}>
                         {lang?.download || 'Скачать'}
                       </DropdownItem>
@@ -340,7 +334,9 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                 <div className="flex flex-col items-center justify-center">
                   <button
                     type="button"
+                    disabled={!available}
                     onClick={() => {
+                      if (!available) return;
                       if (active) {
                         togglePlay();
                         return;
@@ -348,9 +344,14 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
 
                       if (trackNumericId) void playTrack(trackNumericId);
                     }}
-                    className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95"
+                    className={cn(
+                      'flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-zinc-600/30 shadow duration-300',
+                      available
+                        ? 'cursor-pointer bg-purple-500 hover:bg-purple-600 active:scale-95'
+                        : 'cursor-not-allowed bg-zinc-800/80 opacity-40',
+                    )}
                   >
-                    <ActionIcon className="h-10 w-10" name={active ? 'IC-pause' : 'IC-play'} />
+                    <ActionIcon className="h-10 w-10 fill-white" name={active ? 'IC-pause' : 'IC-play'} />
                   </button>
                   <span className="text-sm text-content-500">{lang?.listen || 'Слушать'}</span>
                 </div>

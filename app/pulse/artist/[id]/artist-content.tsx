@@ -9,6 +9,7 @@ import { useAuth, type User } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { AncialAPI } from '../../../lib/api-v2';
+import { useUserCountry } from '../../../lib/user-geo';
 import { SITE_CONFIG } from '../../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import { getPulsePlaylistTracksCacheKey } from '../../playlist/playlist-model';
@@ -114,15 +115,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>(() => readPulseJsonCache<PulseArtistPlaylistsResponse>(`artist_playlists_${cacheId}`)?.playlists ?? []);
   const [tracks, setTracks] = useState<PulseTrack[]>(cachedTracks);
 
-  const userCountry = useMemo(() => {
-    const nextCountry = normalizeText(
-      typeof window !== 'undefined'
-        ? String((window as Window & { userCountry?: string }).userCountry ?? user?.country ?? '')
-        : String(user?.country ?? ''),
-    );
-
-    return nextCountry || 'RU';
-  }, [user?.country]);
+  const userCountry = useUserCountry();
 
   const artistName = decodeHtmlEntities(artist?.name) || (lang?.artist || 'Артист');
   const artistDescription = decodeHtmlEntities(artist?.desk);

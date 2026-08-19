@@ -1,6 +1,6 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-// v14: force cache evict after pointer-based press animation refactor
-const SW_VERSION = '14';
+// v17: pulse unavailable track title formatting
+const SW_VERSION = '17';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");

@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { AncialAPI } from '../../../lib/api-v2';
+import { useUserCountry } from '../../../lib/user-geo';
 import { SITE_CONFIG } from '../../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import { readPulseJsonCache, writePulseJsonCache } from '../../pulse-cache';
@@ -72,14 +73,7 @@ export default function PulseSearchTracksContent() {
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [reportTrackTarget, setReportTrackTarget] = useState<PulseTrack | null>(null);
 
-  const userCountry = useMemo(() => {
-    const nextCountry = normalizeText(
-      typeof window !== 'undefined'
-        ? String((window as Window & { userCountry?: string }).userCountry ?? user?.country ?? '')
-        : String(user?.country ?? ''),
-    );
-    return nextCountry || 'RU';
-  }, [user?.country]);
+  const userCountry = useUserCountry();
 
   const showPulseNote = useCallback(
     (content: string, type: 'error' | 'info' | 'success' = 'info', time = 4) => {

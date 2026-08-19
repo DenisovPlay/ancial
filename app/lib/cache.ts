@@ -16,7 +16,7 @@ export type CacheCategory =
 
 export type CacheSubcategory<C extends CacheCategory> =
   C extends 'home'
-    ? 'currency' | 'weather'
+    ? 'currency' | 'weather' | 'geo'
     : C extends 'pulse'
     ? 'artists' | 'from_pulse' | 'listened' | 'now_listen' | 'we_like' | 'tracks' | 'favorites' | 'playlists' | 'artist_playlists' | 'offline_audio' | 'lyrics'
     : C extends 'wallet'

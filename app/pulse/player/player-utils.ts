@@ -93,9 +93,18 @@ export function normalizeTrackSource(trackSource: string | null | undefined) {
 
 export function isTrackPlayable(track: PlayerTrack | null, userCountry: string) {
   if (!track || String(track.status ?? '0') !== '1') return false;
-  if (Array.isArray(track.blockedin)) return !track.blockedin.includes(userCountry);
-  const blockedCountries = normalizeText(String(track.blockedin ?? ''));
-  return blockedCountries ? !blockedCountries.includes(userCountry) : true;
+  let blocked: string[] = [];
+  if (Array.isArray(track.blockedin)) {
+    blocked = track.blockedin.map((item) => normalizeText(String(item)).toUpperCase()).filter(Boolean);
+  } else {
+    blocked = normalizeText(String(track.blockedin ?? ''))
+      .toUpperCase()
+      .split(/[|,\s]+/)
+      .map((item) => normalizeText(item))
+      .filter(Boolean);
+  }
+  if (!blocked.length) return true;
+  return !blocked.includes(normalizeText(userCountry).toUpperCase());
 }
 
 export function isAndroidBrowser() {

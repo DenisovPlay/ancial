@@ -10,6 +10,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache.ts';
+import { useUserCountry } from '../../../lib/user-geo';
 import { SITE_CONFIG } from '../../../seo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
@@ -119,15 +120,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
 
-  const userCountry = useMemo(() => {
-    const nextCountry = normalizeText(
-      typeof window !== 'undefined'
-        ? String((window as Window & { userCountry?: string }).userCountry ?? user?.country ?? '')
-        : String(user?.country ?? ''),
-    );
-
-    return nextCountry || 'RU';
-  }, [user?.country]);
+  const userCountry = useUserCountry();
 
   const playlistType = toNumber(playlist?.type);
   const playlistPlayTarget = getPulsePlaylistActionTarget(playlistId, playlist);

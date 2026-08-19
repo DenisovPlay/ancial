@@ -32,6 +32,7 @@ import {
 } from '../pulse/player/offline-audio';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
+import { useUserCountry } from '../lib/user-geo';
 import {
   getActiveLyricState,
   splitLyricText,
@@ -320,7 +321,8 @@ export function PulsePlayerProvider({
   const nextTrackObj = playlist[index + 1] ?? null;
   const currentSongId = toNumber(currentTrack?.sid);
   const { cacheCurrentTrackInBackground, deleteOfflineTrack, offlineSaveStatus, saveCurrentTrack } = useOfflineAudioSave(currentTrack);
-  const userCountry = normalizeText(user?.country) || 'RU';
+  // Страна пользователя: мгновенно из кэша, затем обновляем из GetCountry.php
+  const userCountry = useUserCountry();
   const playerTitle = getTrackDisplayTitle(currentTrack, lang);
   const playerArtist = getTrackArtist(currentTrack, lang);
   const playerArtwork = getTrackArtwork(currentTrack);
@@ -352,15 +354,18 @@ export function PulsePlayerProvider({
 
   const notify = ({
     content,
-    time = 3,
+    html,
+    time = 4,
     type = 'info',
   }: {
     content: React.ReactNode;
+    html?: boolean;
     time?: number;
     type?: 'error' | 'info' | 'success';
   }) => {
     showNote({
       content,
+      html,
       time,
       type,
     });
@@ -751,9 +756,10 @@ export function PulsePlayerProvider({
 
     if (!isTrackPlayable(track, userCountry)) {
       notify({
-        content: lang?.pulse_track_unavailable || 'Трек недоступен или удалён. Переходим к следующему...',
+        content: lang?.pulse_track_unavailable || '<b>Трек недоступен или удалён.</b><br> Переходим к следующему...',
         type: 'error',
         time: 5,
+        html: true,
       });
 
       if (currentIsPlaylistRef.current && indexRef.current < playlistRef.current.length - 1) {

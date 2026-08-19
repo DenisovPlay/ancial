@@ -124,19 +124,20 @@ export function isTrackExplicit(track: PulseTrack) {
   return track.explicit === true || String(track.explicit ?? '') === '1';
 }
 
-function getBlockedCountries(blockedIn: PulseTrack['blockedin']) {
+export function getBlockedCountries(blockedIn: unknown): string[] {
   if (Array.isArray(blockedIn)) {
-    return blockedIn.map((item) => normalizeText(item)).filter(Boolean);
+    return blockedIn.map((item) => normalizeText(String(item)).toUpperCase()).filter(Boolean);
   }
 
   return normalizeText(String(blockedIn ?? ''))
-    .split(/[|,]/)
+    .toUpperCase()
+    .split(/[|,\s]+/)
     .map((item) => normalizeText(item))
     .filter(Boolean);
 }
 
-export function isTrackAvailable(track: PulseTrack, userCountry: string) {
-  if (String(track.status ?? '0') !== '1') {
+export function isTrackAvailable(track: PulseTrack | { status?: string | number | null; blockedin?: unknown } | null | undefined, userCountry: string) {
+  if (!track || String(track.status ?? '0') !== '1') {
     return false;
   }
 
@@ -145,7 +146,8 @@ export function isTrackAvailable(track: PulseTrack, userCountry: string) {
     return true;
   }
 
-  return !blockedCountries.includes(userCountry);
+  const normalizedUserCountry = normalizeText(userCountry).toUpperCase();
+  return !blockedCountries.includes(normalizedUserCountry);
 }
 
 export function PulseLogo({ className }: { className?: string }) {
@@ -532,20 +534,22 @@ export function PulseTrackRow({
     <div className={cn('rounded-2xl flex items-center gap-3 duration-300', isAvailable ? 'group cursor-pointer hover:bg-zinc-800 hover:pr-3' : 'group', isCurrentSong && 'bg-lime-500/10 pr-3')}>
       <button
         type="button"
-        onClick={() => onPlayTrack(track, trackIndex)}
+        onClick={() => {
+          if (isAvailable) onPlayTrack(track, trackIndex);
+        }}
         disabled={!isAvailable}
-        className={cn('relative h-16 w-16 shrink-0 cursor-pointer', !isAvailable && 'cursor-not-allowed')}
+        className={cn('relative h-16 w-16 shrink-0', isAvailable ? 'cursor-pointer' : 'cursor-not-allowed')}
       >
         {isOwnTrack ? (
           <ActionIcon
-            className="absolute -left-1.5 -top-1.5 z-10 h-6 w-6 rounded-full border border-zinc-600/30 bg-pink-500/50 stroke-white p-1 backdrop-blur-sm backdrop-saturate-200"
+            className="absolute -left-1.5 -top-1.5 z-20 h-6 w-6 rounded-full border border-zinc-600/30 bg-pink-500/50 stroke-white p-1 backdrop-blur-sm backdrop-saturate-200"
             name="IC-crown"
           />
         ) : null}
 
         {isCached ? (
           <div
-            className="absolute -right-1.5 -top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-emerald-500 text-white shadow-md backdrop-blur-sm"
+            className="absolute -right-1.5 -top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-emerald-500 text-white shadow-md backdrop-blur-sm"
             title={lang?.pulse_already_saved_offline || 'Сохранено офлайн'}
           >
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white">
@@ -556,30 +560,49 @@ export function PulseTrackRow({
 
         <PulseCoverImage
           alt={`${title} cover`}
-          className="rounded-2xl"
+          className={cn('rounded-2xl', !isAvailable && 'opacity-40')}
           sizes={PULSE_COVER_IMAGE_SIZES.trackRow}
           src={coverUrl}
         />
 
+        {/* Geo-block overlay */}
+        {!isAvailable && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-black/60 backdrop-blur-[1px]">
+            <svg className="h-5 w-5 fill-zinc-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+              <use href="/icons.svg#IC-lock" />
+            </svg>
+          </div>
+        )}
+
         {isTrackExplicit(track) ? (
-          <div className="group absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800/50 p-1 text-xs text-white duration-300 backdrop-blur-sm backdrop-saturate-200 hover:w-fit">
+          <div className="group absolute -bottom-1.5 -right-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800/50 p-1 text-xs text-white duration-300 backdrop-blur-sm backdrop-saturate-200 hover:w-fit">
             <span className="group-hover:hidden">E</span>
             <span className="hidden group-hover:inline">18+</span>
           </div>
         ) : null}
       </button>
 
-      <button type="button" onClick={() => onPlayTrack(track, trackIndex)} disabled={!isAvailable} className={cn('min-w-0 flex-grow cursor-pointer text-left', !isAvailable && 'cursor-not-allowed')}>
+      <button
+        type="button"
+        onClick={() => {
+          if (isAvailable) onPlayTrack(track, trackIndex);
+        }}
+        disabled={!isAvailable}
+        className={cn('min-w-0 flex-grow text-left', isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60')}
+      >
         <span className="block truncate text-sm font-medium text-white md:text-base lg:text-lg">
-          {isAvailable ? title : `${title} - ${artist}`}
+          {isAvailable ? title : (artist ? `${title} - ${artist}` : title)}
         </span>
-        <span className="block truncate text-xs text-zinc-300 lg:text-sm">
-          {isAvailable ? artist : (lang?.track_unavailable || 'Трек недоступен')}
+        <span className="block truncate text-xs lg:text-sm">
+          {isAvailable
+            ? <span className="text-zinc-300">{artist}</span>
+            : <span className="text-rose-400 font-medium">{lang?.track_unavailable || 'Трек недоступен'}</span>
+          }
         </span>
       </button>
 
       {isAuthenticated ? (
-        <button type="button" onClick={() => void onLikeTrack(track)} className="cursor-pointer active:scale-95">
+        <button type="button" onClick={() => void onLikeTrack(track)} className={cn('cursor-pointer active:scale-95', !isAvailable && 'opacity-60')}>
           <ActionIcon className={cn('h-6 w-6 duration-300 hover:fill-zinc-300 lg:h-8 lg:w-8', isLiked ? 'fill-white' : 'fill-zinc-100')} name={isLiked ? 'IC-heart-filled' : 'IC-heart'} />
         </button>
       ) : null}

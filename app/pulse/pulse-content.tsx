@@ -18,6 +18,7 @@ import {
   PulsePlaylistTile,
   PulseReportModal,
   PulsePlaylistTileSkeleton,
+  PulseTrackRow,
   TrackCollectionPanel,
 } from './pulse-components';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
@@ -27,6 +28,7 @@ import { getDownloadedAudioCount } from './player/offline-audio';
 import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigation';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-track-modal';
 import { PulseHeader } from './pulse-header';
+import { useUserCountry } from '../lib/user-geo';
 
 type PulseHomePlaylistCard = {
   creator?: string | null;
@@ -72,24 +74,7 @@ type RecentlyListenedState = PulseHomePlaylistCard[] | 'empty' | null;
 type HomeTrackCollectionId = 'New' | 'Top' | 'Your';
 type NoteKind = 'error' | 'info' | 'success';
 
-type PulseTrackRowProps = {
-  currentSongId: number;
-  favoriteIds: number[];
-  isAuthenticated: boolean;
-  onAddToPlaylist: (trackId: number | string) => void;
-  onCopyTrackLink: (trackId: number | string, track?: PulseTrack) => Promise<void>;
-  onDeleteTrack?: (track: PulseTrack) => void;
-  onEditTrack?: (track: PulseTrack) => void;
-  onLikeTrack: (track: PulseTrack) => Promise<void>;
-  onOpenArtist: (artistId: string) => void;
-  onPlayTrack: (track: PulseTrack, index: number) => void;
-  onQueueTrackNext: (trackId: number | string) => Promise<void>;
-  onReportTrack?: (track: PulseTrack) => Promise<void> | void;
-  track: PulseTrack;
-  trackIndex: number;
-  user: User | null;
-  userCountry: string;
-};
+
 
 const HOME_CACHE_KEYS = {
   artists: 'pulse_home_artists',
@@ -163,33 +148,9 @@ function getTrackArtwork(track: PulseTrack) {
   return getImageUrl(cover?.src, DEFAULT_TRACK_IMAGE);
 }
 
-function isTrackExplicit(track: PulseTrack) {
-  return track.explicit === true || String(track.explicit ?? '') === '1';
-}
 
-function getBlockedCountries(blockedIn: PulseTrack['blockedin']) {
-  if (Array.isArray(blockedIn)) {
-    return blockedIn.map((item) => normalizeText(item)).filter(Boolean);
-  }
 
-  return normalizeText(String(blockedIn ?? ''))
-    .split(/[|,]/)
-    .map((item) => normalizeText(item))
-    .filter(Boolean);
-}
 
-function isTrackAvailable(track: PulseTrack, userCountry: string) {
-  if (String(track.status ?? '0') !== '1') {
-    return false;
-  }
-
-  const blockedCountries = getBlockedCountries(track.blockedin);
-  if (!blockedCountries.length) {
-    return true;
-  }
-
-  return !blockedCountries.includes(userCountry);
-}
 
 function getArtistIds(track: PulseTrack) {
   if (Array.isArray(track.artists_ids)) {
@@ -377,275 +338,6 @@ function OfflineDownloadsPill({
   );
 }
 
-function PulseTrackRow({
-  currentSongId,
-  favoriteIds,
-  isAuthenticated,
-  onAddToPlaylist,
-  onCopyTrackLink,
-  onDeleteTrack,
-  onEditTrack,
-  onLikeTrack,
-  onOpenArtist,
-  onPlayTrack,
-  onQueueTrackNext,
-  onReportTrack,
-  track,
-  trackIndex,
-  user,
-  userCountry,
-}: PulseTrackRowProps) {
-  const { lang } = useAuth();
-  const trackId = toNumber(track.sid);
-  const isCurrentSong = currentSongId > 0 && currentSongId === trackId;
-  const isOwnTrack = canManagePulseTrack(track, user);
-  const isLiked = trackId > 0 && favoriteIds.includes(trackId);
-  const isAvailable = isTrackAvailable(track, userCountry);
-  const firstArtistId = getArtistIds(track)[0] ?? '';
-  const coverUrl = getTrackArtwork(track);
-  const title = decodeHtmlEntities(track.title) || (lang?.untitled || 'Без названия');
-  const artist = decodeHtmlEntities(track.artist) || (lang?.unknown_artist || 'Неизвестный исполнитель');
-  const [isTrackMenuOpen, setIsTrackMenuOpen] = useState(false);
-  const [isCached, setIsCached] = useState(false);
-  const [isSavingOffline, setIsSavingOffline] = useState(false);
-  const [isDeletingOffline, setIsDeletingOffline] = useState(false);
-  const trackMenuZIndex = getPulseTrackDropdownZIndex(trackIndex, isTrackMenuOpen);
-
-  useEffect(() => {
-    let isMounted = true;
-    if (trackId > 0) {
-      cache.audio.has(trackId).then((cached) => {
-        if (isMounted) setIsCached(cached);
-      }).catch(() => {});
-    }
-    return () => { isMounted = false; };
-  }, [trackId]);
-
-  const handleSaveOffline = async () => {
-    if (isSavingOffline || isDeletingOffline) return;
-
-    if (isCached) {
-      // Track is cached — delete it
-      setIsDeletingOffline(true);
-      try {
-        await cache.audio.remove(trackId);
-        setIsCached(false);
-      } catch (e) {
-        console.error('Failed to delete offline track:', e);
-      } finally {
-        setIsDeletingOffline(false);
-      }
-      return;
-    }
-
-    setIsSavingOffline(true);
-    try {
-      const src = normalizeText(track.src);
-      if (src && trackId) {
-        const success = await cache.audio.save(
-          trackId,
-          src,
-          { title: track.title || undefined, artist: track.artist || undefined },
-          undefined,
-          true
-        );
-        if (success) setIsCached(true);
-      }
-    } catch (e) {
-      console.error('Failed to save offline:', e);
-    } finally {
-      setIsSavingOffline(false);
-    }
-  };
-
-  const manageActions = [
-    isAuthenticated && isOwnTrack && onEditTrack
-      ? {
-          icon: 'IC-edit',
-          key: 'edit',
-          label: lang?.edit || 'Изменить',
-          onClick: () => onEditTrack(track),
-        }
-      : null,
-    isAuthenticated && isOwnTrack && onDeleteTrack
-      ? {
-          icon: 'IC-trash',
-          key: 'delete',
-          label: lang?.delete || 'Удалить',
-          onClick: () => onDeleteTrack(track),
-        }
-      : null,
-  ].filter(Boolean) as Array<{
-    icon: string;
-    key: string;
-    label: string;
-    onClick: () => void;
-  }>;
-  const footerActions = [
-    firstArtistId
-      ? {
-          icon: 'IC-user',
-          key: 'artist',
-          label: lang?.artist || 'Исполнитель',
-          onClick: () => onOpenArtist(firstArtistId),
-        }
-      : null,
-    {
-      icon: 'IC-share',
-      key: 'share',
-      label: lang?.share || 'Поделиться',
-      onClick: () => void onCopyTrackLink(trackId, track),
-    },
-    onReportTrack
-      ? {
-          icon: 'IC-report',
-          key: 'report',
-          label: lang?.report || 'Пожаловаться',
-          onClick: () => void onReportTrack(track),
-        }
-      : null,
-  ].filter(Boolean) as Array<{
-    icon: string;
-    key: string;
-    label: string;
-    onClick: () => void;
-  }>;
-
-  return (
-    <div className={cn('rounded-2xl flex items-center gap-3 duration-300', isAvailable ? 'group hover:bg-zinc-800 hover:pr-3' : 'opacity-80', isCurrentSong && 'bg-lime-500/10 pr-3')}>
-      <button
-        type="button"
-        onClick={() => onPlayTrack(track, trackIndex)}
-        disabled={!isAvailable}
-        className={cn('relative h-16 w-16 shrink-0 cursor-pointer', !isAvailable && 'cursor-not-allowed')}
-      >
-        {isOwnTrack ? (
-          <ActionIcon
-            className="absolute -left-1.5 -top-1.5 z-10 h-6 w-6 rounded-full border border-zinc-600/30 bg-pink-500/50 stroke-white p-1 backdrop-blur-sm backdrop-saturate-200"
-            name="IC-crown"
-          />
-        ) : null}
-
-        {isCached ? (
-          <div
-            className="absolute -right-1.5 -top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-emerald-500 text-white shadow-md backdrop-blur-sm"
-            title={lang?.pulse_already_saved_offline || 'Сохранено офлайн'}
-          >
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-            </svg>
-          </div>
-        ) : null}
-
-        <PulseCoverImage
-          alt={`${title} cover`}
-          className="rounded-2xl"
-          sizes={PULSE_COVER_IMAGE_SIZES.trackRow}
-          src={coverUrl}
-        />
-
-        {isTrackExplicit(track) ? (
-          <div className="absolute -bottom-1.5 -right-1.5 flex h-6 min-w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800/70 px-1 text-[10px] font-bold text-white backdrop-blur-sm backdrop-saturate-200">
-            18+
-          </div>
-        ) : null}
-      </button>
-
-      <button type="button" onClick={() => onPlayTrack(track, trackIndex)} disabled={!isAvailable} className={cn('min-w-0 flex-grow cursor-pointer text-left', !isAvailable && 'cursor-not-allowed')}>
-        <span className="block truncate text-sm font-medium text-white md:text-base lg:text-lg">
-          {title}
-        </span>
-        <span className="block truncate text-xs text-zinc-300 lg:text-sm">
-          {isAvailable ? artist : (lang?.track_unavailable || 'Трек недоступен')}
-        </span>
-      </button>
-
-      {isAuthenticated ? (
-        <button type="button" onClick={() => void onLikeTrack(track)} className="cursor-pointer active:scale-95">
-          <ActionIcon className={cn('h-6 w-6 duration-300 hover:fill-zinc-300 lg:h-8 lg:w-8', isLiked ? 'fill-white' : 'fill-zinc-100')} name={isLiked ? 'IC-heart-filled' : 'IC-heart'} />
-        </button>
-      ) : null}
-
-      <Dropdown
-        position="bottom"
-        align="end"
-        triggerSize="sm"
-        menuClassName="min-w-[12rem] !gap-1.5"
-        onOpenChange={setIsTrackMenuOpen}
-        open={isTrackMenuOpen}
-        wrapperClassName="relative"
-        wrapperStyle={{ zIndex: trackMenuZIndex }}
-      >
-        {manageActions.length ? (
-          <div className="grid w-full grid-cols-2 gap-1.5">
-            {manageActions.map((action) => (
-              <button
-                key={action.key}
-                type="button"
-                aria-label={action.label}
-                onClick={action.onClick}
-                className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
-              >
-                <ActionIcon className="h-6 w-6" name={action.icon} />
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
-          {lang?.play_next || 'Следующим'}
-        </DropdownItem>
-        {isAuthenticated ? (
-          <DropdownItem icon="IC-plus" onClick={() => onAddToPlaylist(track.sid ?? 0)}>
-            {lang?.add_to_playlist || 'В плейлист'}
-          </DropdownItem>
-        ) : null}
-        <DropdownItem
-          icon="IC-download"
-          onClick={() => {
-            const src = normalizeText(track.src);
-            if (!src) return;
-            const a = document.createElement('a');
-            a.href = src;
-            a.download = `${artist} - ${title}.mp3`;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          }}
-        >
-          {lang?.pulse_download_mp3 || 'Скачать MP3'}
-        </DropdownItem>
-        <DropdownItem
-          icon={isCached ? 'IC-bookmark-filled' : 'IC-bookmark'}
-          onClick={handleSaveOffline}
-        >
-          {isDeletingOffline
-            ? (lang?.pulse_removing_offline || 'Удаляется...')
-            : isSavingOffline
-              ? (lang?.pulse_saving_offline || 'Сохраняется...')
-              : isCached
-                ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
-                : (lang?.pulse_save_offline || 'Сохранить офлайн')}
-        </DropdownItem>
-        <div className={cn('grid w-full gap-1.5', footerActions.length >= 3 ? 'grid-cols-3' : 'grid-cols-2')}>
-          {footerActions.map((action) => (
-            <button
-              key={action.key}
-              type="button"
-              aria-label={action.label}
-              onClick={action.onClick}
-              className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
-            >
-              <ActionIcon className="h-6 w-6" name={action.icon} />
-            </button>
-          ))}
-        </div>
-      </Dropdown>
-    </div>
-  );
-}
-
 export default function PulseContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading, lang, user } = useAuth();
@@ -691,15 +383,9 @@ export default function PulseContent() {
   const [yourTracks, setYourTracks] = useState<PulseTrack[] | null>(() => readJsonCache<PulseTrack[]>(TRACK_CACHE_KEYS.Your));
 
   const guestYourPulseMessage = lang?.guestyourpulsemsg || 'Я не знаю кто ты... Создашь аккаунт?';
-  const userCountry = useMemo(() => {
-    const nextCountry = normalizeText(
-      typeof window !== 'undefined'
-        ? String((window as Window & { userCountry?: string }).userCountry ?? user?.country ?? '')
-        : String(user?.country ?? ''),
-    );
 
-    return nextCountry || 'RU';
-  }, [user?.country]);
+  // Страна пользователя: мгновенно из кэша, затем обновляем из GetCountry.php
+  const userCountry = useUserCountry();
 
   const showPulseNote = useCallback((content: string, type: NoteKind = 'info', time = 4) => {
     showNote({
