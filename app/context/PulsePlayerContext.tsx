@@ -101,6 +101,7 @@ type PulsePlayerContextValue = {
   isPlaying: boolean;
   mode: PulsePlayerMode;
   openAddToPlaylist: (songId: number | string) => void;
+  openBlockedTrackModal: () => void;
   playArtistPlaylist: (artistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
   playDownloadedTracks: (forceReload?: boolean, shuffle?: number, startIndex?: number) => Promise<void>;
   playGenlist: (playlistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
@@ -722,6 +723,11 @@ export function PulsePlayerProvider({
     toggleSongInPlaylist,
   } = useAddToPlaylist({ lang, navigate: router.push, notify });
 
+  const [isBlockedTrackModalOpen, setIsBlockedTrackModalOpen] = useState(false);
+  const openBlockedTrackModal = useCallback(() => {
+    setIsBlockedTrackModalOpen(true);
+  }, []);
+
   const {
     ensureLikedSongsLoaded,
     likedSongIds,
@@ -1002,6 +1008,11 @@ export function PulsePlayerProvider({
       ? 0
       : clamp(startIndex, 0, Math.max(preparedTracks.length - 1, 0));
     const nextTrack = preparedTracks[nextIndex] ?? null;
+
+    if (kind === 'track' && !isTrackPlayable(nextTrack, userCountry)) {
+      setIsBlockedTrackModalOpen(true);
+      return;
+    }
 
     setPlaylistState(preparedTracks);
     setPlaylistIndex(nextIndex);
@@ -1319,9 +1330,14 @@ export function PulsePlayerProvider({
 
   const playQueueTrack = useCallback((targetIndex: number) => {
     if (targetIndex < 0 || targetIndex >= playlistRef.current.length) return;
+    const targetTrack = playlistRef.current[targetIndex] ?? null;
+    if (targetTrack && !isTrackPlayable(targetTrack, userCountry)) {
+      setIsBlockedTrackModalOpen(true);
+      return;
+    }
     setPlaylistIndex(targetIndex);
-    void playLoadedTrack(playlistRef.current[targetIndex] ?? null);
-  }, []);
+    void playLoadedTrack(targetTrack);
+  }, [userCountry]);
 
 
   useEffect(() => {
@@ -1456,6 +1472,18 @@ export function PulsePlayerProvider({
       syncTrackProgress();
     };
 
+    const handleError = () => {
+      setIsPlaying(false);
+      setStatusAudio('Ready');
+      stopProgressLoop();
+      stopVisualProgressLoop();
+
+      const track = playlistRef.current[indexRef.current] ?? null;
+      if (track) {
+        setIsBlockedTrackModalOpen(true);
+      }
+    };
+
     audio.addEventListener('loadstart', handleLoadStart);
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('play', handlePlay);
@@ -1463,6 +1491,7 @@ export function PulsePlayerProvider({
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('loadstart', handleLoadStart);
@@ -1472,6 +1501,7 @@ export function PulsePlayerProvider({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('error', handleError);
     };
     // We intentionally keep this subscription stable and read live player state from refs/events,
     // otherwise adding every helper here would re-bind audio listeners on frequent progress updates.
@@ -1705,6 +1735,7 @@ export function PulsePlayerProvider({
     isPlaying,
     mode,
     openAddToPlaylist,
+    openBlockedTrackModal,
     playArtistPlaylist,
     playDownloadedTracks,
     playGenlist,
@@ -2012,6 +2043,7 @@ export function PulsePlayerProvider({
         changeEqGain={changeEqGain}
         eqGains={eqGains}
         isAddToPlaylistOpen={isAddToPlaylistOpen}
+        isBlockedTrackModalOpen={isBlockedTrackModalOpen}
         isEqualizerOpen={isEqualizerOpen}
         isPlaylistEditorOpen={isPlaylistEditorOpen}
         lang={lang}
@@ -2021,6 +2053,7 @@ export function PulsePlayerProvider({
         playlistOptions={playlistOptions}
         playlistOptionsLoading={playlistOptionsLoading}
         setIsAddToPlaylistOpen={setIsAddToPlaylistOpen}
+        setIsBlockedTrackModalOpen={setIsBlockedTrackModalOpen}
         setIsEqualizerOpen={setIsEqualizerOpen}
         setIsPlaylistEditorOpen={setIsPlaylistEditorOpen}
         toggleSongInPlaylist={toggleSongInPlaylist}

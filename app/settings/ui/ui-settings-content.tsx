@@ -163,14 +163,15 @@ export default function UiSettingsContent() {
             </div>
 
             {/* Glass Box Preview over background */}
-            <div className="w-full sm:w-52 h-20 sm:-mt-3 sm:-mr-3 shrink-0 relative overflow-hidden flex items-center justify-center">
-              <div className="absolute inset-0 bg-zinc-950">
+            <div className="w-full sm:w-52 h-20 sm:-mt-3 sm:-mr-3 shrink-0 relative overflow-hidden flex items-center justify-center select-none">
+              <div className="absolute inset-0 bg-zinc-950 pointer-events-none">
                 <Image
                   src="/img/backgrounds/bg.webp"
                   alt="Glass preview background"
                   fill
                   sizes="160px"
-                  className="object-cover"
+                  className="object-cover pointer-events-none select-none"
+                  draggable={false}
                 />
               </div>
               <div className="absolute left-0 inset-y-0 w-10 bg-gradient-to-r from-zinc-900 via-transparent to-transparent"></div>

@@ -146,6 +146,11 @@ export function isTrackAvailable(track: PulseTrack | { status?: string | number 
     return true;
   }
 
+  // '*' or 'ALL' means completely blocked worldwide across all regions
+  if (blockedCountries.includes('*') || blockedCountries.includes('ALL')) {
+    return false;
+  }
+
   const normalizedUserCountry = normalizeText(userCountry).toUpperCase();
   return !blockedCountries.includes(normalizedUserCountry);
 }
@@ -399,7 +404,7 @@ export function PulseTrackRow({
   userCountry,
 }: PulseTrackRowProps) {
   const { lang } = useAuth();
-  const { currentTrackObj, isPlaying } = usePulsePlayer();
+  const { currentTrackObj, isPlaying, openBlockedTrackModal } = usePulsePlayer();
 
   const rawSid = String(track.sid ?? '').trim();
   const numSid = toNumber(rawSid);
@@ -531,14 +536,17 @@ export function PulseTrackRow({
   }>;
 
   return (
-    <div className={cn('rounded-2xl flex items-center gap-3 duration-300', isAvailable ? 'group cursor-pointer hover:bg-zinc-800 hover:pr-3' : 'group', isCurrentSong && 'bg-lime-500/10 pr-3')}>
+    <div className={cn('rounded-2xl flex items-center gap-3 duration-300 group cursor-pointer hover:bg-zinc-800 hover:pr-3', isCurrentSong && 'bg-lime-500/10 pr-3')}>
       <button
         type="button"
         onClick={() => {
-          if (isAvailable) onPlayTrack(track, trackIndex);
+          if (isAvailable) {
+            onPlayTrack(track, trackIndex);
+          } else {
+            openBlockedTrackModal();
+          }
         }}
-        disabled={!isAvailable}
-        className={cn('relative h-16 w-16 shrink-0', isAvailable ? 'cursor-pointer' : 'cursor-not-allowed')}
+        className="relative h-16 w-16 shrink-0 cursor-pointer active:scale-95 duration-300"
       >
         {isOwnTrack ? (
           <ActionIcon
@@ -585,10 +593,13 @@ export function PulseTrackRow({
       <button
         type="button"
         onClick={() => {
-          if (isAvailable) onPlayTrack(track, trackIndex);
+          if (isAvailable) {
+            onPlayTrack(track, trackIndex);
+          } else {
+            openBlockedTrackModal();
+          }
         }}
-        disabled={!isAvailable}
-        className={cn('min-w-0 flex-grow text-left', isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60')}
+        className={cn('min-w-0 flex-grow text-left', isAvailable ? 'cursor-pointer' : 'cursor-pointer opacity-60')}
       >
         <span className="block truncate text-sm font-medium text-white md:text-base lg:text-lg">
           {isAvailable ? title : (artist ? `${title} - ${artist}` : title)}
@@ -632,43 +643,49 @@ export function PulseTrackRow({
             ))}
           </div>
         ) : null}
-        <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
-          {lang?.play_next || 'Следующим'}
-        </DropdownItem>
+        {isAvailable ? (
+          <DropdownItem icon="IC-chart-hor" onClick={() => void onQueueTrackNext(track.sid ?? 0)}>
+            {lang?.play_next || 'Следующим'}
+          </DropdownItem>
+        ) : null}
         {isAuthenticated ? (
           <DropdownItem icon="IC-plus" onClick={() => onAddToPlaylist(track.sid ?? 0)}>
             {lang?.add_to_playlist || 'В плейлист'}
           </DropdownItem>
         ) : null}
-        <DropdownItem
-          icon="IC-download"
-          onClick={() => {
-            const src = normalizeText(track.src);
-            if (!src) return;
-            const a = document.createElement('a');
-            a.href = src;
-            a.download = `${artist} - ${title}.mp3`;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          }}
-        >
-          {lang?.pulse_download_mp3 || 'Скачать MP3'}
-        </DropdownItem>
-        <DropdownItem
-          icon={isCached ? 'IC-bookmark-filled' : 'IC-bookmark'}
-          onClick={handleSaveOffline}
-        >
-          {isDeletingOffline
-            ? (lang?.pulse_removing_offline || 'Удаляется...')
-            : isSavingOffline
-              ? (lang?.pulse_saving_offline || 'Сохраняется...')
-              : isCached
-                ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
-                : (lang?.pulse_save_offline || 'Сохранить офлайн')}
-        </DropdownItem>
+        {isAvailable && track?.src ? (
+          <DropdownItem
+            icon="IC-download"
+            onClick={() => {
+              const src = normalizeText(track.src);
+              if (!src) return;
+              const a = document.createElement('a');
+              a.href = src;
+              a.download = `${artist} - ${title}.mp3`;
+              a.target = '_blank';
+              a.rel = 'noopener noreferrer';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }}
+          >
+            {lang?.pulse_download_mp3 || 'Скачать MP3'}
+          </DropdownItem>
+        ) : null}
+        {isAvailable ? (
+          <DropdownItem
+            icon={isCached ? 'IC-bookmark-filled' : 'IC-bookmark'}
+            onClick={handleSaveOffline}
+          >
+            {isDeletingOffline
+              ? (lang?.pulse_removing_offline || 'Удаляется...')
+              : isSavingOffline
+                ? (lang?.pulse_saving_offline || 'Сохраняется...')
+                : isCached
+                  ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
+                  : (lang?.pulse_save_offline || 'Сохранить офлайн')}
+          </DropdownItem>
+        ) : null}
         <div className={cn('grid w-full gap-1.5', footerActions.length >= 3 ? 'grid-cols-3' : 'grid-cols-2')}>
           {footerActions.map((action) => (
             <button

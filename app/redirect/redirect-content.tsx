@@ -76,7 +76,7 @@ function RedirectContentInner() {
       `}</style>
       <div className="flex w-full max-w-xl flex-col gap-3">
         {/* Header box */}
-        <div className="pb-20 flex items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-5 shadow-2xl backdrop-blur-xl">
+        <div className="pb-20 flex items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-xl">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center">
             <img alt="Zypo Logo" className="h-14 w-14" src="/img/zypo/logo-rounded.webp" />
           </div>
@@ -91,7 +91,7 @@ function RedirectContentInner() {
         </div>
 
         {/* Target link box */}
-        <div className="-mt-20 flex flex-col gap-1 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-5 shadow-2xl backdrop-blur-xl">
+        <div className="-mt-20 flex flex-col gap-1 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-xl">
           <span className="text-xs text-zinc-400">{lang?.redirect_link_label || 'Ссылка'}</span>
           <div className="break-all text-sm font-medium text-white lg:text-base">
             {rawLink ? decodeURIComponent(rawLink) : (lang?.not_found || 'Не указана')}
@@ -100,7 +100,7 @@ function RedirectContentInner() {
 
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-8 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-xl">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
             <span className="text-sm text-zinc-400">{lang?.loading || 'Проверка безопасности...'}</span>
           </div>
@@ -108,7 +108,7 @@ function RedirectContentInner() {
 
         {/* Error State */}
         {!loading && error && (
-          <div className="flex flex-col gap-2 rounded-3xl border border-amber-500/30 bg-amber-500/10 p-5 text-amber-400 shadow-2xl">
+          <div className="flex flex-col gap-2 rounded-3xl border border-amber-500/30 bg-amber-500/10 p-3 text-amber-400 shadow-2xl">
             <div className="text-base font-bold">Ошибка проверки</div>
             <div className="text-xs">{error}</div>
           </div>
@@ -116,7 +116,7 @@ function RedirectContentInner() {
 
         {/* Analysis Result Card */}
         {!loading && analysis && (
-          <div className={`flex flex-col gap-3 rounded-3xl border ${badgeColor} p-5 shadow-2xl backdrop-blur-xl`}>
+          <div className={`flex flex-col gap-3 rounded-3xl border ${badgeColor} p-3 shadow-2xl backdrop-blur-xl`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <svg className="h-6 w-6 fill-current">
@@ -144,7 +144,7 @@ function RedirectContentInner() {
 
             {/* Reasons List */}
             {analysis.reasons && analysis.reasons.length > 0 && (
-              <div className="mt-2 flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold opacity-75">Факторы риска:</span>
                 <ul className="flex flex-col gap-1.5">
                   {analysis.reasons.map((reason, idx) => (

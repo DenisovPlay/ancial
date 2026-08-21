@@ -36,18 +36,35 @@ export default function CommunityChannelShell({ failed, structure }: Props) {
     }
   }, [lang, openingId, router, showNote]);
 
-  if (!structure && !failed) return <div className="h-28 animate-pulse rounded-3xl border border-zinc-600/30 bg-zinc-900" />;
-  if (failed || !structure) return null;
-  const content = structure.channels.length ? (
-    <CommunityChannelList categories={structure.categories} channels={structure.channels} disabled={openingId !== null} onSelect={openChannel} selectedId={openingId} uncategorizedLabel={lang?.community_channel_uncategorized || ''} />
-  ) : <p className="p-3 text-sm text-zinc-400">{lang?.community_channels_empty}</p>;
+  if (failed || !structure || !structure.channels.length) return null;
+
+  const content = (
+    <CommunityChannelList
+      categories={structure.categories}
+      channels={structure.channels}
+      disabled={openingId !== null}
+      onSelect={openChannel}
+      selectedId={openingId}
+      uncategorizedLabel={lang?.community_channel_uncategorized || ''}
+    />
+  );
 
   return (
     <section className="border-x border-zinc-600/30 bg-zinc-900 p-3 md:rounded-3xl md:border">
-      <div className="mb-3 flex items-center gap-3"><span className="text-lg font-thin text-zinc-300">{lang?.community_channels}</span></div>
+      <div className="mb-3 flex items-center gap-3">
+        <span className="text-lg font-thin text-zinc-300">{lang?.community_channels}</span>
+      </div>
       <div className="hidden lg:block">{content}</div>
-      <button type="button" onClick={() => setMobileOpen(true)} className="w-full cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 duration-300 hover:bg-zinc-700 active:scale-95 lg:hidden">{lang?.community_channels_open}</button>
-      <Modal isOpen={mobileOpen} onClose={() => setMobileOpen(false)} title={lang?.community_channels}>{content}</Modal>
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="w-full cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 duration-300 hover:bg-zinc-700 active:scale-95 lg:hidden"
+      >
+        {lang?.community_channels_open}
+      </button>
+      <Modal isOpen={mobileOpen} onClose={() => setMobileOpen(false)} title={lang?.community_channels}>
+        {content}
+      </Modal>
     </section>
   );
 }

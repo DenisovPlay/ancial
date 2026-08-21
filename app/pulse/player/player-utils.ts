@@ -104,6 +104,7 @@ export function isTrackPlayable(track: PlayerTrack | null, userCountry: string) 
       .filter(Boolean);
   }
   if (!blocked.length) return true;
+  if (blocked.includes('*') || blocked.includes('ALL')) return false;
   return !blocked.includes(normalizeText(userCountry).toUpperCase());
 }
 

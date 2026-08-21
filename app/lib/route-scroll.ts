@@ -53,7 +53,7 @@ function scrollTargetToTop(target: ScrollTarget | null | undefined, options: Scr
   }
 }
 
-export function scrollAppToTop(behavior: ScrollBehavior = 'smooth') {
+export function scrollAppToTop(behavior: ScrollBehavior = 'instant') {
   if (typeof window === 'undefined') {
     return;
   }

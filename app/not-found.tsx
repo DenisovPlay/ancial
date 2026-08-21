@@ -58,7 +58,7 @@ export default function NotFound() {
 
         preload="none"
         playsInline
-        className="z-[1] absolute inset-0 w-full h-full object-cover opacity-50 duration-300"
+        className="z-[1] absolute inset-0 w-full h-full object-cover opacity-50 duration-300 pointer-events-none select-none"
         src="/img/backgrounds/404.webm"
       />
       <span className="z-10 text-[128px] font-bold cutetext">404</span>

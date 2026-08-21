@@ -212,7 +212,7 @@ export default function MessageBubble({
   }, [messageBodyRaw, domain]);
 
   const trackIds = useMemo(() => {
-    const trackRegex = new RegExp(`https?://${domain}/pulse/(?:playlist/\\d+\\?track=|track/)(\\d+)`, 'gi');
+    const trackRegex = new RegExp(`https?://${domain}/pulse/(?:playlist/[a-zA-Z0-9_-]+\\?track=|track/)([a-zA-Z0-9_-]+)`, 'gi');
     const ids = new Set<string>();
     let match;
     while ((match = trackRegex.exec(messageBodyRaw)) !== null) ids.add(match[1]);

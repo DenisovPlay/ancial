@@ -25,10 +25,21 @@
   }
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+img,
+video {
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 /* Android Chromium can spend most of a frame repainting large or nested

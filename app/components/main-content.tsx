@@ -22,7 +22,7 @@ export default function MainContent({ children }: { children: React.ReactNode })
           });
         },
         scrollToTop: () => {
-          scrollAppToTop('smooth');
+          scrollAppToTop('instant');
         },
       }),
     []

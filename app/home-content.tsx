@@ -504,7 +504,7 @@ export default function HomeContent() {
           loop
           preload="none"
           playsInline
-          className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-0 lg:opacity-50 duration-300"
+          className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-0 lg:opacity-50 duration-300 pointer-events-none select-none"
           src="/img/backgrounds/ygX.mp4"
         />
         <Image
@@ -512,7 +512,8 @@ export default function HomeContent() {
           fill
           alt="Background"
           sizes="100vw"
-          className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 lg:opacity-0 duration-300"
+          className="z-[-1] absolute inset-0 w-full h-full object-cover opacity-40 lg:opacity-0 duration-300 pointer-events-none select-none"
+          draggable={false}
           priority
         />
 
@@ -521,10 +522,10 @@ export default function HomeContent() {
           initial={false}
           animate={{ opacity: queryParam ? 0 : 1, y: queryParam ? -20 : 0 }}
           transition={{ duration: 0.3 }}
-          className="-mt-32 /hidden w-full max-w-screen-md flex items-center gap-3 shadow relative z-10"
+          className="-mt-32 /hidden w-full max-w-screen-md flex items-center gap-3 shadow relative z-10 select-none"
         >
           <div className="flex flex-col items-center justify-center text-center w-full">
-            <span className="text-lg lg:text-2xl font-bold">Теперь мы - <img src="/img/zypo/letter.svg" className='h-6 lg:h-8 inline' /></span>
+            <span className="text-lg lg:text-2xl font-bold">Теперь мы - <img src="/img/zypo/letter.svg" className='h-6 lg:h-8 inline pointer-events-none select-none' draggable={false} alt="Zypo" /></span>
             <span className="text-sm lg:text-base text-zinc-300">
               Всё так же, но даже лучше.
             </span>

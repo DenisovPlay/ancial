@@ -69,6 +69,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
     currentSongId,
     isPlaying,
     openAddToPlaylist,
+    openBlockedTrackModal,
     playTrack,
     togglePlay,
   } = usePulsePlayer();
@@ -266,7 +267,15 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
       {!loading && track ? (
         <>
           <div className="flex w-full max-w-screen-2xl flex-col items-center justify-center gap-6 px-3 lg:flex-row lg:justify-start lg:px-0">
-            <div className="relative flex h-72 w-72 shrink-0 rounded-3xl shadow lg:h-96 lg:w-96 overflow-hidden">
+            <div
+              onClick={() => {
+                if (!available) openBlockedTrackModal();
+              }}
+              className={cn(
+                'relative flex h-72 w-72 shrink-0 rounded-3xl shadow lg:h-96 lg:w-96 overflow-hidden',
+                !available && 'cursor-pointer active:scale-95 duration-300'
+              )}
+            >
               <PulseCoverImage
                 alt=""
                 className={cn('rounded-2xl blur-xl', !available && 'opacity-30')}
@@ -334,9 +343,11 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                 <div className="flex flex-col items-center justify-center">
                   <button
                     type="button"
-                    disabled={!available}
                     onClick={() => {
-                      if (!available) return;
+                      if (!available) {
+                        openBlockedTrackModal();
+                        return;
+                      }
                       if (active) {
                         togglePlay();
                         return;
@@ -345,10 +356,10 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                       if (trackNumericId) void playTrack(trackNumericId);
                     }}
                     className={cn(
-                      'flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-zinc-600/30 shadow duration-300',
+                      'flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-zinc-600/30 shadow duration-300 cursor-pointer active:scale-95',
                       available
-                        ? 'cursor-pointer bg-purple-500 hover:bg-purple-600 active:scale-95'
-                        : 'cursor-not-allowed bg-zinc-800/80 opacity-40',
+                        ? 'bg-purple-500 hover:bg-purple-600'
+                        : 'bg-zinc-800/80 opacity-60 hover:bg-zinc-700',
                     )}
                   >
                     <ActionIcon className="h-10 w-10 fill-white" name={active ? 'IC-pause' : 'IC-play'} />

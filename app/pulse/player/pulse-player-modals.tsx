@@ -10,6 +10,7 @@ import type { PulsePlaylistOption } from './use-add-to-playlist';
 
 const PulsePlaylistEditorModal = dynamic(() => import('../pulse-playlist-editor-modal'), { ssr: false });
 const PulseEqualizerModal = dynamic(() => import('./pulse-equalizer-modal').then((m) => m.PulseEqualizerModal), { ssr: false });
+const PulseBlockedTrackModal = dynamic(() => import('./pulse-blocked-track-modal').then((m) => m.PulseBlockedTrackModal), { ssr: false });
 
 type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 type Notice = (notice: { content: ReactNode; time?: number; type?: 'error' | 'info' | 'success' }) => void;
@@ -21,6 +22,7 @@ type PulsePlayerModalsProps = {
   changeEqGain: (index: number, gain: number) => void;
   eqGains: number[];
   isAddToPlaylistOpen: boolean;
+  isBlockedTrackModalOpen: boolean;
   isEqualizerOpen: boolean;
   isPlaylistEditorOpen: boolean;
   lang: Record<string, string> | null;
@@ -30,6 +32,7 @@ type PulsePlayerModalsProps = {
   playlistOptions: PulsePlaylistOption[];
   playlistOptionsLoading: boolean;
   setIsAddToPlaylistOpen: (isOpen: boolean) => void;
+  setIsBlockedTrackModalOpen: (isOpen: boolean) => void;
   setIsEqualizerOpen: (isOpen: boolean) => void;
   setIsPlaylistEditorOpen: (isOpen: boolean) => void;
   toggleSongInPlaylist: (playlistId: string, hasSong: boolean) => Promise<void>;
@@ -43,6 +46,7 @@ export function PulsePlayerModals({
   changeEqGain,
   eqGains,
   isAddToPlaylistOpen,
+  isBlockedTrackModalOpen,
   isEqualizerOpen,
   isPlaylistEditorOpen,
   lang,
@@ -52,6 +56,7 @@ export function PulsePlayerModals({
   playlistOptions,
   playlistOptionsLoading,
   setIsAddToPlaylistOpen,
+  setIsBlockedTrackModalOpen,
   setIsEqualizerOpen,
   setIsPlaylistEditorOpen,
   toggleSongInPlaylist,
@@ -147,6 +152,11 @@ export function PulsePlayerModals({
           onReset={onResetEqualizer}
         />
       ) : null}
+
+      <PulseBlockedTrackModal
+        isOpen={isBlockedTrackModalOpen}
+        onClose={() => setIsBlockedTrackModalOpen(false)}
+      />
     </>
   );
 }
