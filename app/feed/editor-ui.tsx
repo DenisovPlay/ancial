@@ -336,7 +336,7 @@ export function FeedEditorUI({
                                         </div>
                                     ) : null}
                                     <div className="flex-grow"></div>
-                                    
+
                                     {/* ── Счётчик символов ── */}
                                     {(isNearLimit || isOverLimit) && (
                                         <div className="flex items-center gap-1.5 mr-2 select-none">
@@ -354,22 +354,31 @@ export function FeedEditorUI({
                                         triggerAriaLabel="Insert sticker"
                                         position="top"
                                         align="end"
-                                        triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-2xl shadow text-white"
-                                        menuClassName="!grid !grid-cols-6 !w-[15rem] !rounded-3xl !p-1.5 h-32 overflow-auto"
-                                        triggerNode={<StickersIcon className="w-5 h-5 fill-white" />}
+                                        closeOnChildClick={false}
+                                        triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-white flex items-center justify-center cursor-pointer active:scale-95 duration-300"
+                                        menuClassName="w-[17rem] sm:w-[20rem] !rounded-3xl !p-0 shadow-2xl"
+                                        triggerNode={<StickersIcon className="w-4 h-4 fill-white" />}
                                     >
-                                        {STICKERS.map((sticker) => (
-                                            <button
-                                                key={`${sticker.code}-${sticker.src}`}
-                                                type="button"
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={() => handleStickerSelect(sticker.code)}
-                                                className="inline cursor-pointer active:scale-95 duration-300"
-                                            >
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src={sticker.src} alt={sticker.code.trim()} className="w-8 h-8 object-contain" />
-                                            </button>
-                                        ))}
+                                        <div className="grid grid-cols-7 p-1 max-h-32 overflow-y-auto [scrollbar-width:thin] select-none">
+                                            {STICKERS.map((sticker) => (
+                                                <button
+                                                    key={`${sticker.code}-${sticker.src}`}
+                                                    type="button"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => handleStickerSelect(sticker.code)}
+                                                    title={sticker.code.trim()}
+                                                    className="flex items-center justify-center rounded-2xl hover:bg-zinc-800/80 cursor-pointer active:scale-95 duration-300"
+                                                >
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={sticker.src}
+                                                        alt={sticker.code.trim()}
+                                                        className="w-8 h-8 object-contain pointer-events-none select-none"
+                                                        draggable={false}
+                                                    />
+                                                </button>
+                                            ))}
+                                        </div>
                                     </Dropdown>
                                 </div>
                             </div>
