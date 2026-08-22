@@ -7,7 +7,7 @@ export const SITE_CONFIG = {
   description: 'Социальная сеть с лентой новостей, сообщениями, звонками, музыкой, играми и кошельком. Современная платформа для общения и развлечений.',
   url: SITE_URL,
   locale: 'ru_RU',
-  twitter: '@ancialru',
+  twitter: '@zypo_cc',
 };
 
 export const DEFAULT_SEO: Metadata = {
