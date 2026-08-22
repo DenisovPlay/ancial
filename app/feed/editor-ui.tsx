@@ -357,7 +357,7 @@ export function FeedEditorUI({
                                         closeOnChildClick={false}
                                         triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-white flex items-center justify-center cursor-pointer active:scale-95 duration-300"
                                         menuClassName="w-[17rem] sm:w-[20rem] !rounded-3xl !p-0 shadow-2xl"
-                                        triggerNode={<StickersIcon className="w-4 h-4 fill-white" />}
+                                        triggerNode={<StickersIcon className="w-5 h-5 fill-white" />}
                                     >
                                         <div className="grid grid-cols-7 p-1 max-h-32 overflow-y-auto [scrollbar-width:thin] select-none">
                                             {STICKERS.map((sticker) => (
