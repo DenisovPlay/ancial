@@ -10,9 +10,12 @@ const RichTextEditor = dynamic(() => import('../components/rich-text-editor'), {
         <div className="min-h-[220px] bg-zinc-900/60 rounded-3xl p-4 animate-pulse" />
     ),
 });
+const UnifiedStickerPicker = dynamic(
+    () => import('../components/unified-sticker-picker'),
+    { ssr: false }
+);
 import {
     type DraftImage,
-    STICKERS,
     StickersIcon,
     PollIcon,
     SvgIcon,
@@ -183,12 +186,12 @@ export function FeedEditorUI({
                                 strings={strings}
                                 editorClassName={
                                     images.length > 0 && widgets.length > 0
-                                        ? 'pb-[16rem] min-h-[25rem]'
+                                        ? 'pb-[16rem] min-h-[30rem]'
                                         : images.length > 0
-                                            ? 'pb-[13rem] min-h-[22rem]'
+                                            ? 'pb-[13rem] min-h-[26rem]'
                                             : widgets.length > 0
-                                                ? 'pb-[6.5rem] min-h-[18rem]'
-                                                : 'pb-[4.5rem] min-h-[15rem]'
+                                                ? 'pb-[6.5rem] min-h-[22rem]'
+                                                : 'pb-[4.5rem] min-h-[20rem]'
                                 }
                                 scrollPaddingBottom={
                                     images.length > 0 && widgets.length > 0
@@ -356,29 +359,13 @@ export function FeedEditorUI({
                                         align="end"
                                         closeOnChildClick={false}
                                         triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-white flex items-center justify-center cursor-pointer active:scale-95 duration-300"
-                                        menuClassName="w-[17rem] sm:w-[20rem] !rounded-3xl !p-0 shadow-2xl"
+                                        menuClassName="w-[18rem] sm:w-[21rem] !rounded-3xl !p-0 shadow-2xl overflow-hidden"
                                         triggerNode={<StickersIcon className="w-5 h-5 fill-white" />}
                                     >
-                                        <div className="grid grid-cols-7 p-1 max-h-32 overflow-y-auto [scrollbar-width:thin] select-none">
-                                            {STICKERS.map((sticker) => (
-                                                <button
-                                                    key={`${sticker.code}-${sticker.src}`}
-                                                    type="button"
-                                                    onMouseDown={(e) => e.preventDefault()}
-                                                    onClick={() => handleStickerSelect(sticker.code)}
-                                                    title={sticker.code.trim()}
-                                                    className="flex items-center justify-center rounded-2xl hover:bg-zinc-800/80 cursor-pointer active:scale-95 duration-300"
-                                                >
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={sticker.src}
-                                                        alt={sticker.code.trim()}
-                                                        className="w-8 h-8 object-contain pointer-events-none select-none"
-                                                        draggable={false}
-                                                    />
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <UnifiedStickerPicker
+                                            scope="posts"
+                                            onSelect={(shortcode) => handleStickerSelect(shortcode)}
+                                        />
                                     </Dropdown>
                                 </div>
                             </div>

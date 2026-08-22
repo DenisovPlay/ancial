@@ -31,12 +31,14 @@ import {
   normalizeAssetUrl,
   parseMessageLinks,
   parseReactions,
+  renderNativeStickersInHtml,
   resolveSevenTvStickerByName,
   sevenTvStickerCache,
   SevenTvSticker,
   stripHtml,
   toNumber,
 } from '../lib/messages-shared';
+import { isSingleSticker } from '../../lib/stickers-service';
 import PostPreview from './post-preview';
 import TrackPreview from './track-preview';
 
@@ -146,6 +148,7 @@ export default function MessageBubble({
   hideName,
   members,
   isGroupChat,
+  stickerMap,
 }: {
   authUserImage: string;
   currentUserId: number;
@@ -167,6 +170,7 @@ export default function MessageBubble({
   hideName?: boolean | null;
   members?: GroupMember[] | Array<{ id: number; fname?: string; lname?: string; name?: string; img?: string }> | null;
   isGroupChat?: boolean;
+  stickerMap?: Map<string, string>;
   key?: React.Key;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -226,6 +230,9 @@ export default function MessageBubble({
     .replaceAll('/includes/img/anlite/stickers/webp/', '/img/stickers/webp/')
     .replaceAll('?id=NEW', '');
 
+  // Клиентский рендер нативных стикеров (:code: → <img>)
+  messageBodyHtml = renderNativeStickersInHtml(messageBodyHtml, stickerMap);
+
   loadedPosts.forEach((id) => {
     const pattern = new RegExp(`<a href="[^"]*".*?>https?://${domain.replace(/\./g, '\\.')}/(?:feed/)?post/${id}</a>\\s*`, 'gi');
     messageBodyHtml = messageBodyHtml.replace(pattern, '');
@@ -237,11 +244,12 @@ export default function MessageBubble({
     messageBodyHtml = messageBodyHtml.replace(trackRegex2, '');
   });
 
-  const sevenTvStickerTokenData = messageImages.length ? null : getSevenTvStickerTokenData(messageBodyHtml);
+  const sevenTvStickerTokenData = messageImages.length ? null : getSevenTvStickerTokenData(messageBodyRaw);
   const sevenTvStickerName = sevenTvStickerTokenData?.name ?? '';
   const sevenTvStickerId = sevenTvStickerTokenData?.id ?? '';
-  const hasMessageText = !sevenTvStickerName && Boolean(stripHtml(messageBodyHtml).trim());
-  const isStickerOnlyMessage = Boolean(sevenTvStickerName);
+  const isNativeSingleSticker = !messageImages.length && !sevenTvStickerName && isSingleSticker(messageBodyRaw);
+  const isStickerOnlyMessage = Boolean(sevenTvStickerName) || isNativeSingleSticker;
+  const hasMessageText = !sevenTvStickerName && Boolean(messageBodyHtml.trim());
   const isMediaOnlyMessage = (messageImages.length > 0 || isStickerOnlyMessage) && !hasMessageText;
   const canTranslateMessage = !isOwn && isTextMessage && !isStickerOnlyMessage;
   const canEditMessage = isOwn && isTextMessage && !isStickerOnlyMessage;
@@ -615,7 +623,7 @@ export default function MessageBubble({
                           <span className="text-zinc-200 truncate opacity-90 max-w-[200px] sm:max-w-xs -mt-1 text-xs">
                             {message.reply_type == 1
                               ? (lang?.image_sticker || 'Картинка/стикер')
-                              : (getSevenTvStickerTokenData(message.reply_msg)
+                              : (getSevenTvStickerTokenData(message.reply_msg) || isSingleSticker(message.reply_msg)
                                 ? (lang?.image_sticker || 'Картинка/стикер')
                                 : (message.reply_msg?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')))
                             }

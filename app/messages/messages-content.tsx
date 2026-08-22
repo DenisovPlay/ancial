@@ -29,6 +29,8 @@ import CreateGroupModal from './components/create-group-modal';
 import GroupInfoModal from './components/group-info-modal';
 import MessageBubble from './components/message-bubble';
 import StickerPickerDropdownContent from './components/sticker-picker-dropdown-content';
+import { useStickers } from '../hooks/use-stickers';
+import { isSingleSticker } from '../lib/stickers-service';
 import { resolveCommunityChatAccess, resolveSlowModeRemaining } from './lib/community-chat-access';
 import {
   applyCachedDialogs,
@@ -62,6 +64,7 @@ import {
   getMessageId,
   getPayloadMessageId,
   getPayloadMessageText,
+  getSevenTvStickerTokenData,
   formatDialogPreview,
   hasMeaningfulValue,
   Icon,
@@ -224,6 +227,20 @@ export default function MessagesContent() {
   const [activeDialogImageKey, setActiveDialogImageKey] = useState<string | null>(null);
   const [dayLabelTick, setDayLabelTick] = useState(Date.now());
   const [stickerDropdownOpen, setStickerDropdownOpen] = useState(false);
+
+  // Карта стикеров: code → url — для клиентского рендера :code:
+  const { packs: stickerPacks } = useStickers('messages');
+  const stickerMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const pack of stickerPacks) {
+      for (const sticker of pack.stickers) {
+        if (sticker.code && (sticker.image_url_avif ?? sticker.image_url)) {
+          map.set(sticker.code, sticker.image_url_avif ?? sticker.image_url);
+        }
+      }
+    }
+    return map;
+  }, [stickerPacks]);
   const [slowModeNow, setSlowModeNow] = useState(() => Date.now());
 
   const [hasActiveCall, setHasActiveCall] = useState(false);
@@ -2783,7 +2800,7 @@ export default function MessagesContent() {
                     <div className="flex flex-col min-w-0 pr-1 rounded-full border-l-2 border-purple-500 pl-2">
                       <span className="text-xs font-semibold text-purple-400">{lang?.reply_to || 'Ответ'} {replyingTo?.sender_id == currentUserId ? (lang?.yourself || 'себе') : (foreignUser?.fname || (lang?.interlocutor?.toLowerCase() || 'собеседнику'))}</span>
                       <span className="text-sm text-zinc-300 truncate max-w-[200px] sm:max-w-xs md:max-w-md -mt-1">
-                        {replyingTo?.type == 1 ? (lang?.image_sticker || 'Картинка/стикер') : replyingTo?.message?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение')}
+                        {replyingTo?.type == 1 ? (lang?.image_sticker || 'Картинка/стикер') : (getSevenTvStickerTokenData(replyingTo?.message) || isSingleSticker(replyingTo?.message) ? (lang?.image_sticker || 'Картинка/стикер') : replyingTo?.message?.replace(/<[^>]*>?/gm, '') || (lang?.message || 'Сообщение'))}
                       </span>
                     </div>
                     <button type="button" onClick={() => setReplyingTo(null)} className="shrink-0 p-1 rounded-full hover:bg-zinc-700/50 text-zinc-400 cursor-pointer active:scale-95 duration-300">

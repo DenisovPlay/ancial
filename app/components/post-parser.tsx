@@ -1,3 +1,5 @@
+import { parseStickersToHtml } from '../lib/stickers-service';
+
 /**
  * Считает только видимые символы — без BBCode-тегов.
  * Используется для счётчика лимита 3000 символов.
@@ -223,7 +225,10 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
     // 5. Форматирование упоминаний пользователей (@user) и групп ($group)
     html = formatMentions(html);
 
-    // 6. Если в редакторе документ оканчивается на block-элемент (div карусели/коллажа/таблицы),
+    // 6. Рендеринг стикеров на клиенте (:code:, 7TV, BTTV/Memes) — в постах всегда инлайн w-10 h-10
+    html = parseStickersToHtml(html, false);
+
+    // 7. Если в редакторе документ оканчивается на block-элемент (div карусели/коллажа/таблицы),
     // дописываем пустой параграф <p><br></p> в конец, чтобы курсор не застревал.
     if (isPreview && html.trim().endsWith('</div>')) {
         html += '<p><br></p>';

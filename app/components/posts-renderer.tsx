@@ -7,6 +7,8 @@ import { useMentionNavigation } from '../hooks/use-mention-navigation';
 import ImageViewerModal, { type ImageViewerSlide } from './image-viewer-modal';
 import { Dropdown, DropdownItem } from './navigation';
 import { SvgIcon } from '../feed/editor-shared';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import YandexRtb from './yandex-rtb';
 import Link from 'next/link';
 import { DonateModal } from '../wallet/components/donate-modal';
@@ -348,6 +350,8 @@ function PostCardInner({
   noCollapse = false,
 }: PostCardProps) {
   const router = useRouter();
+  const { lang: authLang } = useAuth();
+  const { showNote } = useNotification();
   const canEdit = flag(post.can_edit);
   const initialBookmarked = flag(post.is_bookmarked);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
@@ -643,12 +647,38 @@ function PostCardInner({
       return;
     }
 
+    // Стикеры: копируем шорткод в буфер обмена, не открывая просмотрщик фото
+    const stickerWrapper = target.closest('.inline-sticker-wrapper') as HTMLElement | null;
+    if (stickerWrapper) {
+      e.stopPropagation();
+      const code = stickerWrapper.getAttribute('data-sticker');
+      const textToCopy = code ? `:${code}:` : stickerWrapper.querySelector('img')?.getAttribute('data-clipboard-text');
+      if (textToCopy && typeof navigator !== 'undefined' && navigator.clipboard) {
+        navigator.clipboard.writeText(textToCopy).catch(() => {});
+        showNote({
+          content: authLang?.copied || 'Скопировано',
+          type: 'success',
+          time: 2,
+        });
+      }
+      return;
+    }
+
     if (target.tagName.toLowerCase() === 'img') {
       const imgEl = target as HTMLImageElement;
 
       const isPostImage = (img: HTMLImageElement) => {
+        if (img.closest('.inline-sticker-wrapper') || img.closest('[data-sticker]') || img.hasAttribute('data-clipboard-text')) {
+          return false;
+        }
         const src = img.src || '';
-        if (src.includes('betterttv.net') || src.includes('7tv.app') || src.includes('/api/7tv/') || src.includes('/api/V2/7tv/')) {
+        if (
+          src.includes('/stickers/') ||
+          src.includes('betterttv.net') ||
+          src.includes('7tv.app') ||
+          src.includes('/api/7tv/') ||
+          src.includes('/api/V2/7tv/')
+        ) {
           return false;
         }
         return img.classList.contains('object-cover') || img.classList.contains('object-contain');

@@ -5,64 +5,10 @@ export type DraftImage = {
   uploadedUrl?: string;
 };
 
-type Sticker = {
-  code: string;
-  src: string;
-};
-
 import { uploadImage } from '../lib/upload';
 
 export { uploadImage };
 export const MAX_IMAGES = 3;
-
-export const STICKERS: Sticker[] = [
-  { code: ' btEZ', src: 'https://cdn.betterttv.net/emote/5590b223b344e2c42a9e28e3/1x' },
-  { code: ' btCJ', src: 'https://cdn.betterttv.net/emote/5f1b0186cf6d2144653d2970/1x' },
-  { code: ' btbDOLBIT', src: 'https://cdn.betterttv.net/emote/5fb91b870d141d6f06d7df81/1x' },
-  { code: ' btbPOG', src: 'https://cdn.betterttv.net/emote/5fb023284dfba1644029eea4/1x' },
-  { code: ' btPA', src: 'https://cdn.betterttv.net/emote/5d0d7140ca4f4b50240ff6b4/1x' },
-  { code: ' btTU', src: 'https://cdn.betterttv.net/emote/61501b4fb63cc97ee6d35ea3/1x' },
-  { code: ' btBOOBA', src: 'https://cdn.betterttv.net/emote/605c5f597493072efdeb430a/1x' },
-  { code: ' btCLAP', src: 'https://cdn.betterttv.net/emote/5d38aaa592fc550c2d5996b8/1x' },
-  { code: ' btLOVE', src: 'https://cdn.betterttv.net/emote/5ca7591926dfd77429327bb6/1x' },
-  { code: ' btAFK', src: 'https://cdn.betterttv.net/emote/5edbf265f54be95e2a843385/1x' },
-  { code: ' bt89', src: 'https://cdn.betterttv.net/emote/601f13f3f4d51165feda1886/1x' },
-  { code: ' btPOP', src: 'https://cdn.betterttv.net/emote/601ef51af4d51165feda15cd/1x' },
-  { code: ' btPOO', src: 'https://cdn.betterttv.net/emote/5c3427a55752683d16e409d1/1x' },
-  { code: ' btEAT', src: 'https://cdn.betterttv.net/emote/61e8d6ac06fd6a9f5be16425/1x' },
-  { code: ' btAGA', src: 'https://cdn.betterttv.net/emote/58a57fa706e70d0465b29cd3/1x' },
-  { code: ' btVK', src: 'https://cdn.betterttv.net/emote/61afa691002cdeedc21e9950/1x' },
-  { code: ' btYOUTUBE', src: 'https://cdn.betterttv.net/emote/62f14ed7ecbd41815423a7a9/1x' },
-  { code: ' btHEART', src: 'https://cdn.betterttv.net/emote/6011197adf6a0665f2753118/1x' },
-  { code: ' btNEA', src: 'https://cdn.betterttv.net/emote/605e21037493072efdeb50d2/1x' },
-  { code: ' btBAN', src: 'https://cdn.betterttv.net/emote/6055e47f306b602acc5a06db/1x' },
-  { code: ' btBB', src: 'https://cdn.betterttv.net/emote/5eef252af91de70dea5baedd/1x.webp' },
-  { code: ' btALIEN', src: 'https://cdn.betterttv.net/emote/6052368c306b602acc59eb5c/1x' },
-  { code: ' btDURAK', src: 'https://cdn.betterttv.net/emote/618fa6ef54f3344f8805759f/1x' },
-  { code: ' btRACER', src: 'https://cdn.betterttv.net/emote/5ed0fd17f54be95e2a835054/1x' },
-  { code: ' btNOOB', src: 'https://cdn.betterttv.net/emote/5e8b86328fb1ca5cde5866b5/1x' },
-  { code: ' btHUG', src: 'https://cdn.betterttv.net/emote/5b53f5f2e78929110b2ac92c/1x' },
-  { code: ' btTASTY', src: 'https://cdn.betterttv.net/emote/5ebe1f72ec17d81685a4f97a/1x' },
-  { code: ' btDANCE', src: 'https://cdn.betterttv.net/emote/61ce1122c8cc7f36d52b0dd0/1x' },
-  { code: ' btLAUGH', src: 'https://cdn.betterttv.net/emote/61ce10e0c8cc7f36d52b0dcb/1x' },
-  { code: ' btCRY', src: 'https://cdn.betterttv.net/emote/61ce109ec8cc7f36d52b0dc5/1x' },
-  { code: ' btGIGA', src: 'https://cdn.7tv.app/emote/60ae958e229664e8667aea38/1x.webp' },
-  { code: ' donowall', src: 'https://cdn.7tv.app/emote/60a9cfe96daf811370b0b640/1x.webp' },
-  { code: ' pepegiggles', src: 'https://cdn.7tv.app/emote/60af03597e8706b57220e8ce/1x.webp' },
-  { code: ' catflashbang', src: 'https://cdn.7tv.app/emote/60baca0a3285d8b0b8a051c9/1x.webp' },
-  { code: ' brffpoh', src: 'https://cdn.7tv.app/emote/64b227cb1cc37958c10efaeb/1x.webp' },
-  { code: ' btcatplz', src: 'https://cdn.7tv.app/emote/612d78ab29ee958c97fe6b91/1x.webp' },
-  { code: ' brffflex', src: 'https://cdn.7tv.app/emote/616b51f5d89696663cf3406a/1x.webp' },
-  { code: ' btCatJam', src: 'https://cdn.7tv.app/emote/60ae4f0a5d3fdae583146082/1x.webp' },
-  { code: ' l1337spin', src: 'https://cdn.7tv.app/emote/63a450b407b5c0d21b2f9a38/1x.webp' },
-  { code: ' l1337dance', src: 'https://cdn.7tv.app/emote/6211cf2e5e821986e6f95ea9/1x.webp' },
-  { code: ' l1337punch', src: 'https://cdn.7tv.app/emote/6195998170bd99598794f86c/1x.webp' },
-  { code: ' l1337skoka', src: 'https://cdn.7tv.app/emote/654bc8f8cf586d12ce2f320c/1x.webp' },
-  { code: ' l1337sng', src: 'https://cdn.7tv.app/emote/63b43c6e977fdddeadcf8be2/1x.webp' },
-  { code: ' l1337arg', src: 'https://cdn.7tv.app/emote/66b61665071858acca1b3169/1x.webp' },
-  { code: ' l1337drink', src: 'https://cdn.7tv.app/emote/626eef3debaf81a66f3d3773/1x.webp' },
-  { code: ' l1337molu', src: 'https://cdn.7tv.app/emote/64df6048b7ce014343af9320/1x.webp' },
-];
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -125,6 +71,75 @@ export function decodeHtmlToTextareaValue(value: string | null | undefined) {
 export function safeRevokeObjectUrl(url: string | null | undefined) {
   if (!url || !url.startsWith('blob:')) return;
   URL.revokeObjectURL(url);
+}
+
+export function insertStickerIntoEditor(
+  stickerCode: string,
+  parseHtmlFn: (code: string, isPreview: boolean) => string,
+  onFallback: (code: string) => void,
+) {
+  if (typeof document === 'undefined') {
+    onFallback(stickerCode);
+    return;
+  }
+
+  const editor = document.querySelector('.rich-editor') as HTMLElement | null;
+  if (!editor) {
+    onFallback(stickerCode);
+    return;
+  }
+
+  const stickerHtml = parseHtmlFn(stickerCode, true);
+  if (!stickerHtml) {
+    onFallback(stickerCode);
+    return;
+  }
+
+  editor.focus();
+  const sel = window.getSelection();
+  let range: Range | null = null;
+
+  if (sel && sel.rangeCount > 0) {
+    const currentRange = sel.getRangeAt(0);
+    if (editor.contains(currentRange.startContainer)) {
+      range = currentRange;
+    }
+  }
+
+  if (!range) {
+    range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }
+
+  const temp = document.createElement('div');
+  temp.innerHTML = stickerHtml;
+  const stickerNode = temp.firstElementChild;
+
+  if (!stickerNode) {
+    onFallback(stickerCode);
+    return;
+  }
+
+  range.deleteContents();
+  range.insertNode(stickerNode);
+
+  // Перемещаем каретку вплотную сразу после вставленного стикера ([стикер]|)
+  const newRange = document.createRange();
+  newRange.setStartAfter(stickerNode);
+  newRange.collapse(true);
+
+  if (sel) {
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+  }
+
+  // Триггерим input событие, чтобы rich-text-editor мгновенно синхронизировал стейт
+  editor.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 

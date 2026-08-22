@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 import type { PostData } from '../../components/posts-renderer';
+import { parsePostContentToHtml } from '../../components/post-parser';
 
 type PostPreviewProps = {
   postId: string | number;
@@ -107,7 +108,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
         )}
 
         {post.content && (!post.images || post.images.length === 0) && (
-          <p className="text-xs text-zinc-300 line-clamp-3" dangerouslySetInnerHTML={{ __html: post.content }} />
+          <p className="text-xs text-zinc-300 line-clamp-3" dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(post.content) }} />
         )}
       </div>
     </Link>

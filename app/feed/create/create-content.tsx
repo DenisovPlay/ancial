@@ -13,11 +13,13 @@ import PostBlockTableModal from '../../components/post-block-table-modal';
 import { FeedEditorUI } from '../editor-ui';
 import { serializePostWidgets } from '../post-widgets';
 import { getVisibleLength, VISIBLE_CHAR_LIMIT } from '../../components/rich-text-editor';
+import { parsePostContentToHtml } from '../../components/post-parser';
 
 import {
   type DraftImage,
   MAX_IMAGES,
   decodeHtmlEntities,
+  insertStickerIntoEditor,
   makeId,
   safeRevokeObjectUrl,
   uploadImage,
@@ -284,17 +286,9 @@ export default function CreatePostContent() {
   };
 
   const handleStickerSelect = (stickerCode: string) => {
-    const sel = window.getSelection();
-    const editor = document.querySelector('.rich-editor') as HTMLElement;
-    if (editor && sel && sel.rangeCount > 0) {
-      const range = sel.getRangeAt(0);
-      if (editor.contains(range.startContainer)) {
-        editor.focus();
-        document.execCommand('insertText', false, stickerCode);
-        return;
-      }
-    }
-    setContent((currentContent) => `${currentContent}${stickerCode}`);
+    insertStickerIntoEditor(stickerCode, parsePostContentToHtml, (fallbackCode) => {
+      setContent((currentContent) => `${currentContent}${fallbackCode}`);
+    });
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {

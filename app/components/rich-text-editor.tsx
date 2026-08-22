@@ -84,6 +84,21 @@ function htmlToBBCode(html: string): string {
       }
     }
 
+    // 2. data-sticker: стикеры — round-trip в :code:
+    const stickerCode = el.getAttribute('data-sticker');
+    if (stickerCode) {
+      return `:${stickerCode}:`;
+    }
+    if (el.classList.contains('inline-sticker-wrapper')) {
+      const img = el.querySelector('img[data-clipboard-text]');
+      const clip = img?.getAttribute('data-clipboard-text');
+      if (clip) return clip.startsWith(':') ? clip : `:${clip}:`;
+    }
+    if (tagName === 'img' && el.getAttribute('data-clipboard-text')) {
+      const clip = el.getAttribute('data-clipboard-text') || '';
+      return clip.startsWith(':') ? clip : `:${clip}:`;
+    }
+
     if (tagName === 'br') return '\n';
 
     // Рекурсивно собираем inner content

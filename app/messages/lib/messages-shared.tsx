@@ -2,6 +2,7 @@ import type { ImageViewerSlide } from '../../components/image-viewer-modal';
 import type { CommunityPermissionMap } from '../../group/[link]/lib/community-types';
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import { getStickerByCode, isSingleSticker, parseStickersToHtml } from '../../lib/stickers-service';
 import type { CommunityDisplayRole } from './community-role';
 
 export type DialogImageSlide = ImageViewerSlide & { key: string };
@@ -655,7 +656,12 @@ export function formatDialogPreview(messageValue: string | null | undefined, lan
   const bodyText = prefix ? rawText.slice(prefix.length) : rawText;
 
   const sevenTvStickerTokenData = getSevenTvStickerTokenData(bodyText);
-  if (sevenTvStickerTokenData?.name) {
+  if (sevenTvStickerTokenData?.name || isSingleSticker(bodyText)) {
+    return `${prefix}${lang?.sticker || 'Стикер'}`;
+  }
+
+  const singleCodeMatch = bodyText.trim().match(/^:([a-zA-Z0-9_\-]+):$/);
+  if (singleCodeMatch && getStickerByCode(singleCodeMatch[1])) {
     return `${prefix}${lang?.sticker || 'Стикер'}`;
   }
 
@@ -1285,4 +1291,16 @@ export function getDialogPreviewStatusIconName(status: number | string | null | 
 
 export function isMessageMenuIgnoredTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && Boolean(target.closest('a, button, img'));
+}
+
+/**
+ * Заменяет шорткоды :code: в HTML-тексте сообщения на инлайн-картинки стикеров.
+ * Вызывается на клиенте вместо серверного str_replace.
+ */
+export function renderNativeStickersInHtml(
+  html: string,
+  stickerMap?: Map<string, string>,
+): string {
+  if (!html) return '';
+  return parseStickersToHtml(html, isSingleSticker(html));
 }
