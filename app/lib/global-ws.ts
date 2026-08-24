@@ -10,6 +10,17 @@ type WsPayload = {
   type?: string;
   event?: string;
   user_id?: number | string;
+  sender_id?: number | string;
+  dialog_id?: number | string;
+  dialog_hash?: string;
+  data?: WsPayloadData | null;
+  [key: string]: unknown;
+};
+
+type WsPayloadData = {
+  sender_id?: number | string;
+  dialog_id?: number | string;
+  dialog_hash?: string;
   [key: string]: unknown;
 };
 
@@ -121,14 +132,14 @@ function emitPresenceStoreUpdate() {
 function notifyEvent(eventName: string, payload?: unknown) {
   if (typeof window !== 'undefined') {
     if (eventName === 'message:new') {
-      const data = (payload as any)?.data ?? payload;
-      const currentUserId = Number(cache.get<any>('user_profile')?.id || 0);
+      const data = ((payload as WsPayload)?.data ?? payload) as WsPayloadData;
+      const currentUserId = Number(cache.get<{ id?: number | string }>('user_profile')?.id || 0);
       const senderId = Number(data?.sender_id || 0);
-      const msgDialogId = Number(data?.dialog_id || (payload as any)?.dialog_id || 0);
-      const msgDialogHash = String(data?.dialog_hash || (payload as any)?.dialog_hash || '');
+      const msgDialogId = Number(data?.dialog_id || (payload as WsPayload)?.dialog_id || 0);
+      const msgDialogHash = String(data?.dialog_hash || (payload as WsPayload)?.dialog_hash || '');
 
-      const activeDialogId = Number((window as any).__activeDialogId || 0);
-      const activeDialogHash = String((window as any).__activeDialogHash || '');
+      const activeDialogId = Number(window.__activeDialogId || 0);
+      const activeDialogHash = String(window.__activeDialogHash || '');
 
       const isCurrentActive =
         (activeDialogId > 0 && msgDialogId > 0 && activeDialogId === msgDialogId) ||

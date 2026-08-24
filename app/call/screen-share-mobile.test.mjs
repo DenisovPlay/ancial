@@ -4,9 +4,10 @@ import { readFileSync } from 'node:fs';
 const directCallSource = readFileSync(new URL('./[hash]/call-client.tsx', import.meta.url), 'utf8');
 const groupCallSource = readFileSync(new URL('./group/[hash]/group-call-client.tsx', import.meta.url), 'utf8');
 
+// Кнопка демонстрации экрана должна быть скрыта на телефонах (видна только md+)
 assert.match(
   directCallSource,
-  /data-screen-share-control[\s\S]*?className=\{`[^`]*\bhidden\b[^`]*\bmd:flex\b/,
+  /onClick=\{toggleScreenShare\}[\s\S]{0,400}?className="hidden md:flex"/,
   'личный звонок должен скрывать кнопку демонстрации экрана на телефонах',
 );
 

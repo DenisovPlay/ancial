@@ -28,7 +28,7 @@ export default function SettingsPage() {
               alt="avatar"
             />
             <div className="flex flex-col">
-              <AccountName user={user as any} nameClassName="text-xl lg:text-2xl font-bold text-white" badgeClassName="w-6 h-6 lg:w-7 lg:h-7" />
+              <AccountName user={user} nameClassName="text-xl lg:text-2xl font-bold text-white" badgeClassName="w-6 h-6 lg:w-7 lg:h-7" />
               <span className="lg:text-lg text-zinc-300">{user.desk}</span>
             </div>
           </div>

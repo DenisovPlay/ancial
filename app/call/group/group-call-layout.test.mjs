@@ -37,7 +37,7 @@ assert.match(ruLocale, /"voice_focus_video"/);
 assert.match(ruLocale, /"voice_return_to_grid"/);
 assert.match(enLocale, /"voice_focus_video"/);
 assert.match(enLocale, /"voice_return_to_grid"/);
-assert.match(clientSource, /call\.cameras\.length > 1/);
+assert.match(clientSource, /availableCameras\.map/);
 assert.match(clientSource, /ScreenIcon active=/);
 assert.match(clientSource, /SpeakerIcon off=/);
 

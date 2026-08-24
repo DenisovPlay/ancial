@@ -73,6 +73,8 @@ export default function SearchContent() {
   // Load My List & Initial Recommendations
   useEffect(() => {
     const list = getCinemaMyList();
+    // Гидратация из localStorage при монтировании — сеттлер здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMyListIds(list);
 
     // Check cached recommendations first for instant render
@@ -101,6 +103,8 @@ export default function SearchContent() {
   useEffect(() => {
     const trimmedQuery = query.trim();
     if (!trimmedQuery) {
+      // Пустой запрос — терминальное состояние.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchResults([]);
       setIsLoading(false);
       return;

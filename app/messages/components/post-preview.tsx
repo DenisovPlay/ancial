@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { sanitizeUserHtml } from '../../lib/sanitize-html';
 
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
@@ -25,6 +26,8 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
     const cached = cache.get<PostData>(`preview_post_${postId}`, { category: 'chats', subcategory: 'previews' });
     if (cached) {
       if (isMounted) {
+        // Гидратация превью из кэша — сеттлер здесь источник правды.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPost(cached);
         setLoading(false);
         onLoadSuccess?.();
@@ -108,7 +111,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
         )}
 
         {post.content && (!post.images || post.images.length === 0) && (
-          <p className="text-xs text-zinc-300 line-clamp-3" dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(post.content) }} />
+          <p className="text-xs text-zinc-300 line-clamp-3" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(post.content)) }} />
         )}
       </div>
     </Link>

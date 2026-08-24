@@ -779,14 +779,20 @@ export default function Navigation() {
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
+  /** Полезная нагрузка GetDialogList.php для счётчика непрочитанных. */
+  interface DialogsUnreadPayload {
+    unread_count?: number;
+    dialogs?: Array<{ unread_count?: number | string | null }>;
+  }
+
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
     const fetchUnreadCounts = async () => {
       try {
         const [resMsgs, resNotifs] = await Promise.all([
-          AncialAPI.getDialogListResponse<any>().catch(() => null),
-          AncialAPI.getNotificationsResponse<any>().catch(() => null),
+          AncialAPI.getDialogListResponse<DialogsUnreadPayload>().catch(() => null),
+          AncialAPI.getNotificationsResponse<{ unread_count?: number }>().catch(() => null),
         ]);
 
         if (resMsgs?.success) {
@@ -794,7 +800,7 @@ export default function Navigation() {
           const count = typeof rawData?.unread_count === 'number'
             ? rawData.unread_count
             : Array.isArray(rawData?.dialogs)
-              ? rawData.dialogs.reduce((acc: number, d: any) => acc + Number(d.unread_count || 0), 0)
+              ? rawData.dialogs.reduce((acc: number, d) => acc + Number(d.unread_count ?? 0), 0)
               : 0;
           setUnreadMessages(count);
         }
@@ -807,16 +813,17 @@ export default function Navigation() {
 
     void fetchUnreadCounts();
 
-    const handleCustomUnread = (e: any) => {
-      if (e.detail?.type === 'messages_set') {
-        setUnreadMessages(Math.max(0, e.detail.count ?? 0));
-      } else if (e.detail?.type === 'messages') {
-        setUnreadMessages((prev) => Math.max(0, prev + (e.detail.delta ?? 1)));
-      } else if (e.detail?.type === 'notifications') {
-        setUnreadNotifications((prev) => Math.max(0, prev + (e.detail.delta ?? 1)));
-      } else if (e.detail?.type === 'clear_notifications') {
+    const handleCustomUnread = (e: Event) => {
+      const detail = (e as CustomEvent<{ type?: string; count?: number; delta?: number }>).detail;
+      if (detail?.type === 'messages_set') {
+        setUnreadMessages(Math.max(0, detail.count ?? 0));
+      } else if (detail?.type === 'messages') {
+        setUnreadMessages((prev) => Math.max(0, prev + (detail.delta ?? 1)));
+      } else if (detail?.type === 'notifications') {
+        setUnreadNotifications((prev) => Math.max(0, prev + (detail.delta ?? 1)));
+      } else if (detail?.type === 'clear_notifications') {
         setUnreadNotifications(0);
-      } else if (e.detail?.type === 'clear_messages') {
+      } else if (detail?.type === 'clear_messages') {
         setUnreadMessages(0);
       }
     };

@@ -31,6 +31,8 @@ export default function CartoonsContent() {
 
   useEffect(() => {
     let isMounted = true;
+    // Смена жанра сбрасывает пагинацию — сеттлер здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1);
 
     const cachedCartoons = getCinemaCache<Movie[]>('catalog_cartoons', selectedGenre);

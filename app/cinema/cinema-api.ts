@@ -1,11 +1,18 @@
 'use client';
 
-import { Movie, PlayerOption } from './types';
+import { Movie, Person, PlayerOption, RawMovieRecord, RawPersonality } from './types';
 import { CacheManager } from '../lib/cache';
 import { CINEMA_API_BASE, CINEMA_IMAGE_PROXY_BASE } from '../config';
 
 const API_BASE = '/api/V2/cinema';
 const CINEMA_CACHE_TTL = 3600; // 1 hour TTL
+
+/** Число из number | string | undefined (null/пустое → null). */
+function toNum(v: unknown): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 export function getOptimizedImageUrl(
   url: string | undefined,
@@ -32,7 +39,7 @@ export function getOptimizedImageUrl(
   return url;
 }
 
-function formatFlixMovie(item: any): Movie {
+function formatFlixMovie(item: RawMovieRecord | null | undefined): Movie {
   if (!item) {
     return {
       id: String(Math.random()),
@@ -68,17 +75,17 @@ function formatFlixMovie(item: any): Movie {
 
   const genresRaw = target.genres || target.genre || item.genres || item.genre || [];
   const genres = Array.isArray(genresRaw)
-    ? genresRaw.map((g: any) => (typeof g === 'object' ? g.name : String(g)))
+    ? genresRaw.map((g) => (typeof g === 'object' ? (g.name ?? '') : String(g)))
     : typeof genresRaw === 'string'
     ? genresRaw.split(',').map((s) => s.trim())
     : ['Фильм'];
 
   const ratingNum = parseFloat(
-    target.rating_kp || target.rating_imdb || target.rating || item.rating_kp || (target.vote_average ? String(target.vote_average) : '7.5')
+    String(target.rating_kp || target.rating_imdb || target.rating || item.rating_kp || (target.vote_average ? String(target.vote_average) : '7.5'))
   );
   const rating = !isNaN(ratingNum) && ratingNum > 0 ? ratingNum : 7.5;
 
-  const yearNum = parseInt(target.year || target.release_date || item.year || '2024', 10);
+  const yearNum = parseInt(String(target.year || target.release_date || item.year || '2024'), 10);
   const year = !isNaN(yearNum) ? yearNum : 2024;
 
   const posterUrl =
@@ -107,15 +114,15 @@ function formatFlixMovie(item: any): Movie {
   else if (isCartoon) type = 'cartoons';
   else if (isSerial) type = 'series';
 
-  const director = target.director || (Array.isArray(target.directors) ? target.directors.map((d: any) => d.name_ru || d.name_en || d).join(', ') : 'Режиссёр');
+  const director = target.director || (Array.isArray(target.directors) ? target.directors.map((d) => (typeof d === 'object' ? (d.name_ru || d.name_en || '') : d)).join(', ') : 'Режиссёр');
   
   // v2 API uses "personalities" array with role="actor"
   const cast = Array.isArray(target.personalities)
-    ? target.personalities.filter((p: any) => p.role === 'actor').map((p: any) => p.name_ru || p.name_en)
+    ? target.personalities.filter((p) => p.role === 'actor').map((p) => p.name_ru || p.name_en || '')
     : Array.isArray(target.cast)
     ? target.cast
     : Array.isArray(target.actors)
-    ? target.actors.map((a: any) => a.name_ru || a.name_en || a)
+    ? target.actors.map((a) => (typeof a === 'object' ? (a.name_ru || a.name_en || a.name || '') : a))
     : typeof target.actors === 'string'
     ? target.actors.split(',').map((s: string) => s.trim())
     : ['В главных ролях'];
@@ -132,23 +139,28 @@ function formatFlixMovie(item: any): Movie {
   // Map translationsList
   const rawTranslations = target.translations || item.translations || [];
   const translationsList = Array.isArray(rawTranslations)
-    ? rawTranslations.map((t: any) => ({
-        id: t.id || t.translation_id || 0,
+    ? rawTranslations.map((t) => ({
+        id: Number(t.id ?? t.translation_id ?? 0),
         title: t.title || t.name || t.tag || 'Перевод',
-      })).filter((t: any) => t.id > 0)
+      })).filter((t) => t.id > 0)
     : [];
 
   // Map counters
-  const counters = target.counters || item.counters || (isSerial ? { seasons: target.seasons_count || 1, episodes: target.episodes_count || 10 } : null);
+  const rawCounters = target.counters || item.counters;
+  const counters: NonNullable<Movie['counters']> | null = rawCounters
+    ? { seasons: toNum(rawCounters.seasons) ?? undefined, episodes: toNum(rawCounters.episodes) ?? undefined }
+    : isSerial
+      ? { seasons: toNum(target.seasons_count) ?? 1, episodes: toNum(target.episodes_count) ?? 10 }
+      : null;
 
   // Map files -> episodesBySeason
   const files = target.files || item.files || [];
   const episodesBySeason: Record<number, number[]> = {};
 
   if (Array.isArray(files) && files.length > 0) {
-    files.forEach((f: any) => {
-      const s = f.season_number || f.season || 1;
-      const e = f.series_number || f.episode || f.series || 1;
+    files.forEach((f) => {
+      const s = toNum(f.season_number ?? f.season) ?? 1;
+      const e = toNum(f.series_number ?? f.episode ?? f.series) ?? 1;
       if (!episodesBySeason[s]) episodesBySeason[s] = [];
       if (!episodesBySeason[s].includes(e)) episodesBySeason[s].push(e);
     });
@@ -180,10 +192,10 @@ function formatFlixMovie(item: any): Movie {
     translationTitle: translationTitle ? String(translationTitle) : undefined,
   } : undefined;
 
-  const rawActors = target.actors || item.actors || (Array.isArray(target.personalities) ? target.personalities.filter((p: any) => p.role === 'actor') : []);
+  const rawActors = target.actors || item.actors || (Array.isArray(target.personalities) ? target.personalities.filter((p) => p.role === 'actor') : []);
   const actorsList = Array.isArray(rawActors)
-    ? rawActors.map((a: any) => ({
-        id: typeof a === 'object' ? (a.id || a.kinopoisk_id || a.kp_id) : undefined,
+    ? rawActors.map((a) => ({
+        id: typeof a === 'object' ? (a.id ?? a.kinopoisk_id ?? a.kp_id) : undefined,
         kinopoisk_id: typeof a === 'object' ? a.kinopoisk_id : undefined,
         name: typeof a === 'object' ? (a.name_ru || a.name_en || a.name || '') : String(a),
         name_en: typeof a === 'object' ? a.name_en : undefined,
@@ -194,15 +206,15 @@ function formatFlixMovie(item: any): Movie {
     ? rawActors.split(',').map((s: string) => ({ name: s.trim() })).filter((a: { name: string }) => a.name.length > 0)
     : [];
 
-  const rawDirectors = target.directors || item.directors || (Array.isArray(target.personalities) ? target.personalities.filter((p: any) => p.role === 'director') : []);
+  const rawDirectors = target.directors || item.directors || (Array.isArray(target.personalities) ? target.personalities.filter((p) => p.role === 'director') : []);
   const directorsList = Array.isArray(rawDirectors)
-    ? rawDirectors.map((d: any) => ({
-        id: typeof d === 'object' ? (d.id || d.kinopoisk_id || d.kp_id) : undefined,
+    ? rawDirectors.map((d) => ({
+        id: typeof d === 'object' ? (d.id ?? d.kinopoisk_id ?? d.kp_id) : undefined,
         kinopoisk_id: typeof d === 'object' ? d.kinopoisk_id : undefined,
         name: typeof d === 'object' ? (d.name_ru || d.name_en || d.name || '') : String(d),
         name_en: typeof d === 'object' ? d.name_en : undefined,
         posterUrl: typeof d === 'object' ? (d.poster_url || d.img) : undefined,
-      })).filter((d: any) => d.name.trim().length > 0)
+      })).filter((d) => d.name.trim().length > 0)
     : typeof target.director === 'string'
     ? target.director.split(',').map((s: string) => ({ name: s.trim() })).filter((d: { name: string }) => d.name.length > 0)
     : [];
@@ -217,7 +229,7 @@ function formatFlixMovie(item: any): Movie {
     rating,
     year: year > 0 ? year : undefined,
     duration: durationStr,
-    quality: (target.best_quality || target.quality || 'FullHD') as any,
+    quality: target.best_quality || target.quality || 'FullHD',
     genres,
     posterUrl,
     backdropUrl,
@@ -230,7 +242,7 @@ function formatFlixMovie(item: any): Movie {
     isNew: year >= 2024,
     kinopoisk_id: kpId,
     files: target.files || [],
-    counters,
+    counters: counters ?? undefined,
     translationsList,
     episodesBySeason,
     rawPersonalities: target.personalities || item.personalities || [],
@@ -278,12 +290,14 @@ export async function fetchVideoHubStreamDirect(
       `https://plapi.cdnvideohub.com/api/v1/player/sv/playlist?pub=12&aggr=kp&id=${kpId}`
     );
     if (!playlistRes.ok) return null;
-    const playlistData = await playlistRes.json();
-    const items: any[] = playlistData?.items || [];
+    const playlistData = await playlistRes.json() as { items?: Array<{ vkId?: number | string; season?: number | string; episode?: number | string; voiceType?: string }>; isSerial?: boolean } | null;
+    const items = playlistData?.items || [];
     if (!items.length) return null;
 
-    let matchedItem = null;
-    if (playlistData.isSerial) {
+    type PlaylistItem = NonNullable<typeof items[number]>;
+
+    let matchedItem: PlaylistItem | undefined;
+    if (playlistData?.isSerial) {
       const seasonItems = items.filter(
         (i) => Number(i.season) === Number(season) && Number(i.episode) === Number(episode)
       );
@@ -309,7 +323,9 @@ export async function fetchVideoHubStreamDirect(
       `https://plapi.cdnvideohub.com/api/v1/player/sv/video/${matchedItem.vkId}`
     );
     if (!videoRes.ok) return null;
-    const videoData = await videoRes.json();
+    const videoData = await videoRes.json() as {
+      sources?: Partial<Record<'mpegFullHdUrl' | 'mpegHighUrl' | 'mpegMediumUrl' | 'mpegLowUrl' | 'hlsUrl', string>>;
+    } | null;
     const sources = videoData?.sources || {};
 
     const qualities: Array<{ label: string; url: string }> = [];
@@ -435,16 +451,17 @@ export async function fetchCinemaGetVideo(filters: {
 export async function fetchCinemaVideos(params: {
   page?: number;
   limit?: number;
+  sort?: string;
   sort_by?: string;
   sort_direction?: string;
   year_from?: number | string;
   year_to?: number | string;
   type?: string;
   skipCache?: boolean;
-  [key: string]: any;
+  'filter[title]'?: string;
 }): Promise<Movie[]> {
   const { skipCache, ...cleanParams } = params;
-  const queryStr = new URLSearchParams(cleanParams as any).toString();
+  const queryStr = new URLSearchParams(cleanParams as Record<string, string>).toString();
   const cacheKey = `cinema_v2_videos_${queryStr}`;
   if (!skipCache) {
     const cached = CacheManager.get<Movie[]>(cacheKey, { category: 'cinema', subcategory: 'video' });
@@ -480,13 +497,13 @@ export async function fetchCinemaUpdates(options?: { skipCache?: boolean }): Pro
     const url = new URL(`${API_BASE}/updates.php`, window.location.origin);
     const res = await fetch(url.toString());
     if (!res.ok) return { movies: [], serials: [] };
-    const data = await res.json();
+    const data = await res.json() as { result?: { movies?: RawMovieRecord[]; serials?: RawMovieRecord[] } } | null;
 
     const rawMovies = data?.result?.movies || [];
     const rawSerials = data?.result?.serials || [];
 
-    const movies = rawMovies.map((item: any) => formatFlixMovie(item));
-    const serials = rawSerials.map((item: any) => formatFlixMovie(item));
+    const movies = rawMovies.map((item) => formatFlixMovie(item));
+    const serials = rawSerials.map((item) => formatFlixMovie(item));
     const result = { movies, serials };
 
     if (movies.length > 0 || serials.length > 0) {
@@ -574,7 +591,7 @@ export function deduplicateCinemaList(movies: Movie[]): Movie[] {
   return Array.from(uniqueMap.values());
 }
 
-export function formatCdnMoviesItem(item: any): Movie {
+export function formatCdnMoviesItem(item: RawMovieRecord): Movie {
   const kpId = item.kinopoisk_id || item.id;
   const posterUrl = item.posters?.[0]?.large || item.posters?.[0]?.medium || item.image_url || '/img/branding/frame.svg';
   const typeMap: Record<string, string> = {
@@ -584,7 +601,7 @@ export function formatCdnMoviesItem(item: any): Movie {
     'аниме сериал': 'animeserial',
     'тв телепередача': 'showserial',
   };
-  const itemType = typeMap[item.content_type?.toLowerCase()] || item.type || 'movie';
+  const itemType = (item.content_type && typeMap[item.content_type.toLowerCase()]) || item.type || 'movie';
 
   return {
     id: String(kpId),
@@ -593,7 +610,7 @@ export function formatCdnMoviesItem(item: any): Movie {
     description: (item.description || item.slogan || '').trim(),
     rating: item.kinopoisk_rating || item.rating_kp || item.imdb_rating || '7.5',
     year: item.year || undefined,
-    genres: Array.isArray(item.genres) ? item.genres.map((g: any) => typeof g === 'object' ? g.name : g) : [],
+    genres: Array.isArray(item.genres) ? item.genres.map((g) => (typeof g === 'object' ? (g.name ?? '') : g)) : [],
     posterUrl,
     type: itemType,
     kinopoisk_id: kpId,
@@ -631,16 +648,16 @@ export async function fetchCinemaPersonById(
   role?: string,
   initialName?: string,
   initialPoster?: string
-): Promise<{ person: any; movies: Movie[] } | null> {
+): Promise<{ person: Person; movies: Movie[] } | null> {
   if (!personId) return null;
   const decodedId = decodeURIComponent(personId).trim();
   const cacheKey = `cinema_person_v5_${decodedId}_${initialName || ''}_${role || 'all'}`;
-  const cached = CacheManager.get<{ person: any; movies: Movie[] }>(cacheKey, { category: 'cinema', subcategory: 'person' });
+  const cached = CacheManager.get<{ person: Person; movies: Movie[] }>(cacheKey, { category: 'cinema', subcategory: 'person' });
   if (cached) return cached;
 
   try {
     let movies: Movie[] = [];
-    let foundPerson: any = null;
+    let foundPerson: Person | null = null;
     const isNumeric = /^\d+$/.test(decodedId);
 
     // 1. Fetch matching person from /api/personalities (querying FlixCDN personalities)
@@ -653,12 +670,12 @@ export async function fetchCinemaPersonById(
 
         const res = await fetch(url.toString());
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.json() as { result?: RawPersonality[]; data?: RawPersonality[] } | null;
           const items = data?.result || data?.data || [];
           if (!Array.isArray(items) || items.length === 0) break;
 
-          const matchedItem = items.find((p: any) => 
-            String(p.id) === String(decodedId) || 
+          const matchedItem = items.find((p) =>
+            String(p.id) === String(decodedId) ||
             String(p.kinopoisk_id) === String(decodedId) ||
             (p.name_ru && p.name_ru.trim().toLowerCase() === decodedId.toLowerCase()) ||
             (p.name_en && p.name_en.trim().toLowerCase() === decodedId.toLowerCase()) ||
@@ -669,7 +686,7 @@ export async function fetchCinemaPersonById(
           if (matchedItem) {
             const pName = (matchedItem.name_ru && matchedItem.name_ru.trim()) ? matchedItem.name_ru.trim() : matchedItem.name_en;
             foundPerson = {
-              id: matchedItem.id || decodedId,
+              id: String(matchedItem.id || decodedId),
               name_ru: pName || initialName || decodedId,
               name_en: matchedItem.name_en || '',
               poster_url: matchedItem.poster_url || initialPoster || '/img/branding/frame.svg',
@@ -678,9 +695,9 @@ export async function fetchCinemaPersonById(
 
             // Fetch EXACT video IDs linked to this personality
             if (Array.isArray(matchedItem.videos) && matchedItem.videos.length > 0) {
-              const videoIds = matchedItem.videos.map((v: any) => typeof v === 'object' ? (v.video_id || v.id) : v).filter(Boolean);
+              const videoIds = matchedItem.videos.map((v) => typeof v === 'object' ? (v.video_id ?? v.id) : v).filter(Boolean);
               if (videoIds.length > 0) {
-                const videoPromises = videoIds.slice(0, 30).map((vid: any) => fetchCinemaVideoById(String(vid)));
+                const videoPromises = videoIds.slice(0, 30).map((vid) => fetchCinemaVideoById(String(vid)));
                 const fetchedResults = await Promise.all(videoPromises);
                 movies = fetchedResults.filter((m): m is Movie => m !== null);
               }
@@ -702,10 +719,10 @@ export async function fetchCinemaPersonById(
         cdnUrl.searchParams.set('query', searchQuery);
         const cdnRes = await fetch(cdnUrl.toString());
         if (cdnRes.ok) {
-          const cdnData = await cdnRes.json();
+          const cdnData = await cdnRes.json() as { data?: RawMovieRecord[]; items?: RawMovieRecord[] } | null;
           const cdnItems = cdnData?.data || cdnData?.items || [];
           if (Array.isArray(cdnItems) && cdnItems.length > 0) {
-            const formattedCdnMovies = cdnItems.map((c: any) => formatCdnMoviesItem(c));
+            const formattedCdnMovies = cdnItems.map((c) => formatCdnMoviesItem(c));
             const existingIds = new Set(movies.map((m) => String(m.id || m.kinopoisk_id)));
             for (const cMovie of formattedCdnMovies) {
               const cId = String(cMovie.id || cMovie.kinopoisk_id);
@@ -726,9 +743,9 @@ export async function fetchCinemaPersonById(
     if (targetName || isNumeric) {
       movies = movies.filter((m) => {
         if (!m) return false;
-        const pList = m.rawPersonalities || (m as any).personalities || [];
+        const pList = m.rawPersonalities || [];
         if (Array.isArray(pList) && pList.length > 0) {
-          const matchInMovie = pList.some((p: any) => 
+          const matchInMovie = pList.some((p) =>
             (isNumeric && (String(p.id) === String(decodedId) || String(p.kinopoisk_id) === String(decodedId))) ||
             (targetName && p.name_ru && p.name_ru.trim().toLowerCase().includes(targetName)) ||
             (targetName && p.name_en && p.name_en.trim().toLowerCase().includes(targetName))
@@ -830,9 +847,9 @@ export async function fetchCinemaVideoById(id: string, options?: { skipCache?: b
     searchUrl.searchParams.set('kinopoisk_id', id);
     const searchRes = await fetch(searchUrl.toString());
     if (searchRes.ok) {
-      const searchData = await searchRes.json();
+      const searchData = await searchRes.json() as { result?: RawMovieRecord[]; items?: RawMovieRecord[] } | null;
       const items = searchData?.result || searchData?.items || [];
-      const exactMatch = items.find((m: any) => String(m.kinopoisk_id || m.id) === String(id));
+      const exactMatch = items.find((m) => String(m.kinopoisk_id || m.id) === String(id));
       if (exactMatch) {
         foundMovie = formatFlixMovie(exactMatch);
         if (exactMatch.id) internalId = String(exactMatch.id);

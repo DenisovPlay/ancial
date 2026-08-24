@@ -43,6 +43,8 @@ function NetStatusBanner() {
   // Лёгкий «connected» flash не нужен — пользователь просил плашку до восстановления
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    // Классический client-mount флаг: SSR-рендер и первый клиентский должны отличаться, иначе гидратация ломается.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

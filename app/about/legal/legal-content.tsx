@@ -301,7 +301,7 @@ export default function LegalPage() {
                     <li>
                       Пропаганда/упоминания наркотиков <br />{" "}
                       <span className="text-red-300">
-                        (даже негативные без маркировки "опасно и незаконно")
+                        (даже негативные без маркировки &quot;опасно и незаконно&quot;)
                       </span>
                     </li>
                     <li>
@@ -381,12 +381,12 @@ export default function LegalPage() {
                   </li>
                   <li>С призывами к дискриминации по национальному признаку</li>
                   <li>
-                    Пропагандирующих "русофобию" или дискредитирующих ВС РФ
+                    Пропагандирующих &quot;русофобию&quot; или дискредитирующих ВС РФ
                   </li>
                 </ul>
                 <p className="text-sm text-red-400 mt-4">
                   <strong>Такие треки блокируются немедленно по жалобе.</strong>{" "}
-                  Список "нежелательных" исполнителей ведётся Администрацией.
+                  Список &quot;нежелательных&quot; исполнителей ведётся Администрацией.
                 </p>
               </div>
             </section>
@@ -518,7 +518,7 @@ export default function LegalPage() {
                     </tr>
                     <tr className="border-b border-zinc-700/50 hover:bg-zinc-800/50 transition-all duration-200">
                       <td className="p-3 font-medium text-zinc-200 border-r border-zinc-600/50">
-                        Максим Покровский ("Ногу свело!")
+                        Максим Покровский (&quot;Ногу свело!&quot;)
                       </td>
                       <td className="p-3 text-amber-300 border-r border-zinc-600/50">
                         Сборы для ВСУ
@@ -573,7 +573,7 @@ export default function LegalPage() {
                         Oxxxymiron
                       </td>
                       <td className="p-3 text-amber-300 border-r border-zinc-600/50">
-                        "Антивоенные"/Проукраинские концерты, поддержка Украины,
+                        &quot;Антивоенные&quot;/Проукраинские концерты, поддержка Украины,
                         иноагент Минюста РФ
                       </td>
                       <td className="p-3">
@@ -587,7 +587,7 @@ export default function LegalPage() {
                         Монеточка / NoizeMC
                       </td>
                       <td className="p-3 text-amber-300 border-r border-zinc-600/50">
-                        "Антивоенные"/Проукраинские концерты, поддержка Украины,
+                        &quot;Антивоенные&quot;/Проукраинские концерты, поддержка Украины,
                         иноагент Минюста РФ
                       </td>
                       <td className="p-3">
@@ -599,7 +599,7 @@ export default function LegalPage() {
                     {/*  Украинские  */}
                     <tr className="border-b border-zinc-700/50 hover:bg-zinc-800/50 transition-all duration-200">
                       <td className="p-3 font-medium text-zinc-200 border-r border-zinc-600/50">
-                        Андрей Хлывнюк ("Бумбокс")
+                        Андрей Хлывнюк (&quot;Бумбокс&quot;)
                       </td>
                       <td className="p-3 text-amber-300 border-r border-zinc-600/50">
                         Служит в ВСУ, оператор БПЛА
@@ -1670,7 +1670,7 @@ export default function LegalPage() {
                     <li>provide accurate information;</li>
                     <li>
                       not register multiple accounts without the
-                      Administration's consent;
+                      Administration&apos;s consent;
                     </li>
                     <li>
                       not transfer access to the account to third parties;
@@ -1697,7 +1697,7 @@ export default function LegalPage() {
                   </ul>
                 </li>
                 <li>
-                  When deleting an account at the user's request (email to
+                  When deleting an account at the user&apos;s request (email to
                   contact@zypo.cc with the subject [Account Deletion]):
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>
@@ -1838,7 +1838,7 @@ export default function LegalPage() {
                     <ul className="list-disc ml-6 space-y-1 text-red-100">
                       <li>
                         Tracks that violate copyright (without the copyright
-                        holder's permission);
+                        holder&apos;s permission);
                       </li>
                       <li>
                         Audio with pornographic, violent, or extremist content;
@@ -1856,8 +1856,8 @@ export default function LegalPage() {
                     <li>Original compositions;</li>
                     <li>
                       Covers, remixes, fan versions — only with the copyright
-                      holder's permission or within fair use, if permitted by
-                      the user's country's legislation.
+                      holder&apos;s permission or within fair use, if permitted by
+                      the user&apos;s country&apos;s legislation.
                     </li>
                   </ul>
                 </li>
@@ -1906,7 +1906,7 @@ export default function LegalPage() {
                   deleted or blocked, it becomes unavailable on Zypo as well.
                 </li>
                 <li>
-                  Upon a copyright holder's complaint (to contact@zypo.cc with
+                  Upon a copyright holder&apos;s complaint (to contact@zypo.cc with
                   the subject [Copyright]), the video link is removed within 72
                   hours. The user is warned. Repeated violations result in
                   blocking.
@@ -1957,7 +1957,7 @@ export default function LegalPage() {
                   <ul className="list-disc ml-6 mt-2 space-y-1">
                     <li>Only possible to TON wallets;</li>
                     <li>
-                      Considered a "reward", not a sale or transfer of funds;
+                      Considered a &quot;reward&quot;, not a sale or transfer of funds;
                     </li>
                     <li>
                       Not subject to taxes by the platform — the user is
@@ -2142,7 +2142,7 @@ export default function LegalPage() {
                   trained volunteers may be involved under team supervision.
                 </li>
                 <li>
-                  Complaints about content are submitted through the "Report"
+                  Complaints about content are submitted through the &quot;Report&quot;
                   button under the material or to contact@zypo.cc with the
                   subject [Content Complaint].
                 </li>
@@ -2261,7 +2261,7 @@ export default function LegalPage() {
                 </li>
                 <li>
                   Users can complain about content or actions of Community
-                  moderators through the "Report" button or to contact@zypo.cc
+                  moderators through the &quot;Report&quot; button or to contact@zypo.cc
                   with the subject [Community Complaint].
                 </li>
                 <li>

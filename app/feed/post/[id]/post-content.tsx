@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { sanitizeUserHtml } from '../../../lib/sanitize-html';
 
 import Modal from '../../../components/modal';
 import DeletePostModal from '../../../components/delete-post-modal';
@@ -74,7 +75,7 @@ function truncateText(value: string, maxLength: number) {
   return `${value.slice(0, maxLength).trim()}...`;
 }
 
-function getPostDocumentTitle(post: PostData | null, lang: any) {
+function getPostDocumentTitle(post: PostData | null, lang: Record<string, string> | null) {
   if (!post) return null;
 
   const title = htmlToPlainText(post.title);
@@ -222,7 +223,7 @@ function FeedCommentCard({
       <div
         ref={contentRef}
         className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words"
-        dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(comment.content) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(comment.content)) }}
       />
     </div>
   );
@@ -412,10 +413,10 @@ export default function SinglePostContent({ postId }: { postId: string }) {
           ),
         };
       });
-    } catch (nextError: any) {
+    } catch (nextError) {
       console.error('Bookmark failed', nextError);
       showNote({
-        content: nextError?.message || strings.somethingwrong,
+        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -483,10 +484,10 @@ export default function SinglePostContent({ postId }: { postId: string }) {
           user_vote_up: null,
         };
       });
-    } catch (nextError: any) {
+    } catch (nextError) {
       console.error('Vote failed', nextError);
       showNote({
-        content: nextError?.message || strings.somethingwrong,
+        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });

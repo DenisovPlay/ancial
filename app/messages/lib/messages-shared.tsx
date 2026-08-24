@@ -17,8 +17,8 @@ export type GroupMember = {
   verify: number;
   role: 'owner' | 'admin' | 'member';
   community_role?: CommunityDisplayRole | null;
+  name?: string | null;
 };
-
 export type DialogListItem = {
   hash?: string | null;
   id?: number | string | null;
@@ -43,9 +43,13 @@ export type DialogListItem = {
   Uverify?: number | string | null;
   Ubadges?: string | null;
   unread_count?: number | string | null;
+  unread?: number | string | null;
   img?: string | null;
   bg?: string | null;
   background?: string | null;
+  image_url?: string | null;
+  members_count?: number | string | null;
+  blocked?: boolean | number | string | null;
 };
 
 export type DialogMeta = {
@@ -68,6 +72,8 @@ export type DialogMeta = {
   img?: string | null;
   bg?: string | null;
   background?: string | null;
+  image_url?: string | null;
+  members_count?: number | string | null;
   blocked?: boolean | number | string | null;
   active_mute?: boolean | Record<string, unknown> | null;
   community_permissions?: CommunityPermissionMap | null;
@@ -181,6 +187,11 @@ export type WsPayloadData = Record<string, unknown> & {
   online_at?: number | string | null;
   status?: string | null;
   user_id?: number | string | null;
+  sender_id?: number | string | null;
+  reacted_by?: number | string | null;
+  reaction?: string | null;
+  action?: string | null;
+  typing?: boolean | null;
 };
 
 export type WsPayload = {
@@ -194,6 +205,11 @@ export type WsPayload = {
   online_at?: number | string | null;
   status?: string | null;
   user_id?: number | string | null;
+  sender_id?: number | string | null;
+  reacted_by?: number | string | null;
+  reaction?: string | null;
+  action?: string | null;
+  typing?: boolean | null;
   [key: string]: unknown;
 };
 

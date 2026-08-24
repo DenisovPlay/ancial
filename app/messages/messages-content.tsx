@@ -91,7 +91,30 @@ import {
   writeDialogsCache,
   writeMessageCache,
   type WsPayload,
+  type WsPayloadData,
 } from './lib/messages-shared';
+
+/** Обёртка ответа API: сервер может вернуть объект напрямую или в поле data. */
+type ApiEnvelope<T> = T & { data?: T | null };
+
+/** Список диалогов с опциональным агрегированным счётчиком непрочитанных. */
+type DialogsPayload = DialogListResponse & { unread_count?: number };
+
+declare global {
+  interface Window {
+    /** ID активного диалога для глобального WS (читается в lib/global-ws.ts). */
+    __activeDialogId?: number;
+    /** Хэш активного диалога для глобального WS (читается в lib/global-ws.ts). */
+    __activeDialogHash?: string;
+  }
+}
+
+/** Запись активного диалога для глобального WS — через функцию, чтобы не мутировать window напрямую из компонента. */
+const setActiveDialogGlobals = (dialogId: number, dialogHash: string) => {
+  if (typeof window === 'undefined') return;
+  window.__activeDialogId = dialogId;
+  window.__activeDialogHash = dialogHash;
+};
 
 /* ──────────────────────────────────────────────────────────────────────────
  * TypingBubble
@@ -189,6 +212,8 @@ export default function MessagesContent() {
   const [routeHash, setRouteHash] = useState(paramsHash);
 
   useEffect(() => {
+    // URL → стейт: источник правды здесь, альтернативы без каскада нет.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRouteHash(paramsHash);
   }, [paramsHash]);
   const currentUserId = toNumber(user?.id);
@@ -225,7 +250,9 @@ export default function MessagesContent() {
   const [uploadingMessageImage, setUploadingMessageImage] = useState(false);
   const [uploadingDialogBackground, setUploadingDialogBackground] = useState(false);
   const [activeDialogImageKey, setActiveDialogImageKey] = useState<string | null>(null);
-  const [dayLabelTick, setDayLabelTick] = useState(Date.now());
+  // Тик для перерисовки меток дней в полночь; Date.now() здесь — только начальное значение,
+  // реальное обновление приходит из таймера ниже.
+  const [dayLabelTick, setDayLabelTick] = useState(() => Date.now());
   const [stickerDropdownOpen, setStickerDropdownOpen] = useState(false);
 
   // Карта стикеров: code → url — для клиентского рендера :code:
@@ -257,7 +284,7 @@ export default function MessagesContent() {
     const q = dialogSearchQuery.toLowerCase().trim();
     return dialogs.filter((dialog) => {
       const dialogName = (decodeText(dialog.Uname) || '').toLowerCase();
-      const username = ((dialog.username || (dialog as any).username || '') as string).toLowerCase();
+      const username = (dialog.username || '').toLowerCase();
       const title = (dialog.title || '').toLowerCase();
       const msg = (dialog.Mmessage || '').toLowerCase();
       return dialogName.includes(q) || username.includes(q) || title.includes(q) || msg.includes(q);
@@ -391,24 +418,24 @@ export default function MessagesContent() {
       setVoiceRoomParticipantCount(Array.isArray(signal.participants) ? signal.participants.length : 0);
     }
   }, []);
-  const groupMembersCount = selectedDialog?.members?.length || (selectedDialog as any)?.members_count || (dialogListItem as any)?.members_count || 0;
+  const groupMembersCount = selectedDialog?.members?.length || Number(selectedDialog?.members_count) || Number(dialogListItem?.members_count) || 0;
 
   const dialogTitle = isGroupDialog
     ? (selectedDialog?.title || dialogListItem?.title || (lang?.group_chat || 'Групповой чат'))
     : getDialogTitle(effectiveForeignUser);
 
   const dialogAvatarUrl = isGroupDialog
-    ? normalizeAssetUrl(selectedDialog?.avatar || (dialogListItem as any)?.avatar, FALLBACK_AVATAR)
+    ? normalizeAssetUrl(selectedDialog?.avatar || dialogListItem?.avatar, FALLBACK_AVATAR)
     : normalizeAssetUrl(effectiveForeignUser?.img, FALLBACK_AVATAR);
 
   const rawBg =
     selectedDialog?.img ||
-    (selectedDialog as any)?.bg ||
-    (selectedDialog as any)?.background ||
-    (selectedDialog as any)?.image_url ||
-    (dialogListItem as any)?.img ||
-    (dialogListItem as any)?.bg ||
-    (dialogListItem as any)?.background;
+    selectedDialog?.bg ||
+    selectedDialog?.background ||
+    selectedDialog?.image_url ||
+    dialogListItem?.img ||
+    dialogListItem?.bg ||
+    dialogListItem?.background;
 
   const dialogBackgroundUrl = normalizeAssetUrl(rawBg, '');
   const selectedDialogId = toNumber(selectedDialog?.id);
@@ -455,8 +482,10 @@ export default function MessagesContent() {
     return () => clearInterval(timer);
   }, [typingUsers]);
 
+  // Date.now() в рендере запрещён линтером: typing-юзеры вычищаются таймером выше (500мс),
+  // а «текущее время» для фильтра берём из тика dayLabelTick (обновляется таймерами).
   const activeTypingUserIds = Object.keys(typingUsers).filter(
-    (idStr) => typingUsers[Number(idStr)]?.until > Date.now()
+    (idStr) => typingUsers[Number(idStr)]?.until > dayLabelTick
   );
 
   let typingLabel = '';
@@ -490,6 +519,8 @@ export default function MessagesContent() {
 
     const hasActiveImage = dialogImageSlides.some((image) => image.key === activeDialogImageKey);
     if (!hasActiveImage) {
+      // Ключ не найден в слайдах — терминальный сброс выбора, сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveDialogImageKey(null);
     }
   }, [activeDialogImageKey, dialogImageSlides]);
@@ -556,12 +587,12 @@ export default function MessagesContent() {
       : '';
 
     if (typeof window !== 'undefined') {
-      (window as any).__activeDialogId = activeId;
+      window.__activeDialogId = activeId;
     }
 
     return () => {
       if (typeof window !== 'undefined') {
-        (window as any).__activeDialogId = 0;
+        window.__activeDialogId = 0;
       }
     };
   }, [currentUserId, foreignUser, selectedDialog]);
@@ -677,14 +708,14 @@ export default function MessagesContent() {
     dialogsLastFetchAtRef.current = Date.now();
 
     try {
-      const result = await AncialAPI.getDialogList<any>();
-      const rawData = result as any;
+      const result = await AncialAPI.getDialogList<ApiEnvelope<DialogsPayload>>();
+      const rawData = result as ApiEnvelope<DialogsPayload>;
       const payload = rawData?.data ?? rawData;
       const rawNext = Array.isArray(payload?.dialogs) ? payload.dialogs : (Array.isArray(payload) ? payload : []);
       const activeId = currentDialogIdRef.current;
       const activeHash = currentDialogHashRef.current;
 
-      const nextDialogs = rawNext.map((d: any) => {
+      const nextDialogs = rawNext.map((d: DialogListItem) => {
         const isCurrent = (activeId > 0 && Number(d.id) === activeId) ||
           (activeHash && normalizeHash(d.hash) === activeHash);
         if (isCurrent) {
@@ -704,7 +735,7 @@ export default function MessagesContent() {
       writeDialogsCache(nextDialogs);
 
       if (typeof payload?.unread_count === 'number') {
-        const activeUnreadCount = rawNext.reduce((acc: number, d: any) => {
+        const activeUnreadCount = rawNext.reduce((acc: number, d: DialogListItem) => {
           const isCurrent = (activeId > 0 && Number(d.id) === activeId) ||
             (activeHash && normalizeHash(d.hash) === activeHash);
           if (isCurrent) {
@@ -737,12 +768,12 @@ export default function MessagesContent() {
     const hash = currentDialogHashRef.current;
     if (!hash) return;
     try {
-      const result = await AncialAPI.getDialogByHash<any>(hash);
-      const raw = result as any;
+      const result = await AncialAPI.getDialogByHash<ApiEnvelope<DialogByHashResponse>>(hash);
+      const raw = result as ApiEnvelope<DialogByHashResponse>;
       const payload = raw.data ?? raw;
       const dialogMetaRaw = payload.dialog ?? null;
       if (!dialogMetaRaw?.id) return;
-      const serverImg = (dialogMetaRaw as any).img || (dialogMetaRaw as any).bg || '';
+      const serverImg = dialogMetaRaw.img || dialogMetaRaw.bg || '';
       const dialogMeta = {
         ...dialogMetaRaw,
         active_mute: payload.active_mute ?? null,
@@ -815,8 +846,8 @@ export default function MessagesContent() {
 
       if (session !== dialogSessionRef.current) return;
 
-      const nextMessages = Array.isArray(result) ? result : Array.isArray((result as any).messages) ? (result as any).messages : [];
-      const newForeignUser = (result as any).foreignUser;
+      const nextMessages = Array.isArray(result) ? result : Array.isArray(result.messages) ? result.messages : [];
+      const newForeignUser = result.foreignUser;
 
       const freshMessages = sortMessages(nextMessages);
       const mergedMessages = mergeMessages(cachedMessages, freshMessages);
@@ -882,8 +913,8 @@ export default function MessagesContent() {
 
       if (session !== dialogSessionRef.current) return;
 
-      const nextMessages = Array.isArray(result) ? result : Array.isArray((result as any).messages) ? (result as any).messages : [];
-      const newForeignUser = (result as any).foreignUser;
+      const nextMessages = Array.isArray(result) ? result : Array.isArray(result.messages) ? result.messages : [];
+      const newForeignUser = result.foreignUser;
 
       const newerMessages = sortMessages(nextMessages);
       if (!newerMessages.length) return;
@@ -956,8 +987,8 @@ export default function MessagesContent() {
 
       if (session !== dialogSessionRef.current) return;
 
-      const nextMessages = Array.isArray(result) ? result : Array.isArray((result as any).messages) ? (result as any).messages : [];
-      const newForeignUser = (result as any).foreignUser;
+      const nextMessages = Array.isArray(result) ? result : Array.isArray(result.messages) ? result.messages : [];
+      const newForeignUser = result.foreignUser;
 
       const olderMessages = sortMessages(nextMessages);
       if (!olderMessages.length) {
@@ -989,7 +1020,7 @@ export default function MessagesContent() {
 
   const seekToMessage = async (replyToId: string | number) => {
     const targetId = `msg-${replyToId}`;
-    let el = document.getElementById(targetId);
+    const el = document.getElementById(targetId);
 
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1018,9 +1049,9 @@ export default function MessagesContent() {
         currentEarliestId
       );
 
-      const nextMessages = Array.isArray(result) ? result : Array.isArray((result as any).messages) ? (result as any).messages : [];
-      if (result && !Array.isArray(result) && (result as any).foreignUser) {
-        newForeignUser = (result as any).foreignUser as DialogUser;
+      const nextMessages = Array.isArray(result) ? result : Array.isArray(result.messages) ? result.messages : [];
+      if (result && !Array.isArray(result) && result.foreignUser) {
+        newForeignUser = result.foreignUser as DialogUser;
       }
 
       if (!nextMessages.length) break;
@@ -1080,6 +1111,43 @@ export default function MessagesContent() {
     }
   };
 
+  const clearDialogUnreadLocally = (targetIdOrHash: number | string) => {
+    setDialogs((currentDialogs) => {
+      let unreadDelta = 0;
+      const updated = currentDialogs.map((dialog) => {
+        const isMatch = typeof targetIdOrHash === 'number'
+          ? Number(dialog.id) === targetIdOrHash
+          : normalizeHash(dialog.hash) === normalizeHash(String(targetIdOrHash));
+
+        if (isMatch) {
+          const count = Number(dialog.unread_count ?? dialog.unread ?? 0);
+          if (count > 0) {
+            unreadDelta = count;
+          }
+          return {
+            ...dialog,
+            unread_count: 0,
+            unread: 0,
+            status: 1,
+          };
+        }
+        return dialog;
+      });
+
+      writeDialogsCache(updated);
+
+      if (unreadDelta > 0) {
+        window.dispatchEvent(
+          new CustomEvent('ancial:unread_update', {
+            detail: { type: 'messages_decrement', amount: unreadDelta }
+          })
+        );
+      }
+
+      return updated;
+    });
+  };
+
   const loadDialogByHash = async (hash: string, session: number) => {
     if (session !== dialogSessionRef.current) return;
 
@@ -1096,8 +1164,8 @@ export default function MessagesContent() {
       cached = readMessageCache(getMessageCacheKey(currentUserId, toNumber(dialogFromList.id)));
     }
 
-    const rawImg = (cached?.dialogMeta as any)?.img || (cached?.dialogMeta as any)?.bg || (dialogFromList as any)?.bg || (dialogFromList as any)?.img || '';
-    let cachedMembers = (cached?.dialogMeta as any)?.members;
+    const rawImg = cached?.dialogMeta?.img || cached?.dialogMeta?.bg || dialogFromList?.bg || dialogFromList?.img || '';
+    let cachedMembers = cached?.dialogMeta?.members;
     const targetDialogId = toNumber(cached?.dialogMeta?.id || dialogFromList?.id);
     if (!cachedMembers || !cachedMembers.length) {
       if (targetDialogId > 0) {
@@ -1110,8 +1178,8 @@ export default function MessagesContent() {
       hash: cached?.dialogMeta?.hash || dialogFromList?.hash || normalizedHash,
       img: normalizeAssetUrl(rawImg, ''),
       members: cachedMembers,
-      blocked: Boolean((cached?.dialogMeta as any)?.blocked ?? (dialogFromList as any)?.blocked),
-    } as any) : null;
+      blocked: Boolean(cached?.dialogMeta?.blocked ?? dialogFromList?.blocked),
+    }) : null;
 
     const cachedForeignUser: DialogUser | null = cached?.foreignUser || mapDialogListItemToUser(dialogFromList);
 
@@ -1126,7 +1194,7 @@ export default function MessagesContent() {
       currentDialogHashRef.current = normalizedHash;
       currentForeignUserIdRef.current = toNumber(cachedForeignUser?.id);
       currentMessageCacheKeyRef.current = getMessageCacheKey(currentUserId, currentDialogIdRef.current);
-      setBlockedDialog(Boolean((cachedDialogMeta as any).blocked));
+      setBlockedDialog(Boolean(cachedDialogMeta.blocked));
 
       const cachedMsgs = cached?.messages ? sortMessages(cached.messages) : [];
       // Always set messages (even empty) to immediately clear the previous dialog's messages
@@ -1146,11 +1214,11 @@ export default function MessagesContent() {
     }
 
     try {
-      const result = await AncialAPI.getDialogByHash<DialogByHashResponse>(hash);
+      const result = await AncialAPI.getDialogByHash<ApiEnvelope<DialogByHashResponse>>(hash);
 
       if (session !== dialogSessionRef.current) return;
 
-      const raw = result as any;
+      const raw = result as ApiEnvelope<DialogByHashResponse>;
       const payload = raw.data ?? raw;
       const dialogMetaRaw = payload.dialog ?? null;
 
@@ -1162,7 +1230,7 @@ export default function MessagesContent() {
         writeGroupMembersCache(toNumber(dialogMetaRaw.id), dialogMetaRaw.members);
       }
 
-      const serverImg = (dialogMetaRaw as any).img || (dialogMetaRaw as any).bg || (cachedDialogMeta as any)?.img || '';
+      const serverImg = dialogMetaRaw.img || dialogMetaRaw.bg || cachedDialogMeta?.img || '';
       const dialogMeta: DialogMeta = {
         ...dialogMetaRaw,
         active_mute: payload.active_mute ?? null,
@@ -1307,9 +1375,9 @@ export default function MessagesContent() {
   };
 
   const handleWsTyping = (payload?: unknown) => {
-    const dataObj = ((payload as any)?.data ?? payload) as Record<string, unknown>;
-    const typingUserId = toNumber(dataObj?.user_id ?? dataObj?.sender_id ?? (payload as any)?.user_id);
-    const isTyping = dataObj?.typing !== false && (payload as any)?.typing !== false;
+    const dataObj = ((payload as WsPayload)?.data ?? payload) as WsPayloadData;
+    const typingUserId = toNumber(dataObj?.user_id ?? dataObj?.sender_id ?? (payload as WsPayload)?.user_id);
+    const isTyping = dataObj?.typing !== false && (payload as WsPayload)?.typing !== false;
 
     if (!typingUserId || typingUserId === currentUserId) return;
 
@@ -1352,8 +1420,8 @@ export default function MessagesContent() {
 
   const handleWsMessageNew = (payload?: unknown) => {
     const wsPayload = payload as WsPayload | undefined;
-    const dataObj = wsPayload?.data as Record<string, unknown> | undefined;
-    const senderId = toNumber(dataObj?.sender_id ?? dataObj?.user_id ?? (wsPayload as any)?.user_id);
+    const dataObj = wsPayload?.data as WsPayloadData | undefined;
+    const senderId = toNumber(dataObj?.sender_id ?? dataObj?.user_id ?? wsPayload?.user_id);
 
     if (senderId && senderId !== currentUserId) {
       setTypingUsers((prev) => {
@@ -1371,11 +1439,11 @@ export default function MessagesContent() {
 
   const handleWsMessageReaction = (payload?: unknown) => {
     const wsPayload = payload as WsPayload | undefined;
-    const dataObj = ((wsPayload as any)?.data ?? wsPayload) as Record<string, unknown>;
+    const dataObj = (wsPayload?.data ?? wsPayload) as WsPayloadData;
     const msgId = getPayloadMessageId(payload);
-    const reaction = String(dataObj?.reaction || (wsPayload as any)?.reaction || '');
-    const action = String(dataObj?.action || (wsPayload as any)?.action || '');
-    const reactedByStr = String(dataObj?.reacted_by ?? dataObj?.user_id ?? dataObj?.sender_id ?? (wsPayload as any)?.user_id ?? (wsPayload as any)?.reacted_by ?? 0);
+    const reaction = String(dataObj?.reaction || wsPayload?.reaction || '');
+    const action = String(dataObj?.action || wsPayload?.action || '');
+    const reactedByStr = String(dataObj?.reacted_by ?? dataObj?.user_id ?? dataObj?.sender_id ?? wsPayload?.user_id ?? wsPayload?.reacted_by ?? 0);
 
     if (msgId && reaction && action) {
       setMessages((currentMessages) => {
@@ -1429,6 +1497,8 @@ export default function MessagesContent() {
   useEffect(() => {
     if (!isAuthenticated) return undefined;
 
+    // Первичная загрузка диалогов: сеттлеры внутри loadDialogs после await.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadDialogs();
 
     const timer = window.setInterval(() => {
@@ -1450,6 +1520,8 @@ export default function MessagesContent() {
     teardownWs();
 
     if (!routeHash) {
+      // Нет активного диалога — терминальный сброс состояния, resetDialogState и есть источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       resetDialogState();
       return;
     }
@@ -1469,10 +1541,7 @@ export default function MessagesContent() {
   useEffect(() => {
     const dialogId = currentDialogIdRef.current;
     const dialogHash = currentDialogHashRef.current || routeHash;
-    if (typeof window !== 'undefined') {
-      (window as any).__activeDialogId = dialogId || 0;
-      (window as any).__activeDialogHash = dialogHash || '';
-    }
+    setActiveDialogGlobals(dialogId || 0, dialogHash || '');
 
     if (!isAuthenticated || !dialogId || blockedDialog) return undefined;
 
@@ -1494,10 +1563,7 @@ export default function MessagesContent() {
     }
 
     return () => {
-      if (typeof window !== 'undefined') {
-        (window as any).__activeDialogId = 0;
-        (window as any).__activeDialogHash = '';
-      }
+      setActiveDialogGlobals(0, '');
       teardownWs();
     };
     // WS subscriptions are keyed by dialog/user ids; handlers intentionally keep current state via refs.
@@ -1533,59 +1599,18 @@ export default function MessagesContent() {
     };
   }, [routeHash, selectedDialogId]);
 
-  const clearDialogUnreadLocally = (targetIdOrHash: number | string) => {
-    setDialogs((currentDialogs) => {
-      let unreadDelta = 0;
-      const updated = currentDialogs.map((dialog) => {
-        const isMatch = typeof targetIdOrHash === 'number'
-          ? Number(dialog.id) === targetIdOrHash
-          : normalizeHash(dialog.hash) === normalizeHash(String(targetIdOrHash));
-
-        if (isMatch) {
-          const count = Number((dialog as any).unread_count ?? (dialog as any).unread ?? 0);
-          if (count > 0) {
-            unreadDelta = count;
-          }
-          return {
-            ...dialog,
-            unread_count: 0,
-            unread: 0,
-            status: 1,
-          };
-        }
-        return dialog;
-      });
-
-      writeDialogsCache(updated);
-
-      if (unreadDelta > 0) {
-        window.dispatchEvent(
-          new CustomEvent('ancial:unread_update', {
-            detail: { type: 'messages_decrement', amount: unreadDelta }
-          })
-        );
-      }
-
-      return updated;
-    });
-  };
 
   const handleDialogOpen = (hash: string) => {
     const normalizedHash = normalizeHash(hash);
     if (!normalizedHash || normalizedHash === routeHash) return;
-    if (typeof window !== 'undefined') {
-      (window as any).__activeDialogHash = normalizedHash;
-    }
+    setActiveDialogGlobals(currentDialogIdRef.current || 0, normalizedHash);
     clearDialogUnreadLocally(normalizedHash);
     setRouteHash(normalizedHash);
     window.history.pushState(null, '', `/messages/${encodeURIComponent(normalizedHash)}`);
   };
 
   const handleDialogClose = () => {
-    if (typeof window !== 'undefined') {
-      (window as any).__activeDialogId = 0;
-      (window as any).__activeDialogHash = '';
-    }
+    setActiveDialogGlobals(0, '');
     setRouteHash('');
     window.history.pushState(null, '', '/messages');
   };
@@ -1844,7 +1869,7 @@ export default function MessagesContent() {
         ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
       });
 
-      const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+      const sentMsgId = res?.msg_id || res?.data?.msg_id;
       if (sentMsgId && tempId) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -2028,7 +2053,7 @@ export default function MessagesContent() {
           ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
         });
 
-        const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+        const sentMsgId = res?.msg_id || res?.data?.msg_id;
         if (sentMsgId) {
           setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
         }
@@ -2099,7 +2124,7 @@ export default function MessagesContent() {
           ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
         });
 
-        const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+        const sentMsgId = res?.msg_id || res?.data?.msg_id;
         if (sentMsgId) {
           setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
         }
@@ -2163,7 +2188,7 @@ export default function MessagesContent() {
         ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
       });
 
-      const sentMsgId = (res as any)?.msg_id || (res as any)?.data?.msg_id;
+      const sentMsgId = res?.msg_id || res?.data?.msg_id;
       if (sentMsgId) {
         setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
       }
@@ -2674,7 +2699,7 @@ export default function MessagesContent() {
 
                                 const groupSenderName = isGroupDialog
                                   ? (senderMember
-                                    ? ((senderMember as any).name || `${senderMember.fname || ''} ${senderMember.lname || ''}`.trim() || senderMember.username || (lang?.group_participant || 'Участник'))
+                                    ? ((senderMember.name || `${senderMember.fname || ''} ${senderMember.lname || ''}`.trim() || senderMember.username || (lang?.group_participant || 'Участник')))
                                     : (lang?.group_participant || 'Участник'))
                                   : undefined;
 
@@ -3093,7 +3118,7 @@ export default function MessagesContent() {
             || selectedDialog.can_manage_invites === '1'
             || selectedDialog.can_manage_invites === 'true'
           }
-          myRole={(selectedDialog.my_role as any) || 'member'}
+          myRole={(selectedDialog.my_role as 'owner' | 'admin' | 'member' | undefined) || 'member'}
           members={selectedDialog.members || []}
           visibility={selectedDialog.visibility}
           joinPolicy={selectedDialog.join_policy}

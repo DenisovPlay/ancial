@@ -69,6 +69,8 @@ export default function ContactsSecurityContent() {
 
   useEffect(() => {
     if (user) {
+      // Десериализация пропа user — сеттлер здесь источник правды, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setChangeEmail(user.email || '');
       setChangePhone(user.phone || '');
     }

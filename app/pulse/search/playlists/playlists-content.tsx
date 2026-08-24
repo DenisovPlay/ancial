@@ -55,6 +55,8 @@ export default function PulseSearchPlaylistsContent() {
     const cached = readPulseJsonCache<PulsePlaylistsSearchResponse>(cacheKey);
 
     if (cached && Array.isArray(cached.playlists)) {
+      // SWR: гидратация из кэша до ответа API — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPlaylists(cached.playlists);
       setLoading(false);
     } else {

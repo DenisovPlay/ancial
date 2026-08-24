@@ -369,7 +369,7 @@ export default function PulseContent() {
   const [reportTrackTarget, setReportTrackTarget] = useState<PulseTrack | null>(null);
   const [shareUrl, setShareUrl] = useState('');
   const [shareAttachment, setShareAttachment] = useState<{
-    widgets: any[];
+    widgets: Array<Record<string, unknown>>;
     preview: { authorName: string; authorImg: string; contentSnippet: string; firstImage?: string };
   } | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);

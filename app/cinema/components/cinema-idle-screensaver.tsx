@@ -36,7 +36,7 @@ export default function CinemaIdleScreensaver({
 
     if (list.length === 0) {
       try {
-        const bundle = getCinemaCache<any>('home_bundle');
+        const bundle = getCinemaCache<Partial<Record<'hero' | 'top' | 'newReleases' | 'popularSeries', Movie[]>>>('home_bundle');
         if (bundle) {
           const combined = [
             ...(bundle.hero || []),
@@ -58,6 +58,8 @@ export default function CinemaIdleScreensaver({
 
     // Shuffle active movies for variety
     const shuffled = [...list].sort(() => 0.5 - Math.random());
+    // Гидратация списка для заставки при монтировании/смене фильмов — сеттлер источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveMovies(shuffled);
   }, [movies]);
 
@@ -106,6 +108,8 @@ export default function CinemaIdleScreensaver({
     );
 
     if (disabled || isWatchPage || hasPlayingVideo) {
+      // Принудительный сброс заставки — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsIdle(false);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
       return;

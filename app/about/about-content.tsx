@@ -9,7 +9,12 @@ import { useScrollPingPong } from '../hooks/useScrollPingPong';
 
 export default function Home() {
     const router = useRouter();
-    const { user, isAuthenticated, lang, updateLang } = useAuth() as any;
+    const { user, isAuthenticated, lang, updateLang } = useAuth() as {
+        user?: unknown;
+        isAuthenticated?: boolean;
+        lang?: Record<string, string> | null;
+        updateLang?: (lang: string) => void;
+    };
 
     const navScrollRef = useDragScroll({ speed: 2 });
     const iconsScrollRef = useDragScroll({ speed: 2 });
@@ -128,7 +133,7 @@ export default function Home() {
                 <span className="w-full max-w-3xl text-lg text-zinc-300">НО! Самый ключевой момент - 1 января 2021 года, мы пришли к более знакомому названию - <span className="text-purple-500">AncialNeure</span>, приобрели домен Ancial.ru и начали творить - переделали все интерфейсы, придумали логотип.</span>
 
                 <span className="text-xl font-bold text-white mt-3">2022 - 2024</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">В 2022-2024 мы меняли интерфейсы, создали сервисы, которые есть сейчас, придумали новый логотип с рукописным "an" и спокойными цветами. Создали подназвание <span className="text-purple-500">"Ancial Group"</span> для тех, кто занимался разработкой именно <span className="text-purple-500">Ancial</span>. Сделали чат с нейросетями (<span className="text-purple-500">Anci</span>) и <span className="text-purple-500">dot-Tell</span> - приватный мессенджер в виде клейких листов. Оба этих сервиса пали жертвой оптимизации расходов, но кто знает, может они вернутся... О, ещё - придумали Ancial Коннект для входа в эти сервисы)</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">В 2022-2024 мы меняли интерфейсы, создали сервисы, которые есть сейчас, придумали новый логотип с рукописным &quot;an&quot; и спокойными цветами. Создали подназвание <span className="text-purple-500">&quot;Ancial Group&quot;</span> для тех, кто занимался разработкой именно <span className="text-purple-500">Ancial</span>. Сделали чат с нейросетями (<span className="text-purple-500">Anci</span>) и <span className="text-purple-500">dot-Tell</span> - приватный мессенджер в виде клейких листов. Оба этих сервиса пали жертвой оптимизации расходов, но кто знает, может они вернутся... О, ещё - придумали Ancial Коннект для входа в эти сервисы)</span>
 
                 <span className="text-xl font-bold text-white mt-3">2025</span>
                 <span className="w-full max-w-3xl text-lg text-zinc-300">В 2025 запустили в разработку новый отдельный Pulse (Музыка) и Zeni (Финтех). А ещё - <span className="text-purple-500">Ancial Lite</span> - более мощную и более лёгкую версию Ancial на новой кодовой базе, освежили логотип, взяли более яркие и броские цвета. Вместо <span className="text-purple-500">Ctrl C + Ctrl V</span> и <span className="text-purple-500">Ancial Group</span> решили назвать себя проще - <span className="text-purple-500">ZeniFlow</span>, в честь не вышедшего финтех сервиса <span className="text-purple-500">Zeni</span>.</span>

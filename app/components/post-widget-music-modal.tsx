@@ -74,6 +74,8 @@ export default function PostWidgetMusicModal({ isOpen, onClose, onAdd }: PostWid
 
   useEffect(() => {
     if (isOpen) {
+      // Сброс поиска при открытии модалки — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
       setResults([]);
       setSearching(false);

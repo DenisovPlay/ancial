@@ -20,7 +20,14 @@ export async function generateMetadata({ params }: PulseArtistPageProps): Promis
   let ogImage: string | undefined = undefined;
 
   try {
-    const data = await httpsGetJson<any>(`${API_BASE}/api/V2/pulse/GetArtist.php?id=${id}`);
+    /** Ответ GetArtist.php для SEO-метаданных. */
+    interface ArtistSeoResponse {
+      success?: boolean;
+      data?: {
+        artist?: { name?: string; desk?: string; img?: string };
+      };
+    }
+    const data = await httpsGetJson<ArtistSeoResponse>(`${API_BASE}/api/V2/pulse/GetArtist.php?id=${id}`);
     if (data?.success && data?.data?.artist) {
       const artist = data.data.artist;
       const artistName = decodeHtmlEntities(artist.name) || 'Артист Pulse';

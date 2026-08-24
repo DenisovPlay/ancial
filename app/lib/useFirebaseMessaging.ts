@@ -2,8 +2,22 @@
 
 import { useEffect, useState } from 'react';
 
+/** Минимальный тип firebase.messaging (compat SDK, грузится как внешний скрипт). */
+interface FirebaseCompatMessaging {
+  requestPermission?: () => Promise<void>;
+  getToken: (options: { vapidKey: string; serviceWorkerRegistration?: ServiceWorkerRegistration }) => Promise<string>;
+  onMessage: (callback: (payload: unknown) => void) => void;
+}
+
+/** Минимальный тип глобального объекта firebase (compat SDK). */
+interface FirebaseCompatApp {
+  initializeApp: (config: Record<string, string>) => FirebaseCompatApp;
+  messaging: (app?: FirebaseCompatApp) => FirebaseCompatMessaging;
+  apps?: FirebaseCompatApp[];
+}
+
 interface FirebaseMessaging {
-  messaging: any;
+  messaging: FirebaseCompatMessaging | null;
   ready: boolean;
   error: string | null;
 }
@@ -20,12 +34,12 @@ export const FIREBASE_CONFIG = {
 
 declare global {
   interface Window {
-    firebase?: any;
+    firebase?: FirebaseCompatApp;
   }
 }
 
 export function useFirebaseMessaging(): FirebaseMessaging {
-  const [messaging, setMessaging] = useState<any>(null);
+  const [messaging, setMessaging] = useState<FirebaseCompatMessaging | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,8 +63,10 @@ export function useFirebaseMessaging(): FirebaseMessaging {
             
             try {
               // Инициализируем Firebase
-              window.firebase.initializeApp(FIREBASE_CONFIG);
-              const msg = window.firebase.messaging();
+              const fb = window.firebase;
+              if (!fb) return;
+              fb.initializeApp(FIREBASE_CONFIG);
+              const msg = fb.messaging();
               setMessaging(msg);
               setReady(true);
             } catch (err) {

@@ -38,6 +38,8 @@ export default function PostBlockMediaModal({
 
   React.useEffect(() => {
     if (isOpen) {
+      // Открытие модалки: инициализация из пропов — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMode(initialMode);
       if (initialUrls && initialUrls.length > 0) {
         const initialDrafts: DraftMediaImage[] = initialUrls.map((url) => ({

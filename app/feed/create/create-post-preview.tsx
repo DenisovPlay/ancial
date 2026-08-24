@@ -1,6 +1,9 @@
 import TrackPreview from '../../messages/components/track-preview';
 import PostWidgetPoll from '../../components/post-widget-poll';
 import { parsePostContentToHtml } from '../../components/post-parser';
+import { sanitizeUserHtml } from '../../lib/sanitize-html';
+import { ensureCarouselScrollDelegation } from '../../components/carousel-delegation';
+import { useEffect } from 'react';
 type PreviewImage = {
     id: string;
     status: 'error' | 'uploaded' | 'uploading';
@@ -16,7 +19,10 @@ type PreviewStrings = {
 };
 export type PreviewWidget = {
     type: 'poll' | 'music' | string;
-    [key: string]: any;
+    track_id?: string | number;
+    question?: string;
+    options?: string[];
+    [key: string]: unknown;
 };
 type CreatePostPreviewProps = {
     authorImage?: string | null;
@@ -124,6 +130,11 @@ export default function CreatePostPreview({
     const safeTitle = title?.trim() || strings.placeholderTitle;
     const safeText = text?.trim() || strings.placeholderContent;
     const safeTag = tag?.trim() || strings.placeholderTag;
+
+    useEffect(() => {
+        ensureCarouselScrollDelegation();
+    }, []);
+
     return (
         <div
             id="postdiv-preview"
@@ -160,14 +171,14 @@ export default function CreatePostPreview({
                         spoilerEl.classList.add('revealed');
                     }
                 }}
-                dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(safeText, false) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(safeText, false)) }}
             />
             <PreviewImageBlock images={images} strings={strings} />
             {widgets && widgets.length > 0 && (
                 <div className="flex flex-col gap-3 w-full pointer-events-none">
                     {widgets.map((widget, i) => {
                         if (widget.type === 'music') {
-                            return <TrackPreview key={`w-music-${i}`} trackId={widget.track_id} className="w-full !max-w-none bg-zinc-800/40 border-zinc-600/30" />;
+                            return <TrackPreview key={`w-music-${i}`} trackId={widget.track_id ?? 0} className="w-full !max-w-none bg-zinc-800/40 border-zinc-600/30" />;
                         }
                         if (widget.type === 'poll') {
                             return (
@@ -175,9 +186,9 @@ export default function CreatePostPreview({
                                     key={`w-poll-${i}`}
                                     postId={0}
                                     type="poll"
-                                    question={widget.question}
-                                    options={widget.options}
-                                    votes={widget.options.map(() => 0)}
+                                    question={widget.question ?? ''}
+                                    options={widget.options ?? []}
+                                    votes={(widget.options ?? []).map(() => 0)}
                                     total_votes={0}
                                     user_vote_option={null}
                                 />

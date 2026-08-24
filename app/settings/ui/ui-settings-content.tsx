@@ -34,7 +34,7 @@ function getAutoResolvedMode(): 'full' | 'lite' {
   if (typeof window === 'undefined') return 'full';
   const isAndroid = /Android/i.test(navigator.userAgent || '');
   if (!isAndroid) return 'full';
-  const deviceMemory = Number((navigator as any).deviceMemory || 0);
+  const deviceMemory = Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0);
   const hardwareConcurrency = Number(navigator.hardwareConcurrency || 0);
   const hasLowMemory = deviceMemory > 0 && deviceMemory <= 4;
   const hasFewCores = hardwareConcurrency > 0 && hardwareConcurrency <= 4;
@@ -101,7 +101,7 @@ export default function UiSettingsContent() {
     setLanguage(selectedLang);
     try {
       if (isAuthenticated) {
-        await AncialAPI.updateProfile<any>({ lang: selectedLang });
+        await AncialAPI.updateProfile<{ lang?: string }>({ lang: selectedLang });
       }
       showNote({
         content: lang?.language_updated || 'Язык успешно изменён!',

@@ -12,14 +12,22 @@ export default function PulseCreateArtistsPage() {
   const { lang, isAuthenticated } = useAuth();
   const { showNote } = useNotification();
   const router = useRouter();
-  const [artists, setArtists] = useState<any[]>([]);
+  /** Артист из pulseManagement('artist', 'list'). */
+  interface PulseArtistRow {
+    id: number | string;
+    name?: string;
+    img?: string;
+    desk?: string;
+  }
+
+  const [artists, setArtists] = useState<PulseArtistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [artistToDelete, setArtistToDelete] = useState<number | null>(null);
 
   const fetchArtists = () => {
     setLoading(true);
-    AncialAPI.pulseManagement<any[]>('artist', 'list', {})
+    AncialAPI.pulseManagement<PulseArtistRow[]>('artist', 'list', {})
       .then((res) => {
         if (Array.isArray(res)) setArtists(res);
       })
@@ -28,6 +36,8 @@ export default function PulseCreateArtistsPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Легаси mount-загрузка артистов: сеттлеры внутри fetchArtists после await.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchArtists();
     }
   }, [isAuthenticated]);
@@ -44,9 +54,9 @@ export default function PulseCreateArtistsPage() {
     }
   };
 
-  const handleDelete = (e: React.MouseEvent, id: number) => {
+  const handleDelete = (e: React.MouseEvent, id: number | string) => {
     e.stopPropagation();
-    setArtistToDelete(id);
+    setArtistToDelete(typeof id === 'number' ? id : Number.parseInt(String(id), 10));
     setDeleteModalOpen(true);
   };
 
@@ -77,7 +87,7 @@ export default function PulseCreateArtistsPage() {
               <img className="h-14 w-14 rounded-2xl object-cover shrink-0" src={artist.img || '/img/pulse/artist.png'} alt={artist.name} />
               <div className="flex-grow min-w-0">
                 <span className="md:text-xl text-zinc-100 truncate block">{artist.name}</span>
-                <span className="text-sm text-zinc-400 truncate block">{artist.desk?.length > 60 ? artist.desk.substring(0, 60) + '...' : artist.desk}</span>
+                <span className="text-sm text-zinc-400 truncate block">{artist.desk && artist.desk.length > 60 ? artist.desk.substring(0, 60) + '...' : artist.desk}</span>
               </div>
               <div className="flex gap-1 shrink-0">
                 <button

@@ -25,6 +25,20 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
+/** Результат инициализации Яндекс ID (YaAuthSuggest). */
+interface YandexAuthResult {
+  extraData?: { error?: string } | null;
+}
+
+/** Глобальный виджет YaAuthSuggest из Yandex SDK (подгружается как внешний скрипт). */
+interface YandexAuthSuggest {
+  init(
+    clientConfig: { client_id: string; response_type: string; redirect_uri: string },
+    oauthHost: string,
+    widgetConfig: Record<string, unknown>
+  ): Promise<{ handler: () => Promise<YandexAuthResult> }>;
+}
+
 export default function SocialsContent() {
   const router = useRouter();
   const { lang, user, isAuthenticated, isLoading: authLoading, checkAuth } = useAuth();
@@ -42,6 +56,9 @@ export default function SocialsContent() {
 
   // Set isMounted to true on client-side mount
   useEffect(() => {
+    // Классический client-mount флаг: SSR-рендер и первый клиентский рендер
+    // должны отличаться, иначе гидратация виджетов ломается.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
@@ -126,7 +143,7 @@ export default function SocialsContent() {
           const origin = window.location.origin;
           const redirectUri = `${SITE_URL}/api/V2/oauth/Yandex.php?action=connect&token=${encodeURIComponent(token)}&origin=${encodeURIComponent(origin)}`;
 
-          const YaAuthSuggest = (window as any).YaAuthSuggest;
+          const YaAuthSuggest = (window as { YaAuthSuggest?: YandexAuthSuggest }).YaAuthSuggest;
           if (YaAuthSuggest) {
             YaAuthSuggest.init(
               {
@@ -144,8 +161,8 @@ export default function SocialsContent() {
                 buttonBorderRadius: 0
               }
             )
-              .then((result: any) => result.handler())
-              .then((data: any) => {
+              .then((result) => result.handler())
+              .then((data) => {
                 if (!active) return;
                 const responseData = data?.extraData;
                 if (!responseData?.error) {
@@ -165,7 +182,7 @@ export default function SocialsContent() {
                   yandexInitializedRef.current = false;
                 }
               })
-              .catch((err: any) => {
+              .catch((err) => {
                 console.error('Yandex Suggestion error:', err);
                 if (active) {
                   yandexInitializedRef.current = false;
@@ -198,10 +215,10 @@ export default function SocialsContent() {
       });
       await checkAuth();
       setTgWidgetKey(prev => prev + 1);
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
       showNote({
-        content: error.message || lang?.errorhappend || 'Произошла ошибка...',
+        content: error instanceof Error ? error.message : lang?.errorhappend || 'Произошла ошибка...',
         type: 'error',
         time: 5
       });
@@ -222,10 +239,10 @@ export default function SocialsContent() {
       });
       await checkAuth();
       yandexInitializedRef.current = false;
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
       showNote({
-        content: error.message || lang?.errorhappend || 'Произошла ошибка...',
+        content: error instanceof Error ? error.message : lang?.errorhappend || 'Произошла ошибка...',
         type: 'error',
         time: 5
       });

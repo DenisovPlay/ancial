@@ -7,7 +7,18 @@ import { useEffect, useState, useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { AncialAPI, type WalletOverview, type WalletAccount, type WalletGateway, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
+import { AncialAPI, type SendMoneyParams, type WalletOverview, type WalletAccount, type WalletGateway, type WalletGatewayForm, type WalletGatewayFormField, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
+
+/** Друг для перевода STF (socialAction('friends'), status=1 — подтверждённый). */
+interface StfFriend {
+  id?: number | string;
+  username?: string;
+  name?: string;
+  fname?: string;
+  lname?: string;
+  img?: string;
+  status?: number | string;
+}
 import { cache } from '../lib/cache.ts';
 import Modal from '../components/modal';
 import WalletLogo from './wallet-logo';
@@ -109,7 +120,7 @@ export default function WalletContent() {
   const [stfFriendUsername, setStfFriendUsername] = useState('');
   const [stfAmount, setStfAmount] = useState('');
   const [stfComment, setStfComment] = useState('');
-  const [friendsList, setFriendsList] = useState<any[]>([]);
+  const [friendsList, setFriendsList] = useState<StfFriend[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendsError, setFriendsError] = useState<string | null>(null);
 
@@ -156,7 +167,7 @@ export default function WalletContent() {
   // Dynamic gateway form states from server (/wallet/GetGateWayForm.php)
   const [gatewayFormLoading, setGatewayFormLoading] = useState(false);
   const [gatewayFormError, setGatewayFormError] = useState<string | null>(null);
-  const [gatewayConfig, setGatewayConfig] = useState<any | null>(null);
+  const [gatewayConfig, setGatewayConfig] = useState<WalletGatewayForm | null>(null);
   const [dynamicFieldsData, setDynamicFieldsData] = useState<Record<string, string>>({});
 
   const strings = useMemo(() => {
@@ -196,9 +207,9 @@ export default function WalletContent() {
       }
       setError(null);
       cache.set('wallet_overview_cache', overview, { category: 'wallet', subcategory: 'overview' });
-    } catch (err: any) {
+    } catch (err) {
       if (accounts.length === 0) {
-        setError(err.message || (lang?.walletloaderror || 'Ошибка загрузки кошелька'));
+        setError(err instanceof Error ? err.message : (lang?.walletloaderror || 'Ошибка загрузки кошелька'));
       }
     } finally {
       setLoading(false);
@@ -209,12 +220,15 @@ export default function WalletContent() {
     if (authLoading) return;
 
     if (!isAuthenticated) {
+      // Неавторизован — терминальное состояние: снимаем лоадер сразу,
+      // начальный useState(true) эквивалентен этому setState.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       setError('Auth required');
       return;
     }
 
-    const parsed = cache.get<any>('wallet_overview_cache', { category: 'wallet', subcategory: 'overview' });
+    const parsed = cache.get<WalletOverview>('wallet_overview_cache', { category: 'wallet', subcategory: 'overview' });
     let hasCachedData = false;
     if (parsed) {
       if (Array.isArray(parsed.accounts)) {
@@ -240,6 +254,9 @@ export default function WalletContent() {
   // Reset transfer modal state when opened/closed
   useEffect(() => {
     if (!isSendMoneyModalOpen) {
+      // Сброс состояния формы при закрытии модалки — сеттлеры здесь источник правды,
+      // альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSendStep('select');
       setSdaAmount('');
       setStfAmount('');
@@ -258,6 +275,8 @@ export default function WalletContent() {
   // Reset products modal state when opened/closed
   useEffect(() => {
     if (!isProductsModalOpen) {
+      // Сброс состояния при закрытии модалки — сеттлеры здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProductsView('list');
       setAccountToDelete(null);
       setDeleteAccountError(null);
@@ -271,6 +290,8 @@ export default function WalletContent() {
     const action = searchParams.get('action');
     const login = searchParams.get('login');
     if (action === 'send') {
+      // URL-параметры → стейт модалки: источник правды здесь, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSendStep('sdb');
       setSdbDetailType('login');
       if (login) setSdbLogin(login);
@@ -286,17 +307,18 @@ export default function WalletContent() {
     setFriendsLoading(true);
     setFriendsError(null);
     try {
-      const res: any = await AncialAPI.socialAction('friends');
-      if (res && res.friends) {
+      const res = await AncialAPI.socialAction<{ friends?: StfFriend[] } | StfFriend[]>('friends');
+      const friendsArr = Array.isArray(res) ? res : res?.friends;
+      if (friendsArr) {
         // Friend status 1 is confirmed friends
-        const activeFriends = res.friends.filter((f: any) => f.status === 1);
+        const activeFriends = friendsArr.filter((f) => Number(f.status) === 1);
         setFriendsList(activeFriends);
-        if (activeFriends.length > 0) {
+        if (activeFriends.length > 0 && activeFriends[0].username) {
           setStfFriendUsername(activeFriends[0].username);
         }
       }
-    } catch (err: any) {
-      setFriendsError(err.message || (lang?.friendsloaderror || 'Не удалось загрузить список друзей'));
+    } catch (err) {
+      setFriendsError(err instanceof Error ? err.message : (lang?.friendsloaderror || 'Не удалось загрузить список друзей'));
     } finally {
       setFriendsLoading(false);
     }
@@ -304,6 +326,8 @@ export default function WalletContent() {
 
   useEffect(() => {
     if (sendStep === 'stf') {
+      // Ленивая загрузка друзей при открытии шага: сеттлеры внутри loadFriends после await.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadFriends();
     }
   }, [sendStep]);
@@ -324,8 +348,8 @@ export default function WalletContent() {
       setAccountToDelete(null);
       setProductsView('list');
       await fetchWallet();
-    } catch (err: any) {
-      setDeleteAccountError(err.message || (lang?.failedtocloseaccount || 'Не удалось закрыть счёт'));
+    } catch (err) {
+      setDeleteAccountError(err instanceof Error ? err.message : (lang?.failedtocloseaccount || 'Не удалось закрыть счёт'));
     } finally {
       setDeleteAccountLoading(false);
     }
@@ -345,8 +369,8 @@ export default function WalletContent() {
       setCreateAccountTitle(lang?.walletAccount || 'Счёт');
       setProductsView('list');
       await fetchWallet();
-    } catch (err: any) {
-      setCreateAccountError(err.message || (lang?.failedtocreateaccount || 'Не удалось создать счёт'));
+    } catch (err) {
+      setCreateAccountError(err instanceof Error ? err.message : (lang?.failedtocreateaccount || 'Не удалось создать счёт'));
     } finally {
       setCreateAccountLoading(false);
     }
@@ -364,7 +388,7 @@ export default function WalletContent() {
     return { fees, total, feePercent };
   };
 
-  const handleSendSubmit = async (payload: any, amountStr: string) => {
+  const handleSendSubmit = async (payload: SendMoneyParams, amountStr: string) => {
     setSendLoading(true);
     setSendError(null);
     try {
@@ -384,8 +408,8 @@ export default function WalletContent() {
       });
       setSendStep('success');
       await fetchWallet();
-    } catch (err: any) {
-      setSendError(err.message || (lang?.transfererror || 'Ошибка перевода средств'));
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : (lang?.transfererror || 'Ошибка перевода средств'));
       setSendStep('error');
     } finally {
       setSendLoading(false);
@@ -441,7 +465,7 @@ export default function WalletContent() {
       return;
     }
 
-    const payload: any = {
+    const payload: SendMoneyParams = {
       sender_id: sendSenderId,
       amount: amt,
       comment: sdbComment.trim() || (lang?.transferbydetails || 'Перевод по реквизитам')
@@ -505,8 +529,8 @@ export default function WalletContent() {
       }
 
       await fetchWallet();
-    } catch (err: any) {
-      setTopupError(err.message || (lang?.topupcreateerror || 'Ошибка создания пополнения'));
+    } catch (err) {
+      setTopupError(err instanceof Error ? err.message : (lang?.topupcreateerror || 'Ошибка создания пополнения'));
     } finally {
       setTopupLoading(false);
     }
@@ -517,9 +541,9 @@ export default function WalletContent() {
     try {
       await AncialAPI.cancelTopup(orderHash);
       await fetchWallet();
-    } catch (err: any) {
+    } catch (err) {
       showNote({
-        content: err.message || (lang?.failedtocanceltopup || 'Не удалось отменить пополнение'),
+        content: err instanceof Error ? err.message : (lang?.failedtocanceltopup || 'Не удалось отменить пополнение'),
         type: 'error',
         time: 5
       });
@@ -535,8 +559,8 @@ export default function WalletContent() {
     try {
       const res = await AncialAPI.generateQRCode(accountId);
       setReceiveQrUrl(res.qr_url);
-    } catch (err: any) {
-      setReceiveError(err.message || (lang?.failedtogenerateqr || 'Не удалось сгенерировать QR-код'));
+    } catch (err) {
+      setReceiveError(err instanceof Error ? err.message : (lang?.failedtogenerateqr || 'Не удалось сгенерировать QR-код'));
     } finally {
       setReceiveLoading(false);
     }
@@ -545,6 +569,8 @@ export default function WalletContent() {
   // Trigger QR Code load when selection changes or modal opens
   useEffect(() => {
     if (isUserProfModalOpen && receiveAccountId) {
+      // Загрузка QR при открытии модалки: сеттлеры внутри loadQRCode после await.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadQRCode(receiveAccountId);
     }
   }, [isUserProfModalOpen, receiveAccountId]);
@@ -578,8 +604,8 @@ export default function WalletContent() {
       } else {
         setGatewayFormError(lang?.failedtoloadwithdrawform || 'Не удалось загрузить форму вывода');
       }
-    } catch (err: any) {
-      setGatewayFormError(err.message || (lang?.withdrawformloaderror || 'Ошибка загрузки формы вывода с сервера'));
+    } catch (err) {
+      setGatewayFormError(err instanceof Error ? err.message : (lang?.withdrawformloaderror || 'Ошибка загрузки формы вывода с сервера'));
     } finally {
       setGatewayFormLoading(false);
     }
@@ -595,11 +621,12 @@ export default function WalletContent() {
     }
 
     let finalDetails = withdrawDetails.trim();
-    const serverFields = gatewayConfig?.withdrawal_fields?.fields;
+    const wf = gatewayConfig?.withdrawal_fields;
+    const serverFields = (wf && typeof wf !== 'string' ? wf.fields : undefined);
     if (Array.isArray(serverFields) && serverFields.length > 0) {
       const parts: string[] = [];
       for (const f of serverFields) {
-        const val = dynamicFieldsData[f.key] || '';
+        const val = dynamicFieldsData[f.key ?? ''] ?? '';
         if (f.required && !val.trim()) {
           setWithdrawError(`${lang?.fillfield || 'Заполните поле '}"${f.label || f.key}"`);
           return;
@@ -633,8 +660,8 @@ export default function WalletContent() {
 
       setWithdrawSuccess(res.message || (lang?.withdrawrequestcreated || 'Заявка на вывод средств успешно создана!'));
       fetchWallet(false);
-    } catch (err: any) {
-      setWithdrawError(err.message || (lang?.withdrawcreateerror || 'Ошибка при создании заявки на вывод'));
+    } catch (err) {
+      setWithdrawError(err instanceof Error ? err.message : (lang?.withdrawcreateerror || 'Ошибка при создании заявки на вывод'));
     } finally {
       setWithdrawLoading(false);
     }
@@ -1706,7 +1733,7 @@ export default function WalletContent() {
       />
 
       {/* 5. MODAL: Withdrawal (Вывод средств) */}
-      <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`${gatewayConfig?.withdrawal_fields?.title || selectedGateway?.name || (lang?.payment_system || 'платёжную систему')}`} width="sm">
+      <Modal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} title={`${(gatewayConfig?.withdrawal_fields && typeof gatewayConfig.withdrawal_fields !== 'string' ? gatewayConfig.withdrawal_fields.title : undefined) || selectedGateway?.name || (lang?.payment_system || 'платёжную систему')}`} width="sm">
         <div className="flex flex-col gap-3 text-zinc-100">
           {selectedGateway && (
             <div className="flex items-center gap-3 border border-zinc-600/30 p-3 rounded-3xl bg-zinc-900/40">
@@ -1714,7 +1741,7 @@ export default function WalletContent() {
                 <img alt={selectedGateway.name} src={selectedGateway.image} className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-base font-semibold">{gatewayConfig?.withdrawal_fields?.title || selectedGateway.name}</span>
+                <span className="text-base font-semibold">{(gatewayConfig?.withdrawal_fields && typeof gatewayConfig.withdrawal_fields !== 'string' ? gatewayConfig.withdrawal_fields.title : undefined) || selectedGateway.name}</span>
                 <span className="text-xs text-zinc-400">{lang?.commission_system || 'Комиссия системы'}: {gatewayConfig?.fee_percent ?? selectedGateway.fee_percent}%</span>
               </div>
             </div>
@@ -1763,8 +1790,30 @@ export default function WalletContent() {
               </div>
 
               {/* Server dynamic fields */}
-              {Array.isArray(gatewayConfig?.withdrawal_fields?.fields) && gatewayConfig.withdrawal_fields.fields.length > 0 ? (
-                gatewayConfig.withdrawal_fields.fields.map((f: any) => {
+              {(() => {
+                const wf = gatewayConfig?.withdrawal_fields;
+                const dynFields = (wf && typeof wf !== 'string' ? wf.fields : undefined) || [];
+                if (!Array.isArray(dynFields) || dynFields.length === 0) return (
+                <div className="flex flex-col w-full">
+                  <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">
+                    {selectedGateway?.name.toLowerCase().includes('yoomoney')
+                      ? (lang?.yoomoney_wallet_phone || 'Номер кошелька YooMoney / телефона')
+                      : (lang?.receiver_details_hint || 'Реквизиты получателя (номер карты/счёта)')}
+                  </span>
+                  <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
+                    <input
+                      autoComplete="off"
+                      type="text"
+                      placeholder={selectedGateway?.name.toLowerCase().includes('yoomoney') ? '41001...' : (lang?.details || 'Реквизиты')}
+                      value={withdrawDetails}
+                      onChange={(e) => setWithdrawDetails(e.target.value)}
+                      className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+                );
+                return dynFields.map((f) => {
                   const label = f.label || f.key || '';
                   const key = f.key || 'field';
                   const req = !!f.required;
@@ -1783,7 +1832,7 @@ export default function WalletContent() {
                             className="rounded-3xl bg-zinc-800/60 w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-zinc-200 text-sm"
                           >
                             <option value="" disabled>{lang?.choose || 'Выберите...'}</option>
-                            {options.map((o: any, idx: number) => (
+                            {options.map((o, idx: number) => (
                               <option key={idx} value={o.value ?? ''}>
                                 {o.label ?? o.value}
                               </option>
@@ -1813,27 +1862,8 @@ export default function WalletContent() {
                       {f.hint && <div className="text-xs text-zinc-500 pl-4 -mt-2 z-20">{f.hint}</div>}
                     </div>
                   );
-                })
-              ) : (
-                <div className="flex flex-col w-full">
-                  <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">
-                    {selectedGateway?.name.toLowerCase().includes('yoomoney')
-                      ? (lang?.yoomoney_wallet_phone || 'Номер кошелька YooMoney / телефона')
-                      : (lang?.receiver_details_hint || 'Реквизиты получателя (номер карты/счёта)')}
-                  </span>
-                  <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
-                    <input
-                      autoComplete="off"
-                      type="text"
-                      placeholder={selectedGateway?.name.toLowerCase().includes('yoomoney') ? '41001...' : (lang?.details || 'Реквизиты')}
-                      value={withdrawDetails}
-                      onChange={(e) => setWithdrawDetails(e.target.value)}
-                      className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+                });
+              })()}
 
               {/* Amount */}
               <div className="flex flex-col w-full">

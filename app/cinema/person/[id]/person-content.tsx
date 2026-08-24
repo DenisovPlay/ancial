@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import CinemaHeader from '../../components/cinema-header';
 import MovieCard from '../../components/movie-card';
-import { Movie } from '../../types';
+import { Movie, Person } from '../../types';
 import { useTvNavigation } from '../../use-tv-navigation';
 import { fetchCinemaPersonById, getOptimizedImageUrl } from '../../cinema-api';
 import { CinemaGridSkeleton } from '../../components/cinema-skeleton';
@@ -27,7 +27,7 @@ export default function PersonContent({ personId }: PersonContentProps) {
   const initialPoster = searchParams.get('poster') || undefined;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [person, setPerson] = useState<any | null>(() => {
+  const [person, setPerson] = useState<Person | null>(() => {
     if (initialName) {
       return {
         id: personId,
@@ -44,8 +44,11 @@ export default function PersonContent({ personId }: PersonContentProps) {
   useEffect(() => {
     let isMounted = true;
 
-    const cachedPersonResult = getCinemaCache<{ person: any; movies: Movie[] }>('person', personId);
+    const cachedPersonResult = getCinemaCache<{ person: Person; movies: Movie[] }>('person', personId);
     if (cachedPersonResult) {
+      // Гидратация из кэша при монтировании — синхронный сеттлер здесь и есть
+      // источник правды, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPerson(cachedPersonResult.person);
       setMovies(cachedPersonResult.movies || []);
       setIsLoading(false);
@@ -107,7 +110,7 @@ export default function PersonContent({ personId }: PersonContentProps) {
               <div className="w-36 h-48 sm:w-44 sm:h-56 rounded-2xl overflow-hidden bg-zinc-950 border border-white/10 shrink-0 shadow-2xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={getOptimizedImageUrl(person.poster_url || person.img, '@w300')}
+                  src={getOptimizedImageUrl(person.poster_url, '@w300')}
                   alt={person.name_ru || person.name_en || 'Персона'}
                   referrerPolicy="no-referrer"
                   onError={(e) => {

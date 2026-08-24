@@ -159,6 +159,8 @@ export default function InfoContent({ id }: InfoContentProps) {
     const cachedSimilar = getCinemaCache<Movie[]>('similar', id);
 
     if (cachedMovie) {
+      // SWR-гидратация из кэша до ответа API — сеттлеры здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInfoMovie(cachedMovie);
       if (cachedSimilar && cachedSimilar.length > 0) setSimilarMovies(cachedSimilar);
       setIsLoading(false);

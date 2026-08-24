@@ -18,6 +18,8 @@ function RedirectContentInner() {
   useEffect(() => {
     let isMounted = true;
     if (!rawLink) {
+      // Нет ссылки — терминальное состояние, снимаем лоадер сразу.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }

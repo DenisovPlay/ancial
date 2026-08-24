@@ -165,10 +165,14 @@ function AppsContentInner() {
   }, [category, initialQuery, mode]);
 
   useEffect(() => {
+    // Первичная загрузка: сеттлеры внутри loadApps после await.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadApps();
   }, [loadApps]);
 
   useEffect(() => {
+    // Проп → стейт поискового запроса: источник правды здесь, альтернативы без каскада нет.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuery(initialQuery);
   }, [initialQuery]);
 

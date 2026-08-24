@@ -23,7 +23,7 @@ interface GroupMember {
   username?: string;
   fname?: string;
   lname?: string;
-  name?: string;
+  name?: string | null;
   img?: string;
   verify?: number;
   role: 'owner' | 'admin' | 'member';
@@ -102,6 +102,17 @@ export default function GroupInfoModal({
   const backgroundInputRef = useRef<HTMLInputElement>(null);
 
   const [friendsList, setFriendsList] = useState<Array<{ id: number; username?: string; name?: string; fname?: string; lname?: string; img?: string; verify?: number }>>([]);
+
+  /** Формы ответа socialAction('friends'): массив или обёртки friends/data. */
+  const extractFriends = (res: unknown): Array<{ id: number; username?: string; name?: string; fname?: string; lname?: string; img?: string; verify?: number }> => {
+    type FriendEntry = { id: number; username?: string; name?: string; fname?: string; lname?: string; img?: string; verify?: number };
+    const r = res as FriendEntry[] | { friends?: FriendEntry[]; data?: FriendEntry[] | { friends?: FriendEntry[] } } | null;
+    if (Array.isArray(r)) return r;
+    if (Array.isArray(r?.friends)) return r.friends;
+    if (Array.isArray(r?.data)) return r.data;
+    if (r?.data && typeof r.data === 'object' && Array.isArray(r.data.friends)) return r.data.friends;
+    return [];
+  };
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [selectedAddUserIds, setSelectedAddUserIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -131,6 +142,8 @@ export default function GroupInfoModal({
 
   useEffect(() => {
     if (isOpen) {
+      // Открытие модалки: инициализация из пропов — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setView('main');
       setEditTitle(title);
       setCurrentAvatar(avatar);
@@ -203,8 +216,8 @@ export default function GroupInfoModal({
         time: 3,
       });
       onGroupUpdated();
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -228,8 +241,8 @@ export default function GroupInfoModal({
       showNote({ content: lang?.chat_settings_saved || 'Настройки чата сохранены', type: 'success', time: 3 });
       setView('main');
       onGroupUpdated();
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -238,19 +251,11 @@ export default function GroupInfoModal({
   const fetchFriends = async () => {
     setLoadingFriends(true);
     try {
-      const res = await AncialAPI.socialAction<any>('friends');
-      const list = Array.isArray(res)
-        ? res
-        : Array.isArray(res?.friends)
-          ? res.friends
-          : Array.isArray(res?.data)
-            ? res.data
-            : Array.isArray(res?.data?.friends)
-              ? res.data.friends
-              : [];
+      const res = await AncialAPI.socialAction<unknown>('friends');
+      const list = extractFriends(res);
 
       const memberIds = new Set(members.map((m) => m.id));
-      setFriendsList(list.filter((f: any) => f?.id && !memberIds.has(Number(f.id))));
+      setFriendsList(list.filter((f) => f?.id && !memberIds.has(Number(f.id))));
     } catch {
       showNote({ content: lang?.failed_load_friends || 'Не удалось загрузить список друзей', type: 'error', time: 3 });
     } finally {
@@ -288,8 +293,8 @@ export default function GroupInfoModal({
       setView('main');
       setSelectedAddUserIds(new Set());
       onGroupUpdated();
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.error_adding_members || 'Ошибка добавления участников'), type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.error_adding_members || 'Ошибка добавления участников'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -329,8 +334,8 @@ export default function GroupInfoModal({
       } else {
         showNote({ content: lang?.failed_reset_invite_link || 'Не удалось сбросить ссылку', type: 'error', time: 4 });
       }
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.somethingwrong || 'Произошла ошибка =('), type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.somethingwrong || 'Произошла ошибка =('), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -363,8 +368,8 @@ export default function GroupInfoModal({
       setCurrentAvatar(imageUrl);
       showNote({ content: lang?.group_avatar_updated || 'Аватарка группы обновлена', type: 'success', time: 3 });
       onGroupUpdated({ avatar: imageUrl });
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.error_uploading_image || 'Ошибка загрузки изображения'), type: 'error', time: 3 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.error_uploading_image || 'Ошибка загрузки изображения'), type: 'error', time: 3 });
     } finally {
       setUploadingAvatar(false);
       event.target.value = '';
@@ -437,8 +442,8 @@ export default function GroupInfoModal({
       showNote({ content: lang?.group_name_updated || 'Название группы обновлено', type: 'success', time: 3 });
       setView('main');
       onGroupUpdated({ title: editTitle.trim() });
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.failed_update_group_name || 'Не удалось обновить название'), type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.failed_update_group_name || 'Не удалось обновить название'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -458,8 +463,8 @@ export default function GroupInfoModal({
 
       showNote({ content: lang?.member_removed_from_chat || 'Участник удален из чата', type: 'success', time: 3 });
       onGroupUpdated();
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.failed_remove_member || 'Не удалось удалить участника'), type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.failed_remove_member || 'Не удалось удалить участника'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -482,8 +487,8 @@ export default function GroupInfoModal({
       } else {
         onGroupUpdated();
       }
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.failed_leave_chat || 'Не удалось выйти из чата'), type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.failed_leave_chat || 'Не удалось выйти из чата'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }

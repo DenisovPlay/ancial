@@ -78,7 +78,7 @@ function PulseHistoryRow({
   onPlayTrack,
 }: {
   item: PulseHistoryItem;
-  lang: any;
+  lang?: Record<string, string> | null;
   onOpenPlaylist: () => void;
   onPlayTrack: () => void;
 }) {

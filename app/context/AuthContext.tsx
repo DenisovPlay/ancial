@@ -195,9 +195,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     publishAuthState(authStateRef.current.isAuthenticated, authStateRef.current.user, true);
 
     try {
-      const readSessionUser = async () => {
+      const readSessionUser = async (): Promise<{
+        auth?: boolean;
+        user?: User;
+        token?: string;
+        isNetworkError?: boolean;
+      }> => {
         try {
-          const result = await AncialAPI.checkStatusResponse<any>();
+          const result = await AncialAPI.checkStatusResponse<{ auth?: boolean; user?: User; token?: string }>();
           if (result.success && result.data) {
             return result.data;
           }
@@ -295,8 +300,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Проверяем авторизацию при первой загрузке приложения
   useEffect(() => {
+    // Сеттлеры лоадера внутри checkAuth синхронны по отношению к эффекту — источник правды там,
+    // альтернативы без каскада нет (проверка должна стартовать сразу при монтировании).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     checkAuth();
     const initialCode = getStoredLangCode();
+    // Инициализация языка из localStorage на клиенте — сеттлер здесь источник правды (SSR не знает язык).
     setLanguage(initialCode);
   }, [checkAuth, setLanguage]);
 

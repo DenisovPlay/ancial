@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn, SvgIcon } from '../feed/editor-shared';
 import { parsePostContentToHtml, getVisibleLength } from './post-parser';
+import { sanitizeUserHtml } from '../lib/sanitize-html';
 import Modal from './modal';
 import PostBlockTableModal from './post-block-table-modal';
 import PostBlockMediaModal from './post-block-media-modal';
@@ -229,6 +230,54 @@ function htmlToBBCode(html: string): string {
 export { getVisibleLength, VISIBLE_CHAR_LIMIT };
 
 // ─── RichTextEditor ───────────────────────────────────────────────────────────
+// ── UI компоненты кнопок тулбара (на уровне модуля: замыканий на стейт нет,
+// пересоздание в рендере запрещено линтером и не даёт выгоды) ─────────────────────────────────────────
+function InlineBtn({
+  onClick, active, title, children,
+}: { onClick: () => void; active: boolean; title: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+      className={cn(
+        'flex justify-center items-center cursor-pointer rounded-2xl h-7 w-7 border shadow duration-300 active:scale-95 shrink-0',
+        active
+          ? 'bg-zinc-200 text-zinc-900 border-zinc-300'
+          : 'bg-zinc-900 hover:bg-zinc-700 text-white border-zinc-600/30 text-zinc-400',
+      )}
+      title={title}
+    >
+      {children}
+    </button>
+  );
+}
+
+function BlockBtn({
+  onClick, active, title, children,
+}: { onClick: () => void; active?: boolean; title: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+      className={cn(
+        'flex justify-center items-center cursor-pointer rounded-2xl h-7 px-1.5 border shadow duration-300 active:scale-95 text-xs font-bold shrink-0',
+        active
+          ? 'bg-zinc-200 text-zinc-900 border-zinc-300'
+          : 'bg-zinc-900 hover:bg-zinc-700 text-white border-zinc-600/30 text-zinc-400',
+      )}
+      title={title}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Divider() {
+  return <div className="w-[1px] h-4 bg-zinc-600/50 mx-0.5 shrink-0" />;
+}
+
 export default function RichTextEditor({ value, onChange, placeholder, className, strings, editorClassName, scrollPaddingBottom, onCarouselOpen }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const isUpdatingRef = useRef(false);
@@ -326,15 +375,12 @@ export default function RichTextEditor({ value, onChange, placeholder, className
 
   const handleInsertOrUpdateBlock = (newBBCode: string) => {
     if (editingBlockElement) {
-      const parsedHtml = parsePostContentToHtml(newBBCode, true);
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = parsedHtml;
-      const newNode = tempDiv.firstElementChild;
-      if (newNode) {
-        editingBlockElement.replaceWith(newNode);
-      } else {
-        editingBlockElement.outerHTML = parsedHtml;
-      }
+      const parsedHtml = sanitizeUserHtml(parsePostContentToHtml(newBBCode, true));
+      // template + replaceWith вместо прямой записи в outerHTML:
+      // семантика замены узла та же, но без мутации свойства существующего элемента.
+      const tpl = document.createElement('template');
+      tpl.innerHTML = parsedHtml;
+      editingBlockElement.replaceWith(...tpl.content.childNodes);
       setEditingBlockElement(null);
       triggerChange();
     }
@@ -383,7 +429,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
   useEffect(() => {
     if (editorRef.current && !isUpdatingRef.current && value !== undefined) {
       const div = editorRef.current;
-      const parsedHtml = parsePostContentToHtml(value, true);
+      const parsedHtml = sanitizeUserHtml(parsePostContentToHtml(value, true));
       if (div.innerHTML !== parsedHtml) {
         div.innerHTML = parsedHtml;
         setIsEmpty(checkEditorEmpty(div, value));
@@ -703,7 +749,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         e.preventDefault();
         const prev = blockUndoStackRef.current.pop()!;
         if (editorRef.current) {
-          const parsed = parsePostContentToHtml(prev, true);
+          const parsed = sanitizeUserHtml(parsePostContentToHtml(prev, true));
           isUpdatingRef.current = true;
           editorRef.current.innerHTML = parsed;
           onChange(prev);
@@ -999,53 +1045,6 @@ export default function RichTextEditor({ value, onChange, placeholder, className
     }
   };
 
-  // ── UI компоненты кнопок тулбара ─────────────────────────────────────────
-  function InlineBtn({
-    onClick, active, title, children,
-  }: { onClick: () => void; active: boolean; title: string; children: React.ReactNode }) {
-    return (
-      <button
-        type="button"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={onClick}
-        className={cn(
-          'flex justify-center items-center cursor-pointer rounded-2xl h-7 w-7 border shadow duration-300 active:scale-95 shrink-0',
-          active
-            ? 'bg-zinc-200 text-zinc-900 border-zinc-300'
-            : 'bg-zinc-900 hover:bg-zinc-700 text-white border-zinc-600/30 text-zinc-400',
-        )}
-        title={title}
-      >
-        {children}
-      </button>
-    );
-  }
-
-  function BlockBtn({
-    onClick, active, title, children,
-  }: { onClick: () => void; active?: boolean; title: string; children: React.ReactNode }) {
-    return (
-      <button
-        type="button"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={onClick}
-        className={cn(
-          'flex justify-center items-center cursor-pointer rounded-2xl h-7 px-1.5 border shadow duration-300 active:scale-95 text-xs font-bold shrink-0',
-          active
-            ? 'bg-zinc-200 text-zinc-900 border-zinc-300'
-            : 'bg-zinc-900 hover:bg-zinc-700 text-white border-zinc-600/30 text-zinc-400',
-        )}
-        title={title}
-      >
-        {children}
-      </button>
-    );
-  }
-
-  function Divider() {
-    return <div className="w-[1px] h-4 bg-zinc-600/50 mx-0.5 shrink-0" />;
-  }
-
   return (
     <div className={cn('flex flex-col w-full relative overflow-hidden', className)}>
       {/* ── Тулбар (парит сверху, скроллится по горизонтали) ── */}
@@ -1206,7 +1205,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           if (editingBlockElement) {
             handleInsertOrUpdateBlock(bbcode);
           } else {
-            const html = parsePostContentToHtml(bbcode, true);
+            const html = sanitizeUserHtml(parsePostContentToHtml(bbcode, true));
             document.execCommand('insertHTML', false, html);
             triggerChange();
           }

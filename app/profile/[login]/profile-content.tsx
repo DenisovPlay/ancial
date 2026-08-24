@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { sanitizeUserHtml } from '../../lib/sanitize-html';
 
 import Modal from '../../components/modal';
 import DeletePostModal from '../../components/delete-post-modal';
@@ -552,6 +553,9 @@ export default function UserProfileContent({ login }: { login: string }) {
 
     const cached = readUserProfileCache(profileCacheKey);
     if (cached) {
+      // Гидратация из кэша профиля при монтировании — синхронный сеттлер здесь
+      // и есть источник правды, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
       setUserData(cached.userData);
       profileIdRef.current = cached.userData.id;
@@ -634,10 +638,10 @@ export default function UserProfileContent({ login }: { login: string }) {
           ),
         };
       });
-    } catch (nextError: any) {
+    } catch (nextError) {
       console.error('Bookmark failed', nextError);
       showNote({
-        content: nextError?.message || strings.somethingwrong,
+        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -704,10 +708,10 @@ export default function UserProfileContent({ login }: { login: string }) {
           user_vote_up: null,
         };
       });
-    } catch (nextError: any) {
+    } catch (nextError) {
       console.error('Vote failed', nextError);
       showNote({
-        content: nextError?.message || strings.somethingwrong,
+        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -941,10 +945,10 @@ export default function UserProfileContent({ login }: { login: string }) {
           time: 5,
         });
       }
-    } catch (nextError: any) {
+    } catch (nextError) {
       console.error('Create dialog failed', nextError);
       showNote({
-        content: nextError?.message || strings.errorhappend,
+        content: nextError instanceof Error ? nextError.message : strings.errorhappend,
         type: 'error',
         time: 5,
       });
@@ -1037,7 +1041,7 @@ export default function UserProfileContent({ login }: { login: string }) {
             height={224}
             className="h-56 w-auto"
           />
-          <div className="text-center text-zinc-200" dangerouslySetInnerHTML={{ __html: error }} />
+          <div className="text-center text-zinc-200" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(error) }} />
           <Link
             href="/"
             className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase inline-block text-white"

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import AccountName from '../../components/account-name';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
@@ -30,7 +29,7 @@ export default function InvitePage() {
   const params = useParams();
   const router = useRouter();
   const code = (params?.code as string) || '';
-  const { isAuthenticated, isLoading: authLoading, lang } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { showNote } = useNotification();
 
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
@@ -38,14 +37,9 @@ export default function InvitePage() {
   const [error, setError] = useState('');
   const [joining, setJoining] = useState(false);
 
-  useEffect(() => {
-    if (!code) return;
-    void fetchInviteInfo();
-  }, [code]);
-
   const fetchInviteInfo = async () => {
-    setLoading(true);
-    setError('');
+    // Начальные состояния уже loading=true / error='' — синхронный setState
+    // внутри эффекта не нужен и триггерит react-hooks/set-state-in-effect.
     try {
       const res = await AncialAPI.request<InviteData>(`/messages/GetInviteInfo.php?code=${encodeURIComponent(code)}`);
 
@@ -54,12 +48,21 @@ export default function InvitePage() {
       } else {
         setError('Приглашение не найдено');
       }
-    } catch (err: any) {
-      setError(err?.message || 'Ошибка загрузки информации о приглашении');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки информации о приглашении');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!code) return;
+    // Легаси-паттерн: асинхронная загрузка данных при монтировании.
+    // setState вызывается уже после await, не синхронно в теле эффекта.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchInviteInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- загрузка один раз на код приглашения
+  }, [code]);
 
   const handleJoin = async () => {
     if (!isAuthenticated) {
@@ -88,8 +91,8 @@ export default function InvitePage() {
       } else {
         showNote({ content: 'Не удалось присоединиться к чату', type: 'error', time: 4 });
       }
-    } catch (err: any) {
-      showNote({ content: err?.message || 'Ошибка сети', type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : 'Ошибка сети', type: 'error', time: 4 });
     } finally {
       setJoining(false);
     }

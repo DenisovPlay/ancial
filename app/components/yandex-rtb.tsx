@@ -52,8 +52,9 @@ export default function YandexRtb({
   const [selectedBanner, setSelectedBanner] = useState<BannerItem | null>(null);
 
   useEffect(() => {
-    const randomIndex = Math.floor(Math.random() * COMMERCE_BANNERS.length);
-    setSelectedBanner(COMMERCE_BANNERS[randomIndex]);
+    // Случайный коммерческий баннер выбирается один раз на клиенте (Math.random в рендере запрещён).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedBanner(COMMERCE_BANNERS[Math.floor(Math.random() * COMMERCE_BANNERS.length)]);
   }, []);
 
   if (!selectedBanner) {

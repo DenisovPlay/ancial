@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { AncialAPI, type WalletAccount } from '../../lib/api-v2';
+import { AncialAPI, type WalletAccount, type WalletOverview, type SendMoneyParams } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 
 function FormContentInner() {
@@ -72,6 +72,59 @@ function FormContentInner() {
   }, [lang]);
 
   // Initial load from URL search params
+  const fetchRecipientProfile = async (login: string) => {
+    setLookupLoading(true);
+    setLookupError(null);
+    try {
+      const res = await AncialAPI.getProfile<{ id?: number | string; username?: string; img?: string }>(login);
+      if (res && res.id) {
+        if (user && res.id === user.id) {
+          setLookupError(lang?.cant_send_self || 'Вы не можете отправить перевод самому себе');
+          setRecipientUser(null);
+        } else {
+          setRecipientUser({
+            id: Number(res.id),
+            username: res.username || login,
+            img: res.img || '/img/placeholders/user.png'
+          });
+        }
+      } else {
+        setLookupError(lang?.user_not_found || 'Пользователь не найден');
+        setRecipientUser(null);
+      }
+    } catch {
+      setLookupError(lang?.user_not_found || 'Пользователь не найден');
+      setRecipientUser(null);
+    } finally {
+      setLookupLoading(false);
+    }
+  };
+
+  const loadAccounts = async (senderIdOverride?: number) => {
+    const parsed = cache.get<WalletOverview>('wallet_overview_cache', { category: 'wallet', subcategory: 'overview' });
+    if (parsed && Array.isArray(parsed.accounts)) {
+      setAccounts(parsed.accounts);
+      if (parsed.accounts.length > 0) {
+        const preferredId = senderIdOverride ?? selectedSenderId ?? preferredSenderId;
+        const matched = preferredId ? parsed.accounts.find((account) => account.id === preferredId) : null;
+        setSelectedSenderId(matched ? matched.id : parsed.accounts[0].id);
+      }
+    }
+
+    try {
+      const overview = await AncialAPI.getWalletOverview();
+      setAccounts(overview.accounts || []);
+      if (overview.accounts && overview.accounts.length > 0) {
+        const preferredId = senderIdOverride ?? selectedSenderId ?? preferredSenderId;
+        const matched = preferredId ? overview.accounts.find((account) => account.id === preferredId) : null;
+        setSelectedSenderId(matched ? matched.id : overview.accounts[0].id);
+      }
+      cache.set('wallet_overview_cache', overview, { category: 'wallet', subcategory: 'overview' });
+    } catch (err) {
+      console.error('Failed to load user accounts:', err);
+    }
+  };
+
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
@@ -93,6 +146,9 @@ function FormContentInner() {
     const resolvedReceiverId = receiverIdParam ? Number(receiverIdParam) : null;
     const resolvedSenderId = senderIdParam ? Number(senderIdParam) : null;
 
+    // Инициализация из URL-параметров при монтировании — это источник правды
+    // для встраиваемого режима и предвыбранного счёта.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEmbeded(embededParam);
     setPreferredSenderId(resolvedSenderId && Number.isFinite(resolvedSenderId) ? resolvedSenderId : null);
     if (resolvedSenderId && Number.isFinite(resolvedSenderId)) {
@@ -189,59 +245,6 @@ function FormContentInner() {
     }
   }, [authLoading, isAuthenticated, searchParams]);
 
-  const fetchRecipientProfile = async (login: string) => {
-    setLookupLoading(true);
-    setLookupError(null);
-    try {
-      const res = await AncialAPI.getProfile<any>(login);
-      if (res && res.id) {
-        if (user && res.id === user.id) {
-          setLookupError(lang?.cant_send_self || 'Вы не можете отправить перевод самому себе');
-          setRecipientUser(null);
-        } else {
-          setRecipientUser({
-            id: res.id,
-            username: res.username || login,
-            img: res.img || '/img/placeholders/user.png'
-          });
-        }
-      } else {
-        setLookupError(lang?.user_not_found || 'Пользователь не найден');
-        setRecipientUser(null);
-      }
-    } catch (err: any) {
-      setLookupError(lang?.user_not_found || 'Пользователь не найден');
-      setRecipientUser(null);
-    } finally {
-      setLookupLoading(false);
-    }
-  };
-
-  const loadAccounts = async (senderIdOverride?: number) => {
-    const parsed = cache.get<any>('wallet_overview_cache', { category: 'wallet', subcategory: 'overview' });
-    if (parsed && Array.isArray(parsed.accounts)) {
-      setAccounts(parsed.accounts);
-      if (parsed.accounts.length > 0) {
-        const preferredId = senderIdOverride ?? selectedSenderId ?? preferredSenderId;
-        const matched = preferredId ? parsed.accounts.find((account: any) => account.id === preferredId) : null;
-        setSelectedSenderId(matched ? matched.id : parsed.accounts[0].id);
-      }
-    }
-
-    try {
-      const overview = await AncialAPI.getWalletOverview();
-      setAccounts(overview.accounts || []);
-      if (overview.accounts && overview.accounts.length > 0) {
-        const preferredId = senderIdOverride ?? selectedSenderId ?? preferredSenderId;
-        const matched = preferredId ? overview.accounts.find((account) => account.id === preferredId) : null;
-        setSelectedSenderId(matched ? matched.id : overview.accounts[0].id);
-      }
-      cache.set('wallet_overview_cache', overview, { category: 'wallet', subcategory: 'overview' });
-    } catch (err: any) {
-      console.error('Failed to load user accounts:', err);
-    }
-  };
-
   const selectAmountPreset = (val: number) => {
     setAmount(String(val));
   };
@@ -284,7 +287,7 @@ function FormContentInner() {
     if (recipientType === 'username') {
       setLookupLoading(true);
       try {
-        const res = await AncialAPI.getProfile<any>(recipientValue.trim());
+        const res = await AncialAPI.getProfile<{ id?: number | string; username?: string; img?: string }>(recipientValue.trim());
         if (res && res.id) {
           if (user && res.id === user.id) {
             showNote({ content: lang?.cant_send_self || 'Вы не можете переводить деньги самому себе', type: 'warning', time: 5 });
@@ -292,7 +295,7 @@ function FormContentInner() {
             return;
           }
           setRecipientUser({
-            id: res.id,
+            id: Number(res.id),
             username: res.username || recipientValue.trim(),
             img: res.img || '/img/placeholders/user.png'
           });
@@ -327,7 +330,7 @@ function FormContentInner() {
     setSubmitLoading(true);
     setSubmitError(null);
 
-    const params: any = {
+    const params: SendMoneyParams = {
       sender_id: selectedSenderId,
       amount: parseFloat(amount),
       comment: comment.trim() || (
@@ -362,8 +365,8 @@ function FormContentInner() {
         setSubmitError(lang?.transfer_failed || 'Не удалось выполнить перевод');
         setStep('failed');
       }
-    } catch (err: any) {
-      setSubmitError(err.message || (lang?.transfer_error || 'Ошибка выполнения перевода'));
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : (lang?.transfer_error || 'Ошибка выполнения перевода'));
       setStep('failed');
     } finally {
       setSubmitLoading(false);

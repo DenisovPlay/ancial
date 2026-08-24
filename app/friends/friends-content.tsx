@@ -71,6 +71,8 @@ function FriendsContent() {
   // Синхронизируем стейт если сменился URL
   useEffect(() => {
     const q = searchParams.get('q') || '';
+    // URL → стейт: источник правды здесь, синхронного сеттлера без каскада нет.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchInput(q);
     setSearchQuery(q);
   }, [searchParams]);
@@ -78,7 +80,7 @@ function FriendsContent() {
   const fetchFriends = useCallback(async () => {
     try {
       if (!searchQuery) {
-        const parsed = cache.get<any[]>('friends_cache', { category: 'friends', subcategory: 'list' });
+        const parsed = cache.get<Friend[]>('friends_cache', { category: 'friends', subcategory: 'list' });
         if (parsed) {
           setFriends(parsed);
           setIsLoading(false);
@@ -89,7 +91,7 @@ function FriendsContent() {
         setIsLoading(true);
       }
 
-      const response = await AncialAPI.socialAction<any>('friends', searchQuery);
+      const response = await AncialAPI.socialAction<Friend[] | { friends?: Friend[]; data?: Friend[] }>('friends', searchQuery);
       const fetchedFriends = Array.isArray(response) ? response : (response?.friends || response?.data || []);
 
       setFriends(fetchedFriends);
@@ -107,6 +109,8 @@ function FriendsContent() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Легаси mount-загрузка друзей: сеттлеры внутри после await.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchFriends();
     }
   }, [isAuthenticated, fetchFriends]);
@@ -120,9 +124,9 @@ function FriendsContent() {
       } else if (response.message) {
         showNote({ content: response.message, type: 'info', time: 5 });
       }
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      showNote({ content: e?.message || lang?.errorhappend || 'Произошла ошибка', type: 'error', time: 5 });
+      showNote({ content: e instanceof Error ? e.message : lang?.errorhappend || 'Произошла ошибка', type: 'error', time: 5 });
     }
   };
 

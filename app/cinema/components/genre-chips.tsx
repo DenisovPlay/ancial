@@ -388,7 +388,7 @@ export default function GenreChips({ genres, selectedId, onSelect }: GenreChipsP
 
   return (
     <div
-      ref={scrollRef as any}
+      ref={scrollRef}
       className="viewport dragscroll flex items-center gap-3 overflow-x-auto scrollbar-none py-2 -mx-3 px-3 lg:-mx-6 lg:px-6 select-none"
     >
       {genres.map((g) => {

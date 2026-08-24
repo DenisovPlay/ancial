@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
+import { sanitizeUserHtml } from '../lib/sanitize-html';
 import { Button } from '../components/button';
 import { Input } from '../components/form';
 
@@ -38,6 +39,8 @@ export default function LoginPage() {
   const [greeting, setGreeting] = useState(greetings[0]);
 
   useEffect(() => {
+    // Случайное приветствие и hostname доступны только на клиенте — сеттлеры здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(greetings[Math.floor(Math.random() * greetings.length)]);
     setHostname(window.location.host);
   }, []);
@@ -131,7 +134,9 @@ export default function LoginPage() {
 
           <div className="bg-zinc-800 duration-300 flex flex-col gap-3 p-3 lg:max-w-xs justify-center items-center shadow">
             <span className="text-zinc-200 text-lg font-bold w-full">
-              <span dangerouslySetInnerHTML={{ __html: greeting.text }}></span>
+              {/* Тексты статические (в массиве выше), но одна цитата содержит <br> —
+                  рендерим через санитайзер, чтобы разметка работала, а не показывалась текстом */}
+              <span dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(greeting.text) }}></span>
               {(greeting.author || greeting.source) && (
                 <>
                   <br />

@@ -38,7 +38,7 @@ export type CacheSubcategory<C extends CacheCategory> =
     : C extends 'users'
     ? 'info'
     : C extends 'cinema'
-    ? 'updates' | 'search' | 'video' | 'person' | 'translations' | 'genres' | 'history' | 'progress' | 'home_bundle' | 'info' | 'similar'
+    ? 'updates' | 'search' | 'video' | 'person' | 'translations' | 'genres' | 'history' | 'progress' | 'home_bundle' | 'info' | 'similar' | 'catalog_movies' | 'catalog_series' | 'catalog_cartoons'
     : never;
 
 export interface CacheOptions<C extends CacheCategory> {
@@ -398,7 +398,7 @@ export const cache = {
       if (!db) return;
 
       try {
-        const records = await new Promise<Array<any>>((resolve) => {
+        const records = await new Promise<Array<{ id?: string; blob?: Blob; savedAt?: number }>>((resolve) => {
           const transaction = db.transaction(STORE_NAME, 'readonly');
           const store = transaction.objectStore(STORE_NAME);
           const request = store.getAll();
@@ -520,8 +520,8 @@ export const cache = {
           await this.trimToMaxSize(maxMB * 1024 * 1024);
         }
         return true;
-      } catch (err: any) {
-        if (err?.name !== 'AbortError' && err?.message !== 'Failed to fetch') {
+      } catch (err) {
+        if (!(err instanceof Error && err.name === 'AbortError') && (typeof err !== 'object' || err === null || !('message' in err) || err.message !== 'Failed to fetch')) {
           console.error('Failed to cache audio file', err);
         }
         return false;

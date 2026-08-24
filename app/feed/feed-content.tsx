@@ -637,6 +637,8 @@ export default function FeedContent() {
     const cached = readFeedCache(cacheKey);
 
     if (cached) {
+      // SWR: мгновенная гидратация ленты из кэша до фоновой перезаливки — сеттлеры здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setErrorMessage('');
       setPosts(cached.posts);
       setCurrentLastId(cached.currentLastId);
@@ -726,10 +728,10 @@ export default function FeedContent() {
           };
         }),
       );
-    } catch (error: any) {
+    } catch (error) {
       console.error('Bookmark failed', error);
       showNote({
-        content: error?.message || strings.somethingwrong,
+        content: error instanceof Error ? error.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -750,10 +752,10 @@ export default function FeedContent() {
       }
 
       applyVoteState(post, direction);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Vote failed', error);
       showNote({
-        content: error?.message || strings.somethingwrong,
+        content: error instanceof Error ? error.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -788,10 +790,10 @@ export default function FeedContent() {
       setCommentInput('');
       incrementCommentsCount(activeCommentsPost.id, 1);
       await loadComments(activeCommentsPost.id);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Create comment failed', error);
       showNote({
-        content: error?.message || strings.somethingwrong,
+        content: error instanceof Error ? error.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -816,10 +818,10 @@ export default function FeedContent() {
       if (activeCommentsPost) {
         incrementCommentsCount(activeCommentsPost.id, -1);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete comment failed', error);
       showNote({
-        content: error?.message || strings.somethingwrong,
+        content: error instanceof Error ? error.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -841,10 +843,10 @@ export default function FeedContent() {
         type: 'success',
         time: 5,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Report failed', error);
       showNote({
-        content: error?.message || strings.somethingwrong,
+        content: error instanceof Error ? error.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });

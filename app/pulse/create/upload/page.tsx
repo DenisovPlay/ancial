@@ -10,14 +10,31 @@ import { uploadImage } from '../../../lib/upload';
 
 const MEDIA_TAGS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js';
 
-function loadMediaTags(): Promise<any> {
+/** Строка формы трека на странице загрузки альбома. */
+interface UploadTrack {
+  localId: string;
+  id: string;
+  artist: string;
+  name: string;
+  lang: string;
+  exp: string;
+  audioId: string;
+  audioUrl: string;
+  uploading: boolean;
+}
+
+// Тип Window.jsmediatags (JsMediaTags) объявлен глобально в pulse-upload-track-modal.tsx.
+
+type JsMediaTags = NonNullable<Window['jsmediatags']>;
+
+function loadMediaTags(): Promise<JsMediaTags | null> {
   if (typeof window === 'undefined') return Promise.resolve(null);
-  if ((window as any).jsmediatags) return Promise.resolve((window as any).jsmediatags);
+  if (window.jsmediatags) return Promise.resolve(window.jsmediatags);
 
   return new Promise((resolve) => {
     const script = document.createElement('script');
     script.src = MEDIA_TAGS_SRC;
-    script.onload = () => resolve((window as any).jsmediatags ?? null);
+    script.onload = () => resolve(window.jsmediatags ?? null);
     script.onerror = () => resolve(null);
     document.body.appendChild(script);
   });
@@ -82,7 +99,7 @@ export default function PulseCreateUploadPage() {
     }
   };
 
-  const updateTrack = (index: number, field: string, value: any) => {
+  const updateTrack = (index: number, field: keyof UploadTrack & string, value: string | number | boolean) => {
     setTracks((prevTracks) => {
       const newTracks = [...prevTracks];
       if (newTracks[index]) {
@@ -103,9 +120,9 @@ export default function PulseCreateUploadPage() {
       const mediaTags = await loadMediaTags();
       if (mediaTags) {
         mediaTags.read(file, {
-          onSuccess: (tag: any) => {
-            const title = tag.tags?.title;
-            const artist = tag.tags?.artist;
+          onSuccess: (tag) => {
+            const title = tag.tags?.title ?? undefined;
+            const artist = tag.tags?.artist ?? undefined;
             setTracks((prevTracks) => {
               const newTracks = [...prevTracks];
               if (newTracks[index]) {
@@ -121,7 +138,9 @@ export default function PulseCreateUploadPage() {
           onError: () => {}
         });
       }
-    } catch (err) {}
+    } catch {
+      // Теги не читались — поля имени/артиста остаются как ввёл пользователь.
+    }
 
     updateTrack(index, 'uploading', true);
     setStatusText('Загрузка аудио...');
@@ -200,8 +219,8 @@ export default function PulseCreateUploadPage() {
       });
       
       router.push('/pulse/create/albums');
-    } catch (err: any) {
-      showNote({ content: err?.error || 'Ошибка сохранения', type: 'error', time: 5 });
+    } catch {
+      showNote({ content: 'Ошибка сохранения', type: 'error', time: 5 });
     } finally {
       setLoading(false);
     }

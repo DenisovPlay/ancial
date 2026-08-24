@@ -20,7 +20,19 @@ export async function generateMetadata({ params }: PulseTrackPageProps): Promise
   let ogImage: string | undefined = undefined;
 
   try {
-    const data = await httpsGetJson<any>(`${API_BASE}/api/V2/pulse/GetTrack.php?id=${id}`);
+    /** Ответ GetTrack.php для SEO-метаданных. */
+    interface TrackSeoResponse {
+      success?: boolean;
+      data?: {
+        track?: {
+          name?: string;
+          artist?: string;
+          img?: string;
+          artwork?: Array<{ src?: string }>;
+        };
+      };
+    }
+    const data = await httpsGetJson<TrackSeoResponse>(`${API_BASE}/api/V2/pulse/GetTrack.php?id=${id}`);
     if (data?.success && data?.data?.track) {
       const track = data.data.track;
       const trackTitle = decodeHtmlEntities(track.name) || 'Неизвестный трек';
@@ -30,7 +42,7 @@ export async function generateMetadata({ params }: PulseTrackPageProps): Promise
       description = `Слушайте трек «${trackTitle}» от ${trackArtist} в Zypo Pulse. Бесплатно и без рекламы.`;
 
       const artworkArray = Array.isArray(track.artwork) ? track.artwork : [];
-      const cover = artworkArray.find((item: any) => item?.src);
+      const cover = artworkArray.find((item) => item?.src);
       const src = cover?.src || track.img;
 
       if (src && typeof src === 'string') {

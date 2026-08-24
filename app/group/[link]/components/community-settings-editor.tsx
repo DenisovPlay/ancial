@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
+import { sanitizeUserHtml } from '../../../lib/sanitize-html';
 import { communityErrorText } from '../lib/community-error';
 
 type Props = {
@@ -42,7 +43,7 @@ export default function CommunitySettingsEditor({ communityId, description, link
   const inputClass = 'w-full rounded-3xl border border-zinc-600/30 bg-zinc-800 p-3 text-zinc-100 outline-none duration-300 focus:border-purple-400';
   return (
     <form className="flex flex-col gap-3" onSubmit={(event) => { event.preventDefault(); void save(); }}>
-      <div className="rounded-3xl border border-amber-400/30 bg-amber-500/15 p-3 text-sm text-amber-300" dangerouslySetInnerHTML={{ __html: lang?.editgroupWARN || '' }} />
+      <div className="rounded-3xl border border-amber-400/30 bg-amber-500/15 p-3 text-sm text-amber-300" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(lang?.editgroupWARN || '') }} />
       <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
         <span>{lang?.linktogroup}</span>
         <span className="flex">

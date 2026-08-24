@@ -87,6 +87,8 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
     selectedScreenshotIndex === null ? null : screenshotSlides[selectedScreenshotIndex] ?? null;
 
   useEffect(() => {
+    // Смена приложения/закрытие — терминальный сброс выбора скриншота.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedScreenshotIndex(null);
   }, [appId, isOpen]);
 
@@ -95,6 +97,8 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
       selectedScreenshotIndex !== null &&
       selectedScreenshotIndex >= screenshotSlides.length
     ) {
+      // Индекс вне диапазона нового списка — терминальный сброс выбора.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedScreenshotIndex(null);
     }
   }, [selectedScreenshotIndex, screenshotSlides.length]);

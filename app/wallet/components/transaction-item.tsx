@@ -84,7 +84,7 @@ function getDirectionLabel(trans: WalletTransaction, kind: TransactionKind, syst
   return `${trans.sender} \u2192 ${receiverParty}`;
 }
 
-function getKindLabel(kind: TransactionKind, lang: any) {
+function getKindLabel(kind: TransactionKind, lang?: Record<string, string> | null) {
   if (kind === 'internal') return lang?.internal_transfer || 'Внутренний перевод';
   if (kind === 'in') return lang?.incoming_transfer || 'Входящий перевод';
   return lang?.outgoing_transfer || 'Исходящий перевод';

@@ -30,7 +30,7 @@ type ShareModalProps = {
   } | null;
   onReply?: () => void;
   // Для репоста произвольных вложений (например, треков)
-  attachmentWidgets?: any[];
+  attachmentWidgets?: Array<Record<string, unknown>>;
   attachmentPreview?: {
     authorName: string;
     authorImg: string;
@@ -90,6 +90,8 @@ export default function ShareModal({
         .then(res => setDialogs(res?.dialogs || []))
         .catch(console.error);
     } else {
+      // Закрытие модалки — терминальный сброс состояния, сеттлеры здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedDialog(null);
       setComment('');
       setSent(false);

@@ -52,7 +52,7 @@ export function setAuthToken(token: string): void {
 
 const STICKERS_KEY = 'ancial_7tv_stickers';
 
-export function get7TVStickers(): any[] {
+export function get7TVStickers(): unknown[] {
   if (typeof window === 'undefined') return [];
   
   try {
@@ -63,7 +63,7 @@ export function get7TVStickers(): any[] {
   }
 }
 
-export function set7TVStickers(stickers: any[]): void {
+export function set7TVStickers(stickers: unknown[]): void {
   if (typeof window === 'undefined') return;
   
   try {

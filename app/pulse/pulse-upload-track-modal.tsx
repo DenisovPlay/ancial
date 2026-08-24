@@ -184,6 +184,8 @@ export default function PulseUploadTrackModal({
     if (!isOpen) return;
 
     if (!track) {
+      // Нет трека — терминальный сброс формы, reset() и есть источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       reset();
       return;
     }

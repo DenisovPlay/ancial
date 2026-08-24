@@ -65,6 +65,8 @@ export default function PrivacySecurityContent() {
 
   useEffect(() => {
     if (user) {
+      // Десериализация пропа user в приватные настройки — сеттлер здесь источник правды, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchShow(flag(user.searchshow));
       setMessagesOpen(flag(user.msgopen));
       setGroupAddPrivacy(user.group_add_privacy !== undefined ? Number(user.group_add_privacy) : 0);

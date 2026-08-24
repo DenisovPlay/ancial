@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { sanitizeUserHtml } from '../../lib/sanitize-html';
 
 import Modal from '../../components/modal';
 import DeletePostModal from '../../components/delete-post-modal';
@@ -607,6 +608,9 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
     const cached = readGroupProfileCache(groupCacheKey);
     if (cached) {
+      // Гидратация из кэша группы при монтировании — синхронный сеттлер здесь
+      // и есть источник правды, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
       setBlocked(false);
       setGroupData(cached.groupData);
@@ -689,10 +693,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
           is_bookmarked: nextBookmarked,
         };
       });
-    } catch (nextError: any) {
+    } catch (nextError) {
       console.error('Bookmark failed', nextError);
       showNote({
-        content: nextError?.message || strings.somethingwrong,
+        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -758,10 +762,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
           user_vote_up: null,
         };
       });
-    } catch (nextError: any) {
+    } catch (nextError) {
       console.error('Vote failed', nextError);
       showNote({
-        content: nextError?.message || strings.somethingwrong,
+        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
         type: 'error',
         time: 5,
       });
@@ -770,9 +774,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
   const translatePost = async (post: PostData) => {
     const htmlToText = (value: string | null | undefined) => {
-      const container = document.createElement('div');
-      container.innerHTML = value ?? '';
-      return container.textContent || container.innerText || '';
+      // DOMParser не исполняет скрипты и не грузит изображения,
+      // в отличие от createElement('div') + innerHTML.
+      const doc = new DOMParser().parseFromString(value ?? '', 'text/html');
+      return doc.body.textContent || '';
     };
 
     const translateText = async (sourceText: string) => {

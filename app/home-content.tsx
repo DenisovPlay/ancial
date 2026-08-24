@@ -8,6 +8,7 @@ import Script from 'next/script';
 import { motion } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 import { useNotification } from './context/NotificationContext';
+import { sanitizeUserHtml } from './lib/sanitize-html';
 import { createGoogleCseSearchController, type GoogleCseElement } from './lib/google-cse';
 import {
   readCachedCurrency,
@@ -41,7 +42,7 @@ type HomeWindow = Window &
         cse?: {
           element?: {
             getElement: (name: string) => { execute: (query: string) => void } | null;
-            render: (options: any) => void;
+            render: (options: Record<string, unknown>) => void;
           };
         };
       };
@@ -88,16 +89,21 @@ export default function HomeContent() {
   const activeCallbackRef = useRef<string | null>(null);
   const cseControllerRef = useRef<ReturnType<typeof createGoogleCseSearchController> | null>(null);
   const isNavigatingRef = useRef(false);
-  const gnameRef = useRef(`gcs-${Math.round(Math.random() * 1000000)}`);
+  const gnameRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Уникальное имя CSE-элемента генерим один раз на клиенте
+    // (Math.random недопустим в рендере — impure function).
+    if (gnameRef.current === null) {
+      gnameRef.current = `gcs-${Math.round(Math.random() * 1000000)}`;
+    }
     if (!cseControllerRef.current && typeof window !== 'undefined') {
       cseControllerRef.current = createGoogleCseSearchController({
         getElement: () => {
           const google = (window as HomeWindow).google;
           if (!google?.search?.cse?.element) return null;
 
-          const gname = gnameRef.current;
+          const gname = gnameRef.current ?? 'gcs-0';
           let cse = google.search.cse.element.getElement(gname);
 
           if (!cse) {
@@ -124,6 +130,8 @@ export default function HomeContent() {
 
   // Sync state if URL query param changes
   useEffect(() => {
+    // URL → стейт: источник правды здесь, альтернативы без каскада нет.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchVal(queryParam);
     if (!queryParam) {
       setShowSuggestions(false);
@@ -180,6 +188,8 @@ export default function HomeContent() {
     if (!cachedCurrency) {
       try { cachedCurrency = cache.get<HomeCurrencyCacheData>('rates_backup'); } catch { }
     }
+    // SWR: мгновенный показ кэша до фоновой перезаливки — сеттлер здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (cachedCurrency) setCurrencies(cachedCurrency);
 
     // 2. Фоновое обновление (не ждём)
@@ -217,6 +227,8 @@ export default function HomeContent() {
         try { cachedWeather = cache.get<HomeWeatherCacheData>('weather_backup'); } catch { }
       }
       if (cachedWeather) {
+        // SWR: мгновенный показ кэша до фоновой перезаливки — сеттлер здесь источник правды.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setWeather(cachedWeather);
         hadCache = true;
       }
@@ -298,6 +310,8 @@ export default function HomeContent() {
   useEffect(() => {
     const trimmed = searchVal.trim();
     if (trimmed === '') {
+      // Пустой запрос — терминальное состояние: подсказки сброшены.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
       return;
     }
@@ -563,7 +577,7 @@ export default function HomeContent() {
                 <span
                   suppressHydrationWarning
                   className="flex items-center justify-center w-5 h-5 shrink-0 animate-fade-in"
-                  dangerouslySetInnerHTML={{ __html: weather.wfont }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(weather.wfont) }}
                 />
               ) : (
                 <svg suppressHydrationWarning className="w-5 h-5 fill-white inline animate-fade-in" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">

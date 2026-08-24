@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { sanitizeUserHtml } from '../../../lib/sanitize-html';
 
 import ShareModal from '../../../components/share-modal';
 import { useAuth, type User } from '../../../context/AuthContext';
@@ -102,7 +103,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [shareAttachment, setShareAttachment] = useState<{
-    widgets: any[];
+    widgets: Array<Record<string, unknown>>;
     preview: { authorName: string; authorImg: string; contentSnippet: string; firstImage?: string };
   } | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
@@ -351,7 +352,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                   {artistDescription ? (
                     <span
                       className="text-base text-zinc-200 md:text-lg lg:text-xl"
-                      dangerouslySetInnerHTML={{ __html: artistDescription.replace(/\n/g, '<br>') }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(artistDescription.replace(/\n/g, '<br>')) }}
                     />
                   ) : null}
                   <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">

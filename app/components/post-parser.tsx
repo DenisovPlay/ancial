@@ -141,10 +141,10 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
         ).join('');
 
         const leftArrow = count > 1
-            ? `<button type="button" onclick="const container = this.parentElement.querySelector('.overflow-x-auto'); container.scrollBy({ left: -container.clientWidth * 0.7, behavior: 'smooth' })" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>`
+            ? `<button type="button" data-carousel-scroll="-1" aria-label="Назад" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>`
             : '';
         const rightArrow = count > 1
-            ? `<button type="button" onclick="const container = this.parentElement.querySelector('.overflow-x-auto'); container.scrollBy({ left: container.clientWidth * 0.7, behavior: 'smooth' })" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>`
+            ? `<button type="button" data-carousel-scroll="1" aria-label="Вперёд" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>`
             : '';
 
         const overlay = isPreview
@@ -192,7 +192,7 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             }
             return `<a href="/redirect?link=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${customText.trim()}</a>`;
         } else if (rawUrl) {
-            let url = rawUrl.trim();
+            const url = rawUrl.trim();
 
             if (!/^https?:\/\//i.test(url) && /\.(php|html?|js|css|zip|rar|exe|png|jpe?g|gif|mp4|avi)$/i.test(url)) {
                 return match;

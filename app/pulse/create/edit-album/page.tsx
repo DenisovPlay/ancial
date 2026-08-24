@@ -7,6 +7,23 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+/** Артист из pulseManagement('artist', 'list'). */
+interface PulseArtist {
+  id?: number | string;
+  name?: string;
+}
+
+/** Трек из pulseManagement('track', 'list') / songs альбома. */
+interface PulseTrack {
+  id?: number | string;
+  artist?: string;
+  name?: string;
+  lang?: string;
+  explicit?: boolean | number | string;
+  status?: number | string;
+  genre?: string;
+}
+
 function EditAlbumContent() {
   const { lang, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -26,8 +43,8 @@ function EditAlbumContent() {
   const [img, setImg] = useState('');
   const [genre, setGenre] = useState('');
   
-  const [allArtists, setAllArtists] = useState<any[]>([]);
-  const [albumTracks, setAlbumTracks] = useState<any[]>([]);
+  const [allArtists, setAllArtists] = useState<PulseArtist[]>([]);
+  const [albumTracks, setAlbumTracks] = useState<PulseTrack[]>([]);
   const blobUrlRef = useRef<string | null>(null);
 
   const cleanupBlobUrl = () => {
@@ -46,30 +63,34 @@ function EditAlbumContent() {
   useEffect(() => {
     if (isAuthenticated && id > 0) {
       Promise.all([
-        AncialAPI.pulseManagement<any[]>('album', 'list', {}),
-        AncialAPI.pulseManagement<any[]>('track', 'list', {}),
-        AncialAPI.pulseManagement<any[]>('artist', 'list', {})
+        AncialAPI.pulseManagement<Array<Record<string, unknown>>>('album', 'list', {}),
+        AncialAPI.pulseManagement<PulseTrack[]>('track', 'list', {}),
+        AncialAPI.pulseManagement<PulseArtist[]>('artist', 'list', {})
       ])
         .then(([albumsRes, tracksRes, artistsRes]) => {
           if (Array.isArray(artistsRes)) setAllArtists(artistsRes);
-          
+
           if (Array.isArray(albumsRes)) {
-            const album = albumsRes.find((a: any) => parseInt(a.id, 10) === id);
+            type RawAlbum = {
+              id?: number | string; name?: string; artist?: string; desk?: string;
+              img?: string; artists_ids?: string; songs?: string;
+            };
+            const album = albumsRes.map((a) => a as RawAlbum).find((a) => parseInt(String(a.id), 10) === id);
             if (album) {
               setName(album.name || '');
               setArtist(album.artist || '');
               setDesk(album.desk || '');
               setImg(album.img || '');
               setArtistsIds((album.artists_ids || '').split(',').filter(Boolean));
-              
+
               const songIds = (album.songs || '').split('|').filter(Boolean).map((s: string) => parseInt(s, 10));
               let foundGenre = '';
-              const myTracks = (Array.isArray(tracksRes) ? tracksRes : []).filter((t: any) => songIds.includes(parseInt(t.id, 10)));
-              
+              const myTracks = (Array.isArray(tracksRes) ? tracksRes : []).filter((t) => songIds.includes(parseInt(String(t.id), 10)));
+
               // Maintain order
-              const sortedTracks = [];
+              const sortedTracks: PulseTrack[] = [];
               for (const sid of songIds) {
-                const tr = myTracks.find((t: any) => parseInt(t.id, 10) === sid);
+                const tr = myTracks.find((t) => parseInt(String(t.id), 10) === sid);
                 if (tr) {
                   if (!foundGenre && tr.genre) foundGenre = tr.genre;
                   sortedTracks.push(tr);
@@ -83,6 +104,9 @@ function EditAlbumContent() {
         })
         .finally(() => setLoading(false));
     } else {
+      // Нет данных для загрузки (неавторизован / нет id) — снимаем лоадер сразу.
+      // Начальное useState(true) эквивалентно этому setState, каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
     }
   }, [isAuthenticated, id]);
@@ -131,13 +155,14 @@ function EditAlbumContent() {
       .then(() => {
         router.push('/pulse/create/albums');
       })
-      .catch((err: any) => {
-        showNote({ content: err?.error || 'Произошла ошибка', type: 'error', time: 5 });
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'error' in err ? String((err as { error?: unknown }).error) : '');
+        showNote({ content: msg || 'Произошла ошибка', type: 'error', time: 5 });
         setSaving(false);
       });
   };
 
-  const updateTrack = (index: number, field: string, value: any) => {
+  const updateTrack = (index: number, field: string, value: string | number | boolean) => {
     const newTracks = [...albumTracks];
     newTracks[index] = { ...newTracks[index], [field]: value };
     setAlbumTracks(newTracks);
@@ -259,7 +284,7 @@ function EditAlbumContent() {
                     <option value="EN">{lang?.tracklangEn || 'Английский'}</option>
                   </select>
                   
-                  <select value={t.explicit || '0'} onChange={e => updateTrack(idx, 'explicit', parseInt(e.target.value))} className="bg-zinc-800/60 border border-zinc-600/30 rounded-2xl text-zinc-300 p-2 w-36 text-sm cursor-pointer focus:outline-none">
+                  <select value={t.explicit === true ? '1' : String(t.explicit ?? '0')} onChange={e => updateTrack(idx, 'explicit', parseInt(e.target.value))} className="bg-zinc-800/60 border border-zinc-600/30 rounded-2xl text-zinc-300 p-2 w-36 text-sm cursor-pointer focus:outline-none">
                     <option value="0">{lang?.trackexpN || 'Нет (0+)'}</option>
                     <option value="1">{lang?.trackexpY || 'Да (18+)'}</option>
                   </select>

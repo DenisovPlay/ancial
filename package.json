@@ -2,14 +2,20 @@
   "name": "ancial",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --experimental-strip-types --test \"app/**/*.test.mjs\" \"app/**/*.test.ts\" \"app/**/*.test.mts\"",
+    "lint:ratchet": "node scripts/lint-ratchet.mjs",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
+    "dompurify": "^3.4.14",
     "framer-motion": "^12.40.0",
     "gradualblur": "^2.3.6",
     "jsqr": "^1.4.0",
@@ -20,11 +26,14 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/dompurify": "^3.0.5",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "jsdom": "^30.0.1",
     "react-doctor": "^0.9.1",
     "tailwindcss": "^4",
     "ts-morph": "^28.0.0",

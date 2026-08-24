@@ -45,6 +45,8 @@ export default function PulseSearchArtistsContent() {
     const cached = readPulseJsonCache<PulseArtistsSearchResponse>(cacheKey);
 
     if (cached && Array.isArray(cached.artists)) {
+      // SWR: гидратация из кэша до ответа API — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setArtists(cached.artists);
       setLoading(false);
     } else {

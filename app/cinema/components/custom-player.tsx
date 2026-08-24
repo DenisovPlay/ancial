@@ -9,6 +9,30 @@ import {
   resolveResumeTime,
 } from '../cinema-progress';
 
+/** iOS Safari: нативный фуллскрин <video>. */
+type IosFullscreenVideo = {
+  webkitEnterFullscreen?: () => void;
+  webkitExitFullscreen?: () => void;
+  webkitDisplayingFullscreen?: boolean;
+};
+
+/** Вендорные свойства Document для фуллскрина (Safari/Firefox/IE). */
+type FsVendorDoc = {
+  webkitFullscreenElement?: Element | null;
+  mozFullScreenElement?: Element | null;
+  msFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void>;
+  mozCancelFullScreen?: () => Promise<void>;
+  msExitFullscreen?: () => Promise<void>;
+};
+
+/** Вендорные методы запроса фуллскрина для HTMLElement. */
+type FsVendorReq = {
+  webkitRequestFullscreen?: () => Promise<void>;
+  mozRequestFullScreen?: () => Promise<void>;
+  msRequestFullscreen?: () => Promise<void>;
+};
+
 interface CustomPlayerProps {
   src?: string;
   fallbackIframeSrc?: string;
@@ -89,7 +113,7 @@ export default function CustomPlayer({
     }, 1200);
   }, []);
 
-  const sendIframeCommand = useCallback((cmd: string, val?: any) => {
+  const sendIframeCommand = useCallback((cmd: string, val?: number) => {
     if (!iframeRef.current || !iframeRef.current.contentWindow) return;
     const win = iframeRef.current.contentWindow;
     try {
@@ -165,6 +189,44 @@ export default function CustomPlayer({
     );
   }, [startTime, movieId, isSeries, season, episode]);
 
+  const saveCurrentProgress = (overrideTime?: number) => {
+    if (!movieId) return;
+    const liveDuration = videoRef.current?.duration || durationRef.current;
+    const hasPlayableDuration = src
+      ? Number.isFinite(liveDuration) && liveDuration > 30
+      : isLikelyCinemaContentDuration(liveDuration);
+    if (!hasPlayableDuration) return;
+    const curTime = overrideTime !== undefined ? overrideTime : (videoRef.current ? videoRef.current.currentTime : liveCurrentTimeRef.current);
+    if (!curTime || curTime < 3) return;
+    const dur = liveDuration;
+    const activeTransObj = translations?.find((t) => t.id === selectedTranslationId);
+    const activePlayerObj = players?.find((p) => p.id === selectedPlayerId);
+
+    saveWatchHistoryItem({
+      id: movieId,
+      title,
+      season: season || 1,
+      episode: episode || 1,
+      translationId: selectedTranslationId || null,
+      translationTitle: activeTransObj?.title || '',
+      playerId: selectedPlayerId || 'videohub',
+      playerName: activePlayerObj?.name || '',
+      time: Math.floor(curTime),
+      currentTime: Math.floor(curTime),
+      durationSeconds: Math.floor(dur),
+      type: isSeries ? 'series' : 'movie',
+      preserveActiveSelection: true,
+    });
+  };
+
+  // Throttle-сохранение прогресса: не чаще одного раза в 2 секунды воспроизведения.
+  const maybeSaveProgress = (time: number) => {
+    if (time > 3 && Math.abs(time - lastSavedTimeRef.current) >= 2) {
+      lastSavedTimeRef.current = time;
+      saveCurrentProgress(time);
+    }
+  };
+
   // PostMessage listener for iframe player state events
   useEffect(() => {
     if (!isFlixCDN) return;
@@ -207,10 +269,7 @@ export default function CustomPlayer({
         if (playback.time !== undefined && hasReceivedContentDurationRef.current) {
           if (!isSeekingRef.current) {
             updateCurrentTime(playback.time);
-            if (playback.time > 3 && Math.abs(playback.time - lastSavedTimeRef.current) >= 2) {
-              lastSavedTimeRef.current = playback.time;
-              saveCurrentProgress(playback.time);
-            }
+            maybeSaveProgress(playback.time);
           }
         }
 
@@ -239,6 +298,9 @@ export default function CustomPlayer({
   }, [isFlixCDN, fallbackIframeSrc, movieId, season, episode, updateCurrentTime, updateDuration, getSavedTime, sendIframeCommand, onNextEpisode]);
 
   useEffect(() => {
+    // Сброс лоадера при смене источника плеера — сеттлер здесь и есть источник правды:
+    // новый iframe обязан показать спиннер до onLoad, альтернативы без каскада нет.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsIframeLoading(true);
   }, [fallbackIframeSrc, selectedPlayerId]);
 
@@ -251,6 +313,8 @@ export default function CustomPlayer({
   }, []);
 
   useEffect(() => {
+    // Показ контролов при монтировании/смене фильма — resetControlsTimer и есть источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     resetControlsTimer();
     return () => {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
@@ -299,35 +363,6 @@ export default function CustomPlayer({
     restoredRef.current = false;
   }, [src, season, episode]);
 
-  const saveCurrentProgress = (overrideTime?: number) => {
-    if (!movieId) return;
-    const liveDuration = videoRef.current?.duration || durationRef.current;
-    const hasPlayableDuration = src
-      ? Number.isFinite(liveDuration) && liveDuration > 30
-      : isLikelyCinemaContentDuration(liveDuration);
-    if (!hasPlayableDuration) return;
-    const curTime = overrideTime !== undefined ? overrideTime : (videoRef.current ? videoRef.current.currentTime : liveCurrentTimeRef.current);
-    if (!curTime || curTime < 3) return;
-    const dur = liveDuration;
-    const activeTransObj = translations?.find((t) => t.id === selectedTranslationId);
-    const activePlayerObj = players?.find((p) => p.id === selectedPlayerId);
-
-    saveWatchHistoryItem({
-      id: movieId,
-      title,
-      season: season || 1,
-      episode: episode || 1,
-      translationId: selectedTranslationId || null,
-      translationTitle: activeTransObj?.title || '',
-      playerId: selectedPlayerId || 'videohub',
-      playerName: activePlayerObj?.name || '',
-      time: Math.floor(curTime),
-      currentTime: Math.floor(curTime),
-      durationSeconds: Math.floor(dur),
-      type: isSeries ? 'series' : 'movie',
-      preserveActiveSelection: true,
-    });
-  };
 
   // Save progress instantly when unmounting or changing episode
   useEffect(() => {
@@ -390,11 +425,11 @@ export default function CustomPlayer({
   // Toggle fullscreen & sync state (supporting iOS / Safari / Desktop / Mobile)
   const toggleFullscreen = () => {
     // 1. Check iOS Safari Video native fullscreen method first
-    if (videoRef.current && typeof (videoRef.current as any).webkitEnterFullscreen === 'function') {
-      if ((videoRef.current as any).webkitDisplayingFullscreen) {
-        (videoRef.current as any).webkitExitFullscreen?.();
+    if (videoRef.current && typeof (videoRef.current as HTMLVideoElement & IosFullscreenVideo).webkitEnterFullscreen === 'function') {
+      if ((videoRef.current as HTMLVideoElement & IosFullscreenVideo).webkitDisplayingFullscreen) {
+        (videoRef.current as HTMLVideoElement & IosFullscreenVideo).webkitExitFullscreen?.();
       } else {
-        (videoRef.current as any).webkitEnterFullscreen();
+        (videoRef.current as HTMLVideoElement & IosFullscreenVideo).webkitEnterFullscreen?.();
       }
       return;
     }
@@ -402,30 +437,28 @@ export default function CustomPlayer({
     if (!containerRef.current) return;
     const isFs = !!(
       document.fullscreenElement ||
-      (document as any).webkitFullscreenElement ||
-      (document as any).mozFullScreenElement ||
-      (document as any).msFullscreenElement
+      (document as Document & FsVendorDoc).webkitFullscreenElement ||
+      (document as Document & FsVendorDoc).mozFullScreenElement ||
+      (document as Document & FsVendorDoc).msFullscreenElement
     );
 
     if (!isFs) {
       const req = containerRef.current.requestFullscreen ||
-                  (containerRef.current as any).webkitRequestFullscreen ||
-                  (containerRef.current as any).mozRequestFullScreen ||
-                  (containerRef.current as any).msRequestFullscreen;
+                  (containerRef.current as HTMLElement & FsVendorReq).webkitRequestFullscreen ||
+                  (containerRef.current as HTMLElement & FsVendorReq).mozRequestFullScreen ||
+                  (containerRef.current as HTMLElement & FsVendorReq).msRequestFullscreen;
       if (req) {
         req.call(containerRef.current).catch(() => {
-          if (videoRef.current && (videoRef.current as any).webkitEnterFullscreen) {
-            (videoRef.current as any).webkitEnterFullscreen();
-          }
+          (videoRef.current as (HTMLVideoElement & IosFullscreenVideo) | null)?.webkitEnterFullscreen?.();
         });
-      } else if (videoRef.current && (videoRef.current as any).webkitEnterFullscreen) {
-        (videoRef.current as any).webkitEnterFullscreen();
+      } else if (videoRef.current && (videoRef.current as HTMLVideoElement & IosFullscreenVideo).webkitEnterFullscreen) {
+        (videoRef.current as HTMLVideoElement & IosFullscreenVideo).webkitEnterFullscreen?.();
       }
     } else {
       const exit = document.exitFullscreen ||
-                   (document as any).webkitExitFullscreen ||
-                   (document as any).mozCancelFullScreen ||
-                   (document as any).msExitFullscreen;
+                   (document as Document & FsVendorDoc).webkitExitFullscreen ||
+                   (document as Document & FsVendorDoc).mozCancelFullScreen ||
+                   (document as Document & FsVendorDoc).msExitFullscreen;
       if (exit) exit.call(document).catch(() => {});
     }
   };
@@ -435,10 +468,10 @@ export default function CustomPlayer({
     const handleFsChange = () => {
       const isFs = !!(
         document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement ||
-        (videoRef.current as any)?.webkitDisplayingFullscreen
+        (document as Document & FsVendorDoc).webkitFullscreenElement ||
+        (document as Document & FsVendorDoc).mozFullScreenElement ||
+        (document as Document & FsVendorDoc).msFullscreenElement ||
+        (videoRef.current as (HTMLVideoElement & IosFullscreenVideo) | null)?.webkitDisplayingFullscreen
       );
       setIsFullscreen(isFs);
     };
@@ -949,10 +982,7 @@ export default function CustomPlayer({
             }
 
             // Save progress to localStorage every 2 seconds during playback
-            if (cur > 3 && Math.abs(cur - lastSavedTimeRef.current) >= 2) {
-              lastSavedTimeRef.current = cur;
-              saveCurrentProgress(cur);
-            }
+            maybeSaveProgress(cur);
           }
         }}
         onClick={togglePlay}

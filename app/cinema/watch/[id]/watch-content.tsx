@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Movie, PlayerOption } from '../../types';
+import { Movie, PlayerOption, MovieFile } from '../../types';
 import { fetchCinemaVideoById, fetchVideoHubStreamDirect } from '../../cinema-api';
 import { useTvNavigation } from '../../use-tv-navigation';
 import { FrameBrandLoader } from '../../components/cinema-skeleton';
@@ -41,6 +41,8 @@ export default function WatchContent({ id }: WatchContentProps) {
       try {
         const refUrl = new URL(document.referrer);
         if (refUrl.origin === window.location.origin && !refUrl.pathname.includes('/cinema/watch')) {
+          // Запоминаем URL входа при монтировании — сеттлер здесь источник правды.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setEntryUrl(refUrl.pathname + refUrl.search);
         }
       } catch (e) {}
@@ -76,6 +78,8 @@ export default function WatchContent({ id }: WatchContentProps) {
     // 1. Instantly read cached movie metadata if available
     const cached = getCinemaCache<Movie>('info', id) || CacheManager.get<Movie>(`cinema_video_by_id_${id}`, { category: 'cinema', subcategory: 'video' });
     if (cached) {
+      // SWR-гидратация из кэша до ответа API — сеттлеры здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMovie(cached);
       setIsLoading(false);
     } else {
@@ -131,7 +135,11 @@ export default function WatchContent({ id }: WatchContentProps) {
 
   // Sync currentSeason when season searchParam changes
   useEffect(() => {
-    if (season) setCurrentSeason(Number(season));
+    if (season) {
+      // URL → стейт: источник правды здесь, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentSeason(Number(season));
+    }
   }, [season]);
 
   // Handle TV Back / Escape key & autofocus when picker modal is open
@@ -181,6 +189,8 @@ export default function WatchContent({ id }: WatchContentProps) {
       movie?.translationsList?.find((t) => t.id === activeTranslationId)?.title;
 
     if (selectedPlayerId === 'videohub' && targetKpId) {
+      // Сброс стрима перед перезагрузкой источника — сеттлеры здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVideoHubStreamUrl(undefined);
       setVideoHubQualities([]);
       fetchVideoHubStreamDirect(
@@ -445,7 +455,7 @@ export default function WatchContent({ id }: WatchContentProps) {
   };
 
   // Find direct stream url if available in files
-  const matchedFile = (movie.files || []).find((f: any) => {
+  const matchedFile = (movie.files || []).find((f: MovieFile) => {
     const sMatch = !f.season_number || Number(f.season_number) === activeSeason;
     const eMatch = !f.series_number || Number(f.series_number) === activeEpisode;
     const tMatch = !f.translation?.id || Number(f.translation.id) === activeTranslation;

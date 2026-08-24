@@ -50,8 +50,8 @@ export default function PayContent() {
       const data = await AncialAPI.getPayOrderDetails(hash);
       setDetails(data);
       setError(null);
-    } catch (err: any) {
-      setError(err?.message || (lang?.pay_order_not_found || 'Заказ не найден'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : (lang?.pay_order_not_found || 'Заказ не найден'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -59,6 +59,8 @@ export default function PayContent() {
 
   useEffect(() => {
     if (!orderHash) {
+      // Нет хэша заказа — терминальное состояние, снимаем лоадер сразу.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       setError(lang?.pay_order_not_found || 'Заказ не найден');
       return;
@@ -104,13 +106,14 @@ export default function PayContent() {
     try {
       const res = await AncialAPI.redirectPayOrder(orderHash, gateway.id);
       if (res.payment_url) {
-        window.location.href = res.payment_url;
+        // assign() вместо прямой записи в location.href — то же поведение, но без мутации глобального объекта.
+        window.location.assign(res.payment_url);
       } else {
         throw new Error('Payment URL not returned');
       }
-    } catch (err: any) {
+    } catch (err) {
       showNote({
-        content: err?.message || 'Payment service unavailable',
+        content: err instanceof Error ? err.message : 'Payment service unavailable',
         type: 'error',
         time: 5
       });

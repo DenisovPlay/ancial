@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { sanitizeUserHtml } from '../lib/sanitize-html';
 
 type NoteType = 'success' | 'error' | 'warning' | 'info';
 const NOTE_STACK_GAP_PX = 8;
@@ -160,7 +161,7 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
         {note.html && typeof note.content === 'string' ? (
           <span
             className="font-medium text-sm sm:text-base leading-tight break-words [&_a]:underline [&_a]:underline-offset-2"
-            dangerouslySetInnerHTML={{ __html: note.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(note.content) }}
           />
         ) : (
           <span className="font-medium text-sm sm:text-base leading-tight break-words">
@@ -182,6 +183,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Классический client-mount флаг: SSR-рендер и первый клиентский должны отличаться, иначе гидратация ломается.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

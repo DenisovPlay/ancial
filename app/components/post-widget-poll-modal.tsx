@@ -24,6 +24,8 @@ export default function PostWidgetPollModal({ isOpen, onClose, onAdd }: PostWidg
 
   useEffect(() => {
     if (isOpen) {
+      // Сброс формы опроса при открытии модалки — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuestion('');
       setOptions(['', '']);
     }

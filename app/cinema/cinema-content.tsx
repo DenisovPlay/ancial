@@ -50,7 +50,7 @@ export default function CinemaContent() {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [myListIds, setMyListIds] = useState<string[]>([]);
-  const [watchHistory, setWatchHistory] = useState<any[]>([]);
+  const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [heroMovies, setHeroMovies] = useState<Movie[]>([]);
@@ -66,6 +66,8 @@ export default function CinemaContent() {
   // Load user's My List from cache on mount
   useEffect(() => {
     const list = getCinemaMyList();
+    // Гидратация из localStorage при монтировании — сеттлер здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMyListIds(list);
 
     const refreshHistory = () => {
@@ -95,6 +97,8 @@ export default function CinemaContent() {
     // 1. Instantly apply cached bundle if available
     const cachedBundle = getCinemaCache<HomeCinemaBundle>('home_bundle');
     if (cachedBundle) {
+      // SWR: мгновенная гидратация из кэша до фоновой перезаливки — сеттлеры здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHeroMovies(cachedBundle.hero || []);
       setTopMovies(cachedBundle.top || []);
       setNewReleases(cachedBundle.newReleases || []);
@@ -215,6 +219,8 @@ export default function CinemaContent() {
   // Handle Search Input Query
   useEffect(() => {
     if (!searchQuery.trim()) {
+      // Пустой запрос — терминальное состояние: результаты сброшены, искать нечего.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchResults([]);
       return;
     }

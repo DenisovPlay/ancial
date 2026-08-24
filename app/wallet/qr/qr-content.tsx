@@ -6,6 +6,19 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
 
+/** Координаты углов QR-кода из jsQR (topLeftCorner и т.д.). */
+interface QRLocation {
+  topLeftCorner: { x: number; y: number };
+  topRightCorner: { x: number; y: number };
+  bottomRightCorner: { x: number; y: number };
+  bottomLeftCorner: { x: number; y: number };
+}
+
+/** MediaTrackCapabilities с флагом вспышки (torch есть не на всех устройствах). */
+interface TrackCapabilitiesWithTorch extends MediaTrackCapabilities {
+  torch?: boolean;
+}
+
 export default function QRContent() {
   const router = useRouter();
   const { lang, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -37,14 +50,14 @@ export default function QRContent() {
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const workerRef = useRef<Worker | null>(null);
-  const lastQRResultRef = useRef<{ data: string; location: any } | null>(null);
+  const lastQRResultRef = useRef<{ data: string; location: QRLocation } | null>(null);
   const workerBusyRef = useRef<boolean>(false);
 
   // Detection states (like legacy code)
   const detectionStartTimeRef = useRef<number | null>(null);
   const lastDetectedDataRef = useRef<string | null>(null);
   const lastQRSeenTimeRef = useRef<number | null>(null);
-  const lastQRLocationRef = useRef<any>(null);
+  const lastQRLocationRef = useRef<QRLocation | null>(null);
 
   const SCAN_DELAY = 500; // ms
   const QR_LOST_TOLERANCE = 500; // ms
@@ -100,13 +113,13 @@ export default function QRContent() {
       // Check flash support
       const track = stream.getVideoTracks()[0];
       if (track && typeof track.getCapabilities === 'function') {
-        const capabilities = track.getCapabilities() as any;
+        const capabilities = track.getCapabilities() as TrackCapabilitiesWithTorch;
         setFlashSupported(!!capabilities.torch);
       } else {
         setFlashSupported(false);
       }
-    } catch (err: any) {
-      console.error('Camera startup error:', err);
+    } catch {
+      console.error('Camera startup error');
       setCameraError(strings.noaccesstocamera);
       setCameraActive(false);
     }
@@ -139,6 +152,9 @@ export default function QRContent() {
     }
 
     if (scriptLoaded && scanning) {
+      // Легаси mount-запуск камеры: setState внутри startCamera выполняются
+      // после await getUserMedia, синхронного каскадного рендера нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       startCamera();
     }
 
@@ -147,123 +163,11 @@ export default function QRContent() {
     };
   }, [scriptLoaded, scanning, facingMode, isAuthenticated, authLoading]);
 
-  // Main scan loop using requestAnimationFrame
-  useEffect(() => {
-    if (!scriptLoaded || !scanning || !cameraActive || !streamRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const overlay = overlayRef.current;
-    if (!video || !canvas || !overlay) return;
-
-    const canvasContext = canvas.getContext('2d', { willReadFrequently: true });
-    const overlayContext = overlay.getContext('2d');
-    if (!canvasContext || !overlayContext) return;
-
-    // Spin up QR decoder Worker
-    const worker = new Worker('/qr-worker.js');
-    workerRef.current = worker;
-    workerBusyRef.current = false;
-    lastQRResultRef.current = null;
-
-    worker.onmessage = (e: MessageEvent) => {
-      workerBusyRef.current = false;
-      lastQRResultRef.current = e.data; // null or { data, location }
-    };
-
-    // RAF loop — only captures frames and draws overlay. Decode is async in worker.
-    const loop = () => {
-      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-        // Set canvas dimensions only when they change
-        if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
-        if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
-
-        // Update overlay size to match display
-        const displayWidth = video.clientWidth;
-        const displayHeight = video.clientHeight;
-        if (displayWidth > 0 && displayHeight > 0 && (overlay.width !== displayWidth || overlay.height !== displayHeight)) {
-          overlay.width = displayWidth;
-          overlay.height = displayHeight;
-        }
-
-        // Grab current frame and send to worker if idle
-        canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
-        if (!workerBusyRef.current) {
-          const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
-          workerBusyRef.current = true;
-          worker.postMessage(
-            { data: imageData.data, width: imageData.width, height: imageData.height },
-            [imageData.data.buffer]
-          );
-        }
-
-        // Process latest worker result
-        const result = lastQRResultRef.current;
-        if (result && result.data && result.location) {
-          lastQRSeenTimeRef.current = Date.now();
-          lastQRLocationRef.current = result.location;
-
-          if (!detectionStartTimeRef.current || lastDetectedDataRef.current !== result.data) {
-            detectionStartTimeRef.current = Date.now();
-            lastDetectedDataRef.current = result.data;
-          }
-
-          const elapsed = Date.now() - detectionStartTimeRef.current;
-          const progress = Math.min(elapsed / 300, 1);
-
-          drawTelegramOverlay(overlay, overlayContext, result.location, progress);
-
-          if (elapsed >= 300) {
-            if (navigator.vibrate) navigator.vibrate(200);
-            handleQRSuccess(result.data);
-            return;
-          }
-        } else {
-          // Handle brief frame-loss tolerance
-          if (detectionStartTimeRef.current && lastQRSeenTimeRef.current && lastQRLocationRef.current) {
-            const timeSinceLastSeen = Date.now() - lastQRSeenTimeRef.current;
-            if (timeSinceLastSeen <= QR_LOST_TOLERANCE) {
-              const elapsed = Date.now() - detectionStartTimeRef.current;
-              const progress = Math.min(elapsed / SCAN_DELAY, 1);
-              drawTelegramOverlay(overlay, overlayContext, lastQRLocationRef.current, progress);
-
-              if (elapsed >= SCAN_DELAY && lastDetectedDataRef.current) {
-                if (navigator.vibrate) navigator.vibrate(200);
-                handleQRSuccess(lastDetectedDataRef.current);
-                return;
-              }
-            } else {
-              clearOverlay(overlay, overlayContext);
-              detectionStartTimeRef.current = null;
-              lastDetectedDataRef.current = null;
-              lastQRSeenTimeRef.current = null;
-              lastQRLocationRef.current = null;
-            }
-          } else {
-            clearOverlay(overlay, overlayContext);
-          }
-        }
-      }
-
-      animationFrameRef.current = requestAnimationFrame(loop);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(loop);
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      worker.terminate();
-      workerRef.current = null;
-    };
-  }, [scriptLoaded, scanning, cameraActive, facingMode]);
-
   // Drawing overlay box (Telegram style frame)
   const drawTelegramOverlay = (
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
-    location: any,
+    location: QRLocation,
     progress: number
   ) => {
     const video = videoRef.current;
@@ -394,28 +298,6 @@ export default function QRContent() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
-  // Switch between front/back camera
-  const handleSwitchCamera = () => {
-    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
-  };
-
-  // Toggle flash torch
-  const handleToggleFlash = async () => {
-    if (!streamRef.current) return;
-    const track = streamRef.current.getVideoTracks()[0];
-    if (track && typeof track.applyConstraints === 'function') {
-      try {
-        const nextFlashState = !flashEnabled;
-        await track.applyConstraints({
-          advanced: [{ torch: nextFlashState }]
-        } as any);
-        setFlashEnabled(nextFlashState);
-      } catch (err) {
-        console.error('Flash toggle failed:', err);
-      }
-    }
-  };
-
   // Scanned QR code successful trigger
   const handleQRSuccess = async (data: string) => {
     setScanning(false);
@@ -445,6 +327,140 @@ export default function QRContent() {
         console.error('Failed to resolve wallet QR code:', err);
       } finally {
         setResolvedLoading(false);
+      }
+    }
+  };
+
+  // Main scan loop using requestAnimationFrame
+  useEffect(() => {
+    if (!scriptLoaded || !scanning || !cameraActive || !streamRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const overlay = overlayRef.current;
+    if (!video || !canvas || !overlay) return;
+
+    const canvasContext = canvas.getContext('2d', { willReadFrequently: true });
+    const overlayContext = overlay.getContext('2d');
+    if (!canvasContext || !overlayContext) return;
+
+    // Spin up QR decoder Worker
+    const worker = new Worker('/qr-worker.js');
+    workerRef.current = worker;
+    workerBusyRef.current = false;
+    lastQRResultRef.current = null;
+
+    worker.onmessage = (e: MessageEvent) => {
+      workerBusyRef.current = false;
+      lastQRResultRef.current = e.data; // null or { data, location }
+    };
+
+    // RAF loop — only captures frames and draws overlay. Decode is async in worker.
+    const loop = () => {
+      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+        // Set canvas dimensions only when they change
+        if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
+        if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
+
+        // Update overlay size to match display
+        const displayWidth = video.clientWidth;
+        const displayHeight = video.clientHeight;
+        if (displayWidth > 0 && displayHeight > 0 && (overlay.width !== displayWidth || overlay.height !== displayHeight)) {
+          overlay.width = displayWidth;
+          overlay.height = displayHeight;
+        }
+
+        // Grab current frame and send to worker if idle
+        canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+        if (!workerBusyRef.current) {
+          const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+          workerBusyRef.current = true;
+          worker.postMessage(
+            { data: imageData.data, width: imageData.width, height: imageData.height },
+            [imageData.data.buffer]
+          );
+        }
+
+        // Process latest worker result
+        const result = lastQRResultRef.current;
+        if (result && result.data && result.location) {
+          lastQRSeenTimeRef.current = Date.now();
+          lastQRLocationRef.current = result.location;
+
+          if (!detectionStartTimeRef.current || lastDetectedDataRef.current !== result.data) {
+            detectionStartTimeRef.current = Date.now();
+            lastDetectedDataRef.current = result.data;
+          }
+
+          const elapsed = Date.now() - detectionStartTimeRef.current;
+          const progress = Math.min(elapsed / 300, 1);
+
+          drawTelegramOverlay(overlay, overlayContext, result.location, progress);
+
+          if (elapsed >= 300) {
+            if (navigator.vibrate) navigator.vibrate(200);
+            handleQRSuccess(result.data);
+            return;
+          }
+        } else {
+          // Handle brief frame-loss tolerance
+          if (detectionStartTimeRef.current && lastQRSeenTimeRef.current && lastQRLocationRef.current) {
+            const timeSinceLastSeen = Date.now() - lastQRSeenTimeRef.current;
+            if (timeSinceLastSeen <= QR_LOST_TOLERANCE) {
+              const elapsed = Date.now() - detectionStartTimeRef.current;
+              const progress = Math.min(elapsed / SCAN_DELAY, 1);
+              drawTelegramOverlay(overlay, overlayContext, lastQRLocationRef.current, progress);
+
+              if (elapsed >= SCAN_DELAY && lastDetectedDataRef.current) {
+                if (navigator.vibrate) navigator.vibrate(200);
+                handleQRSuccess(lastDetectedDataRef.current);
+                return;
+              }
+            } else {
+              clearOverlay(overlay, overlayContext);
+              detectionStartTimeRef.current = null;
+              lastDetectedDataRef.current = null;
+              lastQRSeenTimeRef.current = null;
+              lastQRLocationRef.current = null;
+            }
+          } else {
+            clearOverlay(overlay, overlayContext);
+          }
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(loop);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(loop);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, [scriptLoaded, scanning, cameraActive, facingMode]);
+
+  // Switch between front/back camera
+  const handleSwitchCamera = () => {
+    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
+  };
+
+  // Toggle flash torch
+  const handleToggleFlash = async () => {
+    if (!streamRef.current) return;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (track && typeof track.applyConstraints === 'function') {
+      try {
+        const nextFlashState = !flashEnabled;
+        await track.applyConstraints({
+          advanced: [{ torch: nextFlashState }]
+        } as MediaTrackConstraints & { advanced?: Array<{ torch?: boolean }> });
+        setFlashEnabled(nextFlashState);
+      } catch (err) {
+        console.error('Flash toggle failed:', err);
       }
     }
   };

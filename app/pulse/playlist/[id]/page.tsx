@@ -30,7 +30,14 @@ export async function generateMetadata({ params }: PulsePlaylistPageProps): Prom
   // If not a built-in playlist, fetch its meta from the DB
   if (!title) {
     try {
-      const data = await httpsGetJson<any>(`${API_BASE}/api/V2/pulse/GetPlaylist.php?pid=${playlistId}`);
+      /** Ответ GetPlaylist.php для SEO-метаданных. */
+      interface PlaylistSeoResponse {
+        success?: boolean;
+        data?: {
+          playlist?: { name?: string; desk?: string; img?: string };
+        };
+      }
+      const data = await httpsGetJson<PlaylistSeoResponse>(`${API_BASE}/api/V2/pulse/GetPlaylist.php?pid=${playlistId}`);
       if (data?.success && data?.data?.playlist) {
         const playlist = data.data.playlist;
         const pTitle = decodeHtmlEntities(playlist.name) || FALLBACK_TITLE;

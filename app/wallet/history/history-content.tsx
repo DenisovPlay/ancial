@@ -56,6 +56,8 @@ export default function HistoryContent() {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
+      // Неавторизован — терминальное состояние, снимаем лоадер сразу.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInitialLoading(false);
       return;
     }
@@ -75,6 +77,8 @@ export default function HistoryContent() {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
+      // Неавторизован — терминальное состояние, снимаем лоадер сразу.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInitialLoading(false);
       return;
     }
@@ -83,7 +87,7 @@ export default function HistoryContent() {
     latestTransactionsRequest.current = requestId;
 
     const cacheKey = `wallet_history_cache_${activeFilter}`;
-    const parsed = cache.get<any[]>(cacheKey, { category: 'wallet', subcategory: 'history' });
+    const parsed = cache.get<WalletTransaction[]>(cacheKey, { category: 'wallet', subcategory: 'history' });
     if (Array.isArray(parsed)) {
       setTransactions(parsed);
       hasLoadedTransactions.current = true;

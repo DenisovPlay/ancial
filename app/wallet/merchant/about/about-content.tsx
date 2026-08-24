@@ -75,8 +75,8 @@ function AboutContentInner() {
       } else {
         if (!merchant) setError(lang?.merchant_not_found || 'Мерчант не найден');
       }
-    } catch (err: any) {
-      if (!merchant) setError(err.message || (lang?.error_loading_merchant_settings || 'Ошибка загрузки настроек мерчанта'));
+    } catch (err) {
+      if (!merchant) setError(err instanceof Error ? err.message : (lang?.error_loading_merchant_settings || 'Ошибка загрузки настроек мерчанта'));
     } finally {
       setLoading(false);
     }
@@ -90,14 +90,20 @@ function AboutContentInner() {
     }
 
     const cacheKey = `wallet_merchant_detail_cache_${merchantId}`;
-    const parsed = cache.get<any>(cacheKey, { category: 'wallet', subcategory: 'merchant_details' });
+    const parsed = cache.get<{
+      merchant?: WalletMerchantDetails;
+      stats?: { total_payments?: number | string; total_earned?: number | string };
+      orders?: WalletMerchantOrder[];
+    }>(cacheKey, { category: 'wallet', subcategory: 'merchant_details' });
     let hasCache = false;
     if (parsed) {
       if (parsed.merchant) {
+        // SWR-гидратация из кэша до ответа API — сеттлеры здесь источник правды.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMerchant(parsed.merchant);
         if (parsed.stats) {
-          setTotalPayments(parsed.stats.total_payments || 0);
-          setTotalEarned(parsed.stats.total_earned || 0);
+          setTotalPayments(Number(parsed.stats.total_payments) || 0);
+          setTotalEarned(Number(parsed.stats.total_earned) || 0);
         }
         if (parsed.orders) setOrders(parsed.orders);
         setImg(parsed.merchant.img || '');
@@ -148,8 +154,8 @@ function AboutContentInner() {
       } else {
         setSaveError(res.message || (lang?.failed_to_update_settings || 'Не удалось обновить настройки'));
       }
-    } catch (err: any) {
-      setSaveError(err.message || (lang?.error_updating_settings || 'Ошибка обновления настроек'));
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : (lang?.error_updating_settings || 'Ошибка обновления настроек'));
     } finally {
       setSaveLoading(false);
     }

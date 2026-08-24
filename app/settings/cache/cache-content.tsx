@@ -39,7 +39,26 @@ const DonutChart = ({ segments }: { segments: { color: string; value: number }[]
     );
   }
 
-  let currentOffset = 0;
+  const visible = segments.filter((segment) => segment.value !== 0);
+  const lengths = visible.map((segment) => (segment.value / total) * c);
+  const arcs = visible.map((segment, index) => {
+    const strokeLength = lengths[index];
+    const strokeOffset = -lengths.slice(0, index).reduce((sum, len) => sum + len, 0);
+    return (
+      <circle
+        key={index}
+        cx="50"
+        cy="50"
+        r={r}
+        stroke={segment.color}
+        strokeWidth="6"
+        fill="transparent"
+        strokeDasharray={`${strokeLength} ${c}`}
+        strokeDashoffset={strokeOffset}
+        className="transition-all duration-500 ease-out"
+      />
+    );
+  });
   return (
     <svg className="w-56 h-56 transform -rotate-90" viewBox="0 0 100 100">
       <circle
@@ -50,28 +69,7 @@ const DonutChart = ({ segments }: { segments: { color: string; value: number }[]
         strokeWidth="6"
         fill="transparent"
       />
-      {segments.map((segment, index) => {
-        if (segment.value === 0) return null;
-        const percent = segment.value / total;
-        const strokeLength = percent * c;
-        const strokeOffset = -currentOffset;
-        currentOffset += strokeLength;
-
-        return (
-          <circle
-            key={index}
-            cx="50"
-            cy="50"
-            r={r}
-            stroke={segment.color}
-            strokeWidth="6"
-            fill="transparent"
-            strokeDasharray={`${strokeLength} ${c}`}
-            strokeDashoffset={strokeOffset}
-            className="transition-all duration-500 ease-out"
-          />
-        );
-      })}
+      {arcs}
     </svg>
   );
 };
@@ -230,6 +228,10 @@ export default function CacheSettingsPage() {
 
   const loadCacheData = async () => {
     if (typeof window === 'undefined') return;
+
+    // Первый await до любого setState: функция становится асинхронной,
+    // сеттлеры ниже выполняются уже вне синхронной фазы эффекта.
+    await Promise.resolve();
 
     let total = 0;
     const cats: typeof cacheData.categories = {};
@@ -400,6 +402,8 @@ export default function CacheSettingsPage() {
       router.push('/login?backurl=/settings/cache');
       return;
     }
+    // Легаси mount-загрузка данных кэша: все setState внутри после await.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadCacheData();
   }, [authLoading, isAuthenticated]);
 
@@ -597,9 +601,9 @@ export default function CacheSettingsPage() {
   const chartSegments = useMemo(() => {
     return Object.keys(cacheData.categories)
       .map((catId) => {
-        const meta = (categoryMeta as any)[catId] || { color: '#71717a' };
+        const meta = (categoryMeta as Record<string, { label?: string; color?: string }>)[catId] || { color: '#71717a' };
         const val = cacheData.categories[catId]?.size || 0;
-        return { color: meta.color, value: val };
+        return { color: meta.color ?? '#71717a', value: val };
       })
       .filter((s) => s.value > 0);
   }, [cacheData, categoryMeta]);
@@ -698,7 +702,7 @@ export default function CacheSettingsPage() {
           Object.keys(cacheData.categories)
             .filter((catId) => cacheData.categories[catId].size > 0)
             .map((catId) => {
-              const meta = (categoryMeta as any)[catId] || { label: catId, color: '#71717a' };
+              const meta = (categoryMeta as Record<string, { label?: string; color?: string }>)[catId] || { label: catId, color: '#71717a' };
               const catData = cacheData.categories[catId];
               const isExpanded = expandedCats.has(catId);
               const isSelected = selectedCats.has(catId);
@@ -764,7 +768,7 @@ export default function CacheSettingsPage() {
                         className="flex flex-col border-t border-zinc-800/60 bg-zinc-950/40 divide-y divide-zinc-900/50 overflow-hidden"
                       >
                         {subKeys.map((subId) => {
-                          const subLabel = (subcategoryMeta as any)[subId] || subId;
+                          const subLabel = (subcategoryMeta as Record<string, string>)[subId] || subId;
                           const subData = catData.subcategories[subId];
                           const isSubSelected = selectedSubs.has(`${catId}:${subId}`);
                           const isOfflineAudio = subId === 'offline_audio';

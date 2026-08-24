@@ -76,6 +76,8 @@ export default function PostBlockTableModal({
 
   useEffect(() => {
     if (isOpen) {
+      // Открытие модалки: парсинг BBCode в матрицу — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMatrix(parseTableBBCode(initialBBCode || ''));
     }
   }, [isOpen, initialBBCode]);

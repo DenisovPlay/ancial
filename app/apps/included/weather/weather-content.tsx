@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useAuth } from '../../../context/AuthContext';
 import { cache } from '../../../lib/cache';
 import { safeFetchJson } from '../../../lib/safe-fetch-json';
+import { sanitizeUserHtml } from '../../../lib/sanitize-html';
 import {
   buildWeatherMapLinks,
   buildWeatherMedia,
@@ -588,7 +589,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
 
                   <span
                     className="w-full text-2xl text-white/90"
-                    dangerouslySetInnerHTML={{ __html: weatherData?.mornight || '' }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(weatherData?.mornight || '') }}
                     style={{ textShadow: '0 4px 24px rgba(0, 0, 0, 0.45)' }}
                   />
 

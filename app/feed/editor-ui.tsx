@@ -35,7 +35,11 @@ export type FeedEditorUIProps = {
     setContent: (content: string) => void;
     images: DraftImage[];
     handleDeleteImage: (id: string) => void;
-    widgets: any[];
+    widgets: Array<
+    | { type: 'music'; track_name?: string; artist_name?: string; track_img?: string }
+    | { type: 'poll'; question?: string }
+    | { type: string; [key: string]: unknown }
+  >;
     handleRemoveWidget: (index: number) => void;
     topicOptions: string[];
     selectedTopic: string;
@@ -252,7 +256,7 @@ export function FeedEditorUI({
                                                     </span>
                                                 )}
                                                 <span className="text-xs text-zinc-200 truncate flex-1">
-                                                    {w.type === 'music' ? `${w.artist_name} — ${w.track_name}` : w.type === 'poll' ? w.question : (strings.reply_to_post || 'Ответ')}
+                                                    {w.type === 'music' ? `${w.artist_name ?? ''} — ${w.track_name ?? ''}` : w.type === 'poll' ? String(w.question ?? '') : (strings.reply_to_post || 'Ответ')}
                                                 </span>
                                                 <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95 cursor-pointer">
                                                     <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />

@@ -33,6 +33,8 @@ export default function MoviesContent() {
   // Load initial movies on genre change with SWR caching
   useEffect(() => {
     let isMounted = true;
+    // Смена жанра сбрасывает пагинацию — сеттлер здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1);
 
     const cachedMovies = getCinemaCache<Movie[]>('catalog_movies', selectedGenre);

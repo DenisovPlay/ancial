@@ -32,6 +32,17 @@ export class AncialAPIError extends Error {
 }
 
 // --- WALLET TYPINGS ---
+/** Параметры перевода средств (wallet/Transaction.php?action=send). */
+export interface SendMoneyParams {
+  sender_id: number;
+  amount: number;
+  comment: string;
+  receiver_id?: number;
+  receiver_login?: string;
+  receiver_email?: string;
+  receiver_phone?: string;
+}
+
 export interface WalletAccount {
   id: number;
   name: string;
@@ -79,6 +90,25 @@ export interface WalletOverview {
   gateways: WalletGateway[];
   topupOrders: WalletTopupOrder[];
   transactions: WalletTransaction[];
+}
+
+/** Динамическое поле формы вывода, отдаваемое шлюзом. */
+export interface WalletGatewayFormField {
+  key?: string;
+  label?: string;
+  required?: boolean | number | string;
+  type?: string;
+  hint?: string;
+  placeholder?: string;
+  options?: Array<{ value?: string; label?: string }>;
+}
+
+/** Форма вывода конкретного шлюза (GetGateWayForm.php). */
+export interface WalletGatewayForm extends WalletGateway {
+  withdrawal_fields?: string | null | {
+    title?: string;
+    fields?: WalletGatewayFormField[];
+  };
 }
 
 export interface WalletMerchant {
@@ -747,8 +777,8 @@ export class AncialAPI {
   // --- PULSE ---
 
   static async pulseGetHomePage<T = unknown>(type: string): Promise<T> {
-    const response = await this.request<any>(`/pulse/GetHomePage.php?type=${type}`);
-    return (response && typeof response === 'object' && type in response) ? response[type] : response;
+    const response = await this.request<Record<string, unknown>>(`/pulse/GetHomePage.php?type=${type}`);
+    return (response && typeof response === 'object' && type in response) ? response[type] as T : response as T;
   }
 
   static async pulseGetArtist<T = unknown>(id: string | number): Promise<T> {
@@ -771,8 +801,8 @@ export class AncialAPI {
     if (params.aid) query.set('aid', String(params.aid));
     if (params.tid) query.set('tid', String(params.tid));
     
-    const response = await this.request<any>(`/pulse/GetPlaylist.php?${query.toString()}`);
-    return (response && typeof response === 'object' && 'tracks' in response) ? response.tracks : response;
+    const response = await this.request<{ tracks?: unknown } | unknown>(`/pulse/GetPlaylist.php?${query.toString()}`);
+    return (response && typeof response === 'object' && 'tracks' in response) ? (response as { tracks: unknown }).tracks as T : response as T;
   }
 
   static async pulseGetTrack<T = unknown>(id: string | number): Promise<T> {
@@ -793,8 +823,8 @@ export class AncialAPI {
     if (excludeIds.length > 0) {
       query.set('exclude', excludeIds.join(','));
     }
-    const response = await this.request<any>(`/pulse/GetPlaylist.php?${query.toString()}`);
-    return (response && typeof response === 'object' && 'tracks' in response) ? response.tracks : response;
+    const response = await this.request<{ tracks?: unknown } | unknown>(`/pulse/GetPlaylist.php?${query.toString()}`);
+    return (response && typeof response === 'object' && 'tracks' in response) ? (response as { tracks: unknown }).tracks as T : response as T;
   }
 
 
@@ -805,11 +835,11 @@ export class AncialAPI {
   }
 
   static async pulseGetLibrary<T = unknown>(type: string): Promise<T> {
-    const response = await this.request<any>(`/pulse/Library.php?type=${type}`);
+    const response = await this.request<Record<string, unknown>>(`/pulse/Library.php?type=${type}`);
 
     if (type === 'favorites') {
       const tracks = Array.isArray(response?.favorites) ? response.favorites : [];
-      return { ids: tracks.map((t: any) => t.sid || t.id).filter(Boolean) } as T;
+      return { ids: tracks.map((t) => (typeof t === 'object' && t !== null ? ((t as { sid?: unknown }).sid ?? (t as { id?: unknown }).id) : t)).filter(Boolean) } as T;
     }
 
     if (type === 'all' || type === 'my' || type === 'my_playlists') {
@@ -819,17 +849,19 @@ export class AncialAPI {
     }
 
     if (type === 'history') {
+      type RawHistoryItem = { track?: { sid?: number | string; id?: number | string; title?: string; artist?: string; artwork?: Array<{ src?: string }>; explicit?: boolean }; date?: string };
       const historyItems = Array.isArray(response?.history) ? response.history : [];
-      const mappedHistory = historyItems.map((item: any) => {
-        if (item?.track) {
+      const mappedHistory = historyItems.map((item) => {
+        const h = item as RawHistoryItem;
+        if (h?.track) {
           return {
             HTYPE: '1',
-            id: item.track.sid || item.track.id,
-            name: item.track.title,
-            artist: item.track.artist,
-            img: Array.isArray(item.track.artwork) && item.track.artwork.length > 0 ? item.track.artwork[0].src : '',
-            date: item.date,
-            explicit: item.track.explicit
+            id: h.track.sid || h.track.id,
+            name: h.track.title,
+            artist: h.track.artist,
+            img: Array.isArray(h.track.artwork) && h.track.artwork.length > 0 ? h.track.artwork[0].src : '',
+            date: h.date,
+            explicit: h.track.explicit
           };
         }
         return item;
@@ -853,12 +885,12 @@ export class AncialAPI {
   static async pulsePlaylistAction<T = unknown>(action: string, params: Record<string, string | number>): Promise<T> {
     const body = new URLSearchParams({ action });
     Object.entries(params).forEach(([key, value]) => body.set(key, String(value)));
-    const response = await this.request<any>('/pulse/PlaylistAction.php', { method: 'POST', body });
-    
+    const response = await this.request<{ playlists?: unknown } | unknown>('/pulse/PlaylistAction.php', { method: 'POST', body });
+
     if (action === 'list') {
-      return { data: Array.isArray(response?.playlists) ? response.playlists : [] } as T;
+      return { data: Array.isArray(response) && 'playlists' in response ? (response as { playlists: unknown }).playlists : [] } as T;
     }
-    
+
     return response as T;
   }
 
@@ -916,15 +948,7 @@ export class AncialAPI {
     });
   }
 
-  static async sendMoney(params: {
-    sender_id: number;
-    amount: number;
-    comment: string;
-    receiver_id?: number;
-    receiver_login?: string;
-    receiver_email?: string;
-    receiver_phone?: string;
-  }): Promise<{ transaction_id: number; amount: number; fees: number }> {
+  static async sendMoney(params: SendMoneyParams): Promise<{ transaction_id: number; amount: number; fees: number }> {
     const body = new URLSearchParams();
     body.set('sender_id', String(params.sender_id));
     body.set('amount', String(params.amount));
@@ -1015,8 +1039,8 @@ export class AncialAPI {
     });
   }
 
-  static async getGatewayForm(gatewayId: number): Promise<{ gateway: any }> {
-    return this.request<{ gateway: any }>(`/wallet/GetGateWayForm.php?gateway=${gatewayId}`);
+  static async getGatewayForm(gatewayId: number): Promise<{ gateway: WalletGatewayForm }> {
+    return this.request<{ gateway: WalletGatewayForm }>(`/wallet/GetGateWayForm.php?gateway=${gatewayId}`);
   }
 
   // --- PAY ---

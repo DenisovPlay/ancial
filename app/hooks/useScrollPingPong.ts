@@ -24,7 +24,7 @@ export function useScrollPingPong(options: UseScrollPingPongOptions = {}) {
 
     let animationId: number;
     let position = 0;
-    let speed = maxScroll / (duration * 60); // пикселей за кадр
+    const speed = maxScroll / (duration * 60); // пикселей за кадр
     let direction = 1;
 
     const animate = () => {

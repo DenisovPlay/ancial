@@ -29,8 +29,30 @@ function EditTrackContent() {
   const [explicit, setExplicit] = useState('0');
   const [status, setStatus] = useState('1');
   const [src, setSrc] = useState('');
-  
-  const [allArtists, setAllArtists] = useState<any[]>([]);
+
+  /** Артист из pulseManagement('artist', 'list'). */
+  interface PulseArtist {
+    id?: number | string;
+    name?: string;
+    img?: string;
+  }
+
+  /** Трек из pulseManagement('track', 'list'). */
+  interface PulseTrack {
+    id?: number | string;
+    name?: string;
+    artist?: string;
+    img?: string;
+    genre?: string;
+    mood?: string;
+    lang?: string;
+    explicit?: boolean | number | string;
+    status?: number | string;
+    artists_ids?: string;
+    src?: string;
+  }
+
+  const [allArtists, setAllArtists] = useState<PulseArtist[]>([]);
   const blobUrlRef = useRef<string | null>(null);
 
   const cleanupBlobUrl = () => {
@@ -49,14 +71,14 @@ function EditTrackContent() {
   useEffect(() => {
     if (isAuthenticated && id > 0) {
       Promise.all([
-        AncialAPI.pulseManagement<any[]>('track', 'list', {}),
-        AncialAPI.pulseManagement<any[]>('artist', 'list', {})
+        AncialAPI.pulseManagement<PulseTrack[]>('track', 'list', {}),
+        AncialAPI.pulseManagement<PulseArtist[]>('artist', 'list', {})
       ])
         .then(([tracksRes, artistsRes]) => {
           if (Array.isArray(artistsRes)) setAllArtists(artistsRes);
-          
+
           if (Array.isArray(tracksRes)) {
-            const track = tracksRes.find((t: any) => parseInt(t.id, 10) === id);
+            const track = tracksRes.find((t) => parseInt(String(t.id), 10) === id);
             if (track) {
               setName(track.name || '');
               setArtist(track.artist || '');
@@ -73,6 +95,9 @@ function EditTrackContent() {
         })
         .finally(() => setLoading(false));
     } else {
+      // Нет данных для загрузки (неавторизован / нет id) — снимаем лоадер сразу.
+      // Начальное useState(true) эквивалентно этому setState, поведение то же.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
     }
   }, [isAuthenticated, id]);
@@ -116,8 +141,8 @@ function EditTrackContent() {
       .then(() => {
         router.push('/pulse/create/tracks');
       })
-      .catch((err: any) => {
-        showNote({ content: err?.error || 'Произошла ошибка', type: 'error', time: 5 });
+      .catch(() => {
+        showNote({ content: 'Произошла ошибка', type: 'error', time: 5 });
         setSaving(false);
       });
   };

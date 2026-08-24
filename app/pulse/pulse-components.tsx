@@ -419,8 +419,8 @@ export function PulseTrackRow({
   );
   const isOwnTrack = canManagePulseTrack(track, user);
   const isLiked = Boolean(
-    (numSid > 0 && favoriteIds.includes(numSid as any)) ||
-    (Boolean(rawSid) && favoriteIds.includes(rawSid as any))
+    (numSid > 0 && favoriteIds.includes(numSid)) ||
+    (Boolean(rawSid) && favoriteIds.includes(toNumber(rawSid)))
   );
 
   const isAvailable = isTrackAvailable(track, userCountry);

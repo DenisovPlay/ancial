@@ -67,14 +67,17 @@ export default function CreateGroupModal({
     setLoadingFriends(true);
     try {
       let list: FriendItem[] = [];
-      const res = await AncialAPI.socialAction<any>('friends');
+      const res = await AncialAPI.socialAction<{
+        data?: FriendItem[] | { friends?: FriendItem[] } | null;
+        friends?: FriendItem[];
+      } | FriendItem[]>('friends');
       if (Array.isArray(res)) {
         list = res;
       } else if (res?.data && Array.isArray(res.data)) {
         list = res.data;
       } else if (res?.friends && Array.isArray(res.friends)) {
         list = res.friends;
-      } else if (res?.data?.friends && Array.isArray(res.data.friends)) {
+      } else if (!Array.isArray(res?.data) && res?.data?.friends && Array.isArray(res.data.friends)) {
         list = res.data.friends;
       }
       setFriends(list);
@@ -87,6 +90,8 @@ export default function CreateGroupModal({
 
   useEffect(() => {
     if (!isOpen) return;
+    // Открытие модалки: сброс формы — сеттлеры здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTitle('');
     setSelectedUserIds(new Set());
     setSearchQuery('');
@@ -141,8 +146,8 @@ export default function CreateGroupModal({
       } else {
         showNote({ content: lang?.failed_create_chat || 'Не удалось создать чат', type: 'error', time: 4 });
       }
-    } catch (err: any) {
-      showNote({ content: err?.message || (lang?.error_creating_group || 'Ошибка при создании группы'), type: 'error', time: 4 });
+    } catch (err) {
+      showNote({ content: err instanceof Error ? err.message : (lang?.error_creating_group || 'Ошибка при создании группы'), type: 'error', time: 4 });
     } finally {
       setCreating(false);
     }

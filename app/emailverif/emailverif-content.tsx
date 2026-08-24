@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { AncialAPI } from '../lib/api-v2';
+import { sanitizeUserHtml } from '../lib/sanitize-html';
 
 function EmailVerifContentInner() {
   const { lang, user, checkAuth } = useAuth();
@@ -21,6 +22,8 @@ function EmailVerifContentInner() {
 
   useEffect(() => {
     if (!urlCode) {
+      // Нет кода в URL — терминальное состояние.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus('idle');
       return;
     }
@@ -112,7 +115,7 @@ function EmailVerifContentInner() {
             </div>
 
             <div className="bg-emerald-950/40 border border-emerald-500/20 rounded-3xl p-3 text-emerald-200 text-sm leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: lang?.Pemailverified || 'Почта успешно подтверждена!' }} />
+              dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(lang?.Pemailverified || 'Почта успешно подтверждена!') }} />
 
             <Link
               href="/settings/security"

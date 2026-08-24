@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { cn, SvgIcon } from '../feed/editor-shared';
+import { sanitizeUserHtml } from '../lib/sanitize-html';
 import Modal from './modal';
 import { Dropdown, DropdownItem } from './navigation';
 import AccountName from './account-name';
@@ -219,7 +220,7 @@ function CommentCard({
         </Dropdown>
       </div>
 
-      <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: parsePostContentToHtml(comment.content) }} />
+      <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(comment.content)) }} />
     </div>
   );
 }

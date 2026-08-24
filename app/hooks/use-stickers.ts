@@ -115,6 +115,8 @@ export function useStickers(scope: StickerScope = 'all'): UseStickersResult {
 
   // load recent from localStorage on client
   useEffect(() => {
+    // Гидратация недавних стикеров из localStorage на клиенте — сеттлер источник правды (SSR не знает localStorage).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecentStickers(getRecentStickers());
   }, []);
 
@@ -136,6 +138,8 @@ export function useStickers(scope: StickerScope = 'all'): UseStickersResult {
   }, [scope]);
 
   useEffect(() => {
+    // Загрузка стикерпаков: сеттлеры внутри load после await.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 

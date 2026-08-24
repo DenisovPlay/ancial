@@ -267,8 +267,11 @@ export function PulsePlayerProvider({
   }, []);
 
   useEffect(() => {
+    // Определение устройства при монтировании: сеттлеры здесь — источник правды
+    // (navigator недоступен на сервере, начальный useState(false) не знает платформу).
     if (typeof navigator !== 'undefined') {
       const isMobile = shouldDisableWebAudioForDevice();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsMobileDevice(isMobile);
       setCanUseEqualizer(!isMobile);
     }
@@ -751,7 +754,7 @@ export function PulsePlayerProvider({
     likedSongIdsRef.current = likedSongIds;
   }, [likedSongIds]);
 
-  const isPlayingFromFavorites = playlistId === '-5' || currentCollectionIdRef.current === '-5' || currentCollectionIdRef.current === 'playlist_-5';
+  const isPlayingFromFavorites = playlistId === '-5' || playlistId === 'playlist_-5';
   const activeLike = currentTrack
     ? (isPlayingFromFavorites || likedSongIds.includes(toNumber(currentTrack.sid)))
     : false;
@@ -1510,6 +1513,8 @@ export function PulsePlayerProvider({
 
   useEffect(() => {
     if (!currentSongId || !currentTrack) {
+      // Сброс лирики для пустого трека — терминальное состояние, сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLyricsLines([]);
       setLyricsSource('');
       clearMediaSession();
@@ -1571,8 +1576,8 @@ export function PulsePlayerProvider({
 
         setLyricsLines(lyricsData.lines);
         setLyricsSource(lyricsData.source);
-      } catch (e: any) {
-        if (e.name !== 'AbortError') {
+      } catch (e) {
+        if (e instanceof Error && e.name !== 'AbortError') {
           console.error('Failed to load lyrics', e);
         }
       }

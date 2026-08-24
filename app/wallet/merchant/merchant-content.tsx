@@ -36,8 +36,8 @@ export default function MerchantContent() {
       setStats(fetchedStats);
       setError(null);
       cache.set('wallet_merchants_cache', { merchants: fetchedMerchants, stats: fetchedStats }, { category: 'wallet', subcategory: 'merchants' });
-    } catch (err: any) {
-      if (merchants.length === 0) setError(err.message || (lang?.error_loading_merchant_panel || 'Ошибка загрузки панели мерчанта'));
+    } catch (err) {
+      if (merchants.length === 0) setError(err instanceof Error ? err.message : (lang?.error_loading_merchant_panel || 'Ошибка загрузки панели мерчанта'));
     } finally {
       setLoading(false);
     }
@@ -50,12 +50,14 @@ export default function MerchantContent() {
       return;
     }
 
-    const parsed = cache.get<any>('wallet_merchants_cache', { category: 'wallet', subcategory: 'merchants' });
+    const parsed = cache.get<{ merchants?: WalletMerchant[]; stats?: Partial<WalletMerchantStats> }>('wallet_merchants_cache', { category: 'wallet', subcategory: 'merchants' });
     let hasCache = false;
     if (parsed) {
       if (Array.isArray(parsed.merchants)) {
+        // SWR-гидратация из кэша до ответа API — сеттлер здесь источник правды.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMerchants(parsed.merchants);
-        if (parsed.stats) setStats(parsed.stats);
+        if (parsed.stats) setStats((prev) => ({ ...prev, ...parsed.stats }));
         hasCache = true;
         setLoading(false);
       }

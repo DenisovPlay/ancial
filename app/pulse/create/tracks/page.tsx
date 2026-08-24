@@ -12,14 +12,24 @@ export default function PulseCreateTracksPage() {
   const { lang, isAuthenticated } = useAuth();
   const { showNote } = useNotification();
   const router = useRouter();
-  const [tracks, setTracks] = useState<any[]>([]);
+  /** Трек из pulseManagement('track', 'list'). */
+  interface PulseTrackRow {
+    id: number | string;
+    name?: string;
+    artist?: string;
+    img?: string;
+    listens?: number | string;
+    status?: number | string;
+  }
+
+  const [tracks, setTracks] = useState<PulseTrackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [trackToDelete, setTrackToDelete] = useState<number | null>(null);
 
   const fetchTracks = () => {
     setLoading(true);
-    AncialAPI.pulseManagement<any[]>('track', 'list', {})
+    AncialAPI.pulseManagement<PulseTrackRow[]>('track', 'list', {})
       .then((res) => {
         if (Array.isArray(res)) setTracks(res);
       })
@@ -28,6 +38,8 @@ export default function PulseCreateTracksPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Легаси mount-загрузка треков: сеттлеры внутри fetchTracks после await.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchTracks();
     }
   }, [isAuthenticated]);
@@ -36,7 +48,7 @@ export default function PulseCreateTracksPage() {
     if (trackToDelete !== null) {
       AncialAPI.pulseManagement('track', 'delete', { id: trackToDelete })
         .then(() => fetchTracks())
-        .catch((err: any) => showNote({ content: err?.error || 'Ошибка удаления', type: 'error', time: 5 }))
+        .catch((err) => showNote({ content: err instanceof Error ? err.message : 'Ошибка удаления', type: 'error', time: 5 }))
         .finally(() => {
           setDeleteModalOpen(false);
           setTrackToDelete(null);
@@ -44,9 +56,9 @@ export default function PulseCreateTracksPage() {
     }
   };
 
-  const handleDelete = (e: React.MouseEvent, id: number) => {
+  const handleDelete = (e: React.MouseEvent, id: number | string) => {
     e.stopPropagation();
-    setTrackToDelete(id);
+    setTrackToDelete(typeof id === 'number' ? id : Number.parseInt(String(id), 10));
     setDeleteModalOpen(true);
   };
 
@@ -79,8 +91,8 @@ export default function PulseCreateTracksPage() {
                 <span className="text-zinc-100 md:text-xl leading-tight truncate">{track.name}</span>
                 <span className="text-sm text-zinc-400 leading-tight truncate">{track.artist}</span>
                 <div className="flex gap-3 mt-1 text-xs text-zinc-500">
-                  <span>{track.listens ? parseInt(track.listens, 10) : 0} прослушиваний</span>
-                  {parseInt(track.status || 0, 10) === 1 ? (
+                  <span>{track.listens ? parseInt(String(track.listens), 10) : 0} прослушиваний</span>
+                  {parseInt(String(track.status ?? 0), 10) === 1 ? (
                     <span className="text-xs text-green-400">Публичный</span>
                   ) : (
                     <span className="text-xs text-zinc-500">Скрытый</span>

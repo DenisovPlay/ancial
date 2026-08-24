@@ -34,9 +34,12 @@ export default function NotificationsSettingsContent() {
   useEffect(() => {
     if (user?.pushdevice) {
       try {
-        const device = typeof user.pushdevice === 'string' 
-          ? JSON.parse(user.pushdevice) 
+        const device = typeof user.pushdevice === 'string'
+          ? JSON.parse(user.pushdevice)
           : user.pushdevice;
+        // Десериализация пропа пользователя при монтировании — синхронный
+        // сеттлер здесь и есть источник правды, альтернативы без каскада нет.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPushDevice(device);
       } catch {
         setPushDevice(null);
@@ -136,7 +139,7 @@ export default function NotificationsSettingsContent() {
       if (permission === 'granted') {
         setIsDetecting(true);
         const registration = await ensureServiceWorker();
-        const token = await window.firebase.messaging().getToken(messaging, {
+        const token = await messaging.getToken({
           vapidKey: FIREBASE_CONFIG.vapidKey,
           serviceWorkerRegistration: registration,
         });
@@ -144,7 +147,7 @@ export default function NotificationsSettingsContent() {
         const device = detectDevice();
         console.log('Device info:', device);
 
-        let result: any;
+        let result: { success?: boolean; message?: string; name?: string } | null | undefined;
         try {
           result = await AncialAPI.updateProfile({
             pushsid: token,
@@ -190,7 +193,7 @@ export default function NotificationsSettingsContent() {
 
   const cancelNotifications = useCallback(async () => {
     try {
-      let result: any;
+      let result: { success?: boolean; message?: string; name?: string } | null | undefined;
       try {
         result = await AncialAPI.updateProfile({ pushsid: '0' });
       } catch {

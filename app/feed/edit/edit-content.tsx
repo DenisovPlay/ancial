@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import type { PostAuthor, PostData, PostImage } from '../../components/posts-renderer';
+import type { PostAuthor, PostData, PostImage, PostWidget } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
@@ -91,7 +91,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
   const [title, setTitle] = useState('');
 
   // Виджеты
-  const [widgets, setWidgets] = useState<any[]>([]);
+  const [widgets, setWidgets] = useState<PostWidget[]>([]);
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
   const [isMusicModalOpen, setIsMusicModalOpen] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -247,6 +247,9 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     if (isLoading || !isAuthenticated) return;
 
     if (!postId) {
+      // Нет id — сразу терминальное состояние страницы редактирования,
+      // сеттлеры здесь и есть источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPost(null);
       setError('not_found');
       setIsPostLoading(false);
@@ -287,23 +290,35 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
 
         // Enrich widgets
         if (normalizedPost.widgets && Array.isArray(normalizedPost.widgets)) {
+          /** Music-виджет с уже обогащёнными метаданными трека. */
+          interface EnrichedMusicWidget {
+            type: 'music';
+            track_id: number | string;
+            track_name?: string;
+            artist_name?: string;
+            track_img?: string;
+          }
           const enrichedWidgets = await Promise.all(
-            normalizedPost.widgets.map(async (widget) => {
-              const wAny = widget as any;
-              if (widget.type === 'music' && (!wAny.track_name || !wAny.artist_name)) {
-                try {
-                  const res = await AncialAPI.getTrack<{ track?: any }>(wAny.track_id);
-                  const trackData = res?.track;
-                  if (trackData) {
-                    return {
-                      ...widget,
-                      track_name: trackData.title || trackData.name || '',
-                      artist_name: trackData.artist || '',
-                      track_img: trackData.artwork?.[0]?.src || trackData.img || '',
-                    };
+            normalizedPost.widgets.map(async (widget): Promise<PostWidget> => {
+              if (widget.type === 'music') {
+                const music = widget as EnrichedMusicWidget;
+                if (!music.track_name || !music.artist_name) {
+                  try {
+                    const res = await AncialAPI.getTrack<{
+                      track?: { title?: string; name?: string; artist?: string; artwork?: Array<{ src?: string }>; img?: string };
+                    }>(music.track_id);
+                    const trackData = res?.track;
+                    if (trackData) {
+                      return {
+                        ...widget,
+                        track_name: trackData.title || trackData.name || '',
+                        artist_name: trackData.artist || '',
+                        track_img: trackData.artwork?.[0]?.src || trackData.img || '',
+                      } as PostWidget;
+                    }
+                  } catch (e) {
+                    console.error('Failed to enrich widget track', music.track_id, e);
                   }
-                } catch (e) {
-                  console.error('Failed to enrich widget track', wAny.track_id, e);
                 }
               }
               return widget;
@@ -359,7 +374,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
   };
 
   const handleAddPollWidget = (draft: PollWidgetDraft) => {
-    setWidgets(prev => [...prev.filter(w => w.type !== 'poll'), draft]);
+    setWidgets(prev => [...prev.filter(w => w.type !== 'poll'), draft as PostWidget]);
   };
 
   const handleRemoveWidget = (index: number) => {

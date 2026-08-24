@@ -6,26 +6,26 @@ import { useAuth } from "./context/AuthContext";
 import Link from "next/link";
 
 export default function NotFound() {
-  const { lang } = useAuth() as any;
+  const { lang } = useAuth() as { lang?: Record<string, string> | null };
   const router = useRouter();
   const timerRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const timeouts = [
       setTimeout(() => {
-        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundtimer2;
+        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundtimer2 ?? null;
       }, 1000),
       setTimeout(() => {
-        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundtimer1;
+        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundtimer1 ?? null;
       }, 2000),
       setTimeout(() => {
-        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundredirecting;
+        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundredirecting ?? null;
       }, 3000),
       setTimeout(() => {
-        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfounderror;
+        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfounderror ?? null;
       }, 4500),
       setTimeout(() => {
-        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundwhy;
+        if (timerRef.current) timerRef.current.textContent = lang?.pagenotfoundwhy ?? null;
       }, 6500),
       setTimeout(() => {
         //router.push("/");

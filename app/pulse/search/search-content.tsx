@@ -87,7 +87,7 @@ export default function PulseSearchContent() {
   const [searchValue, setSearchValue] = useState(query);
   const [shareUrl, setShareUrl] = useState('');
   const [shareAttachment, setShareAttachment] = useState<{
-    widgets: any[];
+    widgets: Array<Record<string, unknown>>;
     preview: { authorName: string; authorImg: string; contentSnippet: string; firstImage?: string };
   } | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
@@ -102,6 +102,8 @@ export default function PulseSearchContent() {
   }, [showNote]);
 
   useEffect(() => {
+    // URL → стейт поисковой строки: источник правды здесь, альтернативы без каскада нет.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchValue(query);
   }, [query]);
 
@@ -211,8 +213,8 @@ export default function PulseSearchContent() {
       if (result === 'ADDED' || result === 'CREATED_ADDED') {
         updateFavoriteIds((ids) => {
           const next = [...ids];
-          if (finalId && !next.includes(finalId as any)) next.push(finalId as any);
-          if (rawSid && !next.includes(rawSid as any)) next.push(rawSid as any);
+          const addId = toNumber(finalId) || toNumber(rawSid);
+          if (addId && !next.includes(addId)) next.push(addId);
           return next;
         });
         setTracks((prev) => prev.map((t) => String(t.sid ?? '').trim() === rawSid ? { ...t, sid: finalId } : t));

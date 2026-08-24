@@ -28,7 +28,7 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
       try {
-        const parsed = cache.get<any[]>('notifications_cache', { category: 'notifications', subcategory: 'list' });
+        const parsed = cache.get<Notification[]>('notifications_cache', { category: 'notifications', subcategory: 'list' });
         if (parsed) {
           setNotifications(parsed);
           setIsLoading(false);
@@ -36,9 +36,9 @@ export default function NotificationsPage() {
           setIsLoading(true);
         }
 
-        const data = await AncialAPI.getNotifications<any>();
-        
-        if (data?.status === 'success' || data?.notifications || Array.isArray(data)) {
+        const data = await AncialAPI.getNotifications<Notification[] | { status?: string; notifications?: Notification[] }>();
+
+        if (Array.isArray(data) || data?.status === 'success' || data?.notifications) {
           const list = Array.isArray(data) ? data : (data.notifications || []);
           setNotifications(list);
           cache.set('notifications_cache', list, { category: 'notifications', subcategory: 'list' });
@@ -58,6 +58,8 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Легаси mount-загрузка уведомлений: сеттлеры после await внутри.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchNotifications();
     }
   }, [isAuthenticated]);

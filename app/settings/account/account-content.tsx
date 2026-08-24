@@ -26,6 +26,8 @@ export default function AccountSettingsPage() {
   // Инициализация при загрузке пользователя (избегаем ошибок undefined)
   useEffect(() => {
     if (user) {
+      // Десериализация пропа user в форму — синхронный сеттлер здесь источник правды, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         fname: user.fname || '',
         lname: user.lname || '',

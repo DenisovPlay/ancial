@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { useMentionNavigation } from '../hooks/use-mention-navigation';
+import { sanitizeUserHtml } from '../lib/sanitize-html';
+import { ensureCarouselScrollDelegation } from './carousel-delegation';
 
 import ImageViewerModal, { type ImageViewerSlide } from './image-viewer-modal';
 import { Dropdown, DropdownItem } from './navigation';
@@ -221,10 +223,16 @@ function ExpandablePostContent({
   }, [content, noCollapse]);
 
   useEffect(() => {
+    // Анимация включается только когда пост не свёрнут — сеттлер здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!noCollapse) setAnimate(true);
   }, [noCollapse]);
 
-  const parsedHtml = parsePostContentToHtml(content);
+  useEffect(() => {
+    ensureCarouselScrollDelegation();
+  }, []);
+
+  const parsedHtml = sanitizeUserHtml(parsePostContentToHtml(content));
 
   if (noCollapse) {
     return (

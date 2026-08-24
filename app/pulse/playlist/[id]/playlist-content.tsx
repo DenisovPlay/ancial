@@ -64,9 +64,9 @@ function getPlaylistCover(playlistId: string, playlist: PulsePlaylistMeta | null
   return getImageUrl(playlist?.img, fallbackCover);
 }
 
-function getPlaylistTitle(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[], lang: any) {
+function getPlaylistTitle(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[], lang?: Record<string, string> | null) {
   return decodeHtmlEntities(playlist?.name)
-    || getPulseBuiltinPlaylistTitle(playlistId, lang)
+    || getPulseBuiltinPlaylistTitle(playlistId, lang ?? undefined)
     || decodeHtmlEntities(tracks[0]?.album)
     || (lang?.unknown_playlist || FALLBACK_PLAYLIST_NAME);
 }
@@ -112,7 +112,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [isUploadTrackModalOpen, setIsUploadTrackModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [shareAttachment, setShareAttachment] = useState<{
-    widgets: any[];
+    widgets: Array<Record<string, unknown>>;
     preview: { authorName: string; authorImg: string; contentSnippet: string; firstImage?: string };
   } | null>(null);
   const [reportTrackTarget, setReportTrackTarget] = useState<PulseTrack | null>(null);

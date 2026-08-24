@@ -6,10 +6,10 @@ const project = new Project({
 
 const sourceFiles = project.getSourceFiles('app/**/*.tsx').concat(project.getSourceFiles('app/**/*.ts'));
 
-let modifications = 0;
+const modifications = 0;
 
 for (const sourceFile of sourceFiles) {
-  let changed = false;
+  const changed = false;
 
   // We are looking for calls to apiText, apiJson, authFetch, fetchPulseJson
   const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);

@@ -66,6 +66,8 @@ export default function ImageViewerModal({
 
   useEffect(() => {
     if (activeImageIndex !== null) {
+      // Проп активного индекса → внутренний стейт: источник правды здесь, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInternalIndex(activeImageIndex);
     }
   }, [activeImageIndex]);
@@ -141,6 +143,8 @@ export default function ImageViewerModal({
 
   useEffect(() => {
     if (!isOpen) {
+      // Сброс зума при закрытии — сеттлеры здесь источник правды, альтернативы без каскада нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       syncScale(MIN_IMAGE_SCALE);
       syncOffset({ x: 0, y: 0 });
       syncSwipeOffsetX(0);
@@ -161,6 +165,8 @@ export default function ImageViewerModal({
   useEffect(() => {
     if (images.length === 0 || activeImageIndex === null) return;
 
+    // Новая картинка — сброс зума к дефолту, сеттлеры здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     syncScale(MIN_IMAGE_SCALE);
     syncOffset({ x: 0, y: 0 });
     syncSwipeOffsetX(0);

@@ -69,6 +69,8 @@ export function DonateModal({
       setSuccessInfo(null);
 
       if (recipientUsername) {
+        // Открытие модалки: предзаполняем получателя из пропов — сеттлер здесь источник правды.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setRecipientUser({
           id: 0,
           username: recipientUsername,
@@ -97,10 +99,10 @@ export function DonateModal({
 
         if (recipientUsername) {
           try {
-            const profile = await AncialAPI.getProfile<any>(recipientUsername);
+            const profile = await AncialAPI.getProfile<{ id?: number | string; username?: string; img?: string; name?: string }>(recipientUsername);
             if (profile && profile.id) {
               setRecipientUser({
-                id: profile.id,
+                id: Number(profile.id),
                 username: profile.username || recipientUsername,
                 img: profile.img || recipientImg || '/img/placeholders/user.png',
                 name: profile.name || recipientName,
@@ -167,8 +169,8 @@ export function DonateModal({
         setSubmitError(lang?.donation_failed || 'Не удалось выполнить пожертвование');
         setStep('failed');
       }
-    } catch (err: any) {
-      setSubmitError(err.message || (lang?.donation_error || 'Ошибка выполнения пожертвования'));
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : (lang?.donation_error || 'Ошибка выполнения пожертвования'));
       setStep('failed');
     } finally {
       setSubmitLoading(false);

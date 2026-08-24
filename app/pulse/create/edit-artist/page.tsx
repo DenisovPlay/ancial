@@ -39,11 +39,20 @@ function EditArtistContent() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      /** Артист из pulseManagement('artist', 'list'). */
+      interface PulseArtistRow {
+        id?: number | string;
+        name?: string;
+        img?: string;
+        desk?: string;
+        soc_links?: string;
+      }
+
       if (id > 0) {
-        AncialAPI.pulseManagement<any[]>('artist', 'list', {})
+        AncialAPI.pulseManagement<PulseArtistRow[]>('artist', 'list', {})
           .then((res) => {
             if (Array.isArray(res)) {
-              const artist = res.find((a: any) => parseInt(a.id, 10) === id);
+              const artist = res.find((a) => parseInt(String(a.id), 10) === id);
               if (artist) {
                 setName(artist.name || '');
                 setSocLinks(artist.soc_links || '');
@@ -54,6 +63,8 @@ function EditArtistContent() {
           })
           .finally(() => setLoading(false));
       } else {
+        // Нет id — снимаем лоадер сразу, начальное useState(true) эквивалентно.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoading(false);
       }
     }
@@ -95,8 +106,8 @@ function EditArtistContent() {
       .then(() => {
         router.push('/pulse/create/artists');
       })
-      .catch((err: any) => {
-        showNote({ content: err.error || lang?.errorhappend || 'Произошла ошибка', type: 'error', time: 5 });
+      .catch(() => {
+        showNote({ content: lang?.errorhappend || 'Произошла ошибка', type: 'error', time: 5 });
         setSaving(false);
       });
   };

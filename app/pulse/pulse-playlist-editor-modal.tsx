@@ -46,6 +46,8 @@ export default function PulsePlaylistEditorModal({
   useEffect(() => {
     if (!isOpen) return;
 
+    // Открытие модалки: инициализация из пропов — сеттлер здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCoverUrl(normalizeText(playlist?.img));
     setIsCoverUploading(false);
     setIsSaving(false);

@@ -28,14 +28,17 @@ export default function TrackPreview({ trackId, onLoadSuccess, className }: Trac
     const cached = cache.get<PulseTrack>(`preview_track_${trackId}`, { category: 'chats', subcategory: 'previews' });
     if (cached) {
       if (isMounted) {
+        // Гидратация превью из кэша — сеттлер здесь источник правды.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTrack(cached);
         setLoading(false);
         onLoadSuccess?.();
       }
     }
 
-    AncialAPI.getTrack<{ track?: PulseTrack }>(trackId)
-      .then((res: any) => {
+    /** Ответ GetTrack.php: поля id/name/img — сырой вариант полей sid/title/artwork. */
+    AncialAPI.getTrack<{ track?: PulseTrack & { id?: number | string; name?: string; img?: string } }>(trackId)
+      .then((res) => {
         if (isMounted) {
           const trackData = res?.track;
           if (trackData && (trackData.sid || trackData.id)) {

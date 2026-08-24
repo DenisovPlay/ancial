@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore }
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { AncialAPI } from '../../lib/api-v2';
+import { type DialogMeta, type DialogUser } from '../../messages/lib/messages-shared';
 import Modal from '../../components/modal';
 import { Dropdown, DropdownItem } from '../../components/navigation';
 import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../../lib/android-glass';
@@ -13,6 +14,46 @@ interface CameraDevice {
   deviceId: string;
   label: string;
 }
+
+/** Обёртка ответа V2 API: { data: ... } или плоский объект. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- оставлен как документация формата ответа
+interface ApiEnvelope<T> {
+  data?: T | null;
+  [key: string]: unknown;
+}
+
+/** Диалог для звонка (getDialogByHash → dialog) + поля прямого диалога. */
+type CallDialogInfo = DialogMeta & {
+  creator_id?: number | string | null;
+  recipient_id?: number | string | null;
+};
+
+/** Собеседник в звонке (getDialogByHash → foreignUser). */
+type CallForeignUser = DialogUser;
+
+/** Ответ getDialogByHash. */
+interface CallDialogResponse {
+  dialog?: CallDialogInfo | null;
+  foreignUser?: CallForeignUser | null;
+  currentUserId?: number | string | null;
+}
+
+/** Ответ GetTurnConfig.php. */
+interface TurnConfigResponse {
+  data?: { iceServers?: RTCIceServer[] } | null;
+}
+
+/** Полезная нагрузка WebRTC-сигналинга поверх WS (call:signal). */
+type CallSignal = {
+  kind?: 'offer' | 'answer' | 'candidate' | 'ice' | 'media' | string;
+  sdp?: string;
+  candidate?: RTCIceCandidateInit;
+  call_id?: string | number;
+  mic_enabled?: boolean;
+  cam_enabled?: boolean;
+  screen_enabled?: boolean;
+  [key: string]: unknown;
+};
 
 function CallControlButton({
   onClick,
@@ -165,8 +206,8 @@ export default function CallClient() {
   const hash = params?.hash || '';
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
 
-  const [dialogInfo, setDialogInfo] = useState<any>(null);
-  const [foreignUser, setForeignUser] = useState<any>(null);
+  const [dialogInfo, setDialogInfo] = useState<CallDialogInfo | null>(null);
+  const [foreignUser, setForeignUser] = useState<CallForeignUser | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   const [callStatus, setCallStatus] = useState(lang?.connecting || 'Подключение...');
@@ -212,7 +253,7 @@ export default function CallClient() {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
-  const callIdRef = useRef('');
+  const callIdRef = useRef<string | number>('');
   const isPoliteRef = useRef(false);
   const cUserIdRef = useRef(0);
   const fUserIdRef = useRef(0);
@@ -228,25 +269,9 @@ export default function CallClient() {
   useEffect(() => { camEnabledRef.current = camEnabled; }, [camEnabled]);
   useEffect(() => { isScreenSharingRef.current = isScreenSharing; }, [isScreenSharing]);
 
-  // Initial load
-  useEffect(() => {
-    if (!callIdRef.current) {
-      callIdRef.current = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    }
-
-    if (!authLoading && !isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    if (isAuthenticated) {
-      loadDialog();
-    }
-  }, [authLoading, isAuthenticated, hash]);
-
   const loadDialog = async () => {
     try {
-      const resp: any = await AncialAPI.getDialogByHash(hash);
+      const resp = await AncialAPI.getDialogByHash<CallDialogResponse>(hash);
       if (!resp?.dialog || !resp?.foreignUser) {
         setErrorMsg('Dialog not found');
         return;
@@ -254,12 +279,12 @@ export default function CallClient() {
 
       const dialog = resp.dialog;
       const fUser = resp.foreignUser;
-      const cUserId = parseInt(user?.id || resp.currentUserId) || 0;
-      let fUserId = parseInt(fUser.id) || 0;
+      const cUserId = parseInt(String(user?.id || resp.currentUserId || '')) || 0;
+      let fUserId = parseInt(String(fUser.id ?? '')) || 0;
 
       if (!fUserId && dialog) {
-        const creatorId = parseInt(dialog.creator_id) || 0;
-        const recipientId = parseInt(dialog.recipient_id) || 0;
+        const creatorId = parseInt(String(dialog.creator_id ?? '')) || 0;
+        const recipientId = parseInt(String(dialog.recipient_id ?? '')) || 0;
         if (cUserId === creatorId) fUserId = recipientId;
         else if (cUserId === recipientId) fUserId = creatorId;
       }
@@ -276,6 +301,25 @@ export default function CallClient() {
       setErrorMsg('Error loading dialog');
     }
   };
+
+  // Initial load
+  useEffect(() => {
+    if (!callIdRef.current) {
+      callIdRef.current = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    }
+
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (isAuthenticated) {
+      // Легаси mount-загрузка диалога: все setState внутри async loadDialog
+      // выполняются после await, синхронного каскадного рендера нет.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadDialog();
+    }
+  }, [authLoading, isAuthenticated, hash]);
 
   const initCall = async () => {
     setPermissionsModal(false);
@@ -297,7 +341,7 @@ export default function CallClient() {
         }
       }
 
-      const turnResp: any = await AncialAPI.getTurnConfig();
+      const turnResp = await AncialAPI.getTurnConfig<TurnConfigResponse>();
       const iceServers = turnResp?.data?.iceServers || [];
 
       setupWebRTC(iceServers, stream);
@@ -308,7 +352,7 @@ export default function CallClient() {
     }
   };
 
-  const setupWebRTC = (iceServers: any[], localStream: MediaStream) => {
+  const setupWebRTC = (iceServers: RTCIceServer[], localStream: MediaStream) => {
     const pc = new RTCPeerConnection({ iceServers });
     pcRef.current = pc;
 
@@ -355,8 +399,8 @@ export default function CallClient() {
   };
 
   const isSubscribedRef = useRef(false);
-  const outgoingSignalQueueRef = useRef<any[]>([]);
-  const dialogInfoRef = useRef<any>(null);
+  const outgoingSignalQueueRef = useRef<CallSignal[]>([]);
+  const dialogInfoRef = useRef<CallDialogInfo | null>(null);
 
   useEffect(() => {
     dialogInfoRef.current = dialogInfo;
@@ -365,7 +409,9 @@ export default function CallClient() {
   const setupGlobalWS = () => {
     if (!window.GlobalWS) return;
 
-    window.GlobalWS.subscribeDialog(dialogInfoRef.current?.id ?? dialogInfo?.id);
+    const subDialogId = dialogInfoRef.current?.id ?? dialogInfo?.id;
+    if (subDialogId == null) return;
+    window.GlobalWS.subscribeDialog(subDialogId);
 
     if (window.GlobalWS.isReady()) {
       setCallStatus(lang?.waiting_for_answer || 'Ожидание ответа...');
@@ -382,12 +428,13 @@ export default function CallClient() {
       queue.forEach(data => sendWsSignal(data, true));
     });
 
-    window.GlobalWS.addDialogListener('call:signal', async (msg: any) => {
-      handleWsSignal(msg.data || msg);
+    window.GlobalWS.addDialogListener('call:signal', async (payload: unknown) => {
+      const msg = payload as { data?: CallSignal } | CallSignal;
+      handleWsSignal(('data' in msg && msg.data ? msg.data : msg) as CallSignal);
     });
   };
 
-  const sendWsSignal = (data: any, force = false) => {
+  const sendWsSignal = (data: CallSignal, force = false) => {
     if (!isSubscribedRef.current && !force) {
       outgoingSignalQueueRef.current.push(data);
       return;
@@ -404,14 +451,14 @@ export default function CallClient() {
 
   const signalQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const handleWsSignal = (msg: any) => {
+  const handleWsSignal = (msg: CallSignal) => {
     signalQueueRef.current = signalQueueRef.current.then(async () => {
       const pc = pcRef.current;
       if (!pc) return;
 
       let isPolite = isPoliteRef.current;
       if (cUserIdRef.current > 0 && cUserIdRef.current === fUserIdRef.current) {
-        isPolite = callIdRef.current < msg.call_id;
+        isPolite = msg.call_id !== undefined && String(callIdRef.current) < String(msg.call_id);
       }
 
       try {
@@ -628,7 +675,7 @@ export default function CallClient() {
       }, { once: true });
     } catch (e) {
       // Пользователь отменил выбор — не показываем ошибку
-      if ((e as any)?.name !== 'NotAllowedError') {
+      if ((e as DOMException)?.name !== 'NotAllowedError') {
         console.error('getDisplayMedia failed', e);
       }
     }
@@ -703,7 +750,7 @@ export default function CallClient() {
       if (pcRef.current) {
         pcRef.current.close();
       }
-      if (window.GlobalWS && dialogInfo) {
+      if (window.GlobalWS && dialogInfo && dialogInfo.id != null) {
         window.GlobalWS.unsubscribeDialog(dialogInfo.id);
       }
     };

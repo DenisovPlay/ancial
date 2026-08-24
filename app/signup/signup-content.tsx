@@ -24,6 +24,8 @@ export default function SignupContent() {
   const { checkAuth, isAuthenticated, lang } = useAuth();
 
   useEffect(() => {
+    // hostname доступен только на клиенте — сеттлер здесь источник правды (SSR не знает хост).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHostname(window.location.host);
     if (isAuthenticated) {
       router.push('/');

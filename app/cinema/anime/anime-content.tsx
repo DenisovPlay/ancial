@@ -31,6 +31,8 @@ export default function AnimeContent() {
 
   useEffect(() => {
     let isMounted = true;
+    // Смена жанра сбрасывает пагинацию — сеттлер здесь источник правды.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1);
 
     const cachedAnime = getCinemaCache<Movie[]>('catalog_anime', selectedGenre);

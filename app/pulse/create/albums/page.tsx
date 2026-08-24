@@ -12,14 +12,24 @@ export default function PulseCreateAlbumsPage() {
   const { lang, isAuthenticated } = useAuth();
   const { showNote } = useNotification();
   const router = useRouter();
-  const [albums, setAlbums] = useState<any[]>([]);
+  /** Альбом из pulseManagement('album', 'list'). */
+  interface PulseAlbumRow {
+    id: number | string;
+    name?: string;
+    img?: string;
+    desk?: string;
+    likes?: number | string;
+    songs?: string;
+  }
+
+  const [albums, setAlbums] = useState<PulseAlbumRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [albumToDelete, setAlbumToDelete] = useState<number | null>(null);
 
   const fetchAlbums = () => {
     setLoading(true);
-    AncialAPI.pulseManagement<any[]>('album', 'list', {})
+    AncialAPI.pulseManagement<PulseAlbumRow[]>('album', 'list', {})
       .then((res) => {
         if (Array.isArray(res)) setAlbums(res);
       })
@@ -28,6 +38,8 @@ export default function PulseCreateAlbumsPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Легаси mount-загрузка альбомов: сеттлеры внутри fetchAlbums после await.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchAlbums();
     }
   }, [isAuthenticated]);
@@ -36,7 +48,7 @@ export default function PulseCreateAlbumsPage() {
     if (albumToDelete !== null) {
       AncialAPI.pulseManagement('album', 'delete', { id: albumToDelete })
         .then(() => fetchAlbums())
-        .catch((err: any) => showNote({ content: err?.error || 'Ошибка удаления', type: 'error', time: 5 }))
+        .catch((err) => showNote({ content: err instanceof Error ? err.message : 'Ошибка удаления', type: 'error', time: 5 }))
         .finally(() => {
           setDeleteModalOpen(false);
           setAlbumToDelete(null);
@@ -44,13 +56,13 @@ export default function PulseCreateAlbumsPage() {
     }
   };
 
-  const handleDelete = (e: React.MouseEvent, id: number) => {
+  const handleDelete = (e: React.MouseEvent, id: number | string) => {
     e.stopPropagation();
-    setAlbumToDelete(id);
+    setAlbumToDelete(typeof id === 'number' ? id : Number.parseInt(String(id), 10));
     setDeleteModalOpen(true);
   };
 
-  const getSongsCount = (songsStr: string) => {
+  const getSongsCount = (songsStr?: string) => {
     if (!songsStr) return 0;
     return songsStr.split('|').filter(Boolean).length;
   };
@@ -85,7 +97,7 @@ export default function PulseCreateAlbumsPage() {
                 <span className="text-sm text-zinc-400 leading-tight truncate">{album.desk}</span>
                 <div className="flex gap-3 mt-1 text-xs text-zinc-500">
                   <span>Треков: {getSongsCount(album.songs)}</span>
-                  <span>Лайков: {album.likes ? parseInt(album.likes, 10) : 0}</span>
+                  <span>Лайков: {album.likes ? parseInt(String(album.likes), 10) : 0}</span>
                 </div>
               </div>
               <div className="flex gap-1 shrink-0">

@@ -66,7 +66,7 @@ export default function PulseSearchTracksContent() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [shareAttachment, setShareAttachment] = useState<{
-    widgets: any[];
+    widgets: Array<Record<string, unknown>>;
     preview: { authorName: string; authorImg: string; contentSnippet: string; firstImage?: string };
   } | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
@@ -88,6 +88,8 @@ export default function PulseSearchTracksContent() {
     const cached = readPulseJsonCache<PulseTracksSearchResponse>(cacheKey);
 
     if (cached && Array.isArray(cached.tracks)) {
+      // SWR: гидратация из кэша до ответа API — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTracks(cached.tracks);
       setLoading(false);
     } else {
@@ -163,8 +165,8 @@ export default function PulseSearchTracksContent() {
         if (result === 'ADDED' || result === 'CREATED_ADDED') {
           updateFavoriteIds((ids) => {
             const next = [...ids];
-            if (finalId && !next.includes(finalId as any)) next.push(finalId as any);
-            if (rawSid && !next.includes(rawSid as any)) next.push(rawSid as any);
+            const addId = toNumber(finalId) || toNumber(rawSid);
+            if (addId && !next.includes(addId)) next.push(addId);
             return next;
           });
           setTracks((prev) => prev.map((t) => String(t.sid ?? '').trim() === rawSid ? { ...t, sid: finalId } : t));

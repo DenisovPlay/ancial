@@ -7,7 +7,12 @@ import Link from 'next/link';
 
 export default function ContactsPage() {
     const router = useRouter();
-    const { user, isAuthenticated, lang, updateLang } = useAuth() as any;
+    const { user, isAuthenticated, lang, updateLang } = useAuth() as {
+        user?: unknown;
+        isAuthenticated?: boolean;
+        lang?: Record<string, string> | null;
+        updateLang?: (lang: string) => void;
+    };
 
     return (
         <div className="flex flex-col jusitify-center items-center gap-3 py-3">

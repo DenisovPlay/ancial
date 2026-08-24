@@ -100,6 +100,8 @@ export default function AccountContent({ accountId }: AccountContentProps) {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
+      // Неавторизован — терминальное состояние, снимаем лоадер сразу.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       setError('Auth required');
       return;
@@ -140,6 +142,8 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       };
       loadQR();
     } else {
+      // Модалка закрыта — терминальный сброс QR.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReceiveQrUrl(null);
     }
   }, [isReceiveModalOpen, accountId]);

@@ -1,0 +1,47 @@
+# CI: типы, линт-рейчёт, тесты и сборка на каждый PR и push в main.
+#
+# Линт идёт через ratchet (scripts/lint-ratchet.mjs): существующий legacy-долг
+# зафиксирован в lint-ratchet.json — падаем только на НОВЫХ ошибках.
+# Полностью зачистить ошибки можно позже, переведя шаг на `npx eslint`.
+
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint (ratchet)
+        run: npm run lint:ratchet
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

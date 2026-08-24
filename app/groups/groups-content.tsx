@@ -44,7 +44,7 @@ function GroupsContent() {
   const loadGroups = async (searchQuery: string) => {
     try {
       if (!searchQuery) {
-        const parsed = cache.get<any[]>('groups_cache', { category: 'groups', subcategory: 'list' });
+        const parsed = cache.get<Group[]>('groups_cache', { category: 'groups', subcategory: 'list' });
         if (parsed) {
           setGroups(parsed);
           setIsSearch(false);
@@ -58,11 +58,11 @@ function GroupsContent() {
 
       setErrorMsg('');
 
-      const response = await AncialAPI.socialAction<any>('groups', searchQuery);
+      const response = await AncialAPI.socialAction<Group[] | { groups?: Group[]; isSearch?: boolean }>('groups', searchQuery);
       const fetchedGroups = Array.isArray(response) ? response : (response?.groups || []);
 
       setGroups(fetchedGroups);
-      setIsSearch(response?.isSearch ?? !!searchQuery);
+      setIsSearch(Array.isArray(response) ? !!searchQuery : (response?.isSearch ?? !!searchQuery));
 
       if (!searchQuery && fetchedGroups.length > 0) {
         cache.set('groups_cache', fetchedGroups, { category: 'groups', subcategory: 'list' });
@@ -77,6 +77,8 @@ function GroupsContent() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // URL → стейт + легаси mount-загрузка: сеттлеры внутри loadGroups после await.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery(qQuery);
       loadGroups(qQuery);
     }
