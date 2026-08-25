@@ -57,40 +57,17 @@ import {
 
 type LangMap = Record<string, string> | null;
 
-type PulseArtwork = {
-  sizes?: string | null;
-  src?: string | null;
-  type?: string | null;
-};
-
-export type PulseTrack = {
-  album?: string | null;
-  albumid?: number | string | null;
-  artist?: string | null;
-  artwork?: PulseArtwork[] | null;
-  blockedin?: string[] | string | null;
-  explicit?: boolean | number | string | null;
-  sid?: number | string | null;
-  src?: string | null;
-  status?: number | string | null;
-  title?: string | null;
-  mood?: string | null;
-};
-
-type PulseCollectionKind = 'artist' | 'downloads' | 'genlist' | 'playlist' | 'track';
-
-/** Идентификатор виртуальной коллекции «Сохранённые» (треки из IndexedDB) */
-export const DOWNLOADS_COLLECTION_ID = 'downloads';
-
-export type PulsePlayerMode = 'full' | 'mini';
-
-type PulsePlayerState = {
-  currentSongId: number;
-  isPlaylist: boolean;
-  listenCounted: boolean;
-  listenedCounted: boolean;
-  playlistId: string;
-};
+// Типы и константы плеера вынесены в pulse-player-types.ts (реэкспорт сохраняет публичный API).
+import type {
+  PulseArtwork,
+  PulseCollectionKind,
+  PulsePlayerMode,
+  PulsePlayerState,
+  PulseTrack,
+} from '../pulse/player/pulse-player-types';
+import { DOWNLOADS_COLLECTION_ID } from '../pulse/player/pulse-player-types';
+export type { PulseTrack, PulsePlayerMode };
+export { DOWNLOADS_COLLECTION_ID };
 
 type PulsePlayerContextValue = {
   closePlayer: () => void;
