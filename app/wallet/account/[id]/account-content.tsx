@@ -10,6 +10,12 @@ import { cache } from '../../../lib/cache.ts';
 import Modal from '../../../components/modal';
 import { TransactionItem, TransactionDetailsModal } from '../../components/transaction-item';
 
+/** Плоское сравнение WalletAccount по полям: cache.get()/API отдают новый объект каждый раз. */
+function isSameAccount(a: WalletAccount | null, b: WalletAccount): boolean {
+  if (!a) return false;
+  return a.id === b.id && a.name === b.name && a.balance === b.balance && a.status === b.status;
+}
+
 interface AccountContentProps {
   accountId: number;
 }
@@ -63,25 +69,30 @@ export default function AccountContent({ accountId }: AccountContentProps) {
   }, [lang]);
 
   const loadData = useCallback(async (showLoading = false) => {
-    if (showLoading && !currentAccount) setLoading(true);
+    // currentAccount сознательно не читается здесь и не сидит в deps:
+    // новый объект счёта пересоздавал loadData и перезапускал эффект загрузки
+    // (цикл «Maximum update depth exceeded»). Наличие данных проверяется через
+    // bail-out в setCurrentAccount ниже.
+    if (showLoading) setLoading(true);
     try {
       const overview = await AncialAPI.getWalletOverview();
       const loadedAccounts = overview.accounts || [];
 
       const found = loadedAccounts.find(a => a.id === accountId);
       if (found) {
-        setCurrentAccount(found);
+        // Функциональный апдейт: React bail-out'ит рендер, если вернули тот же стейт.
+        setCurrentAccount((prev) => (isSameAccount(prev, found) ? prev : found));
         setError(null);
         cache.set(`wallet_account_cache_${accountId}`, found, { category: 'wallet', subcategory: 'accounts' });
       } else {
-        if (!currentAccount) setError(lang?.account_not_found_or_restricted || 'Счёт не найден или доступ ограничен');
+        setError((prevError) => prevError ?? (lang?.account_not_found_or_restricted || 'Счёт не найден или доступ ограничен'));
       }
     } catch (err: unknown) {
-      if (!currentAccount) setError(err instanceof Error ? err.message : (lang?.error_loading_account || 'Ошибка загрузки счёта'));
+      setError((prevError) => prevError ?? (err instanceof Error ? err.message : (lang?.error_loading_account || 'Ошибка загрузки счёта')));
     } finally {
       setLoading(false);
     }
-  }, [accountId, currentAccount, lang]);
+  }, [accountId, lang]);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -111,8 +122,13 @@ export default function AccountContent({ accountId }: AccountContentProps) {
     const parsedTrans = cache.get<WalletTransaction[]>(`wallet_account_trans_cache_${accountId}`, { category: 'wallet', subcategory: 'transactions' });
     let hasCache = false;
 
+    // Guard от цикла: cache.get() парсит JSON и возвращает НОВЫЙ объект на каждый вызов.
+    // Безусловный setCurrentAccount здесь давал новую ссылку → рендер → новый loadData
+    // (deps [.., currentAccount, ..]) → повторный эффект → «Maximum update depth exceeded».
     if (parsedAccount && parsedAccount.id) {
-      setCurrentAccount(parsedAccount);
+      if (!isSameAccount(currentAccount, parsedAccount)) {
+        setCurrentAccount(parsedAccount);
+      }
       hasCache = true;
       setLoading(false);
     }
