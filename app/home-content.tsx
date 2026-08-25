@@ -13,6 +13,12 @@ import { createGoogleCseSearchController, type GoogleCseElement } from './lib/go
 import {
   readCachedCurrency,
   readCachedWeather,
+  readLastCity,
+  writeLastCity,
+  readWeatherBackup,
+  writeWeatherBackup,
+  readCurrencyBackup,
+  writeCurrencyBackup,
   type HomeCurrencyCacheData,
   type HomeWeatherCacheData,
   writeCachedCurrency,
@@ -186,7 +192,7 @@ export default function HomeContent() {
     // 1. Мгновенно показываем закэшированное
     let cachedCurrency = readCachedCurrency();
     if (!cachedCurrency) {
-      try { cachedCurrency = cache.get<HomeCurrencyCacheData>('rates_backup'); } catch { }
+      try { cachedCurrency = readCurrencyBackup(); } catch { }
     }
     // SWR: мгновенный показ кэша до фоновой перезаливки — сеттлер здесь источник правды.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -200,14 +206,14 @@ export default function HomeContent() {
           const ratesData = { usd: res.data.usd, eur: res.data.eur };
           setCurrencies(ratesData);
           writeCachedCurrency(ratesData);
-          try { cache.set('rates_backup', ratesData, { category: 'home' }); } catch { }
+          try { writeCurrencyBackup(ratesData); } catch { }
         }
       } catch (err) {
         console.error('[Currency] Fetch failed', err);
         // Если вообще ничего нет — попробуем бэкап ещё раз
         if (!cachedCurrency) {
           try {
-            const backup = cache.get<HomeCurrencyCacheData>('rates_backup');
+            const backup = readCurrencyBackup();
             if (backup) setCurrencies(backup);
           } catch { }
         }
@@ -220,11 +226,11 @@ export default function HomeContent() {
     // 1. Мгновенно показываем из кэша, если есть
     let hadCache = false;
     try {
-      const lastCity = cache.get<string>('last_city');
+      const lastCity = readLastCity();
       let cachedWeather: HomeWeatherCacheData | null = null;
       if (lastCity) cachedWeather = readCachedWeather(lastCity);
       if (!cachedWeather) {
-        try { cachedWeather = cache.get<HomeWeatherCacheData>('weather_backup'); } catch { }
+        try { cachedWeather = readWeatherBackup(); } catch { }
       }
       if (cachedWeather) {
         // SWR: мгновенный показ кэша до фоновой перезаливки — сеттлер здесь источник правды.
@@ -243,7 +249,7 @@ export default function HomeContent() {
         if (typeof navigator !== 'undefined' && !navigator.onLine) {
           if (!hadCache) {
             try {
-              const backup = cache.get<HomeWeatherCacheData>('weather_backup');
+              const backup = readWeatherBackup();
               if (backup) setWeather(backup);
             } catch { }
           }
@@ -256,7 +262,7 @@ export default function HomeContent() {
           const locationRes = await safeFetchJson<HomeApiResponse<LocationData>>('/api/V2/info/GetLocation.php');
           if (locationRes?.success && locationRes.data?.city) {
             city = locationRes.data.city;
-            try { cache.set('last_city', city, { category: 'home' }); } catch { }
+            try { writeLastCity(city); } catch { }
           }
         } catch (locationErr) {
           console.error('[Location] Fetch failed', locationErr);
@@ -264,13 +270,13 @@ export default function HomeContent() {
 
         // Фоллбэк: последний известный город
         if (!city) {
-          try { city = cache.get<string>('last_city') ?? ''; } catch { }
+          try { city = readLastCity() ?? ''; } catch { }
         }
 
         if (!city) {
           // Совсем ничего нет — показываем бэкап
           try {
-            const backup = cache.get<HomeWeatherCacheData>('weather_backup');
+            const backup = readWeatherBackup();
             if (backup) setWeather(backup);
           } catch { }
           return;
@@ -284,10 +290,10 @@ export default function HomeContent() {
           const wd = { temp: weatherRes.data.temp, wfont: weatherRes.data.wfont };
           setWeather(wd);
           writeCachedWeather(city, weatherRes.data);
-          try { cache.set('weather_backup', weatherRes.data, { category: 'home' }); } catch { }
+          try { writeWeatherBackup(weatherRes.data); } catch { }
         } else if (!hadCache) {
           try {
-            const backup = cache.get<HomeWeatherCacheData>('weather_backup');
+            const backup = readWeatherBackup();
             if (backup) setWeather(backup);
           } catch { }
         }
@@ -295,7 +301,7 @@ export default function HomeContent() {
         console.error('[Weather/Location] Process failed', err);
         if (!hadCache) {
           try {
-            const backup = cache.get<HomeWeatherCacheData>('weather_backup');
+            const backup = readWeatherBackup();
             if (backup) setWeather(backup);
           } catch { }
         }

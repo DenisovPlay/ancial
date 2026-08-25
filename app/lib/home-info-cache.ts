@@ -51,3 +51,35 @@ export function writeCachedWeather(city: string, value: HomeWeatherCacheData) {
     ttl: getMsUntilMidnight(),
   });
 }
+
+// ─── Вспомогательные ключи. ВАЖНО: чтение и запись обязаны использовать одинаковые
+// options, иначе resolveKeyInfo даёт разные storageKey и кэш «не находится».
+
+const LAST_CITY_KEY = 'last_city';
+const WEATHER_BACKUP_KEY = 'weather_backup';
+const CURRENCY_BACKUP_KEY = 'rates_backup';
+
+export function readLastCity(): string | null {
+  return cache.get<string>(LAST_CITY_KEY, { category: 'home' });
+}
+
+export function writeLastCity(city: string): void {
+  cache.set(LAST_CITY_KEY, city, { category: 'home' });
+}
+
+export function readWeatherBackup(): HomeWeatherCacheData | null {
+  return cache.get<HomeWeatherCacheData>(WEATHER_BACKUP_KEY, { category: 'home' });
+}
+
+export function writeWeatherBackup(value: HomeWeatherCacheData): void {
+  // Без TTL: это «последняя известная погода» для офлайна/холодного старта.
+  cache.set(WEATHER_BACKUP_KEY, value, { category: 'home' });
+}
+
+export function readCurrencyBackup(): HomeCurrencyCacheData | null {
+  return cache.get<HomeCurrencyCacheData>(CURRENCY_BACKUP_KEY, { category: 'home' });
+}
+
+export function writeCurrencyBackup(value: HomeCurrencyCacheData): void {
+  cache.set(CURRENCY_BACKUP_KEY, value, { category: 'home' });
+}
