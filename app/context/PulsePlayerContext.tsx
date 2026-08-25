@@ -208,6 +208,9 @@ export function PulsePlayerProvider({
   const lastMediaPositionUpdateRef = useRef(0);
   const collectionRequestIdRef = useRef(0);
   const preloadStartedRef = useRef(false);
+  // Предрезолвленный источник следующего трека (blob:/http) — готовится заранее,
+  // пока играет текущий, чтобы переход по ended на iOS был полностью синхронным.
+  const preloadedNextRef = useRef<{ trackId: number; src: string; isBlobUrl: boolean } | null>(null);
   const playbackSessionRef = useRef(0);
   const listenReportedSessionRef = useRef<number | null>(null);
   const currentSongIdRef = useRef(0);
@@ -578,8 +581,35 @@ export function PulsePlayerProvider({
     ) {
       const nextTrack = playlistRef.current[indexRef.current + 1];
       if (preloadAudioRef.current && nextTrack && isTrackPlayable(nextTrack, userCountry)) {
-        preloadAudioRef.current.src = normalizeTrackSource(nextTrack.src);
         preloadStartedRef.current = true;
+
+        // Резолвим источник следующего трека заранее: IndexedDB → blob:, иначе сеть.
+        // Пока текущий трек играет, JS жив — все await безопасны. К моменту ended
+        // источник уже готов, и переключение происходит синхронно (важно для iOS PWA:
+        // после ended WebKit замораживает страницу, async-переход обрывается).
+        const nextTrackId = toNumber(nextTrack.sid);
+        const nextSource = normalizeTrackSource(nextTrack.src);
+        void (async () => {
+          try {
+            let resolved = nextSource;
+            let isBlobUrl = false;
+            if (nextTrackId > 0) {
+              const localBlobUrl = await getCachedAudioObjectUrl(nextTrackId);
+              if (localBlobUrl) {
+                resolved = localBlobUrl;
+                isBlobUrl = true;
+              }
+            }
+            preloadedNextRef.current = { trackId: nextTrackId, src: resolved, isBlobUrl };
+            // Прогреваем сетевой источник в отдельном аудио-элементе,
+            // чтобы при переходе данные уже были в HTTP-кэше WebKit.
+            if (!isBlobUrl && preloadAudioRef.current) {
+              preloadAudioRef.current.src = resolved;
+            }
+          } catch (e) {
+            console.error('Failed to preload next track source', e);
+          }
+        })();
       }
     }
 
@@ -671,6 +701,11 @@ export function PulsePlayerProvider({
       playerCloseTimerRef.current = null;
       setStatusAudio('');
       preloadStartedRef.current = false;
+      // Сбрасывая предрезолв, освобождаем и его blob (если был из IndexedDB)
+      if (preloadedNextRef.current?.isBlobUrl) {
+        releaseObjectUrl(preloadedNextRef.current.src);
+      }
+      preloadedNextRef.current = null;
       lastMediaPositionUpdateRef.current = 0;
       currentSongIdRef.current = 0;
       setPlaylistState([]);
@@ -759,6 +794,25 @@ export function PulsePlayerProvider({
     let finalSource = trackSource;
     let isFromCache = false;
 
+    // iOS PWA fast-path: если источник этого трека был предрезолвлен заранее
+    // (пока играл предыдущий), переключаемся синхронно — без await к IndexedDB.
+    // После ended аудио-сессия WebKit гаснет и замораживает JS: любой await здесь
+    // может не возобновиться, и трек «не прогружается», пока не откроешь PWA.
+    const preloadedNext = preloadedNextRef.current;
+    if (preloadedNext && preloadedNext.trackId === trackId && trackId > 0) {
+      preloadedNextRef.current = null;
+      activeBlobUrlRef.current = releaseObjectUrl(activeBlobUrlRef.current);
+      if (preloadedNext.isBlobUrl) {
+        activeBlobUrlRef.current = preloadedNext.src;
+        finalSource = preloadedNext.src;
+        isFromCache = true;
+      } else {
+        finalSource = preloadedNext.src;
+      }
+      void applyResolvedSource(track, finalSource, isFromCache, trackSource);
+      return;
+    }
+
     // Освобождаем память от старого Blob URL перед загрузкой нового трека
     activeBlobUrlRef.current = releaseObjectUrl(activeBlobUrlRef.current);
 
@@ -784,6 +838,26 @@ export function PulsePlayerProvider({
       return;
     }
 
+    // Источник известен — применяем его синхронно (общий путь для обычной загрузки
+    // и iOS fast-path с предрезолвом).
+    void applyResolvedSource(track, finalSource, isFromCache, trackSource);
+  };
+
+  /**
+   * Синхронная часть запуска трека: источник уже резолвлен.
+   * Никаких await до audio.play() — критично для перехода по ended на iOS PWA.
+   */
+  const applyResolvedSource = (
+    track: PulseTrack,
+    resolvedSource: string,
+    resolvedFromCache: boolean,
+    trackSource: string,
+    retryCount = 0,
+  ): void => {
+    const audio = audioRef.current;
+    if (!audio || !track) return;
+
+    const trackId = toNumber(track.sid);
     const isNewTrack = currentSongIdRef.current !== trackId;
     currentSongIdRef.current = trackId;
     if (retryCount === 0) {
@@ -791,6 +865,15 @@ export function PulsePlayerProvider({
       listenReportedSessionRef.current = null;
       setListenCounted(false);
       preloadStartedRef.current = false;
+      // Предрезолв остаётся валидным только если он для этого же трека
+      // (быстрый переход вперёд-назад), иначе сбрасываем с освобождением blob.
+      const pendingPreload = preloadedNextRef.current;
+      if (pendingPreload && pendingPreload.trackId !== trackId) {
+        if (pendingPreload.isBlobUrl) {
+          releaseObjectUrl(pendingPreload.src);
+        }
+        preloadedNextRef.current = null;
+      }
       if (isNewTrack) {
         setLyricsLines([]);
         setLyricsSource('');
@@ -802,35 +885,37 @@ export function PulsePlayerProvider({
       void ensureLikedSongsLoaded();
     }
 
-    if (audio.src !== finalSource) {
-      audio.src = finalSource;
+    if (audio.src !== resolvedSource) {
+      audio.src = resolvedSource;
       audio.load();
     }
 
     // Если трек играет из сети, запускаем фоновое асинхронное кэширование с передачей метаданных
-    if (!isFromCache && trackId > 0 && trackSource) {
+    if (!resolvedFromCache && trackId > 0 && trackSource) {
       cacheCurrentTrackInBackground(track);
     }
 
     showPlayer();
 
     try {
-      await audio.play();
+      void audio.play().catch((error: unknown) => {
+        if (
+          error instanceof DOMException &&
+          (error.name === 'AbortError' || error.name === 'NotAllowedError')
+        ) {
+          return;
+        }
+
+        if (retryCount < 2 && playlistRef.current[indexRef.current]?.sid === track.sid) {
+          window.setTimeout(() => {
+            applyResolvedSource(track, resolvedSource, resolvedFromCache, trackSource, retryCount + 1);
+          }, 1500);
+          return;
+        }
+
+        console.error('Pulse player playback error', error);
+      });
     } catch (error) {
-      if (
-        error instanceof DOMException &&
-        (error.name === 'AbortError' || error.name === 'NotAllowedError')
-      ) {
-        return;
-      }
-
-      if (retryCount < 2 && playlistRef.current[indexRef.current]?.sid === track.sid) {
-        window.setTimeout(() => {
-          void playLoadedTrack(track, retryCount + 1);
-        }, 1500);
-        return;
-      }
-
       console.error('Pulse player playback error', error);
     }
   };
