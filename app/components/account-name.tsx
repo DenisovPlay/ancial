@@ -25,13 +25,9 @@ export interface AccountData {
 /**
  * Декодирует HTML-сущности в строку
  */
-export function decodeHtmlEntities(text: string | null | undefined): string {
-  if (!text) return '';
-  if (typeof window === 'undefined') return text; // SSR fallback
-  const textarea = document.createElement('textarea');
-  textarea.innerHTML = text;
-  return textarea.value;
-}
+import { decodeHtmlEntities } from '../lib/convert';
+
+export { decodeHtmlEntities };
 
 /**
  * Извлекает и форматирует имя пользователя или сообщества

@@ -13,12 +13,15 @@ import { useDragScroll } from '../hooks/useDragScroll';
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import {
+  decodeHtmlEntities,
   getPulseBackgroundColorByMood,
   PulseLegalFooter,
   PulsePlaylistTile,
   PulseReportModal,
   PulsePlaylistTileSkeleton,
   PulseTrackRow,
+  normalizeText,
+  toNumber,
   TrackCollectionPanel,
 } from './pulse-components';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
@@ -96,26 +99,6 @@ const THINKING_IMAGE = '/img/load-placeholders/thinking.webp';
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
-}
-
-function normalizeText(value: string | null | undefined) {
-  return String(value ?? '').trim();
-}
-
-function toNumber(value: number | string | null | undefined) {
-  const nextValue = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(nextValue) ? nextValue : 0;
-}
-
-function decodeHtmlEntities(value: string | null | undefined) {
-  const nextValue = normalizeText(value);
-  if (!nextValue || typeof window === 'undefined') {
-    return nextValue;
-  }
-
-  const textarea = document.createElement('textarea');
-  textarea.innerHTML = nextValue;
-  return textarea.value;
 }
 
 function readJsonCache<T>(key: string): T | null {

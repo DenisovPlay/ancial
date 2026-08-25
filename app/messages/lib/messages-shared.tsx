@@ -286,14 +286,9 @@ export function Icon({
   );
 }
 
-export function toNumber(value: number | string | null | undefined) {
-  const nextValue = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(nextValue) ? nextValue : 0;
-}
+import { normalizeText, parseToInt as toNumber } from '../../lib/convert';
 
-export function normalizeText(value: string | null | undefined) {
-  return String(value ?? '').trim();
-}
+export { normalizeText, toNumber };
 
 export function normalizeHash(value: string | string[] | null | undefined) {
   if (Array.isArray(value)) {

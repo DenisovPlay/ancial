@@ -17,6 +17,8 @@ type PollWidgetInput = {
 
 type PostWidgetInput = MusicWidgetInput | PollWidgetInput | Record<string, unknown>;
 
+// Локальная normalizeText: модуль тестируется node --test напрямую (без сборщика),
+// импорты без расширения из lib/ там не резолвятся.
 function normalizeText(value: unknown): string {
   return String(value ?? '').trim();
 }

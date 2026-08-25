@@ -1,4 +1,5 @@
 'use client';
+import { coerceToFinite as toNumber } from '../../../lib/convert';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -55,11 +56,6 @@ function cn(...classes: Array<string | false | null | undefined>) {
 
 function flag(value: boolean | number | string | null | undefined) {
   return value === true || value === 1 || value === '1' || value === 'true';
-}
-
-function toNumber(value: number | string | null | undefined) {
-  const nextValue = Number(value ?? 0);
-  return Number.isFinite(nextValue) ? nextValue : 0;
 }
 
 function htmlToPlainText(value: string | null | undefined) {

@@ -1,4 +1,5 @@
 'use client';
+import { coerceToFinite as toNumber } from '../lib/convert';
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
@@ -124,11 +125,6 @@ function cn(...classes: Array<string | false | null | undefined>) {
 
 function flag(value: boolean | number | string | null | undefined) {
   return value === true || value === 1 || value === '1' || value === 'true';
-}
-
-function toNumber(value: number | string | null | undefined) {
-  const next = Number(value ?? 0);
-  return Number.isFinite(next) ? next : 0;
 }
 
 function getInitialVote(post: PostData): UserVoteState {

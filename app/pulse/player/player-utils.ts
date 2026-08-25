@@ -22,10 +22,9 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
-export function toNumber(value: number | string | null | undefined) {
-  const nextValue = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(nextValue) ? nextValue : 0;
-}
+import { normalizeText, parseToInt as toNumber } from '../../lib/convert';
+
+export { normalizeText, toNumber };
 
 export async function resolveTrackNumericId(value: number | string | null | undefined, fetchTrack?: (id: string) => Promise<{ track?: { id?: number | string } }>): Promise<number> {
   const rawId = String(value ?? '').trim();
@@ -48,9 +47,6 @@ export async function resolveTrackNumericId(value: number | string | null | unde
 }
 
 
-export function normalizeText(value: string | null | undefined) {
-  return String(value ?? '').trim();
-}
 
 export function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));

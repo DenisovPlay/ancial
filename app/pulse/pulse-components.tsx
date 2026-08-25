@@ -1,4 +1,6 @@
 'use client';
+
+import { decodeHtmlEntities, normalizeText } from '../lib/convert';
 /* eslint-disable @next/next/no-img-element */
 
 import Link from 'next/link';
@@ -78,25 +80,13 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
-export function normalizeText(value: string | null | undefined) {
-  return String(value ?? '').trim();
-}
-
 export function toNumber(value: number | string | null | undefined) {
   const nextValue = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(nextValue) ? nextValue : 0;
 }
 
-export function decodeHtmlEntities(value: string | null | undefined) {
-  const nextValue = normalizeText(value);
-  if (!nextValue || typeof window === 'undefined') {
-    return nextValue;
-  }
-
-  const textarea = document.createElement('textarea');
-  textarea.innerHTML = nextValue;
-  return textarea.value;
-}
+// Реализации в app/lib/convert.ts
+export { decodeHtmlEntities, normalizeText };
 
 export function getImageUrl(value: string | null | undefined, fallback = DEFAULT_TRACK_IMAGE) {
   const nextValue = normalizeText(value);
