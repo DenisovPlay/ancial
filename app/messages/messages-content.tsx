@@ -2354,7 +2354,7 @@ export default function MessagesContent() {
                                       active && 'bg-zinc-800/90',
                                     )}
                                   >
-                                    <div className="shrink-0">
+                                    <div className="relative shrink-0">
                                       <img
                                         className={cn(
                                           'h-16 w-16 rounded-full object-cover shadow',
@@ -2363,6 +2363,13 @@ export default function MessagesContent() {
                                         src={normalizeAssetUrl(dialog.Uimg, FALLBACK_AVATAR)}
                                         alt={dialogName || 'Dialog avatar'}
                                       />
+                                      {dialog.type === 'group' && dialog.community_img ? (
+                                        <img
+                                          className="absolute bottom-0 right-0 h-6 w-6 rounded-full border border-zinc-900 bg-zinc-900 object-cover shadow"
+                                          src={normalizeAssetUrl(dialog.community_img, FALLBACK_AVATAR)}
+                                          alt={dialog.community_name || ''}
+                                        />
+                                      ) : null}
                                     </div>
 
                                     <div className="flex min-w-0 flex-1 flex-col">
