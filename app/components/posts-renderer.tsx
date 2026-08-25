@@ -300,21 +300,8 @@ export function PostCard({
   renderIndex,
   shareBaseUrl,
 }: PostCardProps) {
-  const syncKey = [
-    post.id,
-    post.bookmarked_amount ?? '',
-    post.can_edit ?? '',
-    post.comments_count ?? '',
-    post.is_bookmarked ?? '',
-    post.is_long_content ?? '',
-    post.rating ?? '',
-    post.user_vote_down ?? '',
-    post.user_vote_up ?? '',
-  ].join(':');
-
   return (
     <PostCardInner
-      key={syncKey}
       currentUserId={currentUserId}
       hideComments={hideComments}
       lang={lang}
@@ -367,6 +354,19 @@ function PostCardInner({
   const closingImageTimerRef = useRef<number | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [customImages, setCustomImages] = useState<ImageViewerSlide[]>([]);
+
+  // Синхронизация локального (оптимистичного) состояния с обновлёнными props.post
+  // БЕЗ remount: раньше карточка пересоздавалась по key=syncKey при каждом лайке/комменте,
+  // что закрывало просмотрщик картинок и сбрасывало скролл. Паттерн React
+  // «adjusting state when props change»: сравнение на рендере + сеттлер.
+  const [syncedPost, setSyncedPost] = useState(post);
+  if (post !== syncedPost) {
+    setSyncedPost(post);
+    setBookmarkedAmount(toNumber(post.bookmarked_amount));
+    setIsBookmarked(flag(post.is_bookmarked));
+    setRating(toNumber(post.rating));
+    setUserVote(getInitialVote(post));
+  }
 
 
   const strings = { ...DEFAULT_LANG, ...lang };
