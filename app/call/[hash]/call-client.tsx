@@ -319,6 +319,7 @@ export default function CallClient() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       loadDialog();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка диалога: повторный запуск при смене user недопустим
   }, [authLoading, isAuthenticated, hash]);
 
   const initCall = async () => {
@@ -434,7 +435,7 @@ export default function CallClient() {
     });
   };
 
-  const sendWsSignal = (data: CallSignal, force = false) => {
+  const sendWsSignal = useCallback((data: CallSignal, force = false) => {
     if (!isSubscribedRef.current && !force) {
       outgoingSignalQueueRef.current.push(data);
       return;
@@ -447,7 +448,7 @@ export default function CallClient() {
       call_id: callIdRef.current,
       ...data
     });
-  };
+  }, [dialogInfo]);
 
   const signalQueueRef = useRef<Promise<void>>(Promise.resolve());
 
@@ -729,7 +730,7 @@ export default function CallClient() {
       cam_enabled: camEnabledRef.current,
       screen_enabled: false,
     });
-  }, [selectedCameraId]);
+  }, [selectedCameraId, sendWsSignal]);
 
   const toggleScreenShare = () => {
     if (isScreenSharingRef.current) {

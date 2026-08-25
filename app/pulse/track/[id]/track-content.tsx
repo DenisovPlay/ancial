@@ -203,7 +203,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
     if (trackNumericId) {
       openAddToPlaylist(trackNumericId);
     }
-  }, [isAuthenticated, openAddToPlaylist, showPulseNote, trackNumericId]);
+  }, [isAuthenticated, lang, openAddToPlaylist, showPulseNote, trackNumericId]);
 
   const copyTrackLink = useCallback(async (tid: number | string, t?: PulseTrack) => {
     const resolvedTrackId = toNumber(tid);

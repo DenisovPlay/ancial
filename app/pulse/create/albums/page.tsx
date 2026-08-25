@@ -42,6 +42,7 @@ export default function PulseCreateAlbumsPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchAlbums();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка: повторный запуск при пересоздании fetchAlbums недопустим
   }, [isAuthenticated]);
 
   const confirmDelete = () => {

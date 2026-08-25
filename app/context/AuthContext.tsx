@@ -296,7 +296,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         publishAuthState(nextPublishedAuth, nextPublishedUser, false);
       }
     }
-  }, [publishAuthState]);
+  }, [publishAuthState, setLanguage]);
 
   // Проверяем авторизацию при первой загрузке приложения
   useEffect(() => {

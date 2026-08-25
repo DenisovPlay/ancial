@@ -100,6 +100,7 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
 
     return () => {
       clearTimeout(timer);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- ref.current в cleanup: снимаем обработчики с актуального DOM-узла на момент размонтирования
       const el = ref.current;
       if (el) {
         type ElWithCleanup = HTMLDivElement & { _dragCleanup?: () => void };

@@ -82,6 +82,7 @@ function GroupsContent() {
       setQuery(qQuery);
       loadGroups(qQuery);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка: повторный запуск при пересоздании loadGroups недопустим
   }, [qQuery, isAuthenticated]);
 
   const handleSearch = (e: React.FormEvent) => {

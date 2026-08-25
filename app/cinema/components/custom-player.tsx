@@ -189,7 +189,7 @@ export default function CustomPlayer({
     );
   }, [startTime, movieId, isSeries, season, episode]);
 
-  const saveCurrentProgress = (overrideTime?: number) => {
+  const saveCurrentProgress = useCallback((overrideTime?: number) => {
     if (!movieId) return;
     const liveDuration = videoRef.current?.duration || durationRef.current;
     const hasPlayableDuration = src
@@ -217,15 +217,15 @@ export default function CustomPlayer({
       type: isSeries ? 'series' : 'movie',
       preserveActiveSelection: true,
     });
-  };
+  }, [movieId, src, title, season, episode, isSeries, translations, players, selectedTranslationId, selectedPlayerId]);
 
   // Throttle-сохранение прогресса: не чаще одного раза в 2 секунды воспроизведения.
-  const maybeSaveProgress = (time: number) => {
+  const maybeSaveProgress = useCallback((time: number) => {
     if (time > 3 && Math.abs(time - lastSavedTimeRef.current) >= 2) {
       lastSavedTimeRef.current = time;
       saveCurrentProgress(time);
     }
-  };
+  }, [saveCurrentProgress]);
 
   // PostMessage listener for iframe player state events
   useEffect(() => {
@@ -295,7 +295,7 @@ export default function CustomPlayer({
 
     window.addEventListener('message', handleIframeMessage);
     return () => window.removeEventListener('message', handleIframeMessage);
-  }, [isFlixCDN, fallbackIframeSrc, movieId, season, episode, updateCurrentTime, updateDuration, getSavedTime, sendIframeCommand, onNextEpisode]);
+  }, [isFlixCDN, fallbackIframeSrc, movieId, season, episode, updateCurrentTime, updateDuration, getSavedTime, sendIframeCommand, maybeSaveProgress, onNextEpisode]);
 
   useEffect(() => {
     // Сброс лоадера при смене источника плеера — сеттлер здесь и есть источник правды:
@@ -322,7 +322,7 @@ export default function CustomPlayer({
   }, [movieId, resetControlsTimer]);
 
   // Seek relative seconds with instant ref sync
-  const seekRelative = (seconds: number) => {
+  const seekRelative = useCallback((seconds: number) => {
     const baseTime = currentTimeRef.current || (videoRef.current ? videoRef.current.currentTime : 0);
     const targetTime = Math.max(0, Math.min(duration || 999999, baseTime + seconds));
     updateCurrentTime(targetTime);
@@ -336,10 +336,10 @@ export default function CustomPlayer({
       videoRef.current.currentTime = targetTime;
       resetControlsTimer();
     }
-  };
+  }, [duration, isFlixCDN, src, updateCurrentTime, resetControlsTimer, sendIframeCommand]);
 
   // Toggle play/pause
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (isFlixCDN && !src) {
       const nextState = !isPlaying;
       setIsPlaying(nextState);
@@ -352,7 +352,7 @@ export default function CustomPlayer({
     } else {
       videoRef.current.play().catch(() => { });
     }
-  };
+  }, [isFlixCDN, src, isPlaying, sendIframeCommand]);
 
   const [showResumeToast, setShowResumeToast] = useState(false);
   const [resumeToastTime, setResumeToastTime] = useState<number | null>(null);
@@ -370,13 +370,13 @@ export default function CustomPlayer({
       // For FlixCDN iframe: videoRef has no time — use liveCurrentTimeRef updated from postMessages
       // For native video: use videoRef.currentTime
       const timeToSave = videoRef.current && videoRef.current.currentTime > 3
-        ? videoRef.current.currentTime
+        ? videoRef.current.currentTime // eslint-disable-line react-hooks/exhaustive-deps -- ref.current в cleanup: осознанный fallback video→liveCurrentTimeRef
         : liveCurrentTimeRef.current;
       if (timeToSave > 3) {
         saveCurrentProgress(timeToSave);
       }
     };
-  }, [movieId, season, episode, selectedTranslationId, selectedPlayerId]);
+  }, [movieId, season, episode, selectedTranslationId, selectedPlayerId, saveCurrentProgress]);
 
   const performRestoreTime = () => {
     if (restoredRef.current || !videoRef.current || !movieId) return;
@@ -704,7 +704,7 @@ export default function CustomPlayer({
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [resetControlsTimer, duration, showControls, showQualityDropdown]);
+  }, [resetControlsTimer, duration, showControls, showQualityDropdown, seekRelative, togglePlay]);
 
   // Wakeup controls on fullscreen change, window focus, or cursor returning to window
   useEffect(() => {

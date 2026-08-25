@@ -122,7 +122,7 @@ export default function NotificationsSettingsContent() {
     await reg.update();
     await navigator.serviceWorker.ready;
     return reg;
-  }, []);
+  }, [lang?.service_worker_not_supported]);
 
   const setupNotifications = useCallback(async () => {
     try {
@@ -189,7 +189,7 @@ export default function NotificationsSettingsContent() {
     } finally {
       setIsDetecting(false);
     }
-  }, [messaging, ensureServiceWorker, detectDevice, showNote, checkAuth, router]);
+  }, [lang, messaging, ensureServiceWorker, detectDevice, showNote, checkAuth, router]);
 
   const cancelNotifications = useCallback(async () => {
     try {
@@ -224,7 +224,7 @@ export default function NotificationsSettingsContent() {
         time: 5,
       });
     }
-  }, [showNote, checkAuth, router]);
+  }, [lang, showNote, checkAuth, router]);
 
   const getDeviceIcon = () => {
     const os = pushDevice?.os?.toLowerCase() || '';

@@ -64,6 +64,7 @@ export default function MerchantContent() {
     }
 
     loadData(!hasCache);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка: повторный запуск при пересоздании loadData недопустим
   }, [authLoading, isAuthenticated]);
 
   const handleTopage = (path: string) => {

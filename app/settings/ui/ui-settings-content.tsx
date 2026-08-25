@@ -88,7 +88,7 @@ export default function UiSettingsContent() {
         description: lang?.glass_mode_auto_desc || 'Автоматическая настройка под мощность устройства',
       },
     ],
-    [lang, autoResolvedLabel]
+    [lang]
   );
 
   const glassIdx = useMemo(() => {

@@ -71,7 +71,7 @@ export default function PulsePlaylistEditorModal({
     } finally {
       setIsCoverUploading(false);
     }
-  }, [showNote]);
+  }, [lang, showNote]);
 
   const savePlaylist = useCallback(async () => {
     const nextName = normalizeText(name);
@@ -106,7 +106,7 @@ export default function PulsePlaylistEditorModal({
     } finally {
       setIsSaving(false);
     }
-  }, [coverUrl, isEditing, name, onClose, onSaved, playlistId, showNote]);
+  }, [coverUrl, isEditing, lang, name, onClose, onSaved, playlistId, showNote]);
 
   const isBusy = isCoverUploading || isSaving;
 

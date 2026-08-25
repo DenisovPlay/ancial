@@ -211,6 +211,7 @@ export default function PulseUploadTrackModal({
     setTrackId(initialState.trackId);
     setGenre(initialState.genre);
     setStatus(initialState.status);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- init формы только при открытии: lang?.ready не должен ресетить форму при смене языка
   }, [isOpen, reset, track]);
 
   useEffect(() => {
@@ -253,7 +254,7 @@ export default function PulseUploadTrackModal({
     } finally {
       setIsSaving(false);
     }
-  }, [onUploaded, showNote]);
+  }, [lang, onUploaded, showNote]);
 
   const updateTrack = useCallback(async () => {
     if (!trackId) return;
@@ -292,7 +293,7 @@ export default function PulseUploadTrackModal({
     } finally {
       setIsSaving(false);
     }
-  }, [artist, coverUrl, explicit, isEditingExistingTrack, trackLang, name, onClose, onUploaded, showNote, trackId, genre, status]);
+  }, [artist, coverUrl, explicit, isEditingExistingTrack, lang, trackLang, name, onClose, onUploaded, showNote, trackId, genre, status]);
 
   const handleAudioChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -344,7 +345,7 @@ export default function PulseUploadTrackModal({
     } finally {
       setIsAudioUploading(false);
     }
-  }, [explicit, trackLang, saveTrack, setPreviewUrl, showNote]);
+  }, [explicit, lang, trackLang, saveTrack, setPreviewUrl, showNote]);
 
   const handleCoverChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -398,7 +399,7 @@ export default function PulseUploadTrackModal({
     } finally {
       setIsCoverUploading(false);
     }
-  }, [artist, explicit, isEditingExistingTrack, isSaved, trackLang, name, onUploaded, setPreviewUrl, showNote, trackId, genre, status]);
+  }, [artist, explicit, isEditingExistingTrack, isSaved, lang, trackLang, name, onUploaded, setPreviewUrl, showNote, trackId, genre, status]);
 
   const canUpdate = Boolean(trackId) && isSaved && !isSaving && !isAudioUploading && !isCoverUploading;
   const cover = coverPreview || coverUrl;
@@ -577,7 +578,7 @@ export function PulseDeleteTrackModal({
     } finally {
       setIsDeleting(false);
     }
-  }, [onClose, onDeleted, showNote, trackId]);
+  }, [lang, onClose, onDeleted, showNote, trackId]);
 
   return (
     <PulseModal

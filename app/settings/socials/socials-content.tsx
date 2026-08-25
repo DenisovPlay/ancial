@@ -121,6 +121,7 @@ export default function SocialsContent() {
         container.appendChild(script);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- узкие deps: реинициализация Telegram-виджета только при смене статуса подключения
   }, [isMounted, authLoading, isAuthenticated, user?.connected_telegram, tgWidgetKey]);
 
   // Load Yandex Suggest Script
@@ -201,6 +202,7 @@ export default function SocialsContent() {
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- узкие deps: реинициализация Яндекс-виджета только при смене статуса подключения
   }, [isMounted, authLoading, isAuthenticated, user?.connected_yacc, lang, checkAuth, showNote]);
 
   const handleDisconnectTelegram = async () => {

@@ -165,7 +165,7 @@ export default function PulseSearchContent() {
     return () => {
       cancelled = true;
     };
-  }, [query, searchReloadToken]);
+  }, [query, replaceFavoriteIds, searchReloadToken]);
 
   const playPlaylistCard = useCallback((card: PulsePlaylistCardData) => {
     const playableId = getCardPlayableId(card);
@@ -269,7 +269,7 @@ export default function PulseSearchContent() {
     }
 
     openAddToPlaylist(trackId);
-  }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+  }, [isAuthenticated, lang, openAddToPlaylist, showPulseNote]);
 
   const refreshSearchAfterMutation = useCallback(() => {
     writePulseJsonCache(getPulseSearchCacheKey(query), {

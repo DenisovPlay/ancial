@@ -118,6 +118,7 @@ function AboutContentInner() {
     }
 
     loadData(!hasCache);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка: повторный запуск при пересоздании loadData недопустим
   }, [authLoading, isAuthenticated, merchantId]);
 
   const handleSaveSettings = async (e: React.FormEvent) => {

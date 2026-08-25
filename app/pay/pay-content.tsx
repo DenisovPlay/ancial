@@ -87,6 +87,7 @@ export default function PayContent() {
     }, 10000);
 
     return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- осознанные узкие deps: рестарт поллинга только при смене статуса заказа
   }, [orderHash, details?.order?.status, loadOrderDetails]);
 
   const handleBack = () => {

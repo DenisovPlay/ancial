@@ -247,6 +247,7 @@ export default function InfoContent({ id }: InfoContentProps) {
       isMounted = false;
       window.removeEventListener('ancial:cinema_history_update', refreshFromHistoryEvent);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка по id: повторный запуск при смене infoMovie недопустим
   }, [id]);
 
   const toggleMyList = (movieId: string, e?: React.MouseEvent) => {

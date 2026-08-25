@@ -33,7 +33,7 @@ export default function NotFound() {
     ];
 
     return () => timeouts.forEach(clearTimeout);
-  }, [router]);
+  }, [lang?.pagenotfounderror, lang?.pagenotfoundtimer1, lang?.pagenotfoundtimer2, lang?.pagenotfoundredirecting, lang?.pagenotfoundhome, lang?.pagenotfoundwhy, router]);
 
   return (
     <div className="home-route flex isolate h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-full flex-col items-center justify-center">

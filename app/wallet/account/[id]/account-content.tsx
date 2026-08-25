@@ -81,7 +81,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
     } finally {
       setLoading(false);
     }
-  }, [accountId, currentAccount]);
+  }, [accountId, currentAccount, lang]);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -123,7 +123,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
 
     loadData(!hasCache);
     loadTransactions();
-  }, [authLoading, isAuthenticated, accountId]);
+  }, [authLoading, isAuthenticated, accountId, loadData, loadTransactions]);
 
   // Load QR code when receive modal opens
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setReceiveQrUrl(null);
     }
-  }, [isReceiveModalOpen, accountId]);
+  }, [isReceiveModalOpen, accountId, lang?.failed_to_generate_qr]);
 
   const handleTopage = (path: string) => {
     router.push(path);

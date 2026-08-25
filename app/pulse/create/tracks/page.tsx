@@ -42,6 +42,7 @@ export default function PulseCreateTracksPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchTracks();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка: повторный запуск при пересоздании fetchTracks недопустим
   }, [isAuthenticated]);
 
   const confirmDelete = () => {

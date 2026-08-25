@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SITE_URL } from '../config';
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -189,7 +189,7 @@ export default function WalletContent() {
   const ownedAccountIds = useMemo(() => new Set(accounts.map((account) => account.id)), [accounts]);
 
   // General data fetcher
-  const fetchWallet = async (showLoading = false) => {
+  const fetchWallet = useCallback(async (showLoading = false) => {
     if (showLoading && accounts.length === 0) setLoading(true);
     try {
       const overview = await AncialAPI.getWalletOverview();
@@ -214,7 +214,7 @@ export default function WalletContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [accounts.length, lang?.walletloaderror]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -249,7 +249,7 @@ export default function WalletContent() {
     }
 
     fetchWallet(!hasCachedData);
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, isAuthenticated, fetchWallet]);
 
   // Reset transfer modal state when opened/closed
   useEffect(() => {
@@ -283,6 +283,7 @@ export default function WalletContent() {
       setCreateAccountTitle(lang?.walletAccount || 'Счёт');
       setCreateAccountError(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- сброс только при закрытии модалки: lang?.walletAccount не должен перезаписывать ввод при смене языка
   }, [isProductsModalOpen]);
 
   // Open send modal from QR scanner (?action=send&login=...)
@@ -303,7 +304,7 @@ export default function WalletContent() {
   }, [searchParams]);
 
   // Load friends list for STF step
-  const loadFriends = async () => {
+  const loadFriends = useCallback(async () => {
     setFriendsLoading(true);
     setFriendsError(null);
     try {
@@ -322,7 +323,7 @@ export default function WalletContent() {
     } finally {
       setFriendsLoading(false);
     }
-  };
+  }, [lang?.friendsloaderror]);
 
   useEffect(() => {
     if (sendStep === 'stf') {
@@ -330,7 +331,7 @@ export default function WalletContent() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       loadFriends();
     }
-  }, [sendStep]);
+  }, [sendStep, loadFriends]);
 
   // Handle Account Deletion
   const handleDeleteAccountClick = (e: React.MouseEvent, acc: WalletAccount) => {
@@ -551,7 +552,7 @@ export default function WalletContent() {
   };
 
   // Fetch QR Code logic
-  const loadQRCode = async (accountId: number) => {
+  const loadQRCode = useCallback(async (accountId: number) => {
     if (!accountId) return;
     setReceiveLoading(true);
     setReceiveError(null);
@@ -564,7 +565,7 @@ export default function WalletContent() {
     } finally {
       setReceiveLoading(false);
     }
-  };
+  }, [lang?.failedtogenerateqr]);
 
   // Trigger QR Code load when selection changes or modal opens
   useEffect(() => {
@@ -573,7 +574,7 @@ export default function WalletContent() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       loadQRCode(receiveAccountId);
     }
-  }, [isUserProfModalOpen, receiveAccountId]);
+  }, [isUserProfModalOpen, receiveAccountId, loadQRCode]);
 
   // Open withdrawal dialog for clicked gateway
   const handleGatewayClick = async (gw: WalletGateway) => {

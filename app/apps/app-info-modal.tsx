@@ -72,7 +72,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
     return () => {
       alive = false;
     };
-  }, [appId, isOpen]);
+  }, [appId, isOpen, lang?.loading_error]);
 
   const screenshots = useMemo(() => splitScreenshots(app?.screenshots), [app]);
   const screenshotSlides = useMemo<ImageViewerSlide[]>(

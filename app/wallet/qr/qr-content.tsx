@@ -161,6 +161,7 @@ export default function QRContent() {
     return () => {
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-логика камеры: перезапуск при пересоздании startCamera недопустим
   }, [scriptLoaded, scanning, facingMode, isAuthenticated, authLoading]);
 
   // Drawing overlay box (Telegram style frame)
@@ -441,6 +442,7 @@ export default function QRContent() {
       worker.terminate();
       workerRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- сканер: handleQRSuccess захватывается на старте сканирования
   }, [scriptLoaded, scanning, cameraActive, facingMode]);
 
   // Switch between front/back camera

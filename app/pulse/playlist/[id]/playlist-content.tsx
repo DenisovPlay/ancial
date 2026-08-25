@@ -258,6 +258,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cachedTracks только fallback в catch: перезапуск загрузки при обновлении кэша недопустим
   }, [isBuiltinPlaylist, lang?.somethingwrong, playlist, playlistId, tracksReloadToken]);
 
   useEffect(() => {
@@ -286,7 +287,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, replaceFavoriteIds]);
 
   const playPlaylistFromStart = useCallback(() => {
     const target = getPulsePlaylistActionTarget(playlistId, playlist);
@@ -354,7 +355,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     }
 
     setIsUploadTrackModalOpen(true);
-  }, [isAuthenticated, showPulseNote]);
+  }, [isAuthenticated, lang, showPulseNote]);
 
   const closeTrackEditor = useCallback(() => {
     setIsUploadTrackModalOpen(false);
@@ -395,7 +396,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang, playlist, showPulseNote, updateFavoriteIds]);
+  }, [isAuthenticated, lang, showPulseNote, updateFavoriteIds]);
 
   const togglePlaylistLike = useCallback(async () => {
     if (!isAuthenticated) {
@@ -421,7 +422,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang?.pulse_error_happened, playlistId, playlistLiked, showPulseNote]);
+  }, [isAuthenticated, lang, playlistId, playlistLiked, showPulseNote]);
 
   const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
     const resolvedTrackId = toNumber(trackId);
@@ -472,7 +473,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
         replaceFavoriteIds(nextIds);
       })
       .catch(() => { });
-  }, [playlist, playlistId]);
+  }, [playlist, playlistId, replaceFavoriteIds]);
 
   const queueTrackNext = useCallback(async (trackId: number | string) => {
     await playNextTrack(trackId);
@@ -485,7 +486,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     }
 
     openAddToPlaylist(trackId);
-  }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+  }, [isAuthenticated, lang, openAddToPlaylist, showPulseNote]);
 
   const reportTrack = useCallback((track: PulseTrack) => {
     if (!isAuthenticated) {
@@ -498,7 +499,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
     setReportTrackTarget(track);
     setIsReportModalOpen(true);
-  }, [isAuthenticated, showPulseNote]);
+  }, [isAuthenticated, lang, showPulseNote]);
 
   const handleTrackReport = useCallback(async (reason: string) => {
     if (!reportTrackTarget) return;

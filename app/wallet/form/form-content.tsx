@@ -243,6 +243,7 @@ function FormContentInner() {
       setStep('failed');
       setSubmitError(searchParams.get('error') || (lang?.operation_error || 'Произошла ошибка при выполнении операции'));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-разбор URL-параметров: повторный запуск при пересоздании fetchRecipientProfile недопустим
   }, [authLoading, isAuthenticated, searchParams]);
 
   const selectAmountPreset = (val: number) => {

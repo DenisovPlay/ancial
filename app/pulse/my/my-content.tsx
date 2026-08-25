@@ -227,7 +227,7 @@ export default function PulseMyContent() {
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [lang?.pulse_error_happened, showPulseNote]);
+  }, [lang, showPulseNote]);
 
   const isEmpty = !libraryLoading && !historyLoading && !libraryItems.length && !history?.length;
 

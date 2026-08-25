@@ -128,7 +128,7 @@ export default function PulseSearchTracksContent() {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, replaceFavoriteIds]);
 
   const getResolvedId = useCallback(async (idValue: number | string | null | undefined): Promise<number> => {
     const rawId = String(idValue ?? '').trim();
@@ -232,7 +232,7 @@ export default function PulseSearchTracksContent() {
       }
       openAddToPlaylist(trackId);
     },
-    [isAuthenticated, openAddToPlaylist, showPulseNote],
+    [isAuthenticated, lang, openAddToPlaylist, showPulseNote],
   );
 
   const reportTrack = useCallback(

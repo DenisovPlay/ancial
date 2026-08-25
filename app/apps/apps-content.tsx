@@ -162,7 +162,7 @@ function AppsContentInner() {
     } finally {
       setLoading(false);
     }
-  }, [category, initialQuery, mode]);
+  }, [category, initialQuery, lang, mode]);
 
   useEffect(() => {
     // Первичная загрузка: сеттлеры внутри loadApps после await.
@@ -193,7 +193,7 @@ function AppsContentInner() {
     }, 100);
 
     return () => window.clearTimeout(timer);
-  }, [category]);
+  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps -- ref стабилен
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

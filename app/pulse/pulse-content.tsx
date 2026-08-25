@@ -512,7 +512,7 @@ export default function PulseContent() {
     } catch {
       showPulseNote(pulseErrorText, 'error');
     }
-  }, [getResolvedId, isAuthenticated, pulseErrorText, pulseFavoriteCreatedText, pulseTrackAddedText, pulseTrackRemovedText, pulseUnknownSongText, showPulseNote, updateFavoriteIds]);
+  }, [getResolvedId, isAuthenticated, lang, pulseErrorText, pulseFavoriteCreatedText, pulseTrackAddedText, pulseTrackRemovedText, pulseUnknownSongText, showPulseNote, updateFavoriteIds]);
 
   const queueTrackNext = useCallback(async (trackId: number | string) => {
     await playNextTrack(trackId);
@@ -552,7 +552,7 @@ export default function PulseContent() {
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [lang, reportTrackTarget, showPulseNote]);
+  }, [getResolvedId, lang, reportTrackTarget, showPulseNote]);
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
     if (!isAuthenticated) {
@@ -561,7 +561,7 @@ export default function PulseContent() {
     }
 
     openAddToPlaylist(trackId);
-  }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+  }, [isAuthenticated, lang, openAddToPlaylist, showPulseNote]);
 
   const refreshHomeTracksAfterMutation = useCallback(() => {
     Object.values(TRACK_CACHE_KEYS).forEach((key) => cache.remove(key, { category: 'pulse', subcategory: 'tracks' }));
@@ -605,7 +605,7 @@ export default function PulseContent() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, replaceFavoriteIds]);
 
   useEffect(() => {
     const cachedFromPulse = readJsonCache<PulseHomePlaylistCard[]>(HOME_CACHE_KEYS.fromPulse);

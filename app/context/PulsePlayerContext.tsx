@@ -356,7 +356,7 @@ export function PulsePlayerProvider({
   const mobileLyric = activeLyricLine ? splitLyricText(activeLyricLine.text) : null;
   const displayedCurrentTime = activeSeekSlider ? seekValue : currentTime;
 
-  const notify = ({
+  const notify = useCallback(({
     content,
     html,
     time = 4,
@@ -373,7 +373,7 @@ export function PulsePlayerProvider({
       time,
       type,
     });
-  };
+  }, [showNote]);
 
   const syncWindowState = () => {
     if (typeof window === 'undefined') return;
@@ -1259,6 +1259,13 @@ export function PulsePlayerProvider({
     });
   };
 
+  // latest-ref: колбэки ниже всегда вызывают актуальную версию playLoadedTrack,
+  // оставаясь стабильными между рендерами (поведение идентично прямому вызову).
+  const playLoadedTrackRef = useRef(playLoadedTrack);
+  useEffect(() => {
+    playLoadedTrackRef.current = playLoadedTrack;
+  });
+
   const toggleRepeatMode = useCallback(() => {
     const currentMode = repeatModeRef.current;
     const nextMode: RepeatMode =
@@ -1291,7 +1298,7 @@ export function PulsePlayerProvider({
     if (targetIndex === indexRef.current) {
       const nextIdx = Math.min(targetIndex, newPlaylist.length - 1);
       setPlaylistIndex(nextIdx);
-      void playLoadedTrack(newPlaylist[nextIdx] ?? null);
+      void playLoadedTrackRef.current(newPlaylist[nextIdx] ?? null);
     } else if (targetIndex < indexRef.current) {
       setPlaylistIndex(indexRef.current - 1);
     }
@@ -1339,7 +1346,7 @@ export function PulsePlayerProvider({
       return;
     }
     setPlaylistIndex(targetIndex);
-    void playLoadedTrack(targetTrack);
+    void playLoadedTrackRef.current(targetTrack);
   }, [userCountry]);
 
 

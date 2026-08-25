@@ -78,6 +78,7 @@ export default function PersonContent({ personId }: PersonContentProps) {
     return () => {
       isMounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка по personId: person приходит из SSR-пропсов, повтор не нужен
   }, [personId, initialName, initialPoster]);
 
   return (

@@ -40,6 +40,7 @@ export default function PulseCreateArtistsPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchArtists();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка: повторный запуск при пересоздании fetchArtists недопустим
   }, [isAuthenticated]);
 
   const confirmDelete = () => {

@@ -666,7 +666,7 @@ export default function FeedContent() {
     }, 100);
 
     return () => window.clearTimeout(timer);
-  }, [isAuthenticated, lang, topic]);
+  }, [isAuthenticated, lang, topic, topicButtonsRef]);
 
   useEffect(() => {
     const indicator = loadMoreRef.current;

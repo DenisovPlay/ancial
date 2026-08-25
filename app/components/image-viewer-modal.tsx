@@ -180,6 +180,7 @@ export default function ImageViewerModal({
     pinchStartDistanceRef.current = null;
     pinchStartScaleRef.current = MIN_IMAGE_SCALE;
     lastTapRef.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- images.length только в guard: сброс зума должен происходить при смене кадра, не при изменении массива
   }, [activeImageIndex, activeImageUrl]);
 
   const handleDoubleTapZoom = (position: Point) => {

@@ -182,7 +182,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [artistTracksCacheKey, cacheId, tracksReloadToken]);
+  }, [artistTracksCacheKey, cacheId, tracksReloadToken, replaceFavoriteIds]);
 
   const playPlaylistCard = useCallback((card: PulsePlaylistCardData) => {
     const playableId = getCardPlayableId(card);
@@ -230,7 +230,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     } catch {
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
     }
-  }, [isAuthenticated, lang?.pulse_error_happened, showPulseNote, updateFavoriteIds]);
+  }, [isAuthenticated, lang, showPulseNote, updateFavoriteIds]);
 
   const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
     const resolvedTrackId = toNumber(trackId);
@@ -259,7 +259,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     }
 
     openAddToPlaylist(trackId);
-  }, [isAuthenticated, openAddToPlaylist, showPulseNote]);
+  }, [isAuthenticated, lang?.logintoaddtoplaylists, openAddToPlaylist, showPulseNote]);
 
   const reportTrack = useCallback((track: PulseTrack) => {
     if (!isAuthenticated) {
@@ -272,7 +272,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
 
     setReportTrackTarget(track);
     setIsReportModalOpen(true);
-  }, [isAuthenticated, showPulseNote]);
+  }, [isAuthenticated, lang?.logintoreport, showPulseNote]);
 
   const handleTrackReport = useCallback(async (reason: string) => {
     if (!reportTrackTarget) return;

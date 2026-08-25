@@ -405,6 +405,7 @@ export default function CacheSettingsPage() {
     // Легаси mount-загрузка данных кэша: все setState внутри после await.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadCacheData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка: повторный запуск при пересоздании loadCacheData недопустим
   }, [authLoading, isAuthenticated]);
 
   // Toggle category expansion
