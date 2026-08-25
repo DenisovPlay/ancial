@@ -1978,15 +1978,25 @@ export default function MessagesContent() {
         });
 
         const sentMsgId = res?.msg_id || res?.data?.msg_id;
-        if (sentMsgId) {
-          setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
-        }
 
+        // Пока сообщение летело, его могли «удалить» из чата — тогда стираем на сервере.
         if (cancelledMessageIdsRef.current.has(tempId)) {
           if (sentMsgId) {
             void AncialAPI.messageAction('delete', { msg_id: sentMsgId });
           }
           return;
+        }
+
+        // Повышаем оптимистичную копию на месте (temp-id -> реальный id),
+        // пузырь не исчезает из списка и не моргает перед приходом серверной версии.
+        if (sentMsgId) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              Number(getMessageId(m)) === Number(tempId)
+                ? { ...m, id: sentMsgId, isSending: false }
+                : m
+            )
+          );
         }
 
         await loadMessagesNewer(dialogSessionRef.current);
@@ -2049,8 +2059,20 @@ export default function MessagesContent() {
         });
 
         const sentMsgId = res?.msg_id || res?.data?.msg_id;
-        if (sentMsgId) {
-          setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
+
+        if (cancelledMessageIdsRef.current.has(tempId)) {
+          if (sentMsgId) {
+            void AncialAPI.messageAction('delete', { msg_id: sentMsgId });
+          }
+        } else if (sentMsgId) {
+          // Повышаем оптимистичную копию на месте — без моргания.
+          setMessages((prev) =>
+            prev.map((m) =>
+              Number(getMessageId(m)) === Number(tempId)
+                ? { ...m, id: sentMsgId, isSending: false }
+                : m
+            )
+          );
         }
 
         await loadMessagesNewer(dialogSessionRef.current);
@@ -2113,8 +2135,20 @@ export default function MessagesContent() {
       });
 
       const sentMsgId = res?.msg_id || res?.data?.msg_id;
-      if (sentMsgId) {
-        setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
+
+      if (cancelledMessageIdsRef.current.has(tempId)) {
+        if (sentMsgId) {
+          void AncialAPI.messageAction('delete', { msg_id: sentMsgId });
+        }
+      } else if (sentMsgId) {
+        // Повышаем оптимистичную копию на месте — без моргания.
+        setMessages((prev) =>
+          prev.map((m) =>
+            Number(getMessageId(m)) === Number(tempId)
+              ? { ...m, id: sentMsgId, isSending: false }
+              : m
+          )
+        );
       }
 
       await loadMessagesNewer(dialogSessionRef.current);
