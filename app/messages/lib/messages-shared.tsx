@@ -1301,7 +1301,11 @@ export function getDialogPreviewStatusIconName(status: number | string | null | 
 }
 
 export function isMessageMenuIgnoredTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && Boolean(target.closest('a, button, img'));
+  if (!(target instanceof HTMLElement)) return false;
+  // Стикеры (нативные .inline-sticker-wrapper и 7TV [data-sticker]) НЕ игнорируем:
+  // правый клик / удержание по ним открывает меню сообщения, как по тексту.
+  if (target.closest('.inline-sticker-wrapper, [data-sticker]')) return false;
+  return Boolean(target.closest('a, button, img'));
 }
 
 /**

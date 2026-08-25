@@ -93,14 +93,21 @@ function SevenTvStickerMessage({
 
   if (directStickerUrl || resolvedSticker?.url) {
     return (
-      <div className="overflow-hidden rounded-lg">
+      <div
+        className="overflow-hidden rounded-lg"
+        // data-sticker — маркер для меню сообщения: правый клик / удержание по стикеру
+        // открывает наше меню вместо браузерного (см. isMessageMenuIgnoredTarget).
+        data-sticker={`7tv-${stickerName}`}
+        style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
+      >
         <Image
           src={directStickerUrl || resolvedSticker?.url || ''}
           alt={resolvedSticker?.name || stickerName}
           unoptimized
           width={220}
           height={220}
-          className="h-auto max-h-48 w-auto max-w-full rounded-lg object-contain shadow lg:max-h-64"
+          draggable={false}
+          className="h-auto max-h-48 w-auto max-w-full rounded-lg object-contain shadow lg:max-h-64 select-none pointer-events-none"
         />
       </div>
     );

@@ -959,3 +959,18 @@ body:has(.apps-overlay-route) #main-content {
   stroke: #ffffff !important;
   fill: none !important;
 }
+
+/* СТИКЕРЫ В ЧАТАХ: правый клик / удержание открывает меню сообщения,
+   а не браузерное меню картинки.
+   -webkit-touch-callout: none — убирает системный iOS-callout («Сохранить изображение»),
+   user-select/drag — чтобы удержание не запускало выделение и перетаскивание. */
+.inline-sticker-wrapper,
+.inline-sticker-wrapper img,
+[id^="msg-body-"] [data-sticker],
+[id^="msg-body-"] [data-sticker] img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
