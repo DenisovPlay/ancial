@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { useScrollPingPong } from '../hooks/useScrollPingPong';
+import { APP_VERSION } from '../lib/app-version';
 
 export default function Home() {
     const router = useRouter();
@@ -84,7 +85,7 @@ export default function Home() {
             <span className="w-full max-w-3xl text-3xl font-extralight px-3 lg:px-0" x-text="lang?.technical_specs"></span>
             <div className="w-full max-w-3xl flex flex-col px-3 lg:px-0">
                 <span className="text-xl font-bold text-zinc-100">Внутреннее ПО</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">ZypoClient v3.3.1</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">{`ZypoClient v${APP_VERSION}`}</span>
                 <span className="w-full max-w-3xl text-lg text-zinc-300">LiteAPI v2.3.4</span>
                 <span className="w-full max-w-3xl text-lg text-zinc-300">GG-Connect v3.1 (V2-API implementation)</span>
                 <span className="text-xl font-bold text-zinc-100 mt-1.5">Стороннее ПО</span>
