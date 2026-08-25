@@ -36,7 +36,8 @@ const ALLOWED_TAGS = [
     'img', 'a',
     // тулбар блоков в редакторе (notion-block-toolbar)
     'button',
-    'svg', 'use',
+    // svg-иконки от API (wfont погоды): svg/use + фигуры внутри
+    'svg', 'use', 'path', 'g',
 ];
 
 const ALLOWED_ATTR = [
