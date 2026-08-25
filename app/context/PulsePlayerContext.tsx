@@ -292,6 +292,9 @@ export function PulsePlayerProvider({
   const touchStartXRef = useRef<number | null>(null);
   const touchStartFullRef = useRef<{ x: number, y: number } | null>(null);
   const touchStartMiniRef = useRef<{ x: number, y: number } | null>(null);
+  // Ширина пилюли мини-плеера: замеряется на touchstart для расчёта доката карусели.
+  // State, а не ref: значение читается при рендере (проп в PulsePlayerMini).
+  const [miniShellWidth, setMiniShellWidth] = useState(370);
   // Радио: трек-источник, набор уже воспроизведённых ID, флаг загрузки
   const radioSeedTrackIdRef = useRef<number>(0);
   const radioPlayedIdsRef = useRef<Set<number>>(new Set());
@@ -2073,6 +2076,7 @@ export function PulsePlayerProvider({
             desktopSeekInputRef={desktopSeekInputRef}
             duration={duration}
             isPlaying={isPlaying}
+            isSwiping={isSwiping}
             isVisible={!isFullMode && isPlayerAnimatingIn}
             lang={lang}
             onChangeVolume={changeVolume}
@@ -2090,20 +2094,84 @@ export function PulsePlayerProvider({
             onTouchStart={(event) => {
               if (window.innerWidth >= 1024) return;
               touchStartMiniRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+              const shell = document.getElementById('NAVPmini');
+              const width = shell?.clientWidth ?? 0;
+              if (width > 0) setMiniShellWidth(width);
+              setIsSwiping(false);
+            }}
+            onTouchMove={(event) => {
+              // Живое перелистывание: сдвигаем содержимое пилеи за пальцем (только горизонталь).
+              // Вертикальный жест остаётся «свайпом вверх для full» и не двигает контент.
+              const start = touchStartMiniRef.current;
+              if (!start || window.innerWidth >= 1024) return;
+              const deltaX = event.touches[0].clientX - start.x;
+              const deltaY = event.touches[0].clientY - start.y;
+              setSwipeX(Math.abs(deltaX) > Math.abs(deltaY) * 1.5 ? deltaX : 0);
             }}
             onTouchEnd={(event) => {
-              if (touchStartMiniRef.current && window.innerWidth < 1024) {
-                const deltaY = event.changedTouches[0].clientY - touchStartMiniRef.current.y;
-                const deltaX = event.changedTouches[0].clientX - touchStartMiniRef.current.x;
-                if (deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) setMode('full');
-                touchStartMiniRef.current = null;
+              const start = touchStartMiniRef.current;
+              if (!start) return;
+              touchStartMiniRef.current = null;
+              if (window.innerWidth >= 1024) return;
+
+              const deltaY = event.changedTouches[0].clientY - start.y;
+              const deltaX = event.changedTouches[0].clientX - start.x;
+
+              // Свайп вверх — открыть полный плеер (как раньше).
+              if (deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
+                setSwipeX(0);
+                setMode('full');
+                return;
+              }
+
+              // Горизонтальный свайп — перелистывание трека (та же механика, что в full-плеере:
+              // докат за 250мс до края, затем смена трека и сброс смещения).
+              const threshold = 60;
+              // Докат до точной посадки входящей peek-карточки на место ушедшей.
+              // Геометрия (от внешнего края пилюли): карточка 220px (обложка 56 +
+              // gap 4 + текст 160); якорь peek left-3 = 12px от padding-box = 13px;
+              // покой центральной карточки x=5px (border 1 + p 4).
+              //  - next: база W+8 -> левый край = 13+(W+8)+s; посадка на 5 при s = -(W+16);
+              //  - prev: база -100%-16px -> левый край = 13-236+s = s-223; посадка при s = 228.
+              // Уходящая карточка к моменту доката растворена (fade с 60 по 220px),
+              // поэтому смена трека визуально бесшовна.
+              if (deltaX < -threshold) {
+                setIsSwiping(true);
+                setSwipeX(-(miniShellWidth + 16));
+                setTimeout(() => {
+                  void nextTrack();
+                  setIsSwiping(false);
+                  setSwipeX(0);
+                }, 250);
+              } else if (deltaX > threshold) {
+                setIsSwiping(true);
+                setSwipeX(228);
+                setTimeout(() => {
+                  void prevTrack();
+                  setIsSwiping(false);
+                  setSwipeX(0);
+                }, 250);
+              } else {
+                setIsSwiping(true);
+                setSwipeX(0);
+                setTimeout(() => {
+                  setIsSwiping(false);
+                }, 250);
               }
             }}
             onTogglePlay={togglePlay}
             playerArtist={playerArtist}
             playerArtwork={playerArtwork}
             playerTitle={playerTitle}
+            nextTitle={getTrackDisplayTitle(nextTrackObj, lang)}
+            nextArtist={getTrackArtist(nextTrackObj, lang)}
+            prevTitle={getTrackDisplayTitle(prevTrackObj, lang)}
+            prevArtist={getTrackArtist(prevTrackObj, lang)}
+            nextArtwork={nextArtwork}
+            prevArtwork={prevArtwork}
             seekValue={seekValue}
+            shellWidth={miniShellWidth}
+            swipeX={swipeX}
             volume={volume}
             volumeSliderRef={volumeSliderRef}
           />
