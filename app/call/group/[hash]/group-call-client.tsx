@@ -586,8 +586,8 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
             disabled={!config.canPublish}
             onClick={() => void handleCopyInvite()}
           >
-            <svg className="h-6 w-6 fill-none stroke-current stroke-[2.5]" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5 10.5 13.5M8 16a4 4 0 0 1 0-5.66l2.83-2.83a4 4 0 1 1 5.66 5.66l-1.42 1.41m-1.41 1.42L11.24 17.4A4 4 0 1 1 5.58 11.74l1.42-1.41" />
+            <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
+              <use href="/icons.svg#IC-link" />
             </svg>
           </CallControlButton>
 
