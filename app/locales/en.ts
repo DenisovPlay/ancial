@@ -1666,4 +1666,9 @@ export const en: Record<string, string> = {
     "voice_invite_name_label": "What should we call you?",
     "voice_invite_name_placeholder": "Your name",
     "voice_invite_no_account": "No sign-in required",
+    "voice_invite_join_as": "Join as",
+    "voice_invite_as_guest": "Join under a different name",
+    "voice_invite_have_account": "Already have a Zypo account?",
+    "voice_invite_sign_in": "Sign in to profile",
+    "voice_invite_enter_name": "Enter your name to join the call",
 };

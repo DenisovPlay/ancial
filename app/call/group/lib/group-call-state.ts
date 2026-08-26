@@ -6,8 +6,10 @@ export type ParticipantMediaState = {
 
 export type GroupCallParticipant = ParticipantMediaState & {
   joined_at?: number;
-  /** Имя гостя (у авторизованных участников имя берётся из профиля). */
+  /** Имя гостя или участника. */
   name?: string;
+  /** URL аватара участника. */
+  img?: string;
   user_id: number;
 };
 
@@ -44,12 +46,14 @@ export function normalizeParticipant(raw: unknown): GroupCallParticipant | null 
 
   const joinedAt = Number(participant.joined_at || 0);
   const guestName = typeof participant.name === 'string' ? participant.name.trim() : '';
+  const avatarImg = typeof participant.img === 'string' ? participant.img.trim() : '';
   return {
     user_id: userId,
     mic_enabled: Boolean(participant.mic_enabled),
     cam_enabled: Boolean(participant.cam_enabled),
     screen_enabled: Boolean(participant.screen_enabled),
     ...(guestName !== '' ? { name: guestName } : {}),
+    ...(avatarImg !== '' ? { img: avatarImg } : {}),
     ...(joinedAt > 0 ? { joined_at: joinedAt } : {}),
   };
 }
@@ -89,10 +93,8 @@ export function resolveFocusedParticipantId(
 }
 
 export function isGroupCallOfferer(currentUserId: number, remoteUserId: number): boolean {
-  // Гость (отрицательный id) не инициирует offer'ы — авторизованная сторона делает offer,
-  // гость только отвечает answer. Это сохраняет детерменизм между парами guest↔user.
-  if (currentUserId < 0 || remoteUserId < 0) return false;
-  return currentUserId > 0 && remoteUserId > 0 && currentUserId < remoteUserId;
+  if (currentUserId === 0 || remoteUserId === 0 || currentUserId === remoteUserId) return false;
+  return currentUserId < remoteUserId;
 }
 
 export function isPolitePeer(currentUserId: number, remoteUserId: number): boolean {

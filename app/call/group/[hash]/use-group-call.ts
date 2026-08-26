@@ -79,6 +79,13 @@ export function useGroupCall({
   const [deafened, setDeafened] = useState(false);
   const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState('');
+  const [guestUserId, setGuestUserId] = useState<number | null>(null);
+  const effectiveUserId = guestUserId ?? currentUserId;
+  const currentUserIdRef = useRef(effectiveUserId);
+
+  useEffect(() => {
+    currentUserIdRef.current = effectiveUserId;
+  }, [effectiveUserId]);
 
   const participantsRef = useRef<GroupCallParticipant[]>([]);
   const peersRef = useRef(new Map<number, RTCPeerConnection>());
@@ -105,6 +112,7 @@ export function useGroupCall({
   const camEnabledRef = useRef(false);
   const screenEnabledRef = useRef(false);
   const cameraBeforeScreenRef = useRef(false);
+  const guestWsRef = useRef<WebSocket | null>(null);
 
   const setParticipants = useCallback((next: GroupCallParticipant[]) => {
     const limited = next.slice(0, 8);
@@ -126,13 +134,24 @@ export function useGroupCall({
   }), [canPublish]);
 
   const sendSignal = useCallback((payload: Record<string, unknown>) => {
-    globalWS.send({
+    const data = {
       type: 'voice:signal',
       dialog_id: dialogId,
       ...(roomIdRef.current ? { room_id: roomIdRef.current } : {}),
       ...payload,
-    });
-  }, [dialogId]);
+    };
+    if (guestCode) {
+      if (guestWsRef.current && guestWsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          guestWsRef.current.send(JSON.stringify(data));
+        } catch (err) {
+          console.error('Guest sendSignal error', err);
+        }
+      }
+      return;
+    }
+    globalWS.send(data);
+  }, [dialogId, guestCode]);
 
   const sendMediaState = useCallback(() => {
     if (!joinedRef.current || !roomIdRef.current) return;
@@ -227,7 +246,7 @@ export function useGroupCall({
     peersRef.current.set(targetUserId, peer);
     const negotiationState: PeerNegotiationState = {
       ignoreOffer: false,
-      isPolite: isPolitePeer(currentUserId, targetUserId),
+      isPolite: isPolitePeer(currentUserIdRef.current, targetUserId),
       isSettingRemoteAnswerPending: false,
       makingOffer: false,
     };
@@ -239,7 +258,7 @@ export function useGroupCall({
       mediaStream.addTrack(audioTrack);
       peer.addTrack(audioTrack, mediaStream);
     } else {
-      peer.addTransceiver('audio', { direction: 'recvonly' });
+      peer.addTransceiver('audio', { direction: 'sendrecv' });
     }
 
     const activeVideoTrack = activeVideoTrackRef.current;
@@ -248,7 +267,7 @@ export function useGroupCall({
       const videoSender = peer.addTrack(activeVideoTrack, mediaStream);
       videoSendersRef.current.set(targetUserId, videoSender);
     } else {
-      const videoTransceiver = peer.addTransceiver('video', { direction: 'recvonly' });
+      const videoTransceiver = peer.addTransceiver('video', { direction: 'sendrecv' });
       videoSendersRef.current.set(targetUserId, videoTransceiver.sender);
     }
 
@@ -261,6 +280,7 @@ export function useGroupCall({
       });
     };
     peer.onnegotiationneeded = () => {
+      if (!isGroupCallOfferer(currentUserIdRef.current, targetUserId)) return;
       void enqueueSignal(targetUserId, async () => {
         if (peer.signalingState === 'closed' || peersRef.current.get(targetUserId) !== peer) return;
         const state = negotiationStateRef.current.get(targetUserId);
@@ -280,12 +300,14 @@ export function useGroupCall({
       });
     };
     peer.ontrack = (event) => {
-      const stream = remoteStreamsRef.current.get(targetUserId) ?? new MediaStream();
+      const currentStream = remoteStreamsRef.current.get(targetUserId);
+      const stream = currentStream ?? new MediaStream();
       if (!stream.getTracks().some((track) => track.id === event.track.id)) {
         stream.addTrack(event.track);
       }
       remoteStreamsRef.current.set(targetUserId, stream);
-      setRemoteStreams((current) => ({ ...current, [targetUserId]: stream }));
+      const freshStream = new MediaStream(stream.getTracks());
+      setRemoteStreams((current) => ({ ...current, [targetUserId]: freshStream }));
       if (event.track.kind === 'video') {
         if (event.track.muted) {
           watchForRemoteVideo(targetUserId, true);
@@ -296,6 +318,7 @@ export function useGroupCall({
         event.track.onunmute = () => {
           clearVideoWatchdog(targetUserId);
           recoveryAttemptsRef.current.delete(targetUserId);
+          setRemoteStreams((current) => ({ ...current, [targetUserId]: new MediaStream(stream.getTracks()) }));
         };
         event.track.onmute = () => {
           const participant = participantsRef.current.find((item) => item.user_id === targetUserId);
@@ -304,7 +327,9 @@ export function useGroupCall({
       }
       event.track.onended = () => {
         stream.removeTrack(event.track);
-        setRemoteStreams((current) => ({ ...current, [targetUserId]: stream }));
+        remoteStreamsRef.current.set(targetUserId, stream);
+        const freshStream = new MediaStream(stream.getTracks());
+        setRemoteStreams((current) => ({ ...current, [targetUserId]: freshStream }));
         if (event.track.kind === 'video') {
           const participant = participantsRef.current.find((item) => item.user_id === targetUserId);
           watchForRemoteVideo(targetUserId, Boolean(participant?.cam_enabled || participant?.screen_enabled));
@@ -333,7 +358,7 @@ export function useGroupCall({
       }
     };
     return peer;
-  }, [clearRecoveryTimer, clearVideoWatchdog, currentUserId, enqueueSignal, hasLiveRemoteVideo, sendSignal, watchForRemoteVideo]);
+  }, [clearRecoveryTimer, clearVideoWatchdog, enqueueSignal, hasLiveRemoteVideo, sendSignal, watchForRemoteVideo]);
 
   const flushIce = useCallback(async (userId: number, peer: RTCPeerConnection) => {
     const candidates = pendingIceRef.current.get(userId) ?? [];
@@ -367,7 +392,7 @@ export function useGroupCall({
     recoveryAttemptsRef.current.set(targetUserId, attempts + 1);
     clearRecoveryTimer(targetUserId);
     clearVideoWatchdog(targetUserId);
-    if (isGroupCallOfferer(currentUserId, targetUserId)) {
+    if (isGroupCallOfferer(currentUserIdRef.current, targetUserId)) {
       closePeer(targetUserId, false);
       void makeOfferRef.current(targetUserId, true).catch((error) => {
         console.error('Group call recovery offer failed', error);
@@ -376,7 +401,7 @@ export function useGroupCall({
       closePeer(targetUserId, false);
       sendSignal({ kind: 'restart', target_user_id: targetUserId });
     }
-  }, [clearRecoveryTimer, clearVideoWatchdog, closePeer, currentUserId, sendSignal]);
+  }, [clearRecoveryTimer, clearVideoWatchdog, closePeer, sendSignal]);
 
   useEffect(() => {
     makeOfferRef.current = makeOffer;
@@ -431,7 +456,26 @@ export function useGroupCall({
       const kind = String(signal.kind || '');
 
       if (kind === 'status') {
-        setParticipants(normalizeParticipants(signal.participants));
+        const next = normalizeParticipants(signal.participants);
+        const myId = currentUserIdRef.current;
+        const merged = joinedRef.current
+          ? next.map((participant) => (
+              participant.user_id === myId
+                ? { ...participant, ...currentMediaState() }
+                : participant
+            ))
+          : next;
+        setParticipants(merged);
+        if (joinedRef.current) {
+          merged.forEach((participant) => {
+            if (participant.user_id !== myId) {
+              watchForRemoteVideo(participant.user_id, participant.cam_enabled || participant.screen_enabled);
+              if (isGroupCallOfferer(myId, participant.user_id) && !peersRef.current.has(participant.user_id)) {
+                void makeOffer(participant.user_id).catch((error) => console.error('Group call offer failed', error));
+              }
+            }
+          });
+        }
         return;
       }
       if (kind === 'disconnected') {
@@ -449,12 +493,18 @@ export function useGroupCall({
       if (kind === 'snapshot') {
         roomIdRef.current = String(signal.room_id || '');
         const next = normalizeParticipants(signal.participants);
-        setParticipants(next);
-        next.forEach((participant) => {
-          if (isGroupCallOfferer(currentUserId, participant.user_id)) {
+        const myId = currentUserIdRef.current;
+        const merged = next.map((participant) => (
+          participant.user_id === myId
+            ? { ...participant, ...currentMediaState() }
+            : participant
+        ));
+        setParticipants(merged);
+        merged.forEach((participant) => {
+          if (isGroupCallOfferer(myId, participant.user_id)) {
             void makeOffer(participant.user_id).catch((error) => console.error('Group call offer failed', error));
           }
-          if (participant.user_id !== currentUserId) {
+          if (participant.user_id !== myId) {
             watchForRemoteVideo(participant.user_id, participant.cam_enabled || participant.screen_enabled);
           }
         });
@@ -468,10 +518,16 @@ export function useGroupCall({
       }
       if (kind === 'participant_joined') {
         const participant = normalizeParticipant(signal);
-        if (participant && !participantsRef.current.some((item) => item.user_id === participant.user_id)) {
-          setParticipants([...participantsRef.current, participant]);
+        const myId = currentUserIdRef.current;
+        if (participant && participant.user_id !== myId) {
+          const exists = participantsRef.current.some((item) => item.user_id === participant.user_id);
+          if (!exists) {
+            setParticipants([...participantsRef.current, participant]);
+          } else {
+            setParticipants(participantsRef.current.map((item) => item.user_id === participant.user_id ? { ...item, ...participant } : item));
+          }
           watchForRemoteVideo(participant.user_id, participant.cam_enabled || participant.screen_enabled);
-          if (isGroupCallOfferer(currentUserId, participant.user_id)) {
+          if (isGroupCallOfferer(myId, participant.user_id) && !peersRef.current.has(participant.user_id)) {
             void makeOffer(participant.user_id).catch((error) => console.error('Group call offer failed', error));
           }
         }
@@ -479,7 +535,8 @@ export function useGroupCall({
       }
 
       const fromUserId = Number(signal.from_user_id || 0);
-      if (fromUserId <= 0 || fromUserId === currentUserId) return;
+      const myId = currentUserIdRef.current;
+      if (!Number.isInteger(fromUserId) || fromUserId === 0 || fromUserId === myId) return;
       if (kind === 'media') {
         const media: ParticipantMediaState = {
           mic_enabled: Boolean(signal.mic_enabled),
@@ -493,7 +550,7 @@ export function useGroupCall({
 
       enqueueSignal(fromUserId, async () => {
         if (kind === 'restart') {
-          if (isGroupCallOfferer(currentUserId, fromUserId)) requestPeerRecovery(fromUserId, true);
+          if (isGroupCallOfferer(myId, fromUserId)) requestPeerRecovery(fromUserId, true);
           return;
         }
         const peer = await createPeer(fromUserId);
@@ -546,24 +603,27 @@ export function useGroupCall({
       if (Number(payload.dialog_id || 0) !== dialogId) return;
       subscribedRef.current = true;
 
-      // 1) Мы ещё не в комнате — обычный первый join после подписки.
-      if (!joinedRef.current) {
+      // 1) Мы ещё не в комнате и не нажимали join: не шлем join с нулевыми медиа
+      if (!joinedRef.current && !pendingJoinRef.current) {
+        return;
+      }
+
+      // 2) Пользователь нажал join и ждал подписки:
+      if (pendingJoinRef.current) {
+        pendingJoinRef.current = false;
         sendSignal({ kind: 'join', ...currentMediaState() });
         return;
       }
 
-      // 2) Ресабскрайб при живом звонке. Если комната та же и состав участников
-      // не изменился — сохраняем установленные P2P-сессии (не роняем медиа).
-      // Снапшот придёт следующим сообщением и дозаполнит недостающих offer'ами.
-      if (roomIdRef.current && !pendingJoinRef.current) {
+      // 3) Ресабскрайб при живом звонке (например, реконнект WS):
+      if (roomIdRef.current) {
         sendSignal({ kind: 'join', ...currentMediaState() });
         return;
       }
 
-      // 3) Страховка: зависший pendingJoin — полный ресинк.
+      // 4) Страховка:
       resetPeers();
       roomIdRef.current = '';
-      pendingJoinRef.current = false;
       sendSignal({ kind: 'join', ...currentMediaState() });
     };
 
@@ -589,6 +649,11 @@ export function useGroupCall({
         let msg: { type?: string; error?: string; code?: string; message?: string; dialog_id?: number | string } & Record<string, unknown>;
         try { msg = JSON.parse(raw.data); } catch { return; }
         if (msg.type === 'auth_ok') {
+          const guestUser = msg.user as { id?: number } | undefined;
+          if (typeof guestUser?.id === 'number') {
+            setGuestUserId(guestUser.id);
+            currentUserIdRef.current = guestUser.id;
+          }
           guestSend({ type: 'subscribe', dialog_id: dialogId });
           return;
         }
@@ -596,8 +661,14 @@ export function useGroupCall({
           handleSubscribed(msg);
           return;
         }
-        if (msg.type === 'voice:signal') {
-          handleSignal(msg.data ?? msg);
+        if (msg.type === 'voice:signal' || msg.event === 'voice:signal') {
+          // Для сообщений-событий (event=voice:signal) сигнал в msg.data не имеет dialog_id —
+          // передаём обёртку целиком чтобы envelope.dialog_id прошёл проверку в handleSignal.
+          // Для прямых voice:signal (type=voice:signal) структура совпадает с envelope.
+          const signalPayload = msg.event === 'voice:signal'
+            ? { dialog_id: msg.dialog_id, data: msg.data }
+            : msg;
+          handleSignal(signalPayload);
           return;
         }
         if (msg.type === 'ws_error' || msg.type === 'ws:error' || msg.type === 'error') {
@@ -615,6 +686,7 @@ export function useGroupCall({
       };
       try {
         ws = new WebSocket(WS_BASE);
+        guestWsRef.current = ws;
       } catch {
         onDisconnected();
         return;
@@ -631,6 +703,7 @@ export function useGroupCall({
       };
       return () => {
         closed = true;
+        guestWsRef.current = null;
         try { ws?.close(); } catch {}
         subscribedRef.current = false;
       };
@@ -647,7 +720,7 @@ export function useGroupCall({
       globalWS.unsubscribeDialog(dialogId);
       subscribedRef.current = false;
     };
-  }, [closePeer, createPeer, currentMediaState, currentUserId, dialogId, guestCode, guestName, enqueueSignal, flushIce, lang?.voice_room_disconnected, lang?.voice_room_error, leave, makeOffer, onDisconnected, requestPeerRecovery, resetPeers, sendSignal, setParticipants, showNote, watchForRemoteVideo]);
+  }, [closePeer, createPeer, currentMediaState, currentUserId, dialogId, guestCode, guestName, enqueueSignal, flushIce, lang?.voice_invite_invalid, lang?.voice_room_disconnected, lang?.voice_room_error, leave, makeOffer, onDisconnected, requestPeerRecovery, resetPeers, sendSignal, setParticipants, showNote, watchForRemoteVideo]);
 
   useEffect(() => () => {
     if (joinedRef.current && roomIdRef.current) sendSignal({ kind: 'leave' });
@@ -714,6 +787,11 @@ export function useGroupCall({
       pendingJoinRef.current = true;
       setJoined(true);
       refreshLocalStream();
+      setParticipants(updateParticipantMedia(participantsRef.current, currentUserIdRef.current, {
+        mic_enabled: micEnabledRef.current,
+        cam_enabled: camEnabledRef.current,
+        screen_enabled: false,
+      }));
       void loadCameras().catch(() => undefined);
       if (subscribedRef.current) {
         pendingJoinRef.current = false;
@@ -739,16 +817,16 @@ export function useGroupCall({
     } finally {
       setJoining(false);
     }
-  }, [activityUrl, canPublish, currentMediaState, dialogId, guestCode, joining, lang?.voice_microphone_denied, leave, loadCameras, refreshLocalStream, sendSignal, showNote, title]);
+  }, [activityUrl, canPublish, currentMediaState, dialogId, guestCode, joining, lang?.voice_microphone_denied, leave, loadCameras, refreshLocalStream, sendSignal, setParticipants, showNote, title]);
 
   const toggleMic = useCallback(() => {
     if (!canPublish || !audioTrackRef.current) return;
     micEnabledRef.current = !micEnabledRef.current;
     audioTrackRef.current.enabled = micEnabledRef.current;
     setMicEnabled(micEnabledRef.current);
-    setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
+    setParticipants(updateParticipantMedia(participantsRef.current, currentUserIdRef.current, currentMediaState()));
     sendMediaState();
-  }, [canPublish, currentMediaState, currentUserId, sendMediaState, setParticipants]);
+  }, [canPublish, currentMediaState, sendMediaState, setParticipants]);
 
   const disableCamera = useCallback(async () => {
     const cameraTrack = cameraTrackRef.current;
@@ -757,9 +835,9 @@ export function useGroupCall({
     cameraTrackRef.current = null;
     camEnabledRef.current = false;
     setCamEnabled(false);
-    setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
+    setParticipants(updateParticipantMedia(participantsRef.current, currentUserIdRef.current, currentMediaState()));
     sendMediaState();
-  }, [currentMediaState, currentUserId, replaceVideoTrack, sendMediaState, setParticipants]);
+  }, [currentMediaState, replaceVideoTrack, sendMediaState, setParticipants]);
 
   const enableCamera = useCallback(async (deviceId?: string) => {
     if (!canPublish || screenEnabledRef.current) return;
@@ -779,7 +857,7 @@ export function useGroupCall({
       if (actualDeviceId) setSelectedCameraId(actualDeviceId);
       camEnabledRef.current = true;
       setCamEnabled(true);
-      setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
+      setParticipants(updateParticipantMedia(participantsRef.current, currentUserIdRef.current, currentMediaState()));
       sendMediaState();
       void loadCameras().catch(() => undefined);
     } catch (error) {
@@ -791,7 +869,7 @@ export function useGroupCall({
         time: 4,
       });
     }
-  }, [canPublish, currentMediaState, currentUserId, lang?.camera_access_denied, lang?.camera_off, loadCameras, replaceVideoTrack, sendMediaState, setParticipants, showNote]);
+  }, [canPublish, currentMediaState, lang?.camera_access_denied, lang?.camera_off, loadCameras, replaceVideoTrack, sendMediaState, setParticipants, showNote]);
 
   const toggleCamera = useCallback(async () => {
     if (camEnabledRef.current) await disableCamera();
@@ -816,9 +894,9 @@ export function useGroupCall({
     camEnabledRef.current = shouldRestoreCamera;
     setScreenEnabled(false);
     setCamEnabled(shouldRestoreCamera);
-    setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
+    setParticipants(updateParticipantMedia(participantsRef.current, currentUserIdRef.current, currentMediaState()));
     sendMediaState();
-  }, [currentMediaState, currentUserId, replaceVideoTrack, sendMediaState, setParticipants]);
+  }, [currentMediaState, replaceVideoTrack, sendMediaState, setParticipants]);
 
   const startScreenShare = useCallback(async () => {
     if (!canPublish) return;
@@ -835,7 +913,7 @@ export function useGroupCall({
       setScreenEnabled(true);
       setCamEnabled(false);
       track.onended = () => void stopScreenShare();
-      setParticipants(updateParticipantMedia(participantsRef.current, currentUserId, currentMediaState()));
+      setParticipants(updateParticipantMedia(participantsRef.current, currentUserIdRef.current, currentMediaState()));
       sendMediaState();
     } catch (error) {
       if (track && activeVideoTrackRef.current !== track) track.stop();
@@ -846,7 +924,7 @@ export function useGroupCall({
         time: 4,
       });
     }
-  }, [canPublish, currentMediaState, currentUserId, lang?.screen_share, lang?.screen_share_failed, replaceVideoTrack, sendMediaState, setParticipants, showNote, stopScreenShare]);
+  }, [canPublish, currentMediaState, lang?.screen_share, lang?.screen_share_failed, replaceVideoTrack, sendMediaState, setParticipants, showNote, stopScreenShare]);
 
   const toggleScreenShare = useCallback(async () => {
     if (screenEnabledRef.current) await stopScreenShare();
@@ -856,6 +934,7 @@ export function useGroupCall({
   return {
     camEnabled,
     cameras,
+    currentUserId: effectiveUserId,
     deafened,
     disableCamera,
     enableCamera,

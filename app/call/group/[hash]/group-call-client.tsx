@@ -39,6 +39,8 @@ type GroupCallConfig = {
   currentUserId: number;
   dialog: DialogMeta;
   members: GroupMember[];
+  guestCode?: string;
+  guestName?: string;
 };
 
 type ProfileResponse = Partial<GroupMember> & { id?: number | string };
@@ -156,11 +158,11 @@ function CallControlButton({
       style={
         isFullGlass
           ? {
-              x: springX,
-              y: springY,
-              scaleX: springPressScaleX,
-              scaleY: springPressScaleY,
-            }
+            x: springX,
+            y: springY,
+            scaleX: springPressScaleX,
+            scaleY: springPressScaleY,
+          }
           : undefined
       }
     >
@@ -236,7 +238,13 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   const [focusedParticipantId, setFocusedParticipantId] = useState<number | null>(null);
   const [members, setMembers] = useState(config.members);
   const title = config.dialog.title || lang?.voice_room_title || 'Групповой звонок';
-  const exitCall = useCallback(() => router.push(returnPath), [returnPath, router]);
+  const exitCall = useCallback(() => {
+    if (config.guestCode) {
+      router.push(`/call/invite/${encodeURIComponent(config.guestCode)}`);
+    } else {
+      router.push(returnPath);
+    }
+  }, [config.guestCode, returnPath, router]);
 
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
   const isFullGlass = isEffectiveFullGlass(glassMode);
@@ -267,6 +275,8 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
     dialogId: Number(config.dialog.id),
     onDisconnected: exitCall,
     title,
+    guestCode: config.guestCode,
+    guestName: config.guestName,
   });
 
   const handleCamButtonClick = async () => {
@@ -312,18 +322,32 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   };
 
   const memberById = useMemo(() => new Map(members.map((member) => [Number(member.id), member])), [members]);
+  const effectiveUserId = call.currentUserId || config.currentUserId;
   const visibleParticipants = useMemo<GroupCallParticipant[]>(() => {
-    if (call.participants.length > 0) return call.participants;
+    if (call.participants.length > 0) {
+      return call.participants.map((participant) => (
+        participant.user_id === effectiveUserId
+          ? {
+            ...participant,
+            mic_enabled: call.micEnabled,
+            cam_enabled: call.camEnabled,
+            screen_enabled: call.screenEnabled,
+            name: participant.name || config.guestName,
+          }
+          : participant
+      ));
+    }
     if (!call.joined) return [];
     return [{
-      user_id: config.currentUserId,
+      user_id: effectiveUserId,
+      name: config.guestName || undefined,
       mic_enabled: call.micEnabled,
       cam_enabled: call.camEnabled,
       screen_enabled: call.screenEnabled,
     }];
-  }, [call.camEnabled, call.joined, call.micEnabled, call.participants, call.screenEnabled, config.currentUserId]);
+  }, [call.camEnabled, call.joined, call.micEnabled, call.participants, call.screenEnabled, config.guestName, effectiveUserId]);
   const activeFocusedParticipantId = resolveFocusedParticipantId(focusedParticipantId, visibleParticipants);
-  const currentMember = memberById.get(config.currentUserId);
+  const currentMember = memberById.get(effectiveUserId);
   const actorIsOwner = currentMember?.community_role?.is_owner === true;
   const actorPosition = currentMember?.community_role?.position ?? (actorIsOwner ? -2147483648 : null);
 
@@ -345,7 +369,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
     const known = new Set(members.map((member) => Number(member.id)));
     const missingIds = call.participants
       .map((participant) => participant.user_id)
-      .filter((userId) => !known.has(userId));
+      .filter((userId) => userId > 0 && !known.has(userId));
     if (missingIds.length === 0) return;
 
     let cancelled = false;
@@ -386,7 +410,11 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
 
   const handleCopyInvite = async () => {
     try {
-      const { code } = await AncialAPI.createVoiceInvite(Number(config.dialog.id));
+      let code = config.guestCode;
+      if (!code) {
+        const res = await AncialAPI.createVoiceInvite(Number(config.dialog.id));
+        code = res.code;
+      }
       const url = `${window.location.origin}/call/invite/${encodeURIComponent(code)}`;
       await navigator.clipboard.writeText(url);
       showNote({
@@ -450,13 +478,13 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
                 <GroupCallTile
                   participant={participant}
                   member={memberById.get(participant.user_id)}
-                  stream={participant.user_id === config.currentUserId ? call.localStream : call.remoteStreams[participant.user_id]}
-                  isLocal={participant.user_id === config.currentUserId}
+                  stream={participant.user_id === effectiveUserId ? call.localStream : call.remoteStreams[participant.user_id]}
+                  isLocal={participant.user_id === effectiveUserId}
                   deafened={call.deafened}
                   focused={participant.user_id === activeFocusedParticipantId}
                   onFocusChange={(focused) => setFocusedParticipantId(focused ? participant.user_id : null)}
                   onDisconnect={config.canManageVoice
-                    && participant.user_id !== config.currentUserId
+                    && participant.user_id !== effectiveUserId
                     && canManageCommunityMember({
                       actorIsOwner,
                       actorPosition,
@@ -484,9 +512,8 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
           onMouseLeave={isFullGlass ? handlePillMouseLeave : undefined}
           onTouchEnd={isFullGlass ? handlePillMouseLeave : undefined}
           onTouchCancel={isFullGlass ? handlePillMouseLeave : undefined}
-          className={`flex items-center gap-1 p-1 rounded-full h-fit relative shadow-2xl overflow-visible border ${
-            isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
-          }`}
+          className={`flex items-center gap-1 p-1 rounded-full h-fit relative shadow-2xl overflow-visible border ${isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+            }`}
         >
           {!isGlassOff && (
             <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
@@ -535,11 +562,11 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
                 iconNode={
                   call.selectedCameraId === cam.deviceId ? (
                     <svg className="inline w-6 h-6 fill-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 40.980469 8.9902344 A 2.0002 2.0002 0 0 0 39.585938 9.5859375 L 19 30.171875 L 8.4140625 19.585938 A 2.0002 2.0002 0 1 0 5.5859375 22.414062 L 17.585938 34.414062 A 2.0002 2.0002 0 0 0 20.414062 34.414062 L 42.414062 12.414062 A 2.0002 2.0002 0 0 0 40.980469 8.9902344 z"/>
+                      <path d="M 40.980469 8.9902344 A 2.0002 2.0002 0 0 0 39.585938 9.5859375 L 19 30.171875 L 8.4140625 19.585938 A 2.0002 2.0002 0 1 0 5.5859375 22.414062 L 17.585938 34.414062 A 2.0002 2.0002 0 0 0 20.414062 34.414062 L 42.414062 12.414062 A 2.0002 2.0002 0 0 0 40.980469 8.9902344 z" />
                     </svg>
                   ) : (
                     <svg className="inline w-6 h-6 fill-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z"/>
+                      <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z" />
                     </svg>
                   )
                 }
@@ -553,7 +580,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
               onClick={() => void disableCamFromDropdown()}
               iconNode={
                 <svg className="inline w-6 h-6 fill-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                  <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/>
+                  <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z" />
                 </svg>
               }
               className="text-red-400"
@@ -640,10 +667,50 @@ export default function GroupCallClient() {
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const hash = params?.hash || '';
   const returnPath = safeReturnPath(searchParams.get('return'), hash);
+  const guestCode = searchParams.get('guestCode') || searchParams.get('invite') || '';
+  const guestName = searchParams.get('guestName') || searchParams.get('name') || '';
   const [config, setConfig] = useState<GroupCallConfig | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (guestCode) {
+      const trimmedGuestName = guestName.trim().replace(/[\x00-\x1F\x7F]/g, '');
+      if (!trimmedGuestName) {
+        router.replace(`/call/invite/${encodeURIComponent(guestCode)}`);
+        return;
+      }
+
+      let cancelled = false;
+      AncialAPI.getVoiceInviteInfo(guestCode)
+        .then((info) => {
+          if (cancelled) return;
+          setConfig({
+            canManageVoice: false,
+            dialog: {
+              id: Number(info.dialog_id),
+              hash: info.hash || hash,
+              title: info.title || 'Zypo',
+              avatar: info.avatar || '',
+              type: 'group',
+              voice_enabled: 1,
+            } as DialogMeta,
+            communityId: 0,
+            members: [],
+            currentUserId: -1,
+            canPublish: true,
+            guestCode,
+            guestName: trimmedGuestName,
+          });
+        })
+        .catch((requestError) => {
+          console.error('Guest call invite loading failed', requestError);
+          if (!cancelled) setError(lang?.voice_invite_invalid || 'Приглашение недействительно или устарело');
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     if (authLoading) return;
     if (!isAuthenticated) {
       router.replace(`/login?return=${encodeURIComponent(`/call/group/${hash}`)}`);
@@ -679,7 +746,7 @@ export default function GroupCallClient() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, hash, isAuthenticated, lang?.community_channel_forbidden, lang?.voice_room_error, router, user?.id]);
+  }, [authLoading, guestCode, guestName, hash, isAuthenticated, lang?.community_channel_forbidden, lang?.voice_invite_invalid, lang?.voice_room_error, router, user?.id]);
 
   if (error) {
     return (

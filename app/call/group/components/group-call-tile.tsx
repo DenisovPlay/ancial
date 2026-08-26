@@ -40,7 +40,9 @@ export default function GroupCallTile({
   const { lang } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const advertisedVideo = participant.cam_enabled || participant.screen_enabled;
+  const advertisedVideo = isLocal
+    ? Boolean((participant.cam_enabled || participant.screen_enabled) || (stream && hasPlayableVideoTrack(stream.getTracks())))
+    : Boolean(participant.cam_enabled || participant.screen_enabled);
   const [hasPlayableVideo, setHasPlayableVideo] = useState(() => (
     stream ? hasPlayableVideoTrack(stream.getTracks()) : false
   ));
@@ -68,8 +70,10 @@ export default function GroupCallTile({
       void audio.play().catch(() => undefined);
     };
     const attachStream = () => {
-      videoOnlyStream = stream ? new MediaStream(stream.getVideoTracks()) : null;
-      audioOnlyStream = stream ? new MediaStream(stream.getAudioTracks()) : null;
+      const videoTracks = stream ? stream.getVideoTracks() : [];
+      const audioTracks = stream ? stream.getAudioTracks() : [];
+      videoOnlyStream = videoTracks.length > 0 ? new MediaStream(videoTracks) : null;
+      audioOnlyStream = audioTracks.length > 0 ? new MediaStream(audioTracks) : null;
       video.srcObject = videoOnlyStream;
       audio.srcObject = audioOnlyStream;
       attemptPlayback();
@@ -150,7 +154,7 @@ export default function GroupCallTile({
 
       <div className={`absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950 transition-opacity duration-300 ${advertisedVideo && hasPlayableVideo ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <img
-          src={normalizeAssetUrl(member?.img, FALLBACK_AVATAR)}
+          src={normalizeAssetUrl(member?.img || participant.img, FALLBACK_AVATAR)}
           alt=""
           className="h-20 w-20 rounded-full border border-zinc-600/30 object-cover shadow sm:h-24 sm:w-24"
         />
@@ -194,13 +198,13 @@ export default function GroupCallTile({
         </button>
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-2 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-10">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-3 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-9">
         <span className="min-w-0 truncate text-sm font-medium text-white">
           {displayName}{isLocal ? ` (${lang?.you || 'Вы'})` : ''}
         </span>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-3">
           {participant.screen_enabled ? (
-            <span className="rounded-full border border-purple-400/30 bg-purple-600/90 px-2 py-1 text-[10px] font-semibold text-white">
+            <span className="rounded-full border border-purple-400/30 bg-purple-600/90 px-3 py-1.5 text-[10px] font-semibold text-white">
               {lang?.screen_share || 'Экран'}
             </span>
           ) : null}

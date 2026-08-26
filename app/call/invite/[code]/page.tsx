@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 
-import GuestCallClient from './guest-call-client';
+import CallInviteClient from './call-invite-client';
 
 export const metadata = {
   title: 'Приглашение в звонок',
@@ -9,7 +9,7 @@ export const metadata = {
 export default function CallInvitePage() {
   return (
     <Suspense fallback={<div className="flex min-h-dvh w-full items-center justify-center bg-black text-white">…</div>}>
-      <GuestCallClient />
+      <CallInviteClient />
     </Suspense>
   );
 }

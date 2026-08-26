@@ -22,6 +22,7 @@ export interface AncialV2Response<T> {
 
 export interface VoiceInviteInfo {
   dialog_id: number;
+  hash?: string;
   title: string;
   avatar: string;
   members_count: number;

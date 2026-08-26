@@ -1666,4 +1666,9 @@ export const ru: Record<string, string> = {
     "voice_invite_name_label": "Как вас представить?",
     "voice_invite_name_placeholder": "Ваше имя",
     "voice_invite_no_account": "Авторизация не требуется",
+    "voice_invite_join_as": "Войти как",
+    "voice_invite_as_guest": "Войти под другим именем",
+    "voice_invite_have_account": "Уже есть аккаунт Zypo?",
+    "voice_invite_sign_in": "Войти в профиль",
+    "voice_invite_enter_name": "Введите имя для участия в звонке",
 };
