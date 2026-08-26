@@ -88,37 +88,29 @@ export function PulsePlayerMini({
 }: PulsePlayerMiniProps) {
   const hasSwipe = swipeX !== 0;
 
-  // Карусель существует только во время жеста на телефонах. При swipeX === 0
-  // (десктоп и покой) не рендерится ни один transform — разметка идентична исходной.
-  // Уходящая карточка растворяется по мере выхода за порог жеста (как cover в
-  // full-плеере): к |swipeX| >= 220 она полностью прозрачна — на докате смена
-  // трека визуально бесшовна независимо от ширины пилюли.
-  const fade = Math.max(0, Math.min(1, 1 - (Math.abs(swipeX) - 60) / 160));
+  const w = Math.max(shellWidth || 0, 360);
+  const transition = isSwiping ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+
   const slideStyle = hasSwipe
     ? {
       transform: `translate3d(${swipeX}px, 0, 0)`,
-      opacity: fade,
-      transition: isSwiping ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s' : 'none',
-      willChange: 'transform, opacity' as const,
-    }
-    : undefined;
-  // Обе peek-карточки при старте жеста ПОЛНОСТЬЮ за границами пилюли
-  // (overflow-hidden + rounded-full обрезают у скругления):
-  //  - prev: слева, translate -100% - 16px -> правый край на -3px;
-  //  - next: справа, база W + 8px (якорь left-3) -> левый край за границей.
-  // W — фактическая ширина пилюли, замеряется на touchstart в провайдере.
-  const peekTransition = isSwiping ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
-  const prevPeekStyle = hasSwipe
-    ? {
-      transform: `translate3d(calc(-100% - 16px + ${swipeX}px), 0, 0)`,
-      transition: peekTransition,
+      transition,
       willChange: 'transform' as const,
     }
     : undefined;
+
+  const prevPeekStyle = hasSwipe
+    ? {
+      transform: `translate3d(calc(-${w}px + ${swipeX}px), 0, 0)`,
+      transition,
+      willChange: 'transform' as const,
+    }
+    : undefined;
+
   const nextPeekStyle = hasSwipe
     ? {
-      transform: `translate3d(calc(${Math.max(shellWidth + 8, 360)}px + ${swipeX}px), 0, 0)`,
-      transition: peekTransition,
+      transform: `translate3d(calc(${w}px + ${swipeX}px), 0, 0)`,
+      transition,
       willChange: 'transform' as const,
     }
     : undefined;
@@ -137,58 +129,63 @@ export function PulsePlayerMini({
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* Соседние треки подкладываются под пилюлю только на время свайпа (телефоны).
-            Тот же паттерн, что cover-swipe в full: центральная карточка + peek по бокам.
-            absolute-слой, layout пилюли не затрагивают. */}
-        {hasSwipe && prevArtwork ? (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-3 flex items-center gap-1 lg:hidden"
-            style={prevPeekStyle}
-          >
-            <span className="relative block h-10 w-10 lg:h-14 lg:w-14 overflow-hidden rounded-full bg-zinc-800 shadow">
-              <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={prevArtwork} />
-            </span>
-            <span className="flex w-40 shrink-0 flex-col lg:w-64">
-              <span className="w-full truncate text-sm text-white lg:text-base">{prevTitle}</span>
-              <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{prevArtist}</span>
-            </span>
-          </div>
-        ) : null}
-        {hasSwipe && nextArtwork ? (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-3 flex items-center gap-1 lg:hidden"
-            style={nextPeekStyle}
-          >
-            <span className="relative block h-10 w-10 lg:h-14 lg:w-14 overflow-hidden rounded-full bg-zinc-800 shadow">
-              <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={nextArtwork} />
-            </span>
-            <span className="flex w-40 shrink-0 flex-col lg:w-64">
-              <span className="w-full truncate text-sm text-white lg:text-base">{nextTitle}</span>
-              <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{nextArtist}</span>
-            </span>
-          </div>
-        ) : null}
-
-        {/* Обёртка карусели вокруг ОРИГИНАЛЬНОЙ кнопки обложки: DOM внутри не тронут */}
-        <div className="relative z-10 flex shrink-0" style={slideStyle}>
-          <button
-            type="button"
-            onClick={onOpenFull}
-            className="group relative h-10 w-10 lg:h-14 lg:w-14 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-16 lg:w-16"
-          >
-            <PulseCoverImage alt={playerTitle} className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={playerArtwork} />
-            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90 opacity-0 duration-300 group-hover:opacity-100">
-              <Icon name="IC-full-mode" className="h-10 w-10 fill-white" />
+        {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
+        <div className="relative flex shrink-0 items-center">
+          {/* Предыдущий трек (подкладывается только во время свайпа) */}
+          {hasSwipe && prevArtwork ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 flex items-center gap-1 lg:hidden"
+              style={prevPeekStyle}
+            >
+              <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow lg:h-14 lg:w-14">
+                <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={prevArtwork} />
+              </span>
+              <span className="flex w-40 shrink-0 flex-col lg:w-64">
+                <span className="w-full truncate text-sm text-white lg:text-base">{prevTitle}</span>
+                <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{prevArtist}</span>
+              </span>
             </div>
-          </button>
-        </div>
+          ) : null}
 
-        {/* Текст едет тем же transform: отдельная обёртка с тем же стилем слайда */}
-        <div className="relative z-10 flex w-40 shrink-0 flex-col lg:w-64" style={slideStyle}>
-          <span className="w-full truncate text-sm text-white lg:text-base">{playerTitle}</span>
-          <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{playerArtist}</span>
+          {/* Текущий трек */}
+          <div
+            className="relative z-10 flex shrink-0 items-center gap-1"
+            style={slideStyle}
+          >
+            <button
+              type="button"
+              onClick={onOpenFull}
+              className="group relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-16 lg:w-16"
+            >
+              <PulseCoverImage alt={playerTitle} className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={playerArtwork} />
+              <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90 opacity-0 duration-300 group-hover:opacity-100">
+                <Icon name="IC-full-mode" className="h-10 w-10 fill-white" />
+              </div>
+            </button>
+
+            <div className="flex w-40 shrink-0 flex-col lg:w-64">
+              <span className="w-full truncate text-sm text-white lg:text-base">{playerTitle}</span>
+              <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{playerArtist}</span>
+            </div>
+          </div>
+
+          {/* Следующий трек (подкладывается только во время свайпа) */}
+          {hasSwipe && nextArtwork ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 flex items-center gap-1 lg:hidden"
+              style={nextPeekStyle}
+            >
+              <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow lg:h-14 lg:w-14">
+                <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={nextArtwork} />
+              </span>
+              <span className="flex w-40 shrink-0 flex-col lg:w-64">
+                <span className="w-full truncate text-sm text-white lg:text-base">{nextTitle}</span>
+                <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{nextArtist}</span>
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex-grow" />
@@ -216,7 +213,7 @@ export function PulsePlayerMini({
 
         <div className="hidden flex-grow lg:block" />
 
-        <div className="relative z-10 flex shrink-0 items-center justify-end gap-1.5 lg:w-80 lg:gap-3">
+        <div className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:w-80 lg:gap-3">
           <div className="hidden flex-col items-center justify-center gap-1 pr-1 lg:flex">
             <span className="text-sm text-zinc-300">{lang?.volume || 'Громкость'}</span>
             <input
@@ -236,7 +233,7 @@ export function PulsePlayerMini({
             <Icon name="IC-moveback" className="h-8 w-8 shrink-0 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
           </button>
 
-          <button type="button" onClick={onTogglePlay} className="flex h-10 w-10 lg:h-14 lg:w-14 shrink-0 cursor-pointer items-center justify-center rounded-full lg:bg-purple-500 shadow duration-300 lg:hover:bg-purple-600 active:scale-95">
+          <button type="button" onClick={onTogglePlay} className="flex h-10 w-10 lg:h-14 lg:w-14 shrink-0 cursor-pointer items-center justify-center rounded-full lg:bg-purple-500 lg:shadow duration-300 lg:hover:bg-purple-600 active:scale-95">
             <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-7 w-7 lg:h-10 lg:w-10 fill-white" />
           </button>
 

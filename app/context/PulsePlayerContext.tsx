@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { flushSync } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
@@ -2100,13 +2101,21 @@ export function PulsePlayerProvider({
               setIsSwiping(false);
             }}
             onTouchMove={(event) => {
-              // Живое перелистывание: сдвигаем содержимое пилеи за пальцем (только горизонталь).
+              // Живое перелистывание: сдвигаем содержимое пилюли за пальцем (только горизонталь).
               // Вертикальный жест остаётся «свайпом вверх для full» и не двигает контент.
               const start = touchStartMiniRef.current;
               if (!start || window.innerWidth >= 1024) return;
               const deltaX = event.touches[0].clientX - start.x;
               const deltaY = event.touches[0].clientY - start.y;
-              setSwipeX(Math.abs(deltaX) > Math.abs(deltaY) * 1.5 ? deltaX : 0);
+              if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+                if ((deltaX > 0 && !prevTrackObj) || (deltaX < 0 && !nextTrackObj && !isRadioModeRef.current)) {
+                  setSwipeX(deltaX * 0.3);
+                } else {
+                  setSwipeX(deltaX);
+                }
+              } else {
+                setSwipeX(0);
+              }
             }}
             onTouchEnd={(event) => {
               const start = touchStartMiniRef.current;
@@ -2124,39 +2133,39 @@ export function PulsePlayerProvider({
                 return;
               }
 
-              // Горизонтальный свайп — перелистывание трека (та же механика, что в full-плеере:
-              // докат за 250мс до края, затем смена трека и сброс смещения).
+              // Горизонтальный свайп — перелистывание трека.
+              // Докат на полную ширину пилюли: входящий трек заходит через скругление с одного края
+              // и садится в 0px, а уходящий уходит за противоположный край капсулы (clipped overflow-hidden).
               const threshold = 60;
-              // Докат до точной посадки входящей peek-карточки на место ушедшей.
-              // Геометрия (от внешнего края пилюли): карточка 220px (обложка 56 +
-              // gap 4 + текст 160); якорь peek left-3 = 12px от padding-box = 13px;
-              // покой центральной карточки x=5px (border 1 + p 4).
-              //  - next: база W+8 -> левый край = 13+(W+8)+s; посадка на 5 при s = -(W+16);
-              //  - prev: база -100%-16px -> левый край = 13-236+s = s-223; посадка при s = 228.
-              // Уходящая карточка к моменту доката растворена (fade с 60 по 220px),
-              // поэтому смена трека визуально бесшовна.
-              if (deltaX < -threshold) {
-                setIsSwiping(true);
-                setSwipeX(-(miniShellWidth + 16));
-                setTimeout(() => {
-                  void nextTrack();
-                  setIsSwiping(false);
-                  setSwipeX(0);
-                }, 250);
-              } else if (deltaX > threshold) {
-                setIsSwiping(true);
-                setSwipeX(228);
-                setTimeout(() => {
-                  void prevTrack();
-                  setIsSwiping(false);
-                  setSwipeX(0);
-                }, 250);
+              const slideDistance = Math.max(miniShellWidth || 0, 360);
+
+              if (deltaX < -threshold && (nextTrackObj || isRadioModeRef.current)) {
+                flushSync(() => setIsSwiping(true));
+                requestAnimationFrame(() => {
+                  setSwipeX(-slideDistance);
+                  setTimeout(() => {
+                    void nextTrack();
+                    setIsSwiping(false);
+                    setSwipeX(0);
+                  }, 250);
+                });
+              } else if (deltaX > threshold && prevTrackObj) {
+                flushSync(() => setIsSwiping(true));
+                requestAnimationFrame(() => {
+                  setSwipeX(slideDistance);
+                  setTimeout(() => {
+                    void prevTrack();
+                    setIsSwiping(false);
+                    setSwipeX(0);
+                  }, 250);
+                });
               } else {
-                setIsSwiping(true);
-                setSwipeX(0);
-                setTimeout(() => {
-                  setIsSwiping(false);
-                }, 250);
+                // Отмена свайпа: возврат на место с transition
+                flushSync(() => setIsSwiping(true));
+                requestAnimationFrame(() => {
+                  setSwipeX(0);
+                  setTimeout(() => setIsSwiping(false), 250);
+                });
               }
             }}
             onTogglePlay={togglePlay}

@@ -9,6 +9,7 @@ import ShareModal from '../../../components/share-modal';
 import { useAuth, type User } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
+import { useDragScroll } from '../../../hooks/useDragScroll';
 import { AncialAPI } from '../../../lib/api-v2';
 import { useUserCountry } from '../../../lib/user-geo';
 import { SITE_CONFIG } from '../../../seo';
@@ -27,6 +28,7 @@ import {
   PulsePlaylistTile,
   PulsePlaylistTileSkeleton,
   PulseReportModal,
+  PulseScrollSection,
   PulseSectionTitle,
   PulseTrackRow,
   TracksPanelSkeleton,
@@ -98,6 +100,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const artistTracksCacheKey = getPulsePlaylistTracksCacheKey(cacheId, { genlist: '', type: '5' }, cacheId);
   const cachedTracks = readPulseJsonCache<PulseTrack[]>(artistTracksCacheKey) ?? [];
   const [artist, setArtist] = useState<PulseArtist | null>(() => readPulseJsonCache<PulseArtistResponse>(`artist_${cacheId}`)?.artist ?? null);
+  const playlistsScrollRef = useDragScroll({ speed: 2 });
   const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -418,7 +421,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
       {!missing && (loadingPlaylists || playlists.length > 0) ? (
         <>
           <PulseSectionTitle>{lang?.playlists || 'Плейлисты'}</PulseSectionTitle>
-          <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
+          <PulseScrollSection scrollRef={playlistsScrollRef}>
             {loadingPlaylists && !playlists.length ? Array.from({ length: 6 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
             {playlists.map((card) => {
               const playableId = getCardPlayableId(card);
@@ -432,7 +435,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                 />
               );
             })}
-          </div>
+          </PulseScrollSection>
         </>
       ) : null}
 

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
+import { useDragScroll } from '../../hooks/useDragScroll';
 import { AncialAPI } from '../../lib/api-v2';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
@@ -17,6 +18,7 @@ import {
   PulseLogo,
   PulsePlaylistTile,
   PulsePlaylistTileSkeleton,
+  PulseScrollSection,
   cn,
   decodeHtmlEntities,
   getImageUrl,
@@ -132,6 +134,7 @@ export default function PulseMyContent() {
   } = usePulsePlayer();
 
   const [library, setLibrary] = useState<PulseLibraryResponse | null>(() => readPulseJsonCache<PulseLibraryResponse>(LIBRARY_CACHE_KEY));
+  const libraryScrollRef = useDragScroll({ speed: 2 });
   const [history, setHistory] = useState<PulseHistoryItem[] | null>(() => readPulseJsonCache<PulseHistoryResponse>(HISTORY_CACHE_KEY)?.history ?? null);
   const [libraryLoading, setLibraryLoading] = useState(!library);
   const [historyLoading, setHistoryLoading] = useState(!history);
@@ -292,7 +295,10 @@ export default function PulseMyContent() {
             </Link>
           </div>
 
-          <div className={cn('viewport dragscroll flex overflow-auto px-3 lg:px-0', !libraryItems.length && !libraryLoading && 'hidden')}>
+          <PulseScrollSection
+            scrollRef={libraryScrollRef}
+            wrapperClassName={cn(!libraryItems.length && !libraryLoading && 'hidden')}
+          >
             <div className="flex flex-row flex-nowrap gap-3">
               {libraryLoading && !libraryItems.length ? Array.from({ length: 6 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
               {libraryItems.map((card) => {
@@ -308,7 +314,7 @@ export default function PulseMyContent() {
                 );
               })}
             </div>
-          </div>
+          </PulseScrollSection>
 
           <div className={cn('flex w-full items-center justify-center gap-3 px-3 lg:px-0', !history?.length && !historyLoading && 'hidden')}>
             <span className="cutetext flex-grow text-2xl font-black lg:text-3xl xl:text-4xl">{lang?.mylistened || 'Вы слушали'}</span>

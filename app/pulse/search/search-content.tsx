@@ -8,6 +8,7 @@ import ShareModal from '../../components/share-modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
+import { useDragScroll } from '../../hooks/useDragScroll';
 import { AncialAPI } from '../../lib/api-v2';
 import { useUserCountry } from '../../lib/user-geo';
 import { SITE_CONFIG } from '../../seo';
@@ -24,6 +25,7 @@ import {
   PulseArtistTile,
   PulsePlaylistTile,
   PulseReportModal,
+  PulseScrollSection,
   PulseTrackRow,
   normalizeText,
   toNumber,
@@ -78,6 +80,8 @@ export default function PulseSearchContent() {
   } = usePulsePlayer();
 
   const [artists, setArtists] = useState<PulseArtistCardData[]>([]);
+  const artistsScrollRef = useDragScroll({ speed: 2 });
+  const playlistsScrollRef = useDragScroll({ speed: 2 });
   const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -384,7 +388,7 @@ export default function PulseSearchContent() {
         {!loading && artists.length ? (
           <>
             {sectionHeader(lang?.artists || 'Артисты', `/pulse/search/artists?q=${encodeURIComponent(query)}`)}
-            <div className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
+            <PulseScrollSection scrollRef={artistsScrollRef}>
               {artists.map((artist) => (
                 <PulseArtistTile
                   artist={artist}
@@ -392,14 +396,14 @@ export default function PulseSearchContent() {
                   onOpen={() => router.push(`/pulse/artist/${encodeURIComponent(normalizeText(String(artist.id ?? '0')) || '0')}`)}
                 />
               ))}
-            </div>
+            </PulseScrollSection>
           </>
         ) : null}
 
         {!loading && playlists.length ? (
           <>
             {sectionHeader(lang?.playlists || 'Плейлисты', `/pulse/search/playlists?q=${encodeURIComponent(query)}`)}
-            <div className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
+            <PulseScrollSection scrollRef={playlistsScrollRef}>
               {playlists.map((card) => {
                 const playableId = getCardPlayableId(card);
                 return (
@@ -412,7 +416,7 @@ export default function PulseSearchContent() {
                   />
                 );
               })}
-            </div>
+            </PulseScrollSection>
           </>
         ) : null}
 

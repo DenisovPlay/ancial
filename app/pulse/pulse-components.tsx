@@ -10,6 +10,7 @@ import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
 import { useAuth, type User } from '../context/AuthContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
+import { useDragScroll } from '../hooks/useDragScroll';
 import { cache } from '../lib/cache.ts';
 import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
@@ -856,3 +857,70 @@ export function TrackCollectionPanel({
     </div>
   );
 }
+
+export function PulseScrollSection({
+  children,
+  className,
+  wrapperClassName,
+  scrollRef: externalRef,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  wrapperClassName?: string;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
+}) {
+  const internalRef = useDragScroll({ speed: 2 });
+  const ref = externalRef ?? internalRef;
+  const leftGradRef = React.useRef<HTMLDivElement>(null);
+  const rightGradRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const updateGradients = () => {
+      const canScrollLeft = el.scrollLeft > 4;
+      const canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+      if (leftGradRef.current) {
+        leftGradRef.current.style.opacity = canScrollLeft ? '1' : '0';
+      }
+      if (rightGradRef.current) {
+        rightGradRef.current.style.opacity = canScrollRight ? '1' : '0';
+      }
+    };
+
+    updateGradients();
+
+    el.addEventListener('scroll', updateGradients, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateGradients) : null;
+    ro?.observe(el);
+    const mo = typeof MutationObserver !== 'undefined' ? new MutationObserver(updateGradients) : null;
+    mo?.observe(el, { childList: true, subtree: true });
+
+    return () => {
+      el.removeEventListener('scroll', updateGradients);
+      ro?.disconnect();
+      mo?.disconnect();
+    };
+  }, [ref]);
+
+  return (
+    <div className={cn('relative w-full max-w-screen-2xl', wrapperClassName)}>
+      <div
+        ref={leftGradRef}
+        className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
+      />
+      <div
+        ref={rightGradRef}
+        className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-l from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
+      />
+      <div
+        ref={ref}
+        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0', className)}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+

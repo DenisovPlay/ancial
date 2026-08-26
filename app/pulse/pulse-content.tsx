@@ -19,6 +19,7 @@ import {
   PulsePlaylistTile,
   PulseReportModal,
   PulsePlaylistTileSkeleton,
+  PulseScrollSection,
   PulseTrackRow,
   normalizeText,
   toNumber,
@@ -888,7 +889,7 @@ export default function PulseContent() {
         {lang?.playlistsby || 'Плейлисты от'} <PulseLogo className="ml-1 inline w-30 align-middle" />
       </SectionTitle>
 
-      <div ref={fromPulseScrollRef} className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
+      <PulseScrollSection scrollRef={fromPulseScrollRef}>
         {fromPulse === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
         {Array.isArray(fromPulse) ? fromPulse.map((card) => {
           const cardPlayId = getPlayableCardId(card);
@@ -902,11 +903,11 @@ export default function PulseContent() {
             />
           );
         }) : null}
-      </div>
+      </PulseScrollSection>
 
       <SectionTitle>{lang?.artists || 'Артисты'}</SectionTitle>
 
-      <div ref={artistsScrollRef} className="viewport dragscroll -mx-3 -my-3 flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-3 lg:px-0">
+      <PulseScrollSection scrollRef={artistsScrollRef}>
         {artists === null ? Array.from({ length: 8 }).map((_, index) => <ArtistCardSkeleton key={index} />) : null}
         {Array.isArray(artists) ? artists.map((artist) => (
           <PulseArtistCard
@@ -915,11 +916,11 @@ export default function PulseContent() {
             onOpen={() => openArtistPage(artist.id ?? 0)}
           />
         )) : null}
-      </div>
+      </PulseScrollSection>
 
       <SectionTitle>{lang?.welove || 'Мы любим'}</SectionTitle>
 
-      <div ref={weLikeScrollRef} className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
+      <PulseScrollSection scrollRef={weLikeScrollRef}>
         {weLike === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
         {Array.isArray(weLike) ? weLike.map((card) => {
           const cardPlayId = getPlayableCardId(card);
@@ -933,11 +934,11 @@ export default function PulseContent() {
             />
           );
         }) : null}
-      </div>
+      </PulseScrollSection>
 
       <SectionTitle>{lang?.nowlis || 'Сейчас слушают'}</SectionTitle>
 
-      <div ref={nowListenScrollRef} className="viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0">
+      <PulseScrollSection scrollRef={nowListenScrollRef}>
         {nowListen === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
         {Array.isArray(nowListen) ? nowListen.map((card) => {
           const cardPlayId = getPlayableCardId(card);
@@ -951,7 +952,7 @@ export default function PulseContent() {
             />
           );
         }) : null}
-      </div>
+      </PulseScrollSection>
 
       <div className="grid w-full max-w-screen-2xl grid-cols-1 gap-3 xl:grid-cols-3">
         <TrackCollectionPanel
