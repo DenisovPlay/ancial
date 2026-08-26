@@ -1,7 +1,5 @@
 'use client';
 
-import { API_BASE } from '../config';
-
 import { authFetch } from './auth-fetch';
 import type {
   CommunityAuditEntry,
@@ -640,12 +638,15 @@ export class AncialAPI {
 
   /**
    * Публичная информация по коду инвайта (гость без авторизации).
-   * credentials 'omit': куки авторизованного пользователя не должны влиять
-   * на гостевой сценарий; абсолютный URL — работает из любого Origin.
+   * Относительный путь — Same-Origin через прокси Next (как весь сайт,
+   * без требований CORS); credentials 'omit': куки авторизованного
+   * пользователя не должны влиять на гостевой сценарий.
    */
   static async getVoiceInviteInfo(code: string): Promise<VoiceInviteInfo> {
-    const url = `${API_BASE}api/V2/calls/GetVoiceInviteInfo.php?code=${encodeURIComponent(code)}`;
-    const response = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+    const response = await fetch(`/api/V2/calls/GetVoiceInviteInfo.php?code=${encodeURIComponent(code)}`, {
+      credentials: 'omit',
+      cache: 'no-store',
+    });
     const payload = await response.json().catch(() => null) as AncialV2Response<VoiceInviteInfo> | null;
     if (!response.ok || !payload?.success || !payload.data) {
       throw new Error(payload?.error || 'Invite not found');
@@ -653,10 +654,12 @@ export class AncialAPI {
     return payload.data;
   }
 
-  /** Публичный TURN для гостя (без авторизации). */
+  /** Публичный TURN для гостя (без авторизации, Same-Origin через прокси). */
   static async getGuestTurnConfig(): Promise<VoiceInviteTurn> {
-    const url = `${API_BASE}api/V2/calls/TurnGuest.php`;
-    const response = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+    const response = await fetch('/api/V2/calls/TurnGuest.php', {
+      credentials: 'omit',
+      cache: 'no-store',
+    });
     const payload = await response.json().catch(() => null) as AncialV2Response<VoiceInviteTurn> | null;
     if (!response.ok || !payload?.success || !payload.data) {
       throw new Error(payload?.error || 'TURN unavailable');

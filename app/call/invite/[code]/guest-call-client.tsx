@@ -1,11 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
 
 import GroupCallTile from '../../group/components/group-call-tile';
 import { useGroupCall } from '../../group/[hash]/use-group-call';
-import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, type VoiceInviteInfo } from '../../../lib/api-v2';
@@ -14,9 +12,15 @@ import { AncialAPI, type VoiceInviteInfo } from '../../../lib/api-v2';
  * Публичная страница приглашения в групповой звонок (/call/invite/<code>).
  * Работает БЕЗ авторизации: гость вводит имя → WS guest-auth → комната.
  */
+function readInviteCodeFromLocation(): string {
+  if (typeof window === 'undefined') return '';
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  // /call/invite/<code>
+  const inviteIndex = parts.indexOf('invite');
+  return inviteIndex >= 0 && parts[inviteIndex + 1] ? decodeURIComponent(parts[inviteIndex + 1]) : '';
+}
+
 export default function GuestCallClient() {
-  const params = useParams<{ code: string }>();
-  const code = typeof params?.code === 'string' ? params.code : '';
   const { lang } = useAuth();
   const { showNote } = useNotification();
 
@@ -28,9 +32,18 @@ export default function GuestCallClient() {
   /** После подтверждения имени рендерим полноэкранную комнату в гостевом режиме. */
   const [roomOpen, setRoomOpen] = useState(false);
 
+  // Единый эффект: читаем код из location (после маунта — hydration-safe,
+  // SSR и первый клиентский кадр идентичны) и грузим инвайт. Все setState —
+  // в асинхронных колбэках, синхронных каскадов нет.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка инвайта по коду из URL; повторный запуск при смене code недопустим
-    if (!code) return;
+    const code = readInviteCodeFromLocation();
+    if (!code) {
+      const t = setTimeout(() => {
+        setFailed(true);
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(t);
+    }
     let cancelled = false;
     AncialAPI.getVoiceInviteInfo(code)
       .then((data) => {
@@ -46,19 +59,21 @@ export default function GuestCallClient() {
     return () => {
       cancelled = true;
     };
-  }, [code]);
+  }, []); // mount-once: код инвайта фиксируется на время жизни страницы
 
-  // Отсутствие кода в URL — синхронно считаем ошибкой без сетевого запроса.
-  const effectiveFailed = failed || !code;
-  const effectiveLoading = loading && Boolean(code);
+  // «Код отсутствует» и «запрос упал» — одна и та же ветка UI.
+  const effectiveFailed = failed;
 
   const trimmedName = useMemo(() => name.trim().replace(/[\x00-\x1F\x7F]/g, ''), [name]);
   const canJoin = info !== null && trimmedName.length > 0 && trimmedName.length <= 48;
 
+  const [roomCode, setRoomCode] = useState('');
+
   const handleJoin = useCallback(() => {
     if (!canJoin) return;
+    setRoomCode(readInviteCodeFromLocation());
     setJoining(true);
-    // Комната сама/auth-ится по коду и имени; модалка закроется при успешном join.
+    // Комната сама auth-ится по коду и имени.
     setRoomOpen(true);
   }, [canJoin]);
 
@@ -71,7 +86,7 @@ export default function GuestCallClient() {
     });
   }, [lang?.voice_invite_closed, showNote]);
 
-  if (effectiveLoading) {
+  if (loading) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-black text-white">
         <div className="flex flex-col items-center gap-3">
@@ -101,7 +116,7 @@ export default function GuestCallClient() {
     // временный маркер; реальный id придёт из WS auth_ok. useGroupCall(guest) сам всё делает.
     return (
       <GuestCallRoom
-        code={code}
+        code={roomCode}
         dialogId={info.dialog_id}
         guestName={trimmedName}
         title={info.title || 'Zypo'}
@@ -126,7 +141,8 @@ export default function GuestCallClient() {
           </span>
         </div>
 
-        <Modal isOpen onClose={() => undefined} title={lang?.voice_invite_join_title || 'Войти в звонок'}>
+        <div className="flex flex-col gap-3 px-1 pb-1">
+          <span className="text-base font-semibold">{lang?.voice_invite_join_title || 'Войти в звонок'}</span>
           <div className="flex flex-col gap-3">
             <label className="flex flex-col gap-1">
               <span className="text-sm text-zinc-300">{lang?.voice_invite_name_label || 'Как вас представить?'}</span>
@@ -151,11 +167,11 @@ export default function GuestCallClient() {
             >
               {joining ? (lang?.voice_invite_connecting || 'Подключение…') : (lang?.voice_invite_join || 'Присоединиться')}
             </button>
-            <p className="px-3 text-center text-xs text-zinc-500">
-              {lang?.voice_invite_no_account || 'Авторизация не требуется'}
-            </p>
+          <p className="text-center text-xs text-zinc-500">
+            {lang?.voice_invite_no_account || 'Авторизация не требуется'}
+          </p>
           </div>
-        </Modal>
+        </div>
       </div>
     </div>
   );
