@@ -384,6 +384,25 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
     exitCall();
   };
 
+  const handleCopyInvite = async () => {
+    try {
+      const { code } = await AncialAPI.createVoiceInvite(Number(config.dialog.id));
+      const url = `${window.location.origin}/call/invite/${encodeURIComponent(code)}`;
+      await navigator.clipboard.writeText(url);
+      showNote({
+        content: lang?.voice_invite_copied || 'Ссылка на звонок скопирована',
+        type: 'success',
+        time: 5,
+      });
+    } catch {
+      showNote({
+        content: lang?.voice_invite_failed || 'Не удалось создать ссылку-инвайт',
+        type: 'error',
+        time: 5,
+      });
+    }
+  };
+
   return (
     <div className="group-call-route fixed inset-0 z-[3000] min-h-dvh bg-black text-white">
       <style>{`
@@ -559,6 +578,17 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
             onClick={call.toggleDeafen}
           >
             <SpeakerIcon off={call.deafened} />
+          </CallControlButton>
+
+          <CallControlButton
+            className="hidden md:flex"
+            label={lang?.voice_invite_copy || 'Ссылка-инвайт — скопировать'}
+            disabled={!config.canPublish}
+            onClick={() => void handleCopyInvite()}
+          >
+            <svg className="h-6 w-6 fill-none stroke-current stroke-[2.5]" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5 10.5 13.5M8 16a4 4 0 0 1 0-5.66l2.83-2.83a4 4 0 1 1 5.66 5.66l-1.42 1.41m-1.41 1.42L11.24 17.4A4 4 0 1 1 5.58 11.74l1.42-1.41" />
+            </svg>
           </CallControlButton>
 
           <CallControlButton danger label={lang?.voice_room_leave || 'Выйти'} onClick={handleLeave}>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
 import { type DialogMeta, type DialogUser } from '../../messages/lib/messages-shared';
 import Modal from '../../components/modal';
@@ -205,6 +206,7 @@ export default function CallClient() {
   const params = useParams<{ hash?: string }>();
   const hash = params?.hash || '';
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
+  const { showNote } = useNotification();
 
   const [dialogInfo, setDialogInfo] = useState<CallDialogInfo | null>(null);
   const [foreignUser, setForeignUser] = useState<CallForeignUser | null>(null);
@@ -326,30 +328,45 @@ export default function CallClient() {
     setPermissionsModal(false);
     setCallStatus(lang?.['authorization...'] || 'Авторизация...');
 
+    let stream: MediaStream | null = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localStreamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    } catch {
+      // Нет камеры/отказ в видео — деградация до аудио-звонка вместо полного провала
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setCamEnabled(false);
+        showNote({ content: lang?.call_video_unavailable || 'Камера недоступна — аудио-звонок', type: 'warning', time: 5 });
+      } catch (audioErr) {
+        console.error(audioErr);
+        setCallStatus('No access to camera/mic');
+        return;
       }
+    }
+    const activeStream: MediaStream = stream;
+    localStreamRef.current = activeStream;
 
-      // Сохраняем ID выбранной камеры из потока
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        const settings = videoTrack.getSettings();
-        if (settings.deviceId) {
-          setSelectedCameraId(settings.deviceId);
-        }
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = activeStream;
+    }
+
+    // Сохраняем ID выбранной камеры из потока
+    const videoTrack = activeStream.getVideoTracks()[0];
+    if (videoTrack) {
+      const settings = videoTrack.getSettings();
+      if (settings.deviceId) {
+        setSelectedCameraId(settings.deviceId);
       }
+    }
 
+    try {
       const turnResp = await AncialAPI.getTurnConfig<TurnConfigResponse>();
       const iceServers = turnResp?.data?.iceServers || [];
-
-      setupWebRTC(iceServers, stream);
+      setupWebRTC(iceServers, activeStream);
       setupGlobalWS();
     } catch (e) {
       console.error(e);
-      setCallStatus('No access to camera/mic');
+      setCallStatus(lang?.call_connection_lost || 'Соединение потеряно');
     }
   };
 
@@ -369,9 +386,12 @@ export default function CallClient() {
       }
     };
 
+    // Кандидаты, пришедшие до установки remoteDescription, буферизуются и
+    // выливаются после SRD — иначе при гонке сигналов они теряются.
+    pendingCandidatesRef.current = [];
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        sendWsSignal({ kind: 'ice', candidate: event.candidate });
+        sendWsSignal({ kind: 'ice', candidate: event.candidate.toJSON() });
       }
     };
 
@@ -388,15 +408,64 @@ export default function CallClient() {
       }
     };
 
+    // Автовосстановление: disconnected даёт 4с на самовосстановление, затем
+    // ICE-restart (до 3 попыток); failed — restart сразу. «Потеряно» показываем,
+    // только если лимит исчерпан. Деструктивный close() не трогаем.
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
+        recoveryAttemptsRef.current = 0;
+        if (disconnectedTimerRef.current) { clearTimeout(disconnectedTimerRef.current); disconnectedTimerRef.current = null; }
         setIsRtcConnected(true);
         setCallStatus(lang?.call_connected || 'Соединено');
       } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
         setIsRtcConnected(false);
-        setCallStatus(lang?.call_connection_lost || 'Соединение потеряно');
+        schedulePcRecovery();
       }
     };
+  };
+
+  const recoveryAttemptsRef = useRef(0);
+  const disconnectedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const schedulePcRecovery = () => {
+    if (!pcRef.current) return;
+    if (disconnectedTimerRef.current) return; // уже ждём/восстанавливаемся
+    const state = pcRef.current.connectionState;
+    if (state === 'failed' && recoveryAttemptsRef.current >= 3) {
+      setCallStatus(lang?.call_connection_lost || 'Соединение потеряно');
+      return;
+    }
+    if (state === 'disconnected') {
+      setCallStatus(lang?.call_reconnecting || 'Переподключение...');
+      disconnectedTimerRef.current = setTimeout(() => {
+        disconnectedTimerRef.current = null;
+        if (!pcRef.current) return;
+        if (pcRef.current.connectionState === 'connected') return;
+        doPcRestart();
+      }, 4000);
+      return;
+    }
+    doPcRestart();
+  };
+
+  const doPcRestart = () => {
+    if (!pcRef.current) return;
+    if (recoveryAttemptsRef.current >= 3) {
+      setCallStatus(lang?.call_connection_lost || 'Соединение потеряно');
+      return;
+    }
+    recoveryAttemptsRef.current += 1;
+    setCallStatus(lang?.call_reconnecting || 'Переподключение...');
+    void (async () => {
+      try {
+        const offer = await pcRef.current?.createOffer({ iceRestart: true });
+        if (!offer || !pcRef.current) return;
+        await pcRef.current.setLocalDescription(offer);
+        sendWsSignal({ kind: 'offer', sdp: pcRef.current.localDescription?.sdp });
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   };
 
   const isSubscribedRef = useRef(false);
@@ -450,6 +519,7 @@ export default function CallClient() {
     });
   }, [dialogInfo]);
 
+  const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const signalQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const handleWsSignal = (msg: CallSignal) => {
@@ -499,12 +569,33 @@ export default function CallClient() {
           if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
           await pc.setLocalDescription(answer);
           sendWsSignal({ kind: 'answer', sdp: pc.localDescription?.sdp });
+
+          const buffered = pendingCandidatesRef.current;
+          pendingCandidatesRef.current = [];
+          for (const candidate of buffered) {
+            await pc.addIceCandidate(candidate).catch((err) => {
+              if (!ignoreOfferRef.current) console.error(err);
+            });
+          }
         } else if (msg.kind === 'answer') {
           if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
           if (pc.signalingState !== 'have-local-offer') return;
           await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+
+          const bufferedA = pendingCandidatesRef.current;
+          pendingCandidatesRef.current = [];
+          for (const candidate of bufferedA) {
+            await pc.addIceCandidate(candidate).catch((err) => {
+              if (!ignoreOfferRef.current) console.error(err);
+            });
+          }
         } else if (msg.kind === 'candidate' || msg.kind === 'ice') {
           if ((pc.signalingState as string) === 'closed' || (pc.connectionState as string) === 'closed') return;
+          // Без remoteDescription кандидат добавить нельзя — копим в буфер (групповой паттерн pendingIce).
+          if (!pc.remoteDescription) {
+            if (msg.candidate) pendingCandidatesRef.current.push(msg.candidate);
+            return;
+          }
           try {
             await pc.addIceCandidate(msg.candidate);
           } catch (err) {
@@ -742,6 +833,7 @@ export default function CallClient() {
 
   useEffect(() => {
     return () => {
+      if (disconnectedTimerRef.current) { clearTimeout(disconnectedTimerRef.current); disconnectedTimerRef.current = null; }
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(t => t.stop());
       }

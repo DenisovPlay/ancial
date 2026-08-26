@@ -6,6 +6,8 @@ export type ParticipantMediaState = {
 
 export type GroupCallParticipant = ParticipantMediaState & {
   joined_at?: number;
+  /** Имя гостя (у авторизованных участников имя берётся из профиля). */
+  name?: string;
   user_id: number;
 };
 
@@ -37,14 +39,17 @@ export function normalizeParticipant(raw: unknown): GroupCallParticipant | null 
 
   const participant = raw as Record<string, unknown>;
   const userId = Number(participant.user_id || 0);
-  if (!Number.isInteger(userId) || userId <= 0) return null;
+  // Гости имеют отрицательные user_id (серверная последовательность) — ноль по-прежнему невалиден.
+  if (!Number.isInteger(userId) || userId === 0) return null;
 
   const joinedAt = Number(participant.joined_at || 0);
+  const guestName = typeof participant.name === 'string' ? participant.name.trim() : '';
   return {
     user_id: userId,
     mic_enabled: Boolean(participant.mic_enabled),
     cam_enabled: Boolean(participant.cam_enabled),
     screen_enabled: Boolean(participant.screen_enabled),
+    ...(guestName !== '' ? { name: guestName } : {}),
     ...(joinedAt > 0 ? { joined_at: joinedAt } : {}),
   };
 }
@@ -84,6 +89,9 @@ export function resolveFocusedParticipantId(
 }
 
 export function isGroupCallOfferer(currentUserId: number, remoteUserId: number): boolean {
+  // Гость (отрицательный id) не инициирует offer'ы — авторизованная сторона делает offer,
+  // гость только отвечает answer. Это сохраняет детерменизм между парами guest↔user.
+  if (currentUserId < 0 || remoteUserId < 0) return false;
   return currentUserId > 0 && remoteUserId > 0 && currentUserId < remoteUserId;
 }
 

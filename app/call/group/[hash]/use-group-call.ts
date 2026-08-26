@@ -6,6 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI } from '../../../lib/api-v2';
 import { globalWS } from '../../../lib/global-ws';
+import { WS_BASE } from '../../../config';
 import {
   isGroupCallOfferer,
   isPolitePeer,
@@ -36,6 +37,9 @@ type UseGroupCallOptions = {
   dialogId: number;
   onDisconnected: () => void;
   title: string;
+  /** Гостевой режим: код инвайта и имя гостя (без авторизации). */
+  guestCode?: string;
+  guestName?: string;
 };
 
 const DISCONNECTED_RECOVERY_DELAY_MS = 4_000;
@@ -59,6 +63,8 @@ export function useGroupCall({
   dialogId,
   onDisconnected,
   title,
+  guestCode,
+  guestName,
 }: UseGroupCallOptions) {
   const { lang } = useAuth();
   const { showNote } = useNotification();
@@ -539,7 +545,22 @@ export function useGroupCall({
       const payload = (raw || {}) as { dialog_id?: number | string };
       if (Number(payload.dialog_id || 0) !== dialogId) return;
       subscribedRef.current = true;
-      if (!joinedRef.current) return;
+
+      // 1) Мы ещё не в комнате — обычный первый join после подписки.
+      if (!joinedRef.current) {
+        sendSignal({ kind: 'join', ...currentMediaState() });
+        return;
+      }
+
+      // 2) Ресабскрайб при живом звонке. Если комната та же и состав участников
+      // не изменился — сохраняем установленные P2P-сессии (не роняем медиа).
+      // Снапшот придёт следующим сообщением и дозаполнит недостающих offer'ами.
+      if (roomIdRef.current && !pendingJoinRef.current) {
+        sendSignal({ kind: 'join', ...currentMediaState() });
+        return;
+      }
+
+      // 3) Страховка: зависший pendingJoin — полный ресинк.
       resetPeers();
       roomIdRef.current = '';
       pendingJoinRef.current = false;
@@ -557,6 +578,64 @@ export function useGroupCall({
       leave(false);
     };
 
+    // ─── Гостевой режим: собственное лёгкое WS-подключение (без GlobalWS/auth-токена) ───
+    if (guestCode) {
+      let ws: WebSocket | null = null;
+      let closed = false;
+      const guestSend = (payload: Record<string, unknown>) => {
+        try { ws?.send(JSON.stringify(payload)); } catch {}
+      };
+      const onVoiceEvent = (raw: MessageEvent<string>) => {
+        let msg: { type?: string; error?: string; code?: string; message?: string; dialog_id?: number | string } & Record<string, unknown>;
+        try { msg = JSON.parse(raw.data); } catch { return; }
+        if (msg.type === 'auth_ok') {
+          guestSend({ type: 'subscribe', dialog_id: dialogId });
+          return;
+        }
+        if (msg.type === 'subscribed') {
+          handleSubscribed(msg);
+          return;
+        }
+        if (msg.type === 'voice:signal') {
+          handleSignal(msg.data ?? msg);
+          return;
+        }
+        if (msg.type === 'ws_error' || msg.type === 'ws:error' || msg.type === 'error') {
+          handleWsError({ code: msg.code || msg.error, message: msg.message });
+          return;
+        }
+        if (msg.type === 'auth_error') {
+          showNote({
+            content: lang?.voice_invite_invalid || 'Ссылка-инвайт недействительна или устарела',
+            type: 'error',
+            time: 6,
+          });
+          onDisconnected();
+        }
+      };
+      try {
+        ws = new WebSocket(WS_BASE);
+      } catch {
+        onDisconnected();
+        return;
+      }
+      ws.onopen = () => {
+        guestSend({ type: 'auth', voice_invite: { code: guestCode, name: guestName || '' } });
+      };
+      ws.onmessage = onVoiceEvent;
+      ws.onclose = () => {
+        if (!closed && joinedRef.current) {
+          // Гость выпал из сети — пробуем переподключиться с тем же именем.
+          setTimeout(() => { if (!closed) window.location.reload(); }, 2000);
+        }
+      };
+      return () => {
+        closed = true;
+        try { ws?.close(); } catch {}
+        subscribedRef.current = false;
+      };
+    }
+
     globalWS.addDialogListener('voice:signal', handleSignal);
     globalWS.addDialogListener('subscribed', handleSubscribed);
     globalWS.addDialogListener('ws:error', handleWsError);
@@ -568,7 +647,7 @@ export function useGroupCall({
       globalWS.unsubscribeDialog(dialogId);
       subscribedRef.current = false;
     };
-  }, [closePeer, createPeer, currentMediaState, currentUserId, dialogId, enqueueSignal, flushIce, lang?.voice_room_disconnected, lang?.voice_room_error, leave, makeOffer, onDisconnected, requestPeerRecovery, resetPeers, sendSignal, setParticipants, showNote, watchForRemoteVideo]);
+  }, [closePeer, createPeer, currentMediaState, currentUserId, dialogId, guestCode, guestName, enqueueSignal, flushIce, lang?.voice_room_disconnected, lang?.voice_room_error, leave, makeOffer, onDisconnected, requestPeerRecovery, resetPeers, sendSignal, setParticipants, showNote, watchForRemoteVideo]);
 
   useEffect(() => () => {
     if (joinedRef.current && roomIdRef.current) sendSignal({ kind: 'leave' });
@@ -608,13 +687,18 @@ export function useGroupCall({
     if (joining || joinedRef.current) return joinedRef.current;
     setJoining(true);
     try {
-      const mediaPromise = canPublish
-        ? navigator.mediaDevices.getUserMedia({
+      // Деградация медиа: нет камеры/отказ в видео → аудио-звонок вместо провала.
+      const mediaPromise = !canPublish
+        ? Promise.resolve(new MediaStream())
+        : navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
             video: true,
-          })
-        : Promise.resolve(new MediaStream());
-      const turnPromise = AncialAPI.getTurnConfig<{ iceServers?: RTCIceServer[] }>();
+          }).catch(() => navigator.mediaDevices.getUserMedia({
+            audio: true,
+          }));
+      const turnPromise = guestCode
+        ? AncialAPI.getGuestTurnConfig()
+        : AncialAPI.getTurnConfig<{ iceServers?: RTCIceServer[] }>();
       const [stream, turn] = await Promise.all([mediaPromise, turnPromise]);
       audioTrackRef.current = stream.getAudioTracks()[0] ?? null;
       cameraTrackRef.current = stream.getVideoTracks()[0] ?? null;
@@ -655,7 +739,7 @@ export function useGroupCall({
     } finally {
       setJoining(false);
     }
-  }, [activityUrl, canPublish, currentMediaState, dialogId, joining, lang?.voice_microphone_denied, leave, loadCameras, refreshLocalStream, sendSignal, showNote, title]);
+  }, [activityUrl, canPublish, currentMediaState, dialogId, guestCode, joining, lang?.voice_microphone_denied, leave, loadCameras, refreshLocalStream, sendSignal, showNote, title]);
 
   const toggleMic = useCallback(() => {
     if (!canPublish || !audioTrackRef.current) return;

@@ -1,5 +1,7 @@
 'use client';
 
+import { API_BASE } from '../config';
+
 import { authFetch } from './auth-fetch';
 import type {
   CommunityAuditEntry,
@@ -18,6 +20,18 @@ export interface AncialV2Response<T> {
   success: boolean;
   data: T;
   error: string | null;
+}
+
+export interface VoiceInviteInfo {
+  dialog_id: number;
+  title: string;
+  avatar: string;
+  members_count: number;
+  in_call: number;
+}
+
+export interface VoiceInviteTurn {
+  iceServers: RTCIceServer[];
 }
 
 export class AncialAPIError extends Error {
@@ -613,6 +627,41 @@ export class AncialAPI {
       method: 'POST',
       body: JSON.stringify({ dialog_id: dialogId, request_id: requestId, action }),
     });
+  }
+
+  /** Создать/получить активную ссылку-инвайт в групповой звонок (авторизованный). */
+  static async createVoiceInvite(dialogId: number): Promise<{ code: string }> {
+    return this.request<{ code: string }>('/calls/CreateVoiceInvite.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dialog_id: dialogId }),
+    });
+  }
+
+  /**
+   * Публичная информация по коду инвайта (гость без авторизации).
+   * credentials 'omit': куки авторизованного пользователя не должны влиять
+   * на гостевой сценарий; абсолютный URL — работает из любого Origin.
+   */
+  static async getVoiceInviteInfo(code: string): Promise<VoiceInviteInfo> {
+    const url = `${API_BASE}api/V2/calls/GetVoiceInviteInfo.php?code=${encodeURIComponent(code)}`;
+    const response = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+    const payload = await response.json().catch(() => null) as AncialV2Response<VoiceInviteInfo> | null;
+    if (!response.ok || !payload?.success || !payload.data) {
+      throw new Error(payload?.error || 'Invite not found');
+    }
+    return payload.data;
+  }
+
+  /** Публичный TURN для гостя (без авторизации). */
+  static async getGuestTurnConfig(): Promise<VoiceInviteTurn> {
+    const url = `${API_BASE}api/V2/calls/TurnGuest.php`;
+    const response = await fetch(url, { credentials: 'omit', cache: 'no-store' });
+    const payload = await response.json().catch(() => null) as AncialV2Response<VoiceInviteTurn> | null;
+    if (!response.ok || !payload?.success || !payload.data) {
+      throw new Error(payload?.error || 'TURN unavailable');
+    }
+    return payload.data;
   }
 
   static async getTurnConfig<T = unknown>(): Promise<T> {

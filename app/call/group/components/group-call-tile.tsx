@@ -47,7 +47,9 @@ export default function GroupCallTile({
   const focusLabel = focused
     ? (lang?.voice_return_to_grid || 'Вернуться к сетке')
     : (lang?.voice_focus_video || 'Развернуть видео');
+  // Гости звонка приходят без member-профиля — имя несёт сам participant (поле name от WS).
   const displayName = [member?.fname, member?.lname].filter(Boolean).join(' ')
+    || participant.name
     || member?.username
     || `#${participant.user_id}`;
 
