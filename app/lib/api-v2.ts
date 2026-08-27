@@ -183,6 +183,8 @@ export interface PayMerchant {
   img: string;
   description: string;
   badge: string;
+  badge_key?: string;
+  badge_count?: number;
   fee_paid: 'user' | 'merchant' | string;
   s_url: string;
   e_url: string;

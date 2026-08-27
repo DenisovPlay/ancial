@@ -6,7 +6,7 @@ import { createPageMetadata } from '../../seo';
 export async function generateMetadata(): Promise<Metadata> {
   return createPageMetadata({
     canonical: `/pay`,
-    description: `Оплата услуг и товаров через Ancial Pay.`,
+    description: `Оплата услуг и товаров через Zypo Pay.`,
     title: `Платёж`,
   });
 }

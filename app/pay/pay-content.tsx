@@ -8,6 +8,7 @@ import localFont from 'next/font/local';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { AncialAPI, getApiMessage, type PayOrderDetails, type PayGateway } from '../lib/api-v2';
+import { formatMerchantBadge } from './format-merchant-badge';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -299,14 +300,14 @@ export default function PayContent() {
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-white font-medium">{merchant.name}</span>
                   <span className="border border-zinc-600/30 font-thin text-xs px-1 py-0.5 bg-zinc-800/90 rounded-full shadow text-zinc-300">
-                    {lang?.pay_with_us || 'с нами'} {merchant.badge}
+                    {lang?.pay_with_us || 'с нами'} {formatMerchantBadge(merchant, lang)}
                   </span>
                 </div>
                 <span className="text-zinc-300 text-sm">{merchant.description}</span>
               </div>
             </div>
             <span className="text-xs text-zinc-400 mt-3 block">
-              {lang?.pay_disclaimer || 'Ancial Pay и ZeniFlow не связаны с мерчантом и не могут нести ответственность за его действия.'}
+              {lang?.pay_disclaimer || 'Zypo Pay и ZeniFlow не связаны с мерчантом и не могут нести ответственность за его действия.'}
             </span>
           </div>
         </div>
@@ -409,14 +410,16 @@ export default function PayContent() {
                   href={order.gateway_url}
                   className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 text-base lg:text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl w-full shadow text-center"
                 >
-                  В {gateway_pending?.name || 'платёжную систему'}
+                  {gateway_pending?.name
+                    ? (lang?.pay_to_gateway ? lang.pay_to_gateway.replace('{gateway}', gateway_pending.name) : `В ${gateway_pending.name}`)
+                    : (lang?.pay_to_payment_system || 'В платёжную систему')}
                 </a>
               ) : (
                 <button
                   disabled
                   className="border border-zinc-600/30 opacity-50 bg-zinc-700 text-zinc-400 rounded-3xl w-full py-2 cursor-not-allowed"
                 >
-                  В платёжную систему
+                  {lang?.pay_to_payment_system || 'В платёжную систему'}
                 </button>
               )}
 
