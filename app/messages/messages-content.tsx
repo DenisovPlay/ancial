@@ -2424,7 +2424,7 @@ export default function MessagesContent() {
                   onClick={() => setCreateGroupModalOpen(true)}
                   className={cn(
                     'fixed right-3 lg:absolute z-40 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-500 active:scale-95 duration-300 border border-zinc-600/30 cursor-pointer transition-all ease-in-out',
-                    isPulsePlayerActive ? 'bottom-38 lg:bottom-22' : 'bottom-21 lg:bottom-3',
+                    isPulsePlayerActive ? 'bottom-32 lg:bottom-22' : 'bottom-21 lg:bottom-3',
                     isPlusVisible
                       ? 'translate-y-0 opacity-100 scale-100'
                       : 'translate-y-28 opacity-0 scale-90 pointer-events-none',
