@@ -5,7 +5,7 @@ import Modal from '../../components/modal';
 import AccountName from '../../components/account-name';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { uploadImage } from '../../lib/upload';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
 import { SITE_URL } from '../../config';
@@ -217,7 +217,7 @@ export default function GroupInfoModal({
       });
       onGroupUpdated();
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -242,7 +242,7 @@ export default function GroupInfoModal({
       setView('main');
       onGroupUpdated();
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -289,12 +289,12 @@ export default function GroupInfoModal({
           user_ids: Array.from(selectedAddUserIds),
         }),
       });
-      showNote({ content: res?.message || (lang?.members_added || 'Участники добавлены'), type: 'success', time: 3 });
+      showNote({ content: getApiMessage(res?.message, lang, lang?.members_added || 'Участники добавлены'), type: 'success', time: 3 });
       setView('main');
       setSelectedAddUserIds(new Set());
       onGroupUpdated();
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.error_adding_members || 'Ошибка добавления участников'), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.error_adding_members || 'Ошибка добавления участников'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -335,7 +335,7 @@ export default function GroupInfoModal({
         showNote({ content: lang?.failed_reset_invite_link || 'Не удалось сбросить ссылку', type: 'error', time: 4 });
       }
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.somethingwrong || 'Произошла ошибка =('), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.somethingwrong || 'Произошла ошибка =('), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -369,7 +369,7 @@ export default function GroupInfoModal({
       showNote({ content: lang?.group_avatar_updated || 'Аватарка группы обновлена', type: 'success', time: 3 });
       onGroupUpdated({ avatar: imageUrl });
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.error_uploading_image || 'Ошибка загрузки изображения'), type: 'error', time: 3 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.error_uploading_image || 'Ошибка загрузки изображения'), type: 'error', time: 3 });
     } finally {
       setUploadingAvatar(false);
       event.target.value = '';
@@ -392,7 +392,7 @@ export default function GroupInfoModal({
       showNote({ content: lang?.backgroundupdated || 'Фон обновлён', type: 'success', time: 3 });
     } catch (err: unknown) {
       showNote({
-        content: err instanceof Error ? err.message : (lang?.failed_to_update_background || 'Не удалось обновить фон'),
+        content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failed_to_update_background || 'Не удалось обновить фон'),
         type: 'error',
         time: 4,
       });
@@ -412,7 +412,7 @@ export default function GroupInfoModal({
       showNote({ content: lang?.done || 'Готово', type: 'success', time: 3 });
     } catch (err: unknown) {
       showNote({
-        content: err instanceof Error ? err.message : (lang?.failed_to_update_background || 'Не удалось обновить фон'),
+        content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failed_to_update_background || 'Не удалось обновить фон'),
         type: 'error',
         time: 4,
       });
@@ -443,7 +443,7 @@ export default function GroupInfoModal({
       setView('main');
       onGroupUpdated({ title: editTitle.trim() });
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.failed_update_group_name || 'Не удалось обновить название'), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failed_update_group_name || 'Не удалось обновить название'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -464,7 +464,7 @@ export default function GroupInfoModal({
       showNote({ content: lang?.member_removed_from_chat || 'Участник удален из чата', type: 'success', time: 3 });
       onGroupUpdated();
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.failed_remove_member || 'Не удалось удалить участника'), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failed_remove_member || 'Не удалось удалить участника'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }
@@ -488,7 +488,7 @@ export default function GroupInfoModal({
         onGroupUpdated();
       }
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.failed_leave_chat || 'Не удалось выйти из чата'), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failed_leave_chat || 'Не удалось выйти из чата'), type: 'error', time: 4 });
     } finally {
       setLoadingAction(false);
     }

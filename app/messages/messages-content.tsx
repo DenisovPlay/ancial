@@ -22,7 +22,7 @@ import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import AccountName from '../components/account-name';
 import ImageViewerModal from '../components/image-viewer-modal';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { uploadImage } from '../lib/upload';
 import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
@@ -680,7 +680,7 @@ export default function MessagesContent() {
       console.error('Failed to load dialogs', error);
 
       if (!dialogs.length) {
-        setDialogsError(error instanceof Error ? error.message : (lang?.connection_lost || 'Связь потеряна'));
+        setDialogsError(getApiMessage(error instanceof Error ? error.message : null, lang, lang?.connection_lost || 'Связь потеряна'));
         setDialogsLoading(false);
       }
     } finally {
@@ -803,7 +803,7 @@ export default function MessagesContent() {
       console.error('Failed to load messages', error);
 
       if (!cachedMessages.length) {
-        setDialogError(error instanceof Error ? error.message : (lang?.failed_to_load_dialog || 'Не удалось загрузить диалог'));
+        setDialogError(getApiMessage(error instanceof Error ? error.message : null, lang, lang?.failed_to_load_dialog || 'Не удалось загрузить диалог'));
       }
     } finally {
       if (session === dialogSessionRef.current) {
@@ -1186,7 +1186,7 @@ export default function MessagesContent() {
 
       if (session !== dialogSessionRef.current) return;
 
-      setDialogError(error instanceof Error ? error.message : (lang?.failed_to_open_dialog || 'Не удалось открыть диалог'));
+      setDialogError(getApiMessage(error instanceof Error ? error.message : null, lang, lang?.failed_to_open_dialog || 'Не удалось открыть диалог'));
       router.replace('/messages');
     } finally {
       if (session === dialogSessionRef.current) {
@@ -1638,7 +1638,7 @@ export default function MessagesContent() {
 
       if (text) {
         notify({
-          content: text,
+          content: getApiMessage(text, lang, text),
           type: 'success',
         });
       }
@@ -1698,7 +1698,7 @@ export default function MessagesContent() {
       setEditingValue('');
 
       notify({
-        content: text || (lang?.edit_message || 'Сообщение обновлено'),
+        content: getApiMessage(text, lang) || (lang?.edit_message || 'Сообщение обновлено'),
         type: 'success',
       });
 
@@ -1728,7 +1728,7 @@ export default function MessagesContent() {
 
       if (text) {
         notify({
-          content: text,
+          content: getApiMessage(text, lang, text),
           type: 'success',
         });
       }
@@ -1875,10 +1875,11 @@ export default function MessagesContent() {
     } catch (error) {
       console.error('Failed to update dialog background', error);
       notify({
-        content:
-          error instanceof Error && error.message
-            ? error.message
-            : lang?.somethingwrong || 'Произошла ошибка =(',
+        content: getApiMessage(
+          error instanceof Error && error.message ? error.message : null,
+          lang,
+          lang?.somethingwrong || 'Произошла ошибка =('
+        ),
         type: 'error',
       });
     } finally {

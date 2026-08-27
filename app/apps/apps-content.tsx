@@ -18,7 +18,7 @@ import {
   toAppId,
   toBooleanFlag,
 } from './apps-model';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import AppInfoModal from './app-info-modal';
 import {
@@ -156,7 +156,7 @@ function AppsContentInner() {
     } catch (caughtError) {
       // Если кэш уже показан — не обнуляем список, просто убираем спиннер
       if (!cachedApps?.apps?.length) {
-        setError(caughtError instanceof Error ? caughtError.message : (lang?.loading_error || 'Ошибка загрузки'));
+        setError(getApiMessage(caughtError instanceof Error ? caughtError.message : null, lang, lang?.loading_error || 'Ошибка загрузки'));
         setApps([]);
       }
     } finally {

@@ -7,7 +7,7 @@ import { Inter, Montserrat } from 'next/font/google';
 import localFont from 'next/font/local';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { AncialAPI, type PayOrderDetails, type PayGateway } from '../lib/api-v2';
+import { AncialAPI, getApiMessage, type PayOrderDetails, type PayGateway } from '../lib/api-v2';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -51,7 +51,7 @@ export default function PayContent() {
       setDetails(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : (lang?.pay_order_not_found || 'Заказ не найден'));
+      setError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pay_order_not_found || 'Заказ не найден'));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -114,7 +114,7 @@ export default function PayContent() {
       }
     } catch (err) {
       showNote({
-        content: err instanceof Error ? err.message : 'Payment service unavailable',
+        content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.somethingwrong || 'Сервис оплаты временно недоступен'),
         type: 'error',
         time: 5
       });

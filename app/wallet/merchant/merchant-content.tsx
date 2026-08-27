@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { AncialAPI, type WalletMerchant, type WalletMerchantStats } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage, type WalletMerchant, type WalletMerchantStats } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 
 export default function MerchantContent() {
@@ -37,7 +37,7 @@ export default function MerchantContent() {
       setError(null);
       cache.set('wallet_merchants_cache', { merchants: fetchedMerchants, stats: fetchedStats }, { category: 'wallet', subcategory: 'merchants' });
     } catch (err) {
-      if (merchants.length === 0) setError(err instanceof Error ? err.message : (lang?.error_loading_merchant_panel || 'Ошибка загрузки панели мерчанта'));
+      if (merchants.length === 0) setError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.error_loading_merchant_panel || 'Ошибка загрузки панели мерчанта'));
     } finally {
       setLoading(false);
     }

@@ -334,7 +334,7 @@ export default function HomeContent() {
       if (disallowed.some((term) => lowerQuery.includes(term))) {
         setSuggestions([]);
         showNote({
-          content: 'Будьте добрее к другим людям!',
+          content: lang?.be_kind_to_people || 'Будьте добрее к другим людям!',
           type: 'error',
           time: 5,
         });
@@ -380,7 +380,7 @@ export default function HomeContent() {
     return () => {
       clearTimeout(timer);
     };
-  }, [searchVal, showNote]);
+  }, [lang?.be_kind_to_people, searchVal, showNote]);
 
   // Clean up JSONP callbacks on unmount
   useEffect(() => {

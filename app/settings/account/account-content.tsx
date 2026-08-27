@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -59,8 +59,9 @@ export default function AccountSettingsPage() {
         }
     } catch (error) {
       console.error(error);
+      const rawMsg = error instanceof Error ? error.message : null;
       showNote({
-        content: lang?.errorhappend || 'Произошла ошибка =(',
+        content: getApiMessage(rawMsg, lang, lang?.errorhappend || 'Произошла ошибка =('),
         type: 'error',
         time: 5
       });

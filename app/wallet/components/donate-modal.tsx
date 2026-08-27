@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../../components/modal';
-import { AncialAPI, type WalletAccount } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage, type WalletAccount } from '../../lib/api-v2';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import AccountName from '../../components/account-name';
@@ -170,7 +170,7 @@ export function DonateModal({
         setStep('failed');
       }
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : (lang?.donation_error || 'Ошибка выполнения пожертвования'));
+      setSubmitError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.donation_error || 'Ошибка выполнения пожертвования'));
       setStep('failed');
     } finally {
       setSubmitLoading(false);

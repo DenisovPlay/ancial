@@ -27,7 +27,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useDragScroll } from '../../hooks/useDragScroll';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 import {
   cn,
@@ -664,7 +664,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       const response = (await AncialAPI.postAction('bookmark', { pid: post.id })) as { message: string, action: string };
 
       showNote({
-        content: response.message,
+        content: getApiMessage(response.message, lang),
         html: true,
         type: 'success',
         time: 5,
@@ -692,7 +692,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     } catch (nextError) {
       console.error('Bookmark failed', nextError);
       showNote({
-        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -761,7 +761,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     } catch (nextError) {
       console.error('Vote failed', nextError);
       showNote({
-        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -840,7 +840,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     } catch (nextError) {
       console.error('Create comment failed', nextError);
       showNote({
-        content: strings.somethingwrong,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -852,7 +852,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       const response = await AncialAPI.deleteComment<{ message?: string }>(comment.id);
 
       showNote({
-        content: response?.message || 'Удалено',
+        content: getApiMessage(response?.message, lang, lang?.deleted || 'Удалено'),
         html: true,
         type: 'success',
         time: 5,
@@ -868,7 +868,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     } catch (nextError) {
       console.error('Delete comment failed', nextError);
       showNote({
-        content: strings.somethingwrong,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -885,7 +885,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       const response = (await AncialAPI.reportAction({ id: currentTarget.id, type: currentTarget.type, comment: reason })) as { message: string };
 
       showNote({
-        content: response.message || 'Жалоба отправлена',
+        content: getApiMessage(response.message, lang, lang?.report_sent || 'Жалоба отправлена'),
         html: true,
         type: 'success',
         time: 5,
@@ -893,7 +893,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     } catch (nextError) {
       console.error('Report failed', nextError);
       showNote({
-        content: strings.somethingwrong,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -910,7 +910,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       const response = (await AncialAPI.deletePost(currentTarget.id)) as { message: string };
 
       showNote({
-        content: response.message || 'Пост удален',
+        content: getApiMessage(response.message, lang, lang?.post_deleted || 'Пост удален'),
         html: true,
         type: 'success',
         time: 5,
@@ -927,7 +927,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     } catch (nextError) {
       console.error('Delete post failed', nextError);
       showNote({
-        content: strings.errorhappend,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.errorhappend),
         type: 'error',
         time: 10,
       });
@@ -989,7 +989,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       const response = (await AncialAPI.groupSubscription(action, groupData.id)) as { message: string };
 
       showNote({
-        content: response.message || 'Готово',
+        content: getApiMessage(response.message, lang, lang?.done || 'Готово'),
         html: true,
         type: 'success',
         time: 5,
@@ -999,7 +999,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     } catch (nextError) {
       console.error('Subscription action failed', nextError);
       showNote({
-        content: strings.errorhappend,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.errorhappend),
         type: 'error',
         time: 5,
       });
@@ -1029,7 +1029,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
       const message = response.message || strings.successGroupUpdate;
 
       showNote({
-        content: message,
+        content: getApiMessage(message, lang, strings.successGroupUpdate),
         html: true,
         type: 'success',
         time: 5,
@@ -1045,7 +1045,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     } catch (nextError) {
       console.error('Group media update failed', nextError);
       showNote({
-        content: strings.errorhappend,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.errorhappend),
         type: 'error',
         time: 5,
       });

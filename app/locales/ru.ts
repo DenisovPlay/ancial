@@ -1694,4 +1694,7 @@ export const ru: Record<string, string> = {
     "invite_group_chat_title": "Приглашение в групповой чат",
     "invite_go_to_messages": "Перейти к сообщениям",
     "network_error": "Ошибка сети",
+    "be_kind_to_people": "Будьте добрее к другим людям!",
+    "track_removed_from_cache": "Трек «{title}» удален из кэша",
+    "delete_from_device": "Удалить из устройства",
 };

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import PostWidgetPollModal, { type PollWidgetDraft } from '../../components/post-widget-poll-modal';
 import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/post-widget-music-modal';
 import PostBlockMediaModal from '../../components/post-block-media-modal';
@@ -408,7 +408,7 @@ export default function CreatePostContent() {
       }
 
       showNote({
-        content: response.message,
+        content: getApiMessage(response.message, lang),
         html: true,
         type: 'success',
         time: 5,
@@ -417,10 +417,11 @@ export default function CreatePostContent() {
     } catch (error) {
       console.error('Create post failed', error);
       showNote({
-        content:
-          error instanceof Error && error.message
-            ? error.message
-            : strings.somethingwrong,
+        content: getApiMessage(
+          error instanceof Error && error.message ? error.message : null,
+          lang,
+          strings.somethingwrong
+        ),
         html: true,
         type: 'error',
         time: 10,

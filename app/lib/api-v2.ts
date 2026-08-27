@@ -939,10 +939,23 @@ export class AncialAPI {
   static async pulsePlaylistAction<T = unknown>(action: string, params: Record<string, string | number>): Promise<T> {
     const body = new URLSearchParams({ action });
     Object.entries(params).forEach(([key, value]) => body.set(key, String(value)));
-    const response = await this.request<{ playlists?: unknown } | unknown>('/pulse/PlaylistAction.php', { method: 'POST', body });
+    const response = await this.request<unknown>('/pulse/PlaylistAction.php', { method: 'POST', body });
 
     if (action === 'list') {
-      return { data: Array.isArray(response) && 'playlists' in response ? (response as { playlists: unknown }).playlists : [] } as T;
+      let list: unknown[] = [];
+      if (Array.isArray(response)) {
+        list = response;
+      } else if (response && typeof response === 'object') {
+        const obj = response as Record<string, unknown>;
+        if (Array.isArray(obj.playlists)) {
+          list = obj.playlists;
+        } else if (Array.isArray(obj.data)) {
+          list = obj.data;
+        } else if (obj.data && typeof obj.data === 'object' && Array.isArray((obj.data as Record<string, unknown>).playlists)) {
+          list = (obj.data as Record<string, unknown>).playlists as unknown[];
+        }
+      }
+      return { data: list, playlists: list } as T;
     }
 
     return response as T;

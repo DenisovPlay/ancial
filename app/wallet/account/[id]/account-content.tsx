@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { AncialAPI, type WalletAccount, type WalletTransaction } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage, type WalletAccount, type WalletTransaction } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache.ts';
 import Modal from '../../../components/modal';
 import { TransactionItem, TransactionDetailsModal } from '../../components/transaction-item';
@@ -88,7 +88,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
         setError((prevError) => prevError ?? (lang?.account_not_found_or_restricted || 'Счёт не найден или доступ ограничен'));
       }
     } catch (err: unknown) {
-      setError((prevError) => prevError ?? (err instanceof Error ? err.message : (lang?.error_loading_account || 'Ошибка загрузки счёта')));
+      setError((prevError) => prevError ?? getApiMessage(err instanceof Error ? err.message : null, lang, lang?.error_loading_account || 'Ошибка загрузки счёта'));
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       // Неавторизован — терминальное состояние, снимаем лоадер сразу.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
-      setError('Auth required');
+      setError(lang?.auth_required || 'Требуется авторизация');
       return;
     }
 
@@ -151,7 +151,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
           const res = await AncialAPI.generateQRCode(accountId);
           setReceiveQrUrl(res.qr_url);
         } catch (err: unknown) {
-          setReceiveError(err instanceof Error ? err.message : (lang?.failed_to_generate_qr || 'Не удалось сгенерировать QR-код'));
+          setReceiveError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failed_to_generate_qr || 'Не удалось сгенерировать QR-код'));
         } finally {
           setReceiveLoading(false);
         }
@@ -193,7 +193,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
         setTopupError(lang?.failed_to_create_topup_invoice || 'Не удалось создать счет для пополнения');
       }
     } catch (err: unknown) {
-      setTopupError(err instanceof Error ? err.message : (lang?.error_creating_topup || 'Ошибка при создании пополнения'));
+      setTopupError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.error_creating_topup || 'Ошибка при создании пополнения'));
     } finally {
       setTopupLoading(false);
     }
@@ -209,7 +209,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       // Redirect back to wallet dashboard
       router.push('/wallet');
     } catch (err: unknown) {
-      setCloseError(err instanceof Error ? err.message : (lang?.failed_to_close_account || 'Не удалось закрыть счёт'));
+      setCloseError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failed_to_close_account || 'Не удалось закрыть счёт'));
     } finally {
       setCloseLoading(false);
     }

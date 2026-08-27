@@ -10,7 +10,7 @@ import { useAuth, type User } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { DOWNLOADS_COLLECTION_ID, usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import {
   decodeHtmlEntities,
@@ -514,9 +514,9 @@ export default function PulseContent() {
         return;
       }
 
-      showPulseNote(pulseErrorText, 'error');
-    } catch {
-      showPulseNote(pulseErrorText, 'error');
+      showPulseNote(pulseErrorText, 'error', 4);
+    } catch (err) {
+      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, pulseErrorText), 'error', 4);
     }
   }, [getResolvedId, isAuthenticated, lang, pulseErrorText, pulseFavoriteCreatedText, pulseTrackAddedText, pulseTrackRemovedText, pulseUnknownSongText, showPulseNote, updateFavoriteIds]);
 
@@ -554,9 +554,9 @@ export default function PulseContent() {
         type: 6,
       });
       setReportTrackTarget(null);
-      showPulseNote(result?.message || lang?.reportsended || 'Жалоба отправлена', 'success');
-    } catch {
-      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+      showPulseNote(getApiMessage(result?.message, lang, lang?.reportsended || 'Жалоба отправлена'), 'success');
+    } catch (err) {
+      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
   }, [getResolvedId, lang, reportTrackTarget, showPulseNote]);
 

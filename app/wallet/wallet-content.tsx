@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState, useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { AncialAPI, type SendMoneyParams, type WalletOverview, type WalletAccount, type WalletGateway, type WalletGatewayForm, type WalletGatewayFormField, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
+import { AncialAPI, getApiMessage, type SendMoneyParams, type WalletOverview, type WalletAccount, type WalletGateway, type WalletGatewayForm, type WalletGatewayFormField, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
 
 /** Друг для перевода STF (socialAction('friends'), status=1 — подтверждённый). */
 interface StfFriend {
@@ -212,7 +212,7 @@ export default function WalletContent() {
       cache.set('wallet_overview_cache', overview, { category: 'wallet', subcategory: 'overview' });
     } catch (err) {
       if (accounts.length === 0) {
-        setError(err instanceof Error ? err.message : (lang?.walletloaderror || 'Ошибка загрузки кошелька'));
+        setError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.walletloaderror || 'Ошибка загрузки кошелька'));
       }
     } finally {
       setLoading(false);
@@ -227,7 +227,7 @@ export default function WalletContent() {
       // начальный useState(true) эквивалентен этому setState.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
-      setError('Auth required');
+      setError(lang?.auth_required || 'Требуется авторизация');
       return;
     }
 
@@ -252,7 +252,7 @@ export default function WalletContent() {
     }
 
     fetchWallet(!hasCachedData);
-  }, [authLoading, isAuthenticated, fetchWallet]);
+  }, [authLoading, isAuthenticated, fetchWallet, lang?.auth_required]);
 
   // Reset transfer modal state when opened/closed
   useEffect(() => {
@@ -322,7 +322,7 @@ export default function WalletContent() {
         }
       }
     } catch (err) {
-      setFriendsError(err instanceof Error ? err.message : (lang?.friendsloaderror || 'Не удалось загрузить список друзей'));
+      setFriendsError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.friendsloaderror || 'Не удалось загрузить список друзей'));
     } finally {
       setFriendsLoading(false);
     }
@@ -353,7 +353,7 @@ export default function WalletContent() {
       setProductsView('list');
       await fetchWallet();
     } catch (err) {
-      setDeleteAccountError(err instanceof Error ? err.message : (lang?.failedtocloseaccount || 'Не удалось закрыть счёт'));
+      setDeleteAccountError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failedtocloseaccount || 'Не удалось закрыть счёт'));
     } finally {
       setDeleteAccountLoading(false);
     }
@@ -374,7 +374,7 @@ export default function WalletContent() {
       setProductsView('list');
       await fetchWallet();
     } catch (err) {
-      setCreateAccountError(err instanceof Error ? err.message : (lang?.failedtocreateaccount || 'Не удалось создать счёт'));
+      setCreateAccountError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failedtocreateaccount || 'Не удалось создать счёт'));
     } finally {
       setCreateAccountLoading(false);
     }
@@ -413,7 +413,7 @@ export default function WalletContent() {
       setSendStep('success');
       await fetchWallet();
     } catch (err) {
-      setSendError(err instanceof Error ? err.message : (lang?.transfererror || 'Ошибка перевода средств'));
+      setSendError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.transfererror || 'Ошибка перевода средств'));
       setSendStep('error');
     } finally {
       setSendLoading(false);
@@ -534,7 +534,7 @@ export default function WalletContent() {
 
       await fetchWallet();
     } catch (err) {
-      setTopupError(err instanceof Error ? err.message : (lang?.topupcreateerror || 'Ошибка создания пополнения'));
+      setTopupError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.topupcreateerror || 'Ошибка создания пополнения'));
     } finally {
       setTopupLoading(false);
     }
@@ -547,7 +547,7 @@ export default function WalletContent() {
       await fetchWallet();
     } catch (err) {
       showNote({
-        content: err instanceof Error ? err.message : (lang?.failedtocanceltopup || 'Не удалось отменить пополнение'),
+        content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failedtocanceltopup || 'Не удалось отменить пополнение'),
         type: 'error',
         time: 5
       });
@@ -564,7 +564,7 @@ export default function WalletContent() {
       const res = await AncialAPI.generateQRCode(accountId);
       setReceiveQrUrl(res.qr_url);
     } catch (err) {
-      setReceiveError(err instanceof Error ? err.message : (lang?.failedtogenerateqr || 'Не удалось сгенерировать QR-код'));
+      setReceiveError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failedtogenerateqr || 'Не удалось сгенерировать QR-код'));
     } finally {
       setReceiveLoading(false);
     }
@@ -609,7 +609,7 @@ export default function WalletContent() {
         setGatewayFormError(lang?.failedtoloadwithdrawform || 'Не удалось загрузить форму вывода');
       }
     } catch (err) {
-      setGatewayFormError(err instanceof Error ? err.message : (lang?.withdrawformloaderror || 'Ошибка загрузки формы вывода с сервера'));
+      setGatewayFormError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.withdrawformloaderror || 'Ошибка загрузки формы вывода с сервера'));
     } finally {
       setGatewayFormLoading(false);
     }
@@ -662,10 +662,10 @@ export default function WalletContent() {
         details: finalDetails
       });
 
-      setWithdrawSuccess(res.message || (lang?.withdrawrequestcreated || 'Заявка на вывод средств успешно создана!'));
+      setWithdrawSuccess(getApiMessage(res.message, lang, lang?.withdrawrequestcreated || 'Заявка на вывод средств успешно создана!'));
       fetchWallet(false);
     } catch (err) {
-      setWithdrawError(err instanceof Error ? err.message : (lang?.withdrawcreateerror || 'Ошибка при создании заявки на вывод'));
+      setWithdrawError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.withdrawcreateerror || 'Ошибка при создании заявки на вывод'));
     } finally {
       setWithdrawLoading(false);
     }

@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { SvgIcon } from '../../../feed/editor-shared';
 
 function flag(value: boolean | number | string | null | undefined) {
@@ -106,14 +106,15 @@ export default function ContactsSecurityContent() {
       });
 
       showNote({
-        content: result?.message || lang?.done || 'Готово',
+        content: getApiMessage(result?.message, lang, lang?.done || 'Готово'),
         time: 5,
         type: 'success',
       });
     } catch (error) {
       console.error(error);
+      const rawMsg = error instanceof Error ? error.message : null;
       showNote({
-        content: error instanceof Error ? error.message : (lang?.errorhappend || 'Произошла ошибка =('),
+        content: getApiMessage(rawMsg, lang, lang?.errorhappend || 'Произошла ошибка =('),
         time: 5,
         type: 'error',
       });
@@ -126,24 +127,29 @@ export default function ContactsSecurityContent() {
     setIsSavingContacts(true);
 
     try {
-      const responseText = await AncialAPI.securityAction<string>('change_email_phone', {
+      const response = await AncialAPI.securityAction<{ message?: string } | string>('change_email_phone', {
         phone: changePhone,
         email: changeEmail,
       });
 
+      const msgCode = typeof response === 'object' && response !== null && 'message' in response
+        ? response.message
+        : typeof response === 'string' ? response : null;
+
       showNote({
-        content: responseText || (lang?.done || 'Готово'),
+        content: getApiMessage(msgCode, lang, lang?.dataupdated || lang?.done || 'Готово'),
         html: true,
         time: 5,
-        type: guessNoteType(responseText || ''),
+        type: 'success',
       });
 
       setChangeModalOpen(false);
       await checkAuth({ silent: true });
     } catch (error) {
       console.error(error);
+      const rawMsg = error instanceof Error ? error.message : null;
       showNote({
-        content: lang?.errorhappend || 'Произошла ошибка =(',
+        content: getApiMessage(rawMsg, lang, lang?.errorhappend || 'Произошла ошибка =('),
         time: 5,
         type: 'error',
       });

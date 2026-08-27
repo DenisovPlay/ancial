@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 
 function flag(value: boolean | number | string | null | undefined) {
   return value === true || value === 1 || value === '1' || value === 'true';
@@ -117,7 +117,7 @@ export default function PrivacySecurityContent() {
     } catch (error) {
       console.error(error);
       showNote({
-        content: lang?.errorhappend || 'Произошла ошибка =(',
+        content: getApiMessage(error instanceof Error ? error.message : null, lang, lang?.errorhappend || 'Произошла ошибка =('),
         time: 5,
         type: 'error',
       });

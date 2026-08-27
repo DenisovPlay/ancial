@@ -1694,4 +1694,7 @@ export const en: Record<string, string> = {
     "invite_group_chat_title": "Group chat invitation",
     "invite_go_to_messages": "Go to messages",
     "network_error": "Network error",
+    "be_kind_to_people": "Please be kind to other people!",
+    "track_removed_from_cache": "Track \"{title}\" removed from cache",
+    "delete_from_device": "Delete from device",
 };

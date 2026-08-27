@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter } from 'next/navigation';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { uploadImage } from '../../../lib/upload';
 
 const MEDIA_TAGS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js';
@@ -164,12 +164,12 @@ export default function PulseCreateUploadPage() {
         });
         setStatusText('Трек загружен');
       } else {
-        showNote({ content: 'Ошибка при загрузке аудио на сервер', type: 'error', time: 5 });
+        showNote({ content: lang?.errorhappend || 'Ошибка при загрузке аудио на сервер', type: 'error', time: 5 });
         setStatusText('Ошибка');
       }
     } catch (error) {
       console.error(error);
-      showNote({ content: 'Ошибка при загрузке аудио', type: 'error', time: 5 });
+      showNote({ content: getApiMessage(error instanceof Error ? error.message : null, lang, lang?.somethingwrong || 'Ошибка при загрузке аудио'), type: 'error', time: 5 });
       setStatusText('Ошибка');
     } finally {
       updateTrack(index, 'uploading', false);
@@ -219,8 +219,8 @@ export default function PulseCreateUploadPage() {
       });
       
       router.push('/pulse/create/albums');
-    } catch {
-      showNote({ content: 'Ошибка сохранения', type: 'error', time: 5 });
+    } catch (err) {
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.errorhappend || 'Ошибка сохранения'), type: 'error', time: 5 });
     } finally {
       setLoading(false);
     }

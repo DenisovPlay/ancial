@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { uploadImage } from '../../../lib/upload';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -141,8 +141,8 @@ function EditTrackContent() {
       .then(() => {
         router.push('/pulse/create/tracks');
       })
-      .catch(() => {
-        showNote({ content: 'Произошла ошибка', type: 'error', time: 5 });
+      .catch((err) => {
+        showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.errorhappend || 'Произошла ошибка'), type: 'error', time: 5 });
         setSaving(false);
       });
   };

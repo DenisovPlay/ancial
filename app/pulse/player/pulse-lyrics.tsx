@@ -194,7 +194,7 @@ export function PulseLyricsMobile({
       </div>
 
       {source ? (
-        <span className="absolute bottom-3 text-center text-xs text-zinc-500">
+        <span className="hidden absolute bottom-3 text-center text-xs text-zinc-500">
           Источник: {source}
         </span>
       ) : null}

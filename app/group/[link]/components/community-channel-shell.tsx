@@ -6,7 +6,7 @@ import { useCallback, useState } from 'react';
 import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import CommunityChannelList from './community-channel-list';
 import type { CommunityChannel, CommunityStructure } from '../lib/community-types';
 
@@ -30,7 +30,7 @@ export default function CommunityChannelShell({ failed, structure }: Props) {
       }
       router.push(`/messages/${encodeURIComponent(result.hash || channel.hash)}`);
     } catch (error) {
-      showNote({ content: error instanceof Error ? error.message : (lang?.community_channel_join_error || ''), type: 'error', time: 5 });
+      showNote({ content: getApiMessage(error instanceof Error ? error.message : null, lang, lang?.community_channel_join_error || ''), type: 'error', time: 5 });
     } finally {
       setOpeningId(null);
     }

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { AncialAPI, type WalletAccount, type WalletOverview, type SendMoneyParams } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage, type WalletAccount, type WalletOverview, type SendMoneyParams } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 
 function FormContentInner() {
@@ -241,7 +241,7 @@ function FormContentInner() {
       if (typeParam) setTransferType(typeParam);
     } else if (formParam === 'failed') {
       setStep('failed');
-      setSubmitError(searchParams.get('error') || (lang?.operation_error || 'Произошла ошибка при выполнении операции'));
+      setSubmitError(getApiMessage(searchParams.get('error'), lang, lang?.operation_error || 'Произошла ошибка при выполнении операции'));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-разбор URL-параметров: повторный запуск при пересоздании fetchRecipientProfile недопустим
   }, [authLoading, isAuthenticated, searchParams]);
@@ -367,7 +367,7 @@ function FormContentInner() {
         setStep('failed');
       }
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : (lang?.transfer_error || 'Ошибка выполнения перевода'));
+      setSubmitError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.transfer_error || 'Ошибка выполнения перевода'));
       setStep('failed');
     } finally {
       setSubmitLoading(false);

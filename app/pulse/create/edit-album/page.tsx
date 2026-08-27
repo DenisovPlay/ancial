@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { uploadImage } from '../../../lib/upload';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -156,8 +156,8 @@ function EditAlbumContent() {
         router.push('/pulse/create/albums');
       })
       .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'error' in err ? String((err as { error?: unknown }).error) : '');
-        showNote({ content: msg || 'Произошла ошибка', type: 'error', time: 5 });
+        const rawMsg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'error' in err ? String((err as { error?: unknown }).error) : null);
+        showNote({ content: getApiMessage(rawMsg, lang, lang?.somethingwrong || 'Произошла ошибка'), type: 'error', time: 5 });
         setSaving(false);
       });
   };

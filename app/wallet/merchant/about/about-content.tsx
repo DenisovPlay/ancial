@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { AncialAPI, type WalletMerchantDetails, type WalletMerchantOrder } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage, type WalletMerchantDetails, type WalletMerchantOrder } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache.ts';
 
 function AboutContentInner() {
@@ -76,7 +76,7 @@ function AboutContentInner() {
         if (!merchant) setError(lang?.merchant_not_found || 'Мерчант не найден');
       }
     } catch (err) {
-      if (!merchant) setError(err instanceof Error ? err.message : (lang?.error_loading_merchant_settings || 'Ошибка загрузки настроек мерчанта'));
+      if (!merchant) setError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.error_loading_merchant_settings || 'Ошибка загрузки настроек мерчанта'));
     } finally {
       setLoading(false);
     }
@@ -153,10 +153,10 @@ function AboutContentInner() {
           });
         }
       } else {
-        setSaveError(res.message || (lang?.failed_to_update_settings || 'Не удалось обновить настройки'));
+        setSaveError(getApiMessage(res.message, lang, lang?.failed_to_update_settings || 'Не удалось обновить настройки'));
       }
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : (lang?.error_updating_settings || 'Ошибка обновления настроек'));
+      setSaveError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.error_updating_settings || 'Ошибка обновления настроек'));
     } finally {
       setSaveLoading(false);
     }

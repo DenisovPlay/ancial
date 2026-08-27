@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '../context/AuthContext';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { uploadImage } from '../lib/upload';
 import {
   getPulseTrackEditInitialState,
@@ -250,7 +250,7 @@ export default function PulseUploadTrackModal({
       onUploaded();
     } catch (error) {
       setStatusText('');
-      showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : (lang?.failedtosavetrack || 'не удалось сохранить трек')}`, 'error', 5);
+      showNote(getApiMessage(error instanceof Error ? error.message : null, lang, lang?.failedtosavetrack || 'Не удалось сохранить трек'), 'error', 5);
     } finally {
       setIsSaving(false);
     }
@@ -289,7 +289,7 @@ export default function PulseUploadTrackModal({
         onClose();
       }
     } catch (error) {
-      showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : (lang?.failedtosavechanges || 'не удалось сохранить изменения')}`, 'error', 5);
+      showNote(getApiMessage(error instanceof Error ? error.message : null, lang, lang?.failedtosavechanges || 'Не удалось сохранить изменения'), 'error', 5);
     } finally {
       setIsSaving(false);
     }
@@ -388,7 +388,7 @@ export default function PulseUploadTrackModal({
               throw new Error(result || 'Unknown error');
             }
           } catch (error) {
-            showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : (lang?.failedtosavechanges || 'не удалось сохранить изменения')}`, 'error', 5);
+            showNote(getApiMessage(error instanceof Error ? error.message : null, lang, lang?.failedtosavechanges || 'Не удалось сохранить изменения'), 'error', 5);
           } finally {
             setIsSaving(false);
           }
@@ -574,7 +574,7 @@ export function PulseDeleteTrackModal({
       onDeleted();
       onClose();
     } catch (error) {
-      showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : (lang?.failedtodeletetrack || 'не удалось удалить трек')}`, 'error', 5);
+      showNote(getApiMessage(error instanceof Error ? error.message : null, lang, lang?.failedtodeletetrack || 'Не удалось удалить трек'), 'error', 5);
     } finally {
       setIsDeleting(false);
     }

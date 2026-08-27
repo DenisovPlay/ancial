@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { globalWS } from '../../../lib/global-ws';
 import { WS_BASE } from '../../../config';
 import {
@@ -630,8 +630,9 @@ export function useGroupCall({
     const handleWsError = (raw?: unknown) => {
       const payload = (raw || {}) as { code?: string; message?: string };
       if (!['room_full', 'voice_disabled', 'not_in_room', 'stale_room', 'access_denied'].includes(String(payload.code || ''))) return;
+      const rawMsg = payload.code || payload.message || null;
       showNote({
-        content: payload.message || lang?.voice_room_error || 'Не удалось подключиться к звонку',
+        content: getApiMessage(rawMsg, lang, payload.message || lang?.voice_room_error || 'Не удалось подключиться к звонку'),
         type: 'error',
         time: 5,
       });

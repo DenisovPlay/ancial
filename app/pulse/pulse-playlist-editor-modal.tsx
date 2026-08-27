@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 
 import { useAuth } from '../context/AuthContext';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { uploadImage } from '../lib/upload';
 import { type PulsePlaylistMeta } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
@@ -102,7 +102,7 @@ export default function PulsePlaylistEditorModal({
       onSaved(nextPlaylist);
       onClose();
     } catch (error) {
-      showNote(`${lang?.error || 'Ошибка: '}${error instanceof Error ? error.message : '?'}`, 'error', 5);
+      showNote(getApiMessage(error instanceof Error ? error.message : null, lang, lang?.errorhappend || 'Произошла ошибка'), 'error', 5);
     } finally {
       setIsSaving(false);
     }

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { PostAuthor, PostData, PostImage, PostWidget } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import PostWidgetPollModal, { type PollWidgetDraft } from '../../components/post-widget-poll-modal';
 import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/post-widget-music-modal';
 import PostBlockMediaModal from '../../components/post-block-media-modal';
@@ -486,7 +486,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
 
 
       showNote({
-        content: response?.message?.trim() || strings.saved,
+        content: getApiMessage(response?.message, lang, strings.saved),
         html: true,
         type: 'success',
         time: 5,
@@ -494,10 +494,11 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     } catch (nextError) {
       console.error('Edit post failed', nextError);
       showNote({
-        content:
-          nextError instanceof Error && nextError.message
-            ? nextError.message
-            : strings.somethingwrong,
+        content: getApiMessage(
+          nextError instanceof Error && nextError.message ? nextError.message : null,
+          lang,
+          strings.somethingwrong
+        ),
         html: true,
         type: 'error',
         time: 10,

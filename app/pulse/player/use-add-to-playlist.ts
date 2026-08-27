@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from 'react';
 
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { normalizeText, parsePlaylistSongs, toNumber } from './player-utils';
 import { resolvePulsePlaylistTitle } from '../playlist/playlist-model';
 
@@ -44,13 +44,20 @@ export function useAddToPlaylist({ lang, navigate, notify }: { lang: LangMap; na
 
         setAddToPlaylistSongId(resolvedSongId);
 
-        const result = await AncialAPI.pulsePlaylistAction<{ data?: PlaylistItem[]; error?: string }>('list', {});
-        if (!result || !Array.isArray(result.data)) {
-          notify({ content: result?.error || lang?.pulse_error_happened || 'Произошла ошибка =(', type: 'error', time: 5 });
+        const result = await AncialAPI.pulsePlaylistAction<{ data?: PlaylistItem[]; playlists?: PlaylistItem[]; error?: string }>('list', {});
+        const playlistList = Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result?.playlists)
+            ? result.playlists
+            : Array.isArray(result)
+              ? (result as PlaylistItem[])
+              : null;
+        if (!playlistList) {
+          notify({ content: getApiMessage(result?.error, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), type: 'error', time: 5 });
           setPlaylistOptions([]);
           return;
         }
-        setPlaylistOptions(result.data.map((item) => {
+        setPlaylistOptions(playlistList.map((item) => {
           const songs = parsePlaylistSongs(item.songs);
           return {
             hasSong: songs.includes(resolvedSongId),
@@ -60,8 +67,8 @@ export function useAddToPlaylist({ lang, navigate, notify }: { lang: LangMap; na
             songs,
           };
         }).filter((item) => item.id));
-      } catch {
-        notify({ content: lang?.pulse_error_happened || 'Произошла ошибка =(', type: 'error', time: 5 });
+      } catch (err) {
+        notify({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), type: 'error', time: 5 });
         setPlaylistOptions([]);
       } finally {
         setPlaylistOptionsLoading(false);
@@ -83,8 +90,8 @@ export function useAddToPlaylist({ lang, navigate, notify }: { lang: LangMap; na
       if (window._pagePlaylistConf?.type === 2 && normalizeText(String(window._pagePlaylistConf.id ?? '')) === playlistId) {
         window.setTimeout(() => { setIsAddToPlaylistOpen(false); navigate(`/pulse/playlist/${playlistId}`); }, 400);
       }
-    } catch {
-      notify({ content: lang?.pulse_error_happened || 'Произошла ошибка =(', type: 'error', time: 5 });
+    } catch (err) {
+      notify({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), type: 'error', time: 5 });
     }
   }, [addToPlaylistSongId, lang, navigate, notify, playlistOptions]);
 

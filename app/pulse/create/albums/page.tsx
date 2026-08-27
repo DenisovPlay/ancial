@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import Link from 'next/link';
@@ -49,7 +49,7 @@ export default function PulseCreateAlbumsPage() {
     if (albumToDelete !== null) {
       AncialAPI.pulseManagement('album', 'delete', { id: albumToDelete })
         .then(() => fetchAlbums())
-        .catch((err) => showNote({ content: err instanceof Error ? err.message : 'Ошибка удаления', type: 'error', time: 5 }))
+        .catch((err) => showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.errorhappend || 'Ошибка удаления'), type: 'error', time: 5 }))
         .finally(() => {
           setDeleteModalOpen(false);
           setAlbumToDelete(null);

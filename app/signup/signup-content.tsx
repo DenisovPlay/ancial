@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
 
 export default function SignupContent() {
@@ -50,7 +50,7 @@ export default function SignupContent() {
       });
 
       if (!result.success) {
-        setError(result.error || (lang?.signup_error || 'Ошибка регистрации'));
+        setError(getApiMessage(result.error, lang, lang?.signup_error || 'Ошибка регистрации'));
         setIsLoading(false);
         return;
       }

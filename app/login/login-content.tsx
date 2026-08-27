@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import { Button } from '../components/button';
@@ -62,7 +62,7 @@ export default function LoginPage() {
       const result = await AncialAPI.loginResponse<{ token?: string }>({ login, password });
 
       if (!result.success) {
-        setError(result.error || (lang?.login_error || 'Ошибка авторизации'));
+        setError(getApiMessage(result.error, lang, lang?.login_error || 'Ошибка авторизации'));
       } else {
         setAuthToken(result.data?.token || '');
         await checkAuth({ force: true });

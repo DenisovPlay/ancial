@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 
 function guessNoteType(responseText: string) {
   const normalized = responseText.toLowerCase();
@@ -79,17 +79,24 @@ export default function PasswordContent() {
     setIsSavingPassword(true);
 
     try {
-      const responseText = await AncialAPI.securityAction<string>('change_password', {
+      const response = await AncialAPI.securityAction<{ message?: string } | string>('change_password', {
+        old_password: oldPassword,
+        new_password: newPassword,
+        new_password_confirm: repeatPassword,
         oldpas: oldPassword,
         newpas: newPassword,
         nrepas: repeatPassword,
       });
 
+      const msgCode = typeof response === 'object' && response !== null && 'message' in response
+        ? response.message
+        : typeof response === 'string' ? response : null;
+
       showNote({
-        content: responseText || (lang?.done || 'Готово'),
+        content: getApiMessage(msgCode, lang, lang?.pcsuccess || lang?.done || 'Готово'),
         html: true,
         time: 5,
-        type: guessNoteType(responseText || ''),
+        type: 'success',
       });
 
       setOldPassword('');
@@ -98,8 +105,9 @@ export default function PasswordContent() {
       await checkAuth({ silent: true });
     } catch (error) {
       console.error(error);
+      const rawMsg = error instanceof Error ? error.message : null;
       showNote({
-        content: lang?.errorhappend || 'Произошла ошибка =(',
+        content: getApiMessage(rawMsg, lang, lang?.errorhappend || 'Произошла ошибка =('),
         time: 5,
         type: 'error',
       });

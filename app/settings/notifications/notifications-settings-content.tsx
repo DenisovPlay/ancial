@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { authFetch } from '../../lib/auth-fetch';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { useFirebaseMessaging, FIREBASE_CONFIG } from '../../lib/useFirebaseMessaging';
 import { SvgIcon } from '../../feed/editor-shared';
 
@@ -182,7 +182,7 @@ export default function NotificationsSettingsContent() {
     } catch (err) {
       console.error('Ошибка:', err);
       showNote({
-        content: lang?.notification_connection_error || 'Ошибка при подключении уведомлений',
+        content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.notification_connection_error || 'Ошибка при подключении уведомлений'),
         type: 'error',
         time: 5,
       });
@@ -219,7 +219,7 @@ export default function NotificationsSettingsContent() {
     } catch (err) {
       console.error('Ошибка:', err);
       showNote({
-        content: lang?.notification_disconnection_error || 'Ошибка при отключении уведомлений',
+        content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.notification_disconnection_error || 'Ошибка при отключении уведомлений'),
         type: 'error',
         time: 5,
       });

@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 import Modal from './modal';
 import { getShareServiceUrl, type ShareService } from './share-modal-model';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cn } from '../pulse/pulse-components';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -169,7 +169,7 @@ export default function ShareModal({
     } catch (e) {
       console.error('Reply failed', e);
       showNote({
-        content: e instanceof Error ? e.message : 'Произошла ошибка при публикации',
+        content: getApiMessage(e instanceof Error ? e.message : null, lang, lang?.errorhappend || 'Произошла ошибка при публикации'),
         type: 'error',
         time: 5,
         html: true,

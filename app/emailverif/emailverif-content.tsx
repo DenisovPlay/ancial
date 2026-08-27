@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 
 function EmailVerifContentInner() {
@@ -45,7 +45,8 @@ function EmailVerifContentInner() {
       .catch((err: unknown) => {
         if (!isMounted) return;
         setStatus('error');
-        const msg = err instanceof Error ? err.message : (lang?.somethingwrong || 'Ошибка подтверждения');
+        const rawMsg = err instanceof Error ? err.message : null;
+        const msg = getApiMessage(rawMsg, lang, lang?.somethingwrong || 'Ошибка подтверждения');
         setErrorMessage(msg);
         showNote({
           content: msg,
@@ -76,7 +77,8 @@ function EmailVerifContentInner() {
       });
     } catch (err: unknown) {
       setStatus('error');
-      const msg = err instanceof Error ? err.message : (lang?.somethingwrong || 'Ошибка подтверждения');
+      const rawMsg = err instanceof Error ? err.message : null;
+      const msg = getApiMessage(rawMsg, lang, lang?.somethingwrong || 'Ошибка подтверждения');
       setErrorMessage(msg);
       showNote({
         content: msg,

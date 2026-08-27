@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { AncialAPI, type LinkGuardAnalysis } from '../lib/api-v2';
+import { AncialAPI, getApiMessage, type LinkGuardAnalysis } from '../lib/api-v2';
 
 function RedirectContentInner() {
   const router = useRouter();
@@ -37,7 +37,7 @@ function RedirectContentInner() {
       .catch((err) => {
         if (isMounted) {
           console.error('LinkGuard check failed:', err);
-          setError(err instanceof Error ? err.message : 'Не удалось проверить ссылку');
+          setError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.failed_to_check_link || 'Не удалось проверить ссылку'));
           setLoading(false);
         }
       });

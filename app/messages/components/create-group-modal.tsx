@@ -6,7 +6,7 @@ import AccountName from '../../components/account-name';
 import Modal from '../../components/modal';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
 
 
@@ -147,7 +147,7 @@ export default function CreateGroupModal({
         showNote({ content: lang?.failed_create_chat || 'Не удалось создать чат', type: 'error', time: 4 });
       }
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.error_creating_group || 'Ошибка при создании группы'), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.error_creating_group || 'Ошибка при создании группы'), type: 'error', time: 4 });
     } finally {
       setCreating(false);
     }

@@ -7,7 +7,7 @@ import Modal from '../../../components/modal';
 import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import type { DialogMeta, GroupMember } from '../../../messages/lib/messages-shared';
 import { canManageCommunityMember } from '../../../group/[link]/lib/community-types';
 import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../../../lib/android-glass';
@@ -422,9 +422,9 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
         type: 'success',
         time: 5,
       });
-    } catch {
+    } catch (err) {
       showNote({
-        content: lang?.voice_invite_failed || 'Не удалось создать ссылку-инвайт',
+        content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.voice_invite_failed || 'Не удалось создать ссылку-инвайт'),
         type: 'error',
         time: 5,
       });

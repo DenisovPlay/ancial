@@ -8,7 +8,7 @@ import ShareModal from '../../../components/share-modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache.ts';
 import { useUserCountry } from '../../../lib/user-geo';
 import { SITE_CONFIG } from '../../../seo';
@@ -397,8 +397,8 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       }
 
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
-    } catch {
-      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    } catch (err) {
+      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
   }, [isAuthenticated, lang, showPulseNote, updateFavoriteIds]);
 
@@ -423,8 +423,8 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
         };
       });
       showPulseNote(liked ? (lang?.playlistadded || 'Плейлист добавлен') : (lang?.playlistremoved || 'Плейлист удалён'), 'success');
-    } catch {
-      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    } catch (err) {
+      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
   }, [isAuthenticated, lang, playlistId, playlistLiked, showPulseNote]);
 
@@ -520,8 +520,8 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       });
       setReportTrackTarget(null);
       showPulseNote(result?.message || lang?.reportsended || 'Жалоба отправлена', 'success');
-    } catch {
-      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    } catch (err) {
+      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
   }, [lang, reportTrackTarget, showPulseNote]);
 

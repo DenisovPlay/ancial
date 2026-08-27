@@ -10,7 +10,7 @@ import ImageViewerModal, { type ImageViewerSlide } from '../components/image-vie
 import Modal from '../components/modal';
 import { useAuth } from '../context/AuthContext';
 import { useDragScroll } from '../hooks/useDragScroll';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import {
   type LegacyAppInfo,
   type LegacyAppInfoResponse,
@@ -59,7 +59,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
         setApp(appData ?? null);
       } catch (caughtError) {
         if (!alive) return;
-        setError(caughtError instanceof Error ? caughtError.message : (lang?.loading_error || 'Ошибка загрузки'));
+        setError(getApiMessage(caughtError instanceof Error ? caughtError.message : null, lang, lang?.loading_error || 'Ошибка загрузки'));
       } finally {
         if (alive) {
           setLoading(false);

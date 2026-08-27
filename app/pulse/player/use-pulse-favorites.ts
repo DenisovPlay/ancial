@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, type ReactNode } from 'react';
 
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { toNumber } from './player-utils';
 import { usePulseFavoriteIds } from './use-pulse-favorite-ids';
 
@@ -104,8 +104,8 @@ export function usePulseFavorites({
       } else if (result === 'UND_SONG') {
         notify({ content: lang?.pulse_unknown_song || 'Неизвестная песня...', type: 'error', time: 5 });
       }
-    } catch {
-      notify({ content: lang?.pulse_error_happened || 'Произошла ошибка =(', type: 'error', time: 5 });
+    } catch (err) {
+      notify({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), type: 'error', time: 5 });
     }
   }, [getFavoriteIds, lang, navigate, notify, setLikedSongsState]);
 
@@ -119,8 +119,8 @@ export function usePulseFavorites({
       window.dispatchEvent(new CustomEvent('pulse:playlist-like-changed', {
         detail: { liked: response.message === 'like', playlistId: resolvedPlaylistId },
       }));
-    } catch {
-      notify({ content: lang?.pulse_error_happened || 'Произошла ошибка =(', type: 'error', time: 5 });
+    } catch (err) {
+      notify({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), type: 'error', time: 5 });
     }
   }, [lang, notify]);
 

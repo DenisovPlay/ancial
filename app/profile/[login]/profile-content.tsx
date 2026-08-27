@@ -30,7 +30,7 @@ import PostsRenderer, {
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 import {
   cn,
@@ -411,7 +411,7 @@ export default function UserProfileContent({ login }: { login: string }) {
           clearUserProfileCache(profileCacheKey);
           setUserData(null);
           profileIdRef.current = null;
-          setError((response as { error?: string })?.error || strings.pagenotfound);
+          setError(getApiMessage((response as { error?: string })?.error, lang, strings.pagenotfound));
           setPosts([]);
           setPostsLoading(false);
           currentLastIdRef.current = 0;
@@ -465,7 +465,7 @@ export default function UserProfileContent({ login }: { login: string }) {
         }
       }
     },
-    [login, profileCacheKey, strings.blockedaccdesc, strings.pagenotfound, strings.somethingwrong],
+    [lang, login, profileCacheKey, strings.blockedaccdesc, strings.pagenotfound, strings.somethingwrong],
   );
 
   const loadPosts = useCallback(
@@ -609,7 +609,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       const text = response.message || '';
 
       showNote({
-        content: text,
+        content: getApiMessage(text, lang, lang?.bookmarkadded || strings.bookmarkadded),
         html: true,
         type: 'success',
         time: 5,
@@ -637,7 +637,7 @@ export default function UserProfileContent({ login }: { login: string }) {
     } catch (nextError) {
       console.error('Bookmark failed', nextError);
       showNote({
-        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -707,7 +707,7 @@ export default function UserProfileContent({ login }: { login: string }) {
     } catch (nextError) {
       console.error('Vote failed', nextError);
       showNote({
-        content: nextError instanceof Error ? nextError.message : strings.somethingwrong,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -798,7 +798,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       const text = response?.message || (lang?.deleted || 'Удалено');
 
       showNote({
-        content: text,
+        content: getApiMessage(text, lang, lang?.deleted || 'Удалено'),
         html: true,
         type: 'success',
         time: 5,
@@ -832,7 +832,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       const text = response.message || '';
 
       showNote({
-        content: text,
+        content: getApiMessage(text, lang, lang?.reportsended || 'Жалоба отправлена'),
         html: true,
         type: 'success',
         time: 5,
@@ -858,7 +858,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       const text = response.message || '';
 
       showNote({
-        content: text,
+        content: getApiMessage(text, lang, lang?.deleted || 'Удалено'),
         html: true,
         type: 'success',
         time: 5,
@@ -909,7 +909,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       const text = response.message || '';
 
       showNote({
-        content: text,
+        content: getApiMessage(text, lang, lang?.done || 'Готово'),
         html: true,
         type: 'success',
         time: 5,
@@ -936,7 +936,7 @@ export default function UserProfileContent({ login }: { login: string }) {
         router.push(`/messages/${response.hash}`);
       } else if (response.message) {
         showNote({
-          content: response.message,
+          content: getApiMessage(response.message, lang),
           type: 'error',
           time: 5,
         });
@@ -944,7 +944,7 @@ export default function UserProfileContent({ login }: { login: string }) {
     } catch (nextError) {
       console.error('Create dialog failed', nextError);
       showNote({
-        content: nextError instanceof Error ? nextError.message : strings.errorhappend,
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.errorhappend),
         type: 'error',
         time: 5,
       });
@@ -970,7 +970,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       const message = response.message || strings.successProfileUpdate;
 
       showNote({
-        content: message,
+        content: getApiMessage(message, lang, strings.successProfileUpdate),
         html: true,
         type: 'success',
         time: 5,

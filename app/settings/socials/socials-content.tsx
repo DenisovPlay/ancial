@@ -6,7 +6,7 @@ import { getAuthToken, setAuthToken } from '../../lib/cache-helpers';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { AncialAPI } from '../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { SITE_URL } from '../../config';
 
 // Helper to dynamically load external scripts
@@ -175,7 +175,7 @@ export default function SocialsContent() {
                   checkAuth();
                 } else {
                   showNote({
-                    content: responseData.error,
+                    content: getApiMessage(responseData.error, lang, responseData.error),
                     type: 'error',
                     time: 5
                   });
@@ -211,7 +211,7 @@ export default function SocialsContent() {
     try {
       const response = await AncialAPI.disconnectTelegram();
       showNote({
-        content: response.message || lang?.telegramdiscon || 'Аккаунт Telegram отвязан',
+        content: getApiMessage(response.message, lang, lang?.telegramdiscon || 'Аккаунт Telegram отвязан'),
         type: 'success',
         time: 5
       });
@@ -220,7 +220,7 @@ export default function SocialsContent() {
     } catch (error) {
       console.error(error);
       showNote({
-        content: error instanceof Error ? error.message : lang?.errorhappend || 'Произошла ошибка...',
+        content: getApiMessage(error instanceof Error ? error.message : null, lang, lang?.errorhappend || 'Произошла ошибка...'),
         type: 'error',
         time: 5
       });
@@ -235,7 +235,7 @@ export default function SocialsContent() {
     try {
       const response = await AncialAPI.disconnectYandex();
       showNote({
-        content: response.message || lang?.yandexdiscon || 'Yandex отвязан!',
+        content: getApiMessage(response.message, lang, lang?.yandexdiscon || 'Yandex отвязан!'),
         type: 'success',
         time: 5
       });
@@ -244,7 +244,7 @@ export default function SocialsContent() {
     } catch (error) {
       console.error(error);
       showNote({
-        content: error instanceof Error ? error.message : lang?.errorhappend || 'Произошла ошибка...',
+        content: getApiMessage(error instanceof Error ? error.message : null, lang, lang?.errorhappend || 'Произошла ошибка...'),
         type: 'error',
         time: 5
       });

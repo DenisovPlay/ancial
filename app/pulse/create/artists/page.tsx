@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import Link from 'next/link';
@@ -47,7 +47,10 @@ export default function PulseCreateArtistsPage() {
     if (artistToDelete !== null) {
       AncialAPI.pulseManagement('artist', 'delete', { id: artistToDelete })
         .then(() => fetchArtists())
-        .catch((err) => showNote({ content: err.error || lang?.errorhappend || 'Ошибка удаления', type: 'error', time: 5 }))
+        .catch((err) => {
+          const rawMsg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'error' in err ? String((err as { error?: unknown }).error) : null);
+          showNote({ content: getApiMessage(rawMsg, lang, lang?.errorhappend || 'Ошибка удаления'), type: 'error', time: 5 });
+        })
         .finally(() => {
           setDeleteModalOpen(false);
           setArtistToDelete(null);

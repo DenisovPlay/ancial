@@ -339,7 +339,7 @@ export default function CallClient() {
         showNote({ content: lang?.call_video_unavailable || 'Камера недоступна — аудио-звонок', type: 'warning', time: 5 });
       } catch (audioErr) {
         console.error(audioErr);
-        setCallStatus('No access to camera/mic');
+        setCallStatus(lang?.voice_microphone_denied || 'Нет доступа к камере или микрофону');
         return;
       }
     }

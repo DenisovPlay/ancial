@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import YandexRtb from '../components/yandex-rtb';
 import { useDragScroll } from '../hooks/useDragScroll';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 
 interface Friend {
@@ -122,11 +122,11 @@ function FriendsContent() {
       if (response.hash) {
         router.push(`/messages/${response.hash}`);
       } else if (response.message) {
-        showNote({ content: response.message, type: 'info', time: 5 });
+        showNote({ content: getApiMessage(response.message, lang), type: 'info', time: 5 });
       }
     } catch (e) {
       console.error(e);
-      showNote({ content: e instanceof Error ? e.message : lang?.errorhappend || 'Произошла ошибка', type: 'error', time: 5 });
+      showNote({ content: getApiMessage(e instanceof Error ? e.message : null, lang, lang?.errorhappend || 'Произошла ошибка'), type: 'error', time: 5 });
     }
   };
 

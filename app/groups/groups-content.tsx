@@ -3,10 +3,11 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import YandexRtb from '../components/yandex-rtb';
 import Modal from '../components/modal';
 import Link from 'next/link';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 
 interface Group {
@@ -24,6 +25,7 @@ function GroupsContent() {
   const searchParams = useSearchParams();
   const qQuery = searchParams.get('q') || '';
   const { isAuthenticated, isLoading: authLoading, lang } = useAuth();
+  const { showNote } = useNotification();
 
   const [query, setQuery] = useState(qQuery);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -93,26 +95,19 @@ function GroupsContent() {
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await AncialAPI.createGroup<{ message?: string }>({ gr_title: grTitle, gr_desc: grDesc });
+      const response = await AncialAPI.createGroup<{ message?: string; slnk?: string; id?: number }>({ gr_title: grTitle, gr_desc: grDesc });
 
-      // Fallback if it returns text instead of json
-      const textResponse = (response?.message || response || '') as string;
+      const msg = getApiMessage(response?.message, lang, lang?.groupcreated || 'Сообщество создано!');
+      showNote({ content: msg, type: 'success', time: 5 });
 
-      if (textResponse === "Сообщество создано!" || textResponse.includes('создано') || textResponse === "success" || textResponse.includes('успех')) {
-        setGrTitle('');
-        setGrDesc('');
-        setIsModalOpen(false);
-        loadGroups(query);
-      } else {
-        console.error('Ошибка создания:', textResponse);
-        // Fallback: still treat as success just in case format changed and there's no error
-        setGrTitle('');
-        setGrDesc('');
-        setIsModalOpen(false);
-        loadGroups(query);
-      }
+      setGrTitle('');
+      setGrDesc('');
+      setIsModalOpen(false);
+      loadGroups(query);
     } catch (error) {
-      console.error('Ошибка:', error);
+      console.error('Ошибка создания сообщества:', error);
+      const rawMsg = error instanceof Error ? error.message : null;
+      showNote({ content: getApiMessage(rawMsg, lang, lang?.errorhappend || 'Произошла ошибка'), type: 'error', time: 5 });
     }
   };
 

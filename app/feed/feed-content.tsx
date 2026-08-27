@@ -19,7 +19,7 @@ import PostsRenderer, {
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useDragScroll } from '../hooks/useDragScroll';
-import { AncialAPI } from '../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import { cn, SvgIcon } from './editor-shared';
 import FeedPostSkeleton from './feed-post-skeleton';
@@ -725,7 +725,7 @@ export default function FeedContent() {
       const response = (await AncialAPI.postAction('bookmark', { pid: post.id })) as { message: string, action: string };
 
       showNote({
-        content: response.message,
+        content: getApiMessage(response.message, lang),
         html: true,
         type: 'success',
         time: 5,
@@ -759,7 +759,7 @@ export default function FeedContent() {
     } catch (error) {
       console.error('Bookmark failed', error);
       showNote({
-        content: error instanceof Error ? error.message : strings.somethingwrong,
+        content: getApiMessage(error instanceof Error ? error.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -783,7 +783,7 @@ export default function FeedContent() {
     } catch (error) {
       console.error('Vote failed', error);
       showNote({
-        content: error instanceof Error ? error.message : strings.somethingwrong,
+        content: getApiMessage(error instanceof Error ? error.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -821,7 +821,7 @@ export default function FeedContent() {
     } catch (error) {
       console.error('Create comment failed', error);
       showNote({
-        content: error instanceof Error ? error.message : strings.somethingwrong,
+        content: getApiMessage(error instanceof Error ? error.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -833,7 +833,7 @@ export default function FeedContent() {
       const response = await AncialAPI.deleteComment<{ message?: string }>(comment.id);
 
       showNote({
-        content: response?.message || (lang?.deleted || 'Удалено'),
+        content: getApiMessage(response?.message, lang, lang?.deleted || 'Удалено'),
         html: true,
         type: 'success',
         time: 5,
@@ -849,7 +849,7 @@ export default function FeedContent() {
     } catch (error) {
       console.error('Delete comment failed', error);
       showNote({
-        content: error instanceof Error ? error.message : strings.somethingwrong,
+        content: getApiMessage(error instanceof Error ? error.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -866,7 +866,7 @@ export default function FeedContent() {
       const response = (await AncialAPI.reportAction({ id: currentTarget.id, type: currentTarget.type, comment: reason })) as { message: string };
 
       showNote({
-        content: response.message || (lang?.report_sent || 'Жалоба отправлена'),
+        content: getApiMessage(response.message, lang, lang?.report_sent || 'Жалоба отправлена'),
         html: true,
         type: 'success',
         time: 5,
@@ -874,7 +874,7 @@ export default function FeedContent() {
     } catch (error) {
       console.error('Report failed', error);
       showNote({
-        content: error instanceof Error ? error.message : strings.somethingwrong,
+        content: getApiMessage(error instanceof Error ? error.message : null, lang, strings.somethingwrong),
         type: 'error',
         time: 5,
       });
@@ -891,7 +891,7 @@ export default function FeedContent() {
       const response = (await AncialAPI.deletePost(currentTarget.id)) as { message: string };
 
       showNote({
-        content: response.message || (lang?.post_deleted || 'Пост удален'),
+        content: getApiMessage(response.message, lang, lang?.post_deleted || 'Пост удален'),
         html: true,
         type: 'success',
         time: 5,

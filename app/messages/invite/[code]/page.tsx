@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../../lib/messages-shared';
 
 interface InviteData {
@@ -55,7 +55,7 @@ export default function InvitePage() {
         setError(lang?.invite_not_found || 'Приглашение не найдено');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : (lang?.invite_load_error || 'Ошибка загрузки информации о приглашении'));
+      setError(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.invite_load_error || 'Ошибка загрузки информации о приглашении'));
     } finally {
       setLoading(false);
     }
@@ -92,13 +92,13 @@ export default function InvitePage() {
       });
 
       if (res?.hash) {
-        showNote({ content: res.message || (lang?.invite_joined_success || 'Вы успешно присоединились!'), type: 'success', time: 3 });
+        showNote({ content: getApiMessage(res.message, lang, lang?.invite_joined_success || 'Вы успешно присоединились!'), type: 'success', time: 3 });
         router.push(`/messages/${res.hash}`);
       } else {
         showNote({ content: lang?.invite_join_failed || 'Не удалось присоединиться к чату', type: 'error', time: 4 });
       }
     } catch (err) {
-      showNote({ content: err instanceof Error ? err.message : (lang?.network_error || 'Ошибка сети'), type: 'error', time: 4 });
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.network_error || 'Ошибка сети'), type: 'error', time: 4 });
     } finally {
       setJoining(false);
     }

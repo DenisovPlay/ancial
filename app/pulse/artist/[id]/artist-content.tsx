@@ -10,7 +10,7 @@ import { useAuth, type User } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { useDragScroll } from '../../../hooks/useDragScroll';
-import { AncialAPI } from '../../../lib/api-v2';
+import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { useUserCountry } from '../../../lib/user-geo';
 import { SITE_CONFIG } from '../../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
@@ -230,8 +230,8 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
       }
 
       showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
-    } catch {
-      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+    } catch (err) {
+      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
   }, [isAuthenticated, lang, showPulseNote, updateFavoriteIds]);
 
@@ -291,9 +291,9 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
         type: 6,
       });
       setReportTrackTarget(null);
-      showPulseNote(result?.message || lang?.reportsended || 'Жалоба отправлена', 'success');
-    } catch {
-      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
+      showPulseNote(getApiMessage(result?.message, lang, lang?.reportsended || 'Жалоба отправлена'), 'success');
+    } catch (err) {
+      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
   }, [lang, reportTrackTarget, showPulseNote]);
 
