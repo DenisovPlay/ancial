@@ -12,6 +12,7 @@ import { useDragScroll } from '../../hooks/useDragScroll';
 import { AncialAPI } from '../../lib/api-v2';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
+import { resolvePulsePlaylistTitle } from '../playlist/playlist-model';
 import {
   ActionIcon,
   DEFAULT_TRACK_IMAGE,
@@ -86,7 +87,9 @@ function PulseHistoryRow({
 }) {
   const isTrack = String(item.HTYPE ?? '') === '1';
   const imageUrl = getImageUrl(item.img, DEFAULT_TRACK_IMAGE);
-  const title = decodeHtmlEntities(item.name) || (lang?.untitled || 'Без названия');
+  const title = isTrack
+    ? (decodeHtmlEntities(item.name) || (lang?.untitled || 'Без названия'))
+    : resolvePulsePlaylistTitle(item, lang);
   const artist = decodeHtmlEntities(item.artist) || 'Pulse';
   const explicit = item.explicit === true || String(item.explicit ?? '') === '1';
 

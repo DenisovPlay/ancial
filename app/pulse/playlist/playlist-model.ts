@@ -1,3 +1,5 @@
+import { decodeHtmlEntities } from '../../lib/convert';
+
 export type PulsePlaylistMeta = {
   artist?: string | null;
   creator?: string | null;
@@ -112,7 +114,7 @@ export function getPulseBuiltinPlaylistTitle(value: string | number | null | und
   const id = normalizePulsePlaylistId(value);
   if (id === '-1') return lang?.playlist_top || 'Топ';
   if (id === '-2') return lang?.playlist_new || 'Новинки';
-  if (id === '-5') return lang?.playlist_favorites || 'Избранное';
+  if (id === '-5') return lang?.your || 'Твой';
   return '';
 }
 
@@ -120,7 +122,7 @@ export function getPulseBuiltinPlaylistDescription(value: string | number | null
   const id = normalizePulsePlaylistId(value);
   if (id === '-1') return lang?.playlist_top_desc || 'Самые популярные треки Zypo Pulse.';
   if (id === '-2') return lang?.playlist_new_desc || 'Новые треки Zypo Pulse.';
-  if (id === '-5') return lang?.playlist_favorites_desc || 'Ваши избранные треки в Zypo Pulse.';
+  if (id === '-5') return lang?.playlist_new_desc || 'Персональный плейлист Zypo Pulse.';
   return '';
 }
 
@@ -136,14 +138,56 @@ export function getPulseBuiltinPlaylistMeta(value: string | number | null | unde
     meta.name = lang?.playlist_new || 'Новое';
     meta.desk = lang?.playlist_new_meta_desc || 'Громкие новинки';
   } else if (id === '-5') {
-    meta.name = lang?.playlist_favorites || 'Избранное';
-    meta.desk = lang?.playlist_favorites_desc || 'Ваши избранные треки в Zypo Pulse.';
+    meta.name = lang?.your || 'Твой';
+    meta.desk = lang?.playlist_new_desc || 'Персональный плейлист Zypo Pulse.';
   }
   return meta;
 }
 
 export function getPulseBuiltinPlaylistCover(value: string | number | null | undefined) {
   return BUILTIN_PLAYLIST_META[normalizePulsePlaylistId(value)]?.img ?? '';
+}
+
+export function resolvePulsePlaylistTitle(
+  card: {
+    id?: number | string | null;
+    genlist?: string | null;
+    name?: string | null;
+    type?: number | string | null;
+  } | null | undefined,
+  lang?: Record<string, string> | null,
+): string {
+  if (!card) return '';
+  const genlist = String(card.genlist ?? '').trim();
+  const id = normalizePulsePlaylistId(card.id);
+  // Твой (рекомендации)
+  if (genlist === 'Your' || id === '-5') return lang?.your || 'Твой';
+  // Топ
+  if (genlist === 'Top' || id === '-1') return lang?.playlist_top || 'Топ';
+  // Новинки
+  if (genlist === 'New' || id === '-2') return lang?.playlist_new || 'Новинки';
+  // Избранное пользователя
+  if (Number(card.type) === 3) return lang?.playlist_favorites || 'Избранное';
+  return decodeHtmlEntities(String(card.name ?? '').trim()) || lang?.untitled || 'Без названия';
+}
+
+export function resolvePulsePlaylistDescription(
+  card: {
+    id?: number | string | null;
+    genlist?: string | null;
+    desk?: string | null;
+    type?: number | string | null;
+  } | null | undefined,
+  lang?: Record<string, string> | null,
+): string {
+  if (!card) return 'Pulse';
+  const genlist = String(card.genlist ?? '').trim();
+  const id = normalizePulsePlaylistId(card.id);
+  if (genlist === 'Your' || id === '-5') return lang?.playlist_new_desc || 'Персональный плейлист Zypo Pulse.';
+  if (genlist === 'Top' || id === '-1') return lang?.playlist_top_desc || 'Самые популярные треки Zypo Pulse.';
+  if (genlist === 'New' || id === '-2') return lang?.playlist_new_desc || 'Новые треки Zypo Pulse.';
+  if (Number(card.type) === 3) return lang?.playlist_favorites_desc || 'Ваши избранные треки в Zypo Pulse.';
+  return decodeHtmlEntities(String(card.desk ?? '').trim()) || 'Pulse';
 }
 
 export function getPulsePlaylistTrackParams(

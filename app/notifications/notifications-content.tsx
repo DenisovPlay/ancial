@@ -75,16 +75,36 @@ export default function NotificationsPage() {
   };
 
   const translateContent = (text: string) => {
+    if (!text) return '';
+    let res = text;
     if (langCode === 'en') {
-      return text
+      res = res
         .replace('написал вам!', 'wrote to you!')
         .replace('хочет добавить вас в друзья', 'wants you to become friends')
         .replace('поставил вам лайк!', 'liked your post!')
         .replace('создал с вами диалог!', 'created a dialogue with you!')
         .replace('отправил фотографию', 'sent a photo')
-        .replace('звонит вам', 'calls you');
+        .replace('отправил стикер', 'sent a sticker')
+        .replace('написал сообщение', 'sent a message')
+        .replace('оставил комментарий к вашему посту', 'commented on your post')
+        .replace('упомянул вас в комментарии', 'mentioned you in a comment')
+        .replace('упомянул вас в своем посте', 'mentioned you in a post')
+        .replace('звонит вам', 'is calling you');
+    } else if (langCode === 'be') {
+      res = res
+        .replace('написал вам!', 'напісаў вам!')
+        .replace('хочет добавить вас в друзья', 'хоча дадаць вас у сябры')
+        .replace('поставил вам лайк!', 'паставіў вам лайк!')
+        .replace('создал с вами диалог!', 'стварыў з вамі дыялог!')
+        .replace('отправил фотографию', 'адправіў фатаграфію')
+        .replace('отправил стикер', 'адправіў сцікер')
+        .replace('написал сообщение', 'напісаў паведамленне')
+        .replace('оставил комментарий к вашему посту', 'пакінуў каментарый да вашага допісу')
+        .replace('упомянул вас в комментарии', 'згадаў вас у каментарыі')
+        .replace('упомянул вас в своем посте', 'згадаў вас у сваім допісе')
+        .replace('звонит вам', 'тэлефануе вам');
     }
-    return text;
+    return res;
   };
 
   const renderIcon = (type: string | number) => {

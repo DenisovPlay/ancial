@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { sanitizeUserHtml } from '../../lib/sanitize-html';
 
+import { useAuth } from '../../context/AuthContext';
+import { formatRelativeTime } from '../../lib/time';
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
 import type { PostData } from '../../components/posts-renderer';
@@ -16,6 +18,7 @@ type PostPreviewProps = {
 };
 
 export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps) {
+  const { lang } = useAuth();
   const [post, setPost] = useState<PostData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -92,7 +95,9 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
           />
           <div className="flex flex-col">
             <span className="text-xs font-semibold text-zinc-200 line-clamp-1">{post.author?.name}</span>
-            <span className="text-[10px] text-zinc-500">{post.time_elapsed || '...'}</span>
+            <span className="text-[10px] text-zinc-500">
+              {formatRelativeTime(post.date || post.time_elapsed, lang, post.time_elapsed || '...')}
+            </span>
           </div>
         </div>
 

@@ -46,6 +46,7 @@ import {
   isPulseBuiltinGeneratedPlaylist,
   normalizePulsePlaylistId,
   getPulsePlaylistTrackParams,
+  resolvePulsePlaylistTitle,
   type PulsePlaylistMeta,
 } from '../playlist-model';
 
@@ -65,6 +66,9 @@ function getPlaylistCover(playlistId: string, playlist: PulsePlaylistMeta | null
 }
 
 function getPlaylistTitle(playlistId: string, playlist: PulsePlaylistMeta | null, tracks: PulseTrack[], lang?: Record<string, string> | null) {
+  if (Number(playlist?.type) === 3) {
+    return lang?.playlist_favorites || lang?.favoritetracks || 'Избранное';
+  }
   return decodeHtmlEntities(playlist?.name)
     || getPulseBuiltinPlaylistTitle(playlistId, lang ?? undefined)
     || decodeHtmlEntities(tracks[0]?.album)

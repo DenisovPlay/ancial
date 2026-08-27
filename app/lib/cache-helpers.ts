@@ -1,6 +1,9 @@
-'use client';
-
 import { cache } from './cache';
+import {
+  getStoredLangCode,
+  saveStoredLangCode,
+  type SupportedLang,
+} from '../locales';
 
 /**
  * Unified cache helpers for specific domains.
@@ -11,7 +14,7 @@ import { cache } from './cache';
 // Types
 // ==========================
 
-export type SupportedLang = 'ru' | 'en';
+export type { SupportedLang };
 
 // ==========================
 // Authentication Token
@@ -82,44 +85,14 @@ export function set7TVStickers(stickers: unknown[]): void {
  * localStorage -> cookie -> navigator.language -> 'ru'
  */
 export function getStoredLang(): SupportedLang {
-  if (typeof window === 'undefined') return 'ru';
-  
-  try {
-    // Try cache first (unified with localStorage under the hood)
-    const cached = cache.get<string>('lang', { category: 'profile' });
-    if (cached === 'ru' || cached === 'en') return cached;
-
-    // Fallback to cookie
-    const cookieMatch = document.cookie.match(/(?:^|;\s*)lang=([^;]*)/);
-    if (cookieMatch && (cookieMatch[1] === 'ru' || cookieMatch[1] === 'en')) {
-      return cookieMatch[1] as SupportedLang;
-    }
-
-    const navLang = (navigator.language || '').toLowerCase();
-    if (navLang.startsWith('ru')) return 'ru';
-    if (navLang.startsWith('en')) return 'en';
-  } catch (e) {
-    console.error('[Cache] Error reading stored language:', e);
-  }
-  
-  return 'ru';
+  return getStoredLangCode();
 }
 
 /**
  * Save language code to both localStorage and cookie.
  */
 export function saveStoredLang(langCode: SupportedLang): void {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    cache.set('lang', langCode, {
-      category: 'profile',
-      isPersistent: true,
-    });
-    document.cookie = `lang=${langCode}; path=/; max-age=31536000`;
-  } catch (e) {
-    console.error('[Cache] Error saving stored language:', e);
-  }
+  saveStoredLangCode(langCode);
 }
 
 // ==========================
@@ -271,39 +244,12 @@ export function removeCinemaReferrer(): void {
  * localStorage -> cookie -> navigator.language -> 'ru'
  */
 export function getLangFromCache(): SupportedLang {
-  if (typeof window === 'undefined') return 'ru';
-  
-  try {
-    const stored = localStorage.getItem('lang');
-    if (stored === 'ru' || stored === 'en') {
-      return stored;
-    }
-
-    const cookieMatch = document.cookie.match(/(?:^|;\s*)lang=([^;]*)/);
-    if (cookieMatch && (cookieMatch[1] === 'ru' || cookieMatch[1] === 'en')) {
-      return cookieMatch[1] as SupportedLang;
-    }
-
-    const navLang = (navigator.language || '').toLowerCase();
-    if (navLang.startsWith('ru')) return 'ru';
-    if (navLang.startsWith('en')) return 'en';
-  } catch (e) {
-    console.error('[Cache] Error reading stored language:', e);
-  }
-  
-  return 'ru';
+  return getStoredLangCode();
 }
 
 /**
  * Save language code to both localStorage and cookie.
  */
 export function saveLangToCache(langCode: SupportedLang): void {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    localStorage.setItem('lang', langCode);
-    document.cookie = `lang=${langCode}; path=/; max-age=31536000`;
-  } catch (e) {
-    console.error('[Cache] Error saving stored language:', e);
-  }
+  saveStoredLangCode(langCode);
 }

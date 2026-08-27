@@ -25,7 +25,11 @@ import {
   toNumber,
   TrackCollectionPanel,
 } from './pulse-components';
-import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
+import {
+  canManagePulseTrack,
+  getPulseTrackDropdownZIndex,
+  resolvePulsePlaylistTitle,
+} from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { usePulseFavoriteIds } from './player/use-pulse-favorite-ids';
 import { getDownloadedAudioCount } from './player/offline-audio';
@@ -272,11 +276,12 @@ function RecentlyListenedPill({
   onPlay: () => void;
 }) {
   const { lang } = useAuth();
+  const title = resolvePulsePlaylistTitle(card, lang);
   return (
     <div className={cn('flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95', className)}>
       <button type="button" onClick={onPlay} className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full xl:h-16 xl:w-16 2xl:h-20 2xl:w-20">
         <PulseCoverImage
-          alt={decodeHtmlEntities(card.name) || 'Playlist cover'}
+          alt={title || 'Playlist cover'}
           className="rounded-full"
           sizes={PULSE_COVER_IMAGE_SIZES.playlistPill}
           src={getImageUrl(card.img, DEFAULT_TRACK_IMAGE)}
@@ -288,7 +293,7 @@ function RecentlyListenedPill({
 
       <button type="button" onClick={onOpen} className="min-w-0 flex-grow cursor-pointer text-left">
         <span className="block truncate text-base font-medium text-white lg:text-lg 2xl:text-xl">
-          {decodeHtmlEntities(card.name) || (lang?.untitled || 'Без названия')}
+          {title}
         </span>
       </button>
     </div>

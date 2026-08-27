@@ -1,14 +1,25 @@
 import { cache } from './cache.ts';
-import { locales, getStoredLangCode, saveStoredLangCode, SupportedLang } from '../locales';
+import {
+  locales,
+  getStoredLangCode,
+  saveStoredLangCode,
+  availableLocales,
+  isSupportedLang,
+  resolveLocaleDict,
+  type SupportedLang,
+  type LocaleMeta,
+} from '../locales';
 
 const CACHE_KEY = 'lang_cache';
 
 export function getLangFromCache(): Record<string, string> {
   const cached = cache.get<Record<string, string>>(CACHE_KEY);
-  if (cached) return cached;
-  
+  if (cached && cached.langname && isSupportedLang(cached.langname)) {
+    return cached;
+  }
+
   const code = getStoredLangCode();
-  const activeDict = locales[code] || locales['ru'];
+  const activeDict = resolveLocaleDict(code);
   saveLangToCache(activeDict);
   return activeDict;
 }
@@ -20,5 +31,12 @@ export function saveLangToCache(lang: Record<string, string>) {
   });
 }
 
-export type { SupportedLang };
-export { locales, getStoredLangCode, saveStoredLangCode };
+export type { SupportedLang, LocaleMeta };
+export {
+  locales,
+  getStoredLangCode,
+  saveStoredLangCode,
+  availableLocales,
+  isSupportedLang,
+  resolveLocaleDict,
+};

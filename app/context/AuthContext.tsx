@@ -2,7 +2,16 @@
 
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getLangFromCache, saveLangToCache, locales, getStoredLangCode, saveStoredLangCode, SupportedLang } from '../lib/lang';
+import {
+  getLangFromCache,
+  saveLangToCache,
+  locales,
+  getStoredLangCode,
+  saveStoredLangCode,
+  isSupportedLang,
+  resolveLocaleDict,
+  type SupportedLang,
+} from '../lib/lang';
 import { restoreLegacyAuthSession } from '../lib/auth-fetch';
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
@@ -114,9 +123,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const setLanguage = useCallback((code: SupportedLang) => {
-    const validCode: SupportedLang = code === 'en' ? 'en' : 'ru';
+    const validCode = isSupportedLang(code) ? code : 'ru';
     saveStoredLangCode(validCode);
-    const dict = locales[validCode] || locales['ru'];
+    const dict = resolveLocaleDict(validCode);
     setLangCode(validCode);
     setLang(dict);
     publishLangState(dict);

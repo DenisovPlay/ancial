@@ -8,6 +8,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { SettingsItem } from '../../components/settings-item';
 import { AncialAPI } from '../../lib/api-v2';
+import { availableLocales, type SupportedLang } from '../../locales';
 import {
   GLASS_MODE_CHANGE_EVENT,
   GLASS_MODE_STORAGE_KEY,
@@ -97,7 +98,7 @@ export default function UiSettingsContent() {
   }, [glassMode, glassModeOptions]);
 
   const selectLanguage = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedLang = e.target.value as 'ru' | 'en';
+    const selectedLang = e.target.value as SupportedLang;
     setLanguage(selectedLang);
     try {
       if (isAuthenticated) {
@@ -230,8 +231,11 @@ export default function UiSettingsContent() {
                 value={langCode}
                 className="focus:outline-0 focus:ring-0 bg-zinc-700/70 hover:bg-zinc-700/60 duration-300 p-1 rounded-2xl mr-2 shadow cursor-pointer text-white border-0 focus:ring-0"
               >
-                <option value="ru">Русский</option>
-                <option value="en">English</option>
+                {availableLocales.map((loc) => (
+                  <option key={loc.code} value={loc.code}>
+                    {loc.title}
+                  </option>
+                ))}
               </select>
             }
           />

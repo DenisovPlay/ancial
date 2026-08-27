@@ -21,6 +21,7 @@ import { SvgIcon } from '../../editor-shared';
 import AccountName from '../../../components/account-name';
 import FeedPostSkeleton from '../../feed-post-skeleton';
 import { parsePostContentToHtml } from '../../../components/post-parser';
+import { formatRelativeTime } from '../../../lib/time';
 
 type Id = string | number;
 
@@ -143,6 +144,7 @@ function FeedCommentCard({
   reportLabel: string;
 }) {
   const router = useRouter();
+  const { lang } = useAuth();
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -183,7 +185,9 @@ function FeedCommentCard({
           >
             <AccountName user={comment.user} nameClassName="font-medium" />
           </button>
-          <span className="text-zinc-300 text-xs">{comment.date}</span>
+          <span className="text-zinc-300 text-xs">
+            {formatRelativeTime(comment.date, lang, comment.date)}
+          </span>
         </div>
 
         <Dropdown

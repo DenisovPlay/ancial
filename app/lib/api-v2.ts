@@ -1,6 +1,7 @@
 'use client';
 
 import { authFetch } from './auth-fetch';
+export { getApiMessage } from './format-api-message';
 import type {
   CommunityAuditEntry,
   CommunityChannelOverride,

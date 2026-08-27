@@ -21,6 +21,7 @@ import PostWidgetQuote, { type QuoteWidgetData } from './post-widget-quote';
 import ShareModal from './share-modal';
 import { parsePostContentToHtml } from './post-parser';
 import { SITE_URL } from '../config';
+import { formatRelativeTime } from '../lib/time';
 
 
 
@@ -58,6 +59,7 @@ export interface PostData {
   is_bookmarked?: boolean | number | string | null;
   is_long_content?: boolean | number | string | null;
   rating?: number | string | null;
+  date?: string | null;
   tags?: string | null;
   time_elapsed?: string | null;
   title?: string | null;
@@ -724,7 +726,9 @@ function PostCardInner({
             >
               <AccountName user={post.author} nameClassName="font-medium" />
             </Link>
-            <span className="text-zinc-400 text-xs lg:text-sm">{post.time_elapsed}</span>
+            <span className="text-zinc-400 text-xs lg:text-sm">
+              {formatRelativeTime(post.date || post.time_elapsed, lang, post.time_elapsed || '')}
+            </span>
           </div>
 
           <div className="flex-grow">

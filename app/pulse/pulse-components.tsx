@@ -12,7 +12,12 @@ import { useAuth, type User } from '../context/AuthContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { cache } from '../lib/cache.ts';
-import { canManagePulseTrack, getPulseTrackDropdownZIndex } from './playlist/playlist-model';
+import {
+  canManagePulseTrack,
+  getPulseTrackDropdownZIndex,
+  resolvePulsePlaylistDescription,
+  resolvePulsePlaylistTitle,
+} from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 
 export type PulseTrackArtwork = {
@@ -252,8 +257,8 @@ export function PulsePlaylistTile({
 }) {
   const { lang } = useAuth();
   const coverUrl = getImageUrl(card.img, DEFAULT_TRACK_IMAGE);
-  const title = decodeHtmlEntities(card.name) || lang?.untitled || 'Без названия';
-  const description = decodeHtmlEntities(card.desk) || 'Pulse';
+  const title = resolvePulsePlaylistTitle(card, lang);
+  const description = resolvePulsePlaylistDescription(card, lang);
   const playButtonSize = variant === 'big' ? 'h-10 w-10 lg:h-14 lg:w-14' : 'h-10 w-10';
   const playIconSize = variant === 'big' ? 'h-6 w-6' : 'h-6 w-6';
   const titleWidth = variant === 'big' ? 'w-28 lg:w-32' : 'w-28';

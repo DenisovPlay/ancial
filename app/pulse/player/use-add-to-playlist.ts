@@ -4,6 +4,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 
 import { AncialAPI } from '../../lib/api-v2';
 import { normalizeText, parsePlaylistSongs, toNumber } from './player-utils';
+import { resolvePulsePlaylistTitle } from '../playlist/playlist-model';
 
 type LangMap = Record<string, string> | null;
 type Notice = (notice: { content: ReactNode; time?: number; type?: 'error' | 'info' | 'success' }) => void;
@@ -55,7 +56,7 @@ export function useAddToPlaylist({ lang, navigate, notify }: { lang: LangMap; na
             hasSong: songs.includes(resolvedSongId),
             id: normalizeText(String(item.id ?? '')),
             image: normalizeText(item.img),
-            name: normalizeText(item.name) || lang?.pulse_unknown_playlist || 'Без названия',
+            name: resolvePulsePlaylistTitle(item, lang),
             songs,
           };
         }).filter((item) => item.id));

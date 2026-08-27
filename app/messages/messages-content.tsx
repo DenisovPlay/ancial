@@ -26,6 +26,7 @@ import { AncialAPI } from '../lib/api-v2';
 import { uploadImage } from '../lib/upload';
 import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
+import { formatRelativeTime } from '../lib/time';
 import CreateGroupModal from './components/create-group-modal';
 import GroupInfoModal from './components/group-info-modal';
 import MessageBubble from './components/message-bubble';
@@ -2394,7 +2395,7 @@ export default function MessagesContent() {
                                     </div>
 
                                     <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-zinc-400 lg:text-sm">
-                                      <span>{normalizeText(dialog.Mtime)}</span>
+                                      <span>{formatRelativeTime(dialog.Mtime, lang, normalizeText(dialog.Mtime))}</span>
                                       {isMyLastMessage ? (
                                         <Icon
                                           name={previewStatusIcon}

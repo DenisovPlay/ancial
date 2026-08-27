@@ -664,9 +664,20 @@ export function formatDialogPreview(messageValue: string | null | undefined, lan
   const rawText = normalizeText(messageValue);
   if (!rawText) return '';
 
-  const prefixMatch = rawText.match(/^(Вы: |You: |[^:]+: )/);
-  const prefix = prefixMatch ? prefixMatch[0] : '';
-  const bodyText = prefix ? rawText.slice(prefix.length) : rawText;
+  const isYou = /^(Вы: |You: )/.test(rawText);
+  let prefix = '';
+  let bodyText = rawText;
+
+  if (isYou) {
+    prefix = `${lang?.you || 'Вы'}: `;
+    bodyText = rawText.replace(/^(Вы: |You: )/, '');
+  } else {
+    const prefixMatch = rawText.match(/^([^:]+: )/);
+    if (prefixMatch) {
+      prefix = prefixMatch[0];
+      bodyText = rawText.slice(prefix.length);
+    }
+  }
 
   const sevenTvStickerTokenData = getSevenTvStickerTokenData(bodyText);
   if (sevenTvStickerTokenData?.name || isSingleSticker(bodyText)) {

@@ -21,6 +21,27 @@ const FALLBACK_DESCRIPTION = 'Слушайте подборки и плейли�
 
 export async function generateMetadata({ params }: PulsePlaylistPageProps): Promise<Metadata> {
   const { id } = await params;
+
+  // Genlist-идентификаторы системных плейлистов (URL вида /pulse/playlist/Your)
+  const GENLIST_TITLES: Record<string, string> = {
+    Your: 'Твой',
+    Top: 'Топ',
+    New: 'Новинки',
+  };
+  const GENLIST_DESCRIPTIONS: Record<string, string> = {
+    Your: 'Персональный плейлист Zypo Pulse.',
+    Top: 'Самые популярные треки Zypo Pulse.',
+    New: 'Новые треки Zypo Pulse.',
+  };
+
+  if (GENLIST_TITLES[id]) {
+    return createPageMetadata({
+      canonical: `/pulse/playlist/${encodeURIComponent(id)}`,
+      description: GENLIST_DESCRIPTIONS[id] || FALLBACK_DESCRIPTION,
+      title: GENLIST_TITLES[id],
+    });
+  }
+
   const playlistId = normalizePulsePlaylistId(id);
 
   let title = getPulseBuiltinPlaylistTitle(playlistId);
