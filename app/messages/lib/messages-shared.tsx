@@ -664,13 +664,16 @@ export function formatDialogPreview(messageValue: string | null | undefined, lan
   const rawText = normalizeText(messageValue);
   if (!rawText) return '';
 
-  const isYou = /^(Вы: |You: )/.test(rawText);
+  const isYou = /^(Вы: |You: )/.test(rawText) || (Boolean(lang?.you) && rawText.startsWith(`${lang?.you}: `));
   let prefix = '';
   let bodyText = rawText;
 
   if (isYou) {
     prefix = `${lang?.you || 'Вы'}: `;
     bodyText = rawText.replace(/^(Вы: |You: )/, '');
+    if (lang?.you && bodyText.startsWith(`${lang.you}: `)) {
+      bodyText = bodyText.slice(`${lang.you}: `.length);
+    }
   } else {
     const prefixMatch = rawText.match(/^([^:]+: )/);
     if (prefixMatch) {
@@ -690,6 +693,16 @@ export function formatDialogPreview(messageValue: string | null | undefined, lan
   }
 
   const previewText = decodeHtml(stripHtml(bodyText));
+  const trimmedLower = previewText.trim().toLowerCase();
+
+  if (trimmedLower === 'стикер' || trimmedLower === 'сцікер' || trimmedLower === 'sticker') {
+    return `${prefix}${lang?.sticker || 'Стикер'}`;
+  }
+
+  if (trimmedLower === 'photo' || trimmedLower === 'фото' || trimmedLower === 'фота') {
+    return `${prefix}${lang?.photo || 'Фото'}`;
+  }
+
   if (previewText) {
     return `${prefix}${previewText}`;
   }

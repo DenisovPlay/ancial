@@ -47,7 +47,7 @@ export default function SecuritySettingsContent() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 w-full max-w-3xl px-3 lg:px-0">
+      <div className="flex flex-col gap-3 w-full max-w-3xl">
         <div className="rounded-3xl flex flex-col border border-zinc-600/30 bg-zinc-900 overflow-hidden">
           <SettingsItem
             href="/settings/security/password"

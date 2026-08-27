@@ -1158,6 +1158,7 @@ export const en: Record<string, string> = {
   "enter_min_chars": "Enter minimum {min} characters",
   "nothing_found": "Nothing found",
   "popular_7tv_stickers": "Popular 7TV stickers",
+  "sticker": "Sticker",
   "stickers": "Stickers",
   "recent_stickers": "Recent",
   "search_stickers": "Search stickers",

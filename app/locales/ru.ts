@@ -1157,6 +1157,7 @@ export const ru: Record<string, string> = {
     "yourself": "себе",
     "enter_min_chars": "Введите минимум {min} символа",
     "nothing_found": "Ничего не найдено",
+    "sticker": "Стикер",
     "stickers": "Стикеры",
     "recent_stickers": "Недавние",
     "search_stickers": "Поиск стикеров",

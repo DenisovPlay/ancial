@@ -727,7 +727,7 @@ function PostCardInner({
               <AccountName user={post.author} nameClassName="font-medium" />
             </Link>
             <span className="text-zinc-400 text-xs lg:text-sm">
-              {formatRelativeTime(post.date || post.time_elapsed, lang, post.time_elapsed || '')}
+              {formatRelativeTime(post.date || post.time_elapsed, authLang, post.time_elapsed || '')}
             </span>
           </div>
 
