@@ -129,8 +129,9 @@ export default function MessagesContent() {
 
   // Next.js useParams in a layout might not see child segment params.
   // So we extract it from the pathname directly.
+  const isInvitePage = pathname.startsWith('/messages/invite');
   const pathParts = pathname.split('/').filter(Boolean);
-  const hashFromPath = pathParts[1] || '';
+  const hashFromPath = isInvitePage ? '' : (pathParts[1] || '');
   const paramsHash = normalizeHash(hashFromPath);
 
   const [routeHash, setRouteHash] = useState(paramsHash);
@@ -2186,6 +2187,10 @@ export default function MessagesContent() {
       setUnreadCount(0);
     }
   };
+
+  if (isInvitePage) {
+    return null;
+  }
 
   if (authLoading || !isAuthenticated) {
     return (

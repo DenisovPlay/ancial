@@ -16,9 +16,9 @@ export default function SettingsPage() {
         <span className="w-full max-w-3xl text-3xl font-extralight">{lang?.settings || 'Настройки'}</span>
       </div>
 
-      <div className="flex flex-col gap-3 w-full max-w-3xl px-3 lg:px-0">
+      <div className="flex flex-col gap-3 w-full max-w-3xl">
         {isAuthenticated && user && (
-          <div className="flex items-center gap-3 w-full mb-2">
+          <div className="flex items-center gap-3 w-full px-3 lg:px-0">
             <Image
               src={userAvatarSrc}
               width={80}

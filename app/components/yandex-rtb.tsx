@@ -79,7 +79,7 @@ export default function YandexRtb({
         href={selectedBanner.link}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative block w-full h-full overflow-hidden group transition-opacity duration-300 bg-black"
+        className="hidden relative block w-full h-full overflow-hidden group transition-opacity duration-300 bg-black"
       >
         <div className="z-[1] duration-300 opacity-50 group-hover:opacity-100 backdrop-blur-lg absolute top-0 right-0 px-1.5 text-[10px] text-white bg-zinc-800 rounded-bl-3xl">Реф. программа</div>
         <img

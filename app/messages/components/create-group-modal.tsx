@@ -184,7 +184,7 @@ export default function CreateGroupModal({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/50 p-3">
+        <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
             <span>{lang?.chat_visibility || 'Доступ к чату'}</span>
             <select
@@ -194,7 +194,7 @@ export default function CreateGroupModal({
                 setVisibility(nextVisibility);
                 if (nextVisibility === 'private') setJoinPolicy('invite');
               }}
-              className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900 px-3 text-white outline-none"
+              className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/90 px-3 text-white outline-none"
             >
               <option value="private">{lang?.chat_visibility_private || 'Приватный — только по приглашению'}</option>
               <option value="public">{lang?.chat_visibility_public || 'Публичный — виден всем'}</option>
@@ -208,7 +208,7 @@ export default function CreateGroupModal({
                 <select
                   value={joinPolicy}
                   onChange={(event) => setJoinPolicy(event.target.value === 'request' ? 'request' : 'open')}
-                  className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900 px-3 text-white outline-none"
+                  className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/90 px-3 text-white outline-none"
                 >
                   <option value="open">{lang?.chat_join_open || 'Свободный вход'}</option>
                   <option value="request">{lang?.chat_join_request || 'По заявке'}</option>
@@ -220,7 +220,7 @@ export default function CreateGroupModal({
                 <select
                   value={communityId}
                   onChange={(event) => setCommunityId(event.target.value)}
-                  className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-900 px-3 text-white outline-none"
+                  className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/90 px-3 text-white outline-none"
                 >
                   <option value="">{lang?.chat_without_community || 'Без привязки к сообществу'}</option>
                   {managedCommunities.map((community) => (
@@ -235,7 +235,7 @@ export default function CreateGroupModal({
                 maxLength={500}
                 rows={3}
                 placeholder={lang?.chat_description_placeholder || 'Коротко опишите тему чата'}
-                className="resize-none rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 text-sm text-white outline-none placeholder:text-zinc-600"
+                className="resize-none rounded-3xl border border-zinc-600/30 bg-zinc-800/90 p-3 text-sm text-white outline-none placeholder:text-zinc-600"
               />
             </>
           ) : null}
@@ -258,7 +258,7 @@ export default function CreateGroupModal({
 
         {/* Поиск */}
         <div className="z-[30] -mx-3 px-3 bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
-          <div className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
+          <div className="flex items-center justify-center bg-zinc-800/90 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
             <input
               className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
               type="text"
@@ -293,9 +293,8 @@ export default function CreateGroupModal({
                 <div
                   key={friend.id}
                   onClick={() => toggleSelectUser(friend.id)}
-                  className={`cursor-pointer flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 duration-300 ${
-                    isSelected ? 'bg-purple-500/10' : 'hover:bg-zinc-800/40'
-                  }`}
+                  className={`cursor-pointer flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 duration-300 ${isSelected ? 'bg-purple-500/10' : 'hover:bg-zinc-800/40'
+                    }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <img

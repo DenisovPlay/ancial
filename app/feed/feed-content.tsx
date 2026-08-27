@@ -171,6 +171,8 @@ export default function FeedContent() {
 
   const topic = searchParams.get('topic');
   const topicButtonsRef = useDragScroll({ speed: 2 });
+  const leftGradRef = useRef<HTMLDivElement | null>(null);
+  const rightGradRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const loadPostsRef = useRef<
@@ -669,6 +671,36 @@ export default function FeedContent() {
   }, [isAuthenticated, lang, topic, topicButtonsRef]);
 
   useEffect(() => {
+    const el = topicButtonsRef.current;
+    if (!el) return;
+
+    const updateGradients = () => {
+      const canScrollLeft = el.scrollLeft > 4;
+      const canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+      if (leftGradRef.current) {
+        leftGradRef.current.style.opacity = canScrollLeft ? '1' : '0';
+      }
+      if (rightGradRef.current) {
+        rightGradRef.current.style.opacity = canScrollRight ? '1' : '0';
+      }
+    };
+
+    updateGradients();
+
+    el.addEventListener('scroll', updateGradients, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateGradients) : null;
+    ro?.observe(el);
+    const mo = typeof MutationObserver !== 'undefined' ? new MutationObserver(updateGradients) : null;
+    mo?.observe(el, { childList: true, subtree: true });
+
+    return () => {
+      el.removeEventListener('scroll', updateGradients);
+      ro?.disconnect();
+      mo?.disconnect();
+    };
+  }, [topicButtonsRef]);
+
+  useEffect(() => {
     const indicator = loadMoreRef.current;
     if (!indicator) return;
 
@@ -931,7 +963,15 @@ export default function FeedContent() {
         )}
       </div>
 
-      <div className="max-w-3xl w-full flex items-center justify-center sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[25]">
+      <div className="relative max-w-3xl w-full flex items-center justify-center sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[25]">
+        <div
+          ref={leftGradRef}
+          className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
+        />
+        <div
+          ref={rightGradRef}
+          className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-l from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
+        />
         <div
           id="topic-buttons"
           ref={topicButtonsRef}

@@ -894,7 +894,7 @@ export default function Navigation() {
           </MotionNavItem>
 
           <MotionNavItem id="desktop-user" isVisible={isAuthenticated && user ? true : false}>
-            <Dropdown imgSrc={user?.img} position="right" activePaths={[`/@${user?.username}`, '/settings']}>
+            <Dropdown imgSrc={user?.img} position="right" activePaths={[`/@${user?.username}`, '/settings', '/notifications']}>
               <DropdownItem href={`/@${user?.username}`} icon="IC-user">
                 {lang?.myaccount}
               </DropdownItem>
@@ -1041,7 +1041,7 @@ export default function Navigation() {
             </MotionNavItem>
 
             <MotionNavItem id="mobile-user" isVisible={isAuthenticated && user ? true : false}>
-              <Dropdown imgSrc={user?.img} position="top" align="end" activePaths={[`/@${user?.username}`, '/settings']}>
+              <Dropdown imgSrc={user?.img} position="top" align="end" activePaths={[`/@${user?.username}`, '/settings', '/notifications']}>
                 <DropdownItem href={`/@${user?.username}`} icon="IC-user">
                   {lang?.myaccount}
                 </DropdownItem>
