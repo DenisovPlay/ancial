@@ -173,6 +173,8 @@ export default function FeedContent() {
   const topicButtonsRef = useDragScroll({ speed: 2 });
   const leftGradRef = useRef<HTMLDivElement | null>(null);
   const rightGradRef = useRef<HTMLDivElement | null>(null);
+  const topicBarRef = useRef<HTMLDivElement | null>(null);
+  const postsLineRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const loadPostsRef = useRef<
@@ -674,9 +676,39 @@ export default function FeedContent() {
     const el = topicButtonsRef.current;
     if (!el) return;
 
+    const isCardUnderTopicBar = (): boolean => {
+      const topicBar = topicBarRef.current;
+      const postsLine = postsLineRef.current;
+      if (!topicBar || !postsLine) return false;
+
+      const cards = postsLine.querySelectorAll<HTMLElement>('[id^="postdiv"], .loading-skeleton');
+      if (!cards.length) return false;
+
+      const topicRect = topicBar.getBoundingClientRect();
+      const firstCardRect = cards[0].getBoundingClientRect();
+      const lastCardRect = cards[cards.length - 1].getBoundingClientRect();
+
+      if (firstCardRect.top >= topicRect.bottom || lastCardRect.bottom <= topicRect.top) {
+        return false;
+      }
+
+      for (let i = 0; i < cards.length; i++) {
+        const cardRect = cards[i].getBoundingClientRect();
+        if (cardRect.top < topicRect.bottom && cardRect.bottom > topicRect.top) {
+          return true;
+        }
+        if (cardRect.top >= topicRect.bottom) {
+          break;
+        }
+      }
+
+      return false;
+    };
+
     const updateGradients = () => {
-      const canScrollLeft = el.scrollLeft > 4;
-      const canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+      const isBlocked = isCardUnderTopicBar();
+      const canScrollLeft = !isBlocked && el.scrollLeft > 4;
+      const canScrollRight = !isBlocked && el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
       if (leftGradRef.current) {
         leftGradRef.current.style.opacity = canScrollLeft ? '1' : '0';
       }
@@ -685,18 +717,44 @@ export default function FeedContent() {
       }
     };
 
+    let rafId: number | null = null;
+    const scheduleUpdate = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        updateGradients();
+      });
+    };
+
     updateGradients();
 
-    el.addEventListener('scroll', updateGradients, { passive: true });
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateGradients) : null;
+    el.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleUpdate) : null;
     ro?.observe(el);
-    const mo = typeof MutationObserver !== 'undefined' ? new MutationObserver(updateGradients) : null;
+    const mo = typeof MutationObserver !== 'undefined' ? new MutationObserver(scheduleUpdate) : null;
     mo?.observe(el, { childList: true, subtree: true });
 
+    const postsEl = postsLineRef.current;
+    const postsMo = typeof MutationObserver !== 'undefined' && postsEl
+      ? new MutationObserver(scheduleUpdate)
+      : null;
+    if (postsEl && postsMo) {
+      postsMo.observe(postsEl, { childList: true, subtree: true });
+    }
+
     return () => {
-      el.removeEventListener('scroll', updateGradients);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      el.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
       ro?.disconnect();
       mo?.disconnect();
+      postsMo?.disconnect();
     };
   }, [topicButtonsRef]);
 
@@ -963,7 +1021,10 @@ export default function FeedContent() {
         )}
       </div>
 
-      <div className="relative max-w-3xl w-full flex items-center justify-center sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[25]">
+      <div
+        ref={topicBarRef}
+        className="relative max-w-3xl w-full flex items-center justify-center sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[25]"
+      >
         <div
           ref={leftGradRef}
           className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
@@ -1114,7 +1175,7 @@ export default function FeedContent() {
       </div>
 
       <div className="w-full flex flex-col gap-3 justify-center items-center -mt-3">
-        <div className="max-w-3xl w-full flex flex-col gap-3" id="ugpostsline">
+        <div ref={postsLineRef} className="max-w-3xl w-full flex flex-col gap-3" id="ugpostsline">
           {isInitialLoading ? (
             <>
               <FeedPostSkeleton />
