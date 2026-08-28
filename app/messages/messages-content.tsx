@@ -2923,7 +2923,7 @@ export default function MessagesContent() {
                   ) : (
                     <div ref={composerPaneRef} className="absolute bottom-0 inset-x-0 z-20 flex flex-col items-center justify-center p-3 pt-0">
                       {attachedImages.length > 0 && (
-                        <div className="flex gap-3 overflow-x-auto w-full pb-23 -mb-20 px-3 bg-gradient-to-b from-transparent via-black to-black">
+                        <div className="flex gap-3 overflow-x-auto w-full pb-23 -mb-20 px-3 bg-gradient-to-b from-transparent via-black to-black lg:via-transparent lg:to-transparent">
                           {attachedImages.map((att) => (
                             <div key={att.id} className="relative group shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-zinc-600/30">
                               <img src={att.previewUrl} alt="Attached" className="w-full h-full object-cover" />
