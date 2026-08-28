@@ -95,8 +95,6 @@ export default function Home() {
                 </div>
                 <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-green-400">Icons8</b> - все иконки на сайте</span>
                 <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-orange-400">GCore</b> - защита от DDOS-атак</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">FancyBox v3</b> - модальные окна</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-blue-400">ImgBB</b> - хостинг картинок</span>
                 <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">Yandex</b>, <b className="text-blue-400">Telegram</b> - авторизация/верификация</span>
             </div>
 
