@@ -15,7 +15,7 @@ import {
 } from './pulse-components';
 
 async function uploadPlaylistCover(file: File) {
-  const url = await uploadImage(file);
+  const url = await uploadImage(file, { type: 'playlist_cover', targetType: 'playlist' });
   return normalizeText(url);
 }
 

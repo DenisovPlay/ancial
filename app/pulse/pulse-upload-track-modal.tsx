@@ -91,7 +91,7 @@ async function readAudioTags(file: File) {
 }
 
 async function uploadImageBlob(blob: Blob) {
-  const url = await uploadImage(blob, 'cover.jpg');
+  const url = await uploadImage(blob, { filename: 'cover.jpg', type: 'track_cover', targetType: 'track' });
   return normalizeText(url);
 }
 

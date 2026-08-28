@@ -119,7 +119,7 @@ function EditAlbumContent() {
     blobUrlRef.current = tempUrl;
     setImg(tempUrl);
 
-    uploadImage(file)
+    uploadImage(file, { type: 'album_cover', targetType: 'album' })
       .then((uploadedUrl) => {
         if (uploadedUrl) {
           cleanupBlobUrl();

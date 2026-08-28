@@ -325,7 +325,7 @@ export default function CreatePostContent() {
     });
 
     try {
-      const uploadedUrl = await uploadImage(file);
+      const uploadedUrl = await uploadImage(file, { type: 'post', targetType: 'post' });
 
       safeRevokeObjectUrl(previewUrl);
 

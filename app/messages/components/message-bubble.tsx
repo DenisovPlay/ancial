@@ -42,6 +42,7 @@ import {
 import { isSingleSticker } from '../../lib/stickers-service';
 import PostPreview from './post-preview';
 import TrackPreview from './track-preview';
+import MessageAttachments from './message-attachments';
 
 function SevenTvStickerMessage({
   stickerId,
@@ -208,7 +209,9 @@ export default function MessageBubble({
   const messageId = getMessageId(message);
   const isOwn = toNumber(message.sender_id) === currentUserId;
   const isTextMessage = String(message.type ?? '0') === '0';
+  const hasAttachments = message.attachments && message.attachments.length > 0;
   const messageImages = extractMessageImages(message.message);
+  const hasAnyImages = hasAttachments || messageImages.length > 0;
   const messageBodyRaw = messageImages.length
     ? getMessageBodyHtmlWithoutImages(message.message)
     : String(message.message ?? '');
@@ -252,13 +255,13 @@ export default function MessageBubble({
     messageBodyHtml = messageBodyHtml.replace(trackRegex2, '');
   });
 
-  const sevenTvStickerTokenData = messageImages.length ? null : getSevenTvStickerTokenData(messageBodyRaw);
+  const sevenTvStickerTokenData = hasAnyImages ? null : getSevenTvStickerTokenData(messageBodyRaw);
   const sevenTvStickerName = sevenTvStickerTokenData?.name ?? '';
   const sevenTvStickerId = sevenTvStickerTokenData?.id ?? '';
-  const isNativeSingleSticker = !messageImages.length && !sevenTvStickerName && isSingleSticker(messageBodyRaw);
+  const isNativeSingleSticker = !hasAnyImages && !sevenTvStickerName && isSingleSticker(messageBodyRaw);
   const isStickerOnlyMessage = Boolean(sevenTvStickerName) || isNativeSingleSticker;
   const hasMessageText = !sevenTvStickerName && Boolean(messageBodyHtml.trim());
-  const isMediaOnlyMessage = (messageImages.length > 0 || isStickerOnlyMessage) && !hasMessageText;
+  const isMediaOnlyMessage = (hasAnyImages || isStickerOnlyMessage) && !hasMessageText;
   const canTranslateMessage = !isOwn && isTextMessage && !isStickerOnlyMessage;
   const canEditMessage = isOwn && isTextMessage && !isStickerOnlyMessage;
   const reactions = parseReactions(message.reactions);
@@ -334,14 +337,16 @@ export default function MessageBubble({
     }, 500);
   };
 
-  const hasMainContent = messageImages.length > 0 || !!sevenTvStickerName || hasMessageText;
-  const blocks: Array<{ type: 'reply' | 'post' | 'track' | 'main'; id: string }> = [];
+  const blocks: Array<{ type: 'reply' | 'post' | 'track' | 'attachments' | 'main'; id: string }> = [];
   if (message.reply_to) {
     blocks.push({ type: 'reply', id: 'reply' });
   }
   postIds.forEach((id) => blocks.push({ type: 'post', id }));
   trackIds.forEach((id) => blocks.push({ type: 'track', id }));
-  if (hasMainContent || blocks.length === 0) {
+  if (hasAnyImages) {
+    blocks.push({ type: 'attachments', id: 'attachments' });
+  }
+  if (hasMessageText || isStickerOnlyMessage || (!hasAnyImages && postIds.length === 0 && trackIds.length === 0)) {
     blocks.push({ type: 'main', id: 'main' });
   }
 
@@ -593,7 +598,8 @@ export default function MessageBubble({
                 {blocks.map((block, index) => {
                   const isLast = index === blocks.length - 1;
 
-                  const blockBg = isTextMessage && !(block.type === 'main' && isStickerOnlyMessage)
+                  const isMainTextBubble = block.type === 'main' && !isStickerOnlyMessage;
+                  const blockBg = isMainTextBubble
                     ? (isOwn ? 'bg-purple-700' : 'bg-zinc-900')
                     : '';
 
@@ -601,7 +607,7 @@ export default function MessageBubble({
                     ? (isOwn && isLast ? 'rounded-br-lg' : (!isOwn && isLast ? 'rounded-bl-lg' : ''))
                     : '';
 
-                  const blockPadding = block.type === 'main' ? 'p-1 rounded-2xl' : 'rounded-3xl';
+                  const blockPadding = isMainTextBubble ? 'p-1 rounded-2xl' : 'rounded-3xl';
 
                   return (
                     <div
@@ -656,19 +662,21 @@ export default function MessageBubble({
                         />
                       )}
 
-                      {block.type === 'main' && (
-                        <div
-                          id={`msg-body-${messageId}`}
-                          className="flex flex-col gap-2 select-text cursor-text"
-                          style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
-                        >
-                          {!isOwn && senderName && !isMediaOnlyMessage && !hideName && (
-                            <span className="px-1.5 text-[10px] -mb-2 font-bold text-purple-400 select-none">{senderName}</span>
+                      {block.type === 'attachments' && (
+                        <div className="flex flex-col">
+                          {!isOwn && senderName && !hideName && index === 0 && (
+                            <span className="px-1 text-[10px] mb-1 font-bold text-purple-400 select-none">{senderName}</span>
                           )}
-                          {messageImages.length ? (
+                          {hasAttachments ? (
+                            <MessageAttachments
+                              attachments={message.attachments!}
+                              messageId={messageId}
+                              onOpenImage={onOpenImage}
+                            />
+                          ) : messageImages.length ? (
                             <div
                               className={cn(
-                                'flex flex-col gap-2',
+                                'flex flex-col gap-3',
                                 messageImages.length > 1 && 'sm:grid sm:grid-cols-2',
                               )}
                             >
@@ -676,12 +684,15 @@ export default function MessageBubble({
                                 !image.isViewerImage ? (
                                   <div
                                     key={getDialogImageKey(messageId, imageIndex)}
-                                    className="overflow-hidden rounded-lg"
+                                    className="overflow-hidden rounded-3xl"
                                   >
                                     <img
                                       src={image.src}
                                       alt={image.alt || `Sticker ${imageIndex + 1}`}
-                                      className="max-h-48 max-w-full rounded-lg object-contain shadow lg:max-h-64"
+                                      className={cn(
+                                        'rounded-3xl object-contain shadow',
+                                        messageImages.length === 1 ? 'max-h-96 w-auto max-w-full' : 'max-h-48 w-full object-cover'
+                                      )}
                                     />
                                   </div>
                                 ) : (
@@ -691,18 +702,35 @@ export default function MessageBubble({
                                     onClick={() => {
                                       onOpenImage(getDialogImageKey(messageId, imageIndex));
                                     }}
-                                    className="cursor-pointer overflow-hidden rounded-lg duration-300 active:scale-95"
+                                    className="cursor-pointer overflow-hidden rounded-3xl duration-300 active:scale-95"
                                   >
                                     <img
                                       src={image.src}
                                       alt={image.alt || `Message image ${imageIndex + 1}`}
-                                      className="max-h-48 max-w-full rounded-lg object-cover shadow lg:max-h-64"
+                                      className={cn(
+                                        'rounded-3xl shadow',
+                                        messageImages.length === 1
+                                          ? 'max-h-96 w-auto max-w-full object-contain'
+                                          : 'max-h-48 w-full object-cover'
+                                      )}
                                     />
                                   </button>
                                 )
                               ))}
                             </div>
                           ) : null}
+                        </div>
+                      )}
+
+                      {block.type === 'main' && (
+                        <div
+                          id={`msg-body-${messageId}`}
+                          className="flex flex-col gap-2 select-text cursor-text"
+                          style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                        >
+                          {!isOwn && senderName && !hideName && (!hasAnyImages || index === 0) && (
+                            <span className="px-1 text-[10px] -mb-2 font-bold text-purple-400 select-none">{senderName}</span>
+                          )}
 
                           {sevenTvStickerName ? (
                             <SevenTvStickerMessage stickerId={sevenTvStickerId} stickerName={sevenTvStickerName} />
@@ -715,7 +743,7 @@ export default function MessageBubble({
                       )}
 
                       {isLast ? (
-                        <div className={cn("mt-1 flex items-end justify-end gap-1", block.type !== 'main' && "px-1 pb-1")}>
+                        <div className={cn("mt-1 flex items-end justify-end gap-1", !isMainTextBubble && "px-1 pb-1")}>
                           <div className="flex flex-1 flex-wrap items-center gap-1">
                             {reactions.map((reaction, index) => {
                               const reactionUserId = String(reaction.userId);

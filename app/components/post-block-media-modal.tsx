@@ -93,7 +93,7 @@ export default function PostBlockMediaModal({
       filesToProcess.map(async (file, i) => {
         const draft = drafts[i];
         try {
-          const uploadedUrl = await uploadImage(file);
+          const uploadedUrl = await uploadImage(file, { type: 'post', targetType: 'post' });
           setImages((prev) =>
             prev.map((img) =>
               img.id === draft.id ? { ...img, status: 'uploaded', uploadedUrl } : img,

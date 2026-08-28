@@ -10,9 +10,10 @@ export default function AdblockBanner() {
 
   useEffect(() => {
     let isMounted = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let adElement: HTMLDivElement | null = null;
 
     const detectAdblock = () => {
-      // Способ 1: Фейковый DOM элемент (основной и самый надежный метод)
       const ad = document.createElement('div');
       ad.className = 'adsbox textad banner-ad ads-banner ad-placement ad-container ads-box';
       ad.style.height = '10px';
@@ -21,28 +22,28 @@ export default function AdblockBanner() {
       ad.style.top = '-1000px';
       ad.style.left = '-1000px';
       document.body.appendChild(ad);
+      adElement = ad;
 
-      // Способ 2: Параллельный fetch
       fetch('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', {
         method: 'HEAD',
         mode: 'no-cors'
       }).catch(() => {
         if (isMounted) {
-          console.log('[AdblockBanner] Detected via fetch block');
           setHasAdblock(true);
         }
       });
 
-      // Проверка DOM-элемента через небольшую задержку
-      setTimeout(() => {
+      timer = setTimeout(() => {
         if (!isMounted) return;
         const isBlocked = ad.offsetHeight === 0 || window.getComputedStyle(ad).display === 'none';
         
         if (isBlocked) {
-          console.log('[AdblockBanner] Detected via DOM element');
           setHasAdblock(true);
         }
-        document.body.removeChild(ad);
+        if (ad.parentNode) {
+          ad.parentNode.removeChild(ad);
+          adElement = null;
+        }
       }, 300);
     };
 
@@ -50,6 +51,10 @@ export default function AdblockBanner() {
 
     return () => {
       isMounted = false;
+      if (timer) clearTimeout(timer);
+      if (adElement && adElement.parentNode) {
+        adElement.parentNode.removeChild(adElement);
+      }
     };
   }, []);
 

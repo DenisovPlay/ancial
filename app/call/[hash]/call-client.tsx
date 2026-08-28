@@ -371,6 +371,11 @@ export default function CallClient() {
   };
 
   const setupWebRTC = (iceServers: RTCIceServer[], localStream: MediaStream) => {
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- RTCPeerConnection сохраняется в pcRef и закрывается при размонтировании звонка в unmount-эффекте
     const pc = new RTCPeerConnection({ iceServers });
     pcRef.current = pc;
 

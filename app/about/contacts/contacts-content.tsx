@@ -25,7 +25,7 @@ export default function ContactsPage() {
                 <a target="_blank" href="https://t.me/zypocc" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
                     <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative" style={{ backgroundImage: 'url(/img/zypo/logo.webp)' }}>
                         <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-blue-400 shadow">
-                            <img className="w-3.5 h-3.5" src="/img/socials/tg.png" />
+                            <img className="w-3.5 h-3.5" src="/img/socials/tg.png" alt="Telegram" />
                         </div>
                     </div>
                     <div className="flex flex-col">
@@ -37,7 +37,7 @@ export default function ContactsPage() {
                 <a target="_blank" href="https://vk.com/ancial" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
                     <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative" style={{ backgroundImage: 'url(/img/zypo/logo.webp)' }}>
                         <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-blue-500 shadow">
-                            <img className="w-3.5 h-3.5" src="/img/socials/vk.png" />
+                            <img className="w-3.5 h-3.5" src="/img/socials/vk.png" alt="VK" />
                         </div>
                     </div>
                     <div className="flex flex-col">
@@ -49,7 +49,7 @@ export default function ContactsPage() {
                 <a target="_blank" href="https://max.ru/join/uv2IksDpcTpFQ3-AP7jn7rLkLUIFpTv8G6GczqLi7FE" className="relative group border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
                     <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative shrink-0" style={{ backgroundImage: 'url(/img/logos/ancial.png)' }}>
                         <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-purple-700 shadow">
-                            <img className="w-3.5 h-3.5" src="/img/socials/max.png" />
+                            <img className="w-3.5 h-3.5" src="/img/socials/max.png" alt="Max" />
                         </div>
                     </div>
                     <div className="flex flex-col">
@@ -64,7 +64,7 @@ export default function ContactsPage() {
                 <a target="_blank" href="https://t.me/ancialen" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
                     <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative" style={{ backgroundImage: 'url(/img/logos/ancial.png)' }}>
                         <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-blue-400 shadow">
-                            <img className="w-3.5 h-3.5" src="/img/socials/tg.png" />
+                            <img className="w-3.5 h-3.5" src="/img/socials/tg.png" alt="Telegram" />
                         </div>
                     </div>
                     <div className="flex flex-col">
@@ -76,7 +76,7 @@ export default function ContactsPage() {
                 <a target="_blank" href="https://x.com/zypo_cc" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
                     <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative" style={{ backgroundImage: 'url(/img/zypo/logo.webp)' }}>
                         <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-slate-900 shadow">
-                            <img className="w-3.5 h-3.5" src="/img/socials/x.png" />
+                            <img className="w-3.5 h-3.5" src="/img/socials/x.png" alt="X" />
                         </div>
                     </div>
                     <div className="flex flex-col">
@@ -88,7 +88,7 @@ export default function ContactsPage() {
                 <a target="_blank" href="https://t.me/ancialtoken" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
                     <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative" style={{ backgroundImage: 'url(/img/logos/ANCItoken.png)' }}>
                         <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-blue-400 shadow">
-                            <img className="w-3.5 h-3.5" src="/img/socials/tg.png" />
+                            <img className="w-3.5 h-3.5" src="/img/socials/tg.png" alt="Telegram" />
                         </div>
                     </div>
                     <div className="flex flex-col">
@@ -100,7 +100,7 @@ export default function ContactsPage() {
                 <a target="_blank" href="https://t.me/zeniflow" className="border border-zinc-600/30 rounded-full p-1 bg-zinc-900 flex items-center hover:bg-zinc-800 duration-300 active:scale-95 cursor-pointer hover:shadow-lg hover:shadow-blue-400/25 gap-1.5">
                     <div className="w-14 h-14 flex items-center justify-center bg-zinc-900 bg-center bg-cover rounded-full shadow relative" style={{ backgroundImage: 'url(/img/logos/zeni.png)' }}>
                         <div className="w-5 h-5 absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-blue-400 shadow">
-                            <img className="w-3.5 h-3.5" src="/img/socials/tg.png" />
+                            <img className="w-3.5 h-3.5" src="/img/socials/tg.png" alt="Telegram" />
                         </div>
                     </div>
                     <div className="flex flex-col">

@@ -13,9 +13,11 @@ export default function WeatherMarkerOnboarding({ children }: WeatherMarkerOnboa
   const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    // Only show on Desktop (>= 768px)
-    if (window.innerWidth < 768) return;
+    if (typeof window === 'undefined' || window.innerWidth < 768) return () => {};
+
+    let startTimer: ReturnType<typeof setTimeout> | null = null;
+    let fadeTimer: ReturnType<typeof setTimeout> | null = null;
+    let removeTimer: ReturnType<typeof setTimeout> | null = null;
 
     try {
       const alreadyShown = localStorage.getItem('ancial_weather_onboarding_shown');
@@ -24,26 +26,27 @@ export default function WeatherMarkerOnboarding({ children }: WeatherMarkerOnboa
         localStorage.setItem('ancial_weather_onboarding_shown', 'true');
 
         // Delay start slightly for smooth page load
-        const startTimer = setTimeout(() => {
+        startTimer = setTimeout(() => {
           setShowOnboarding(true);
 
           // Fade out after 4.5 seconds
-          const fadeTimer = setTimeout(() => {
+          fadeTimer = setTimeout(() => {
             setIsFadingOut(true);
-            const removeTimer = setTimeout(() => {
+            removeTimer = setTimeout(() => {
               setShowOnboarding(false);
             }, 800);
-            return () => clearTimeout(removeTimer);
           }, 4500);
-
-          return () => clearTimeout(fadeTimer);
         }, 700);
-
-        return () => clearTimeout(startTimer);
       }
     } catch (e) {
       console.error('Failed to read weather onboarding cache:', e);
     }
+
+    return () => {
+      if (startTimer) clearTimeout(startTimer);
+      if (fadeTimer) clearTimeout(fadeTimer);
+      if (removeTimer) clearTimeout(removeTimer);
+    };
   }, []);
 
   return (

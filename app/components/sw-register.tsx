@@ -45,8 +45,11 @@ function isChunkLoadError(reason: unknown): boolean {
 }
 
 export default function SWRegister() {
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- Регистрация ServiceWorker управляется глобальным жизненным циклом PWA
   useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return () => {};
+    }
 
     // 1) Авто-активация нового SW без кнопки «Обновить»
     // Когда waiting SW становится active и берёт control — один hard reload,
@@ -108,7 +111,7 @@ export default function SWRegister() {
         .catch(() => {});
     };
     // Не блокируем first paint — прогрев чуть позже
-    window.setTimeout(warmOfflineShell, 2500);
+    const warmTimer = window.setTimeout(warmOfflineShell, 2500);
 
     // Периодическая проверка обновлений (вкладка открыта долго)
     const updateInterval = window.setInterval(() => {
@@ -147,6 +150,7 @@ export default function SWRegister() {
     window.addEventListener('error', onError);
 
     return () => {
+      window.clearTimeout(warmTimer);
       window.clearInterval(updateInterval);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('online', warmOfflineShell);

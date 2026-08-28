@@ -32,7 +32,9 @@ export default function NotFound() {
       }, 3000),
     ];
 
-    return () => timeouts.forEach(clearTimeout);
+    return () => {
+      timeouts.forEach((id) => clearTimeout(id));
+    };
   }, [lang?.pagenotfounderror, lang?.pagenotfoundtimer1, lang?.pagenotfoundtimer2, lang?.pagenotfoundredirecting, lang?.pagenotfoundhome, lang?.pagenotfoundwhy, router]);
 
   return (

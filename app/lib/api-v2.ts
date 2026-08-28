@@ -538,23 +538,35 @@ export class AncialAPI {
     return this.request<T>(`/messages/GetDialog.php?${query.toString()}`, options);
   }
 
-  static async sendMessage<T = unknown>(params: { di_id: string | number, message?: string, img?: string, sticker?: string | number }): Promise<T> {
-    const body = new URLSearchParams();
+  static async sendMessage<T = unknown>(params: {
+    di_id: string | number;
+    message?: string;
+    img?: string;
+    sticker?: string | number;
+    reply_to?: number | null;
+    media_ids?: number[];
+  }): Promise<T> {
+    const body = new FormData();
     const query = new URLSearchParams();
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        if (key === 'sticker' || key === 'img') {
-          query.set(key, String(value));
-        } else {
-          body.set(key, String(value));
-        }
-      }
-    });
-    
+
+    const { di_id, message, img, sticker, reply_to, media_ids } = params;
+
+    body.set('di_id', String(di_id));
+    if (message !== undefined) body.set('message', message);
+    if (reply_to) body.set('reply_to', String(reply_to));
+
+    // img и sticker — legacy-параметры, идут в query string
+    if (img !== undefined) query.set('img', String(img));
+    if (sticker !== undefined) query.set('sticker', String(sticker));
+
+    // media_ids передаются как media_ids[] (PHP читает как массив)
+    if (media_ids && media_ids.length > 0) {
+      media_ids.forEach((id) => body.append('media_ids[]', String(id)));
+    }
+
     const queryString = query.toString();
     const url = queryString ? `/messages/SendMessage.php?${queryString}` : '/messages/SendMessage.php';
-    
+
     return this.request<T>(url, { method: 'POST', body });
   }
 

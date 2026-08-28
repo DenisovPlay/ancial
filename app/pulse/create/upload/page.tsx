@@ -73,7 +73,7 @@ export default function PulseCreateUploadPage() {
     const tempUrl = URL.createObjectURL(file);
     setImg(tempUrl);
 
-    uploadImage(file)
+    uploadImage(file, { type: 'track_cover', targetType: 'track' })
       .then((uploadedUrl) => {
         if (uploadedUrl) setImg(uploadedUrl);
       })

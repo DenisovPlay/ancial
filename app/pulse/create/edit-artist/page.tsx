@@ -79,7 +79,7 @@ function EditArtistContent() {
     blobUrlRef.current = tempUrl;
     setImg(tempUrl);
 
-    uploadImage(file)
+    uploadImage(file, { type: 'avatar', targetType: 'artist' })
       .then((uploadedUrl) => {
         if (uploadedUrl) {
           cleanupBlobUrl();

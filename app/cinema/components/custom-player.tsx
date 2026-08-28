@@ -231,6 +231,9 @@ export default function CustomPlayer({
   useEffect(() => {
     if (!isFlixCDN) return;
 
+    let seekTimer1: ReturnType<typeof setTimeout> | null = null;
+    let seekTimer2: ReturnType<typeof setTimeout> | null = null;
+
     const handleIframeMessage = (e: MessageEvent) => {
       try {
         if (!iframeRef.current || e.source !== iframeRef.current.contentWindow) return;
@@ -257,10 +260,10 @@ export default function CustomPlayer({
             if (savedTime > 5 && savedTime < playback.duration - 15) {
               hasSeekedSavedTimeRef.current = true;
               updateCurrentTime(savedTime);
-              setTimeout(() => {
+              seekTimer1 = setTimeout(() => {
                 sendIframeCommand('seek', savedTime);
               }, 150);
-              setTimeout(() => {
+              seekTimer2 = setTimeout(() => {
                 sendIframeCommand('seek', savedTime);
               }, 500);
             }
@@ -294,7 +297,11 @@ export default function CustomPlayer({
     };
 
     window.addEventListener('message', handleIframeMessage);
-    return () => window.removeEventListener('message', handleIframeMessage);
+    return () => {
+      if (seekTimer1) clearTimeout(seekTimer1);
+      if (seekTimer2) clearTimeout(seekTimer2);
+      window.removeEventListener('message', handleIframeMessage);
+    };
   }, [isFlixCDN, fallbackIframeSrc, movieId, season, episode, updateCurrentTime, updateDuration, getSavedTime, sendIframeCommand, maybeSaveProgress, onNextEpisode]);
 
   useEffect(() => {
@@ -503,13 +510,14 @@ export default function CustomPlayer({
   // Autofocus selected or first quality item when dropdown opens
   useEffect(() => {
     if (showQualityDropdown) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         const qualityItems = Array.from(
           containerRef.current?.querySelectorAll<HTMLElement>('[data-quality-dropdown="true"] button') || []
         );
         const selectedOrFirst = qualityItems.find((el) => el.classList.contains('bg-white')) || qualityItems[0];
         if (selectedOrFirst) selectedOrFirst.focus();
       }, 50);
+      return () => clearTimeout(timer);
     }
   }, [showQualityDropdown]);
 

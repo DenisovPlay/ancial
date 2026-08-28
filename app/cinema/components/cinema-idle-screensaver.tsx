@@ -101,6 +101,7 @@ export default function CinemaIdleScreensaver({
   }, [isIdle, activeMovies.length]);
 
   // 4. Idle Detection Activity Listeners
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- idleTimerRef очищается при размонтировании и сбросе активности
   useEffect(() => {
     const isWatchPage = typeof window !== 'undefined' && window.location.pathname.includes('/cinema/watch');
     const hasPlayingVideo = typeof document !== 'undefined' && Boolean(
@@ -112,7 +113,9 @@ export default function CinemaIdleScreensaver({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsIdle(false);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-      return;
+      return () => {
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      };
     }
 
     const resetIdleTimer = () => {

@@ -426,7 +426,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     });
 
     try {
-      const uploadedUrl = await uploadImage(file);
+      const uploadedUrl = await uploadImage(file, { type: 'post', targetType: 'post' });
 
       safeRevokeObjectUrl(previewUrl);
 

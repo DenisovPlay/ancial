@@ -30,31 +30,7 @@ export default function InfoContent({ id }: InfoContentProps) {
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [fromUrl] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    
-    try {
-      const saved = getCinemaReferrer();
-      if (saved) {
-        removeCinemaReferrer();
-        if (!saved.includes('/cinema/info/') && !saved.includes('/cinema/watch/')) {
-          return saved;
-        }
-      }
-
-      if (document.referrer) {
-        const refUrl = new URL(document.referrer);
-        if (
-          refUrl.origin === window.location.origin &&
-          !refUrl.pathname.includes('/cinema/info/') &&
-          !refUrl.pathname.includes('/cinema/watch/')
-        ) {
-          return refUrl.pathname + refUrl.search;
-        }
-      }
-    } catch (e) {}
-    return null;
-  });
+  const [fromUrl, setFromUrl] = useState<string | null>(null);
 
   const handleInfoBack = () => {
     if (fromUrl) {
@@ -64,26 +40,11 @@ export default function InfoContent({ id }: InfoContentProps) {
     }
   };
 
-  // Synchronous cache read for instant 0-ms initial render without skeleton flash
-  const [infoMovie, setInfoMovie] = useState<Movie | null>(() => {
-    if (typeof window === 'undefined') return null;
-    return (
-      getCinemaCache<Movie>('info', id) ||
-      CacheManager.get<Movie>(`cinema_video_by_id_${id}`, { category: 'cinema', subcategory: 'video' })
-    );
-  });
-  const [similarMovies, setSimilarMovies] = useState<Movie[]>(() => {
-    if (typeof window === 'undefined') return [];
-    return getCinemaCache<Movie[]>('similar', id) || [];
-  });
-  
-  const [isLoading, setIsLoading] = useState<boolean>(() => !infoMovie);
+  const [infoMovie, setInfoMovie] = useState<Movie | null>(null);
+  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRevalidating, setIsRevalidating] = useState<boolean>(true);
-
-  const [myListIds, setMyListIds] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    return getCinemaMyList();
-  });
+  const [myListIds, setMyListIds] = useState<string[]>([]);
 
   // Watch state & selection
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
@@ -139,8 +100,10 @@ export default function InfoContent({ id }: InfoContentProps) {
     } catch (err) {}
   };
 
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- Таймеры и события очищаются в функции размонтирования эффекта
   useEffect(() => {
     let isMounted = true;
+    let focusTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Refresh savedProgress when history updates
     const refreshFromHistoryEvent = () => {
@@ -150,6 +113,28 @@ export default function InfoContent({ id }: InfoContentProps) {
         setSavedProgress(normalizeCinemaProgressState(prog));
       }
     };
+
+    // 0. Initialize client-only states
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- SWR-гидратация из кэша до ответа API
+    setMyListIds(getCinemaMyList());
+    try {
+      const saved = getCinemaReferrer();
+      if (saved) {
+        removeCinemaReferrer();
+        if (!saved.includes('/cinema/info/') && !saved.includes('/cinema/watch/')) {
+          setFromUrl(saved);
+        }
+      } else if (document.referrer) {
+        const refUrl = new URL(document.referrer);
+        if (
+          refUrl.origin === window.location.origin &&
+          !refUrl.pathname.includes('/cinema/info/') &&
+          !refUrl.pathname.includes('/cinema/watch/')
+        ) {
+          setFromUrl(refUrl.pathname + refUrl.search);
+        }
+      }
+    } catch (e) {}
 
     // 1. Read cached data first (check 'info' cache, then fallback to 'video' cache)
     let cachedMovie = getCinemaCache<Movie>('info', id);
@@ -228,7 +213,7 @@ export default function InfoContent({ id }: InfoContentProps) {
       } finally {
         if (isMounted) {
           setIsLoading(false);
-          setTimeout(() => {
+          focusTimer = setTimeout(() => {
             const watchBtn = document.querySelector<HTMLElement>('[data-watch-hero-btn]');
             const backBtn = Array.from(document.querySelectorAll<HTMLElement>('[data-cinema-back="true"]')).find(
               (b) => b.offsetWidth > 0 && b.offsetHeight > 0 && getComputedStyle(b).display !== 'none'
@@ -245,6 +230,7 @@ export default function InfoContent({ id }: InfoContentProps) {
     window.addEventListener('ancial:cinema_history_update', refreshFromHistoryEvent);
     return () => {
       isMounted = false;
+      if (focusTimer) clearTimeout(focusTimer);
       window.removeEventListener('ancial:cinema_history_update', refreshFromHistoryEvent);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка по id: повторный запуск при смене infoMovie недопустим

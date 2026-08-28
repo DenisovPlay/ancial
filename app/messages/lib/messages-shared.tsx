@@ -134,6 +134,8 @@ export type DialogMessage = {
   dialog_id?: number | string | null;
   di_id?: number | string | null;
   isSending?: boolean;
+  /** Структурированные вложения изображений (новая система). Если null — рендерится через legacy extractMessageImages. */
+  attachments?: MessageAttachment[] | null;
 };
 
 export type DialogMessagesResponse = {
@@ -152,6 +154,19 @@ export type MessageImage = {
   alt: string;
   isViewerImage: boolean;
   src: string;
+};
+
+/**
+ * Вложение изображения в сообщение.
+ * Новые сообщения хранят этот объект в поле `attachments` вместо `<img>` HTML в тексте.
+ */
+export type MessageAttachment = {
+  media_id: number;
+  url: string;
+  display_url?: string;
+  file_hash?: string;
+  width?: number;
+  height?: number;
 };
 
 export type SevenTvSticker = {
@@ -646,15 +661,27 @@ export function buildDialogImageSlides(messages: DialogMessage[]) {
     const messageId = getMessageId(message);
     if (!messageId) return;
 
-    extractMessageImages(message.message).forEach((image, imageIndex) => {
-      if (!image.isViewerImage) return;
-
-      slides.push({
-        alt: image.alt || null,
-        key: getDialogImageKey(messageId, imageIndex),
-        url: image.src,
+    if (message.attachments && message.attachments.length > 0) {
+      message.attachments.slice(0, 9).forEach((att, attIndex) => {
+        const isBlob = att.url.startsWith('blob:');
+        const imgSrc = isBlob ? att.url : normalizeAssetUrl(att.url, '');
+        slides.push({
+          alt: `Вложение ${attIndex + 1}`,
+          key: getDialogImageKey(messageId, attIndex),
+          url: imgSrc,
+        });
       });
-    });
+    } else {
+      extractMessageImages(message.message).forEach((image, imageIndex) => {
+        if (!image.isViewerImage) return;
+
+        slides.push({
+          alt: image.alt || null,
+          key: getDialogImageKey(messageId, imageIndex),
+          url: image.src,
+        });
+      });
+    }
   });
 
   return slides;

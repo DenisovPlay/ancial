@@ -964,7 +964,10 @@ export default function UserProfileContent({ login }: { login: string }) {
         time: 5,
       });
 
-      const uploadedUrl = await uploadImage(file);
+      const uploadedUrl = await uploadImage(file, {
+        type: field === 'img' ? 'avatar' : 'cover',
+        targetType: 'user',
+      });
 
       const response = await AncialAPI.updateProfileMedia<{ message?: string }>(field, uploadedUrl);
       const message = response.message || strings.successProfileUpdate;

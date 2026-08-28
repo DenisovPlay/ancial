@@ -110,7 +110,7 @@ function EditTrackContent() {
     blobUrlRef.current = tempUrl;
     setImg(tempUrl);
 
-    uploadImage(file)
+    uploadImage(file, { type: 'track_cover', targetType: 'track' })
       .then((uploadedUrl) => {
         if (uploadedUrl) {
           cleanupBlobUrl();

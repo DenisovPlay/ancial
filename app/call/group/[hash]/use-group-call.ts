@@ -242,6 +242,7 @@ export function useGroupCall({
     const existing = peersRef.current.get(targetUserId);
     if (existing && existing.connectionState !== 'closed') return existing;
 
+    // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- RTCPeerConnection сохраняется в peersRef и закрывается при завершении звонка
     const peer = new RTCPeerConnection({ iceServers: iceServersRef.current });
     peersRef.current.set(targetUserId, peer);
     const negotiationState: PeerNegotiationState = {
@@ -448,6 +449,7 @@ export function useGroupCall({
     setCallPresence(null);
   }, [resetPeers, sendSignal, setParticipants, stopTracks]);
 
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- Подписки WS и listeners очищаются в возвращаемой функции размонтирования
   useEffect(() => {
     const handleSignal = (raw?: unknown) => {
       const envelope = (raw || {}) as VoiceEnvelope;

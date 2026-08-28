@@ -18,9 +18,9 @@ export default function GuidesPage() {
                     <span>1. Откройте Safari.</span>
                     <span>2. Откройте Zypo.cc.</span>
                     <span>3. Нажмите &quot;Поделиться&quot; внизу экрана.</span>
-                    <img src="/img/guides/app/ios1.png" loading="lazy" className="max-w-sm rounded-2xl shadow" />
+                    <img src="/img/guides/app/ios1.png" alt="iOS Safari Шаг 1" loading="lazy" className="max-w-sm rounded-2xl shadow" />
                     <span>4. Выберите пункт &quot;На экран &quot;Домой&quot;.</span>
-                    <img src="/img/guides/app/ios2.png" loading="lazy" className="max-w-sm rounded-2xl shadow" />
+                    <img src="/img/guides/app/ios2.png" alt="iOS Safari Шаг 2" loading="lazy" className="max-w-sm rounded-2xl shadow" />
                     <span>ПОЗДРАВЛЯЕМ! Вы только что установили на свой &quot;айфончик&quot; ПРОГРЕССИВНОЕ МОБИЛЬНОЕ ПРИЛОЖЕНИЕ Zypo! Откройте же его!</span>
                 </div>
                 <div className="w-full text-lg text-zinc-200 px-3 lg:px-0 pt-3 flex flex-col">
@@ -28,9 +28,9 @@ export default function GuidesPage() {
                     <span>1. Откройте Chrome.</span>
                     <span>2. Откройте Zypo.cc.</span>
                     <span>3. Нажмите &quot;...&quot; рядом с адресной строкой.</span>
-                    <img src="/img/guides/app/android1.png" loading="lazy" className="max-w-sm rounded-2xl shadow" />
+                    <img src="/img/guides/app/android1.png" alt="Android Chrome Шаг 1" loading="lazy" className="max-w-sm rounded-2xl shadow" />
                     <span>4. Выберите пункт &quot;Добавить на гл. экран&quot;.</span>
-                    <img src="/img/guides/app/android2.png" loading="lazy" className="max-w-sm rounded-2xl shadow" />
+                    <img src="/img/guides/app/android2.png" alt="Android Chrome Шаг 2" loading="lazy" className="max-w-sm rounded-2xl shadow" />
                     <span>ПОЗДРАВЛЯЕМ! Вы успешно установили Zypo! Откройте же его!</span>
                 </div>
             </div>

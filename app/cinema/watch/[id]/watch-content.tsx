@@ -146,7 +146,7 @@ export default function WatchContent({ id }: WatchContentProps) {
   useEffect(() => {
     if (!showPicker) return;
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       const firstBtn = document.querySelector<HTMLElement>('[data-modal-picker="true"] button.focusable-tv, [data-modal-picker="true"] button');
       if (firstBtn) firstBtn.focus();
     }, 50);
@@ -161,6 +161,7 @@ export default function WatchContent({ id }: WatchContentProps) {
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [showPicker]);
@@ -262,12 +263,13 @@ export default function WatchContent({ id }: WatchContentProps) {
   // Auto-focus active episode/season when picker modal opens
   useEffect(() => {
     if (showPicker) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         const picker = document.querySelector<HTMLElement>('[data-modal-picker="true"]');
         if (!picker) return;
         const activeItem = picker.querySelector<HTMLElement>('.bg-indigo-600, .bg-white') || picker.querySelector<HTMLElement>('.focusable-tv');
         if (activeItem) activeItem.focus();
       }, 50);
+      return () => clearTimeout(timer);
     }
   }, [showPicker]);
 

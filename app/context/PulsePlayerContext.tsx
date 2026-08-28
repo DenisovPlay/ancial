@@ -1582,7 +1582,7 @@ export function PulsePlayerProvider({
     // We intentionally keep this subscription stable and read live player state from refs/events,
     // otherwise adding every helper here would re-bind audio listeners on frequent progress updates.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nextTrack, userCountry]);
+  }, []);
 
   useEffect(() => {
     if (!currentSongId || !currentTrack) {
@@ -1800,9 +1800,9 @@ export function PulsePlayerProvider({
       delete compatWindow.trackP;
       delete compatWindow.updatePlayerLikeBtn;
     };
-    // Global bridge methods are reinstalled only when their public behavior changes, not on every syncWindowState update.
+    // Global bridge methods are installed once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [changeVolume, closePlayer, ensureLikedSongsLoaded, likeCurrentSong, nextTrack, openAddToPlaylist, playArtistPlaylist, playGenlist, playPlaylist, playTrack, prevTrack, queueTrackNext, showPlayer, togglePlay, togglePlaylistLike, toggleSongLike]);
+  }, []);
 
   const contextValue: PulsePlayerContextValue = {
     closePlayer,

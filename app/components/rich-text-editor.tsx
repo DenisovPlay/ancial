@@ -4,6 +4,8 @@ import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn, SvgIcon } from '../feed/editor-shared';
 import { parsePostContentToHtml, getVisibleLength } from './post-parser';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
+import { uploadImage } from '../lib/upload';
+import { extractImagesFromClipboard } from '../lib/clipboard-image';
 import Modal from './modal';
 import PostBlockTableModal from './post-block-table-modal';
 import PostBlockMediaModal from './post-block-media-modal';
@@ -1041,6 +1043,46 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         }
 
         handleInput();
+      }
+    }
+  };
+
+  const handleEditorPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const files = await extractImagesFromClipboard(e);
+    if (!files.length) return;
+
+    e.preventDefault();
+    for (const file of files) {
+      try {
+        const url = await uploadImage(file, { type: 'post' });
+        if (url) {
+          execCmd(
+            'insertHTML',
+            `<img src="${url}" data-src="${url}" alt="" class="max-h-96 rounded-3xl object-contain my-3" />`
+          );
+        }
+      } catch (err) {
+        console.error('Failed to upload pasted image', err);
+      }
+    }
+  };
+
+  const handleEditorDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    const files = e.dataTransfer?.files;
+    if (!files || !files.length) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        e.preventDefault();
+        try {
+          const url = await uploadImage(file, { type: 'post' });
+          if (url) {
+            execCmd('insertHTML', `<img src="${url}" data-src="${url}" alt="" class="max-h-96 rounded-3xl object-contain my-3" />`);
+          }
+        } catch (err) {
+          console.error('Failed to upload dropped image', err);
+        }
       }
     }
   };

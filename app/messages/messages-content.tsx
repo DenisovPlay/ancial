@@ -23,7 +23,8 @@ import { usePulsePlayer } from '../context/PulsePlayerContext';
 import AccountName from '../components/account-name';
 import ImageViewerModal from '../components/image-viewer-modal';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
-import { uploadImage } from '../lib/upload';
+import { uploadImage, uploadImageDetailed } from '../lib/upload';
+import { extractImagesFromClipboard } from '../lib/clipboard-image';
 import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
 import { formatRelativeTime } from '../lib/time';
@@ -102,6 +103,16 @@ type ApiEnvelope<T> = T & { data?: T | null };
 /** Список диалогов с опциональным агрегированным счётчиком непрочитанных. */
 type DialogsPayload = DialogListResponse & { unread_count?: number };
 
+interface AttachedChatImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  uploading: boolean;
+  uploadedUrl?: string;
+  uploadedMediaId?: number;
+  error?: boolean;
+}
+
 declare global {
   interface Window {
     /** ID активного диалога для глобального WS (читается в lib/global-ws.ts). */
@@ -174,6 +185,8 @@ export default function MessagesContent() {
   const [editingMessage, setEditingMessage] = useState<DialogMessage | null>(null);
   const [editingValue, setEditingValue] = useState('');
   const [uploadingMessageImage, setUploadingMessageImage] = useState(false);
+  const [attachedImages, setAttachedImages] = useState<AttachedChatImage[]>([]);
+  const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
   const [uploadingDialogBackground, setUploadingDialogBackground] = useState(false);
   const [activeDialogImageKey, setActiveDialogImageKey] = useState<string | null>(null);
   // Тик для перерисовки меток дней в полночь; Date.now() здесь — только начальное значение,
@@ -1741,91 +1754,147 @@ export default function MessagesContent() {
     }
   };
 
-  const handleMessageImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!canUseComposer) {
+  const addFilesToAttachments = useCallback((files: FileList | File[]) => {
+    const validImageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    if (!validImageFiles.length) return;
+
+    validImageFiles.forEach((file) => {
+      const id = `att_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      let previewUrl = '';
+      try {
+        previewUrl = URL.createObjectURL(file);
+      } catch {
+        // Fallback
+      }
+
+      const newAttachment: AttachedChatImage = {
+        id,
+        file,
+        previewUrl,
+        uploading: true,
+      };
+
+      setAttachedImages((prev) => [...prev, newAttachment]);
+
+      uploadImageDetailed(file, {
+        type: 'chat',
+        targetType: 'dialog',
+        targetId: currentDialogIdRef.current || undefined,
+      })
+        .then((result) => {
+          setAttachedImages((prev) =>
+            prev.map((item) =>
+              item.id === id
+                ? { ...item, uploading: false, uploadedUrl: result.url, uploadedMediaId: result.media_id }
+                : item
+            )
+          );
+        })
+        .catch((err) => {
+          console.error('Failed to upload attached image', err);
+          setAttachedImages((prev) =>
+            prev.map((item) =>
+              item.id === id ? { ...item, uploading: false, error: true } : item
+            )
+          );
+        });
+    });
+  }, []);
+
+  const removeAttachment = useCallback((id: string) => {
+    setAttachedImages((prev) => {
+      const item = prev.find((i) => i.id === id);
+      if (item?.previewUrl && item.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      return prev.filter((i) => i.id !== id);
+    });
+  }, []);
+
+  const handleChatPaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    // Синхронно проверяем наличие image-файлов в DataTransfer
+    // (работает для файлов, перетащенных или скопированных в Chromium/Windows)
+    const syncImageItems = Array.from(event.clipboardData?.items ?? []).filter(
+      (it) => it.kind === 'file' && it.type.startsWith('image/')
+    );
+    const syncFileImages = Array.from(event.clipboardData?.files ?? []).filter(
+      (f) => f.type.startsWith('image/')
+    );
+
+    if (syncImageItems.length > 0 || syncFileImages.length > 0) {
+      // Есть синхронные файлы — блокируем paste-текст и клонируем сразу
+      event.preventDefault();
+      extractImagesFromClipboard(event).then((imageFiles) => {
+        if (imageFiles.length > 0) {
+          addFilesToAttachments(imageFiles);
+        }
+      });
+      return;
+    }
+
+    // Синхронных файлов нет — пробуем Async Clipboard API.
+    // Сюда попадают macOS-скриншоты (Cmd+Shift+4 → Cmd+V):
+    // они видны только через navigator.clipboard.read(), а не через DataTransfer.
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.read === 'function'
+    ) {
+      navigator.clipboard
+        .read()
+        .then(async (items) => {
+          const imageFiles: File[] = [];
+          for (const clipItem of items) {
+            for (const type of clipItem.types) {
+              if (type.startsWith('image/')) {
+                try {
+                  const blob = await clipItem.getType(type);
+                  const ext = type.split('/')[1] || 'png';
+                  imageFiles.push(
+                    new File([blob], `pasted_${Date.now()}.${ext}`, { type })
+                  );
+                } catch {
+                  // тип недоступен — пропускаем
+                }
+              }
+            }
+          }
+          if (imageFiles.length > 0) {
+            addFilesToAttachments(imageFiles);
+          }
+        })
+        .catch(() => {
+          // Пользователь отказал или браузер не поддерживает — игнорируем
+        });
+    }
+  };
+
+  const handleChatDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      setIsDraggingOverChat(true);
+    }
+  };
+
+  const handleChatDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOverChat(false);
+  };
+
+  const handleChatDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOverChat(false);
+    if (!canUseComposer || !e.dataTransfer.files) return;
+    addFilesToAttachments(e.dataTransfer.files);
+  };
+
+  const handleMessageImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canUseComposer || !event.target.files) {
       event.target.value = '';
       return;
     }
-    const file = event.target.files?.[0];
-    const dialogId = currentDialogIdRef.current;
-    if (!file || !dialogId) return;
-
-    setUploadingMessageImage(true);
-    notify({
-      content: lang?.['loading...'] || 'Загрузка...',
-      time: 5,
-      type: 'info',
-    });
-
-    let tempId: number | null = null;
-
-    try {
-      const imageUrl = await uploadImage(file);
-      tempId = Date.now();
-      const currentReplyingTo = replyingTo;
-      const imgHtml = `<img src="${imageUrl}" data-src="${imageUrl}" data-type="image" data-fancybox="images" class="max-h-48 lg:max-h-64 shrink-0 cursor-pointer duration-300 active:scale-95 overflow rounded-lg">`;
-
-      const optimisticMsg: DialogMessage = {
-        id: tempId,
-        dialog_id: dialogId,
-        sender_id: currentUserId,
-        message: imgHtml,
-        date: new Date().toISOString(),
-        isSending: true,
-        reply_to: currentReplyingTo ? currentReplyingTo.id : null,
-        reply_author: currentReplyingTo ? currentReplyingTo.sender_id : null,
-        reply_msg: currentReplyingTo ? currentReplyingTo.message : null,
-        reply_type: currentReplyingTo ? currentReplyingTo.type : null,
-        type: 1,
-      };
-
-      setReplyingTo(null);
-      scrollActionRef.current = { type: 'bottom' };
-      setMessages((prev) => [...prev, optimisticMsg]);
-
-      window.requestAnimationFrame(() => {
-        if (messageScrollRef.current) {
-          messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
-        }
-      });
-
-      const res = await AncialAPI.sendMessage<{ msg_id?: number; data?: { msg_id?: number } }>({
-        di_id: dialogId,
-        img: imageUrl,
-        ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
-      });
-
-      const sentMsgId = res?.msg_id || res?.data?.msg_id;
-      if (sentMsgId && tempId) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === tempId
-              ? { ...m, id: sentMsgId, isSending: false }
-              : m
-          )
-        );
-      }
-
-      notify({
-        content: lang?.done || 'Готово',
-        type: 'success',
-      });
-
-      await loadMessagesNewer(dialogSessionRef.current);
-      await loadDialogs({ force: true });
-    } catch (error) {
-      console.error('Failed to send image message', error);
-      if (tempId) {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      }
-      notify({
-        content: lang?.somethingwrong || 'Произошла ошибка =(',
-        type: 'error',
-      });
-    } finally {
-      setUploadingMessageImage(false);
-      event.target.value = '';
-    }
+    addFilesToAttachments(event.target.files);
+    event.target.value = '';
   };
 
   const handleDialogBackgroundSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1931,7 +2000,7 @@ export default function MessagesContent() {
 
     if (!dialogId) return;
 
-    if (!nextValue) {
+    if (!nextValue && attachedImages.length === 0) {
       notify({
         content:
           lang?.empty_message_warning || 'Ну хоть что-нибудь написали. Вот зачем так делать?',
@@ -1940,23 +2009,46 @@ export default function MessagesContent() {
       return;
     }
 
-    const tempId = Date.now();
+    const stillUploading = attachedImages.some((i) => i.uploading);
+    if (stillUploading) {
+      notify({
+        content: lang?.['loading...'] || 'Загрузка изображений...',
+        type: 'info',
+        time: 2,
+      });
+      return;
+    }
+
+    const currentAttached = [...attachedImages];
     const currentReplyingTo = replyingTo;
+    const tempId = Date.now();
+
+    // Новая система: собираем media_ids и optimistic attachments (без HTML-тегов)
+    const readyAttachments = currentAttached.filter((att) => att.uploadedMediaId);
+    const mediaIds = readyAttachments.map((att) => att.uploadedMediaId!);
+    const optimisticAttachments = readyAttachments.map((att) => ({
+      media_id: att.uploadedMediaId!,
+      url: att.previewUrl, // blob URL — для немедленного рендера до ответа сервера
+    }));
 
     const optimisticMsg: DialogMessage = {
       id: tempId,
       dialog_id: dialogId,
       sender_id: currentUserId,
-      message: escapeHtml(nextValue),
+      message: nextValue ? escapeHtml(nextValue) : '',
       date: new Date().toISOString(),
       isSending: true,
       reply_to: currentReplyingTo ? currentReplyingTo.id : null,
       reply_author: currentReplyingTo ? currentReplyingTo.sender_id : null,
       reply_msg: currentReplyingTo ? currentReplyingTo.message : null,
       reply_type: currentReplyingTo ? currentReplyingTo.type : null,
-      type: 0,
+      type: currentAttached.length > 0 && !nextValue ? 1 : 0,
+      attachments: optimisticAttachments.length > 0 ? optimisticAttachments : null,
     };
 
+    // Освобождаем blob URL только после того как сообщение ушло на сервер
+    // (не здесь — иначе оптимистичное изображение исчезнет до ответа)
+    setAttachedImages([]);
     setComposerText('');
     setReplyingTo(null);
     scrollActionRef.current = { type: 'bottom' };
@@ -1972,12 +2064,15 @@ export default function MessagesContent() {
     (async () => {
       try {
         if (cancelledMessageIdsRef.current.has(tempId)) {
+          // Освобождаем blob URL при отмене
+          currentAttached.forEach((a) => { if (a.previewUrl.startsWith('blob:')) URL.revokeObjectURL(a.previewUrl); });
           return;
         }
         const res = await AncialAPI.sendMessage<{ msg_id?: number; data?: { msg_id?: number } }>({
           di_id: dialogId,
-          message: nextValue,
-          ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
+          message: nextValue ? escapeHtml(nextValue) : '',
+          media_ids: mediaIds.length > 0 ? mediaIds : undefined,
+          ...(currentReplyingTo ? { reply_to: Number(currentReplyingTo.id) } : {}),
         });
 
         const sentMsgId = res?.msg_id || res?.data?.msg_id;
@@ -2014,6 +2109,8 @@ export default function MessagesContent() {
           type: 'error',
         });
       } finally {
+        // Освобождаем blob URL — к этому моменту сообщение либо принято сервером, либо удалено из списка
+        currentAttached.forEach((a) => { if (a.previewUrl.startsWith('blob:')) URL.revokeObjectURL(a.previewUrl); });
         cancelledMessageIdsRef.current.delete(tempId);
         setMessages((prev) => prev.filter((m) => Number(getMessageId(m)) !== Number(tempId)));
       }
@@ -2058,7 +2155,7 @@ export default function MessagesContent() {
         const res = await AncialAPI.sendMessage<{ msg_id?: number; data?: { msg_id?: number } }>({
           di_id: dialogId,
           sticker: `:${stickerName}:`,
-          ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
+          ...(currentReplyingTo ? { reply_to: Number(currentReplyingTo.id) } : {}),
         });
 
         const sentMsgId = res?.msg_id || res?.data?.msg_id;
@@ -2134,7 +2231,7 @@ export default function MessagesContent() {
       const res = await AncialAPI.sendMessage<{ msg_id?: number; data?: { msg_id?: number } }>({
         di_id: dialogId,
         message: `:7tv-${normalizedStickerName}-${sticker.id}:`,
-        ...(currentReplyingTo ? { reply_to: currentReplyingTo.id } : {}),
+        ...(currentReplyingTo ? { reply_to: Number(currentReplyingTo.id) } : {}),
       });
 
       const sentMsgId = res?.msg_id || res?.data?.msg_id;
@@ -2474,8 +2571,17 @@ export default function MessagesContent() {
               ) : (
                 <div
                   id="dialog-bg-old"
+                  onDragOver={handleChatDragOver}
+                  onDragLeave={handleChatDragLeave}
+                  onDrop={handleChatDrop}
                   className="relative flex h-full w-full flex-col overflow-hidden bg-cover bg-center"
                 >
+                  {isDraggingOverChat && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md border-2 border-dashed border-purple-500 rounded-3xl pointer-events-none p-3">
+                      <Icon name="IC-image" className="w-16 h-16 fill-purple-400 mb-3" />
+                      <span className="text-lg font-bold text-zinc-200">Перетащите изображения для прикрепления</span>
+                    </div>
+                  )}
                   <div className="absolute inset-x-0 top-0 z-[20] flex items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent lg:from-transparent lg:via-transparent p-2">
                     <div className="flex w-23 shrink-0">
                       <button
@@ -2815,7 +2921,33 @@ export default function MessagesContent() {
                       <div className="bg-amber-500/25 text-amber-500 p-3 rounded-3xl shadow border border-zinc-600/30 text-center backdrop-blur-lg backdrop-saturate-200 backdrop-hue-200">Собеседник заблокирован</div>
                     </div>
                   ) : (
-                    <div ref={composerPaneRef} className="absolute bottom-0 inset-x-0 z-20 flex items-center justify-center gap-1.5 p-3 pt-0">
+                    <div ref={composerPaneRef} className="absolute bottom-0 inset-x-0 z-20 flex flex-col items-center justify-center p-3 pt-0">
+                      {attachedImages.length > 0 && (
+                        <div className="flex gap-3 overflow-x-auto w-full pb-23 -mb-20 px-3 bg-gradient-to-b from-transparent via-black to-black">
+                          {attachedImages.map((att) => (
+                            <div key={att.id} className="relative group shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-zinc-600/30">
+                              <img src={att.previewUrl} alt="Attached" className="w-full h-full object-cover" />
+                              {att.uploading && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                  <Icon name="IC-loader" className="w-6 h-6 animate-spin fill-purple-400" />
+                                </div>
+                              )}
+                              {att.error && (
+                                <div className="absolute inset-0 bg-red-900/60 flex items-center justify-center text-[10px] text-white font-bold">
+                                  Ошибка
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => removeAttachment(att.id)}
+                                className="cursor-pointer absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 hover:bg-red-500 text-white flex items-center justify-center text-xs duration-300 active:scale-95"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <form
                         onSubmit={handleMessageSend}
                         className="relative flex items-end min-h-[42px] w-full rounded-3xl border border-zinc-600/30 bg-zinc-900/20 p-1 transition-all duration-150"
@@ -2830,6 +2962,7 @@ export default function MessagesContent() {
                             setComposerText(event.target.value);
                             sendTypingSignal();
                           }}
+                          onPaste={handleChatPaste}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' && !event.shiftKey) {
                               event.preventDefault();

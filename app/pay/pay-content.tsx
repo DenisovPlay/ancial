@@ -528,7 +528,7 @@ export default function PayContent() {
         <div className="flex items-center justify-center gap-2">
           <img src="/img/zypo/logo-rounded.webp" alt="Zypo" className="w-8 rounded-xl" />
           <div className="flex flex-col items-start justify-center">
-            <img src="/img/zypo/letter.svg" className="h-4 mt-1" />
+            <img src="/img/zypo/letter.svg" alt="Zypo" className="h-4 mt-1" />
             <span className="text-zinc-300 text-xs">flow as one</span>
           </div>
         </div>

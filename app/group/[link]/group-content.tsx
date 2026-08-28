@@ -1019,7 +1019,11 @@ export default function GroupProfileContent({ link }: { link: string }) {
         time: 5,
       });
 
-      const uploadedUrl = await uploadImage(file);
+      const uploadedUrl = await uploadImage(file, {
+        type: field === 'img' ? 'avatar' : 'cover',
+        targetType: 'group',
+        targetId: groupData.id,
+      });
 
       const response = (await AncialAPI.updateGroupInfo({
         gid: String(groupData.id),

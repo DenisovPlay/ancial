@@ -349,7 +349,7 @@ export default function GroupInfoModal({
     showNote({ content: lang?.uploading_avatar || 'Загрузка аватарки...', type: 'info', time: 3 });
 
     try {
-      const imageUrl = await uploadImage(file);
+      const imageUrl = await uploadImage(file, { type: 'avatar', targetType: 'dialog', targetId: dialogId });
 
       if (!imageUrl) {
         throw new Error(lang?.error_uploading_photo || 'Ошибка загрузки фото');
@@ -383,7 +383,7 @@ export default function GroupInfoModal({
     setUploadingBackground(true);
     showNote({ content: lang?.['loading...'] || 'Загрузка...', type: 'info', time: 3 });
     try {
-      const uploadedUrl = await uploadImage(file);
+      const uploadedUrl = await uploadImage(file, { type: 'cover', targetType: 'dialog', targetId: dialogId });
       if (!uploadedUrl) throw new Error(lang?.error_uploading_image || 'Ошибка загрузки изображения');
 
       const result = await AncialAPI.updateDialogBackground<{ image_url?: string }>(dialogId, uploadedUrl);

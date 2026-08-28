@@ -32,6 +32,11 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   transpilePackages: ['gradualblur'],
   images: {
+    localPatterns: [
+      {
+        pathname: '/**',
+      },
+    ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -102,6 +107,14 @@ const nextConfig: NextConfig = {
         { // Proxy for API requests only when there is no local route handler
           source: '/api/:path*',
           destination: `${API_BASE}/api/:path*`,
+        },
+        { // Proxy for image.php
+          source: '/image.php',
+          destination: `${API_BASE}/image.php`,
+        },
+        { // Proxy for track.php
+          source: '/track.php',
+          destination: `${API_BASE}/track.php`,
         },
         { // Proxy for legacy engine endpoints still used by settings flows
           source: '/engine/:path*',
