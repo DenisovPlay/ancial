@@ -2921,9 +2921,9 @@ export default function MessagesContent() {
                       <div className="bg-amber-500/25 text-amber-500 p-3 rounded-3xl shadow border border-zinc-600/30 text-center backdrop-blur-lg backdrop-saturate-200 backdrop-hue-200">Собеседник заблокирован</div>
                     </div>
                   ) : (
-                    <div ref={composerPaneRef} className="absolute bottom-0 inset-x-0 z-20 flex flex-col items-center justify-center p-3 pt-0">
+                    <div ref={composerPaneRef} className="absolute bottom-0 inset-x-0 z-20 flex flex-col items-center justify-center pb-3 pt-0">
                       {attachedImages.length > 0 && (
-                        <div className="flex gap-3 overflow-x-auto w-full pb-23 -mb-20 px-3 bg-gradient-to-b from-transparent via-black to-black lg:via-transparent lg:to-transparent">
+                        <div className="flex gap-3 overflow-x-auto w-full pb-23 -mx-3 -mb-20 px-3 bg-gradient-to-b from-transparent via-black/90 to-black lg:via-transparent lg:to-transparent">
                           {attachedImages.map((att) => (
                             <div key={att.id} className="relative group shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-zinc-600/30">
                               <img src={att.previewUrl} alt="Attached" className="w-full h-full object-cover" />
@@ -2940,106 +2940,108 @@ export default function MessagesContent() {
                               <button
                                 type="button"
                                 onClick={() => removeAttachment(att.id)}
-                                className="cursor-pointer absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 hover:bg-red-500 text-white flex items-center justify-center text-xs duration-300 active:scale-95"
+                                className="cursor-pointer absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 hover:bg-red-500 text-white flex items-center justify-center duration-300 active:scale-95"
                               >
-                                ×
+                                <Icon name="IC-times" className="w-3.5 h-3.5 fill-white" />
                               </button>
                             </div>
                           ))}
                         </div>
                       )}
-                      <form
-                        onSubmit={handleMessageSend}
-                        className="relative flex items-end min-h-[42px] w-full rounded-3xl border border-zinc-600/30 bg-zinc-900/20 p-1 transition-all duration-150"
-                      >
-                        <div className="absolute inset-0 rounded-3xl backdrop-blur-md backdrop-saturate-200"></div>
-
-                        <textarea
-                          ref={messageInputRef}
-                          rows={1}
-                          value={composerText}
-                          onChange={(event) => {
-                            setComposerText(event.target.value);
-                            sendTypingSignal();
-                          }}
-                          onPaste={handleChatPaste}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' && !event.shiftKey) {
-                              event.preventDefault();
-                              if (composerText.trim() && selectedDialog && canUseComposer) {
-                                void handleMessageSend(event);
-                              }
-                            }
-                          }}
-                          placeholder={composerPlaceholder}
-                          disabled={!selectedDialog || !canUseComposer}
-                          className="relative z-[1] w-full h-[40px] max-h-32 min-h-[40px] resize-none bg-transparent py-2 pl-3 pr-1 text-white placeholder-zinc-600/80 focus:border-0 focus:outline-none focus:ring-0 leading-6 scrollbar-none"
-                        />
-
-                        <input
-                          ref={imageInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleMessageImageSelect}
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => imageInputRef.current?.click()}
-                          disabled={!selectedDialog || !canUseComposer || uploadingMessageImage}
-                          className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 mb-[1px]"
+                      <div className="px-3 flex w-full">
+                        <form
+                          onSubmit={handleMessageSend}
+                          className="relative flex items-end min-h-[42px] w-full rounded-3xl border border-zinc-600/30 bg-zinc-900/20 p-1 transition-all duration-150"
                         >
-                          {uploadingMessageImage ? (
-                            <Icon name="IC-loader" className="h-6 w-6 animate-spin fill-zinc-500" />
-                          ) : (
-                            <Icon name="IC-image" className="h-6 w-6 fill-zinc-400 group-hover:fill-zinc-300 duration-300" />
-                          )}
-                        </button>
+                          <div className="absolute inset-0 rounded-3xl backdrop-blur-md backdrop-saturate-200"></div>
 
-                        {!selectedDialog || !canUseComposer ? (
+                          <textarea
+                            ref={messageInputRef}
+                            rows={1}
+                            value={composerText}
+                            onChange={(event) => {
+                              setComposerText(event.target.value);
+                              sendTypingSignal();
+                            }}
+                            onPaste={handleChatPaste}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' && !event.shiftKey) {
+                                event.preventDefault();
+                                if (composerText.trim() && selectedDialog && canUseComposer) {
+                                  void handleMessageSend(event);
+                                }
+                              }
+                            }}
+                            placeholder={composerPlaceholder}
+                            disabled={!selectedDialog || !canUseComposer}
+                            className="relative z-[1] w-full h-[40px] max-h-32 min-h-[40px] resize-none bg-transparent py-2 pl-3 pr-1 text-white placeholder-zinc-600/80 focus:border-0 focus:outline-none focus:ring-0 leading-6 scrollbar-none"
+                          />
+
+                          <input
+                            ref={imageInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleMessageImageSelect}
+                          />
+
                           <button
                             type="button"
-                            disabled
-                            className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-not-allowed items-center justify-center rounded-full opacity-50 mb-[1px]"
+                            onClick={() => imageInputRef.current?.click()}
+                            disabled={!selectedDialog || !canUseComposer || uploadingMessageImage}
+                            className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-95 mb-[1px]"
                           >
-                            <Icon name="IC-emoji" className="h-6 w-6 fill-zinc-400 group-hover:fill-zinc-300 duration-300" />
+                            {uploadingMessageImage ? (
+                              <Icon name="IC-loader" className="h-6 w-6 animate-spin fill-zinc-500" />
+                            ) : (
+                              <Icon name="IC-image" className="h-6 w-6 fill-zinc-400 group-hover:fill-zinc-300 duration-300" />
+                            )}
                           </button>
-                        ) : (
-                          <Dropdown
-                            closeOnChildClick={false}
-                            open={stickerDropdownOpen}
-                            onOpenChange={setStickerDropdownOpen}
-                            position="top"
-                            align="end"
-                            triggerSize="sm"
-                            width="auto"
-                            menuClassName="w-[17rem] overflow-hidden !p-0 text-zinc-300"
-                            triggerAriaLabel={lang?.stickers || 'Стикеры'}
-                            triggerClassName="group relative z-[1] h-10 w-10 rounded-full hover:bg-zinc-700 mb-[1px]"
-                            triggerNode={<Icon name="IC-emoji" className="h-6 w-6 fill-zinc-400 group-hover:fill-zinc-300 duration-300" />}
-                          >
-                            <StickerPickerDropdownContent
-                              isOpen={stickerDropdownOpen}
-                              isSending={sendingMessage}
-                              onSendNativeSticker={(stickerName) => {
-                                void handleStickerSend(stickerName);
-                              }}
-                              onSendSevenTvSticker={(sticker) => {
-                                void handleSevenTvStickerSend(sticker);
-                              }}
-                            />
-                          </Dropdown>
-                        )}
 
-                        <button
-                          type="submit"
-                          disabled={!selectedDialog || !canUseComposer}
-                          className="relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-purple-500 disabled:cursor-not-allowed disabled:bg-zinc-500/50 disabled:opacity-70 active:scale-95 mb-[1px]"
-                        >
-                          <Icon name="IC-send" className="h-8 w-8 fill-white" />
-                        </button>
-                      </form>
+                          {!selectedDialog || !canUseComposer ? (
+                            <button
+                              type="button"
+                              disabled
+                              className="group relative z-[1] flex h-10 w-10 shrink-0 cursor-not-allowed items-center justify-center rounded-full opacity-50 mb-[1px]"
+                            >
+                              <Icon name="IC-emoji" className="h-6 w-6 fill-zinc-400 group-hover:fill-zinc-300 duration-300" />
+                            </button>
+                          ) : (
+                            <Dropdown
+                              closeOnChildClick={false}
+                              open={stickerDropdownOpen}
+                              onOpenChange={setStickerDropdownOpen}
+                              position="top"
+                              align="end"
+                              triggerSize="sm"
+                              width="auto"
+                              menuClassName="w-[17rem] overflow-hidden !p-0 text-zinc-300"
+                              triggerAriaLabel={lang?.stickers || 'Стикеры'}
+                              triggerClassName="group relative z-[1] h-10 w-10 rounded-full hover:bg-zinc-700 mb-[1px]"
+                              triggerNode={<Icon name="IC-emoji" className="h-6 w-6 fill-zinc-400 group-hover:fill-zinc-300 duration-300" />}
+                            >
+                              <StickerPickerDropdownContent
+                                isOpen={stickerDropdownOpen}
+                                isSending={sendingMessage}
+                                onSendNativeSticker={(stickerName) => {
+                                  void handleStickerSend(stickerName);
+                                }}
+                                onSendSevenTvSticker={(sticker) => {
+                                  void handleSevenTvStickerSend(sticker);
+                                }}
+                              />
+                            </Dropdown>
+                          )}
+
+                          <button
+                            type="submit"
+                            disabled={!selectedDialog || !canUseComposer}
+                            className="relative z-[1] flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-purple-500 disabled:cursor-not-allowed disabled:bg-zinc-500/50 disabled:opacity-70 active:scale-95 mb-[1px]"
+                          >
+                            <Icon name="IC-send" className="h-8 w-8 fill-white" />
+                          </button>
+                        </form>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -735,7 +735,11 @@ export function formatDialogPreview(messageValue: string | null | undefined, lan
   }
 
   if (extractMessageImages(bodyText).length > 0) {
-    return `${prefix}${lang?.sticker || 'Стикер'}`;
+    return `${prefix}${lang?.photo || 'Фото'}`;
+  }
+
+  if (prefix && !bodyText.trim()) {
+    return `${prefix}${lang?.photo || 'Фото'}`;
   }
 
   return '';
