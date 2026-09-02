@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { PostAuthor, PostData, PostImage, PostWidget } from '../../components/posts-renderer';
@@ -26,6 +26,7 @@ import {
   makeId,
   safeRevokeObjectUrl,
   uploadImage,
+  uploadPostImageFiles,
 } from '../editor-shared';
 
 
@@ -392,74 +393,24 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
     });
   };
 
+  const handleUploadImageFiles = useCallback(
+    async (files: File[]) => {
+      await uploadPostImageFiles({
+        files,
+        imagesRef,
+        setImages,
+        showNote,
+        strings,
+      });
+    },
+    [showNote, strings],
+  );
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-
     if (!file) return;
-
-    if (images.length >= MAX_IMAGES) {
-      showNote({
-        content: strings.max3photos,
-        type: 'info',
-        time: 8,
-      });
-      event.target.value = '';
-      return;
-    }
-
-    const draftId = makeId();
-    const previewUrl = URL.createObjectURL(file);
-
-    setImages((currentImages) => [
-      ...currentImages,
-      {
-        id: draftId,
-        previewUrl,
-        status: 'uploading',
-      },
-    ]);
-
-    showNote({
-      content: strings.loading,
-      type: 'info',
-      time: 5,
-    });
-
-    try {
-      const uploadedUrl = await uploadImage(file, { type: 'post', targetType: 'post' });
-
-      safeRevokeObjectUrl(previewUrl);
-
-      setImages((currentImages) =>
-        currentImages.map((currentImage) =>
-          currentImage.id === draftId
-            ? { ...currentImage, status: 'uploaded', uploadedUrl }
-            : currentImage,
-        ),
-      );
-
-      showNote({
-        content: strings.uploadedcompl,
-        type: 'success',
-        time: 5,
-      });
-    } catch (nextError) {
-      console.error('Image upload failed during edit', nextError);
-
-      URL.revokeObjectURL(previewUrl);
-
-      setImages((currentImages) =>
-        currentImages.filter((currentImage) => currentImage.id !== draftId),
-      );
-
-      showNote({
-        content: strings.somethingwrong,
-        type: 'error',
-        time: 5,
-      });
-    } finally {
-      event.target.value = '';
-    }
+    await handleUploadImageFiles([file]);
+    event.target.value = '';
   };
 
   const handleSubmit = async () => {
@@ -610,6 +561,7 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
       isContentOverLimit={isContentOverLimit}
       handleSubmit={handleSubmit}
       handleOpenFilePicker={handleOpenFilePicker}
+      onUploadImages={handleUploadImageFiles}
       setIsPollModalOpen={setIsPollModalOpen}
       setIsMusicModalOpen={setIsMusicModalOpen}
       setIsMediaModalOpen={setIsMediaModalOpen}

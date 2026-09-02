@@ -23,6 +23,7 @@ import {
   makeId,
   safeRevokeObjectUrl,
   uploadImage,
+  uploadPostImageFiles,
 } from '../editor-shared';
 
 type AvailableAuthor = {
@@ -291,74 +292,24 @@ export default function CreatePostContent() {
     });
   };
 
+  const handleUploadImageFiles = useCallback(
+    async (files: File[]) => {
+      await uploadPostImageFiles({
+        files,
+        imagesRef,
+        setImages,
+        showNote,
+        strings,
+      });
+    },
+    [showNote, strings],
+  );
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-
     if (!file) return;
-
-    if (images.length >= MAX_IMAGES) {
-      showNote({
-        content: strings.max3photos,
-        type: 'info',
-        time: 8,
-      });
-      event.target.value = '';
-      return;
-    }
-
-    const draftId = makeId();
-    const previewUrl = URL.createObjectURL(file);
-
-    setImages((currentImages) => [
-      ...currentImages,
-      {
-        id: draftId,
-        previewUrl,
-        status: 'uploading',
-      },
-    ]);
-
-    showNote({
-      content: strings.loading,
-      type: 'info',
-      time: 5,
-    });
-
-    try {
-      const uploadedUrl = await uploadImage(file, { type: 'post', targetType: 'post' });
-
-      safeRevokeObjectUrl(previewUrl);
-
-      setImages((currentImages) =>
-        currentImages.map((currentImage) =>
-          currentImage.id === draftId
-            ? { ...currentImage, status: 'uploaded', uploadedUrl }
-            : currentImage,
-        ),
-      );
-
-      showNote({
-        content: strings.uploadedcompl,
-        type: 'success',
-        time: 5,
-      });
-    } catch (error) {
-      console.error('Image upload failed', error);
-
-      URL.revokeObjectURL(previewUrl);
-
-      setImages((currentImages) =>
-        currentImages.filter((currentImage) => currentImage.id !== draftId),
-      );
-
-      showNote({
-        content: strings.somethingwrong,
-        type: 'error',
-        time: 5,
-      });
-    } finally {
-      event.target.value = '';
-    }
+    await handleUploadImageFiles([file]);
+    event.target.value = '';
   };
 
   const handleAddMusicWidget = (draft: MusicWidgetDraft) => {
@@ -477,6 +428,7 @@ export default function CreatePostContent() {
       isContentOverLimit={isContentOverLimit}
       handleSubmit={handleSubmit}
       handleOpenFilePicker={handleOpenFilePicker}
+      onUploadImages={handleUploadImageFiles}
       setIsPollModalOpen={setIsPollModalOpen}
       setIsMusicModalOpen={setIsMusicModalOpen}
       setIsMediaModalOpen={setIsMediaModalOpen}

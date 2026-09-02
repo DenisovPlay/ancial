@@ -21,6 +21,7 @@ type RichTextEditorProps = {
   editorClassName?: string;
   scrollPaddingBottom?: string;
   onCarouselOpen?: () => void;
+  onImagePaste?: (files: File[]) => void;
 };
 
 type ActiveFormats = {
@@ -280,7 +281,7 @@ function Divider() {
   return <div className="w-[1px] h-4 bg-zinc-600/50 mx-0.5 shrink-0" />;
 }
 
-export default function RichTextEditor({ value, onChange, placeholder, className, strings, editorClassName, scrollPaddingBottom, onCarouselOpen }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder, className, strings, editorClassName, scrollPaddingBottom, onCarouselOpen, onImagePaste }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const isUpdatingRef = useRef(false);
   // Undo-стек для операций удаления блоков через Notion-тулбар
@@ -1048,41 +1049,83 @@ export default function RichTextEditor({ value, onChange, placeholder, className
   };
 
   const handleEditorPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
-    const files = await extractImagesFromClipboard(e);
-    if (!files.length) return;
+    const syncImageItems = Array.from(e.clipboardData?.items ?? []).filter(
+      (item) => item.kind === 'file' && item.type.startsWith('image/')
+    );
+    const syncFileImages = Array.from(e.clipboardData?.files ?? []).filter(
+      (f) => f.type.startsWith('image/')
+    );
 
-    e.preventDefault();
-    for (const file of files) {
-      try {
-        const url = await uploadImage(file, { type: 'post' });
-        if (url) {
-          execCmd(
-            'insertHTML',
-            `<img src="${url}" data-src="${url}" alt="" class="max-h-96 rounded-3xl object-contain my-3" />`
-          );
+    if (syncImageItems.length > 0 || syncFileImages.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      const files = await extractImagesFromClipboard(e);
+      if (!files.length) return;
+
+      if (onImagePaste) {
+        onImagePaste(files);
+        return;
+      }
+
+      for (const file of files) {
+        try {
+          const url = await uploadImage(file, { type: 'post' });
+          if (url) {
+            execCmd(
+              'insertHTML',
+              `<img src="${url}" data-src="${url}" alt="" class="max-h-96 rounded-3xl object-contain my-3" />`
+            );
+          }
+        } catch (err) {
+          console.error('Failed to upload pasted image', err);
         }
-      } catch (err) {
-        console.error('Failed to upload pasted image', err);
+      }
+      return;
+    }
+
+    const files = await extractImagesFromClipboard(e);
+    if (files.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (onImagePaste) {
+        onImagePaste(files);
+        return;
+      }
+      for (const file of files) {
+        try {
+          const url = await uploadImage(file, { type: 'post' });
+          if (url) {
+            execCmd(
+              'insertHTML',
+              `<img src="${url}" data-src="${url}" alt="" class="max-h-96 rounded-3xl object-contain my-3" />`
+            );
+          }
+        } catch (err) {
+          console.error('Failed to upload pasted image', err);
+        }
       }
     }
   };
 
   const handleEditorDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    const files = e.dataTransfer?.files;
-    if (!files || !files.length) return;
+    const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
+    if (!files.length) return;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.type.startsWith('image/')) {
-        e.preventDefault();
-        try {
-          const url = await uploadImage(file, { type: 'post' });
-          if (url) {
-            execCmd('insertHTML', `<img src="${url}" data-src="${url}" alt="" class="max-h-96 rounded-3xl object-contain my-3" />`);
-          }
-        } catch (err) {
-          console.error('Failed to upload dropped image', err);
+    e.preventDefault();
+    e.stopPropagation();
+    if (onImagePaste) {
+      onImagePaste(files);
+      return;
+    }
+
+    for (const file of files) {
+      try {
+        const url = await uploadImage(file, { type: 'post' });
+        if (url) {
+          execCmd('insertHTML', `<img src="${url}" data-src="${url}" alt="" class="max-h-96 rounded-3xl object-contain my-3" />`);
         }
+      } catch (err) {
+        console.error('Failed to upload dropped image', err);
       }
     }
   };

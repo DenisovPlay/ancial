@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Dropdown } from '../components/navigation';
 import CreatePostPreview from './create/create-post-preview';
 import { getVisibleLength } from '../components/post-parser';
+import { extractImagesFromClipboard } from '../lib/clipboard-image';
 
 const RichTextEditor = dynamic(() => import('../components/rich-text-editor'), {
     ssr: false,
@@ -54,6 +55,7 @@ export type FeedEditorUIProps = {
     isContentOverLimit?: boolean;
     handleSubmit: () => void;
     handleOpenFilePicker: () => void;
+    onUploadImages?: (files: File[]) => void | Promise<void>;
     setIsPollModalOpen: (open: boolean) => void;
     setIsMusicModalOpen: (open: boolean) => void;
     setIsMediaModalOpen: (open: boolean) => void;
@@ -90,6 +92,7 @@ export function FeedEditorUI({
     isContentOverLimit = false,
     handleSubmit,
     handleOpenFilePicker,
+    onUploadImages,
     setIsPollModalOpen,
     setIsMusicModalOpen,
     setIsMediaModalOpen,
@@ -105,6 +108,46 @@ export function FeedEditorUI({
     const visibleLength = getVisibleLength(content);
     const isOverLimit = visibleLength > VISIBLE_CHAR_LIMIT;
     const isNearLimit = visibleLength > VISIBLE_CHAR_LIMIT - 300;
+
+    useEffect(() => {
+        if (activeTab !== 'write' || !onUploadImages) return;
+
+        const handleWindowPaste = async (event: ClipboardEvent) => {
+            if (event.defaultPrevented) return;
+
+            const target = event.target as HTMLElement | null;
+            if (target?.closest('[role="dialog"], .modal-content, [data-modal]')) {
+                return;
+            }
+
+            const syncImageItems = Array.from(event.clipboardData?.items ?? []).filter(
+                (item) => item.kind === 'file' && item.type.startsWith('image/')
+            );
+            const syncFileImages = Array.from(event.clipboardData?.files ?? []).filter(
+                (f) => f.type.startsWith('image/')
+            );
+
+            if (syncImageItems.length > 0 || syncFileImages.length > 0) {
+                event.preventDefault();
+                const files = await extractImagesFromClipboard(event);
+                if (files.length > 0) {
+                    void onUploadImages(files);
+                }
+                return;
+            }
+
+            const files = await extractImagesFromClipboard(event);
+            if (files.length > 0) {
+                event.preventDefault();
+                void onUploadImages(files);
+            }
+        };
+
+        window.addEventListener('paste', handleWindowPaste);
+        return () => {
+            window.removeEventListener('paste', handleWindowPaste);
+        };
+    }, [activeTab, onUploadImages]);
 
     return (
         <div className="flex flex-col jusitify-center items-center gap-3 py-3">
@@ -170,6 +213,41 @@ export function FeedEditorUI({
                             onSubmit={(event) => {
                                 event.preventDefault();
                             }}
+                            onDragOver={(event) => {
+                                if (event.dataTransfer?.types?.includes('Files')) {
+                                    event.preventDefault();
+                                }
+                            }}
+                            onDrop={async (event) => {
+                                const files = Array.from(event.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
+                                if (files.length > 0 && onUploadImages) {
+                                    event.preventDefault();
+                                    void onUploadImages(files);
+                                }
+                            }}
+                            onPaste={async (event) => {
+                                const syncImageItems = Array.from(event.clipboardData?.items ?? []).filter(
+                                    (item) => item.kind === 'file' && item.type.startsWith('image/')
+                                );
+                                const syncFileImages = Array.from(event.clipboardData?.files ?? []).filter(
+                                    (f) => f.type.startsWith('image/')
+                                );
+
+                                if (syncImageItems.length > 0 || syncFileImages.length > 0) {
+                                    event.preventDefault();
+                                    const files = await extractImagesFromClipboard(event);
+                                    if (files.length > 0 && onUploadImages) {
+                                        void onUploadImages(files);
+                                    }
+                                    return;
+                                }
+
+                                const files = await extractImagesFromClipboard(event);
+                                if (files.length > 0 && onUploadImages) {
+                                    event.preventDefault();
+                                    void onUploadImages(files);
+                                }
+                            }}
                             className="border border-zinc-600/30 duration-300 bg-zinc-900 shadow rounded-3xl text-zinc-700 flex flex-col relative overflow-hidden"
                         >
                             <input
@@ -188,6 +266,7 @@ export function FeedEditorUI({
                                 onChange={setContent}
                                 placeholder={strings.postcontent}
                                 strings={strings}
+                                onImagePaste={onUploadImages}
                                 editorClassName={
                                     images.length > 0 && widgets.length > 0
                                         ? 'pb-[16rem] min-h-[30rem]'

@@ -1,3 +1,5 @@
+import type React from 'react';
+
 export type DraftImage = {
   id: string;
   previewUrl: string;
@@ -142,4 +144,89 @@ export function insertStickerIntoEditor(
   editor.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+export async function uploadPostImageFiles({
+  files,
+  imagesRef,
+  setImages,
+  showNote,
+  strings,
+}: {
+  files: File[];
+  imagesRef: { current: DraftImage[] };
+  setImages: React.Dispatch<React.SetStateAction<DraftImage[]>>;
+  showNote: (params: { content: string; type: 'info' | 'success' | 'error'; time?: number }) => void;
+  strings: Record<string, string>;
+}): Promise<void> {
+  if (!files || files.length === 0) return;
 
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+
+    if (imagesRef.current.length >= MAX_IMAGES) {
+      showNote({
+        content: strings.max3photos,
+        type: 'info',
+        time: 8,
+      });
+      break;
+    }
+
+    const draftId = makeId();
+    const previewUrl = URL.createObjectURL(file);
+
+    const draftImage: DraftImage = {
+      id: draftId,
+      previewUrl,
+      status: 'uploading',
+    };
+
+    imagesRef.current = [...imagesRef.current, draftImage];
+    setImages((currentImages) => [...currentImages, draftImage]);
+
+    showNote({
+      content: strings.loading,
+      type: 'info',
+      time: 5,
+    });
+
+    try {
+      const uploadedUrl = await uploadImage(file, { type: 'post', targetType: 'post' });
+
+      safeRevokeObjectUrl(previewUrl);
+
+      imagesRef.current = imagesRef.current.map((currentImage) =>
+        currentImage.id === draftId
+          ? { ...currentImage, status: 'uploaded', uploadedUrl }
+          : currentImage,
+      );
+      setImages((currentImages) =>
+        currentImages.map((currentImage) =>
+          currentImage.id === draftId
+            ? { ...currentImage, status: 'uploaded', uploadedUrl }
+            : currentImage,
+        ),
+      );
+
+      showNote({
+        content: strings.uploadedcompl,
+        type: 'success',
+        time: 5,
+      });
+    } catch (error) {
+      console.error('Image upload failed', error);
+
+      safeRevokeObjectUrl(previewUrl);
+
+      imagesRef.current = imagesRef.current.filter((currentImage) => currentImage.id !== draftId);
+      setImages((currentImages) =>
+        currentImages.filter((currentImage) => currentImage.id !== draftId),
+      );
+
+      showNote({
+        content: strings.somethingwrong,
+        type: 'error',
+        time: 5,
+      });
+    }
+  }
+}
