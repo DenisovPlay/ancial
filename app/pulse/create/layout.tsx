@@ -115,7 +115,7 @@ export default function PulseCreateLayout({ children }: { children: React.ReactN
       </div>
 
       <div className="flex flex-col w-full gap-3 duration-300 max-w-screen-2xl">
-        <div className="relative w-full max-w-3xl sticky top-0 py-3 -my-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40 flex items-center">
+        <div className="relative w-full sticky top-0 py-3 -my-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40 flex items-center">
           <div
             ref={leftGradRef}
             className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
