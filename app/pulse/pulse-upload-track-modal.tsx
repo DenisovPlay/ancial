@@ -100,7 +100,7 @@ async function uploadAudioFile(file: File) {
   formData.append('file', file);
 
   const response = await AncialAPI.pulseManagement<{ id?: string | number; src?: string; message?: string }>('file', 'upload', formData);
-  
+
   if (response.message === 'Failure' || !response.id) {
     throw new Error('Upload failed');
   }
@@ -494,7 +494,7 @@ export default function PulseUploadTrackModal({
               <option value="" disabled>{lang?.tracklangD || 'Несколько языков - выберите преобладающий. Нет языка - выберите английский.'}</option>
             </PulseModalSelectField>
             <PulseModalSelectField
-              label={lang?.trackexp || 'Нецензурная лексика'}
+              label={lang?.trackexp || 'Плохие слова'}
               onChange={(event) => setExplicit(event.target.value)}
               value={explicit}
             >

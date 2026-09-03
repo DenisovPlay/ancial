@@ -38,13 +38,14 @@ const nextConfig: NextConfig = {
       },
     ],
     dangerouslyAllowSVG: true,
+    dangerouslyAllowLocalIP: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: IMAGE_HOSTS.flatMap(({ hostname, insecure }) =>
       (insecure ? (['https', 'http'] as const) : (['https'] as const)).map((protocol) => ({
         protocol,
         hostname,
-        pathname: '**',
+        pathname: '/**',
       })),
     ),
   },

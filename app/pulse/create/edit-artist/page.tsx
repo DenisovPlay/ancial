@@ -6,6 +6,7 @@ import { uploadImage } from '../../../lib/upload';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ActionIcon } from '../../pulse-components';
 
 function EditArtistContent() {
   const { lang, isAuthenticated } = useAuth();
@@ -17,7 +18,7 @@ function EditArtistContent() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   const [name, setName] = useState('');
   const [socLinks, setSocLinks] = useState('');
   const [desk, setDesk] = useState('');
@@ -39,7 +40,6 @@ function EditArtistContent() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      /** Артист из pulseManagement('artist', 'list'). */
       interface PulseArtistRow {
         id?: number | string;
         name?: string;
@@ -63,7 +63,6 @@ function EditArtistContent() {
           })
           .finally(() => setLoading(false));
       } else {
-        // Нет id — снимаем лоадер сразу, начальное useState(true) эквивалентно.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoading(false);
       }
@@ -92,22 +91,31 @@ function EditArtistContent() {
   const saveArtist = (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    
+
     const action = id > 0 ? 'update' : 'create';
     const data = {
       id: id > 0 ? id : undefined,
-      name,
-      soc_links: socLinks,
-      desk,
-      img
+      name: name.trim(),
+      soc_links: socLinks.trim(),
+      desk: desk.trim(),
+      img,
     };
 
     AncialAPI.pulseManagement('artist', action, data)
       .then(() => {
+        showNote({
+          content: id > 0 ? 'Профиль артиста обновлен!' : 'Профиль артиста создан!',
+          type: 'success',
+          time: 3,
+        });
         router.push('/pulse/create/artists');
       })
       .catch((err) => {
-        showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.errorhappend || 'Произошла ошибка'), type: 'error', time: 5 });
+        showNote({
+          content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.errorhappend || 'Произошла ошибка'),
+          type: 'error',
+          time: 5,
+        });
         setSaving(false);
       });
   };
@@ -116,55 +124,99 @@ function EditArtistContent() {
 
   return (
     <div className="w-full flex flex-col gap-3">
-      <h5 className="text-2xl text-zinc-200 w-full">{id > 0 ? 'Редактировать артиста' : 'Новый артист'}</h5>
-      
-      {loading ? (
-        <div className="p-5 text-center text-zinc-500">Загрузка...</div>
-      ) : (
-        <form onSubmit={saveArtist} className="flex flex-col gap-4 w-full">
-          <div className="w-full flex flex-col items-center justify-center">
-            <input type="file" id="artistcover" accept="image/*" onChange={handleImageUpload} className="hidden" />
-            <label htmlFor="artistcover" className="w-64 h-64 bg-zinc-800/70 border border-zinc-600/30 rounded-3xl flex flex-col items-center justify-center gap-3 shadow cursor-pointer duration-300 active:scale-95 hover:bg-zinc-700/70 overflow-hidden relative group">
-              <img id="image-preview" className={`w-64 h-64 object-cover absolute top-0 left-0 ${img ? '' : 'hidden'}`} src={img} alt="Preview" />
-              
-              <div id="upload-placeholder" className={`${img ? 'hidden' : 'flex flex-col items-center justify-center'}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                </svg>
-                <span className="text-zinc-500 text-sm">Загрузить фото</span>
-              </div>
+      <h1 className="text-2xl font-bold text-zinc-100">
+        {id > 0 ? 'Редактировать артиста' : lang?.creators_new_artist || 'Новый артист'}
+      </h1>
 
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300">
-                <span className="text-white text-sm font-medium">Нажмите, чтобы обновить фото</span>
-              </div>
+      {loading ? (
+        <div className="flex w-full items-center justify-center p-6">
+          <ActionIcon className="h-8 w-8 animate-spin fill-zinc-500" name="IC-loader" />
+        </div>
+      ) : (
+        <form onSubmit={saveArtist} className="flex flex-col gap-3 w-full">
+          <div className="flex flex-col items-center justify-center py-3">
+            <input type="file" id="artistcover" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            <label
+              htmlFor="artistcover"
+              className="w-44 h-44 rounded-full bg-zinc-800/70 border border-zinc-600/30 flex flex-col items-center justify-center gap-2 shadow cursor-pointer duration-300 active:scale-95 hover:bg-zinc-700/70 overflow-hidden relative group"
+            >
+              {img ? (
+                <>
+                  <img className="w-full h-full object-cover" src={img} alt="Preview" />
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300 backdrop-blur-xs">
+                    <span className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-600/30">
+                      Заменить фото
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 text-center p-3">
+                  <div className="p-3 rounded-full bg-zinc-700/60 text-zinc-300">
+                    <ActionIcon className="w-8 h-8 fill-current" name="IC-user" />
+                  </div>
+                  <span className="text-xs font-semibold text-zinc-300">Фото артиста</span>
+                </div>
+              )}
             </label>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <div className="flex flex-col w-full -mt-1.5">
-              <span className="text-zinc-400 pl-4 z-20 text-sm">Имя артиста</span>
-              <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
-                <input required type="text" value={name} onChange={e => setName(e.target.value)} className="bg-transparent w-full focus:ring-0 focus:outline-none pl-2 text-zinc-200 placeholder-zinc-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex w-full flex-col">
+              <span className="z-20 pl-4 text-zinc-400">Имя артиста *</span>
+              <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
+                <input
+                  required
+                  type="text"
+                  autoComplete="off"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Псевдоним или сценическое имя"
+                  className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
+                />
               </div>
             </div>
-            
-            <div className="flex flex-col w-full -mt-1.5">
-              <span className="text-zinc-400 pl-4 z-20 text-sm">Соц. сети (через запятую)</span>
-              <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
-                <input type="text" placeholder="vk.com/..., t.me/..." value={socLinks} onChange={e => setSocLinks(e.target.value)} className="bg-transparent w-full focus:ring-0 focus:outline-none pl-2 text-zinc-200 placeholder-zinc-600" />
+
+            <div className="flex w-full flex-col">
+              <span className="z-20 pl-4 text-zinc-400">Соц. сети (через запятую)</span>
+              <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder="vk.com/..., t.me/..."
+                  value={socLinks}
+                  onChange={(e) => setSocLinks(e.target.value)}
+                  className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
+                />
               </div>
             </div>
-            
-            <div className="flex flex-col w-full col-span-1 lg:col-span-2 -mt-1.5">
-              <span className="text-zinc-400 pl-4 z-20 text-sm">Описание / Биография</span>
-              <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-32 pt-4 -mt-3 z-10 border border-zinc-600/30">
-                <textarea value={desk} onChange={e => setDesk(e.target.value)} className="bg-transparent w-full h-full focus:ring-0 focus:outline-none pl-2 text-zinc-200 placeholder-zinc-600 resize-none"></textarea>
+
+            <div className="col-span-1 sm:col-span-2 flex w-full flex-col">
+              <span className="z-20 pl-4 text-zinc-400">Описание / Биография</span>
+              <div className="-mt-3 z-10 flex min-h-[100px] w-full rounded-3xl border border-zinc-600/30 bg-zinc-800/90 p-3 pt-4">
+                <textarea
+                  rows={4}
+                  value={desk}
+                  onChange={(e) => setDesk(e.target.value)}
+                  placeholder="Расскажите слушателям о себе, стиле музыки и творческом пути..."
+                  className="w-full bg-transparent text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0 text-sm resize-none"
+                />
               </div>
             </div>
           </div>
-          
-          <button type="submit" disabled={saving} className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full w-full disabled:opacity-50">
-            Сохранить
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full px-4 py-2.5 rounded-full bg-white text-black font-semibold text-base hover:bg-zinc-200 active:scale-95 duration-300 shadow cursor-pointer disabled:opacity-50 mt-3 flex items-center justify-center gap-2"
+          >
+            {saving ? (
+              <>
+                <ActionIcon className="h-5 w-5 animate-spin fill-black" name="IC-loader" />
+                <span>Сохранение...</span>
+              </>
+            ) : (
+              <span>{id > 0 ? 'Сохранить изменения' : 'Создать артиста'}</span>
+            )}
           </button>
         </form>
       )}
@@ -174,11 +226,13 @@ function EditArtistContent() {
 
 export default function PulseCreateEditArtistPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center p-8">
-        <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex w-full items-center justify-center p-6">
+          <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        </div>
+      }
+    >
       <EditArtistContent />
     </Suspense>
   );

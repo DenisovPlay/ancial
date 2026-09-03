@@ -2314,7 +2314,7 @@ export default function MessagesContent() {
         }
       ></div>
 
-      <div className="flex h-[100dvh] w-full items-center justify-center">
+      <div className="flex lg:h-[100dvh] w-full items-center justify-center">
         <div
           className={cn(
             'messages-route flex h-full w-full items-center justify-center bg-center bg-cover',
@@ -2363,7 +2363,7 @@ export default function MessagesContent() {
                     </div>
                   </div>
 
-                  <div className="relative flex h-full flex-col min-h-0 flex-1">
+                  <div className="md:bg-zinc-900 md:rounded-3xl md:border md:border-zinc-600/30 md:overflow-hidden lg:bg-transparent lg:rounded-none lg:border-0 lg:border-transparent relative flex h-full flex-col min-h-0 flex-1">
                     <div className="flex h-full flex-col min-h-0 flex-1">
                       {dialogsLoading && dialogs.length === 0 ? (
                         <div className="flex flex-col w-full">
