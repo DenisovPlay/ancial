@@ -2314,7 +2314,12 @@ export default function MessagesContent() {
         }
       ></div>
 
-      <div className="flex lg:h-[100dvh] w-full items-center justify-center">
+      <div
+        className={cn(
+          'flex lg:h-[100dvh] w-full items-center justify-center',
+          routeHash && 'h-[100dvh]',
+        )}
+      >
         <div
           className={cn(
             'messages-route flex h-full w-full items-center justify-center bg-center bg-cover',
