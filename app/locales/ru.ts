@@ -457,6 +457,7 @@ export const ru: Record<string, string> = {
     "qrscanner": "QR-Сканер",
     "in": "В",
     "username": "Логин",
+    "login_or_email_phone": "Логин, почта или телефон",
     "password": "Пароль",
     "loghello": "Мне нужен твой логин, пароль и мотоцикл",
     "logwait": "можно войти через Zypo",

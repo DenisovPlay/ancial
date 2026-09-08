@@ -457,6 +457,7 @@ export const be: Record<string, string> = {
     "qrscanner": "QR-Сканер",
     "in": "У",
     "username": "Лагін",
+    "login_or_email_phone": "Лагін, пошта ці тэлефон",
     "password": "Пароль",
     "loghello": "Мне патрэбны твой лагін, пароль і матацыкл",
     "logwait": "можна ўвайсці праз Zypo",

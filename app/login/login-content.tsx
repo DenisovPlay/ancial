@@ -151,7 +151,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="flex flex-col gap-3 justify-center items-center w-full">
               <div className="flex items-center bg-zinc-900 rounded-3xl rounded-b-none border-t border-x border-zinc-600/30 w-full shadow">
                 <input
-                  placeholder={lang?.username || "Имя пользователя"}
+                  placeholder={lang?.login_or_email_phone || "Логин, почта или телефон"}
                   type="text"
                   value={login}
                   onChange={(e) => setLogin(e.target.value)}

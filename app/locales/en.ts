@@ -427,6 +427,7 @@ export const en: Record<string, string> = {
   "in": "In",
   "login": "Login",
   "username": "Username",
+  "login_or_email_phone": "Username, email or phone",
   "password": "Password",
   "loghello": "I need your login, password and bike",
   "logwait": "you can login via Zypo",
