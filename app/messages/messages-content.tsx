@@ -23,7 +23,7 @@ import { usePulsePlayer } from '../context/PulsePlayerContext';
 import AccountName from '../components/account-name';
 import ImageViewerModal from '../components/image-viewer-modal';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
-import { uploadImage, uploadImageDetailed } from '../lib/upload';
+import { deleteUploadedImage, uploadImage, uploadImageDetailed } from '../lib/upload';
 import { extractImagesFromClipboard } from '../lib/clipboard-image';
 import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
@@ -1806,6 +1806,12 @@ export default function MessagesContent() {
       const item = prev.find((i) => i.id === id);
       if (item?.previewUrl && item.previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(item.previewUrl);
+      }
+      if (item && (item.uploadedMediaId || item.uploadedUrl)) {
+        void deleteUploadedImage({
+          media_id: item.uploadedMediaId,
+          url: item.uploadedUrl,
+        });
       }
       return prev.filter((i) => i.id !== id);
     });

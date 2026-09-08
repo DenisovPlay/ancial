@@ -7,9 +7,9 @@ export type DraftImage = {
   uploadedUrl?: string;
 };
 
-import { uploadImage } from '../lib/upload';
+import { deleteUploadedImage, uploadImage } from '../lib/upload';
 
-export { uploadImage };
+export { deleteUploadedImage, uploadImage };
 export const MAX_IMAGES = 3;
 
 export function cn(...classes: Array<string | false | null | undefined>) {

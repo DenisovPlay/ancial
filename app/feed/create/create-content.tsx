@@ -22,6 +22,7 @@ import {
   insertStickerIntoEditor,
   makeId,
   safeRevokeObjectUrl,
+  deleteUploadedImage,
   uploadImage,
   uploadPostImageFiles,
 } from '../editor-shared';
@@ -281,6 +282,9 @@ export default function CreatePostContent() {
     }
 
     safeRevokeObjectUrl(image.previewUrl);
+    if (image.uploadedUrl) {
+      void deleteUploadedImage({ url: image.uploadedUrl });
+    }
     setImages((currentImages) =>
       currentImages.filter((currentImage) => currentImage.id !== imageId),
     );

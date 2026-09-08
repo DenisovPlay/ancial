@@ -126,3 +126,46 @@ export async function uploadImage(
   const result = await uploadImageDetailed(file, filenameOrOptions);
   return result.url;
 }
+
+export const DELETE_IMAGE_ENDPOINT = '/api/V2/upload/DeleteImage.php';
+
+export interface DeleteImageOptions {
+  media_id?: number;
+  url?: string;
+}
+
+/**
+ * Удаление загруженного изображения из S3 при отмене или очистке в UI.
+ */
+export async function deleteUploadedImage(options: DeleteImageOptions): Promise<boolean> {
+  if (!options.media_id && !options.url) return false;
+
+  const token = getStoredAuthToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(DELETE_IMAGE_ENDPOINT, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({
+        media_id: options.media_id || undefined,
+        url: options.url || undefined,
+        token: token || undefined,
+      }),
+    });
+
+    if (!response.ok) return false;
+    const result = (await response.json()) as { success?: boolean };
+    return Boolean(result.success);
+  } catch (err) {
+    console.error('Failed to delete uploaded image:', err);
+    return false;
+  }
+}
+
