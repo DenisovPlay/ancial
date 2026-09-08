@@ -161,9 +161,9 @@ export default function PostWidgetMusicModal({ isOpen, onClose, onAdd }: PostWid
               key={track.id}
               type="button"
               onClick={() => handleSelect(track)}
-              className="flex items-center gap-3 rounded-3xl hover:bg-zinc-800/80 transition-colors cursor-pointer active:scale-95 duration-300 text-left w-full border border-transparent hover:border-zinc-600/30 group"
+              className="flex items-center gap-3 rounded-3xl hover:bg-zinc-800/80 cursor-pointer active:scale-95 duration-300 text-left w-full border border-transparent hover:border-zinc-600/30 group hover:pr-3"
             >
-              <div className="w-12 h-12 shrink-0 rounded-2xl overflow-hidden bg-zinc-800">
+              <div className="w-14 h-14 shrink-0 rounded-2xl overflow-hidden bg-zinc-800">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={track.img} alt={track.name} className="w-full h-full object-cover" />
               </div>

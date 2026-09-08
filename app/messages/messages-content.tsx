@@ -2368,8 +2368,8 @@ export default function MessagesContent() {
                     </div>
                   </div>
 
-                  <div className="md:bg-zinc-900 md:rounded-3xl md:border md:border-zinc-600/30 md:overflow-hidden lg:bg-transparent lg:rounded-none lg:border-0 lg:border-transparent relative flex h-full flex-col min-h-0 flex-1">
-                    <div className="flex h-full flex-col min-h-0 flex-1">
+                  <div className="md:bg-zinc-900 md:rounded-3xl md:border md:border-zinc-600/30 md:overflow-hidden lg:overflow-visible lg:bg-transparent lg:rounded-none lg:border-0 lg:border-transparent relative flex min-h-full flex-col flex-1">
+                    <div className="flex min-h-full flex-col flex-1">
                       {dialogsLoading && dialogs.length === 0 ? (
                         <div className="flex flex-col w-full">
                           {Array.from({ length: 6 }).map((_, i) => (

@@ -544,12 +544,12 @@ export default function GroupInfoModal({
           <button
             type="button"
             onClick={() => setView('main')}
-            className="self-start flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 font-medium duration-300 active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 text-zinc-400 hover:text-white duration-300 mb-4 text-sm font-semibold w-fit duration-300 active:scale-95 cursor-pointer"
           >
-            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            <svg className="w-4 h-4 fill-current rotate-180" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <use href="/icons.svg#IC-chevron-right"></use>
             </svg>
-            <span>{lang?.back || 'Назад'}</span>
+            {lang?.back || 'Назад'}
           </button>
         )}
 
@@ -756,7 +756,7 @@ export default function GroupInfoModal({
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     placeholder={lang?.eg_chat_name || 'Например: Проект Zypo'}
-                    className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600"
+                    className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                     autoFocus
                   />
                 </div>
@@ -824,58 +824,73 @@ export default function GroupInfoModal({
           <div className="flex flex-col gap-3">
             {canManageChannel ? (
               <>
-                <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
-                  <span>{lang?.chat_visibility || 'Доступ к чату'}</span>
-                  <select
-                    value={visibility}
-                    onChange={(event) => {
-                      const nextVisibility = event.target.value === 'public' ? 'public' : 'private';
-                      setVisibility(nextVisibility);
-                      if (nextVisibility === 'private') setJoinPolicy('invite');
-                    }}
-                    className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/90 px-3 outline-none"
-                  >
-                    <option value="private">{lang?.chat_visibility_private || 'Приватный — только по приглашению'}</option>
-                    <option value="public">{lang?.chat_visibility_public || 'Публичный — виден всем'}</option>
-                  </select>
-                </label>
+                {/* Доступ к чату */}
+                <div className="flex flex-col w-full -mt-3.5">
+                  <span className="text-zinc-400 pl-4 z-20">{lang?.chat_visibility || 'Доступ к чату'}</span>
+                  <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                    <select
+                      value={visibility}
+                      onChange={(event) => {
+                        const nextVisibility = event.target.value === 'public' ? 'public' : 'private';
+                        setVisibility(nextVisibility);
+                        if (nextVisibility === 'private') setJoinPolicy('invite');
+                      }}
+                      className="rounded-full bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white cursor-pointer"
+                    >
+                      <option value="private" className="bg-zinc-800 text-white">{lang?.chat_visibility_private || 'Приватный — только по приглашению'}</option>
+                      <option value="public" className="bg-zinc-800 text-white">{lang?.chat_visibility_public || 'Публичный — виден всем'}</option>
+                    </select>
+                  </div>
+                </div>
 
                 {visibility === 'public' ? (
                   <>
-                    <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
-                      <span>{lang?.chat_join_policy || 'Как вступать'}</span>
-                      <select
-                        value={joinPolicy}
-                        onChange={(event) => setJoinPolicy(event.target.value === 'request' ? 'request' : 'open')}
-                        className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/90 px-3 outline-none"
-                      >
-                        <option value="open">{lang?.chat_join_open || 'Свободный вход'}</option>
-                        <option value="request">{lang?.chat_join_request || 'По заявке'}</option>
-                      </select>
-                    </label>
+                    {/* Как вступать */}
+                    <div className="flex flex-col w-full">
+                      <span className="text-zinc-400 pl-4 z-20">{lang?.chat_join_policy || 'Как вступать'}</span>
+                      <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                        <select
+                          value={joinPolicy}
+                          onChange={(event) => setJoinPolicy(event.target.value === 'request' ? 'request' : 'open')}
+                          className="rounded-full bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white cursor-pointer"
+                        >
+                          <option value="open" className="bg-zinc-800 text-white">{lang?.chat_join_open || 'Свободный вход'}</option>
+                          <option value="request" className="bg-zinc-800 text-white">{lang?.chat_join_request || 'По заявке'}</option>
+                        </select>
+                      </div>
+                    </div>
 
-                    <label className="flex flex-col gap-1.5 text-sm text-zinc-300">
-                      <span>{lang?.chat_community || 'Сообщество'}</span>
-                      <select
-                        value={communityId}
-                        onChange={(event) => setCommunityId(event.target.value)}
-                        className="h-12 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800/90 px-3 outline-none"
-                      >
-                        <option value="">{lang?.chat_without_community || 'Без привязки к сообществу'}</option>
-                        {managedCommunities.map((community) => (
-                          <option key={community.id} value={community.id}>{community.name}</option>
-                        ))}
-                      </select>
-                    </label>
+                    {/* Сообщество */}
+                    <div className="flex flex-col w-full">
+                      <span className="text-zinc-400 pl-4 z-20">{lang?.chat_community || 'Сообщество'}</span>
+                      <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                        <select
+                          value={communityId}
+                          onChange={(event) => setCommunityId(event.target.value)}
+                          className="rounded-full bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white cursor-pointer"
+                        >
+                          <option value="" className="bg-zinc-800 text-white">{lang?.chat_without_community || 'Без привязки к сообществу'}</option>
+                          {managedCommunities.map((community) => (
+                            <option key={community.id} value={community.id} className="bg-zinc-800 text-white">{community.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
 
-                    <textarea
-                      value={description}
-                      onChange={(event) => setDescription(event.target.value)}
-                      maxLength={500}
-                      rows={4}
-                      placeholder={lang?.chat_description_placeholder || 'Коротко опишите тему чата'}
-                      className="resize-none rounded-3xl border border-zinc-600/30 bg-zinc-800/90 p-3 text-sm outline-none placeholder:text-zinc-600"
-                    />
+                    {/* Описание */}
+                    <div className="flex flex-col w-full">
+                      <span className="text-zinc-400 pl-4 z-20">{lang?.chat_description_placeholder || 'Коротко опишите тему чата'}</span>
+                      <div className="flex bg-zinc-800/90 rounded-3xl w-full p-2 -mt-3 z-10 border border-zinc-600/30">
+                        <textarea
+                          value={description}
+                          onChange={(event) => setDescription(event.target.value)}
+                          maxLength={500}
+                          rows={4}
+                          placeholder={lang?.chat_description_placeholder || 'Коротко опишите тему чата'}
+                          className="resize-none w-full bg-transparent p-1 text-sm outline-none placeholder:text-zinc-600 text-white"
+                        />
+                      </div>
+                    </div>
                   </>
                 ) : null}
 
@@ -947,7 +962,7 @@ export default function GroupInfoModal({
           <div className="flex flex-col gap-3">
 
             <div className="z-[30] -mx-3 px-3 bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
-              <div className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
+              <div className="flex items-center justify-center bg-zinc-800/90 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
                 <input
                   className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                   type="text"
@@ -956,6 +971,7 @@ export default function GroupInfoModal({
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <button
+                  type="button"
                   className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700"
                 >
                   <svg className="inline w-8 h-8 fill-white"><use href="#IC-search"></use></svg>
