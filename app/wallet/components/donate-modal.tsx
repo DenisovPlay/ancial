@@ -184,6 +184,8 @@ export function DonateModal({
       title={lang?.donation || "Пожертвование"}
       width="sm"
       bodyClassName="!pb-0"
+      onBack={step === 'select' ? () => setStep('donate') : undefined}
+      backLabel={lang?.back || 'Назад'}
     >
       <div className="flex flex-col items-center gap-3 text-zinc-100">
         {/* STEP 1: DONATE PRESETS & AMOUNT */}
@@ -364,23 +366,14 @@ export function DonateModal({
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep('donate')}
-                  className="cursor-pointer px-5 py-2 text-lg rounded-3xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 duration-300 active:scale-95 border border-zinc-600/30"
-                >
-                  {lang?.back || 'Назад'}
-                </button>
-                <button
-                  type="button"
-                  disabled={submitLoading || !selectedSenderId}
-                  onClick={handleExecuteTransfer}
-                  className="flex-1 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 disabled:bg-zinc-700 disabled:cursor-not-allowed active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow border border-zinc-600/30"
-                >
-                  {submitLoading ? (lang?.sending || 'Отправка...') : (lang?.send || 'Отправить')}
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={submitLoading || !selectedSenderId}
+                onClick={handleExecuteTransfer}
+                className="w-full cursor-pointer flex items-center justify-center gap-3 px-4 py-2 text-lg duration-300 disabled:bg-zinc-700 disabled:cursor-not-allowed active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow border border-zinc-600/30 mt-3"
+              >
+                {submitLoading ? (lang?.sending || 'Отправка...') : (lang?.send || 'Отправить')}
+              </button>
             </div>
           </div>
         )}

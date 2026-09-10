@@ -122,24 +122,22 @@ export function SendMoneyModal({
     <>
 
       {/* 2. MODAL: Send Money (Перевести) */}
-      <Modal isOpen={isOpen} onClose={onClose} title={title} width="sm">
-        <div className="flex flex-col text-zinc-100">
-
-          {/* Back button visible on sub-steps */}
-          {sendStep !== 'select' && sendStep !== 'success' && sendStep !== 'error' && (
-            <button
-              onClick={() => {
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={title}
+        width="sm"
+        onBack={
+          sendStep !== 'select' && sendStep !== 'success' && sendStep !== 'error'
+            ? () => {
                 setSendStep('select');
                 setSendError(null);
-              }}
-              className="flex items-center gap-1.5 text-zinc-400 hover:text-white duration-300 mb-4 text-sm font-semibold w-fit duration-300 active:scale-95 cursor-pointer"
-            >
-              <svg className="w-4 h-4 fill-current rotate-180" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <use href="/icons.svg#IC-chevron-right"></use>
-              </svg>
-              {lang?.back || 'Назад'}
-            </button>
-          )}
+              }
+            : undefined
+        }
+        backLabel={lang?.back || 'Назад'}
+      >
+        <div className="flex flex-col text-zinc-100">
 
           {/* STEP: select */}
           {sendStep === 'select' && (
@@ -200,7 +198,7 @@ export function SendMoneyModal({
           {sendStep === 'sda' && (
             <form onSubmit={handleSdaSubmit} className="flex flex-col gap-3">
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.fromaccount || 'Счёт списания'}</span>
+                <span className="text-zinc-400 pl-4 z-20">{lang?.fromaccount || 'Счёт списания'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={sendSenderId}
@@ -216,8 +214,8 @@ export function SendMoneyModal({
                 </div>
               </div>
 
-              <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.toaccount || 'Счёт зачисления'}</span>
+              <div className="flex flex-col w-full text-left -mt-3">
+                <span className="text-zinc-400 pl-4 z-20">{lang?.toaccount || 'Счёт зачисления'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={sdaToAccountId}
@@ -234,8 +232,8 @@ export function SendMoneyModal({
                 </div>
               </div>
 
-              <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
+              <div className="flex flex-col w-full text-left -mt-3">
+                <span className="text-zinc-400 pl-4 z-20">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="number"
@@ -272,7 +270,7 @@ export function SendMoneyModal({
               <button
                 type="submit"
                 disabled={sendLoading || !sendSenderId || !sdaToAccountId || sendSenderId === sdaToAccountId || !sdaAmount || parseFloat(sdaAmount) <= 0}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-2"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
@@ -287,7 +285,7 @@ export function SendMoneyModal({
           {sendStep === 'stf' && (
             <form onSubmit={handleStfSubmit} className="flex flex-col gap-3">
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.fromaccount || 'Счёт списания'}</span>
+                <span className="text-zinc-400 pl-4 z-20">{lang?.fromaccount || 'Счёт списания'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={sendSenderId}
@@ -303,8 +301,8 @@ export function SendMoneyModal({
                 </div>
               </div>
 
-              <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.friendreceiver || 'Друг получатель'}</span>
+              <div className="flex flex-col w-full text-left -mt-3">
+                <span className="text-zinc-400 pl-4 z-20">{lang?.friendreceiver || 'Друг получатель'}</span>
                 {friendsLoading ? (
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30 items-center pl-3 text-zinc-400 text-sm">{lang?.loadingfriends || 'Загрузка друзей...'}</div>
                 ) : friendsError ? (
@@ -328,8 +326,8 @@ export function SendMoneyModal({
                 )}
               </div>
 
-              <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
+              <div className="flex flex-col w-full text-left -mt-3">
+                <span className="text-zinc-400 pl-4 z-20">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="number"
@@ -342,7 +340,7 @@ export function SendMoneyModal({
                 </div>
               </div>
 
-              <div className="flex flex-col w-full text-left">
+              <div className="flex flex-col w-full text-left -mt-3">
                 <span className="text-zinc-300 pl-4 z-20">{lang?.comment || 'Комментарий'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
@@ -379,7 +377,7 @@ export function SendMoneyModal({
               <button
                 type="submit"
                 disabled={sendLoading || !sendSenderId || !stfFriendUsername || !stfAmount || parseFloat(stfAmount) <= 0}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-2"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
@@ -393,7 +391,7 @@ export function SendMoneyModal({
           {sendStep === 'sdb' && (
             <form onSubmit={handleSdbSubmit} className="flex flex-col gap-3">
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.fromaccount || 'Счёт списания'}</span>
+                <span className="text-zinc-400 pl-4 z-20">{lang?.fromaccount || 'Счёт списания'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <select
                     value={sendSenderId}
@@ -444,8 +442,8 @@ export function SendMoneyModal({
               </div>
 
               {sdbDetailType === 'email' && (
-                <div className="flex flex-col w-full text-left">
-                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.emailaddress || 'Электронная почта (Email)'}</span>
+                <div className="flex flex-col w-full text-left -mt-3">
+                  <span className="text-zinc-400 pl-4 z-20">{lang?.emailaddress || 'Электронная почта (Email)'}</span>
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <input
                       type="email"
@@ -460,8 +458,8 @@ export function SendMoneyModal({
               )}
 
               {sdbDetailType === 'phone' && (
-                <div className="flex flex-col w-full text-left">
-                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.phonenumber || 'Номер телефона'}</span>
+                <div className="flex flex-col w-full text-left -mt-3">
+                  <span className="text-zinc-400 pl-4 z-20">{lang?.phonenumber || 'Номер телефона'}</span>
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <input
                       type="tel"
@@ -476,8 +474,8 @@ export function SendMoneyModal({
               )}
 
               {sdbDetailType === 'login' && (
-                <div className="flex flex-col w-full text-left">
-                  <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.nickname_format || 'Никнейм пользователя'}</span>
+                <div className="flex flex-col w-full text-left -mt-3">
+                  <span className="text-zinc-400 pl-4 z-20">{lang?.nickname_format || 'Никнейм пользователя'}</span>
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <input
                       type="text"
@@ -491,8 +489,8 @@ export function SendMoneyModal({
                 </div>
               )}
 
-              <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
+              <div className="flex flex-col w-full text-left -mt-3">
+                <span className="text-zinc-400 pl-4 z-20">{lang?.transferamount || 'Сумма перевода'} (<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>)</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="number"
@@ -505,7 +503,7 @@ export function SendMoneyModal({
                 </div>
               </div>
 
-              <div className="flex flex-col w-full text-left">
+              <div className="flex flex-col w-full text-left -mt-3">
                 <span className="text-zinc-300 pl-4 z-20">{lang?.comment || 'Комментарий'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
@@ -542,7 +540,7 @@ export function SendMoneyModal({
               <button
                 type="submit"
                 disabled={sendLoading || !sendSenderId || !sdbAmount || parseFloat(sdbAmount) <= 0 || (sdbDetailType === 'email' && !sdbEmail) || (sdbDetailType === 'phone' && !sdbPhone) || (sdbDetailType === 'login' && !sdbLogin)}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-2"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />

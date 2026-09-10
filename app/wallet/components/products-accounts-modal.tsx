@@ -58,6 +58,8 @@ export function ProductsAccountsModal({
         showHeader={true}
         title={productsView === 'list' ? (lang?.my_prod || 'Мои продукты') : productsView === 'create' ? (lang?.t_account || 'Новый счёт') : (lang?.closeaccount || 'Закрыть счёт')}
         bodyClassName="max-h-96 p-0"
+        onBack={productsView !== 'list' ? () => setProductsView('list') : undefined}
+        backLabel={lang?.back || 'Назад'}
       >
         <div className="backdrop-filter backdrop-blur-lg">
           {productsView === 'list' && (
@@ -130,28 +132,18 @@ export function ProductsAccountsModal({
               {deleteAccountError && (
                 <p className="text-red-500 text-sm font-semibold">{deleteAccountError}</p>
               )}
-              <div className="flex gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={handleConfirmDeleteAccount}
-                  disabled={deleteAccountLoading}
-                  className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-red-600 hover:bg-red-500 disabled:bg-red-800/50 disabled:text-zinc-400 text-zinc-100 rounded-3xl cursor-pointer font-bold"
-                >
-                  {deleteAccountLoading ? (
-                    <div className="w-5 h-5 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
-                  ) : (
-                    lang?.closeaccount || 'Закрыть счёт'
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProductsView('list')}
-                  disabled={deleteAccountLoading}
-                  className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-700"
-                >
-                  {lang?.cancel || 'Отмена'}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteAccount}
+                disabled={deleteAccountLoading}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-red-600 hover:bg-red-500 disabled:bg-red-800/50 disabled:text-zinc-400 text-zinc-100 rounded-3xl cursor-pointer font-bold"
+              >
+                {deleteAccountLoading ? (
+                  <div className="w-5 h-5 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
+                ) : (
+                  lang?.closeaccount || 'Закрыть счёт'
+                )}
+              </button>
             </div>
           )}
 
@@ -161,7 +153,7 @@ export function ProductsAccountsModal({
                 {lang?.account_desc || 'Счёт позволит вам отправлять переводы внутри системы, а также принимать пополнения и оплачивать услуги.'}
               </p>
               <div className="flex flex-col w-full text-left">
-                <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.accountname || 'Название счёта'}</span>
+                <span className="text-zinc-400 pl-4 z-20">{lang?.accountname || 'Название счёта'}</span>
                 <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                   <input
                     type="text"
@@ -176,27 +168,17 @@ export function ProductsAccountsModal({
               {createAccountError && (
                 <p className="text-red-500 text-sm font-semibold">{createAccountError}</p>
               )}
-              <div className="flex gap-3 mt-2">
-                <button
-                  type="submit"
-                  disabled={createAccountLoading}
-                  className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-purple-800/50 disabled:text-zinc-400 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
-                >
-                  {createAccountLoading ? (
-                    <div className="w-5 h-5 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
-                  ) : (
-                    lang?.createaccount || 'Создать счёт'
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProductsView('list')}
-                  disabled={createAccountLoading}
-                  className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-3xl cursor-pointer font-semibold border border-zinc-700"
-                >
-                  {lang?.back || 'Назад'}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={createAccountLoading}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-purple-800/50 disabled:text-zinc-400 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
+              >
+                {createAccountLoading ? (
+                  <div className="w-5 h-5 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
+                ) : (
+                  lang?.createaccount || 'Создать счёт'
+                )}
+              </button>
             </form>
           )}
         </div>

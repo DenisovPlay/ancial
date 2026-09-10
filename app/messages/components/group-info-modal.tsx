@@ -522,6 +522,8 @@ export default function GroupInfoModal({
               : ''
       }
       bodyClassName="!overflow-hidden p-3 pt-14 pb-3"
+      onBack={view !== 'main' ? () => setView('main') : undefined}
+      backLabel={lang?.back || 'Назад'}
     >
       <div className="flex flex-col gap-3 text-white">
         <input
@@ -538,20 +540,6 @@ export default function GroupInfoModal({
           className="hidden"
           onChange={handleBackgroundUpload}
         />
-
-        {/* Кнопка «Назад» при нахождении во вложенном табе */}
-        {view !== 'main' && (
-          <button
-            type="button"
-            onClick={() => setView('main')}
-            className="flex items-center gap-1.5 text-zinc-400 hover:text-white duration-300 mb-4 text-sm font-semibold w-fit duration-300 active:scale-95 cursor-pointer"
-          >
-            <svg className="w-4 h-4 fill-current rotate-180" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <use href="/icons.svg#IC-chevron-right"></use>
-            </svg>
-            {lang?.back || 'Назад'}
-          </button>
-        )}
 
         {/* --- VIEW 1: ГЛАВНЫЙ ЭКРАН СВОЙСТВ --- */}
         {view === 'main' && (

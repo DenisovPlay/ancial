@@ -1039,35 +1039,37 @@ export default function WalletContent() {
             <span className="text-xs">{lang?.contacts_hint || 'Контакты находятся в Настройки -> О Zypo -> Контакты'}</span>
           </div>
 
-          <div className="flex flex-col w-full text-left">
-            <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.whichaccount || 'На какой счёт'}</span>
-            <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
-              <select
-                value={topupAccountId}
-                onChange={(e) => setTopupAccountId(Number(e.target.value))}
-                className="rounded-full bg-zinc-800/60 w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white"
-              >
-                {accounts.map(acc => (
-                  <option key={acc.id} value={acc.id}>
-                    {lang?.walletAccount || 'Счёт'} №{acc.id} ({acc.name})
-                  </option>
-                ))}
-              </select>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col w-full text-left">
+              <span className="text-zinc-400 pl-4 z-20">{lang?.whichaccount || 'На какой счёт'}</span>
+              <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                <select
+                  value={topupAccountId}
+                  onChange={(e) => setTopupAccountId(Number(e.target.value))}
+                  className="rounded-full bg-zinc-800/60 w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 text-white"
+                >
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>
+                      {lang?.walletAccount || 'Счёт'} №{acc.id} ({acc.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-col w-full text-left mt-3">
-            <span className="text-zinc-400 pl-4 z-20 -mt-1.5">{lang?.t_ama || 'Сумма'}</span>
-            <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
-              <input
-                type="number"
-                value={topupAmount}
-                onChange={(e) => setTopupAmount(e.target.value)}
-                placeholder="0"
-                min="0"
-                step="1"
-                className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
-              />
+            <div className="flex flex-col w-full text-left -mt-3">
+              <span className="text-zinc-400 pl-4 z-20">{lang?.t_ama || 'Сумма'}</span>
+              <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
+                <input
+                  type="number"
+                  value={topupAmount}
+                  onChange={(e) => setTopupAmount(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                  className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
+                />
+              </div>
             </div>
           </div>
 

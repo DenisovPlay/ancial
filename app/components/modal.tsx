@@ -18,6 +18,9 @@ interface ModalProps {
   showHeader?: boolean;
   unstyled?: boolean;
   closeLabel?: string;
+  /** Показывает кружок-шеврон слева от заголовка (для вложенных шагов/табов внутри модалки). */
+  onBack?: () => void;
+  backLabel?: string;
 }
 
 function cn(...classes: Array<string | false | null | undefined>) {
@@ -47,6 +50,8 @@ export default function Modal({
   showHeader = true,
   unstyled = false,
   closeLabel = 'Close',
+  onBack,
+  backLabel = 'Back',
 }: ModalProps) {
   const [offsetY, setOffsetY] = useState(0);
   const [render, setRender] = useState(isOpen);
@@ -237,13 +242,32 @@ export default function Modal({
               </div>
               )}
               
-              <div className="flex items-center justify-between px-3 pb-3 sm:pt-3 w-full">
-                  <h2 id={titleId} className="text-xl font-bold text-white backdrop-shadow-lg">{title}</h2>
-                  <button 
+              <div className="flex items-center px-3 pb-3 sm:pt-3 w-full">
+                  <div
+                    className={cn(
+                      'overflow-hidden shrink-0 transition-[width,opacity,margin-right] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                      onBack ? 'w-9 opacity-100 mr-2' : 'w-0 opacity-0 mr-0',
+                    )}
+                  >
+                      <button
+                          type="button"
+                          aria-label={backLabel}
+                          aria-hidden={!onBack}
+                          tabIndex={onBack ? 0 : -1}
+                          onClick={onBack}
+                          className="cursor-pointer flex items-center justify-center w-9 h-9 rounded-full border border-zinc-600/30 hover:bg-zinc-800/50 duration-300 active:scale-95 shrink-0"
+                      >
+                          <svg className="w-4 h-4 fill-zinc-300" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <use href="#IC-chevron-left"></use>
+                          </svg>
+                      </button>
+                  </div>
+                  <h2 id={titleId} className="text-xl font-bold text-white backdrop-shadow-lg flex-1 min-w-0 truncate">{title}</h2>
+                  <button
                       type="button"
                       aria-label={closeLabel}
                       onClick={onClose}
-                      className="cursor-pointer hidden sm:flex p-1.5 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-600/30 duration-300 active:scale-95"
+                      className="cursor-pointer hidden sm:flex p-1.5 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-600/30 duration-300 active:scale-95 ml-2 shrink-0"
                   >
                       <svg className="w-5 h-5 fill-zinc-300" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <use href="#IC-times"></use>
