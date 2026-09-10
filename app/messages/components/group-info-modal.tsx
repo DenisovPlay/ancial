@@ -592,7 +592,7 @@ export default function GroupInfoModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+            <div className="grid grid-cols-3 gap-3 w-full">
               {canManageInvites ? (
                 <button
                   type="button"
@@ -846,7 +846,7 @@ export default function GroupInfoModal({
                 {visibility === 'public' ? (
                   <>
                     {/* Как вступать */}
-                    <div className="flex flex-col w-full">
+                    <div className="flex flex-col w-full -mt-3">
                       <span className="text-zinc-400 pl-4 z-20">{lang?.chat_join_policy || 'Как вступать'}</span>
                       <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                         <select
@@ -861,7 +861,7 @@ export default function GroupInfoModal({
                     </div>
 
                     {/* Сообщество */}
-                    <div className="flex flex-col w-full">
+                    <div className="flex flex-col w-full -mt-3">
                       <span className="text-zinc-400 pl-4 z-20">{lang?.chat_community || 'Сообщество'}</span>
                       <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                         <select
@@ -878,7 +878,7 @@ export default function GroupInfoModal({
                     </div>
 
                     {/* Описание */}
-                    <div className="flex flex-col w-full">
+                    <div className="flex flex-col w-full -mt-3">
                       <span className="text-zinc-400 pl-4 z-20">{lang?.chat_description_placeholder || 'Коротко опишите тему чата'}</span>
                       <div className="flex bg-zinc-800/90 rounded-3xl w-full p-2 -mt-3 z-10 border border-zinc-600/30">
                         <textarea

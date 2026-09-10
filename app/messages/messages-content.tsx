@@ -2360,17 +2360,14 @@ export default function MessagesContent() {
                         value={dialogSearchQuery}
                         onChange={(e) => setDialogSearchQuery(e.target.value)}
                       />
-                      {dialogSearchQuery ? (
-                        <button
-                          type="button"
-                          onClick={() => setDialogSearchQuery('')}
-                          className="cursor-pointer shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-zinc-700/60 text-zinc-400 hover:text-white transition-colors duration-200"
-                        >
-                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                          </svg>
-                        </button>
-                      ) : null}
+                      <button
+                        type="button"
+                        className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700/50 border border-transparent hover:border-zinc-600/30"
+                      >
+                        <svg className="inline w-8 h-8 fill-white" viewBox="0 0 48 48">
+                          <use href="#IC-search"></use>
+                        </svg>
+                      </button>
                     </div>
                   </div>
 

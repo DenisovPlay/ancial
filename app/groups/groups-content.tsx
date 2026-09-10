@@ -142,7 +142,7 @@ function GroupsContent() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
-            placeholder={lang?.groups_search || 'Поиск...'}
+            placeholder={lang?.groups_search || 'Поиск сообществ...'}
             autoComplete="off"
           />
           <button type="submit" className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700">
