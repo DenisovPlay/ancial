@@ -1,0 +1,6 @@
+{
+  "git.autoRepositoryDetection": true,
+  "git.scanRepositories": [
+    "php-v2-api"
+  ]
+}
