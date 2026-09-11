@@ -101,8 +101,8 @@ export default function PulseSearchContent() {
 
   const userCountry = useUserCountry();
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4) => {
-    showNote({ content, time, type });
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4, html = false) => {
+    showNote({ content, time, type, html });
   }, [showNote]);
 
   useEffect(() => {
@@ -314,7 +314,7 @@ export default function PulseSearchContent() {
         type: 6,
       });
       setReportTrackTarget(null);
-      showPulseNote(getApiMessage(result?.message, lang, lang?.reportsended || 'Жалоба отправлена'), 'success');
+      showPulseNote(getApiMessage(result?.message, lang, lang?.reportsended || 'Жалоба отправлена'), 'success', undefined, true);
     } catch (err) {
       showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }

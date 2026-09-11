@@ -380,11 +380,12 @@ export default function PulseContent() {
   // Страна пользователя: мгновенно из кэша, затем обновляем из GetCountry.php
   const userCountry = useUserCountry();
 
-  const showPulseNote = useCallback((content: string, type: NoteKind = 'info', time = 4) => {
+  const showPulseNote = useCallback((content: string, type: NoteKind = 'info', time = 4, html = false) => {
     showNote({
       content,
       time,
       type,
+      html,
     });
   }, [showNote]);
 
@@ -554,7 +555,7 @@ export default function PulseContent() {
         type: 6,
       });
       setReportTrackTarget(null);
-      showPulseNote(getApiMessage(result?.message, lang, lang?.reportsended || 'Жалоба отправлена'), 'success');
+      showPulseNote(getApiMessage(result?.message, lang, lang?.reportsended || 'Жалоба отправлена'), 'success', undefined, true);
     } catch (err) {
       showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }

@@ -144,8 +144,8 @@ export default function PulseMyContent() {
 
   const libraryItems = useMemo(() => getLibraryItems(library), [library]);
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4) => {
-    showNote({ content, time, type });
+  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4, html = false) => {
+    showNote({ content, time, type, html });
   }, [showNote]);
 
   useEffect(() => {
