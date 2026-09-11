@@ -1,53 +1,41 @@
 'use client';
 
 import Modal from './modal';
+import type { ReportReason } from '../lib/report-reasons';
 
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onReport: (reason: string) => void;
-  strings: {
-    report: string;
-    spam: string;
-    prohibitedgood: string;
-    scam: string;
-    violence: string;
-    candidimage: string;
-    propertyrights: string;
-  };
+  onReport: (reason: string) => void | Promise<void>;
+  reasons: ReportReason[];
+  title: string;
 }
 
 export default function ReportModal({
   isOpen,
   onClose,
   onReport,
-  strings,
+  reasons,
+  title,
 }: ReportModalProps) {
-  const options = [
-    { label: strings.spam, value: strings.spam },
-    { label: strings.prohibitedgood, value: strings.prohibitedgood },
-    { label: strings.scam, value: strings.scam },
-    { label: strings.violence, value: strings.violence },
-    { label: strings.candidimage, value: strings.candidimage },
-    { label: strings.propertyrights, value: strings.propertyrights },
-  ];
-
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={strings.report}
+      title={title}
       width="sm"
     >
       <div className="flex flex-col justify-center rounded-3xl shadow overflow-hidden">
-        {options.map((option) => (
+        {reasons.map((reason) => (
           <button
-            key={option.value}
+            key={reason.value}
             type="button"
-            onClick={() => onReport(option.value)}
+            onClick={() => {
+              void onReport(reason.value);
+            }}
             className="text-left p-2.5 bg-zinc-800 text-base cursor-pointer duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl text-zinc-200 hover:text-white"
           >
-            {option.label}
+            {reason.label}
           </button>
         ))}
       </div>

@@ -5,25 +5,29 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Dropdown, DropdownItem } from '../components/navigation';
+import ReportModal from '../components/report-modal';
 import ShareModal from '../components/share-modal';
 import { useAuth, type User } from '../context/AuthContext';
-import { useNotification } from '../context/NotificationContext';
 import { DOWNLOADS_COLLECTION_ID, usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
+import { usePulseNote } from '../hooks/use-pulse-note';
+import { usePulseTrackReport } from '../hooks/use-pulse-track-report';
+import { useRequireAuth } from '../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
+import { buildPulseTrackReportReasons } from '../lib/report-reasons';
 import {
   decodeHtmlEntities,
   getPulseBackgroundColorByMood,
   PulseLegalFooter,
   PulsePlaylistTile,
-  PulseReportModal,
   PulsePlaylistTileSkeleton,
   PulseScrollSection,
   PulseTrackRow,
   normalizeText,
   toNumber,
   TrackCollectionPanel,
+  type PulseShareAttachment,
 } from './pulse-components';
 import {
   canManagePulseTrack,
@@ -80,7 +84,6 @@ type PulseTrack = {
 
 type RecentlyListenedState = PulseHomePlaylistCard[] | 'empty' | null;
 type HomeTrackCollectionId = 'New' | 'Top' | 'Your';
-type NoteKind = 'error' | 'info' | 'success';
 
 
 
@@ -334,7 +337,6 @@ function OfflineDownloadsPill({
 export default function PulseContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading, lang, user } = useAuth();
-  const { showNote } = useNotification();
   const {
     currentCollectionId,
     currentSongId,
@@ -353,14 +355,9 @@ export default function PulseContent() {
   const nowListenScrollRef = useDragScroll({ speed: 2 });
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [reportTrackTarget, setReportTrackTarget] = useState<PulseTrack | null>(null);
   const [shareUrl, setShareUrl] = useState('');
-  const [shareAttachment, setShareAttachment] = useState<{
-    widgets: Array<Record<string, unknown>>;
-    preview: { authorName: string; authorImg: string; contentSnippet: string; firstImage?: string };
-  } | null>(null);
+  const [shareAttachment, setShareAttachment] = useState<PulseShareAttachment | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
@@ -380,14 +377,8 @@ export default function PulseContent() {
   // Страна пользователя: мгновенно из кэша, затем обновляем из GetCountry.php
   const userCountry = useUserCountry();
 
-  const showPulseNote = useCallback((content: string, type: NoteKind = 'info', time = 4, html = false) => {
-    showNote({
-      content,
-      time,
-      type,
-      html,
-    });
-  }, [showNote]);
+  const showPulseNote = usePulseNote();
+  const requireAuth = useRequireAuth(showPulseNote);
 
   const openPulseSubpage = useCallback((path: string) => {
     const target = getPulseNavigationTarget(path);
@@ -478,10 +469,7 @@ export default function PulseContent() {
   const pulseErrorText = lang?.pulse_error_happened || 'Произошла ошибка =(';
 
   const likeTrack = useCallback(async (track: PulseTrack) => {
-    if (!isAuthenticated) {
-      showPulseNote(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное', 'info');
-      return;
-    }
+    if (!requireAuth(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное')) return;
 
     const rawSid = String(track.sid ?? '').trim();
     const trackId = await getResolvedId(rawSid);
@@ -519,56 +507,24 @@ export default function PulseContent() {
     } catch (err) {
       showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, pulseErrorText), 'error', 4);
     }
-  }, [getResolvedId, isAuthenticated, lang, pulseErrorText, pulseFavoriteCreatedText, pulseTrackAddedText, pulseTrackRemovedText, pulseUnknownSongText, showPulseNote, updateFavoriteIds]);
+  }, [getResolvedId, lang, pulseErrorText, pulseFavoriteCreatedText, pulseTrackAddedText, pulseTrackRemovedText, pulseUnknownSongText, requireAuth, showPulseNote, updateFavoriteIds]);
 
   const queueTrackNext = useCallback(async (trackId: number | string) => {
     await playNextTrack(trackId);
   }, [playNextTrack]);
 
-  const reportTrack = useCallback(async (track: PulseTrack) => {
-    if (!isAuthenticated) {
-      showPulseNote(lang?.logintoreport || 'Войдите, чтобы отправить жалобу', 'info');
-      return;
-    }
-
-    const rawId = String(track.sid ?? '').trim();
-    if (!rawId) return;
-
-    const trackId = await getResolvedId(rawId);
-    if (!trackId) return;
-
-    setReportTrackTarget({ ...track, sid: trackId });
-    setIsReportModalOpen(true);
-  }, [getResolvedId, isAuthenticated, lang, showPulseNote]);
-
-  const handleTrackReport = useCallback(async (reason: string) => {
-    if (!reportTrackTarget) return;
-
-    const trackId = await getResolvedId(reportTrackTarget.sid);
-    if (!trackId) return;
-
-    setIsReportModalOpen(false);
-    try {
-      const result = await AncialAPI.reportAction<{ message?: string }>({
-        comment: reason,
-        id: trackId,
-        type: 6,
-      });
-      setReportTrackTarget(null);
-      showPulseNote(getApiMessage(result?.message, lang, lang?.reportsended || 'Жалоба отправлена'), 'success', undefined, true);
-    } catch (err) {
-      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
-    }
-  }, [getResolvedId, lang, reportTrackTarget, showPulseNote]);
+  const {
+    closeReportModal,
+    handleTrackReport,
+    isReportModalOpen,
+    reportTrack,
+  } = usePulseTrackReport<PulseTrack>(showPulseNote, getResolvedId);
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
-    if (!isAuthenticated) {
-      showPulseNote(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты', 'info');
-      return;
-    }
+    if (!requireAuth(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты')) return;
 
     openAddToPlaylist(trackId);
-  }, [isAuthenticated, lang, openAddToPlaylist, showPulseNote]);
+  }, [lang, openAddToPlaylist, requireAuth]);
 
   const refreshHomeTracksAfterMutation = useCallback(() => {
     Object.values(TRACK_CACHE_KEYS).forEach((key) => cache.remove(key, { category: 'pulse', subcategory: 'tracks' }));
@@ -1046,13 +1002,11 @@ export default function PulseContent() {
         attachmentWidgets={shareAttachment?.widgets}
         attachmentPreview={shareAttachment?.preview}
       />
-      <PulseReportModal
+      <ReportModal
         isOpen={isReportModalOpen}
-        onClose={() => {
-          setIsReportModalOpen(false);
-          setReportTrackTarget(null);
-        }}
-        onSelectReason={handleTrackReport}
+        onClose={closeReportModal}
+        onReport={handleTrackReport}
+        reasons={buildPulseTrackReportReasons(lang)}
         title={lang?.report || 'Пожаловаться'}
       />
       <PulseUploadTrackModal

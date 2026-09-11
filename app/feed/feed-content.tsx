@@ -1,14 +1,15 @@
 'use client';
 import { coerceToFinite as toNumber } from '../lib/convert';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import Modal from '../components/modal';
 import DeletePostModal from '../components/delete-post-modal';
+import { EmptyIllustration } from '../components/profile-ui';
 import ReportModal from '../components/report-modal';
+import { buildPostReportReasons } from '../lib/report-reasons';
 import ShareModal from '../components/share-modal';
 import { CommentsModal, type FeedComment } from '../components/comments-modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
@@ -19,8 +20,11 @@ import PostsRenderer, {
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useDragScroll } from '../hooks/useDragScroll';
+import { useLoadMoreObserver } from '../hooks/use-load-more-observer';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
+import { applyBookmarkResult } from '../lib/post-bookmark';
+import { applyVoteResult } from '../lib/post-vote';
 import { cn, SvgIcon } from './editor-shared';
 import FeedPostSkeleton from './feed-post-skeleton';
 
@@ -138,28 +142,6 @@ function MobileTopicCard({
         <SvgIcon className="w-16 h-16 opacity-50 absolute -bottom-3 -right-3 fill-white" id={icon} />
       </div>
     </button>
-  );
-}
-
-function EmptyIllustration({
-  description,
-  title,
-}: {
-  description: string;
-  title: string;
-}) {
-  return (
-    <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-0.5 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
-      <Image
-        src="/img/load-placeholders/nothingfound.webp"
-        alt="Nothing found"
-        width={224}
-        height={224}
-        className="h-56 w-auto"
-      />
-      <span className="text-base text-zinc-200 w-full text-center font-black">{title}</span>
-      <span className="text-sm text-zinc-400 w-full text-center font-medium">{description}</span>
-    </div>
   );
 }
 
@@ -378,60 +360,11 @@ export default function FeedContent() {
 
   const applyVoteState = (post: PostData, direction: 'up' | 'down') => {
     setPosts((currentPosts) =>
-      currentPosts.map((currentPost) => {
-        if (String(currentPost.id) !== String(post.id)) {
-          return currentPost;
-        }
-
-        const currentVote =
-          currentPost.user_vote_up === 'voted'
-            ? 'up'
-            : currentPost.user_vote_down === 'voted'
-              ? 'down'
-              : null;
-
-        if (direction === 'up') {
-          if (currentVote === 'up') {
-            return currentPost;
-          }
-
-          if (currentVote === 'down') {
-            return {
-              ...currentPost,
-              rating: toNumber(currentPost.rating) + 1,
-              user_vote_down: null,
-              user_vote_up: null,
-            };
-          }
-
-          return {
-            ...currentPost,
-            rating: toNumber(currentPost.rating) + 1,
-            user_vote_down: null,
-            user_vote_up: 'voted',
-          };
-        }
-
-        if (currentVote === 'down') {
-          return currentPost;
-        }
-
-        if (currentVote === 'up') {
-          return {
-            ...currentPost,
-            rating: toNumber(currentPost.rating) - 1,
-            user_vote_down: null,
-            user_vote_up: null,
-          };
-        }
-
-        return {
-          ...currentPost,
-          rating: toNumber(currentPost.rating) - 1,
-          user_vote_down: 'voted',
-          user_vote_up: null,
-        };
-      }),
+      currentPosts.map((currentPost) =>
+        String(currentPost.id) === String(post.id)
+          ? applyVoteResult(currentPost, direction)
+          : currentPost,
+      ),
     );
   };
 
@@ -709,24 +642,9 @@ export default function FeedContent() {
     };
   }, [topicButtonsRef]);
 
-  useEffect(() => {
-    const indicator = loadMoreRef.current;
-    if (!indicator) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        if (!hasMorePagesRef.current || isBusyRef.current) return;
-
-        void loadPostsRef.current(currentLastIdRef.current, true);
-      },
-      { rootMargin: '0px 0px 20% 0px' },
-    );
-
-    observer.observe(indicator);
-
-    return () => observer.disconnect();
+  useLoadMoreObserver(loadMoreRef, () => {
+    if (!hasMorePagesRef.current || isBusyRef.current) return;
+    void loadPostsRef.current(currentLastIdRef.current, true);
   }, [posts.length, topic]);
 
   const handleBookmark = async (post: PostData, nextValue: boolean) => {
@@ -741,29 +659,11 @@ export default function FeedContent() {
       });
 
       setPosts((currentPosts) =>
-        currentPosts.map((currentPost) => {
-          if (String(currentPost.id) !== String(post.id)) {
-            return currentPost;
-          }
-
-          const isAdded = response.action === 'added';
-          const isRemoved = response.action === 'removed';
-          const nextBookmarked = isAdded ? true : isRemoved ? false : nextValue;
-          const currentAmount = toNumber(currentPost.bookmarked_amount);
-
-          return {
-            ...currentPost,
-            is_bookmarked: nextBookmarked,
-            bookmarked_amount: Math.max(
-              0,
-              isAdded
-                ? currentAmount + 1
-                : isRemoved
-                  ? currentAmount - 1
-                  : currentAmount + (nextBookmarked ? 1 : -1),
-            ),
-          };
-        }),
+        currentPosts.map((currentPost) =>
+          String(currentPost.id) === String(post.id)
+            ? applyBookmarkResult(currentPost, response.action, nextValue)
+            : currentPost,
+        ),
       );
     } catch (error) {
       console.error('Bookmark failed', error);
@@ -1202,7 +1102,8 @@ export default function FeedContent() {
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         onReport={(reason) => void handleReport(reason)}
-        strings={strings}
+        reasons={buildPostReportReasons(strings)}
+        title={strings.report}
       />
 
       <CommentsModal

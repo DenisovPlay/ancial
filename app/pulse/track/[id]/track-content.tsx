@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { Dropdown, DropdownItem } from '../../../components/navigation';
 import ShareModal from '../../../components/share-modal';
 import { useAuth } from '../../../context/AuthContext';
-import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
+import { usePulseNote } from '../../../hooks/use-pulse-note';
+import { useRequireAuth } from '../../../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
@@ -28,6 +29,7 @@ import {
   isTrackAvailable,
   normalizeText,
   toNumber,
+  type PulseShareAttachment,
 } from '../../pulse-components';
 import { getPulseExternalUrl } from '../../pulse-navigation';
 import { PulseHeader } from '../../pulse-header';
@@ -49,22 +51,10 @@ type PulseTrackPageResponse = {
   track?: PulseTrackPageTrack | null;
 };
 
-type TrackShareAttachment = {
-  preview: {
-    authorImg: string;
-    authorName: string;
-    contentSnippet: string;
-    firstImage?: string;
-  };
-  widgets: Array<Record<string, unknown>>;
-};
-
-
 
 export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: string }) {
   const router = useRouter();
   const { isAuthenticated, lang, user } = useAuth();
-  const { showNote } = useNotification();
   const {
     currentSongId,
     isPlaying,
@@ -88,7 +78,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   const { favoriteIds, getFavoriteIdsSnapshot, updateFavoriteIds } = usePulseFavoriteIds();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
-  const [shareAttachment, setShareAttachment] = useState<TrackShareAttachment | null>(null);
+  const [shareAttachment, setShareAttachment] = useState<PulseShareAttachment | null>(null);
 
   // Страна пользователя: мгновенно из кэша, затем обновляем из GetCountry.php
   const userCountry = useUserCountry();
@@ -100,9 +90,8 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   const image = getImageUrl(track?.img, DEFAULT_TRACK_IMAGE);
   const active = trackNumericId > 0 && currentSongId === trackNumericId && isPlaying;
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4, html = false) => {
-    showNote({ content, time, type, html });
-  }, [showNote]);
+  const showPulseNote = usePulseNote();
+  const requireAuth = useRequireAuth(showPulseNote);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,10 +152,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   }, [router, searchValue]);
 
   const likeTrack = useCallback(async () => {
-    if (!isAuthenticated) {
-      showPulseNote(lang?.logintoaddfavorites || 'Войдите, чтобы добавить трек в Избранное', 'info');
-      return;
-    }
+    if (!requireAuth(lang?.logintoaddfavorites || 'Войдите, чтобы добавить трек в Избранное')) return;
 
     if (!trackNumericId) return;
 
@@ -192,18 +178,15 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
     } catch (err) {
       showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
-  }, [isAuthenticated, lang, showPulseNote, trackNumericId, updateFavoriteIds]);
+  }, [lang, requireAuth, showPulseNote, trackNumericId, updateFavoriteIds]);
 
   const addToPlaylist = useCallback(() => {
-    if (!isAuthenticated) {
-      showPulseNote(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты', 'info');
-      return;
-    }
+    if (!requireAuth(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты')) return;
 
     if (trackNumericId) {
       openAddToPlaylist(trackNumericId);
     }
-  }, [isAuthenticated, lang, openAddToPlaylist, showPulseNote, trackNumericId]);
+  }, [lang, openAddToPlaylist, requireAuth, trackNumericId]);
 
   const copyTrackLink = useCallback(async (tid: number | string, t?: PulseTrack) => {
     const resolvedTrackId = toNumber(tid);

@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import ReportModal from '../../../components/report-modal';
 import ShareModal from '../../../components/share-modal';
 import { useAuth } from '../../../context/AuthContext';
-import { useNotification } from '../../../context/NotificationContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
+import { usePulseNote } from '../../../hooks/use-pulse-note';
+import { usePulseTrackReport } from '../../../hooks/use-pulse-track-report';
+import { useRequireAuth } from '../../../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
+import { buildPulseTrackReportReasons } from '../../../lib/report-reasons';
 import { useUserCountry } from '../../../lib/user-geo';
 import { SITE_CONFIG } from '../../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
@@ -18,7 +22,6 @@ import {
   getPulseBackgroundColorByMood,
   PulseEmptyState,
   PulseLogo,
-  PulseReportModal,
   PulseTrackRow,
   TracksPanelSkeleton,
   decodeHtmlEntities,
@@ -26,6 +29,7 @@ import {
   getTrackArtwork,
   normalizeText,
   toNumber,
+  type PulseShareAttachment,
   type PulseTrack,
 } from '../../pulse-components';
 
@@ -46,7 +50,6 @@ export default function PulseSearchTracksContent() {
   const searchParams = useSearchParams();
   const query = normalizeText(searchParams.get('q'));
   const { isAuthenticated, lang, user } = useAuth();
-  const { showNote } = useNotification();
   const {
     currentSongId,
     currentTrackObj,
@@ -63,24 +66,15 @@ export default function PulseSearchTracksContent() {
   const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
   const [loading, setLoading] = useState(!tracks.length);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
-  const [shareAttachment, setShareAttachment] = useState<{
-    widgets: Array<Record<string, unknown>>;
-    preview: { authorName: string; authorImg: string; contentSnippet: string; firstImage?: string };
-  } | null>(null);
+  const [shareAttachment, setShareAttachment] = useState<PulseShareAttachment | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
-  const [reportTrackTarget, setReportTrackTarget] = useState<PulseTrack | null>(null);
 
   const userCountry = useUserCountry();
 
-  const showPulseNote = useCallback(
-    (content: string, type: 'error' | 'info' | 'success' = 'info', time = 4, html = false) => {
-      showNote({ content, time, type, html });
-    },
-    [showNote],
-  );
+  const showPulseNote = usePulseNote();
+  const requireAuth = useRequireAuth(showPulseNote);
 
   useEffect(() => {
     let cancelled = false;
@@ -148,10 +142,7 @@ export default function PulseSearchTracksContent() {
 
   const likeTrack = useCallback(
     async (track: PulseTrack) => {
-      if (!isAuthenticated) {
-        showPulseNote(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное', 'info');
-        return;
-      }
+      if (!requireAuth(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное')) return;
 
       const rawSid = String(track.sid ?? '').trim();
       const trackId = await getResolvedId(rawSid);
@@ -192,7 +183,7 @@ export default function PulseSearchTracksContent() {
         showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
       }
     },
-    [getResolvedId, isAuthenticated, lang, showPulseNote, updateFavoriteIds],
+    [getResolvedId, lang, requireAuth, showPulseNote, updateFavoriteIds],
   );
 
   const copyTrackLink = useCallback(
@@ -226,53 +217,18 @@ export default function PulseSearchTracksContent() {
 
   const openAddTrackToPlaylist = useCallback(
     (trackId: number | string) => {
-      if (!isAuthenticated) {
-        showPulseNote(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты', 'info');
-        return;
-      }
+      if (!requireAuth(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты')) return;
       openAddToPlaylist(trackId);
     },
-    [isAuthenticated, lang, openAddToPlaylist, showPulseNote],
+    [lang, openAddToPlaylist, requireAuth],
   );
 
-  const reportTrack = useCallback(
-    async (track: PulseTrack) => {
-      if (!isAuthenticated) {
-        showPulseNote(lang?.logintoreport || 'Войдите, чтобы отправить жалобу', 'info');
-        return;
-      }
-      const rawId = String(track.sid ?? '').trim();
-      if (!rawId) return;
-
-      const trackId = await getResolvedId(rawId);
-      if (!trackId) return;
-
-      setReportTrackTarget({ ...track, sid: trackId });
-      setIsReportModalOpen(true);
-    },
-    [getResolvedId, isAuthenticated, lang, showPulseNote],
-  );
-
-  const handleTrackReport = useCallback(
-    async (reason: string) => {
-      if (!reportTrackTarget) return;
-      const trackId = await getResolvedId(reportTrackTarget.sid);
-      if (!trackId) return;
-      setIsReportModalOpen(false);
-      try {
-        const result = await AncialAPI.reportAction<{ message?: string }>({
-          comment: reason,
-          id: trackId,
-          type: 6,
-        });
-        setReportTrackTarget(null);
-        showPulseNote(getApiMessage(result?.message, lang, lang?.reportsended || 'Жалоба отправлена'), 'success', undefined, true);
-      } catch (err) {
-        showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
-      }
-    },
-    [getResolvedId, lang, reportTrackTarget, showPulseNote],
-  );
+  const {
+    closeReportModal,
+    handleTrackReport,
+    isReportModalOpen,
+    reportTrack,
+  } = usePulseTrackReport<PulseTrack>(showPulseNote, getResolvedId);
 
 
   const refreshAfterMutation = useCallback(() => {
@@ -370,13 +326,11 @@ export default function PulseSearchTracksContent() {
         attachmentWidgets={shareAttachment?.widgets}
         attachmentPreview={shareAttachment?.preview}
       />
-      <PulseReportModal
+      <ReportModal
         isOpen={isReportModalOpen}
-        onClose={() => {
-          setIsReportModalOpen(false);
-          setReportTrackTarget(null);
-        }}
-        onSelectReason={handleTrackReport}
+        onClose={closeReportModal}
+        onReport={handleTrackReport}
+        reasons={buildPulseTrackReportReasons(lang)}
         title={lang?.report || 'Пожаловаться'}
       />
       <PulseUploadTrackModal

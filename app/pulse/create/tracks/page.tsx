@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { useCopyToClipboard } from '../../../hooks/use-copy-to-clipboard';
 import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import { getPulseBackgroundColorByMood, ActionIcon } from '../../pulse-components';
 
@@ -23,6 +24,7 @@ interface PulseTrackRow {
 export default function PulseCreateTracksPage() {
   const { lang, isAuthenticated } = useAuth();
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
 
   const [tracks, setTracks] = useState<PulseTrackRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,20 +89,17 @@ export default function PulseCreateTracksPage() {
       .catch(() => setPlayingTrackId(null));
   };
 
-  const handleCopyLink = (trackId: number | string) => {
+  const handleCopyLink = async (trackId: number | string) => {
     const url = `${window.location.origin}/pulse/track/${trackId}`;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url)
-        .then(() => {
-          showNote({
-            content: lang?.creators_link_copied || 'Ссылка скопирована в буфер',
-            type: 'success',
-            time: 3,
-          });
-        })
-        .catch(() => {
-          showNote({ content: url, type: 'info', time: 5 });
-        });
+    const ok = await copyToClipboard(url);
+    if (ok) {
+      showNote({
+        content: lang?.creators_link_copied || 'Ссылка скопирована в буфер',
+        type: 'success',
+        time: 3,
+      });
+    } else {
+      showNote({ content: url, type: 'info', time: 5 });
     }
   };
 

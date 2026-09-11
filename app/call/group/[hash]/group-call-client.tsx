@@ -7,6 +7,7 @@ import Modal from '../../../components/modal';
 import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { useCopyToClipboard } from '../../../hooks/use-copy-to-clipboard';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import type { DialogMeta, GroupMember } from '../../../messages/lib/messages-shared';
 import { canManageCommunityMember } from '../../../group/[link]/lib/community-types';
@@ -232,6 +233,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   const router = useRouter();
   const { lang } = useAuth();
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
   const [permissionsOpen, setPermissionsOpen] = useState(true);
   const [cameraMenuOpen, setCameraMenuOpen] = useState(false);
   const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
@@ -416,12 +418,20 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
         code = res.code;
       }
       const url = `${window.location.origin}/call/invite/${encodeURIComponent(code)}`;
-      await navigator.clipboard.writeText(url);
-      showNote({
-        content: lang?.voice_invite_copied || 'Ссылка на звонок скопирована',
-        type: 'success',
-        time: 5,
-      });
+      const ok = await copyToClipboard(url);
+      if (ok) {
+        showNote({
+          content: lang?.voice_invite_copied || 'Ссылка на звонок скопирована',
+          type: 'success',
+          time: 5,
+        });
+      } else {
+        showNote({
+          content: lang?.voice_invite_failed || 'Не удалось создать ссылку-инвайт',
+          type: 'error',
+          time: 5,
+        });
+      }
     } catch (err) {
       showNote({
         content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.voice_invite_failed || 'Не удалось создать ссылку-инвайт'),

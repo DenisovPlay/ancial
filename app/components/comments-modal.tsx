@@ -225,7 +225,7 @@ function CommentCard({
   );
 }
 
-function CommentsEmptyState({
+export function CommentsEmptyState({
   description,
   title,
 }: {

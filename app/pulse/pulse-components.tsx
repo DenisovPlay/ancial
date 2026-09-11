@@ -6,7 +6,6 @@ import { decodeHtmlEntities, normalizeText } from '../lib/convert';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 
-import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
 import { useAuth, type User } from '../context/AuthContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
@@ -22,6 +21,17 @@ import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 
 export type PulseTrackArtwork = {
   src?: string | null;
+};
+
+/** Вложение для ShareModal (карточка-превью + виджеты) — раньше дублировалось по 6 pulse-файлам. */
+export type PulseShareAttachment = {
+  preview: {
+    authorImg: string;
+    authorName: string;
+    contentSnippet: string;
+    firstImage?: string;
+  };
+  widgets: Array<Record<string, unknown>>;
 };
 
 export type PulseTrack = {
@@ -739,52 +749,6 @@ export function PulseLegalFooter({ className }: { className?: string }) {
         </span>
       </div>
     </div>
-  );
-}
-
-export function PulseReportModal({
-  isOpen,
-  onClose,
-  onSelectReason,
-  title,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelectReason: (reason: string) => void | Promise<void>;
-  title?: string;
-}) {
-  const { lang } = useAuth();
-  const reasons = [
-    { label: lang?.report_spam || 'Спам', value: 'Спам' },
-    { label: lang?.report_illegal_item || 'Запрещённый товар', value: 'Запрещённый товар' },
-    { label: lang?.report_fraud || 'Обман', value: 'Обман' },
-    { label: lang?.report_violence || 'Насилие и вражда', value: 'Насилие и вражда' },
-    { label: lang?.report_explicit || 'Откровенное изображение', value: 'Откровенное изображение' },
-    { label: lang?.report_copyright || 'Нарушение интеллектуальных прав', value: 'Нарушение интеллектуальных прав' },
-  ];
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={title || lang?.report || 'Пожаловаться'}
-      width="sm"
-    >
-      <div className="flex flex-col justify-center overflow-hidden rounded-3xl shadow">
-        {reasons.map((reason) => (
-          <button
-            key={reason.value}
-            type="button"
-            onClick={() => {
-              void onSelectReason(reason.value);
-            }}
-            className="cursor-pointer bg-zinc-800 p-1.5 text-left text-lg duration-300 hover:bg-zinc-700 active:scale-95 active:rounded-xl"
-          >
-            {reason.label}
-          </button>
-        ))}
-      </div>
-    </Modal>
   );
 }
 

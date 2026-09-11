@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { sanitizeUserHtml } from '../../lib/sanitize-html';
 import { SITE_DOMAIN } from '../../config';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { useCopyToClipboard } from '../../hooks/use-copy-to-clipboard';
 import { useMentionNavigation } from '../../hooks/use-mention-navigation';
 import { useNotification } from '../../context/NotificationContext';
 import { Dropdown, DropdownItem } from '../../components/navigation';
@@ -191,12 +192,13 @@ export default function MessageBubble({
   const replyIconScale = useTransform(dragX, [0, -50], [0.5, 1]);
   const replyIconX = useTransform(dragX, [0, -50], [20, 0]);
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
 
   const handleCopyText = useCallback(() => {
     const rawText = message.message || '';
     const cleanText = stripHtml(rawText).trim();
     if (cleanText && typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(cleanText);
+      void copyToClipboard(cleanText);
       showNote({
         content: lang?.copied || 'Скопировано',
         type: 'success',
@@ -204,7 +206,7 @@ export default function MessageBubble({
       });
     }
     setMenuOpen(false);
-  }, [message.message, lang, showNote]);
+  }, [message.message, lang, showNote, copyToClipboard]);
 
   const messageId = getMessageId(message);
   const isOwn = toNumber(message.sender_id) === currentUserId;

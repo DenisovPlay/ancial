@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { useCopyToClipboard } from '../../../hooks/use-copy-to-clipboard';
 import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import { ActionIcon, cn } from '../../pulse-components';
 
@@ -19,6 +20,7 @@ interface PulseArtistRow {
 export default function PulseCreateArtistsPage() {
   const { lang, isAuthenticated } = useAuth();
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
 
   const [artists, setArtists] = useState<PulseArtistRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,20 +75,17 @@ export default function PulseCreateArtistsPage() {
     setDeleteModalOpen(true);
   };
 
-  const handleCopyLink = (artistId: number | string) => {
+  const handleCopyLink = async (artistId: number | string) => {
     const url = `${window.location.origin}/pulse/artist/${artistId}`;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url)
-        .then(() => {
-          showNote({
-            content: lang?.creators_link_copied || 'Ссылка скопирована в буфер',
-            type: 'success',
-            time: 3,
-          });
-        })
-        .catch(() => {
-          showNote({ content: url, type: 'info', time: 5 });
-        });
+    const ok = await copyToClipboard(url);
+    if (ok) {
+      showNote({
+        content: lang?.creators_link_copied || 'Ссылка скопирована в буфер',
+        type: 'success',
+        time: 3,
+      });
+    } else {
+      showNote({ content: url, type: 'info', time: 5 });
     }
   };
 

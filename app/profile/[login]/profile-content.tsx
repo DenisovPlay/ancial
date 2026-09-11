@@ -10,6 +10,7 @@ import { sanitizeUserHtml } from '../../lib/sanitize-html';
 import Modal from '../../components/modal';
 import DeletePostModal from '../../components/delete-post-modal';
 import ReportModal from '../../components/report-modal';
+import { buildPostReportReasons } from '../../lib/report-reasons';
 import ShareModal from '../../components/share-modal';
 import { CommentsModal, type FeedComment } from '../../components/comments-modal';
 import {
@@ -30,8 +31,11 @@ import PostsRenderer, {
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useLoadMoreObserver } from '../../hooks/use-load-more-observer';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import { applyBookmarkResult } from '../../lib/post-bookmark';
+import { applyVoteResult } from '../../lib/post-vote';
 import {
   cn,
   SvgIcon,
@@ -583,29 +587,15 @@ export default function UserProfileContent({ login }: { login: string }) {
     });
   }, [hasMorePages, loading, posts, postsLoading, profileCacheKey, userData]);
 
-  useEffect(() => {
-    const indicator = loadMoreRef.current;
-    if (!indicator) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        if (!hasMorePagesRef.current || postsLoading || isLoadingMore) return;
-        if (!profileIdRef.current) return;
-
-        void loadPostsRef.current(profileIdRef.current, currentLastIdRef.current, true);
-      },
-      { rootMargin: '0px 0px 20% 0px' },
-    );
-
-    observer.observe(indicator);
-    return () => observer.disconnect();
+  useLoadMoreObserver(loadMoreRef, () => {
+    if (!hasMorePagesRef.current || postsLoading || isLoadingMore) return;
+    if (!profileIdRef.current) return;
+    void loadPostsRef.current(profileIdRef.current, currentLastIdRef.current, true);
   }, [isLoadingMore, posts.length, postsLoading, userData?.id]);
 
   const handleBookmark = async (post: PostData, nextValue: boolean) => {
     try {
-      const response = await AncialAPI.postAction<{ message?: string }>('bookmark', { pid: post.id });
+      const response = await AncialAPI.postAction<{ action?: string; message?: string }>('bookmark', { pid: post.id });
       const text = response.message || '';
 
       showNote({
@@ -615,25 +605,7 @@ export default function UserProfileContent({ login }: { login: string }) {
         time: 5,
       });
 
-      updatePost(post.id, (currentPost) => {
-        const isAdded = text === strings.bookmarkadded;
-        const isRemoved = text === strings.bookmarkremoved;
-        const nextBookmarked = isAdded ? true : isRemoved ? false : nextValue;
-        const currentAmount = toNumber(currentPost.bookmarked_amount);
-
-        return {
-          ...currentPost,
-          is_bookmarked: nextBookmarked,
-          bookmarked_amount: Math.max(
-            0,
-            isAdded
-              ? currentAmount + 1
-              : isRemoved
-                ? currentAmount - 1
-                : currentAmount + (nextBookmarked ? 1 : -1),
-          ),
-        };
-      });
+      updatePost(post.id, (currentPost) => applyBookmarkResult(currentPost, response.action, nextValue));
     } catch (nextError) {
       console.error('Bookmark failed', nextError);
       showNote({
@@ -646,10 +618,9 @@ export default function UserProfileContent({ login }: { login: string }) {
 
   const handleVote = async (post: PostData, direction: 'up' | 'down') => {
     try {
-      const response = await AncialAPI.votePost<{ message?: string }>(post.id, direction);
-      const text = response.message || '';
+      const response = await AncialAPI.votePost<{ status?: string }>(post.id, direction);
 
-      if (text === 'nlog') {
+      if (response.status === 'nlog') {
         showNote({
           content: strings.logintoreact,
           type: 'success',
@@ -658,52 +629,7 @@ export default function UserProfileContent({ login }: { login: string }) {
         return;
       }
 
-      updatePost(post.id, (currentPost) => {
-        const currentVote =
-          currentPost.user_vote_up === 'voted'
-            ? 'up'
-            : currentPost.user_vote_down === 'voted'
-              ? 'down'
-              : null;
-
-        if (direction === 'up') {
-          if (currentVote === 'up') return currentPost;
-
-          if (currentVote === 'down') {
-            return {
-              ...currentPost,
-              rating: toNumber(currentPost.rating) + 1,
-              user_vote_down: null,
-              user_vote_up: null,
-            };
-          }
-
-          return {
-            ...currentPost,
-            rating: toNumber(currentPost.rating) + 1,
-            user_vote_down: null,
-            user_vote_up: 'voted',
-          };
-        }
-
-        if (currentVote === 'down') return currentPost;
-
-        if (currentVote === 'up') {
-          return {
-            ...currentPost,
-            rating: toNumber(currentPost.rating) - 1,
-            user_vote_down: null,
-            user_vote_up: null,
-          };
-        }
-
-        return {
-          ...currentPost,
-          rating: toNumber(currentPost.rating) - 1,
-          user_vote_down: 'voted',
-          user_vote_up: null,
-        };
-      });
+      updatePost(post.id, (currentPost) => applyVoteResult(currentPost, direction));
     } catch (nextError) {
       console.error('Vote failed', nextError);
       showNote({
@@ -1355,7 +1281,8 @@ export default function UserProfileContent({ login }: { login: string }) {
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         onReport={(reason) => void handleReport(reason)}
-        strings={strings}
+        reasons={buildPostReportReasons(strings)}
+        title={strings.report}
       />
 
       <ShareModal

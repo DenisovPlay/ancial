@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { useAuth } from '../../context/AuthContext';
-import { useNotification } from '../../context/NotificationContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { useDragScroll } from '../../hooks/useDragScroll';
+import { usePulseNote } from '../../hooks/use-pulse-note';
 import { AncialAPI } from '../../lib/api-v2';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
@@ -127,7 +127,6 @@ function PulseHistoryRow({
 export default function PulseMyContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
-  const { showNote } = useNotification();
   const {
     currentCollectionId,
     isPlaying,
@@ -144,9 +143,7 @@ export default function PulseMyContent() {
 
   const libraryItems = useMemo(() => getLibraryItems(library), [library]);
 
-  const showPulseNote = useCallback((content: string, type: 'error' | 'info' | 'success' = 'info', time = 4, html = false) => {
-    showNote({ content, time, type, html });
-  }, [showNote]);
+  const showPulseNote = usePulseNote();
 
   useEffect(() => {
     if (authLoading) return;

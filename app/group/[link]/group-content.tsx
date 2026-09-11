@@ -10,11 +10,14 @@ import { sanitizeUserHtml } from '../../lib/sanitize-html';
 import Modal from '../../components/modal';
 import DeletePostModal from '../../components/delete-post-modal';
 import ReportModal from '../../components/report-modal';
+import { buildPostReportReasons } from '../../lib/report-reasons';
 import ShareModal from '../../components/share-modal';
 import { CommentsModal, type FeedComment } from '../../components/comments-modal';
 import {
+  EmptyIllustration,
   GroupMiniCard,
   PeopleSection,
+  ProfileMediaButton,
   RelationGridModal,
   type UserPreview,
   UserMiniCard,
@@ -25,10 +28,14 @@ import PostsRenderer, {
 } from '../../components/posts-renderer';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useCopyToClipboard } from '../../hooks/use-copy-to-clipboard';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useDragScroll } from '../../hooks/useDragScroll';
+import { useLoadMoreObserver } from '../../hooks/use-load-more-observer';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import { applyBookmarkResult } from '../../lib/post-bookmark';
+import { applyVoteResult } from '../../lib/post-vote';
 import {
   cn,
   SvgIcon,
@@ -127,30 +134,6 @@ function clearGroupProfileCache(key: string) {
 
 // Local helpers removed
 
-function EmptyIllustration({
-  description,
-  title,
-}: {
-  description?: string;
-  title: string;
-}) {
-  return (
-    <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6 border border-zinc-600/30">
-      <Image
-        src="/img/load-placeholders/nothingfound.webp"
-        alt="Nothing found"
-        width={224}
-        height={224}
-        className="h-56 w-auto"
-      />
-      <span className="text-base text-zinc-200 w-full text-center font-black">{title}</span>
-      {description ? (
-        <span className="text-sm text-zinc-400 w-full text-center font-medium">{description}</span>
-      ) : null}
-    </div>
-  );
-}
-
 function GroupSkeleton() {
   return (
     <div className="flex flex-col gap-3 items-center flex-grow w-screen md:max-w-screen-2xl">
@@ -173,31 +156,11 @@ function GroupSkeleton() {
   );
 }
 
-function ProfileMediaButton({
-  className,
-  onClick,
-}: {
-  className?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'active:scale-95 border border-zinc-600/30 bg-zinc-800/80 hover:bg-zinc-700/80 backdrop-blur-lg flex items-center justify-center text-zinc-100 rounded-2xl hover:text-zinc-300 cursor-pointer duration-300',
-        className,
-      )}
-    >
-      <SvgIcon className="w-6 h-6 fill-white inline" id="IC-edit" />
-    </button>
-  );
-}
-
 export default function GroupProfileContent({ link }: { link: string }) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
 
   const abortRef = useRef<AbortController | null>(null);
   const currentLastIdRef = useRef<Id>(0);
@@ -639,24 +602,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
     });
   }, [blocked, error, groupCacheKey, groupData, hasMorePages, loading, posts, postsLoading]);
 
-  useEffect(() => {
-    const indicator = loadMoreRef.current;
-    if (!indicator) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        if (!hasMorePagesRef.current || postsLoading || isLoadingMore) return;
-        if (!groupIdRef.current) return;
-
-        void loadPostsRef.current(groupIdRef.current, currentLastIdRef.current, true);
-      },
-      { rootMargin: '0px 0px 20% 0px' },
-    );
-
-    observer.observe(indicator);
-    return () => observer.disconnect();
+  useLoadMoreObserver(loadMoreRef, () => {
+    if (!hasMorePagesRef.current || postsLoading || isLoadingMore) return;
+    if (!groupIdRef.current) return;
+    void loadPostsRef.current(groupIdRef.current, currentLastIdRef.current, true);
   }, [isLoadingMore, posts.length, postsLoading, groupData?.id]);
 
   const handleBookmark = async (post: PostData, nextValue: boolean) => {
@@ -670,25 +619,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         time: 5,
       });
 
-      updatePost(post.id, (currentPost) => {
-        const isAdded = response.action === 'added';
-        const isRemoved = response.action === 'removed';
-        const nextBookmarked = isAdded ? true : isRemoved ? false : nextValue;
-        const currentAmount = toNumber(currentPost.bookmarked_amount);
-
-        return {
-          ...currentPost,
-          bookmarked_amount: Math.max(
-            0,
-            isAdded
-              ? currentAmount + 1
-              : isRemoved
-                ? currentAmount - 1
-                : currentAmount + (nextBookmarked ? 1 : -1),
-          ),
-          is_bookmarked: nextBookmarked,
-        };
-      });
+      updatePost(post.id, (currentPost) => applyBookmarkResult(currentPost, response.action, nextValue));
     } catch (nextError) {
       console.error('Bookmark failed', nextError);
       showNote({
@@ -712,52 +643,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         return;
       }
 
-      updatePost(post.id, (currentPost) => {
-        const currentVote =
-          currentPost.user_vote_up === 'voted'
-            ? 'up'
-            : currentPost.user_vote_down === 'voted'
-              ? 'down'
-              : null;
-
-        if (direction === 'up') {
-          if (currentVote === 'up') return currentPost;
-
-          if (currentVote === 'down') {
-            return {
-              ...currentPost,
-              rating: toNumber(currentPost.rating) + 1,
-              user_vote_down: null,
-              user_vote_up: null,
-            };
-          }
-
-          return {
-            ...currentPost,
-            rating: toNumber(currentPost.rating) + 1,
-            user_vote_down: null,
-            user_vote_up: 'voted',
-          };
-        }
-
-        if (currentVote === 'down') return currentPost;
-
-        if (currentVote === 'up') {
-          return {
-            ...currentPost,
-            rating: toNumber(currentPost.rating) - 1,
-            user_vote_down: null,
-            user_vote_up: null,
-          };
-        }
-
-        return {
-          ...currentPost,
-          rating: toNumber(currentPost.rating) - 1,
-          user_vote_down: 'voted',
-          user_vote_up: null,
-        };
-      });
+      updatePost(post.id, (currentPost) => applyVoteResult(currentPost, direction));
     } catch (nextError) {
       console.error('Vote failed', nextError);
       showNote({
@@ -921,15 +807,14 @@ export default function GroupProfileContent({ link }: { link: string }) {
   const handleCopyShareLink = async () => {
     if (!shareUrl) return;
 
-    try {
-      await navigator.clipboard.writeText(shareUrl);
+    const ok = await copyToClipboard(shareUrl);
+    if (ok) {
       showNote({
         content: strings.linkcopied,
         type: 'success',
         time: 5,
       });
-    } catch (nextError) {
-      console.error('Copy link failed', nextError);
+    } else {
       showNote({
         content: strings.somethingwrong,
         type: 'error',
@@ -1362,7 +1247,8 @@ export default function GroupProfileContent({ link }: { link: string }) {
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         onReport={(reason) => void handleReport(reason)}
-        strings={strings}
+        reasons={buildPostReportReasons(strings)}
+        title={strings.report}
       />
 
       <ShareModal

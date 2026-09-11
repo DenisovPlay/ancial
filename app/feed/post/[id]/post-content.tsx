@@ -1,22 +1,27 @@
 'use client';
 import { coerceToFinite as toNumber } from '../../../lib/convert';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { sanitizeUserHtml } from '../../../lib/sanitize-html';
 
 import Modal from '../../../components/modal';
+import { CommentsEmptyState } from '../../../components/comments-modal';
 import DeletePostModal from '../../../components/delete-post-modal';
+import { EmptyIllustration } from '../../../components/profile-ui';
 import ReportModal from '../../../components/report-modal';
+import { buildPostReportReasons } from '../../../lib/report-reasons';
 import ShareModal from '../../../components/share-modal';
 import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { PostCard, type PostCardLang, type PostData } from '../../../components/posts-renderer';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { useCopyToClipboard } from '../../../hooks/use-copy-to-clipboard';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
+import { applyBookmarkResult } from '../../../lib/post-bookmark';
+import { applyVoteResult } from '../../../lib/post-vote';
 import { SvgIcon } from '../../editor-shared';
 import AccountName from '../../../components/account-name';
 import FeedPostSkeleton from '../../feed-post-skeleton';
@@ -87,46 +92,6 @@ function getPostDocumentTitle(post: PostData | null, lang: Record<string, string
 
 // Removed local api helpers
 
-function EmptyIllustration({
-  title,
-}: {
-  title: string;
-}) {
-  return (
-    <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6 border border-zinc-600/30">
-      <Image
-        src="/img/load-placeholders/nothingfound.webp"
-        alt="Nothing found"
-        width={224}
-        height={224}
-        className="h-56 w-auto"
-      />
-      <span className="text-base text-zinc-200 w-full text-center font-black">{title}</span>
-    </div>
-  );
-}
-
-function CommentsEmptyState({
-  description,
-  title,
-}: {
-  description: string;
-  title: string;
-}) {
-  return (
-    <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center">
-      <Image
-        src="/img/load-placeholders/nothingfound.webp"
-        alt="No comments"
-        width={224}
-        height={224}
-        className="h-56 w-auto"
-      />
-      <span className="text-base text-zinc-100 w-full text-center font-black">{title}</span>
-      <span className="text-sm text-zinc-300 w-full text-center font-medium">{description}</span>
-    </div>
-  );
-}
 
 function FeedCommentCard({
   comment,
@@ -233,6 +198,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
   const router = useRouter();
   const { lang, isAuthenticated, user } = useAuth();
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
   const commentInputRef = useRef<HTMLInputElement | null>(null);
   const commentsSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -392,27 +358,11 @@ export default function SinglePostContent({ postId }: { postId: string }) {
         time: 5,
       });
 
-      updatePost((currentPost) => {
-        if (String(currentPost.id) !== String(targetPost.id)) return currentPost;
-
-        const isAdded = response.action === 'added';
-        const isRemoved = response.action === 'removed';
-        const nextBookmarked = isAdded ? true : isRemoved ? false : nextValue;
-        const currentAmount = toNumber(currentPost.bookmarked_amount);
-
-        return {
-          ...currentPost,
-          is_bookmarked: nextBookmarked,
-          bookmarked_amount: Math.max(
-            0,
-            isAdded
-              ? currentAmount + 1
-              : isRemoved
-                ? currentAmount - 1
-                : currentAmount + (nextBookmarked ? 1 : -1),
-          ),
-        };
-      });
+      updatePost((currentPost) =>
+        String(currentPost.id) === String(targetPost.id)
+          ? applyBookmarkResult(currentPost, response.action, nextValue)
+          : currentPost,
+      );
     } catch (nextError) {
       console.error('Bookmark failed', nextError);
       showNote({
@@ -436,54 +386,11 @@ export default function SinglePostContent({ postId }: { postId: string }) {
         return;
       }
 
-      updatePost((currentPost) => {
-        if (String(currentPost.id) !== String(targetPost.id)) return currentPost;
-
-        const currentVote =
-          currentPost.user_vote_up === 'voted'
-            ? 'up'
-            : currentPost.user_vote_down === 'voted'
-              ? 'down'
-              : null;
-
-        if (direction === 'up') {
-          if (currentVote === 'up') return currentPost;
-
-          if (currentVote === 'down') {
-            return {
-              ...currentPost,
-              rating: toNumber(currentPost.rating) + 1,
-              user_vote_down: null,
-              user_vote_up: null,
-            };
-          }
-
-          return {
-            ...currentPost,
-            rating: toNumber(currentPost.rating) + 1,
-            user_vote_down: null,
-            user_vote_up: 'voted',
-          };
-        }
-
-        if (currentVote === 'down') return currentPost;
-
-        if (currentVote === 'up') {
-          return {
-            ...currentPost,
-            rating: toNumber(currentPost.rating) - 1,
-            user_vote_down: null,
-            user_vote_up: null,
-          };
-        }
-
-        return {
-          ...currentPost,
-          rating: toNumber(currentPost.rating) - 1,
-          user_vote_down: 'voted',
-          user_vote_up: null,
-        };
-      });
+      updatePost((currentPost) =>
+        String(currentPost.id) === String(targetPost.id)
+          ? applyVoteResult(currentPost, direction)
+          : currentPost,
+      );
     } catch (nextError) {
       console.error('Vote failed', nextError);
       showNote({
@@ -613,15 +520,14 @@ export default function SinglePostContent({ postId }: { postId: string }) {
   const handleCopyShareLink = async () => {
     if (!shareUrl) return;
 
-    try {
-      await navigator.clipboard.writeText(shareUrl);
+    const ok = await copyToClipboard(shareUrl);
+    if (ok) {
       showNote({
         content: strings.linkcopied,
         type: 'success',
         time: 5,
       });
-    } catch (nextError) {
-      console.error('Copy link failed', nextError);
+    } else {
       showNote({
         content: strings.somethingwrong,
         type: 'error',
@@ -763,7 +669,8 @@ export default function SinglePostContent({ postId }: { postId: string }) {
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
         onReport={(reason) => void handleReport(reason)}
-        strings={strings}
+        reasons={buildPostReportReasons(strings)}
+        title={strings.report}
       />
 
       <ShareModal

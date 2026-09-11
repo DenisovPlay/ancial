@@ -1241,7 +1241,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       >
         <form onSubmit={handleSubmitLink} className="flex flex-col gap-3">
           <div className="flex flex-col w-full text-left">
-            <span className="text-zinc-400 pl-4 z-20 -mt-1.5 text-sm">
+            <span className="text-zinc-400 pl-4 z-20 text-sm">
               {strings?.editor_link_text || 'Текст ссылки'}
             </span>
             <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
@@ -1256,8 +1256,8 @@ export default function RichTextEditor({ value, onChange, placeholder, className
             </div>
           </div>
 
-          <div className="flex flex-col w-full text-left mt-2">
-            <span className="text-zinc-400 pl-4 z-20 -mt-1.5 text-sm">URL</span>
+          <div className="flex flex-col w-full text-left -mt-2">
+            <span className="text-zinc-400 pl-4 z-20 text-sm">URL</span>
             <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
               <input
                 type="url"
@@ -1272,7 +1272,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
 
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-2"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
           >
             {strings?.editor_link_insert_btn || 'Вставить'}
           </button>

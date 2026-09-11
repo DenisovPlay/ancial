@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useCopyToClipboard } from '../../hooks/use-copy-to-clipboard';
 import { AncialAPI } from '../../lib/api-v2';
 
 /** Координаты углов QR-кода из jsQR (topLeftCorner и т.д.). */
@@ -23,6 +24,7 @@ export default function QRContent() {
   const router = useRouter();
   const { lang, isAuthenticated, isLoading: authLoading } = useAuth();
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
 
   const [scriptLoaded, setScriptLoaded] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -498,8 +500,8 @@ export default function QRContent() {
     return null;
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const handleCopyToClipboard = (text: string) => {
+    void copyToClipboard(text);
     setCopiedSuccess(true);
     setTimeout(() => setCopiedSuccess(false), 2000);
   };
@@ -603,7 +605,7 @@ export default function QRContent() {
     buttons.push(
       <button
         key="copy-text"
-        onClick={() => copyToClipboard(scannedData)}
+        onClick={() => handleCopyToClipboard(scannedData)}
         className="flex items-center justify-center gap-3 p-3 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white font-semibold rounded-3xl duration-300 active:scale-95 border border-zinc-600/30"
       >
         <span>{strings.copytext}</span>

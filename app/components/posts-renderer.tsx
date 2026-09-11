@@ -3,6 +3,7 @@ import { coerceToFinite as toNumber } from '../lib/convert';
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useCopyToClipboard } from '../hooks/use-copy-to-clipboard';
 import { useMentionNavigation } from '../hooks/use-mention-navigation';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import { ensureCarouselScrollDelegation } from './carousel-delegation';
@@ -22,6 +23,7 @@ import ShareModal from './share-modal';
 import { parsePostContentToHtml } from './post-parser';
 import { SITE_URL } from '../config';
 import { formatRelativeTime } from '../lib/time';
+import { detectTextLanguage, htmlToPlainText, translateToLang } from '../lib/translate';
 
 
 
@@ -149,49 +151,6 @@ function callLegacy(name: string, ...args: unknown[]) {
 function getShareUrl(post: PostData, shareBaseUrl: string) {
   const normalized = shareBaseUrl.endsWith('/') ? shareBaseUrl : `${shareBaseUrl}/`;
   return `${normalized}${post.id}`;
-}
-
-/**
- * Грубое определение языка текста по доминирующему алфавиту — без сети и внешних библиотек.
- * Различает ru/be/en, чего достаточно под три локали приложения. Короткие/смешанные
- * тексты (меньше 12 буквенных символов) намеренно не определяются — вернётся null.
- */
-function detectPostLanguage(text: string): string | null {
-  const stripped = text.replace(/<[^>]+>/g, ' ');
-  const cyrillicCount = (stripped.match(/[а-яёіў]/gi) || []).length;
-  const latinCount = (stripped.match(/[a-z]/gi) || []).length;
-
-  if (cyrillicCount + latinCount < 12) return null;
-  if (cyrillicCount > latinCount) {
-    const belarusianMarkers = (stripped.match(/[ўі]/gi) || []).length;
-    return belarusianMarkers >= 2 ? 'be' : 'ru';
-  }
-  if (latinCount > cyrillicCount) return 'en';
-  return null;
-}
-
-function htmlToPlainText(value: string | null | undefined): string {
-  if (!value) return '';
-  if (typeof DOMParser === 'undefined') return value;
-  // DOMParser не исполняет скрипты и не грузит изображения,
-  // в отличие от createElement('div') + innerHTML.
-  const doc = new DOMParser().parseFromString(value, 'text/html');
-  return doc.body.textContent || '';
-}
-
-/** Неофициальный Google Translate endpoint — уже используется в проекте (feed/profile/group/post). */
-async function translateToLang(sourceText: string, targetLang: string): Promise<string> {
-  if (!sourceText.trim()) return sourceText;
-  const url =
-    'https://translate.googleapis.com/translate_a/single?client=gtx' +
-    `&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(sourceText)}`;
-  const response = await fetch(url, { cache: 'no-store' });
-  const data = (await response.json()) as unknown[];
-  if (Array.isArray(data) && Array.isArray(data[0])) {
-    const translated = (data[0] as Array<[string]>).map((item) => item?.[0]).filter(Boolean).join('');
-    return translated || sourceText;
-  }
-  return sourceText;
 }
 
 function ImageTile({
@@ -384,6 +343,7 @@ function PostCardInner({
   const router = useRouter();
   const { lang: authLang } = useAuth();
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
   const canEdit = flag(post.can_edit);
   const initialBookmarked = flag(post.is_bookmarked);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
@@ -419,7 +379,7 @@ function PostCardInner({
 
   const interfaceLang = authLang?.langname || 'ru';
   const detectedPostLang = useMemo(
-    () => detectPostLanguage(`${post.title || ''} ${post.content || ''}`),
+    () => detectTextLanguage(`${post.title || ''} ${post.content || ''}`),
     [post.title, post.content],
   );
   const showTranslateButton = detectedPostLang !== null && detectedPostLang !== interfaceLang;
@@ -744,7 +704,7 @@ function PostCardInner({
       const code = stickerWrapper.getAttribute('data-sticker');
       const textToCopy = code ? `:${code}:` : stickerWrapper.querySelector('img')?.getAttribute('data-clipboard-text');
       if (textToCopy && typeof navigator !== 'undefined' && navigator.clipboard) {
-        navigator.clipboard.writeText(textToCopy).catch(() => { });
+        void copyToClipboard(textToCopy);
         showNote({
           content: authLang?.copied || 'Скопировано',
           type: 'success',
@@ -1156,7 +1116,7 @@ function PostCardInner({
         replyPostPreview={{
           authorName: post.author.name,
           authorImg: post.author.img,
-          contentSnippet: (post.content ?? '').replace(/<[^>]*>/g, '').slice(0, 120),
+          contentSnippet: htmlToPlainText(post.content).slice(0, 120),
           firstImage: images[0]?.url,
         }}
       />

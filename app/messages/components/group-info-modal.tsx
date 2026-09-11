@@ -5,6 +5,7 @@ import Modal from '../../components/modal';
 import AccountName from '../../components/account-name';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useCopyToClipboard } from '../../hooks/use-copy-to-clipboard';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { uploadImage } from '../../lib/upload';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
@@ -90,6 +91,7 @@ export default function GroupInfoModal({
 }: GroupInfoModalProps) {
   const { lang, user } = useAuth();
   const { showNote } = useNotification();
+  const copyToClipboard = useCopyToClipboard();
 
   const [view, setView] = useState<ModalView>('main');
   const [inviteCode, setInviteCode] = useState(initialInviteCode);
@@ -305,10 +307,10 @@ export default function GroupInfoModal({
     : `${SITE_URL}/messages/invite/${inviteCode || initialInviteCode}`;
 
   const copyInviteLink = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
+    const ok = await copyToClipboard(inviteUrl);
+    if (ok) {
       showNote({ content: lang?.invite_link_copied || 'Ссылка-приглашение скопирована в буфер обмена', type: 'success', time: 3 });
-    } catch {
+    } else {
       showNote({ content: inviteUrl, type: 'info', time: 5 });
     }
   };
