@@ -185,13 +185,13 @@ function GroupsContent() {
               {(index + 1) % 6 === 0 && <YandexRtb className="" />}
               <Link
                 href={`/$${group.slnk}`}
-                className="relative flex p-3 flex-grow hover:bg-zinc-800 duration-300 justify-center gap-3 cursor-pointer active:scale-95 active:rounded-3xl"
+                className="relative flex p-3 flex-grow hover:bg-zinc-800 duration-300 justify-center gap-3 cursor-pointer active:scale-95 active:rounded-3xl min-w-0"
               >
                 <div
                   className="cursor-pointer shadow w-16 h-16 rounded-full shrink-0 bg-cover bg-center"
                   style={{ backgroundImage: `url(${group.img})` }}
                 ></div>
-                <div className="flex flex-col flex-grow justify-center">
+                <div className="flex flex-col flex-grow justify-center min-w-0">
                   <AccountName
                     user={group}
                     className="text-zinc-200 lg:text-lg font-medium cursor-pointer"

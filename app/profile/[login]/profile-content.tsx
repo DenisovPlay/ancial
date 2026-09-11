@@ -714,49 +714,6 @@ export default function UserProfileContent({ login }: { login: string }) {
     }
   };
 
-  const translatePost = async (post: PostData) => {
-    const htmlToText = (value: string | null | undefined) => {
-      const container = document.createElement('div');
-      container.innerHTML = value ?? '';
-      return container.textContent || container.innerText || '';
-    };
-
-    const translateText = async (sourceText: string) => {
-      const url =
-        'https://translate.googleapis.com/translate_a/single?client=gtx' +
-        `&sl=auto&tl=${encodeURIComponent(strings.langname)}&dt=t&q=${encodeURIComponent(sourceText)}`;
-
-      const response = await fetch(url, { cache: 'no-store' });
-      const data = (await response.json()) as unknown[];
-
-      if (Array.isArray(data) && Array.isArray(data[0])) {
-        const translatedText = (data[0] as Array<[string]>)
-          .map((item) => item?.[0])
-          .filter(Boolean)
-          .join('');
-
-        return translatedText || sourceText;
-      }
-
-      return sourceText;
-    };
-
-    try {
-      const [translatedTitle, translatedContent] = await Promise.all([
-        translateText(htmlToText(post.title)),
-        translateText(htmlToText(post.content)),
-      ]);
-
-      updatePost(post.id, (currentPost) => ({
-        ...currentPost,
-        title: translatedTitle,
-        content: translatedContent,
-      }));
-    } catch (nextError) {
-      console.error('Translate failed', nextError);
-    }
-  };
-
   const openCommentsModal = (post: PostData) => {
     setActiveCommentsPost(post);
     setComments([]);
@@ -1081,7 +1038,7 @@ export default function UserProfileContent({ login }: { login: string }) {
             </div>
 
             <div className="p-3 flex flex-col md:flex-row gap-3">
-              <div className="flex gap-1.5 items-center md:-mt-12 md:items-end flex-grow">
+              <div className="flex gap-1.5 items-center md:-mt-12 md:items-end flex-grow min-w-0">
                 <div className="group relative shrink-0">
                   {flag(userData.is_owner) ? (
                     <ProfileMediaButton
@@ -1097,7 +1054,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                   />
                 </div>
 
-                <div className="flex flex-col">
+                <div className="flex flex-col min-w-0">
                   <AccountName
                     user={userData}
                     className="text-xl font-bold text-zinc-100"
@@ -1209,7 +1166,6 @@ export default function UserProfileContent({ login }: { login: string }) {
                       setReportTarget({ id: post.id, type: 2 });
                       setIsReportModalOpen(true);
                     }}
-                    onTranslate={translatePost}
                     onVote={handleVote}
                     posts={posts}
                   />

@@ -1,6 +1,7 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-// v21: messages context menu scroll lock
-const SW_VERSION = '21';
+// v22: HTML-навигация переведена с Network-First на Stale-While-Revalidate —
+// офлайн (и просто быстрее) показываем кэш мгновенно, сеть обновляет кэш в фоне
+const SW_VERSION = '22';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
@@ -241,25 +242,39 @@ async function trimImageCache(cache) {
   }
 }
 
-/** Network First: сеть → кэш → fallback. Для HTML (защита от shell со старыми чанками). */
-function networkFirst(event, cacheName, offlineFallback) {
+/**
+ * Stale-While-Revalidate для HTML-навигации: есть кэш — отдаём мгновенно
+ * (быстро и офлайн-first), сеть в фоне обновляет кэш для следующего захода.
+ * Нет кэша — ждём сеть; если и сеть недоступна — offlineFallback.
+ * Старые чанки в закэшированном HTML не страшны: sw-register.tsx ловит
+ * ChunkLoadError на клиенте и делает hard-reload за свежим билдом.
+ */
+function staleWhileRevalidateNavigation(event, cacheName, offlineFallback) {
   event.respondWith(
-    fetch(event.request)
-      .then((res) => {
-        // Кэшируем только успешный HTML/ответ — не сохраняем 404/5xx
-        if (isCacheableResponse(res)) {
-          saveToCache(cacheName, event.request, res);
+    caches.open(cacheName).then((cache) =>
+      cache.match(event.request).then((cached) => {
+        const networkFetch = fetch(event.request)
+          .then((res) => {
+            if (isCacheableResponse(res)) {
+              cache.put(event.request, res.clone());
+            }
+            return res;
+          })
+          .catch(() => null);
+
+        if (cached) {
+          event.waitUntil(networkFetch);
+          return cached;
         }
-        return res;
-      })
-      .catch(() =>
-        caches.match(event.request).then((cached) => {
-          if (cached) return cached;
+
+        return networkFetch.then((res) => {
+          if (res) return res;
           return offlineFallback
             ? offlineFallback()
             : new Response('', { status: 503, statusText: 'Offline' });
-        })
-      )
+        });
+      })
+    )
   );
 }
 
@@ -475,6 +490,6 @@ self.addEventListener('fetch', (event) => {
   const isNavigate = req.mode === 'navigate' || (req.headers.get('Accept') || '').includes('text/html');
 
   if (isNavigate) {
-    networkFirst(event, CACHE_PAGES, () => navigationOfflineFallback());
+    staleWhileRevalidateNavigation(event, CACHE_PAGES, () => navigationOfflineFallback());
   }
 });

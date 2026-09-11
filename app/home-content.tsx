@@ -545,10 +545,7 @@ export default function HomeContent() {
           className="-mt-32 /hidden w-full max-w-screen-md flex items-center gap-3 shadow relative z-10 select-none"
         >
           <div className="flex flex-col items-center justify-center text-center w-full">
-            <span className="text-lg lg:text-2xl font-bold">Теперь мы - <img src="/img/zypo/letter.svg" className='h-6 lg:h-8 inline pointer-events-none select-none' draggable={false} alt="Zypo" /></span>
-            <span className="text-sm lg:text-base text-zinc-300">
-              Всё так же, но даже лучше.
-            </span>
+            <img src="/img/zypo/letter.svg" className='h-8 lg:h-10 duration-300 inline pointer-events-none select-none' draggable={false} alt="Zypo" />
           </div>
         </motion.div>
 

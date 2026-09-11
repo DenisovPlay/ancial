@@ -813,7 +813,7 @@ export default function GroupInfoModal({
             {canManageChannel ? (
               <>
                 {/* Доступ к чату */}
-                <div className="flex flex-col w-full -mt-3.5">
+                <div className="flex flex-col w-full">
                   <span className="text-zinc-400 pl-4 z-20">{lang?.chat_visibility || 'Доступ к чату'}</span>
                   <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
                     <select

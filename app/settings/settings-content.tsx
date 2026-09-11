@@ -18,16 +18,16 @@ export default function SettingsPage() {
 
       <div className="flex flex-col gap-3 w-full max-w-3xl">
         {isAuthenticated && user && (
-          <div className="flex items-center gap-3 w-full px-3 lg:px-0">
+          <div className="flex items-center gap-3 w-full px-3 lg:px-0 min-w-0">
             <Image
               src={userAvatarSrc}
               width={80}
               height={80}
               priority
-              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full shadow border border-zinc-600/30 object-cover"
+              className="w-16 h-16 lg:w-20 lg:h-20 rounded-full shadow border border-zinc-600/30 object-cover shrink-0"
               alt="avatar"
             />
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <AccountName user={user} nameClassName="text-xl lg:text-2xl font-bold text-white" badgeClassName="w-6 h-6 lg:w-7 lg:h-7" />
               <span className="lg:text-lg text-zinc-300">{user.desk}</span>
             </div>

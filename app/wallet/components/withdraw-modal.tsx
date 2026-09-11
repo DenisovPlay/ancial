@@ -60,8 +60,8 @@ export function WithdrawModal({
       <Modal isOpen={isOpen} onClose={onClose} title={`${(gatewayConfig?.withdrawal_fields && typeof gatewayConfig.withdrawal_fields !== 'string' ? gatewayConfig.withdrawal_fields.title : undefined) || selectedGateway?.name || (lang?.payment_system || 'платёжную систему')}`} width="sm">
         <div className="flex flex-col gap-3 text-zinc-100">
           {selectedGateway && (
-            <div className="flex items-center gap-3 border border-zinc-600/30 p-3 rounded-3xl bg-zinc-900/40">
-              <div className="h-12 w-12 p-1 bg-zinc-800 rounded-2xl flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 p-1 bg-zinc-800 rounded-2xl border border-zinc-600/30 flex items-center justify-center shrink-0">
                 <img alt={selectedGateway.name} src={selectedGateway.image} className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
@@ -118,24 +118,24 @@ export function WithdrawModal({
                 const wf = gatewayConfig?.withdrawal_fields;
                 const dynFields = (wf && typeof wf !== 'string' ? wf.fields : undefined) || [];
                 if (!Array.isArray(dynFields) || dynFields.length === 0) return (
-                <div className="flex flex-col w-full">
-                  <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">
-                    {selectedGateway?.name.toLowerCase().includes('yoomoney')
-                      ? (lang?.yoomoney_wallet_phone || 'Номер кошелька YooMoney / телефона')
-                      : (lang?.receiver_details_hint || 'Реквизиты получателя (номер карты/счёта)')}
-                  </span>
-                  <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
-                    <input
-                      autoComplete="off"
-                      type="text"
-                      placeholder={selectedGateway?.name.toLowerCase().includes('yoomoney') ? '41001...' : (lang?.details || 'Реквизиты')}
-                      value={withdrawDetails}
-                      onChange={(e) => setWithdrawDetails(e.target.value)}
-                      className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
-                      required
-                    />
+                  <div className="flex flex-col w-full">
+                    <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">
+                      {selectedGateway?.name.toLowerCase().includes('yoomoney')
+                        ? (lang?.yoomoney_wallet_phone || 'Номер кошелька YooMoney / телефона')
+                        : (lang?.receiver_details_hint || 'Реквизиты получателя (номер карты/счёта)')}
+                    </span>
+                    <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
+                      <input
+                        autoComplete="off"
+                        type="text"
+                        placeholder={selectedGateway?.name.toLowerCase().includes('yoomoney') ? '41001...' : (lang?.details || 'Реквизиты')}
+                        value={withdrawDetails}
+                        onChange={(e) => setWithdrawDetails(e.target.value)}
+                        className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
                 );
                 return dynFields.map((f) => {
                   const label = f.label || f.key || '';
@@ -148,7 +148,7 @@ export function WithdrawModal({
                     return (
                       <div key={key} className="flex flex-col w-full">
                         <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">{label}</span>
-                        <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
+                        <div className={`flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30 ${f.hint ? '-mb-2' : ''}`}>
                           <select
                             required={req}
                             value={dynamicFieldsData[key] || ''}
@@ -163,7 +163,7 @@ export function WithdrawModal({
                             ))}
                           </select>
                         </div>
-                        {f.hint && <div className="text-xs text-zinc-500 pl-4 mt-1">{f.hint}</div>}
+                        {f.hint && <div className="text-xs text-zinc-500 pl-4 z-[10] -mb-2">{f.hint}</div>}
                       </div>
                     );
                   }
@@ -172,7 +172,7 @@ export function WithdrawModal({
                   return (
                     <div key={key} className="flex flex-col w-full">
                       <span className="text-zinc-400 pl-4 z-20 text-xs lg:text-sm">{label}</span>
-                      <div className="flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30">
+                      <div className={`flex bg-zinc-800/90 rounded-3xl w-full p-1 h-12 -mt-2 lg:-mt-3 z-10 border border-zinc-600/30 ${f.hint ? '-mb-2' : ''}`}>
                         <input
                           autoComplete="off"
                           type={inputType}
@@ -183,7 +183,7 @@ export function WithdrawModal({
                           className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white text-sm"
                         />
                       </div>
-                      {f.hint && <div className="text-xs text-zinc-500 pl-4 -mt-2 z-20">{f.hint}</div>}
+                      {f.hint && <div className="text-xs text-zinc-500 pl-4 z-[10] -mb-2">{f.hint}</div>}
                     </div>
                   );
                 });

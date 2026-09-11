@@ -200,10 +200,10 @@ export function DonateModal({
               <>
                 {/* Recipient info card */}
                 {(recipientUser || recipientUsername) && (
-                  <div className="flex items-center gap-3 bg-zinc-800/80 p-3 rounded-3xl border border-zinc-600/30 text-left w-full">
+                  <div className="flex items-center gap-3 w-full">
                     <img
                       src={recipientUser?.img || recipientImg || '/img/placeholders/user.png'}
-                      className="w-12 h-12 rounded-2xl object-cover border border-zinc-700"
+                      className="w-14 h-14 rounded-full object-cover border border-zinc-700"
                       alt="Avatar"
                     />
                     <div className="flex flex-col min-w-0">

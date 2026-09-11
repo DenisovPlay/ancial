@@ -451,55 +451,6 @@ export default function FeedContent() {
     );
   };
 
-  const translatePost = async (post: PostData) => {
-    const htmlToText = (value: string | null | undefined) => {
-      const container = document.createElement('div');
-      container.innerHTML = value ?? '';
-      return container.textContent || container.innerText || '';
-    };
-
-    const translateText = async (sourceText: string) => {
-      const url =
-        'https://translate.googleapis.com/translate_a/single?client=gtx' +
-        `&sl=auto&tl=${encodeURIComponent(strings.langname)}&dt=t&q=${encodeURIComponent(sourceText)}`;
-
-      const response = await fetch(url, { cache: 'no-store' });
-      const data = (await response.json()) as unknown[];
-
-      if (Array.isArray(data) && Array.isArray(data[0])) {
-        const translatedText = (data[0] as Array<[string]>)
-          .map((item) => item?.[0])
-          .filter(Boolean)
-          .join('');
-
-        return translatedText || sourceText;
-      }
-
-      return sourceText;
-    };
-
-    try {
-      const [translatedTitle, translatedContent] = await Promise.all([
-        translateText(htmlToText(post.title)),
-        translateText(htmlToText(post.content)),
-      ]);
-
-      setPosts((currentPosts) =>
-        currentPosts.map((currentPost) =>
-          String(currentPost.id) === String(post.id)
-            ? {
-              ...currentPost,
-              title: translatedTitle,
-              content: translatedContent,
-            }
-            : currentPost,
-        ),
-      );
-    } catch (error) {
-      console.error('Translate failed', error);
-    }
-  };
-
   const loadComments = async (postId: Id) => {
     setIsCommentsLoading(true);
 
@@ -1198,7 +1149,6 @@ export default function FeedContent() {
               }}
               onNavigate={(href) => router.push(href)}
               onReport={(post) => openReportModal(post.id, 2)}
-              onTranslate={translatePost}
               onVote={handleVote}
               posts={posts}
             />

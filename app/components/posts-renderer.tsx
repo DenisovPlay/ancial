@@ -2,7 +2,7 @@
 import { coerceToFinite as toNumber } from '../lib/convert';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useMentionNavigation } from '../hooks/use-mention-navigation';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import { ensureCarouselScrollDelegation } from './carousel-delegation';
@@ -95,7 +95,6 @@ export interface PostCardProps {
   onEdit?: (post: PostData) => void;
   onNavigate?: (href: string, post: PostData) => void;
   onReport?: (post: PostData) => void;
-  onTranslate?: (post: PostData) => void;
   onVote?: (post: PostData, direction: VoteDirection) => void;
   post: PostData;
   renderIndex?: number;
@@ -150,6 +149,49 @@ function callLegacy(name: string, ...args: unknown[]) {
 function getShareUrl(post: PostData, shareBaseUrl: string) {
   const normalized = shareBaseUrl.endsWith('/') ? shareBaseUrl : `${shareBaseUrl}/`;
   return `${normalized}${post.id}`;
+}
+
+/**
+ * Грубое определение языка текста по доминирующему алфавиту — без сети и внешних библиотек.
+ * Различает ru/be/en, чего достаточно под три локали приложения. Короткие/смешанные
+ * тексты (меньше 12 буквенных символов) намеренно не определяются — вернётся null.
+ */
+function detectPostLanguage(text: string): string | null {
+  const stripped = text.replace(/<[^>]+>/g, ' ');
+  const cyrillicCount = (stripped.match(/[а-яёіў]/gi) || []).length;
+  const latinCount = (stripped.match(/[a-z]/gi) || []).length;
+
+  if (cyrillicCount + latinCount < 12) return null;
+  if (cyrillicCount > latinCount) {
+    const belarusianMarkers = (stripped.match(/[ўі]/gi) || []).length;
+    return belarusianMarkers >= 2 ? 'be' : 'ru';
+  }
+  if (latinCount > cyrillicCount) return 'en';
+  return null;
+}
+
+function htmlToPlainText(value: string | null | undefined): string {
+  if (!value) return '';
+  if (typeof DOMParser === 'undefined') return value;
+  // DOMParser не исполняет скрипты и не грузит изображения,
+  // в отличие от createElement('div') + innerHTML.
+  const doc = new DOMParser().parseFromString(value, 'text/html');
+  return doc.body.textContent || '';
+}
+
+/** Неофициальный Google Translate endpoint — уже используется в проекте (feed/profile/group/post). */
+async function translateToLang(sourceText: string, targetLang: string): Promise<string> {
+  if (!sourceText.trim()) return sourceText;
+  const url =
+    'https://translate.googleapis.com/translate_a/single?client=gtx' +
+    `&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(sourceText)}`;
+  const response = await fetch(url, { cache: 'no-store' });
+  const data = (await response.json()) as unknown[];
+  if (Array.isArray(data) && Array.isArray(data[0])) {
+    const translated = (data[0] as Array<[string]>).map((item) => item?.[0]).filter(Boolean).join('');
+    return translated || sourceText;
+  }
+  return sourceText;
 }
 
 function ImageTile({
@@ -296,7 +338,6 @@ export function PostCard({
   onEdit,
   onNavigate,
   onReport,
-  onTranslate,
   onVote,
   post,
   renderIndex,
@@ -315,7 +356,6 @@ export function PostCard({
       onEdit={onEdit}
       onNavigate={onNavigate}
       onReport={onReport}
-      onTranslate={onTranslate}
       onVote={onVote}
       post={post}
       renderIndex={renderIndex}
@@ -335,7 +375,6 @@ function PostCardInner({
   onEdit,
   onNavigate,
   onReport,
-  onTranslate,
   onVote,
   post,
   renderIndex = 1,
@@ -356,6 +395,10 @@ function PostCardInner({
   const closingImageTimerRef = useRef<number | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [customImages, setCustomImages] = useState<ImageViewerSlide[]>([]);
+  const [isTranslated, setIsTranslated] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
 
   // Синхронизация локального (оптимистичного) состояния с обновлёнными props.post
   // БЕЗ remount: раньше карточка пересоздавалась по key=syncKey при каждом лайке/комменте,
@@ -368,7 +411,55 @@ function PostCardInner({
     setIsBookmarked(flag(post.is_bookmarked));
     setRating(toNumber(post.rating));
     setUserVote(getInitialVote(post));
+    // Текст поста сменился (например, после редактирования) — старый перевод больше не актуален.
+    setIsTranslated(false);
+    setTranslatedTitle(null);
+    setTranslatedContent(null);
   }
+
+  const interfaceLang = authLang?.langname || 'ru';
+  const detectedPostLang = useMemo(
+    () => detectPostLanguage(`${post.title || ''} ${post.content || ''}`),
+    [post.title, post.content],
+  );
+  const showTranslateButton = detectedPostLang !== null && detectedPostLang !== interfaceLang;
+
+  const handleToggleTranslate = async () => {
+    if (isTranslating) return;
+
+    if (isTranslated) {
+      setIsTranslated(false);
+      return;
+    }
+
+    if (translatedTitle !== null || translatedContent !== null) {
+      setIsTranslated(true);
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const [nextTitle, nextContent] = await Promise.all([
+        post.title ? translateToLang(htmlToPlainText(post.title), interfaceLang) : Promise.resolve(null),
+        post.content ? translateToLang(htmlToPlainText(post.content), interfaceLang) : Promise.resolve(null),
+      ]);
+      setTranslatedTitle(nextTitle);
+      setTranslatedContent(nextContent);
+      setIsTranslated(true);
+    } catch (error) {
+      console.error('Translate failed', error);
+      showNote({
+        content: authLang?.translate_failed || 'Не удалось перевести пост',
+        type: 'error',
+        time: 4,
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const displayTitle = isTranslated && translatedTitle !== null ? translatedTitle : post.title;
+  const displayContent = isTranslated && translatedContent !== null ? translatedContent : post.content;
 
 
   const strings = { ...DEFAULT_LANG, ...lang };
@@ -612,13 +703,6 @@ function PostCardInner({
     setIsShareOpen(true);
   };
 
-  const handleTranslate = () => {
-    onTranslate?.(post);
-    if (!onTranslate) {
-      callLegacy('translatepost', post.id);
-    }
-  };
-
   const handleOpenImage = (index: number) => {
     if (closingImageTimerRef.current !== null) {
       window.clearTimeout(closingImageTimerRef.current);
@@ -660,7 +744,7 @@ function PostCardInner({
       const code = stickerWrapper.getAttribute('data-sticker');
       const textToCopy = code ? `:${code}:` : stickerWrapper.querySelector('img')?.getAttribute('data-clipboard-text');
       if (textToCopy && typeof navigator !== 'undefined' && navigator.clipboard) {
-        navigator.clipboard.writeText(textToCopy).catch(() => {});
+        navigator.clipboard.writeText(textToCopy).catch(() => { });
         showNote({
           content: authLang?.copied || 'Скопировано',
           type: 'success',
@@ -711,18 +795,18 @@ function PostCardInner({
         id={`postdiv${post.id}`}
         className="p-3 duration-300 rounded-3xl border border-zinc-600/30 bg-zinc-900 flex flex-col gap-3 w-full shadow text-zinc-100"
       >
-        <div className="text-sm lg:text-base text-zinc-400 font-medium flex items-center gap-1.5">
+        <div className="text-sm lg:text-base text-zinc-400 font-medium flex items-center gap-1.5 min-w-0">
           <Link
             href={authorHref}
-            className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow bg-cover bg-center cursor-pointer"
+            className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow bg-cover bg-center cursor-pointer shrink-0"
             style={{ backgroundImage: `url(${post.author.img})` }}
             aria-label={post.author.name}
           />
 
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0 shrink">
             <Link
               href={authorHref}
-              className="cursor-pointer text-zinc-200 hover:text-zinc-100 active:scale-95 duration-300 font-medium w-fit flex items-center gap-1.5 text-left"
+              className="cursor-pointer text-zinc-200 hover:text-zinc-100 active:scale-95 duration-300 font-medium flex items-center gap-1.5 text-left min-w-0"
             >
               <AccountName user={post.author} nameClassName="font-medium" />
             </Link>
@@ -731,14 +815,43 @@ function PostCardInner({
             </span>
           </div>
 
-          <div className="flex-grow">
+          <div className="flex-grow flex items-center gap-1.5">
             {post.author.type === 'user' && !isOwnUser && (
               <button
                 type="button"
                 onClick={handleDonate}
-                className="cursor-pointer border border-zinc-600/30 flex items-center justify-center gap-3 px-2 py-1 duration-300 active:scale-95 bg-zinc-700 hover:bg-zinc-800 rounded-full shadow"
+                className="h-10 w-10 cursor-pointer border border-zinc-600/30 flex items-center justify-center gap-3 duration-300 active:scale-95 bg-zinc-700 hover:bg-zinc-800 rounded-full shadow shrink-0"
               >
                 <SvgIcon className="h-7 w-7 fill-white" id="IC-donate" viewBox="0 0 48 48" />
+              </button>
+            )}
+            {showTranslateButton && (
+              <button
+                type="button"
+                onClick={handleToggleTranslate}
+                disabled={isTranslating}
+                aria-label={isTranslated ? (authLang?.show_original_text || 'Показать оригинал') : strings.translate}
+                className={cn(
+                  'h-10 min-w-10 cursor-pointer border border-zinc-600/30 flex items-center justify-center duration-300 active:scale-95 rounded-full shadow shrink-0',
+                  isTranslated ? 'bg-purple-700 hover:bg-purple-600 pl-1 pr-2' : 'bg-zinc-700 hover:bg-zinc-800',
+                  isTranslating && 'opacity-70 cursor-wait active:scale-100',
+                )}
+              >
+                {isTranslating ? (
+                  <span className="h-7 w-7 flex items-center justify-center shrink-0">
+                    <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  </span>
+                ) : (
+                  <SvgIcon className="h-7 w-7 fill-white shrink-0" id="IC-globe" viewBox="0 0 48 48" />
+                )}
+                <span
+                  className={cn(
+                    'text-sm font-semibold text-white whitespace-nowrap overflow-hidden transition-[max-width,opacity,margin-left] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                    isTranslated ? 'max-w-32 opacity-100 ml-1' : 'max-w-0 opacity-0 ml-0',
+                  )}
+                >
+                  {authLang?.translated || 'Переведено'}
+                </span>
               </button>
             )}
           </div>
@@ -752,14 +865,24 @@ function PostCardInner({
             menuClassName="min-w-48 !mt-0 z-[90]"
           >
             {canEdit && (
-              <DropdownItem onClick={handleEdit} icon="IC-edit">
-                {strings.edit}
-              </DropdownItem>
-            )}
-            {canEdit && (
-              <DropdownItem onClick={handleDelete} icon="IC-times">
-                {strings.delete}
-              </DropdownItem>
+              <div className="grid w-full grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  aria-label={strings.edit}
+                  onClick={handleEdit}
+                  className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
+                >
+                  <SvgIcon className="h-6 w-6 fill-white" id="IC-edit" viewBox="0 0 48 48" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={strings.delete}
+                  onClick={handleDelete}
+                  className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
+                >
+                  <SvgIcon className="h-6 w-6 fill-white" id="IC-times" viewBox="0 0 48 48" />
+                </button>
+              </div>
             )}
             <DropdownItem
               onClick={handleBookmark}
@@ -774,27 +897,24 @@ function PostCardInner({
             <DropdownItem onClick={handleShare} icon="IC-share">
               {strings.share}
             </DropdownItem>
-            <DropdownItem onClick={handleTranslate} icon="IC-globe">
-              {strings.translate}
-            </DropdownItem>
           </Dropdown>
         </div>
 
-        {post.title && (
+        {displayTitle && (
           <div
             id={`titleblock${post.id}`}
             className="text-lg lg:text-xl text-zinc-100 font-bold"
-            dangerouslySetInnerHTML={{ __html: post.title ?? '' }}
+            dangerouslySetInnerHTML={{ __html: displayTitle ?? '' }}
           />
         )}
 
-        {post.content && (
+        {displayContent && (
           <ExpandablePostContent
-            content={post.content}
+            content={displayContent}
             postId={post.id}
             onClick={handlePostContentClick}
             strings={strings}
-            initiallyOverflowing={flag(post.is_long_content)}
+            initiallyOverflowing={isTranslated ? false : flag(post.is_long_content)}
             noCollapse={noCollapse}
           />
         )}
@@ -1056,7 +1176,6 @@ export default function PostsRenderer({
   onEdit,
   onNavigate,
   onReport,
-  onTranslate,
   onVote,
   posts,
 
@@ -1086,7 +1205,6 @@ export default function PostsRenderer({
             onEdit={onEdit}
             onNavigate={onNavigate}
             onReport={onReport}
-            onTranslate={onTranslate}
             onVote={onVote}
             shareBaseUrl={shareBaseUrl}
 

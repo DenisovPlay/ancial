@@ -168,19 +168,19 @@ function CommentCard({
       id={`comment${comment.id}`}
       className="p-3 border border-zinc-600/30 duration-300 rounded-3xl bg-zinc-800/50 flex flex-col w-full shadow"
     >
-      <div className="text-sm lg:text-base text-zinc-200 font-medium flex items-center gap-1.5">
+      <div className="text-sm lg:text-base text-zinc-200 font-medium flex items-center gap-1.5 min-w-0">
         <button
           type="button"
           onClick={() => onNavigateToUser(comment.user.username)}
-          className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow bg-cover bg-center"
+          className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow bg-cover bg-center shrink-0"
           style={{ backgroundImage: `url('${comment.user.img}')` }}
         />
 
-        <div className="flex flex-col flex-grow">
+        <div className="flex flex-col flex-grow min-w-0">
           <button
             type="button"
             onClick={() => onNavigateToUser(comment.user.username)}
-            className="cursor-pointer hover:text-zinc-100 duration-300 font-medium w-fit text-left flex items-center gap-1.5"
+            className="cursor-pointer hover:text-zinc-100 duration-300 font-medium text-left flex items-center gap-1.5 min-w-0"
           >
             <AccountName user={comment.user} nameClassName="font-medium" />
           </button>

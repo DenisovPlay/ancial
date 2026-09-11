@@ -323,7 +323,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                     position="bottom"
                     triggerClassName="h-16 w-16 rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow hover:bg-zinc-700"
                     triggerIcon="IC-more"
-                    triggerNode={<ActionIcon className="h-10 w-10" name="IC-more" />}
+                    triggerNode={<ActionIcon className="h-10 w-10 text-white" name="IC-more" />}
                     triggerSize="sm"
                   >
                     {isAuthenticated ? (

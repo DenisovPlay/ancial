@@ -113,24 +113,31 @@ export default function SWRegister() {
     // Не блокируем first paint — прогрев чуть позже
     const warmTimer = window.setTimeout(warmOfflineShell, 2500);
 
-    // Периодическая проверка обновлений (вкладка открыта долго)
-    const updateInterval = window.setInterval(() => {
+    // Явная проверка новой версии SW — чтобы после деплоя не застревать на старой
+    const checkForUpdate = () => {
       navigator.serviceWorker.getRegistration().then((reg) => {
         reg?.update().catch(() => {});
       });
-    }, 5 * 60 * 1000);
+    };
+
+    // Периодическая проверка обновлений (вкладка открыта долго)
+    const updateInterval = window.setInterval(checkForUpdate, 5 * 60 * 1000);
 
     // При возврате на вкладку — тоже check update + soft warm
     const onVisibility = () => {
       if (document.visibilityState === 'visible') {
-        navigator.serviceWorker.getRegistration().then((reg) => {
-          reg?.update().catch(() => {});
-        });
+        checkForUpdate();
         warmOfflineShell();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('online', warmOfflineShell);
+
+    // При возврате сети — сразу проверяем обновление и прогреваем кэш заново
+    const onOnline = () => {
+      checkForUpdate();
+      warmOfflineShell();
+    };
+    window.addEventListener('online', onOnline);
 
     // 2) ChunkLoadError / dynamic import fail → hard reload за новым HTML
     // Это как раз кейс «страница ссылается на старые /_next/static чанки после деплоя»
@@ -153,7 +160,7 @@ export default function SWRegister() {
       window.clearTimeout(warmTimer);
       window.clearInterval(updateInterval);
       document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('online', warmOfflineShell);
+      window.removeEventListener('online', onOnline);
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
       window.removeEventListener('unhandledrejection', onUnhandledRejection);
       window.removeEventListener('error', onError);

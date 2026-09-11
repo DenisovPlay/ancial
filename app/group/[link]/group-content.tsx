@@ -768,50 +768,6 @@ export default function GroupProfileContent({ link }: { link: string }) {
     }
   };
 
-  const translatePost = async (post: PostData) => {
-    const htmlToText = (value: string | null | undefined) => {
-      // DOMParser не исполняет скрипты и не грузит изображения,
-      // в отличие от createElement('div') + innerHTML.
-      const doc = new DOMParser().parseFromString(value ?? '', 'text/html');
-      return doc.body.textContent || '';
-    };
-
-    const translateText = async (sourceText: string) => {
-      const url =
-        'https://translate.googleapis.com/translate_a/single?client=gtx' +
-        `&sl=auto&tl=${encodeURIComponent(strings.langname)}&dt=t&q=${encodeURIComponent(sourceText)}`;
-
-      const response = await fetch(url, { cache: 'no-store' });
-      const data = (await response.json()) as unknown[];
-
-      if (Array.isArray(data) && Array.isArray(data[0])) {
-        const translatedText = (data[0] as Array<[string]>)
-          .map((item) => item?.[0])
-          .filter(Boolean)
-          .join('');
-
-        return translatedText || sourceText;
-      }
-
-      return sourceText;
-    };
-
-    try {
-      const [translatedTitle, translatedContent] = await Promise.all([
-        translateText(htmlToText(post.title)),
-        translateText(htmlToText(post.content)),
-      ]);
-
-      updatePost(post.id, (currentPost) => ({
-        ...currentPost,
-        content: translatedContent,
-        title: translatedTitle,
-      }));
-    } catch (nextError) {
-      console.error('Translate failed', nextError);
-    }
-  };
-
   const openCommentsModal = (post: PostData) => {
     setActiveCommentsPost(post);
     setComments([]);
@@ -1218,7 +1174,6 @@ export default function GroupProfileContent({ link }: { link: string }) {
                       setReportTarget({ id: post.id, type: 2 });
                       setIsReportModalOpen(true);
                     }}
-                    onTranslate={translatePost}
                     onVote={handleVote}
                     posts={posts}
                   />

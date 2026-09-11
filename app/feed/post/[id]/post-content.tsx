@@ -168,20 +168,20 @@ function FeedCommentCard({
       id={`comment${comment.id}`}
       className="p-3 border border-zinc-600/30 duration-300 rounded-3xl bg-zinc-800/50 flex flex-col w-full shadow"
     >
-      <div className="text-sm lg:text-base text-zinc-200 font-medium flex items-center gap-1.5">
+      <div className="text-sm lg:text-base text-zinc-200 font-medium flex items-center gap-1.5 min-w-0">
         <button
           type="button"
           onClick={() => onNavigateToUser(comment.user.username)}
-          className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow bg-cover bg-center"
+          className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow bg-cover bg-center shrink-0"
           style={{ backgroundImage: `url('${comment.user.img}')` }}
           aria-label={comment.user.name}
         />
 
-        <div className="flex flex-col flex-grow">
+        <div className="flex flex-col flex-grow min-w-0">
           <button
             type="button"
             onClick={() => onNavigateToUser(comment.user.username)}
-            className="cursor-pointer hover:text-zinc-100 duration-300 font-medium w-fit text-left flex items-center gap-1.5"
+            className="cursor-pointer hover:text-zinc-100 duration-300 font-medium text-left flex items-center gap-1.5 min-w-0"
           >
             <AccountName user={comment.user} nameClassName="font-medium" />
           </button>
@@ -494,49 +494,6 @@ export default function SinglePostContent({ postId }: { postId: string }) {
     }
   };
 
-  const translatePost = async (targetPost: PostData) => {
-    const htmlToText = (value: string | null | undefined) => {
-      const container = document.createElement('div');
-      container.innerHTML = value ?? '';
-      return container.textContent || container.innerText || '';
-    };
-
-    const translateText = async (sourceText: string) => {
-      const url =
-        'https://translate.googleapis.com/translate_a/single?client=gtx' +
-        `&sl=auto&tl=${encodeURIComponent(strings.langname)}&dt=t&q=${encodeURIComponent(sourceText)}`;
-
-      const response = await fetch(url, { cache: 'no-store' });
-      const data = (await response.json()) as unknown[];
-
-      if (Array.isArray(data) && Array.isArray(data[0])) {
-        const translatedText = (data[0] as Array<[string]>)
-          .map((item) => item?.[0])
-          .filter(Boolean)
-          .join('');
-
-        return translatedText || sourceText;
-      }
-
-      return sourceText;
-    };
-
-    try {
-      const [translatedTitle, translatedContent] = await Promise.all([
-        translateText(htmlToText(targetPost.title)),
-        translateText(htmlToText(targetPost.content)),
-      ]);
-
-      updatePost((currentPost) => ({
-        ...currentPost,
-        title: translatedTitle,
-        content: translatedContent,
-      }));
-    } catch (nextError) {
-      console.error('Translate failed', nextError);
-    }
-  };
-
   const scrollToComments = () => {
     commentsSectionRef.current?.scrollIntoView({
       behavior: 'smooth',
@@ -712,7 +669,6 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                   setReportTarget({ id: targetPost.id, type: 2 });
                   setIsReportModalOpen(true);
                 }}
-                onTranslate={translatePost}
                 onVote={handleVote}
                 post={post}
                 renderIndex={1}
