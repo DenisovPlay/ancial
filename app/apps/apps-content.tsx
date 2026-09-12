@@ -8,10 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '../context/AuthContext';
 import { useDragScroll } from '../hooks/useDragScroll';
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
+import { cn } from '../lib/cn';
 import {
   type LegacyAppSummary,
   type LegacyAppsResponse,

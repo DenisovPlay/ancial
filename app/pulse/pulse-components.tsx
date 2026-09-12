@@ -1,6 +1,8 @@
 'use client';
 
 import { decodeHtmlEntities, normalizeText } from '../lib/convert';
+import { cn } from '../lib/cn';
+export { cn };
 /* eslint-disable @next/next/no-img-element */
 
 import Link from 'next/link';
@@ -91,10 +93,6 @@ export type PulseTrackRowProps = {
 };
 
 export const DEFAULT_TRACK_IMAGE = '/img/pulse/track.png';
-
-export function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
 
 export function toNumber(value: number | string | null | undefined) {
   const nextValue = Number.parseInt(String(value ?? ''), 10);

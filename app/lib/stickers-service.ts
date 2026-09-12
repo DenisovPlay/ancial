@@ -30,8 +30,6 @@ export interface SevenTvStickerItem {
 }
 
 const STICKERS_CACHE_KEY = 'ancial_stickers_cache_v2';
-const RECENT_STICKERS_KEY = 'ancial_recent_stickers_v2';
-const MAX_RECENT_STICKERS = 24;
 
 // Встроенный резервный набор стикеров на случай офлайна или задержки сети
 export const FALLBACK_NATIVE_STICKERS: Sticker[] = [
@@ -238,42 +236,6 @@ export function getStickerByCode(codeOrShortcode: string): Sticker | null {
   const lower = clean.toLowerCase();
 
   return inMemoryLookup?.get(clean) || inMemoryLookup?.get(lower) || null;
-}
-
-export function getRecentStickers(): Sticker[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(RECENT_STICKERS_KEY);
-    if (!raw) return [];
-    const codes = JSON.parse(raw) as string[];
-    if (!Array.isArray(codes)) return [];
-
-    const stickers: Sticker[] = [];
-    for (const code of codes) {
-      const st = getStickerByCode(code);
-      if (st) {
-        stickers.push(st);
-      }
-    }
-    return stickers;
-  } catch {
-    return [];
-  }
-}
-
-export function recordRecentSticker(stickerCode: string): void {
-  if (typeof window === 'undefined' || !stickerCode) return;
-  try {
-    const clean = stickerCode.replace(/^:/, '').replace(/:$/, '').trim();
-    const raw = localStorage.getItem(RECENT_STICKERS_KEY);
-    let codes: string[] = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(codes)) codes = [];
-
-    codes = [clean, ...codes.filter((c) => c.toLowerCase() !== clean.toLowerCase())].slice(0, MAX_RECENT_STICKERS);
-    localStorage.setItem(RECENT_STICKERS_KEY, JSON.stringify(codes));
-  } catch {
-    // Ignore storage errors
-  }
 }
 
 /**

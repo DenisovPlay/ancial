@@ -3,6 +3,7 @@ import PostWidgetPoll from '../../components/post-widget-poll';
 import { parsePostContentToHtml } from '../../components/post-parser';
 import { sanitizeUserHtml } from '../../lib/sanitize-html';
 import { ensureCarouselScrollDelegation } from '../../components/carousel-delegation';
+import { cn, SvgIcon } from '../editor-shared';
 import { useEffect } from 'react';
 type PreviewImage = {
     id: string;
@@ -34,22 +35,6 @@ type CreatePostPreviewProps = {
     title?: string;
     widgets?: PreviewWidget[];
 };
-function cn(...classes: Array<string | false | null | undefined>) {
-    return classes.filter(Boolean).join(' ');
-}
-function SvgIcon({
-    className,
-    id,
-}: {
-    className?: string;
-    id: string;
-}) {
-    return (
-        <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <use href={`#${id}`}></use>
-        </svg>
-    );
-}
 function PreviewAvatar({
     authorImage,
     authorName,

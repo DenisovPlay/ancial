@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { cache } from '../../lib/cache';
 import { cacheAudioInBackground } from './offline-audio';
-import { getTrackArtwork, normalizeTrackSource, toNumber } from './player-utils';
+import { getPlayerTrackArtwork, normalizeTrackSource, toNumber } from './player-utils';
 
 export type OfflineSaveStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error';
 export type OfflineSaveResult = 'failed' | 'saved' | 'skipped';
@@ -19,8 +19,8 @@ type OfflineAudioTrack = {
 
 function resolveArtworkUrl(track: OfflineAudioTrack | null) {
   if (!track) return undefined;
-  const fromHelper = getTrackArtwork(track);
-  // getTrackArtwork returns fallback placeholder when empty — don't store that as "cover"
+  const fromHelper = getPlayerTrackArtwork(track);
+  // getPlayerTrackArtwork returns fallback placeholder when empty — don't store that as "cover"
   if (!fromHelper || fromHelper.includes('/img/pulse/track.png') || fromHelper.includes('track.png')) {
     const raw = Array.isArray(track.artwork)
       ? track.artwork.map((item) => String(item?.src ?? '').trim()).find(Boolean)

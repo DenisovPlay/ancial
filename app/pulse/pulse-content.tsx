@@ -17,12 +17,20 @@ import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import { buildPulseTrackReportReasons } from '../lib/report-reasons';
 import {
+  ActionIcon,
+  cn,
   decodeHtmlEntities,
+  DEFAULT_TRACK_IMAGE,
+  getArtistIds,
+  getImageUrl,
   getPulseBackgroundColorByMood,
+  getTrackArtwork,
   PulseLegalFooter,
+  PulseLogo,
   PulsePlaylistTile,
   PulsePlaylistTileSkeleton,
   PulseScrollSection,
+  PulseSectionTitle,
   PulseTrackRow,
   normalizeText,
   toNumber,
@@ -102,12 +110,7 @@ const TRACK_CACHE_KEYS: Record<HomeTrackCollectionId, string> = {
 };
 
 const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
-const DEFAULT_TRACK_IMAGE = '/img/pulse/track.png';
 const THINKING_IMAGE = '/img/load-placeholders/thinking.webp';
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
 
 function readJsonCache<T>(key: string): T | null {
   return cache.get<T>(key, { category: 'pulse' });
@@ -128,31 +131,6 @@ function writeListenedCache(value: RecentlyListenedState) {
 }
 
 
-function getImageUrl(value: string | null | undefined, fallback = DEFAULT_TRACK_IMAGE) {
-  const nextValue = normalizeText(value);
-  return nextValue || fallback;
-}
-
-function getTrackArtwork(track: PulseTrack) {
-  const artwork = Array.isArray(track.artwork) ? track.artwork : [];
-  const cover = artwork.find((item) => normalizeText(item?.src));
-  return getImageUrl(cover?.src, DEFAULT_TRACK_IMAGE);
-}
-
-
-
-
-
-function getArtistIds(track: PulseTrack) {
-  if (Array.isArray(track.artists_ids)) {
-    return track.artists_ids.map((artistId) => normalizeText(artistId)).filter(Boolean);
-  }
-
-  return normalizeText(String(track.artists_ids ?? ''))
-    .split(/[|,]/)
-    .map((artistId) => normalizeText(artistId))
-    .filter(Boolean);
-}
 
 function isGenlistCard(card: PulseHomePlaylistCard) {
   return String(card.type ?? '') === '4';
@@ -176,34 +154,6 @@ function getTrackPath(trackId: number | string) {
   return `/pulse/track/${encodeURIComponent(normalizeText(String(trackId)) || '0')}`;
 }
 
-function PulseLogo({ className }: { className?: string }) {
-  return (
-    <img src="/img/branding/pulse.svg" alt="Pulse Logo" className={cn('shrink-0', className)} />
-  );
-}
-
-function ActionIcon({ name, className }: { className?: string; name: string }) {
-  return (
-    <svg className={cn('inline fill-white', className)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <use href={`#${name}`} />
-    </svg>
-  );
-}
-
-function SectionTitle({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <span className={cn('w-full max-w-screen-2xl px-3 text-2xl font-black cutetext lg:px-0 lg:text-3xl xl:text-4xl', className)}>
-      {children}
-    </span>
-  );
-}
-
 function ArtistCardSkeleton() {
   return (
     <div className="h-32 w-32 shrink-0 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-800 shadow duration-300 animate-pulse lg:h-48 lg:w-48" />
@@ -214,22 +164,6 @@ function ListenedPillSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn('flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow', className)}>
       <div className="h-14 w-14 rounded-full bg-zinc-700/80 xl:h-16 xl:w-16 2xl:h-20 2xl:w-20" />
-    </div>
-  );
-}
-
-function TracksPanelSkeleton() {
-  return (
-    <div className="flex flex-col gap-3 animate-pulse">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <div key={index} className="flex items-center gap-3 rounded-2xl">
-          <div className="h-16 w-16 shrink-0 rounded-2xl bg-zinc-800" />
-          <div className="flex flex-grow flex-col gap-2">
-            <div className="h-4 w-2/3 rounded-full bg-zinc-800" />
-            <div className="h-3 w-1/3 rounded-full bg-zinc-800" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
@@ -791,7 +725,7 @@ export default function PulseContent() {
 
       {shouldShowRecentListened ? (
         <>
-          <SectionTitle>{lang?.recentlis || 'Недавно слушали'}</SectionTitle>
+          <PulseSectionTitle>{lang?.recentlis || 'Недавно слушали'}</PulseSectionTitle>
 
           <div className="grid w-full max-w-screen-2xl grid-cols-2 gap-3 px-3 lg:px-0 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {isLoading || (isAuthenticated && listened === null) ? (
@@ -847,9 +781,9 @@ export default function PulseContent() {
         </>
       ) : null}
 
-      <SectionTitle>
+      <PulseSectionTitle>
         {lang?.playlistsby || 'Плейлисты от'} <PulseLogo className="ml-1 inline w-30 align-middle" />
-      </SectionTitle>
+      </PulseSectionTitle>
 
       <PulseScrollSection scrollRef={fromPulseScrollRef}>
         {fromPulse === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
@@ -867,7 +801,7 @@ export default function PulseContent() {
         }) : null}
       </PulseScrollSection>
 
-      <SectionTitle>{lang?.artists || 'Артисты'}</SectionTitle>
+      <PulseSectionTitle>{lang?.artists || 'Артисты'}</PulseSectionTitle>
 
       <PulseScrollSection scrollRef={artistsScrollRef}>
         {artists === null ? Array.from({ length: 8 }).map((_, index) => <ArtistCardSkeleton key={index} />) : null}
@@ -880,7 +814,7 @@ export default function PulseContent() {
         )) : null}
       </PulseScrollSection>
 
-      <SectionTitle>{lang?.welove || 'Мы любим'}</SectionTitle>
+      <PulseSectionTitle>{lang?.welove || 'Мы любим'}</PulseSectionTitle>
 
       <PulseScrollSection scrollRef={weLikeScrollRef}>
         {weLike === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}
@@ -898,7 +832,7 @@ export default function PulseContent() {
         }) : null}
       </PulseScrollSection>
 
-      <SectionTitle>{lang?.nowlis || 'Сейчас слушают'}</SectionTitle>
+      <PulseSectionTitle>{lang?.nowlis || 'Сейчас слушают'}</PulseSectionTitle>
 
       <PulseScrollSection scrollRef={nowListenScrollRef}>
         {nowListen === null ? Array.from({ length: 8 }).map((_, index) => <PulsePlaylistTileSkeleton key={index} />) : null}

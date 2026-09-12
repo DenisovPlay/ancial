@@ -8,13 +8,13 @@ export type DraftImage = {
 };
 
 import { deleteUploadedImage, uploadImage } from '../lib/upload';
+import { decodeHtmlEntities } from '../seo';
 
 export { deleteUploadedImage, uploadImage };
+export { decodeHtmlEntities };
 export const MAX_IMAGES = 3;
 
-export function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
+export { cn } from '../lib/cn';
 
 export function SvgIcon({
   className,
@@ -46,16 +46,6 @@ export function makeId() {
   }
 
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-export function decodeHtmlEntities(value: string) {
-  return value
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
 }
 
 export function decodeHtmlToTextareaValue(value: string | null | undefined) {

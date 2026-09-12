@@ -18,9 +18,7 @@ export type PlayerLang = Record<string, string> | null;
 
 const FALLBACK_TRACK_IMAGE = '/img/pulse/track.png';
 
-export function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
+export { cn } from '../../lib/cn';
 
 import { normalizeText, parseToInt as toNumber } from '../../lib/convert';
 
@@ -69,7 +67,7 @@ export function getTrackArtist(track: PlayerTrack | null, lang: PlayerLang) {
   return normalizeText(track.artist) || (lang?.pulse_unknown_artist || 'Неизвестный исполнитель');
 }
 
-export function getTrackArtwork(track: PlayerTrack | null) {
+export function getPlayerTrackArtwork(track: PlayerTrack | null) {
   const artwork = Array.isArray(track?.artwork) ? track.artwork : [];
   const nextArtwork = artwork.find((item) => normalizeText(item?.src));
   return normalizeText(nextArtwork?.src) || FALLBACK_TRACK_IMAGE;
@@ -110,7 +108,7 @@ export function isAndroidBrowser() {
 
 export function buildMediaArtwork(track: PlayerTrack | null) {
   if (isAndroidBrowser()) return [];
-  const trackImage = getTrackArtwork(track);
+  const trackImage = getPlayerTrackArtwork(track);
   const artwork = Array.isArray(track?.artwork) ? track.artwork : [];
   const validArtwork = artwork.filter((item) => normalizeText(item?.src));
   if (validArtwork.length && validArtwork[0]?.sizes) {

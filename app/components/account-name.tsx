@@ -89,13 +89,6 @@ export function getVerifyStatus(
   return 0;
 }
 
-/**
- * Проверяет наличие статуса верификации у аккаунта (1 или 2)
- */
-export function isAccountVerified(account?: AccountData | null): boolean {
-  return getVerifyStatus(account) > 0;
-}
-
 export interface AccountNameProps {
   /** Объект пользователя или сообщества */
   user?: AccountData | null;

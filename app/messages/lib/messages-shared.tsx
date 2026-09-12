@@ -285,9 +285,7 @@ const sevenTvStickerPromiseCache = new Map<string, Promise<SevenTvSticker | null
 const sevenTvStickerSearchCache = new Map<string, SevenTvStickerSearchCacheEntry>();
 let sevenTvStickerSearchCacheHydrated = false;
 
-export function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
+export { cn } from '../../lib/cn';
 
 export function Icon({
   name,

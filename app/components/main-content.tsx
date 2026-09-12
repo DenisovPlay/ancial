@@ -3,10 +3,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { createRouteScrollController, scrollAppToTop } from '../lib/route-scroll';
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
+import { cn } from '../lib/cn';
 
 export default function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

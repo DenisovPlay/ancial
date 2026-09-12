@@ -4,6 +4,7 @@ import { coerceToFinite as toNumber } from '../lib/convert';
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useCopyToClipboard } from '../hooks/use-copy-to-clipboard';
+import { cn } from '../lib/cn';
 import { useMentionNavigation } from '../hooks/use-mention-navigation';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import { ensureCarouselScrollDelegation } from './carousel-delegation';
@@ -121,10 +122,6 @@ const DEFAULT_LANG: PostCardLang = {
   tobookmarks: 'В закладки',
   translate: 'Перевести',
 };
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
 
 function flag(value: boolean | number | string | null | undefined) {
   return value === true || value === 1 || value === '1' || value === 'true';

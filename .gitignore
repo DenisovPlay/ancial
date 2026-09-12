@@ -50,3 +50,6 @@ next-env.d.ts
 /php-v2-api/
 
 /docs/
+
+# graphify output (generated cache/graph artifacts, not source)
+/graphify-out/

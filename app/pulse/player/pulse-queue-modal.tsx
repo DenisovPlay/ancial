@@ -4,7 +4,7 @@ import React from 'react';
 import Modal from '../../components/modal';
 import type { PulseTrack } from '../../context/PulsePlayerContext';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
-import { getTrackArtwork, cn } from './player-utils';
+import { getPlayerTrackArtwork, cn } from './player-utils';
 
 type PulseQueueModalProps = {
   isOpen: boolean;
@@ -55,7 +55,7 @@ export function PulseQueueModal({
             const isCurrent = i === currentIndex;
             const title = track.title || lang?.pulse_unknown_track || 'Неизвестный трек';
             const artist = track.artist || lang?.pulse_unknown_artist || 'Неизвестный исполнитель';
-            const artwork = getTrackArtwork(track);
+            const artwork = getPlayerTrackArtwork(track);
 
             return (
               <div

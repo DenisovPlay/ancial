@@ -2,6 +2,7 @@
 
 import React, { useEffect, useId, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { cn } from '../lib/cn';
 
 interface ModalProps {
   align?: 'responsive' | 'center';
@@ -21,10 +22,6 @@ interface ModalProps {
   /** Показывает кружок-шеврон слева от заголовка (для вложенных шагов/табов внутри модалки). */
   onBack?: () => void;
   backLabel?: string;
-}
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
 }
 
 const MODAL_WIDTH_CLASSES = {

@@ -8,11 +8,8 @@ import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
 import { normalizeAvatarUrl } from '../lib/avatar';
 import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../lib/android-glass';
+import { cn } from '../lib/cn';
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
 
 const NavItem = ({
   href,

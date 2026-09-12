@@ -46,7 +46,7 @@ import {
   cn,
   formatPlaybackTime,
   getTrackArtist,
-  getTrackArtwork,
+  getPlayerTrackArtwork,
   getTrackDisplayTitle,
   isTrackPlayable,
   normalizeSongIds,
@@ -313,9 +313,9 @@ export function PulsePlayerProvider({
   const userCountry = useUserCountry();
   const playerTitle = getTrackDisplayTitle(currentTrack, lang);
   const playerArtist = getTrackArtist(currentTrack, lang);
-  const playerArtwork = getTrackArtwork(currentTrack);
-  const prevArtwork = getTrackArtwork(prevTrackObj);
-  const nextArtwork = getTrackArtwork(nextTrackObj);
+  const playerArtwork = getPlayerTrackArtwork(currentTrack);
+  const prevArtwork = getPlayerTrackArtwork(prevTrackObj);
+  const nextArtwork = getPlayerTrackArtwork(nextTrackObj);
   const hiddenByMessagesDialog = Boolean(pathname?.startsWith('/messages/'));
   const isCinema = Boolean(pathname?.startsWith('/cinema'));
   const effectivePlayerVisible = isMounted && !hiddenByMessagesDialog && !isCinema;

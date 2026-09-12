@@ -8,6 +8,7 @@ import { sanitizeUserHtml } from '../../../lib/sanitize-html';
 
 import Modal from '../../../components/modal';
 import { CommentsEmptyState } from '../../../components/comments-modal';
+import { cn } from '../../../lib/cn';
 import DeletePostModal from '../../../components/delete-post-modal';
 import { EmptyIllustration } from '../../../components/profile-ui';
 import ReportModal from '../../../components/report-modal';
@@ -54,10 +55,6 @@ interface FeedComment {
 interface ReportTarget {
   id: Id;
   type: number;
-}
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
 }
 
 function flag(value: boolean | number | string | null | undefined) {

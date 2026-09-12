@@ -3,6 +3,8 @@
 
 import Image from 'next/image';
 
+import { cn } from '../lib/cn';
+
 const DEFAULT_PULSE_COVER = '/img/pulse/track.png';
 const NEXT_IMAGE_REMOTE_HOSTS = new Set([
   'ancial.ru',
@@ -22,10 +24,6 @@ export const PULSE_COVER_IMAGE_SIZES = {
   playlistTileBig: '(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw',
   trackRow: '4rem',
 } as const;
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
-}
 
 function normalizePulseImageSrc(src: string | null | undefined, fallback: string) {
   const nextSrc = String(src ?? '').trim();

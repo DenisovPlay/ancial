@@ -2,6 +2,7 @@
 
 import React, { type CSSProperties, useEffect, useRef } from 'react';
 import { normalizeText } from './player-utils';
+import { cn } from '../../lib/cn';
 
 export type PulseLyricsLine = {
   text: string;
@@ -10,10 +11,6 @@ export type PulseLyricsLine = {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
-}
-
-function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(' ');
 }
 
 /** Parses LRC or plain text lyrics into timestamped lines. */

@@ -24,24 +24,6 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaHTMLAttrib
 });
 Textarea.displayName = 'Textarea';
 
-// --- SEARCHBAR ---
-export const SearchBar = (props: InputHTMLAttributes<HTMLInputElement>) => {
-  return (
-    <div className={`relative w-full ${props.className || ''}`}>
-      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-        <svg className="w-5 h-5 fill-zinc-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="#IC-search"></use>
-        </svg>
-      </div>
-      <input
-        type="text"
-        className="w-full bg-zinc-900/50 border border-zinc-600/30 rounded-full pl-12 pr-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 focus:bg-zinc-800/80 transition-all"
-        {...props}
-      />
-    </div>
-  );
-};
-
 // --- SWITCH ---
 interface SwitchProps {
   checked: boolean;
