@@ -2,7 +2,7 @@
 import { coerceToFinite as toNumber } from '../lib/convert';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCopyToClipboard } from '../hooks/use-copy-to-clipboard';
 import { cn } from '../lib/cn';
 import { useMentionNavigation } from '../hooks/use-mention-navigation';

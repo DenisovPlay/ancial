@@ -4,10 +4,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Dropdown, DropdownItem } from '../components/navigation';
 import ReportModal from '../components/report-modal';
 import ShareModal from '../components/share-modal';
-import { useAuth, type User } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { DOWNLOADS_COLLECTION_ID, usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { usePulseNote } from '../hooks/use-pulse-note';

@@ -8,7 +8,6 @@ import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 
 export default function AccountSettingsPage() {
-  const router = useRouter();
   const { user, lang, checkAuth } = useAuth();
   const { showNote } = useNotification();
 

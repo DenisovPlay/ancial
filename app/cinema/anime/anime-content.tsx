@@ -8,7 +8,7 @@ import MovieCard from '../components/movie-card';
 import GenreChips, { ANIME_GENRES } from '../components/genre-chips';
 import { Movie } from '../types';
 import { useTvNavigation } from '../use-tv-navigation';
-import { fetchCinemaSearch, fetchCinemaGetVideo } from '../cinema-api';
+import { fetchCinemaGetVideo } from '../cinema-api';
 import { CinemaGridSkeleton, CinemaRowSkeleton } from '../components/cinema-skeleton';
 import { getCinemaCache, setCinemaCache } from '../cinema-cache';
 

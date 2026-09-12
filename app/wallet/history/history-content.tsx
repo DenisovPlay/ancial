@@ -7,13 +7,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AncialAPI, type WalletAccount, type WalletTransaction } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
-import Modal from '../../components/modal';
 import { TransactionItem, TransactionDetailsModal } from '../components/transaction-item';
 
 type HistoryFilterId = 'all' | 'deposit' | 'withdraw' | 'transfer' | 'done' | 'onhold' | 'canceled';
 
 export default function HistoryContent() {
-  const router = useRouter();
   const { lang, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [initialLoading, setInitialLoading] = useState(true);

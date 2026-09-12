@@ -3,7 +3,6 @@
 
 import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { sanitizeUserHtml } from '../../lib/sanitize-html';
 import { SITE_DOMAIN } from '../../config';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
@@ -263,7 +262,6 @@ export default function MessageBubble({
   const isNativeSingleSticker = !hasAnyImages && !sevenTvStickerName && isSingleSticker(messageBodyRaw);
   const isStickerOnlyMessage = Boolean(sevenTvStickerName) || isNativeSingleSticker;
   const hasMessageText = !sevenTvStickerName && Boolean(messageBodyHtml.trim());
-  const isMediaOnlyMessage = (hasAnyImages || isStickerOnlyMessage) && !hasMessageText;
   const canTranslateMessage = !isOwn && isTextMessage && !isStickerOnlyMessage;
   const canEditMessage = isOwn && isTextMessage && !isStickerOnlyMessage;
   const reactions = parseReactions(message.reactions);

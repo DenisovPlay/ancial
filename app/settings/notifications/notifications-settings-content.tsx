@@ -1,13 +1,11 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { authFetch } from '../../lib/auth-fetch';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { useFirebaseMessaging, FIREBASE_CONFIG } from '../../lib/useFirebaseMessaging';
 import { SvgIcon } from '../../feed/editor-shared';
@@ -24,7 +22,7 @@ export default function NotificationsSettingsContent() {
   const router = useRouter();
   const { user, isAuthenticated, checkAuth, lang } = useAuth();
   const { showNote } = useNotification();
-  const { messaging, ready: firebaseReady, error: firebaseError } = useFirebaseMessaging();
+  const { messaging, error: firebaseError } = useFirebaseMessaging();
 
   const [pushDevice, setPushDevice] = useState<PushDevice | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);

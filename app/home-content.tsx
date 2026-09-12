@@ -25,7 +25,6 @@ import {
   writeCachedWeather,
 } from './lib/home-info-cache';
 import { safeFetchJson } from './lib/safe-fetch-json';
-import { cache } from './lib/cache';
 import WeatherMarkerOnboarding from './components/weather-marker-onboarding';
 import { GLASS_MODE_CHANGE_EVENT, GLASS_MODE_STORAGE_KEY, readGlassMode } from './lib/android-glass';
 

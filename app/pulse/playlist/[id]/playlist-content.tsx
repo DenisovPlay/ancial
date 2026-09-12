@@ -12,7 +12,6 @@ import { usePulseNote } from '../../../hooks/use-pulse-note';
 import { usePulseTrackReport } from '../../../hooks/use-pulse-track-report';
 import { useRequireAuth } from '../../../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
-import { cache } from '../../../lib/cache.ts';
 import { buildPulseTrackReportReasons } from '../../../lib/report-reasons';
 import { useUserCountry } from '../../../lib/user-geo';
 import { SITE_CONFIG } from '../../../seo';

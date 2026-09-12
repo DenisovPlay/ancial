@@ -43,7 +43,6 @@ function getAutoResolvedMode(): 'full' | 'lite' {
 }
 
 export default function UiSettingsContent() {
-  const router = useRouter();
   const { showNote } = useNotification();
   const { isAuthenticated, lang, langCode, setLanguage } = useAuth();
   const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);

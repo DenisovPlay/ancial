@@ -52,8 +52,6 @@ const NavItem = ({
 
   const springX = useSpring(rawX, { stiffness: 420, damping: 22 });
   const springY = useSpring(rawY, { stiffness: 420, damping: 22 });
-  const springScaleX = useSpring(rawScaleX, { stiffness: 440, damping: 24 });
-  const springScaleY = useSpring(rawScaleY, { stiffness: 440, damping: 24 });
   const springPressScaleX = useSpring(pressScaleX, { stiffness: 500, damping: 30 });
   const springPressScaleY = useSpring(pressScaleY, { stiffness: 500, damping: 30 });
 
@@ -534,8 +532,6 @@ export const DropdownItem = ({
 
   const springX = useSpring(rawX, { stiffness: 400, damping: 24 });
   const springY = useSpring(rawY, { stiffness: 400, damping: 24 });
-  const springScaleX = useSpring(rawScaleX, { stiffness: 420, damping: 25 });
-  const springScaleY = useSpring(rawScaleY, { stiffness: 420, damping: 25 });
   // Press animation (replaces whileTap — whileTap gets stuck on iOS Safari)
   const pressScaleX = useMotionValue(1);
   const pressScaleY = useMotionValue(1);
@@ -805,7 +801,7 @@ export default function Navigation() {
         if (resNotifs?.success) {
           setUnreadNotifications(resNotifs.data?.unread_count ?? 0);
         }
-      } catch (e) { }
+      } catch { }
     };
 
     void fetchUnreadCounts();

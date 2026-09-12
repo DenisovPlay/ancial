@@ -9,9 +9,8 @@ import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 
 function EmailVerifContentInner() {
-  const { lang, user, checkAuth } = useAuth();
+  const { lang, checkAuth } = useAuth();
   const { showNote } = useNotification();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const urlCode = searchParams.get('code') || '';
 

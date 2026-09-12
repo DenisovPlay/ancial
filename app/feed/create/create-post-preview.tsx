@@ -112,9 +112,7 @@ export default function CreatePostPreview({
     widgets,
 }: CreatePostPreviewProps) {
     const safeAuthorName = authorName?.trim() || strings.placeholderAuthor;
-    const safeTitle = title?.trim() || strings.placeholderTitle;
     const safeText = text?.trim() || strings.placeholderContent;
-    const safeTag = tag?.trim() || strings.placeholderTag;
 
     useEffect(() => {
         ensureCarouselScrollDelegation();

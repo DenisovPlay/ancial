@@ -6,8 +6,7 @@ import Link from 'next/link';
 
 
 export default function ContactsPage() {
-    const router = useRouter();
-    const { user, isAuthenticated, lang, updateLang } = useAuth() as {
+    const { lang } = useAuth() as {
         user?: unknown;
         isAuthenticated?: boolean;
         lang?: Record<string, string> | null;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { FrameBrandLoader } from './cinema-skeleton';
 import { getMovieProgress, saveWatchHistoryItem } from '../cinema-history';
 import {
@@ -142,7 +142,7 @@ export default function CustomPlayer({
         win.postMessage({ api: 'setVolume', volume: val }, '*');
         win.postMessage(JSON.stringify({ api: 'setVolume', volume: val }), '*');
       }
-    } catch (e) {}
+    } catch {}
   }, [releaseSeekingDebounce]);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -166,7 +166,6 @@ export default function CustomPlayer({
     setDuration(nextDuration);
   }, []);
   const [buffered, setBuffered] = useState<number>(0);
-  const [volume, setVolume] = useState<number>(1);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [showQualityDropdown, setShowQualityDropdown] = useState<boolean>(false);
@@ -245,7 +244,7 @@ export default function CustomPlayer({
         if (typeof data === 'string') {
           try {
             data = JSON.parse(data);
-          } catch (err) {}
+          } catch {}
         }
         if (!data || typeof data !== 'object') return;
         const playback = parseFlixPlaybackPayload(data);
@@ -293,7 +292,7 @@ export default function CustomPlayer({
             onNextEpisode();
           }
         }
-      } catch (err) {}
+      } catch {}
     };
 
     window.addEventListener('message', handleIframeMessage);
@@ -361,8 +360,6 @@ export default function CustomPlayer({
     }
   }, [isFlixCDN, src, isPlaying, sendIframeCommand]);
 
-  const [showResumeToast, setShowResumeToast] = useState(false);
-  const [resumeToastTime, setResumeToastTime] = useState<number | null>(null);
   const restoredRef = useRef(false);
   const lastSavedTimeRef = useRef<number>(0);
 
@@ -419,7 +416,7 @@ export default function CustomPlayer({
           }, 500);
         }
       }
-    } catch (e) {}
+    } catch {}
   };
 
   const handleLoadedMetadata = () => {

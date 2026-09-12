@@ -93,8 +93,6 @@ function CallControlButton({
 
   const springX = useSpring(rawX, { stiffness: 420, damping: 22 });
   const springY = useSpring(rawY, { stiffness: 420, damping: 22 });
-  const springScaleX = useSpring(rawScaleX, { stiffness: 440, damping: 24 });
-  const springScaleY = useSpring(rawScaleY, { stiffness: 440, damping: 24 });
   const springPressScaleX = useSpring(pressScaleX, { stiffness: 500, damping: 30 });
   const springPressScaleY = useSpring(pressScaleY, { stiffness: 500, damping: 30 });
 
@@ -299,7 +297,7 @@ export default function CallClient() {
       isPoliteRef.current = (fUserId > 0 && cUserId > fUserId);
 
       setPermissionsModal(true);
-    } catch (e) {
+    } catch {
       setErrorMsg('Error loading dialog');
     }
   };
@@ -476,6 +474,7 @@ export default function CallClient() {
   const isSubscribedRef = useRef(false);
   const outgoingSignalQueueRef = useRef<CallSignal[]>([]);
   const dialogInfoRef = useRef<CallDialogInfo | null>(null);
+  const wsTeardownRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     dialogInfoRef.current = dialogInfo;
@@ -486,27 +485,38 @@ export default function CallClient() {
 
     const subDialogId = dialogInfoRef.current?.id ?? dialogInfo?.id;
     if (subDialogId == null) return;
+
+    wsTeardownRef.current?.();
     window.GlobalWS.subscribeDialog(subDialogId);
 
     if (window.GlobalWS.isReady()) {
       setCallStatus(lang?.waiting_for_answer || 'Ожидание ответа...');
     }
 
-    window.GlobalWS.addDialogListener('auth_ok', () => {
+    const onAuthOk = () => {
       setCallStatus(lang?.waiting_for_answer || 'Ожидание ответа...');
-    });
-    window.GlobalWS.addDialogListener('subscribed', () => {
+    };
+    const onSubscribed = () => {
       setCallStatus(lang?.waiting_for_answer || 'Ожидание ответа...');
       isSubscribedRef.current = true;
       const queue = outgoingSignalQueueRef.current;
       outgoingSignalQueueRef.current = [];
       queue.forEach(data => sendWsSignal(data, true));
-    });
-
-    window.GlobalWS.addDialogListener('call:signal', async (payload: unknown) => {
+    };
+    const onCallSignal = (payload: unknown) => {
       const msg = payload as { data?: CallSignal } | CallSignal;
       handleWsSignal(('data' in msg && msg.data ? msg.data : msg) as CallSignal);
-    });
+    };
+
+    window.GlobalWS.addDialogListener('auth_ok', onAuthOk);
+    window.GlobalWS.addDialogListener('subscribed', onSubscribed);
+    window.GlobalWS.addDialogListener('call:signal', onCallSignal);
+
+    wsTeardownRef.current = () => {
+      window.GlobalWS?.removeDialogListener('auth_ok', onAuthOk);
+      window.GlobalWS?.removeDialogListener('subscribed', onSubscribed);
+      window.GlobalWS?.removeDialogListener('call:signal', onCallSignal);
+    };
   };
 
   const sendWsSignal = useCallback((data: CallSignal, force = false) => {
@@ -848,6 +858,8 @@ export default function CallClient() {
       if (pcRef.current) {
         pcRef.current.close();
       }
+      wsTeardownRef.current?.();
+      wsTeardownRef.current = null;
       if (window.GlobalWS && dialogInfo && dialogInfo.id != null) {
         window.GlobalWS.unsubscribeDialog(dialogInfo.id);
       }

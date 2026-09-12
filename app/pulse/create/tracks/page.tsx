@@ -52,7 +52,6 @@ export default function PulseCreateTracksPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- mount fetch
       fetchTracks();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   useEffect(() => {

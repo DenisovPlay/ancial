@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { sanitizeUserHtml } from '../../../lib/sanitize-html';
 
-import Modal from '../../../components/modal';
 import { CommentsEmptyState } from '../../../components/comments-modal';
 import { cn } from '../../../lib/cn';
 import DeletePostModal from '../../../components/delete-post-modal';

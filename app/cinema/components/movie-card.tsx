@@ -7,8 +7,6 @@ import { getOptimizedImageUrl } from '../cinema-api';
 interface MovieCardProps {
   movie: Movie;
   rankNumber?: number;
-  isInMyList?: boolean;
-  onToggleList?: (e: React.MouseEvent) => void;
   onClick: () => void;
   onPlay: () => void;
 }

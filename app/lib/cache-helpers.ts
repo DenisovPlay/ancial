@@ -39,43 +39,6 @@ export function setAuthToken(token: string): void {
 }
 
 // ==========================
-// Cinema My List
-// ==========================
-
-const CINEMA_MY_LIST_KEY = 'frame_my_list';
-
-/**
- * Get user's "My List" movie IDs from cache.
- */
-export function getCinemaMyList(): string[] {
-  if (typeof window === 'undefined') return [];
-  
-  try {
-    const stored = localStorage.getItem(CINEMA_MY_LIST_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-  } catch (e) {
-    console.error('[Cache] Error reading cinema my list:', e);
-  }
-  
-  return [];
-}
-
-/**
- * Save user's "My List" movie IDs to cache.
- */
-export function setCinemaMyList(ids: string[]): void {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    localStorage.setItem(CINEMA_MY_LIST_KEY, JSON.stringify(ids));
-  } catch (e) {
-    console.error('[Cache] Error saving cinema my list:', e);
-  }
-}
-
-// ==========================
 // Cinema Referrer (sessionStorage)
 // ==========================
 

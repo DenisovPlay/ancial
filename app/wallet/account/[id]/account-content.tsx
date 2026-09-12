@@ -112,7 +112,6 @@ export default function AccountContent({ accountId }: AccountContentProps) {
     if (authLoading) return;
     if (!isAuthenticated) {
       // Неавторизован — терминальное состояние, снимаем лоадер сразу.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       setError(lang?.auth_required || 'Требуется авторизация');
       return;
@@ -159,7 +158,6 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       loadQR();
     } else {
       // Модалка закрыта — терминальный сброс QR.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReceiveQrUrl(null);
     }
   }, [isReceiveModalOpen, accountId, lang?.failed_to_generate_qr]);

@@ -9,12 +9,10 @@ import { getOptimizedImageUrl } from '../cinema-api';
 
 interface HeroSliderProps {
   heroMovies?: Movie[];
-  myListIds?: string[];
-  onToggleList?: (id: string, e?: React.MouseEvent) => void;
   onPlayMovie: (movie: Movie) => void;
 }
 
-export default function HeroSlider({ heroMovies = [], myListIds = [], onToggleList, onPlayMovie }: HeroSliderProps) {
+export default function HeroSlider({ heroMovies = [], onPlayMovie }: HeroSliderProps) {
   const { lang } = useAuth();
   const router = useRouter();
 

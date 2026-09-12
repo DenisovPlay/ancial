@@ -304,7 +304,7 @@ function FormContentInner() {
         } else {
           showNote({ content: lang?.user_with_login_not_found || 'Пользователь с таким логином не найден', type: 'error', time: 5 });
         }
-      } catch (err) {
+      } catch {
         showNote({ content: lang?.user_with_login_not_found || 'Пользователь с таким логином не найден', type: 'error', time: 5 });
       } finally {
         setLookupLoading(false);

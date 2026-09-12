@@ -11,7 +11,7 @@ import React, {
   useSyncExternalStore,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { TypingBubble } from './components/typing-bubble';
 
 import Modal from '../components/modal';
@@ -588,6 +588,8 @@ export default function MessagesContent() {
     globalWS.removeDialogListener('message:deleted', handleWsMessageDeleted);
     globalWS.removeDialogListener('message:edited', handleWsMessageEdited);
     globalWS.removeDialogListener('message:reaction', handleWsMessageReaction);
+    globalWS.removeDialogListener('user:typing', handleWsTyping);
+    globalWS.removeDialogListener('typing', handleWsTyping);
     globalWS.removeDialogListener('call:signal', handleWsCallSignal);
     globalWS.removeDialogListener('voice:signal', handleVoiceRoomSignal);
 

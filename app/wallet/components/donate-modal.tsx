@@ -108,7 +108,7 @@ export function DonateModal({
                 name: profile.name || recipientName,
               });
             }
-          } catch (err) {
+          } catch {
             // Keep fallback
           }
         }

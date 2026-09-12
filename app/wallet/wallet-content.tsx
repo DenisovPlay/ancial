@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { SITE_URL } from '../config';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { AncialAPI, getApiMessage, type SendMoneyParams, type WalletOverview, type WalletAccount, type WalletGateway, type WalletGatewayForm, type WalletGatewayFormField, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
+import { AncialAPI, getApiMessage, type SendMoneyParams, type WalletOverview, type WalletAccount, type WalletGateway, type WalletGatewayForm, type WalletTopupOrder, type WalletTransaction } from '../lib/api-v2';
 
 /** Друг для перевода STF (socialAction('friends'), status=1 — подтверждённый). */
 interface StfFriend {
@@ -396,7 +395,7 @@ export default function WalletContent() {
     setSendLoading(true);
     setSendError(null);
     try {
-      const res = await AncialAPI.sendMoney(payload);
+      await AncialAPI.sendMoney(payload);
 
       const { fees, total, feePercent } = getCommissionInfo(amountStr);
       setSuccessDetails({
@@ -601,7 +600,7 @@ export default function WalletContent() {
       if (targetGw) {
         let fieldsObj = targetGw.withdrawal_fields;
         if (typeof fieldsObj === 'string') {
-          try { fieldsObj = JSON.parse(fieldsObj); } catch (e) { }
+          try { fieldsObj = JSON.parse(fieldsObj); } catch { }
         }
         targetGw.withdrawal_fields = fieldsObj;
         setGatewayConfig(targetGw);

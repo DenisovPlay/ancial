@@ -91,8 +91,6 @@ function CallControlButton({
 
   const springX = useSpring(rawX, { stiffness: 420, damping: 22 });
   const springY = useSpring(rawY, { stiffness: 420, damping: 22 });
-  const springScaleX = useSpring(rawScaleX, { stiffness: 440, damping: 24 });
-  const springScaleY = useSpring(rawScaleY, { stiffness: 440, damping: 24 });
   const springPressScaleX = useSpring(pressScaleX, { stiffness: 500, damping: 30 });
   const springPressScaleY = useSpring(pressScaleY, { stiffness: 500, damping: 30 });
 

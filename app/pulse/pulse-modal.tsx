@@ -49,7 +49,7 @@ type PulseModalFieldProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'c
 
 export function PulseModalField({ label, ...inputProps }: PulseModalFieldProps) {
   return (
-    <div className="flex w-full flex-col">
+    <div className="-mt-3 flex w-full flex-col">
       <span className="z-20 pl-4 text-zinc-400">{label}</span>
       <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
         <input
@@ -68,7 +68,7 @@ type PulseModalSelectFieldProps = Omit<React.SelectHTMLAttributes<HTMLSelectElem
 
 export function PulseModalSelectField({ children, label, ...selectProps }: PulseModalSelectFieldProps) {
   return (
-    <div className="flex w-full flex-col">
+    <div className="-mt-3 flex w-full flex-col">
       <span className="z-20 pl-4 text-zinc-400">{label}</span>
       <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
         <select

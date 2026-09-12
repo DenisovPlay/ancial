@@ -4,10 +4,8 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
-import Image from 'next/image';
 import Link from 'next/link';
 import YandexRtb from '../components/yandex-rtb';
-import { useDragScroll } from '../hooks/useDragScroll';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 
@@ -214,7 +212,6 @@ function FriendsContent() {
           </div>
         ) : (
           friends.map((friend, i) => {
-            const friendName = friend.name || `${friend.fname || ''} ${friend.lname || ''}`.trim() || (lang?.anonymous || 'Аноним');
             const isOnline = onlineUsers[friend.id] || friend.online || friend.isOnline;
             const isPending = friend.status === 0 || friend.isPending || friend.is_request;
             const isIncoming = friend.is_incoming || friend.isIncoming;

@@ -80,7 +80,7 @@ export function getMovieProgress(movieId: string | number): CinemaProgressState 
       subcategory: 'progress',
     });
     return data || null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -167,5 +167,5 @@ export function saveWatchHistoryItem(item: Partial<WatchHistoryItem> & { id: str
   // Диспатчим событие обновления истории для UI страниц
   try {
     window.dispatchEvent(new CustomEvent('ancial:cinema_history_update', { detail: { item: fullHistoryItem } }));
-  } catch (e) {}
+  } catch {}
 }

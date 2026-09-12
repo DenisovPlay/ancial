@@ -92,11 +92,14 @@ function getInitialAuth(): boolean {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(() => getInitialUser());
-  const [isAuthenticated, setIsAuthenticated] = useState(() => getInitialAuth());
-  const [langCode, setLangCode] = useState<SupportedLang>(() => getStoredLangCode());
-  const [lang, setLang] = useState<Record<string, string>>(() => locales[langCode] || locales['ru']);
-  const [isLoading, setIsLoading] = useState(() => !getInitialAuth());
+  // Стартовые значения обязаны совпадать с серверными: localStorage на SSR недоступен,
+  // и чтение его прямо в useState даёт расхождение гидратации (React #418) на каждой странице.
+  // Реальные значения подставляет mount-эффект ниже — checkAuth() и setLanguage().
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [langCode, setLangCode] = useState<SupportedLang>('ru');
+  const [lang, setLang] = useState<Record<string, string>>(locales['ru']);
+  const [isLoading, setIsLoading] = useState(true);
   const authStateRef = useRef<{ isAuthenticated: boolean; user: User | null }>({
     isAuthenticated: getInitialAuth(),
     user: getInitialUser(),

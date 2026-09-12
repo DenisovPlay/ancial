@@ -47,7 +47,7 @@ export default function NotificationsPage() {
           try {
             void AncialAPI.markNotificationsRead().catch(() => null);
             window.dispatchEvent(new CustomEvent('ancial:unread_update', { detail: { type: 'clear_notifications' } }));
-          } catch (e) {}
+          } catch {}
         }
       } catch (error) {
       console.error('Error fetching notifications:', error);

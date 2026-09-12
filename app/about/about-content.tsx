@@ -9,8 +9,7 @@ import { useScrollPingPong } from '../hooks/useScrollPingPong';
 import { APP_VERSION } from '../lib/app-version';
 
 export default function Home() {
-    const router = useRouter();
-    const { user, isAuthenticated, lang, updateLang } = useAuth() as {
+    const { lang } = useAuth() as {
         user?: unknown;
         isAuthenticated?: boolean;
         lang?: Record<string, string> | null;

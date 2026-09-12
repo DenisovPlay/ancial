@@ -26,7 +26,6 @@ import {
   UserIcon,
 } from './apps-icons';
 
-type AppsMode = 'home' | 'search' | 'category';
 
 type CategoryItem = {
   animationClass?: string;

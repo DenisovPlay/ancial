@@ -174,7 +174,6 @@ function htmlToBBCode(html: string): string {
     // ── Блочные: спойлер / details (обратная совместимость старых постов) ────
     if (tagName === 'details') {
       const summaryEl = el.querySelector(':scope > summary');
-      const summaryTitle = summaryEl?.textContent?.trim() || 'Спойлер';
       let body = '';
       Array.from(el.childNodes).forEach(child => {
         if (child.nodeName !== 'SUMMARY') {
@@ -308,7 +307,6 @@ export default function RichTextEditor({ value, onChange, placeholder, className
 
   const visibleLength = getVisibleLength(value);
   const isOverLimit = visibleLength > VISIBLE_CHAR_LIMIT;
-  const isNearLimit = !isOverLimit && visibleLength > VISIBLE_CHAR_LIMIT * 0.85;
 
   const checkEditorEmpty = useCallback((el: HTMLDivElement | null, val: string): boolean => {
     if (!val || !val.trim()) return true;

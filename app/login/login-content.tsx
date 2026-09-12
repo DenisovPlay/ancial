@@ -7,8 +7,6 @@ import { useAuth } from '../context/AuthContext';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
-import { Button } from '../components/button';
-import { Input } from '../components/form';
 
 const greetings = [
   { text: 'Ну, удачной дороги тебе, сталкер!', author: 'Сидорович', source: 'S.T.A.L.K.E.R.' },

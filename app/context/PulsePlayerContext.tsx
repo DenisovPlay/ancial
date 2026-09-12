@@ -13,7 +13,6 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
-import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse/pulse-image';
 import { shouldDisableWebAudioForDevice, useEqualizer } from '../pulse/player/use-equalizer';
 import { usePulseFavorites } from '../pulse/player/use-pulse-favorites';
 import { useAddToPlaylist } from '../pulse/player/use-add-to-playlist';
@@ -56,7 +55,6 @@ import {
   toNumber,
 } from '../pulse/player/player-utils';
 
-type LangMap = Record<string, string> | null;
 
 // Типы и константы плеера вынесены в pulse-player-types.ts (реэкспорт сохраняет публичный API).
 import type {
@@ -160,11 +158,9 @@ declare global {
 
 const PulsePlayerContext = createContext<PulsePlayerContextValue | undefined>(undefined);
 
-const FALLBACK_TRACK_IMAGE = '/img/pulse/track.png';
 const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
 const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;
-const PLAYER_LYRIC_FILL_TRANSITION_MS = 250;
 const PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
 
 type SyncTrackProgressOptions = {
@@ -200,7 +196,7 @@ export function PulsePlayerProvider({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, lang, user } = useAuth();
+  const { isAuthenticated, lang } = useAuth();
   const { showNote } = useNotification();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);

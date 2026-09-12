@@ -17,7 +17,7 @@ export default function CinemaIdleScreensaver({
   idleTimeoutMs = 45000, // 45 seconds default idle time
   disabled = false,
 }: CinemaIdleScreensaverProps) {
-  const { lang, langCode } = useAuth();
+  const { langCode } = useAuth();
   const [isIdle, setIsIdle] = useState<boolean>(false);
   const [activeMovies, setActiveMovies] = useState<Movie[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);

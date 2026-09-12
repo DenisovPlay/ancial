@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import ReportModal from '../../components/report-modal';
@@ -45,7 +45,6 @@ type PulseSearchResponse = {
   tracks?: PulseTrack[] | null;
 };
 
-const FAVORITES_CACHE_KEY = 'pulse_fav_ids';
 
 function getPulseSearchCacheKey(query: string) {
   return `pulse_search:${encodeURIComponent(query || '__empty__')}`;

@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { sanitizeUserHtml } from '../../lib/sanitize-html';
 
 import Modal from '../../components/modal';
 import DeletePostModal from '../../components/delete-post-modal';

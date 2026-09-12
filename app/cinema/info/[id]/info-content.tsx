@@ -4,14 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
-import { useNotification } from '../../../context/NotificationContext';
-import { getCinemaReferrer, removeCinemaReferrer, getCinemaMyList, setCinemaMyList } from '../../../lib/cache-helpers';
+import { getCinemaReferrer, removeCinemaReferrer } from '../../../lib/cache-helpers';
 import CinemaHeader from '../../components/cinema-header';
 import MovieRow from '../../components/movie-row';
 import { Movie } from '../../types';
 import { useTvNavigation } from '../../use-tv-navigation';
 import { fetchCinemaVideoById, fetchCinemaSearch, getOptimizedImageUrl } from '../../cinema-api';
-import { CinemaInfoSkeleton, FrameBrandLoader } from '../../components/cinema-skeleton';
+import { CinemaInfoSkeleton } from '../../components/cinema-skeleton';
 import CinemaIdleScreensaver from '../../components/cinema-idle-screensaver';
 
 import { CacheManager } from '../../../lib/cache';
@@ -26,7 +25,6 @@ interface InfoContentProps {
 export default function InfoContent({ id }: InfoContentProps) {
   useTvNavigation();
   const { lang } = useAuth();
-  const { showNote } = useNotification();
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -44,7 +42,6 @@ export default function InfoContent({ id }: InfoContentProps) {
   const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRevalidating, setIsRevalidating] = useState<boolean>(true);
-  const [myListIds, setMyListIds] = useState<string[]>([]);
 
   // Watch state & selection
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
@@ -97,7 +94,7 @@ export default function InfoContent({ id }: InfoContentProps) {
         playerId: pId,
         playerName: playerObj?.name || '',
       });
-    } catch (err) {}
+    } catch {}
   };
 
   // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- Таймеры и события очищаются в функции размонтирования эффекта
@@ -115,13 +112,13 @@ export default function InfoContent({ id }: InfoContentProps) {
     };
 
     // 0. Initialize client-only states
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- SWR-гидратация из кэша до ответа API
-    setMyListIds(getCinemaMyList());
     try {
       const saved = getCinemaReferrer();
       if (saved) {
         removeCinemaReferrer();
         if (!saved.includes('/cinema/info/') && !saved.includes('/cinema/watch/')) {
+          // Реферер живёт в sessionStorage, SSR его не знает — читаем только на монтировании.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setFromUrl(saved);
         }
       } else if (document.referrer) {
@@ -134,7 +131,7 @@ export default function InfoContent({ id }: InfoContentProps) {
           setFromUrl(refUrl.pathname + refUrl.search);
         }
       }
-    } catch (e) {}
+    } catch {}
 
     // 1. Read cached data first (check 'info' cache, then fallback to 'video' cache)
     let cachedMovie = getCinemaCache<Movie>('info', id);
@@ -145,7 +142,6 @@ export default function InfoContent({ id }: InfoContentProps) {
 
     if (cachedMovie) {
       // SWR-гидратация из кэша до ответа API — сеттлеры здесь источник правды.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInfoMovie(cachedMovie);
       if (cachedSimilar && cachedSimilar.length > 0) setSimilarMovies(cachedSimilar);
       setIsLoading(false);
@@ -166,7 +162,7 @@ export default function InfoContent({ id }: InfoContentProps) {
           const defaultTrans = defaultPlayer?.translations?.[0]?.id || cachedMovie.translationsList?.[0]?.id || null;
           if (defaultTrans) setSelectedTranslation(defaultTrans);
         }
-      } catch (e) {}
+      } catch {}
     } else {
       setIsLoading(true);
     }
@@ -198,7 +194,7 @@ export default function InfoContent({ id }: InfoContentProps) {
               const defaultTrans = defaultPlayer?.translations?.[0]?.id || target.translationsList?.[0]?.id || null;
               if (defaultTrans) setSelectedTranslation(defaultTrans);
             }
-          } catch (e) {}
+          } catch {}
 
           // Load similar content
           const similar = await fetchCinemaSearch('', target.type === 'series' ? 'serial' : 'movie');
@@ -235,26 +231,6 @@ export default function InfoContent({ id }: InfoContentProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-загрузка по id: повторный запуск при смене infoMovie недопустим
   }, [id]);
-
-  const toggleMyList = (movieId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    
-    const isInList = myListIds.includes(movieId);
-    const updated = isInList
-      ? myListIds.filter((i) => i !== movieId)
-      : [...myListIds, movieId];
-    
-    setCinemaMyList(updated);
-    setMyListIds(updated);
-
-    showNote({
-      content: isInList
-        ? (lang?.frame_note_removed || 'Удалено из Моего списка')
-        : (lang?.frame_note_added || 'Добавлено в Мой список'),
-      type: isInList ? 'info' : 'success',
-      time: 3,
-    });
-  };
 
   const handleSelectSeason = (sNum: number) => {
     setSelectedSeason(sNum);
@@ -768,8 +744,6 @@ export default function InfoContent({ id }: InfoContentProps) {
           <MovieRow
             title={lang?.frame_similar || 'Похожие фильмы и сериалы'}
             movies={similarMovies}
-            myListIds={myListIds}
-            onToggleList={toggleMyList}
             onSelectMovie={(m) => router.push(`/cinema/info/${m.id}`)}
             onPlayMovie={(m) => handleWatch(1, 1, null)}
           />

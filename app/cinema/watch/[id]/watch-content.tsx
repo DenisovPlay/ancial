@@ -45,7 +45,7 @@ export default function WatchContent({ id }: WatchContentProps) {
           // eslint-disable-next-line react-hooks/set-state-in-effect
           setEntryUrl(refUrl.pathname + refUrl.search);
         }
-      } catch (e) {}
+      } catch {}
     }
   }, []);
 
@@ -123,7 +123,7 @@ export default function WatchContent({ id }: WatchContentProps) {
             playerId: activePlayerId,
             playerName: playerObj?.name || '',
           });
-        } catch (e) { }
+        } catch { }
       }
     }
     loadWatchMovie();
@@ -257,7 +257,7 @@ export default function WatchContent({ id }: WatchContentProps) {
         playerId: curPlayerId,
         playerName: playerObj?.name || '',
       });
-    } catch (e) {}
+    } catch {}
   }, [movie, season, episode, translation, player]);
 
   // Auto-focus active episode/season when picker modal opens
@@ -526,7 +526,7 @@ export default function WatchContent({ id }: WatchContentProps) {
         u.searchParams.set('no_back', '1');
       }
       activeIframeSrc = u.toString();
-    } catch (e) {
+    } catch {
       activeIframeSrc = rawUrl;
     }
   }

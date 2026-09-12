@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { locales, availableLocales, isSupportedLang, resolveLocaleDict, getStoredLangCode } from './index.ts';
+import { locales, availableLocales, isSupportedLang, resolveLocaleDict } from './index.ts';
 
 test('locales contains ru and en', () => {
   assert.ok(locales.ru, 'ru dictionary should be defined');

@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { getCinemaMyList, setCinemaMyList } from '../lib/cache-helpers';
 import { goToMovieInfo } from './cinema-navigation';
 import MovieCard from './components/movie-card';
 import MovieRow from './components/movie-row';
@@ -49,7 +48,6 @@ export default function CinemaContent() {
   const topScrollRef = useDragScroll({ speed: 2 });
 
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [myListIds, setMyListIds] = useState<string[]>([]);
   const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -63,13 +61,7 @@ export default function CinemaContent() {
   const [animeList, setAnimeList] = useState<Movie[]>([]);
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
 
-  // Load user's My List from cache on mount
   useEffect(() => {
-    const list = getCinemaMyList();
-    // Гидратация из localStorage при монтировании — сеттлер здесь источник правды.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMyListIds(list);
-
     const refreshHistory = () => {
       const list = getWatchHistory();
       setWatchHistory(list);
@@ -250,7 +242,7 @@ export default function CinemaContent() {
           router.push(`/cinema/watch/${movieId}${qStr ? `?${qStr}` : ''}`);
           return;
         }
-      } catch (e) {}
+      } catch {}
       router.push(`/cinema/watch/${movieId}`);
     };
 

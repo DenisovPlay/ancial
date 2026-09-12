@@ -1,7 +1,6 @@
 import { headers } from 'next/headers';
 import { SITE_URL } from './config';
 
-import { SITE_CONFIG } from './seo';
 
 function trimTrailingSlash(value: string) {
   return value.endsWith('/') ? value.slice(0, -1) : value;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -109,6 +109,20 @@ export default function UploadContent() {
     },
   ]);
 
+  const blobUrlsRef = useRef<string[]>([]);
+
+  const createTrackedBlobUrl = (file: Blob) => {
+    const url = URL.createObjectURL(file);
+    blobUrlsRef.current.push(url);
+    return url;
+  };
+
+  useEffect(() => {
+    // Массив только мутируется (push), поэтому ссылка, снятая на монтировании, видит все URL.
+    const urls = blobUrlsRef.current;
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
+
   // Load user artists
   useEffect(() => {
     if (isAuthenticated) {
@@ -126,7 +140,7 @@ export default function UploadContent() {
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'single' | 'album') => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    const previewUrl = URL.createObjectURL(file);
+    const previewUrl = createTrackedBlobUrl(file);
 
     if (target === 'single') {
       setSingleCover(previewUrl);
@@ -159,7 +173,7 @@ export default function UploadContent() {
     const file = e.target.files[0];
 
     setSingleAudioFile(file);
-    const audioUrl = URL.createObjectURL(file);
+    const audioUrl = createTrackedBlobUrl(file);
     setSingleAudioUrl(audioUrl);
 
     // Extract ID3 metadata
@@ -300,7 +314,7 @@ export default function UploadContent() {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
 
-    const audioUrl = URL.createObjectURL(file);
+    const audioUrl = createTrackedBlobUrl(file);
     updateAlbumTrack(index, 'audioUrl', audioUrl);
 
     try {

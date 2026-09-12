@@ -63,7 +63,7 @@ export default function PostWidgetPoll({
       setVotes(res.votes);
       setTotal(res.total_votes);
       setUserVote(res.user_vote_option);
-    } catch (e) {
+    } catch {
       // Откат при ошибке
       setVotes(prevVotes);
       setTotal(prevTotal);

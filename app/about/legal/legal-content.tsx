@@ -7,7 +7,6 @@ import { useAuth } from "../../context/AuthContext";
 import Modal from "../../components/modal";
 
 export default function LegalPage() {
-  const router = useRouter();
   const { lang } = useAuth();
   const [langFilter, setLangFilter] = useState("ALL");
   const [activeModal, setActiveModal] = useState<string | null>(null);

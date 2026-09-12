@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { getCinemaMyList, setCinemaMyList } from '../../lib/cache-helpers';
-import { useNotification } from '../../context/NotificationContext';
 import CinemaHeader from '../components/cinema-header';
 import MovieCard from '../components/movie-card';
 import AdblockBanner from '../components/adblock-banner';
@@ -18,7 +16,6 @@ import { CacheManager } from '../../lib/cache';
 export default function SearchContent() {
   useTvNavigation();
   const { lang } = useAuth();
-  const { showNote } = useNotification();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -44,7 +41,6 @@ export default function SearchContent() {
     if (!initialQuery.trim()) return false;
     return searchResults.length === 0;
   });
-  const [myListIds, setMyListIds] = useState<string[]>([]);
 
   // Update URL silently when query changes
   const updateUrlWithQuery = (newQuery: string) => {
@@ -70,16 +66,13 @@ export default function SearchContent() {
     goToMovieInfo(router, movie.id, movie);
   };
 
-  // Load My List & Initial Recommendations
+  // Initial Recommendations
   useEffect(() => {
-    const list = getCinemaMyList();
-    // Гидратация из localStorage при монтировании — сеттлер здесь источник правды.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMyListIds(list);
-
     // Check cached recommendations first for instant render
     const cachedRecs = getCinemaCache<Movie[]>('search', 'recommended');
     if (cachedRecs && cachedRecs.length > 0) {
+      // SWR-гидратация из кэша до ответа API — сеттлер здесь источник правды.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecommendedMovies(deduplicateCinemaList(cachedRecs));
     }
 
@@ -145,26 +138,6 @@ export default function SearchContent() {
 
   const handleClear = () => {
     handleQueryChange('');
-  };
-
-  const toggleMyList = (movieId: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    
-    const isInList = myListIds.includes(movieId);
-    const updated = isInList
-      ? myListIds.filter((id) => id !== movieId)
-      : [movieId, ...myListIds];
-    
-    setMyListIds(updated);
-    setCinemaMyList(updated);
-    
-    showNote({
-      content: isInList
-        ? (lang?.frame_note_removed || 'Удалено из Моего списка')
-        : (lang?.frame_note_added || 'Добавлено в Мой список'),
-      type: isInList ? 'info' : 'success',
-      time: 3,
-    });
   };
 
   const displayMovies = query.trim() ? searchResults : recommendedMovies;
@@ -246,8 +219,6 @@ export default function SearchContent() {
                   <MovieCard
                     key={`${movie.id}-${index}`}
                     movie={movie}
-                    isInMyList={myListIds.includes(movie.id)}
-                    onToggleList={(e) => toggleMyList(movie.id, e)}
                     onClick={() => handleMovieClick(movie)}
                     onPlay={() => handleMovieClick(movie)}
                   />

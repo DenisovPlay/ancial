@@ -12,7 +12,6 @@ import ReportModal from '../components/report-modal';
 import { buildPostReportReasons } from '../lib/report-reasons';
 import ShareModal from '../components/share-modal';
 import { CommentsModal, type FeedComment } from '../components/comments-modal';
-import { Dropdown, DropdownItem } from '../components/navigation';
 import PostsRenderer, {
   type PostCardLang,
   type PostData,
@@ -168,7 +167,6 @@ export default function FeedContent() {
       },
     ) => Promise<void>
   >(async () => { });
-  const requestCounterRef = useRef(0);
   const currentLastIdRef = useRef<Id>(0);
   const hasMorePagesRef = useRef(true);
   const isBusyRef = useRef(false);
@@ -417,7 +415,6 @@ export default function FeedContent() {
 
     const requestedTopic = topic;
     const cacheKey = getFeedCacheKey(requestedTopic, user?.id, isAuthenticated);
-    const nextRequestId = ++requestCounterRef.current;
 
     setErrorMessage('');
     if (append) {

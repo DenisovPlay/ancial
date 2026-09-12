@@ -186,7 +186,7 @@ export default function GroupInfoModal({
   const openCommunitySettings = async () => {
     setView('community_settings');
     const [communitiesResult, requestsResult] = await Promise.allSettled([
-      !initialCommunityId && myRole === 'owner'
+      canManageChannel
         ? AncialAPI.getManagedCommunities<{ communities?: ManagedCommunity[] }>()
         : Promise.resolve({ communities: [] }),
       canManageJoinRequests

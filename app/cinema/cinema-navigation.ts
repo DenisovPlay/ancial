@@ -23,7 +23,7 @@ export function goToMovieInfo(router: Pick<AppRouterInstance, 'push'>, movieId: 
           ttl: 24 * 60 * 60 * 1000,
         });
       }
-    } catch (e) {}
+    } catch {}
   }
   router.push(`/cinema/info/${strId}`);
 }

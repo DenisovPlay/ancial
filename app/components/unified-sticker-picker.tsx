@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useStickers, type StickerItem, type StickerScope } from '../hooks/use-stickers';
 
 export interface UnifiedStickerPickerProps {
