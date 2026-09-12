@@ -10,6 +10,10 @@ export const metadata: Metadata = createPageMetadata({
   title: 'Поиск Pulse',
 });
 
+// PulseSearchContent's render depends on useSearchParams (q); static generation
+// causes a hydration mismatch in prod when the URL carries real query params.
+export const dynamic = 'force-dynamic';
+
 export default function PulseSearchPage() {
   return (
     <Suspense fallback={null}>

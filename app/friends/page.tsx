@@ -9,6 +9,10 @@ export const metadata: Metadata = createPageMetadata({
   canonical: '/friends',
 });
 
+// FriendsContent's search state and conditional render depend on useSearchParams (q);
+// static generation causes a hydration mismatch in prod when the URL carries real query params.
+export const dynamic = 'force-dynamic';
+
 export default function FriendsPage() {
   return <FriendsContent />;
 }

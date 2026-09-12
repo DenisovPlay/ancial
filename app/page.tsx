@@ -10,6 +10,10 @@ export const metadata: Metadata = createPageMetadata({
   canonical: '/',
 });
 
+// HomeContent's render depends on useSearchParams (q); static generation causes
+// a hydration mismatch in prod when the URL carries real query params.
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   return (
     <Suspense fallback={<div className="h-screen w-full" />}>

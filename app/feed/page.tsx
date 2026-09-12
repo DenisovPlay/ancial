@@ -12,6 +12,11 @@ export const metadata: Metadata = createPageMetadata({
   canonical: '/feed',
 });
 
+// FeedContent's render depends entirely on useSearchParams (topic); static generation
+// bakes in the Suspense fallback as the only markup, causing a hydration mismatch
+// (dead topic buttons) in prod whenever the URL carries real query params.
+export const dynamic = 'force-dynamic';
+
 function FeedFallback() {
   return (
     <div className="flex flex-col jusitify-center items-center gap-3">

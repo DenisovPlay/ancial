@@ -9,6 +9,10 @@ export const metadata: Metadata = createPageMetadata({
   canonical: '/groups',
 });
 
+// GroupsContent's search input state depends on useSearchParams (q); static
+// generation causes a hydration mismatch in prod when the URL carries real query params.
+export const dynamic = 'force-dynamic';
+
 export default function GroupsPage() {
   return <GroupsContent />;
 }

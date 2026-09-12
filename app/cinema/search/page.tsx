@@ -11,6 +11,10 @@ export const metadata: Metadata = createPageMetadata({
   robots: { index: false, follow: false },
 });
 
+// SearchContent's initial query state depends on useSearchParams (q); static
+// generation causes a hydration mismatch in prod when the URL carries real query params.
+export const dynamic = 'force-dynamic';
+
 export default function CinemaSearchPage() {
   return (
     <Suspense fallback={<CinemaGridSkeleton />}>
