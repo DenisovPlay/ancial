@@ -119,139 +119,191 @@ export function splitLyricText(text: string) {
   };
 }
 
-function renderLyricWords(text: string, progress: number, isActive: boolean) {
+function renderLyricWords(text: string) {
   const words = text.split(' ').filter(Boolean);
   if (!words.length) {
     return <span>{text}</span>;
   }
 
-  const currentWordProgress = progress * words.length;
+  // Заливка слов считается в CSS из --lyric-p строки: кадры анимации не трогают React.
+  return words.map((word, wordIndex) => (
+    <React.Fragment key={`${word}:${wordIndex}`}>
+      <span className="pulse-lyric-word" style={{ '--i': wordIndex, '--n': words.length } as CSSProperties}>
+        {word}
+      </span>
+      {wordIndex < words.length - 1 ? ' ' : null}
+    </React.Fragment>
+  ));
+}
 
-  return words.map((word, wordIndex) => {
-    let fill = 0;
+/**
+ * Собственные часы текста: rAF крутится только пока компонент смонтирован и трек играет.
+ * React перерисовывается лишь при смене строки, прогресс внутри строки пишется в CSS-переменную.
+ */
+function useActiveLyric<T extends HTMLElement>(
+  audioRef: React.RefObject<HTMLAudioElement | null>,
+  lines: PulseLyricsLine[],
+  initialIndex = -1,
+) {
+  const [activeIndex, setActiveIndex] = React.useState(initialIndex);
+  const activeLineRef = useRef<T | null>(null);
 
-    if (isActive) {
-      if (wordIndex < currentWordProgress - 1) {
-        fill = 100;
-      } else if (wordIndex > currentWordProgress) {
-        fill = 0;
-      } else {
-        fill = clamp((currentWordProgress - wordIndex) * 100, 0, 100);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || lines.length === 0) return undefined;
+
+    let loopFrame: number | null = null;
+    let onceFrame: number | null = null;
+    let lastIndex = Number.NaN;
+
+    const sync = () => {
+      const { activeIndex: nextIndex, progress } = getActiveLyricState(lines, audio.currentTime);
+      const changed = nextIndex !== lastIndex;
+      if (changed) {
+        lastIndex = nextIndex;
+        setActiveIndex(nextIndex);
       }
-    }
+      activeLineRef.current?.style.setProperty('--lyric-p', progress.toFixed(4));
+      return changed;
+    };
 
-    const fillVal = fill.toFixed(1);
+    const startLoop = () => {
+      if (loopFrame !== null) return;
+      loopFrame = requestAnimationFrame(function tick() {
+        sync();
+        loopFrame = requestAnimationFrame(tick);
+      });
+    };
 
-    const style: CSSProperties | undefined = isActive
-      ? {
-        backgroundImage: `linear-gradient(90deg, #ffffff ${fillVal}%, rgba(255,255,255,0.4) ${fillVal}%)`,
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        color: 'transparent',
-      }
-      : undefined;
+    const stopLoop = () => {
+      if (loopFrame === null) return;
+      cancelAnimationFrame(loopFrame);
+      loopFrame = null;
+    };
 
-    return (
-      <React.Fragment key={`${word}:${wordIndex}`}>
-        <span style={style}>{word}</span>
-        {wordIndex < words.length - 1 ? ' ' : null}
-      </React.Fragment>
-    );
-  });
+    // На паузе: разовая синхронизация; сменилась строка — ещё кадр, когда ref уже на новой строке.
+    const syncWhilePaused = () => {
+      if (onceFrame !== null) return;
+      onceFrame = requestAnimationFrame(function once() {
+        onceFrame = null;
+        if (sync()) onceFrame = requestAnimationFrame(once);
+      });
+    };
+
+    if (audio.paused) syncWhilePaused();
+    else startLoop();
+
+    audio.addEventListener('play', startLoop);
+    audio.addEventListener('pause', stopLoop);
+    audio.addEventListener('ended', stopLoop);
+    audio.addEventListener('seeked', syncWhilePaused);
+
+    return () => {
+      stopLoop();
+      if (onceFrame !== null) cancelAnimationFrame(onceFrame);
+      audio.removeEventListener('play', startLoop);
+      audio.removeEventListener('pause', stopLoop);
+      audio.removeEventListener('ended', stopLoop);
+      audio.removeEventListener('seeked', syncWhilePaused);
+    };
+  }, [audioRef, lines]);
+
+  return { activeIndex, activeLineRef };
 }
 
 /** Mobile overlay lyrics displayed on top of artwork. */
 export function PulseLyricsMobile({
-  activeIndex,
-  lyric,
-  progress,
-  source,
+  audioRef,
+  expandLabel,
+  leaving = false,
+  lines,
+  onExpand,
 }: {
-  activeIndex: number;
-  lyric: ReturnType<typeof splitLyricText> | null;
-  progress: number;
-  source: string;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+  expandLabel: string;
+  leaving?: boolean;
+  lines: PulseLyricsLine[];
+  onExpand: (activeIndex: number) => void;
 }) {
+  const { activeIndex, activeLineRef } = useActiveLyric<HTMLSpanElement>(audioRef, lines);
+  const activeLine = activeIndex >= 0 ? lines[activeIndex] : undefined;
+  const lyric = activeLine ? splitLyricText(activeLine.text) : null;
   const mainText = lyric?.mainText || '♪';
   const backText = lyric?.backText || '';
 
+  // Подложку с блюром держит родитель: при смене режима она не мигает, меняется только контент.
   return (
-    <div className="animate-opacity-fade-in absolute inset-0 flex flex-col items-center justify-center rounded-3xl bg-zinc-900/80 p-4 backdrop-blur-md backdrop-saturate-200 lg:hidden">
+    <button
+      type="button"
+      onClick={() => onExpand(activeIndex)}
+      title={expandLabel}
+      className={cn(
+        'absolute inset-0 flex cursor-pointer flex-col items-center justify-center p-3 text-left',
+        leaving ? 'pulse-lyrics-line-out pointer-events-none' : 'pulse-lyrics-line-in',
+      )}
+    >
       <div className="relative flex min-h-[140px] w-full flex-col items-center justify-center text-center text-zinc-100 drop-shadow-lg">
-        <div key={`lyric-${activeIndex}-${mainText}`} className="animate-smooth-appear flex flex-col items-center justify-center px-2">
-          <span className="block text-2xl font-bold leading-tight">
-            {renderLyricWords(mainText, progress, true)}
+        <div key={`lyric-${activeIndex}-${mainText}`} className="pulse-mobile-lyric-enter flex flex-col items-center justify-center px-3">
+          <span ref={activeLineRef} className="pulse-lyric-line is-active block text-2xl font-bold leading-tight">
+            {renderLyricWords(mainText)}
           </span>
           {backText ? (
-            <span className="mt-2 block text-sm font-semibold text-white/60">
+            <span className="mt-3 block text-sm font-semibold text-white/60">
               ({backText})
             </span>
           ) : null}
         </div>
       </div>
 
-      {source ? (
-        <span className="hidden absolute bottom-3 text-center text-xs text-zinc-500">
-          Источник: {source}
-        </span>
-      ) : null}
-    </div>
+      <span className="absolute bottom-3 flex items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-300">
+        {expandLabel}
+      </span>
+    </button>
   );
 }
 
-const PulseLyricLineDesktop = React.memo(
+const PulseLyricLine = React.memo(
   React.forwardRef<HTMLButtonElement, {
+    className?: string;
     isActive: boolean;
     line: PulseLyricsLine;
     onSeek: (time: number) => void;
-    progress: number;
-  }>(function PulseLyricLineDesktop({ isActive, line, onSeek, progress }, ref) {
+    style?: CSSProperties;
+  }>(function PulseLyricLine({ className, isActive, line, onSeek, style }, ref) {
     return (
       <button
         ref={ref}
         type="button"
         onClick={() => onSeek(line.time)}
         className={cn(
-          'block cursor-pointer py-1.5 text-center text-white/40 duration-300',
-          isActive && 'pointer-events-none scale-[1.03] text-white',
+          'pulse-lyric-line block cursor-pointer py-1.5 text-center text-white/40 duration-300',
+          isActive && 'is-active scale-[1.03] text-white',
           !isActive && 'hover:text-white/70',
+          className,
         )}
         style={{
+          ...style,
           textShadow: isActive ? '0 0 18px rgba(255,255,255,0.2)' : undefined,
           transformOrigin: 'center',
         }}
       >
-        {renderLyricWords(line.text, isActive ? progress : 0, isActive)}
+        {renderLyricWords(line.text)}
       </button>
     );
   }),
-  (prevProps, nextProps) => {
-    return (
-      prevProps.isActive === nextProps.isActive &&
-      prevProps.progress === nextProps.progress &&
-      prevProps.line === nextProps.line
-    );
-  },
+  (prevProps, nextProps) => prevProps.isActive === nextProps.isActive && prevProps.line === nextProps.line,
 );
 
-/** Desktop side panel synchronized lyrics. */
-export function PulseLyricsDesktop({
-  activeIndex,
-  lines,
-  onSeek,
-  progress,
-}: {
-  activeIndex: number;
-  lines: PulseLyricsLine[];
-  onSeek: (time: number) => void;
-  progress: number;
-}) {
+/** Автопрокрутка к активной строке с паузой, пока пользователь листает сам. */
+function useLyricsAutoScroll(activeIndex: number, activeLineRef: React.RefObject<HTMLElement | null>) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const activeLineRef = useRef<HTMLButtonElement | null>(null);
   const userScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<number | null>(null);
+  const hasPositionedRef = useRef(false);
 
-  useEffect(() => {
+  // Layout-эффект и мгновенная первая прокрутка: список появляется уже на текущей строке,
+  // без проезда от начала через весь текст.
+  React.useLayoutEffect(() => {
     if (!containerRef.current || !activeLineRef.current || userScrollingRef.current) return;
 
     const container = containerRef.current;
@@ -259,10 +311,11 @@ export function PulseLyricsDesktop({
     const targetTop = activeLine.offsetTop - container.clientHeight / 2 + activeLine.clientHeight / 2;
 
     container.scrollTo({
-      behavior: 'smooth',
+      behavior: hasPositionedRef.current ? 'smooth' : 'auto',
       top: Math.max(0, targetTop),
     });
-  }, [activeIndex]);
+    hasPositionedRef.current = true;
+  }, [activeIndex, activeLineRef]);
 
   useEffect(() => {
     return () => {
@@ -285,27 +338,103 @@ export function PulseLyricsDesktop({
     }, 3000);
   };
 
+  return { containerRef, handleUserScroll };
+}
+
+const SHEET_STAGGER_RADIUS = 8;
+const SHEET_STAGGER_STEP_MS = 40;
+
+/** Полный текст на телефоне: список всех строк с перемоткой по тапу. */
+export function PulseLyricsMobileSheet({
+  audioRef,
+  initialIndex = -1,
+  leaving = false,
+  lines,
+  onSeek,
+}: {
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+  initialIndex?: number;
+  leaving?: boolean;
+  lines: PulseLyricsLine[];
+  onSeek: (time: number) => void;
+}) {
+  const { activeIndex, activeLineRef } = useActiveLyric<HTMLButtonElement>(audioRef, lines, initialIndex);
+  const { containerRef, handleUserScroll } = useLyricsAutoScroll(activeIndex, activeLineRef);
+  // Точка, от которой «раскрывается» список, фиксируется при монтировании.
+  const [expandOrigin] = React.useState(Math.max(initialIndex, 0));
+
+  // Маска только на прокручиваемом тексте; подложку с блюром держит родитель.
   return (
-    <div className="animate-opacity-fade-in hidden h-full lg:flex lg:ml-12 lg:w-[500px] xl:w-[600px] 2xl:w-[700px] shrink-0">
+    <div
+      ref={containerRef}
+      onWheel={handleUserScroll}
+      onTouchMove={handleUserScroll}
+      className={cn(
+        'viewport pulse-lyrics-fade absolute inset-0 flex flex-col gap-3 overflow-y-auto overflow-x-hidden px-3 py-24 text-center text-xl font-bold',
+        leaving ? 'pulse-lyrics-sheet-out pointer-events-none' : 'pulse-lyrics-line-in',
+      )}
+    >
+      {lines.map((line, lineIndex) => {
+        const isActive = lineIndex === activeIndex;
+        const distance = Math.abs(lineIndex - expandOrigin);
+        // Текущая строка уже на месте — вокруг неё мягко проявляется контекст. Дальние за краем не анимируем.
+        const fadesIn = distance > 0 && distance <= SHEET_STAGGER_RADIUS;
+
+        return (
+          <PulseLyricLine
+            key={`${line.time}:${lineIndex}`}
+            ref={isActive ? activeLineRef : null}
+            className={fadesIn ? 'pulse-lyrics-context-in' : undefined}
+            style={fadesIn ? ({ '--d': `${distance * SHEET_STAGGER_STEP_MS}ms` } as CSSProperties) : undefined}
+            isActive={isActive}
+            line={line}
+            onSeek={onSeek}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** Desktop side panel synchronized lyrics. */
+export function PulseLyricsDesktop({
+  audioRef,
+  leaving = false,
+  lines,
+  onSeek,
+}: {
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+  leaving?: boolean;
+  lines: PulseLyricsLine[];
+  onSeek: (time: number) => void;
+}) {
+  const { activeIndex, activeLineRef } = useActiveLyric<HTMLButtonElement>(audioRef, lines);
+  const { containerRef, handleUserScroll } = useLyricsAutoScroll(activeIndex, activeLineRef);
+
+  return (
+    <div
+      className={cn(
+        'flex h-full shrink-0 lg:w-[420px] xl:w-[480px] 2xl:w-[540px]',
+        leaving ? 'pulse-lyrics-panel-out pointer-events-none' : 'pulse-lyrics-panel-in',
+      )}
+    >
       <div className="relative h-full w-full">
         <div
           ref={containerRef}
           onWheel={handleUserScroll}
           onTouchMove={handleUserScroll}
-          className="viewport flex h-full w-full flex-col gap-4 overflow-y-auto overflow-x-hidden px-3 py-32 text-center text-2xl font-bold lg:text-3xl"
+          className="viewport pulse-lyrics-fade flex h-full w-full flex-col gap-3 overflow-y-auto overflow-x-hidden px-3 py-32 text-center text-2xl font-bold lg:text-3xl"
         >
           {lines.map((line, lineIndex) => {
             const isActive = lineIndex === activeIndex;
-            const nextProgress = isActive ? progress : 0;
 
             return (
-              <PulseLyricLineDesktop
+              <PulseLyricLine
                 key={`${line.time}:${lineIndex}`}
                 ref={isActive ? activeLineRef : null}
                 isActive={isActive}
                 line={line}
                 onSeek={onSeek}
-                progress={nextProgress}
               />
             );
           })}

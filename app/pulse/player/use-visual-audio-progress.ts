@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, type MutableRefObject, type RefObject } from 'react';
 
 import { formatPlaybackTime } from './player-utils';
+import { setRangeProgressVar } from './pulse-range-track';
 
 type SeekTarget = 'desktop' | 'mobile' | null;
 
@@ -30,6 +31,8 @@ export function useVisualAudioProgress(
       if (!slider) return;
       slider.max = max;
       slider.value = value;
+      // Нативный инпут невидим — видимую дорожку двигает эта переменная.
+      setRangeProgressVar(slider);
     });
 
     const formattedTime = formatPlaybackTime(currentTime);

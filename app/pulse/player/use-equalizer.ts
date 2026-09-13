@@ -43,6 +43,20 @@ function readSavedEqGains() {
   return [0, 0, 0, 0, 0];
 }
 
+type WebAudioGraph = {
+  context: AudioContext;
+  filters: BiquadFilterNode[];
+  source: MediaElementAudioSourceNode;
+};
+
+/**
+ * createMediaElementSource() привязывает элемент к контексту навсегда: повторный вызов
+ * кидает InvalidStateError, а close() контекста оставляет элемент немым без шансов на
+ * восстановление. Поэтому граф живёт рядом с самим элементом и переиспользуется —
+ * это переживает ремаунт провайдера (в том числе fast-refresh в деве).
+ */
+const graphByElement = new WeakMap<HTMLAudioElement, WebAudioGraph>();
+
 export function useEqualizer(audioRef: React.RefObject<HTMLAudioElement | null>) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -58,12 +72,27 @@ export function useEqualizer(audioRef: React.RefObject<HTMLAudioElement | null>)
     if (typeof window === 'undefined' || shouldDisableWebAudioForDevice()) return;
     if (!audioRef.current || audioContextRef.current) return;
 
+    const element = audioRef.current;
+
+    // Элемент уже подключён (ремаунт провайдера) — переиспользуем граф вместо
+    // повторного createMediaElementSource, который бы бросил InvalidStateError.
+    const existingGraph = graphByElement.get(element);
+    if (existingGraph) {
+      audioContextRef.current = existingGraph.context;
+      sourceNodeRef.current = existingGraph.source;
+      filtersRef.current = existingGraph.filters;
+      existingGraph.filters.forEach((filter, index) => {
+        filter.gain.value = gainsRef.current[index] ?? 0;
+      });
+      return;
+    }
+
     try {
       const AudioContextConstructor = window.AudioContext || (window as WebkitAudioWindow).webkitAudioContext;
       if (!AudioContextConstructor) return;
 
       const audioContext = new AudioContextConstructor();
-      const source = audioContext.createMediaElementSource(audioRef.current);
+      const source = audioContext.createMediaElementSource(element);
       const filters = EQ_BANDS.map((frequency, index) => {
         const filter = audioContext.createBiquadFilter();
         filter.type = index === 0 ? 'lowshelf' : index === EQ_BANDS.length - 1 ? 'highshelf' : 'peaking';
@@ -79,6 +108,7 @@ export function useEqualizer(audioRef: React.RefObject<HTMLAudioElement | null>)
       source.connect(filters[0]);
       filters.slice(0, -1).forEach((filter, index) => filter.connect(filters[index + 1]));
       filters[filters.length - 1].connect(audioContext.destination);
+      graphByElement.set(element, { context: audioContext, filters, source });
     } catch (error) {
       console.warn('Failed to initialize Web Audio API', error);
     }
@@ -101,11 +131,9 @@ export function useEqualizer(audioRef: React.RefObject<HTMLAudioElement | null>)
     filtersRef.current.forEach((filter) => { filter.gain.value = 0; });
   }, []);
 
-  useEffect(() => () => {
-    try { sourceNodeRef.current?.disconnect(); } catch { /* ignore cleanup errors */ }
-    filtersRef.current.forEach((filter) => { try { filter.disconnect(); } catch { /* ignore cleanup errors */ } });
-    if (audioContextRef.current) void audioContextRef.current.close().catch(() => { /* ignore cleanup errors */ });
-  }, []);
+  // Граф намеренно не разбирается при размонтировании: он принадлежит аудио-элементу,
+  // а не хуку. Disconnect или close() здесь сделали бы элемент немым навсегда — отключить
+  // его от контекста уже нельзя, а новый контекст к нему подключить не даст браузер.
 
   const resumeWebAudio = useCallback(() => {
     if (audioContextRef.current?.state === 'suspended') {
@@ -113,5 +141,13 @@ export function useEqualizer(audioRef: React.RefObject<HTMLAudioElement | null>)
     }
   }, []);
 
-  return { changeEqGain, eqGains, initWebAudio, resetEqGains, resumeWebAudio };
+  /**
+   * Есть ли смысл вообще поднимать граф. Пока полосы на нуле, WebAudio не даёт ничего,
+   * зато делает звук заложником аудио-контекста: тот может умереть ("error from the audio
+   * device or the WebAudio renderer"), а отвязать элемент обратно уже нельзя — выйдет
+   * полная тишина. Поэтому по умолчанию играем напрямую в динамики.
+   */
+  const hasActiveEq = useCallback(() => gainsRef.current.some((gain) => gain !== 0), []);
+
+  return { changeEqGain, eqGains, hasActiveEq, initWebAudio, resetEqGains, resumeWebAudio };
 }

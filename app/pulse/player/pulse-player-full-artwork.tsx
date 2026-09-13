@@ -3,6 +3,7 @@
 import type { RefObject } from 'react';
 
 import { formatPlaybackTime } from './player-utils';
+import { PulseRangeTrack } from './pulse-range-track';
 
 type PulsePlayerFullArtworkProps = {
   displayedCurrentTime: number;
@@ -15,7 +16,7 @@ type PulsePlayerFullArtworkProps = {
   onSeekSubmit: () => void;
 };
 
-/** Mobile seek presentation for full player mode. Seek ownership stays in the provider. */
+/** Seek presentation for full player mode. Seek ownership stays in the provider. */
 export function PulsePlayerFullArtwork({
   displayedCurrentTime,
   duration,
@@ -27,22 +28,23 @@ export function PulsePlayerFullArtwork({
   onSeekSubmit,
 }: PulsePlayerFullArtworkProps) {
   return (
-    <div className="mt-3 flex w-full max-w-sm flex-col items-center justify-center gap-1 duration-300">
-      <input
+    <div className="group relative mt-3 flex w-full flex-col items-center justify-center">
+      <PulseRangeTrack
         min={0}
         max={duration || 0}
         step="0.01"
-        type="range"
+        aria-label="Перемотка"
         value={displayedCurrentTime}
+        inputRef={mobileSeekInputRef}
         onPointerDown={onSeekStart}
         onPointerUp={onSeekSubmit}
         onPointerCancel={onSeekCancel}
         onLostPointerCapture={onSeekCancel}
         onChange={(event) => onSeekChange(Number(event.target.value))}
-        className="h-3 w-full appearance-none rounded-full bg-zinc-800 accent-purple-500"
-        ref={mobileSeekInputRef}
       />
-      <div className="flex w-full text-xs text-zinc-300 duration-300 lg:text-sm">
+
+      {/* На ПК тайминги вне потока и появляются при наведении — место под полосой не держат. */}
+      <div className="flex w-full text-xs tabular-nums text-zinc-400 transition-opacity duration-300 lg:pointer-events-none lg:absolute lg:inset-x-0 lg:top-4 lg:text-sm lg:opacity-0 lg:group-hover:opacity-100">
         <div ref={mobileCurrentTimeLabelRef} className="flex-grow">{formatPlaybackTime(displayedCurrentTime)}</div>
         <div>{formatPlaybackTime(duration)}</div>
       </div>

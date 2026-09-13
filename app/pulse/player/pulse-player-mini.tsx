@@ -4,6 +4,7 @@ import type { ComponentType, RefObject, TouchEventHandler } from 'react';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
+import { PulseRangeTrack } from './pulse-range-track';
 
 type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 type ActiveSeekSlider = 'desktop' | 'mobile' | null;
@@ -47,6 +48,8 @@ type PulsePlayerMiniProps = {
   volumeSliderRef: RefObject<HTMLInputElement | null>;
 };
 
+const MINI_ICON_BUTTON = 'hidden h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-white/10 active:scale-95 lg:flex';
+
 /** Prop-driven mini player presentation. Playback and gesture ownership stay in the provider. */
 export function PulsePlayerMini({
   Icon,
@@ -87,6 +90,7 @@ export function PulsePlayerMini({
   volumeSliderRef,
 }: PulsePlayerMiniProps) {
   const hasSwipe = swipeX !== 0;
+  const desktopSeekTime = activeSeekSlider === 'desktop' ? seekValue : currentTime;
 
   const w = Math.max(shellWidth || 0, 360);
   const transition = isSwiping ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
@@ -124,7 +128,7 @@ export function PulsePlayerMini({
     >
       <div
         id="NAVPmini"
-        className="pulse-player-mini-shell relative flex w-full touch-none items-center gap-1 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-900/20 lg:p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300"
+        className="pulse-player-mini-shell relative flex w-full touch-none items-center gap-1 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-900/20 lg:gap-3 lg:p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -150,23 +154,23 @@ export function PulsePlayerMini({
 
           {/* Текущий трек */}
           <div
-            className="relative z-10 flex shrink-0 items-center gap-1"
+            className="relative z-10 flex shrink-0 items-center gap-1 lg:gap-3"
             style={slideStyle}
           >
             <button
               type="button"
               onClick={onOpenFull}
-              className="group relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-16 lg:w-16"
+              className="group relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-14 lg:w-14"
             >
               <PulseCoverImage alt={playerTitle} className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={playerArtwork} />
-              <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90 opacity-0 duration-300 group-hover:opacity-100">
-                <Icon name="IC-full-mode" className="h-10 w-10 fill-white" />
+              <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 opacity-0 duration-300 group-hover:opacity-100">
+                <Icon name="IC-full-mode" className="h-7 w-7 fill-white" />
               </div>
             </button>
 
-            <div className="flex w-40 shrink-0 flex-col lg:w-64">
-              <span className="w-full truncate text-sm text-white lg:text-base">{playerTitle}</span>
-              <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{playerArtist}</span>
+            <div className="flex w-40 shrink-0 flex-col lg:w-56">
+              <span className="w-full truncate text-sm font-medium text-white lg:text-base">{playerTitle}</span>
+              <span className="w-full truncate text-xs text-zinc-400 lg:text-sm">{playerArtist}</span>
             </div>
           </div>
 
@@ -188,57 +192,60 @@ export function PulsePlayerMini({
           ) : null}
         </div>
 
-        <div className="flex-grow" />
+        <div className="flex-grow lg:hidden" />
 
-        <div className="hidden flex-grow flex-col items-center justify-center gap-1 lg:flex">
-          <input
+        {/* Перемотка — только десктоп: таймкоды по бокам дорожки, моноширинно, чтобы не прыгали. */}
+        <div className="hidden min-w-0 flex-grow items-center justify-center gap-3 lg:flex">
+          <div ref={desktopCurrentTimeLabelRef} className="w-10 shrink-0 text-right text-xs tabular-nums text-zinc-400">
+            {formatPlaybackTime(desktopSeekTime)}
+          </div>
+          <PulseRangeTrack
+            className="max-w-md"
             min={0}
             max={duration || 0}
             step="0.01"
-            type="range"
-            value={activeSeekSlider === 'desktop' ? seekValue : currentTime}
+            aria-label="Перемотка"
+            value={desktopSeekTime}
+            inputRef={desktopSeekInputRef}
             onPointerDown={onDesktopSeekStart}
             onPointerUp={onDesktopSeekSubmit}
             onPointerCancel={onDesktopSeekCancel}
             onLostPointerCapture={onDesktopSeekCancel}
             onChange={(event) => onDesktopSeekChange(Number(event.target.value))}
-            className="h-3 w-full max-w-sm appearance-none rounded-full bg-zinc-800 accent-purple-500"
-            ref={desktopSeekInputRef}
           />
-          <div className="flex w-full max-w-sm text-xs text-zinc-300 lg:text-sm">
-            <div ref={desktopCurrentTimeLabelRef} className="flex-grow">{formatPlaybackTime(activeSeekSlider === 'desktop' ? seekValue : currentTime)}</div>
-            <div>{formatPlaybackTime(duration)}</div>
-          </div>
+          <div className="w-10 shrink-0 text-xs tabular-nums text-zinc-400">{formatPlaybackTime(duration)}</div>
         </div>
 
-        <div className="hidden flex-grow lg:block" />
-
-        <div className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:w-80 lg:gap-3">
-          <div className="hidden flex-col items-center justify-center gap-1 pr-1 lg:flex">
-            <span className="text-sm text-zinc-300">{lang?.volume || 'Громкость'}</span>
-            <input
-              ref={volumeSliderRef}
+        <div className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:gap-3 lg:pr-1">
+          <div className="hidden w-28 items-center gap-3 lg:flex" title={lang?.volume || 'Громкость'}>
+            <Icon name="IC-speaker" className="h-5 w-5 shrink-0 fill-zinc-400" />
+            <PulseRangeTrack
               min={0}
               max={1}
               step="0.005"
-              type="range"
+              aria-label={lang?.volume || 'Громкость'}
               value={volume}
+              inputRef={volumeSliderRef}
+              progressPercent={volume * 100}
               onChange={(event) => onChangeVolume(event.target.value)}
-              className="h-3 w-full appearance-none rounded-full bg-zinc-800 accent-purple-500"
             />
           </div>
 
           {/* prev/next — только десктоп; на телефонах треки листаются свайпом */}
-          <button type="button" onClick={onPrevTrack} className="hidden lg:block">
-            <Icon name="IC-moveback" className="h-8 w-8 shrink-0 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
+          <button type="button" onClick={onPrevTrack} className={MINI_ICON_BUTTON}>
+            <Icon name="IC-moveback" className="h-7 w-7 fill-white" />
           </button>
 
-          <button type="button" onClick={onTogglePlay} className="flex h-10 w-10 lg:h-14 lg:w-14 shrink-0 cursor-pointer items-center justify-center rounded-full lg:bg-purple-500 lg:shadow duration-300 lg:hover:bg-purple-600 active:scale-95">
-            <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-7 w-7 lg:h-10 lg:w-10 fill-white" />
+          <button
+            type="button"
+            onClick={onTogglePlay}
+            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:h-12 lg:w-12 lg:bg-purple-500 lg:shadow lg:hover:bg-purple-400"
+          >
+            <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-7 w-7 fill-white lg:h-8 lg:w-8" />
           </button>
 
-          <button type="button" onClick={onNextTrack} className="hidden lg:block">
-            <Icon name="IC-moveforward" className="h-8 w-8 shrink-0 cursor-pointer fill-white duration-300 hover:fill-zinc-300 active:scale-95" />
+          <button type="button" onClick={onNextTrack} className={MINI_ICON_BUTTON}>
+            <Icon name="IC-moveforward" className="h-7 w-7 fill-white" />
           </button>
         </div>
       </div>

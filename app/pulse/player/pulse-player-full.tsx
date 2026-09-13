@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useSyncExternalStore, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
 import { GLASS_MODE_CHANGE_EVENT, GLASS_MODE_STORAGE_KEY, readGlassMode } from '../../lib/android-glass';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import {
-  getActiveLyricState,
   PulseLyricsDesktop,
   PulseLyricsMobile,
-  splitLyricText,
+  PulseLyricsMobileSheet,
   type PulseLyricsLine,
 } from './pulse-lyrics';
 import { cn } from './player-utils';
@@ -21,9 +20,36 @@ import type { PulseTrack } from '../../context/PulsePlayerContext';
 
 type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 
+const DESKTOP_LAYOUT_QUERY = '(min-width: 1024px)';
+
+function subscribeDesktopLayout(onChange: () => void) {
+  const query = window.matchMedia(DESKTOP_LAYOUT_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
+const readDesktopLayout = () => window.matchMedia(DESKTOP_LAYOUT_QUERY).matches;
+
+const LYRICS_MODE_EXIT_MS = 260;
+
+/** Держит элемент смонтированным, пока доигрывает анимация ухода. */
+function usePresence(visible: boolean, exitMs = LYRICS_MODE_EXIT_MS) {
+  const [mounted, setMounted] = useState(visible);
+  if (visible && !mounted) setMounted(true);
+
+  useEffect(() => {
+    if (visible || !mounted) return undefined;
+    const timer = window.setTimeout(() => setMounted(false), exitMs);
+    return () => window.clearTimeout(timer);
+  }, [visible, mounted, exitMs]);
+
+  return { leaving: !visible && mounted, mounted: visible || mounted };
+}
+
 export type PulsePlayerFullProps = {
   // Icons / refs
   Icon: PlayerIcon;
+  audioRef: RefObject<HTMLAudioElement | null>;
   mobileCurrentTimeLabelRef: RefObject<HTMLDivElement | null>;
   mobileSeekInputRef: RefObject<HTMLInputElement | null>;
 
@@ -35,7 +61,6 @@ export type PulsePlayerFullProps = {
   nextArtwork: string;
   prevTrackObj: object | null;
   nextTrackObj: object | null;
-  currentTrack: { src?: string | null; album?: string | null; albumid?: number | string | null } | null;
   // Unique string that changes when the track changes (used to reset animations)
   trackKey: string;
 
@@ -49,12 +74,10 @@ export type PulsePlayerFullProps = {
   // Swipe state (full-player horizontal swipe)
   swipeX: number;
   isSwiping?: boolean;
-  touchStartXRef: RefObject<number | null>;
 
   // Seek / time
   displayedCurrentTime: number;
   duration: number;
-  currentTime: number;
 
   // Playback
   isPlaying: boolean;
@@ -66,9 +89,8 @@ export type PulsePlayerFullProps = {
 
   // Lyrics
   lyricsLines: PulseLyricsLine[];
-  lyricsSource: string;
-  activeLyricState: ReturnType<typeof getActiveLyricState>;
-  mobileLyric: ReturnType<typeof splitLyricText> | null;
+  lyricsEnabled: boolean;
+  onToggleLyrics: () => void;
 
   // Header
   albumLabel: string;
@@ -126,6 +148,7 @@ export type PulsePlayerFullProps = {
  */
 export function PulsePlayerFull({
   Icon,
+  audioRef,
   mobileCurrentTimeLabelRef,
   mobileSeekInputRef,
 
@@ -136,7 +159,6 @@ export function PulsePlayerFull({
   nextArtwork,
   prevTrackObj,
   nextTrackObj,
-  currentTrack,
   trackKey,
 
   repeatMode = 'none',
@@ -147,11 +169,9 @@ export function PulsePlayerFull({
 
   swipeX,
   isSwiping,
-  touchStartXRef,
 
   displayedCurrentTime,
   duration,
-  currentTime,
 
   isPlaying,
   isVisible,
@@ -160,9 +180,8 @@ export function PulsePlayerFull({
   isAuthenticated,
 
   lyricsLines,
-  lyricsSource,
-  activeLyricState,
-  mobileLyric,
+  lyricsEnabled,
+  onToggleLyrics,
 
   albumLabel,
   canOpenAlbum,
@@ -205,6 +224,25 @@ export function PulsePlayerFull({
   onLyricsSeek,
 }: PulsePlayerFullProps) {
   const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const [isLyricsExpanded, setIsLyricsExpanded] = useState(false);
+  // Рендерим только видимую раскладку текста: спрятанная CSS-ом всё равно считала бы кадры.
+  const isDesktopLayout = useSyncExternalStore(subscribeDesktopLayout, readDesktopLayout, () => false);
+  const hasLyrics = lyricsEnabled && lyricsLines.length > 0;
+  const showDesktopLyrics = hasLyrics && isDesktopLayout;
+  const showMobileLyrics = hasLyrics && !isDesktopLayout;
+  const showMobileSheet = showMobileLyrics && isLyricsExpanded;
+  const [expandFromIndex, setExpandFromIndex] = useState(-1);
+  // Пока текст уходит анимацией, нужны прежние строки: провайдер очищает их сразу.
+  const [stickyLines, setStickyLines] = useState(lyricsLines);
+  if (lyricsLines.length > 0 && lyricsLines !== stickyLines) setStickyLines(lyricsLines);
+  const mobileLyricsPresence = usePresence(showMobileLyrics);
+  // Совпадает с длительностью pulse-lyrics-slot-out в globals.css.
+  const desktopLyricsPresence = usePresence(showDesktopLyrics, 380);
+  // Строка и список сменяют друг друга симметрично: уходящий догасает, потом проявляется новый.
+  // Внутри гаснущей подложки строка остаётся, чтобы текст не пропадал раньше блюра.
+  const linePresence = usePresence(!isLyricsExpanded);
+  const sheetPresence = usePresence(showMobileSheet && !linePresence.mounted);
+  const showMobileLine = linePresence.mounted && !sheetPresence.mounted;
   const glassMode = useSyncExternalStore(
     (cb) => {
       const handle = (e: StorageEvent | Event) => {
@@ -234,7 +272,7 @@ export function PulsePlayerFull({
     >
       <div
         id="NAVPfull"
-        className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center gap-1 overflow-y-auto overflow-x-hidden rounded-none bg-zinc-900/80 p-1 shadow lg:h-full lg:gap-3"
+        className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-none bg-zinc-900/80 shadow lg:h-full"
         style={{
           backdropFilter: glassMode === 'off' ? 'none' : 'blur(40px) saturate(180%)',
           WebkitBackdropFilter: glassMode === 'off' ? 'none' : 'blur(40px) saturate(180%)',
@@ -252,13 +290,13 @@ export function PulsePlayerFull({
           onOpenAlbum={onOpenAlbum}
         />
 
-        <div className="flex h-full w-full flex-row items-center justify-center">
-          <div className="flex w-full flex-col items-center lg:w-auto lg:items-start lg:shrink-0">
-            <div className="flex flex-col items-center duration-300 lg:items-start">
+        <div className="flex h-full w-full flex-row items-center justify-center gap-3 px-3 py-20 lg:gap-0 lg:py-24">
+          <div className="flex w-full max-w-sm shrink-0 flex-col items-center lg:w-[420px] lg:max-w-none lg:items-start xl:w-[480px]">
+            <div className="flex w-full flex-col items-center duration-300 lg:items-start">
               {/* Cover art with horizontal swipe */}
-              <div className="flex items-center justify-center">
+              <div className="flex w-full items-center justify-center">
                 <div
-                  className="relative flex w-[calc(100vw-24px)] max-w-sm aspect-square items-center justify-center shrink-0 lg:h-96 lg:w-96 lg:max-w-none"
+                  className="pulse-full-rise relative flex aspect-square w-full max-w-sm shrink-0 items-center justify-center lg:max-w-none"
                   onTouchStart={onTouchStartCover}
                   onTouchMove={onTouchMoveCover}
                   onTouchEnd={onTouchEndCover}
@@ -290,20 +328,55 @@ export function PulsePlayerFull({
                       transition: isSwiping ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s' : 'none',
                     }}
                   >
-                    <PulseCoverImage
-                      alt={playerTitle}
-                      className="rounded-3xl"
-                      sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
-                      src={playerArtwork}
-                    />
-
-                    {lyricsLines.length ? (
-                      <PulseLyricsMobile
-                        activeIndex={activeLyricState.activeIndex}
-                        lyric={mobileLyric}
-                        progress={activeLyricState.progress}
-                        source={lyricsSource}
+                    <div key={`art-${trackKey}`} className="pulse-art-layer animate-opacity-fade-in absolute inset-0">
+                      <PulseCoverImage
+                        alt={playerTitle}
+                        className="rounded-3xl"
+                        sizes={PULSE_COVER_IMAGE_SIZES.playerFull}
+                        src={playerArtwork}
                       />
+                    </div>
+
+                    {!isDesktopLayout && mobileLyricsPresence.mounted ? (
+                      <div
+                        className={cn(
+                          'absolute inset-0 overflow-hidden rounded-3xl bg-zinc-900/80 backdrop-blur-md backdrop-saturate-200',
+                          mobileLyricsPresence.leaving ? 'pulse-lyrics-backdrop-out' : 'pulse-lyrics-backdrop-in',
+                        )}
+                      >
+                        {sheetPresence.mounted ? (
+                          <PulseLyricsMobileSheet
+                            audioRef={audioRef}
+                            initialIndex={expandFromIndex}
+                            leaving={sheetPresence.leaving}
+                            lines={stickyLines}
+                            onSeek={onLyricsSeek}
+                          />
+                        ) : null}
+
+                        {showMobileLine ? (
+                          <PulseLyricsMobile
+                            audioRef={audioRef}
+                            expandLabel={lang?.pulse_lyrics_full || 'Весь текст'}
+                            leaving={linePresence.leaving}
+                            lines={stickyLines}
+                            onExpand={(activeIndex) => {
+                              setExpandFromIndex(activeIndex);
+                              setIsLyricsExpanded(true);
+                            }}
+                          />
+                        ) : null}
+
+                        {sheetPresence.mounted && !sheetPresence.leaving ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsLyricsExpanded(false)}
+                            className="animate-opacity-fade-in absolute bottom-3 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-800/90 px-3 py-1.5 text-xs text-zinc-200 duration-300 active:scale-95 hover:bg-zinc-700"
+                          >
+                            {lang?.pulse_lyrics_collapse || 'Свернуть'}
+                          </button>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
 
@@ -329,15 +402,15 @@ export function PulsePlayerFull({
             </div>
 
             {/* Track title + artist + actions row — direct child of w-full column */}
-            <div className="max-w-sm flex w-full items-center justify-between gap-2 mt-3 px-3 lg:w-96 lg:px-0">
+            <div className="mt-3 flex w-full items-center justify-between gap-3">
               <div
                 key={`text-${trackKey}`}
                 className="animate-smooth-appear flex min-w-0 flex-col"
               >
-                <span className="truncate text-base font-bold text-white lg:text-lg">
+                <span className="truncate text-lg font-bold text-white lg:text-xl">
                   {playerTitle}
                 </span>
-                <span className="truncate text-sm text-zinc-300 lg:text-base">
+                <span className="truncate text-sm text-zinc-400 lg:text-base">
                   {playerArtist}
                 </span>
               </div>
@@ -348,59 +421,73 @@ export function PulsePlayerFull({
                     id="player_likebutton_title"
                     type="button"
                     onClick={onLike}
-                    className="cursor-pointer p-1 duration-300 active:scale-95"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
                   >
                     <Icon
                       name={activeLike ? 'IC-heart-filled' : 'IC-heart'}
                       className={cn(
-                        'h-7 w-7 duration-300 hover:fill-zinc-300',
+                        'h-6 w-6 duration-300',
                         activeLike ? 'fill-pink-400' : 'fill-white',
                       )}
                     />
                   </button>
                 ) : null}
 
-                {isAuthenticated && !isMobileDevice ? (
+                {!isMobileDevice ? (
                   <Dropdown
                     position="top"
                     align="end"
                     triggerSize="sm"
-                    triggerNode={<Icon name="IC-more" className="h-7 w-7 fill-white duration-300 hover:fill-zinc-300" />}
-                    triggerClassName="block !h-auto !w-auto !bg-transparent !p-0 hover:!bg-transparent cursor-pointer p-1 duration-300 active:scale-95"
+                    triggerNode={<Icon name="IC-more" className="h-6 w-6 fill-white duration-300" />}
+                    triggerClassName="flex !h-10 !w-10 items-center justify-center rounded-full !bg-transparent !p-0 hover:!bg-white/10 cursor-pointer duration-300 active:scale-95"
                   >
-                    <DropdownItem onClick={onAddToPlaylist} icon="IC-plus">
-                      {lang?.add_to_playlist || 'В плейлист'}
+                    <DropdownItem icon="IC-quote" onClick={onToggleLyrics}>
+                      {lyricsEnabled
+                        ? (lang?.pulse_lyrics_hide || 'Скрыть текст')
+                        : (lang?.pulse_lyrics_show || 'Показать текст')}
                     </DropdownItem>
-                    <DropdownItem icon="IC-download" onClick={onDownload}>
-                      {lang?.pulse_download_mp3 || 'Скачать MP3'}
-                    </DropdownItem>
-                    <DropdownItem
-                      icon={offlineSaveStatus === 'already' ? 'IC-bookmark-filled' : 'IC-bookmark'}
-                      onClick={() => { void onSaveOffline(); }}
-                    >
-                      {offlineSaveStatus === 'saving'
-                        ? (lang?.pulse_saving_offline || 'Сохраняется...')
-                        : offlineSaveStatus === 'already'
-                          ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
-                          : (lang?.pulse_save_offline || 'Сохранить офлайн')}
-                    </DropdownItem>
+                    {isAuthenticated ? (
+                      <DropdownItem onClick={onAddToPlaylist} icon="IC-plus">
+                        {lang?.add_to_playlist || 'В плейлист'}
+                      </DropdownItem>
+                    ) : null}
+                    {isAuthenticated ? (
+                      <DropdownItem icon="IC-download" onClick={onDownload}>
+                        {lang?.pulse_download_mp3 || 'Скачать MP3'}
+                      </DropdownItem>
+                    ) : null}
+                    {isAuthenticated ? (
+                      <DropdownItem
+                        icon={offlineSaveStatus === 'already' ? 'IC-bookmark-filled' : 'IC-bookmark'}
+                        onClick={() => { void onSaveOffline(); }}
+                      >
+                        {offlineSaveStatus === 'saving'
+                          ? (lang?.pulse_saving_offline || 'Сохраняется...')
+                          : offlineSaveStatus === 'already'
+                            ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
+                            : (lang?.pulse_save_offline || 'Сохранить офлайн')}
+                      </DropdownItem>
+                    ) : null}
                     {canUseEqualizer ? (
-                      <DropdownItem onClick={onOpenEqualizer} icon="IC-equalizer">Эквалайзер</DropdownItem>
+                      <DropdownItem onClick={onOpenEqualizer} icon="IC-equalizer">
+                        {lang?.pulse_equalizer || 'Эквалайзер'}
+                      </DropdownItem>
                     ) : null}
                   </Dropdown>
-                ) : isAuthenticated && isMobileDevice ? (
-                  <button title={lang?.add_to_playlist || 'В плейлист'} type="button" onClick={onAddToPlaylist} className="group cursor-pointer p-1 duration-300 active:scale-95">
-                    <Icon name="IC-plus" className="h-7 w-7 fill-white duration-300 group-hover:fill-zinc-300" />
-                  </button>
-                ) : !isAuthenticated && !isMobileDevice && canUseEqualizer ? (
-                  <button title="Эквалайзер" type="button" onClick={onOpenEqualizer} className="group cursor-pointer p-1 duration-300 active:scale-95">
-                    <Icon name="IC-equalizer" className="h-7 w-7 fill-white duration-300 group-hover:fill-zinc-300" />
+                ) : isAuthenticated ? (
+                  <button
+                    title={lang?.add_to_playlist || 'В плейлист'}
+                    type="button"
+                    onClick={onAddToPlaylist}
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+                  >
+                    <Icon name="IC-plus" className="h-6 w-6 fill-white duration-300" />
                   </button>
                 ) : null}
               </div>
             </div>
 
-            <div className="w-full px-3 lg:px-0 max-w-sm flex flex-col items-center justify-center">
+            <div className="flex w-full flex-col items-center justify-center">
               <PulsePlayerFullArtwork
                 displayedCurrentTime={displayedCurrentTime}
                 duration={duration}
@@ -427,15 +514,48 @@ export function PulsePlayerFull({
             />
           </div>
 
-          {lyricsLines.length ? (
-            <PulseLyricsDesktop
-              activeIndex={activeLyricState.activeIndex}
-              lines={lyricsLines}
-              onSeek={onLyricsSeek}
-              progress={activeLyricState.progress}
-            />
+          {/* Смена раскладки при ресайзе — мгновенная: анимируются только вкл/выкл и загрузка текста. */}
+          {isDesktopLayout && desktopLyricsPresence.mounted ? (
+            // Слот включает и отступ от обложки: его ширина раскрывается/схлопывается,
+            // поэтому колонка с обложкой плавно едет вместо прыжка в центр.
+            // self-stretch + -my-24 компенсируют py-24 ряда: панель от края до края экрана.
+            <div
+              className={cn(
+                'flex shrink-0 justify-end self-stretch overflow-hidden lg:-my-24 lg:w-[516px] lg:pl-24 xl:w-[608px] xl:pl-32 2xl:w-[668px]',
+                desktopLyricsPresence.leaving ? 'pulse-lyrics-slot-out' : 'pulse-lyrics-slot-in',
+              )}
+            >
+              <PulseLyricsDesktop
+                audioRef={audioRef}
+                leaving={desktopLyricsPresence.leaving}
+                lines={stickyLines}
+                onSeek={onLyricsSeek}
+              />
+            </div>
           ) : null}
         </div>
+
+        {isMobileDevice ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (lyricsEnabled) setIsLyricsExpanded(false);
+              onToggleLyrics();
+            }}
+            className={cn(
+              'absolute left-1/2 z-[20] flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-sm text-white duration-300 active:scale-95 border',
+              lyricsEnabled ? 'bg-white/10 border-zinc-600/30' : 'opacity-70 hover:bg-white/10 hover:opacity-100 border-transparent',
+            )}
+            style={{ bottom: 'max(12px, env(safe-area-inset-bottom))' }}
+          >
+            <Icon name="IC-quote" className="h-4 w-4 fill-white" />
+            <span>
+              {lyricsEnabled
+                ? (lang?.pulse_lyrics_hide || 'Скрыть текст')
+                : (lang?.pulse_lyrics_show || 'Показать текст')}
+            </span>
+          </button>
+        ) : null}
       </div>
 
       <PulseQueueModal

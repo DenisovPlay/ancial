@@ -150,6 +150,7 @@ export function PulsePlayerModals({
           eqGains={eqGains}
           onGainChange={changeEqGain}
           onReset={onResetEqualizer}
+          lang={lang}
         />
       ) : null}
 

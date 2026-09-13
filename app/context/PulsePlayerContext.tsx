@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import { flushSync } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
@@ -17,6 +18,12 @@ import { shouldDisableWebAudioForDevice, useEqualizer } from '../pulse/player/us
 import { usePulseFavorites } from '../pulse/player/use-pulse-favorites';
 import { useAddToPlaylist } from '../pulse/player/use-add-to-playlist';
 import { loadPulseLyrics } from '../pulse/player/lyrics-service';
+import {
+  getServerLyricsEnabled,
+  readLyricsEnabled,
+  setLyricsEnabled,
+  subscribeLyricsEnabled,
+} from '../pulse/player/lyrics-preference';
 import { useOfflineAudioSave } from '../pulse/player/use-offline-audio-save';
 import { useVisualAudioProgress } from '../pulse/player/use-visual-audio-progress';
 import { PulsePlayerFull } from '../pulse/player/pulse-player-full';
@@ -33,11 +40,7 @@ import {
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 import { useUserCountry } from '../lib/user-geo';
-import {
-  getActiveLyricState,
-  splitLyricText,
-  type PulseLyricsLine,
-} from '../pulse/player/pulse-lyrics';
+import { type PulseLyricsLine } from '../pulse/player/pulse-lyrics';
 
 import {
   buildMediaArtwork,
@@ -231,7 +234,7 @@ export function PulsePlayerProvider({
     syncVisualProgress,
   } = useVisualAudioProgress(audioRef, seekingSliderRef);
 
-  const { changeEqGain, eqGains, initWebAudio, resetEqGains, resumeWebAudio } = useEqualizer(audioRef);
+  const { changeEqGain, eqGains, hasActiveEq, initWebAudio, resetEqGains, resumeWebAudio } = useEqualizer(audioRef);
   const likedSongIdsRef = useRef<number[]>([]);
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
@@ -273,6 +276,11 @@ export function PulsePlayerProvider({
   const [volume, setVolume] = useState(() => readSavedVolume());
   const [lyricsLines, setLyricsLines] = useState<PulseLyricsLine[]>([]);
   const [lyricsSource, setLyricsSource] = useState('');
+  const lyricsEnabled = useSyncExternalStore(
+    subscribeLyricsEnabled,
+    () => readLyricsEnabled(),
+    getServerLyricsEnabled,
+  );
   const [seekValue, setSeekValue] = useState(0);
   const [activeSeekSlider, setActiveSeekSlider] = useState<'desktop' | 'mobile' | null>(null);
   const [listenCounted, setListenCounted] = useState(false);
@@ -327,13 +335,6 @@ export function PulsePlayerProvider({
 
   const isPlayerAnimatingIn = isVisible && isMounted;
   const isFullPlayerActive = shouldRunPulseFullPlayerWork(mode, isVisible, isMounted);
-  const activeLyricState = isFullPlayerActive
-    ? getActiveLyricState(lyricsLines, currentTime)
-    : { activeIndex: -1, progress: 0 };
-  const activeLyricLine = isFullPlayerActive && activeLyricState.activeIndex >= 0
-    ? lyricsLines[activeLyricState.activeIndex]
-    : null;
-  const mobileLyric = activeLyricLine ? splitLyricText(activeLyricLine.text) : null;
   const displayedCurrentTime = activeSeekSlider ? seekValue : currentTime;
 
   const notify = useCallback(({
@@ -1485,8 +1486,12 @@ export function PulsePlayerProvider({
 
     const handlePlay = () => {
       setIsPlaying(true);
-      initWebAudio();
-      resumeWebAudio();
+      // Граф поднимаем только если эквалайзер реально что-то делает — иначе звук
+      // не должен зависеть от живучести WebAudio-контекста.
+      if (hasActiveEq()) {
+        initWebAudio();
+        resumeWebAudio();
+      }
       bindMediaSession();
       if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
         try {
@@ -1627,7 +1632,8 @@ export function PulsePlayerProvider({
     setLyricsLines([]);
     setLyricsSource('');
 
-    if (!isFullPlayerActive) {
+    // Текст выключен настройкой — не тратим запрос, и rAF-цикл прогресса тоже не стартует.
+    if (!isFullPlayerActive || !lyricsEnabled) {
       syncWindowState();
       return () => {
         controller.abort();
@@ -1667,33 +1673,7 @@ export function PulsePlayerProvider({
     // Depend on currentSongId (primitive ID) rather than currentTrack (object reference)
     // so that background re-renders don't cancel in-flight lyric loading.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSongId, isFullPlayerActive]);
-
-  useEffect(() => {
-    // Only run 60 FPS smooth lyrics progress updates when player is in full mode, playing, and has lyrics.
-    // When minimized, paused, or closed, this effect cancels the animation loop immediately (0% CPU load).
-    if (!isFullPlayerActive || !isPlaying || lyricsLines.length === 0) {
-      return undefined;
-    }
-
-    let animationFrameId: number | null = null;
-
-    const tick = () => {
-      const audio = audioRef.current;
-      if (audio && !audio.paused && Number.isFinite(audio.currentTime)) {
-        setCurrentTime(audio.currentTime);
-      }
-      animationFrameId = requestAnimationFrame(tick);
-    };
-
-    animationFrameId = requestAnimationFrame(tick);
-
-    return () => {
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [isFullPlayerActive, isPlaying, lyricsLines.length]);
+  }, [currentSongId, isFullPlayerActive, lyricsEnabled]);
 
   useEffect(() => {
     syncWindowState();
@@ -1863,26 +1843,10 @@ export function PulsePlayerProvider({
           id="NAVP"
           className="pointer-events-none fixed inset-0 z-[1500]"
         >
-          <style>{`
-            @keyframes animate-opacity-fade-in {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-            @keyframes animate-smooth-appear {
-              from { opacity: 0; transform: translateY(8px) scale(0.98); }
-              to { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            .animate-opacity-fade-in {
-              animation: animate-opacity-fade-in 0.6s cubic-bezier(0.32,0.72,0,1) forwards;
-            }
-            .animate-smooth-appear {
-              animation: animate-smooth-appear 0.6s cubic-bezier(0.32,0.72,0,1) forwards;
-            }
-          `}</style>
-
           {isMounted ? (
             <PulsePlayerFull
             Icon={PlayerIcon}
+            audioRef={audioRef}
             mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}
             mobileSeekInputRef={mobileSeekInputRef}
 
@@ -1893,7 +1857,6 @@ export function PulsePlayerProvider({
             nextArtwork={nextArtwork}
             prevTrackObj={prevTrackObj}
             nextTrackObj={nextTrackObj}
-            currentTrack={currentTrack}
             trackKey={String(currentSongId)}
 
             repeatMode={repeatMode}
@@ -1909,11 +1872,9 @@ export function PulsePlayerProvider({
 
             swipeX={swipeX}
             isSwiping={isSwiping}
-            touchStartXRef={touchStartXRef}
 
             displayedCurrentTime={displayedCurrentTime}
             duration={duration}
-            currentTime={currentTime}
 
             isPlaying={isPlaying}
             isVisible={isFullMode && isPlayerAnimatingIn}
@@ -1922,9 +1883,8 @@ export function PulsePlayerProvider({
             isAuthenticated={isAuthenticated}
 
             lyricsLines={isFullPlayerActive ? lyricsLines : []}
-            lyricsSource={lyricsSource}
-            activeLyricState={activeLyricState}
-            mobileLyric={mobileLyric}
+            lyricsEnabled={lyricsEnabled}
+            onToggleLyrics={() => setLyricsEnabled(!lyricsEnabled)}
 
             albumLabel={isRadioMode && radioSeedName
               ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
@@ -2033,7 +1993,12 @@ export function PulsePlayerProvider({
             }}
             onLike={() => { void likeCurrentSong(); }}
             onNext={() => { void nextTrack(); }}
-            onOpenEqualizer={() => setIsEqualizerOpen(true)}
+            onOpenEqualizer={() => {
+              // Открыли эквалайзер — с этого момента граф нужен.
+              initWebAudio();
+              resumeWebAudio();
+              setIsEqualizerOpen(true);
+            }}
             onPrev={() => { void prevTrack(); }}
             onSaveOffline={async () => {
               if (offlineSaveStatus === 'already') {

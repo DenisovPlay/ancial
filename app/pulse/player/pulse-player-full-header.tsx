@@ -26,33 +26,41 @@ export function PulsePlayerFullHeader({
   onOpenAlbum,
 }: PulsePlayerFullHeaderProps) {
   return (
-    <div className="absolute top-3 z-[20] flex w-full items-center px-3">
-      <button type="button" onClick={onClose} className="cursor-pointer duration-300 active:scale-95">
-        <Icon name="IC-times" className="h-10 w-10 fill-white" />
+    <div className="absolute top-3 z-[20] flex w-full items-center gap-3 px-3">
+      <button
+        type="button"
+        onClick={onClose}
+        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+      >
+        <Icon name="IC-times" className="h-6 w-6 fill-white" />
       </button>
 
-      <div className="flex flex-grow flex-col items-center justify-center gap-1.5">
+      <div className="flex min-w-0 flex-grow flex-col items-center justify-center gap-1.5">
         <button
           type="button"
           onClick={onOpenAlbum}
           className={cn(
-            'text-center text-sm text-white duration-300 lg:text-base',
-            canOpenAlbum && 'cursor-pointer active:scale-95 hover:text-zinc-300',
+            'max-w-full truncate text-center text-xs text-zinc-400 duration-300 lg:text-sm',
+            canOpenAlbum && 'cursor-pointer active:scale-95 hover:text-white',
           )}
         >
           {albumLabel}
         </button>
         <Image
           alt="Pulse Logo"
-          className="w-24 shrink-0 backdrop-shadow-lg"
+          className="w-20 shrink-0 backdrop-shadow-lg lg:w-24"
           height={96}
           src="/img/branding/pulse.svg"
           width={96}
         />
       </div>
 
-      <button type="button" onClick={onMinimize} className="cursor-pointer duration-300 hover:fill-zinc-300 active:scale-95">
-        <Icon name="IC-chevron-down" className="h-10 w-10 fill-white" />
+      <button
+        type="button"
+        onClick={onMinimize}
+        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+      >
+        <Icon name="IC-chevron-down" className="h-6 w-6 fill-white" />
       </button>
     </div>
   );

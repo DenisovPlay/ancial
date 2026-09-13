@@ -435,6 +435,230 @@ body.pulse-player-full #main-content {
   will-change: opacity, transform;
 }
 
+@keyframes animate-opacity-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes animate-smooth-appear {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-opacity-fade-in {
+  animation: animate-opacity-fade-in 0.6s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.animate-smooth-appear {
+  animation: animate-smooth-appear 0.6s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* Вход контента full-плеера: обложка и блоки под ней появляются со сдвигом. */
+@keyframes pulse-full-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pulse-full-rise {
+  animation: pulse-full-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+
+/* Караоке-заливка активной строки: доля строки --lyric-p пишется из rAF в DOM,
+   каждое слово само считает свою заливку по индексу --i из общего числа слов --n. */
+.pulse-lyric-line.is-active .pulse-lyric-word {
+  --fill: clamp(0%, calc((var(--lyric-p, 0) * var(--n) - var(--i)) * 100%), 100%);
+  background-image: linear-gradient(90deg, #fff var(--fill), rgb(255 255 255 / 0.4) var(--fill));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Переходы между режимами текста на телефоне. Подложка с блюром живёт отдельно и только
+   проявляется/гаснет. Строка и список не накладываются: при раскрытии текущая строка остаётся
+   в центре, а соседние проявляются вокруг неё (--d — задержка по расстоянию от текущей). */
+@keyframes pulse-lyrics-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-lyrics-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.pulse-lyrics-backdrop-in {
+  animation: pulse-lyrics-fade-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pulse-lyrics-backdrop-out {
+  animation: pulse-lyrics-fade-out 240ms ease-in both;
+}
+
+.pulse-lyrics-line-in {
+  animation: pulse-lyrics-fade-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pulse-lyrics-line-out {
+  animation: pulse-lyrics-fade-out 200ms ease-in both;
+}
+
+.pulse-lyrics-context-in {
+  animation: pulse-lyrics-fade-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.pulse-lyrics-sheet-out {
+  animation: pulse-lyrics-fade-out 200ms ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .pulse-lyrics-backdrop-in,
+  .pulse-lyrics-backdrop-out,
+  .pulse-lyrics-line-in,
+  .pulse-lyrics-line-out,
+  .pulse-lyrics-context-in,
+  .pulse-lyrics-sheet-out {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
+
+/* Текст на ПК: слот раскрывается по ширине (вместе с отступом от обложки), колонка с обложкой
+   плавно едет следом; сам текст выезжает справа с задержкой. Ширина до/после берётся из
+   классов слота — в ключевых кадрах задан только нулевой край. */
+@keyframes pulse-lyrics-slot-in {
+  from {
+    width: 0;
+    padding-left: 0;
+  }
+}
+
+@keyframes pulse-lyrics-slot-out {
+  to {
+    width: 0;
+    padding-left: 0;
+  }
+}
+
+@keyframes pulse-lyrics-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse-lyrics-panel-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+.pulse-lyrics-slot-in {
+  animation: pulse-lyrics-slot-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pulse-lyrics-slot-out {
+  animation: pulse-lyrics-slot-out 380ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.pulse-lyrics-panel-in {
+  animation: pulse-lyrics-panel-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+}
+
+.pulse-lyrics-panel-out {
+  animation: pulse-lyrics-panel-out 260ms ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .pulse-lyrics-slot-in,
+  .pulse-lyrics-slot-out,
+  .pulse-lyrics-panel-in,
+  .pulse-lyrics-panel-out {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
+
+/* Текст не обрубается по краям панели, а растворяется — как у стримингов. */
+.pulse-lyrics-fade {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);
+}
+
+/* Кросс-фейд обложки при смене трека и при переключении на текст. */
+.pulse-art-layer {
+  transition: opacity 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
+}
+
+/* Нативный range остаётся ради доступности и владения перемоткой, но целиком
+   невидим: полосу и ползунок рисуем сами. opacity надёжнее возни с вендорными
+   псевдоэлементами — ни один движок не покажет свою отсебятину. */
+.pulse-seek-input {
+  opacity: 0;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .animate-opacity-fade-in,
+  .animate-smooth-appear,
+  .pulse-full-rise,
+  .pulse-mobile-lyric-enter,
+  .pulse-mobile-lyric-exit {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+
+  .pulse-art-layer {
+    transition-duration: 1ms;
+  }
+}
+
 @media (min-width: 768px) {
 
   .pulse-player-full-shell,
