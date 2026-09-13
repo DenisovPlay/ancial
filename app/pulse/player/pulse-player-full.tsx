@@ -297,9 +297,10 @@ export function PulsePlayerFull({
               <div className="flex w-full items-center justify-center">
                 <div
                   className="pulse-full-rise relative flex aspect-square w-full max-w-sm shrink-0 items-center justify-center lg:max-w-none"
-                  onTouchStart={onTouchStartCover}
-                  onTouchMove={onTouchMoveCover}
-                  onTouchEnd={onTouchEndCover}
+                  // В режиме полного текста свайп треков выключен: иначе прокрутка списка листает треки.
+                  onTouchStart={showMobileSheet ? undefined : onTouchStartCover}
+                  onTouchMove={showMobileSheet ? undefined : onTouchMoveCover}
+                  onTouchEnd={showMobileSheet ? undefined : onTouchEndCover}
                 >
                   {prevTrackObj ? (
                     <div
