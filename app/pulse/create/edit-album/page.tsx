@@ -8,6 +8,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PULSE_GENRES, PULSE_TRACK_LANGUAGES } from '../../pulse-constants';
 import { ActionIcon } from '../../pulse-components';
+import { PulseArtistLinkPicker } from '../pulse-artist-link-picker';
 
 interface PulseArtist {
   id?: number | string;
@@ -34,7 +35,6 @@ function EditAlbumContent() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showArtistsDropdown, setShowArtistsDropdown] = useState(false);
 
   const [name, setName] = useState('');
   const [artist, setArtist] = useState('');
@@ -160,7 +160,7 @@ function EditAlbumContent() {
 
     AncialAPI.pulseManagement('album', 'update', data)
       .then(() => {
-        showNote({ content: 'Альбом обновлен!', type: 'success', time: 3 });
+        showNote({ content: lang?.creators_album_updated || 'Альбом обновлён!', type: 'success', time: 3 });
         router.push('/pulse/create/albums');
       })
       .catch((err: unknown) => {
@@ -188,9 +188,7 @@ function EditAlbumContent() {
   };
 
   if (!isAuthenticated) return null;
-  if (!id) return <div className="p-6 text-center text-zinc-500">Альбом не найден</div>;
-
-  const selectedArtists = allArtists.filter((a) => artistsIds.includes(String(a.id)));
+  if (!id) return <div className="p-6 text-center text-zinc-500">{lang?.creators_album_not_found || 'Альбом не найден'}</div>;
 
   return (
     <div className="w-full flex flex-col gap-3">
@@ -264,63 +262,13 @@ function EditAlbumContent() {
                 </div>
               </div>
 
-              {/* Artists linking */}
-              {allArtists.length > 0 && (
-                <div className="col-span-1 sm:col-span-2 flex w-full flex-col relative" style={{ zIndex: 40 }}>
-                  <span className="z-20 pl-4 text-zinc-400">Привязка к страницам артистов</span>
-                  <div className="-mt-3 z-10 flex min-h-[48px] w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
-                    <div
-                      onClick={() => setShowArtistsDropdown(!showArtistsDropdown)}
-                      className="w-full flex items-center justify-between pl-2 pr-2 cursor-pointer"
-                    >
-                      <div className="flex flex-wrap gap-1.5 py-1.5 items-center">
-                        {selectedArtists.length === 0 ? (
-                          <span className="text-zinc-500 text-sm">{lang?.creators_select_artist || 'Выберите артистов...'}</span>
-                        ) : (
-                          selectedArtists.map((a) => (
-                            <span
-                              key={a.id}
-                              className="bg-zinc-700 border border-zinc-600/30 text-white text-xs px-3 py-1 rounded-full font-medium"
-                            >
-                              {a.name}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                      <ActionIcon
-                        className={`w-5 h-5 fill-zinc-400 shrink-0 transition-transform duration-200 ${showArtistsDropdown ? 'rotate-180' : ''
-                          }`}
-                        name="IC-chevron-down"
-                      />
-                    </div>
-                  </div>
-
-                  {showArtistsDropdown && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowArtistsDropdown(false)} />
-                      <div className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-600/30 rounded-3xl shadow-2xl max-h-56 overflow-y-auto z-50 p-2 flex flex-col gap-1">
-                        {allArtists.map((a) => (
-                          <label
-                            key={a.id}
-                            className="flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 rounded-full cursor-pointer text-zinc-200 text-sm duration-200"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={artistsIds.includes(String(a.id))}
-                              onChange={(e) => {
-                                if (e.target.checked) setArtistsIds([...artistsIds, String(a.id)]);
-                                else setArtistsIds(artistsIds.filter((aid) => aid !== String(a.id)));
-                              }}
-                              className="w-4 h-4 rounded bg-zinc-900 border-zinc-500 text-white focus:ring-0 cursor-pointer"
-                            />
-                            <span>{a.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+              <PulseArtistLinkPicker
+                artists={allArtists}
+                label={lang?.creators_link_artists || 'Привязка к профилям артистов'}
+                placeholder={lang?.creators_select_artist || 'Выберите артистов...'}
+                selectedIds={artistsIds}
+                onChange={setArtistsIds}
+              />
 
               {/* Description */}
               <div className="col-span-1 sm:col-span-2 flex w-full flex-col">
@@ -425,7 +373,7 @@ function EditAlbumContent() {
                 </div>
               ))
             ) : (
-              <span className="text-zinc-500 text-center py-4">Нет треков</span>
+              <span className="text-zinc-500 text-center py-4">{lang?.creators_no_album_tracks || 'Нет треков'}</span>
             )}
           </div>
 
@@ -437,10 +385,10 @@ function EditAlbumContent() {
             {saving ? (
               <>
                 <ActionIcon className="h-5 w-5 animate-spin fill-black" name="IC-loader" />
-                <span>Сохранение...</span>
+                <span>{lang?.creators_saving || 'Сохранение...'}</span>
               </>
             ) : (
-              <span>Сохранить изменения</span>
+              <span>{lang?.creators_save_changes || 'Сохранить изменения'}</span>
             )}
           </button>
         </form>

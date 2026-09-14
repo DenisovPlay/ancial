@@ -104,7 +104,9 @@ export default function EditArtistContent() {
     AncialAPI.pulseManagement('artist', action, data)
       .then(() => {
         showNote({
-          content: id > 0 ? 'Профиль артиста обновлен!' : 'Профиль артиста создан!',
+          content: id > 0
+            ? (lang?.creators_artist_updated || 'Профиль артиста обновлён!')
+            : (lang?.creators_artist_created || 'Профиль артиста создан!'),
           type: 'success',
           time: 3,
         });
@@ -125,7 +127,7 @@ export default function EditArtistContent() {
   return (
     <div className="w-full flex flex-col gap-3">
       <h1 className="text-2xl font-bold text-zinc-100">
-        {id > 0 ? 'Редактировать артиста' : lang?.creators_new_artist || 'Новый артист'}
+        {id > 0 ? (lang?.creators_edit_artist || 'Редактировать артиста') : (lang?.creators_new_artist || 'Новый артист')}
       </h1>
 
       {loading ? (
@@ -145,7 +147,7 @@ export default function EditArtistContent() {
                   <img className="w-full h-full object-cover" src={img} alt="Preview" />
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300 backdrop-blur-xs">
                     <span className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-600/30">
-                      Заменить фото
+                      {lang?.creators_replace_photo || 'Заменить фото'}
                     </span>
                   </div>
                 </>
@@ -154,7 +156,7 @@ export default function EditArtistContent() {
                   <div className="p-3 rounded-full bg-zinc-700/60 text-zinc-300">
                     <ActionIcon className="w-8 h-8 fill-current" name="IC-user" />
                   </div>
-                  <span className="text-xs font-semibold text-zinc-300">Фото артиста</span>
+                  <span className="text-xs font-semibold text-zinc-300">{lang?.creators_artist_photo || 'Фото артиста'}</span>
                 </div>
               )}
             </label>
@@ -162,7 +164,7 @@ export default function EditArtistContent() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex w-full flex-col">
-              <span className="z-20 pl-4 text-zinc-400">Имя артиста *</span>
+              <span className="z-20 pl-4 text-zinc-400">{lang?.creators_artist_name || 'Имя артиста'} *</span>
               <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                 <input
                   required
@@ -170,14 +172,14 @@ export default function EditArtistContent() {
                   autoComplete="off"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Псевдоним или сценическое имя"
+                  placeholder={lang?.creators_artist_name_placeholder || 'Псевдоним или сценическое имя'}
                   className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
                 />
               </div>
             </div>
 
             <div className="flex w-full flex-col">
-              <span className="z-20 pl-4 text-zinc-400">Соц. сети (через запятую)</span>
+              <span className="z-20 pl-4 text-zinc-400">{lang?.creators_artist_socials || 'Соц. сети (через запятую)'}</span>
               <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                 <input
                   type="text"
@@ -191,13 +193,13 @@ export default function EditArtistContent() {
             </div>
 
             <div className="col-span-1 sm:col-span-2 flex w-full flex-col">
-              <span className="z-20 pl-4 text-zinc-400">Описание / Биография</span>
+              <span className="z-20 pl-4 text-zinc-400">{lang?.creators_artist_bio || 'Описание / биография'}</span>
               <div className="-mt-3 z-10 flex min-h-[100px] w-full rounded-3xl border border-zinc-600/30 bg-zinc-800/90 p-3 pt-4">
                 <textarea
                   rows={4}
                   value={desk}
                   onChange={(e) => setDesk(e.target.value)}
-                  placeholder="Расскажите слушателям о себе, стиле музыки и творческом пути..."
+                  placeholder={lang?.creators_artist_bio_placeholder || 'Расскажите слушателям о себе, стиле музыки и творческом пути...'}
                   className="w-full bg-transparent text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0 text-sm resize-none"
                 />
               </div>
@@ -212,10 +214,14 @@ export default function EditArtistContent() {
             {saving ? (
               <>
                 <ActionIcon className="h-5 w-5 animate-spin fill-black" name="IC-loader" />
-                <span>Сохранение...</span>
+                <span>{lang?.creators_saving || 'Сохранение...'}</span>
               </>
             ) : (
-              <span>{id > 0 ? 'Сохранить изменения' : 'Создать артиста'}</span>
+              <span>
+                {id > 0
+                  ? (lang?.creators_save_changes || 'Сохранить изменения')
+                  : (lang?.creators_create_artist || 'Создать артиста')}
+              </span>
             )}
           </button>
         </form>

@@ -8,6 +8,7 @@ import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { uploadImage } from '../../../lib/upload';
 import { PULSE_GENRES, PULSE_MOODS, PULSE_TRACK_LANGUAGES } from '../../pulse-constants';
 import { ActionIcon } from '../../pulse-components';
+import { PulseArtistLinkPicker } from '../pulse-artist-link-picker';
 
 const MEDIA_TAGS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js';
 
@@ -32,6 +33,9 @@ interface UserArtist {
   img?: string;
   verify?: number;
 }
+
+// Формат как на страницах редактирования: "1,2,". Пусто — релиз ни к одному профилю не привязан.
+const toArtistsIdsField = (ids: string[]) => (ids.length > 0 ? `${ids.join(',')},` : '');
 
 interface AlbumTrackItem {
   localId: string;
@@ -68,9 +72,8 @@ export default function UploadContent() {
   // ----------------------------------------------------
   const [singleCover, setSingleCover] = useState('');
   const [singleTitle, setSingleTitle] = useState('');
-  const [singleArtistMode, setSingleArtistMode] = useState<string>('');
   const [singleArtistName, setSingleArtistName] = useState('');
-  const [singleArtistId, setSingleArtistId] = useState('');
+  const [singleArtistsIds, setSingleArtistsIds] = useState<string[]>([]);
   const [singleGenre, setSingleGenre] = useState<string>('');
   const [singleMood, setSingleMood] = useState<string>('');
   const [singleLang, setSingleLang] = useState('');
@@ -87,9 +90,8 @@ export default function UploadContent() {
   // ----------------------------------------------------
   const [albumCover, setAlbumCover] = useState('');
   const [albumTitle, setAlbumTitle] = useState('');
-  const [albumArtistMode, setAlbumArtistMode] = useState<string>('');
   const [albumArtistName, setAlbumArtistName] = useState('');
-  const [albumArtistId, setAlbumArtistId] = useState('');
+  const [albumArtistsIds, setAlbumArtistsIds] = useState<string[]>([]);
   const [albumDesc, setAlbumDesc] = useState('');
   const [albumGenre, setAlbumGenre] = useState<string>('');
   const [albumLang, setAlbumLang] = useState('');
@@ -185,11 +187,11 @@ export default function UploadContent() {
             const title = tag.tags?.title;
             const artist = tag.tags?.artist;
             if (title && !singleTitle) setSingleTitle(title);
-            if (artist && !singleArtistName && singleArtistMode === 'custom') {
+            if (artist && !singleArtistName) {
               setSingleArtistName(artist);
             }
           },
-          onError: () => {},
+          onError: () => { },
         });
       }
     } catch {
@@ -208,7 +210,7 @@ export default function UploadContent() {
       if (res && res.id) {
         setSingleUploadedId(Number(res.id));
         setStatusText(lang?.albumUploadStatus3 || 'Аудио загружено');
-        showNote({ content: 'Аудиофайл успешно загружен', type: 'success', time: 3 });
+        showNote({ content: lang?.creators_audio_uploaded || 'Аудиофайл загружен', type: 'success', time: 3 });
       } else {
         throw new Error('Upload failed');
       }
@@ -219,7 +221,7 @@ export default function UploadContent() {
         type: 'error',
         time: 5,
       });
-      setStatusText('Ошибка');
+      setStatusText(lang?.creators_status_error || 'Ошибка');
     } finally {
       setSingleUploadingAudio(false);
     }
@@ -228,27 +230,27 @@ export default function UploadContent() {
   // Publish Single
   const handlePublishSingle = async () => {
     if (!singleUploadedId) {
-      showNote({ content: 'Пожалуйста, выберите и дождитесь загрузки аудиофайла!', type: 'error', time: 5 });
+      showNote({ content: lang?.creators_err_audio_required || 'Выберите аудиофайл и дождитесь окончания загрузки', type: 'error', time: 5 });
       return;
     }
     if (!singleTitle.trim()) {
-      showNote({ content: 'Введите название трека!', type: 'error', time: 5 });
+      showNote({ content: lang?.creators_err_track_name || 'Введите название трека', type: 'error', time: 5 });
       return;
     }
     if (!singleArtistName.trim()) {
-      showNote({ content: 'Укажите исполнителя!', type: 'error', time: 5 });
+      showNote({ content: lang?.creators_err_artist || 'Укажите исполнителя', type: 'error', time: 5 });
       return;
     }
 
     setLoading(true);
-    setStatusText('Публикация сингла...');
+    setStatusText(lang?.creators_publishing_single || 'Публикация сингла...');
 
     try {
       await AncialAPI.pulseManagement('track', 'create', {
         id: singleUploadedId,
         name: singleTitle.trim(),
         artist: singleArtistName.trim(),
-        artists_ids: singleArtistId,
+        artists_ids: toArtistsIdsField(singleArtistsIds),
         img: singleCover,
         genre: singleGenre,
         mood: singleMood,
@@ -257,7 +259,7 @@ export default function UploadContent() {
         status: singleStatus,
       });
 
-      showNote({ content: 'Сингл успешно опубликован!', type: 'success', time: 4 });
+      showNote({ content: lang?.creators_single_published || 'Сингл опубликован!', type: 'success', time: 4 });
       router.push('/pulse/create/tracks');
     } catch (err) {
       console.error(err);
@@ -336,7 +338,7 @@ export default function UploadContent() {
               return copy;
             });
           },
-          onError: () => {},
+          onError: () => { },
         });
       }
     } catch {
@@ -382,11 +384,11 @@ export default function UploadContent() {
       return;
     }
     if (!albumTitle.trim()) {
-      showNote({ content: 'Введите название альбома!', type: 'error', time: 5 });
+      showNote({ content: lang?.creators_err_album_name || 'Введите название альбома', type: 'error', time: 5 });
       return;
     }
     if (!albumArtistName.trim()) {
-      showNote({ content: 'Укажите исполнителя альбома!', type: 'error', time: 5 });
+      showNote({ content: lang?.creators_err_album_artist || 'Укажите исполнителя альбома', type: 'error', time: 5 });
       return;
     }
 
@@ -406,7 +408,7 @@ export default function UploadContent() {
     }));
 
     setLoading(true);
-    setStatusText('Публикация альбома...');
+    setStatusText(lang?.creators_publishing_album || 'Публикация альбома...');
 
     try {
       await AncialAPI.pulseManagement('album', 'create', {
@@ -416,7 +418,7 @@ export default function UploadContent() {
         desk: albumDesc.trim(),
         genre: albumGenre,
         lang: albumLang,
-        artists_ids: albumArtistId,
+        artists_ids: toArtistsIdsField(albumArtistsIds),
         tracks_data: JSON.stringify(tracksData),
       });
 
@@ -444,26 +446,24 @@ export default function UploadContent() {
           {lang?.creators_upload_release || 'Новый релиз'}
         </h1>
 
-        <div className="flex items-center gap-2 p-1 rounded-full bg-zinc-800/80 border border-zinc-600/30 shrink-0">
+        <div className="flex items-center gap-1 p-1 rounded-full bg-zinc-800/80 border border-zinc-600/30 shrink-0 w-fit">
           <button
             type="button"
             onClick={() => setMode('single')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold duration-300 active:scale-95 cursor-pointer ${
-              mode === 'single'
-                ? 'bg-white text-black shadow'
-                : 'text-zinc-400 hover:text-white'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-semibold duration-300 active:scale-95 cursor-pointer ${mode === 'single'
+              ? 'bg-white text-black shadow'
+              : 'text-zinc-400 hover:text-white'
+              }`}
           >
             {lang?.creators_single_mode || 'Сингл (1 трек)'}
           </button>
           <button
             type="button"
             onClick={() => setMode('album')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold duration-300 active:scale-95 cursor-pointer ${
-              mode === 'album'
-                ? 'bg-white text-black shadow'
-                : 'text-zinc-400 hover:text-white'
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-semibold duration-300 active:scale-95 cursor-pointer ${mode === 'album'
+              ? 'bg-white text-black shadow'
+              : 'text-zinc-400 hover:text-white'
+              }`}
           >
             {lang?.creators_album_mode || 'Альбом / EP'}
           </button>
@@ -474,7 +474,7 @@ export default function UploadContent() {
       {/* 2. MODE: SINGLE TRACK                                   */}
       {/* ======================================================== */}
       {mode === 'single' && (
-        <div className="w-full flex flex-col gap-3 border border-zinc-600/30 bg-zinc-800/40 p-3 rounded-3xl">
+        <div className="w-full flex flex-col gap-3">
           <div className="flex flex-col lg:flex-row items-start gap-3">
             {/* Cover Upload Dropzone */}
             <div className="flex flex-col items-center shrink-0 w-full lg:w-56">
@@ -539,16 +539,18 @@ export default function UploadContent() {
                       </span>
                       <span className="text-xs text-zinc-400">
                         {singleUploadingAudio
-                          ? 'Идёт загрузка аудио...'
+                          ? (lang?.creators_audio_uploading || 'Идёт загрузка аудио...')
                           : singleUploadedId
-                            ? '✓ Аудиофайл успешно загружен'
+                            ? `✓ ${lang?.creators_audio_uploaded || 'Аудиофайл загружен'}`
                             : lang?.creators_audio_drop_subtitle || 'До 25 MB, битрейт до 320 kbps'}
                       </span>
                     </div>
                   </div>
 
                   <span className="px-4 py-2 rounded-full bg-zinc-700 text-white text-xs font-semibold shrink-0 hover:bg-zinc-600 duration-300 border border-zinc-600/30">
-                    {singleUploadedId ? 'Заменить' : 'Выбрать файл'}
+                    {singleUploadedId
+                      ? (lang?.creators_replace_file || 'Заменить')
+                      : (lang?.creators_choose_file || 'Выбрать файл')}
                   </span>
                 </label>
 
@@ -569,74 +571,35 @@ export default function UploadContent() {
                     autoComplete="off"
                     value={singleTitle}
                     onChange={(e) => setSingleTitle(e.target.value)}
-                    placeholder="Например: Ночной город"
+                    placeholder={lang?.creators_track_name_placeholder || 'Например: Ночной город'}
                     className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
                   />
                 </div>
               </div>
 
-              {/* Artist Selector */}
+              {/* Исполнители вводятся вручную, привязка к профилям — отдельно и необязательна */}
               <div className="flex w-full flex-col">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumartist || 'Исполнитель'} *</span>
-                {userArtists.length > 0 ? (
-                  <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1 gap-1">
-                    <select
-                      value={singleArtistMode}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSingleArtistMode(val);
-                        if (val === 'custom') {
-                          setSingleArtistId('');
-                          setSingleArtistName('');
-                        } else if (!val) {
-                          setSingleArtistId('');
-                          setSingleArtistName('');
-                        } else {
-                          const art = userArtists.find((a) => String(a.id) === val);
-                          if (art) {
-                            setSingleArtistName(art.name);
-                            setSingleArtistId(String(art.id));
-                          }
-                        }
-                      }}
-                      className="w-full bg-transparent pl-2 pr-4 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0 cursor-pointer flex-1"
-                    >
-                      <option value="" className="bg-zinc-900 text-zinc-400">
-                        {lang?.creators_not_specified || 'Не выбрано'}
-                      </option>
-                      {userArtists.map((a) => (
-                        <option key={a.id} value={String(a.id)}>
-                          {a.name} {a.verify ? '✓' : ''}
-                        </option>
-                      ))}
-                      <option value="custom">{lang?.creators_custom_artist || 'Другой исполнитель'}</option>
-                    </select>
-
-                    {singleArtistMode === 'custom' && (
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        value={singleArtistName}
-                        onChange={(e) => setSingleArtistName(e.target.value)}
-                        placeholder="Имя артиста"
-                        className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0 flex-1 border-l border-zinc-600/30"
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
-                    <input
-                      type="text"
-                      required
-                      autoComplete="off"
-                      value={singleArtistName}
-                      onChange={(e) => setSingleArtistName(e.target.value)}
-                      placeholder="Имя артиста"
-                      className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
-                    />
-                  </div>
-                )}
+                <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
+                  <input
+                    type="text"
+                    required
+                    autoComplete="off"
+                    value={singleArtistName}
+                    onChange={(e) => setSingleArtistName(e.target.value)}
+                    placeholder={lang?.creators_artists_placeholder || 'Через запятую: Артист 1, Артист 2'}
+                    className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
+                  />
+                </div>
               </div>
+
+              <PulseArtistLinkPicker
+                artists={userArtists}
+                label={lang?.creators_link_artists || 'Привязка к профилям артистов'}
+                placeholder={lang?.creators_select_artist || 'Выберите артистов...'}
+                selectedIds={singleArtistsIds}
+                onChange={setSingleArtistsIds}
+              />
 
               {/* Genre (Canonical select) */}
               <div className="flex w-full flex-col">
@@ -721,7 +684,7 @@ export default function UploadContent() {
                 </div>
 
                 <div className="flex w-full flex-col">
-                  <span className="z-20 pl-4 text-zinc-400">Статус</span>
+                  <span className="z-20 pl-4 text-zinc-400">{lang?.creators_status_label || 'Статус'}</span>
                   <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                     <select
                       value={singleStatus}
@@ -771,7 +734,7 @@ export default function UploadContent() {
       {/* 3. MODE: ALBUM / EP                                      */}
       {/* ======================================================== */}
       {mode === 'album' && (
-        <div className="w-full flex flex-col gap-3 border border-zinc-600/30 bg-zinc-800/40 p-3 rounded-3xl">
+        <div className="w-full flex flex-col gap-3">
           <div className="flex flex-col lg:flex-row items-start gap-3">
             {/* Album Cover Upload */}
             <div className="flex flex-col items-center shrink-0 w-full lg:w-56">
@@ -823,74 +786,35 @@ export default function UploadContent() {
                     autoComplete="off"
                     value={albumTitle}
                     onChange={(e) => setAlbumTitle(e.target.value)}
-                    placeholder="Например: Лучшие хиты"
+                    placeholder={lang?.creators_album_name_placeholder || 'Например: Лучшие хиты'}
                     className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
                   />
                 </div>
               </div>
 
-              {/* Artist Selector */}
+              {/* Исполнители вводятся вручную, привязка к профилям — отдельно и необязательна */}
               <div className="flex w-full flex-col">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumartist || 'Исполнитель альбома'} *</span>
-                {userArtists.length > 0 ? (
-                  <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1 gap-1">
-                    <select
-                      value={albumArtistMode}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setAlbumArtistMode(val);
-                        if (val === 'custom') {
-                          setAlbumArtistId('');
-                          setAlbumArtistName('');
-                        } else if (!val) {
-                          setAlbumArtistId('');
-                          setAlbumArtistName('');
-                        } else {
-                          const art = userArtists.find((a) => String(a.id) === val);
-                          if (art) {
-                            setAlbumArtistName(art.name);
-                            setAlbumArtistId(String(art.id));
-                          }
-                        }
-                      }}
-                      className="w-full bg-transparent pl-2 pr-4 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0 cursor-pointer flex-1"
-                    >
-                      <option value="" className="bg-zinc-900 text-zinc-400">
-                        {lang?.creators_not_specified || 'Не выбрано'}
-                      </option>
-                      {userArtists.map((a) => (
-                        <option key={a.id} value={String(a.id)}>
-                          {a.name} {a.verify ? '✓' : ''}
-                        </option>
-                      ))}
-                      <option value="custom">{lang?.creators_custom_artist || 'Другой исполнитель'}</option>
-                    </select>
-
-                    {albumArtistMode === 'custom' && (
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        value={albumArtistName}
-                        onChange={(e) => setAlbumArtistName(e.target.value)}
-                        placeholder="Имя артиста"
-                        className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0 flex-1 border-l border-zinc-600/30"
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
-                    <input
-                      type="text"
-                      required
-                      autoComplete="off"
-                      value={albumArtistName}
-                      onChange={(e) => setAlbumArtistName(e.target.value)}
-                      placeholder="Имя артиста"
-                      className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
-                    />
-                  </div>
-                )}
+                <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
+                  <input
+                    type="text"
+                    required
+                    autoComplete="off"
+                    value={albumArtistName}
+                    onChange={(e) => setAlbumArtistName(e.target.value)}
+                    placeholder={lang?.creators_artists_placeholder || 'Через запятую: Артист 1, Артист 2'}
+                    className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
+                  />
+                </div>
               </div>
+
+              <PulseArtistLinkPicker
+                artists={userArtists}
+                label={lang?.creators_link_artists || 'Привязка к профилям артистов'}
+                placeholder={lang?.creators_select_artist || 'Выберите артистов...'}
+                selectedIds={albumArtistsIds}
+                onChange={setAlbumArtistsIds}
+              />
 
               {/* Album Genre */}
               <div className="flex w-full flex-col">
@@ -943,7 +867,7 @@ export default function UploadContent() {
                     autoComplete="off"
                     value={albumDesc}
                     onChange={(e) => setAlbumDesc(e.target.value)}
-                    placeholder="Пара слов о концепции релиза..."
+                    placeholder={lang?.creators_album_desc_placeholder || 'Пара слов о концепции релиза...'}
                     className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
                   />
                 </div>
@@ -975,7 +899,7 @@ export default function UploadContent() {
                 key={t.localId}
                 className="w-full p-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/60 flex flex-col gap-3"
               >
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 w-full">
                   <span className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-600/30 text-white font-bold text-xs flex items-center justify-center shrink-0">
                     {idx + 1}
                   </span>
@@ -1020,6 +944,39 @@ export default function UploadContent() {
                     </select>
                   </div>
 
+                  {/* Language Select */}
+                  <div className="flex h-10 rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
+                    <select
+                      value={t.lang}
+                      onChange={(e) => updateAlbumTrack(idx, 'lang', e.target.value)}
+                      className="w-full bg-transparent pl-2 pr-4 text-zinc-100 focus:border-0 focus:outline-0 focus:ring-0 text-xs cursor-pointer"
+                    >
+                      <option value="" className="bg-zinc-900 text-zinc-400">
+                        {lang?.tracklang || 'Язык трека'}
+                      </option>
+                      {PULSE_TRACK_LANGUAGES.map((l) => (
+                        <option key={l.code} value={l.code} className="bg-zinc-900 text-white">
+                          {l.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Explicit Select */}
+                  <div className="flex h-10 rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
+                    <select
+                      value={t.exp}
+                      onChange={(e) => updateAlbumTrack(idx, 'exp', e.target.value)}
+                      className="w-full bg-transparent pl-2 pr-4 text-zinc-100 focus:border-0 focus:outline-0 focus:ring-0 text-xs cursor-pointer"
+                    >
+                      <option value="" className="bg-zinc-900 text-zinc-400">
+                        {lang?.trackexp || '18+'}
+                      </option>
+                      <option value="0" className="bg-zinc-900">{lang?.trackexpN || 'Нет (0+)'}</option>
+                      <option value="1" className="bg-zinc-900">{lang?.trackexpY || 'Да (18+)'}</option>
+                    </select>
+                  </div>
+
                   {/* Audio Upload File Button */}
                   <div className="flex items-center gap-2 shrink-0">
                     <input
@@ -1031,19 +988,18 @@ export default function UploadContent() {
                     />
                     <label
                       htmlFor={`album-audio-${t.localId}`}
-                      className={`px-3 py-2 rounded-full text-xs font-medium border border-zinc-600/30 cursor-pointer duration-300 active:scale-95 flex items-center gap-1.5 ${
-                        t.audioId
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                          : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                      }`}
+                      className={`px-3 py-2 rounded-full text-xs font-medium border border-zinc-600/30 cursor-pointer duration-300 active:scale-95 flex items-center gap-1.5 ${t.audioId
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                        }`}
                     >
                       <ActionIcon className="w-3.5 h-3.5 fill-current" name="IC-music" />
                       <span>
                         {t.uploading
-                          ? 'Загрузка...'
+                          ? (lang?.loading || 'Загрузка...')
                           : t.audioId
-                            ? '✓ Загружено'
-                            : 'Выбрать MP3'}
+                            ? `✓ ${lang?.creators_uploaded_short || 'Загружено'}`
+                            : (lang?.creators_choose_mp3 || 'Выбрать MP3')}
                       </span>
                     </label>
 
@@ -1051,7 +1007,7 @@ export default function UploadContent() {
                       <button
                         type="button"
                         onClick={() => removeAlbumTrack(idx)}
-                        aria-label="Удалить трек"
+                        aria-label={lang?.deletetrack || 'Удалить трек'}
                         className="w-8 h-8 rounded-full border border-zinc-600/30 bg-zinc-800 text-red-400 hover:text-red-300 hover:bg-red-500/20 duration-300 active:scale-95 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                       >
                         <ActionIcon className="w-4 h-4 fill-current" name="IC-trash" />

@@ -14,6 +14,7 @@ type PulsePlayerFullArtworkProps = {
   onSeekChange: (value: number) => void;
   onSeekStart: () => void;
   onSeekSubmit: () => void;
+  lang?: Record<string, string> | null;
 };
 
 /** Seek presentation for full player mode. Seek ownership stays in the provider. */
@@ -26,6 +27,7 @@ export function PulsePlayerFullArtwork({
   onSeekChange,
   onSeekStart,
   onSeekSubmit,
+  lang,
 }: PulsePlayerFullArtworkProps) {
   return (
     <div className="group relative mt-3 flex w-full flex-col items-center justify-center">
@@ -33,7 +35,7 @@ export function PulsePlayerFullArtwork({
         min={0}
         max={duration || 0}
         step="0.01"
-        aria-label="Перемотка"
+        aria-label={lang?.pulse_seek || 'Перемотка'}
         value={displayedCurrentTime}
         inputRef={mobileSeekInputRef}
         onPointerDown={onSeekStart}

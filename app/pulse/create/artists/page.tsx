@@ -138,7 +138,7 @@ export default function PulseCreateArtistsPage() {
               type="button"
               onClick={() => setSearchQuery('')}
               className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95"
-              aria-label="Очистить поиск"
+              aria-label={lang?.creators_clear_search || 'Очистить поиск'}
             >
               <ActionIcon className="h-8 w-8 cursor-pointer" name="IC-times" />
             </button>
@@ -217,8 +217,8 @@ export default function PulseCreateArtistsPage() {
 
                   <Link
                     href={`/pulse/artist/${artist.id}`}
-                    aria-label="Открыть в Pulse"
-                    title="Открыть в Pulse"
+                    aria-label={lang?.creators_open_in_pulse || 'Открыть в Pulse'}
+                    title={lang?.creators_open_in_pulse || 'Открыть в Pulse'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
                     <ActionIcon className="w-4 h-4 fill-current" name="IC-eye" />
@@ -250,7 +250,7 @@ export default function PulseCreateArtistsPage() {
       ) : (
         <div className="border border-zinc-600/30 p-6 bg-zinc-800/30 rounded-3xl flex flex-col items-center justify-center gap-3 text-center">
           <span className="text-zinc-400 text-sm">
-            {searchQuery ? 'Ничего не найдено по вашему запросу' : lang?.creators_no_artists || 'У вас пока нет профилей артистов'}
+            {searchQuery ? (lang?.creators_nothing_found || 'Ничего не найдено по вашему запросу') : lang?.creators_no_artists || 'У вас пока нет профилей артистов'}
           </span>
           {!searchQuery && (
             <Link
@@ -267,8 +267,8 @@ export default function PulseCreateArtistsPage() {
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        title="Удалить артиста?"
-        description="Удаление профиля артиста необратимо удалит его с серверов Zypo Pulse. Привязанные треки и альбомы останутся."
+        title={lang?.creators_delete_artist_title || 'Удалить артиста?'}
+        description={lang?.creators_delete_artist_desc || 'Удаление профиля артиста необратимо удалит его с серверов Zypo Pulse. Привязанные треки и альбомы останутся.'}
       />
     </div>
   );

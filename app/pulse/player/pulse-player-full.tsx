@@ -498,6 +498,7 @@ export function PulsePlayerFull({
                 onSeekChange={onSeekChange}
                 onSeekStart={onSeekStart}
                 onSeekSubmit={onSeekSubmit}
+                lang={lang}
               />
             </div>
 

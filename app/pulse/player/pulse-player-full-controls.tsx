@@ -55,7 +55,7 @@ export function PulsePlayerFullControls({
         <button
           type="button"
           onClick={onPrev}
-          title="Предыдущий трек"
+          title={lang?.pulse_prev_track || 'Предыдущий трек'}
           className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
         >
           <Icon name="IC-moveback" className="h-9 w-9 fill-white" />
@@ -70,7 +70,7 @@ export function PulsePlayerFullControls({
         <button
           type="button"
           onClick={onNext}
-          title="Следующий трек"
+          title={lang?.pulse_next_track || 'Следующий трек'}
           className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
         >
           <Icon name="IC-moveforward" className="h-9 w-9 fill-white" />

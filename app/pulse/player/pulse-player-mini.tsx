@@ -204,7 +204,7 @@ export function PulsePlayerMini({
             min={0}
             max={duration || 0}
             step="0.01"
-            aria-label="Перемотка"
+            aria-label={lang?.pulse_seek || 'Перемотка'}
             value={desktopSeekTime}
             inputRef={desktopSeekInputRef}
             onPointerDown={onDesktopSeekStart}

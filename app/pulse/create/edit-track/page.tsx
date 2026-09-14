@@ -8,6 +8,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PULSE_GENRES, PULSE_MOODS, PULSE_TRACK_LANGUAGES } from '../../pulse-constants';
 import { ActionIcon } from '../../pulse-components';
+import { PulseArtistLinkPicker } from '../pulse-artist-link-picker';
 
 function EditTrackContent() {
   const { lang, isAuthenticated } = useAuth();
@@ -19,7 +20,6 @@ function EditTrackContent() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showArtistsDropdown, setShowArtistsDropdown] = useState(false);
 
   const [name, setName] = useState('');
   const [artist, setArtist] = useState('');
@@ -50,6 +50,7 @@ function EditTrackContent() {
     status?: number | string;
     artists_ids?: string;
     src?: string;
+    uploaded_by?: number | string;
   }
 
   const [allArtists, setAllArtists] = useState<PulseArtist[]>([]);
@@ -88,7 +89,15 @@ function EditTrackContent() {
               setTrackLang(track.lang || 'ru');
               setExplicit(track.explicit ? String(track.explicit) : '0');
               setStatus(track.status !== undefined ? String(track.status) : '1');
-              setArtistsIds((track.artists_ids || '').split(',').filter(Boolean));
+              // Заглушка загрузки раньше писала в artists_ids ID пользователя — это не профиль артиста,
+              // иначе у трека появляется кнопка на несуществующую страницу. Свой профиль с тем же ID не трогаем.
+              const ownArtistIds = new Set((Array.isArray(artistsRes) ? artistsRes : []).map((a) => String(a.id)));
+              const uploaderId = String(track.uploaded_by ?? '');
+              setArtistsIds(
+                (track.artists_ids || '')
+                  .split(',')
+                  .filter((aid) => aid && (aid !== uploaderId || ownArtistIds.has(aid))),
+              );
               setSrc(track.src || '');
             }
           }
@@ -137,7 +146,7 @@ function EditTrackContent() {
 
     AncialAPI.pulseManagement('track', 'update', data)
       .then(() => {
-        showNote({ content: 'Изменения сохранены!', type: 'success', time: 3 });
+        showNote({ content: lang?.changessaved || 'Изменения сохранены!', type: 'success', time: 3 });
         router.push('/pulse/create/tracks');
       })
       .catch((err) => {
@@ -151,9 +160,7 @@ function EditTrackContent() {
   };
 
   if (!isAuthenticated) return null;
-  if (!id) return <div className="p-6 text-center text-zinc-500">Трек не найден</div>;
-
-  const selectedArtists = allArtists.filter((a) => artistsIds.includes(String(a.id)));
+  if (!id) return <div className="p-6 text-center text-zinc-500">{lang?.creators_track_not_found || 'Трек не найден'}</div>;
 
   return (
     <div className="w-full flex flex-col gap-3">
@@ -233,63 +240,13 @@ function EditTrackContent() {
                 </div>
               </div>
 
-              {/* Linking to Artists Profiles */}
-              {allArtists.length > 0 && (
-                <div className="col-span-1 sm:col-span-2 flex w-full flex-col relative" style={{ zIndex: 40 }}>
-                  <span className="z-20 pl-4 text-zinc-400">Привязка к профилям артистов</span>
-                  <div className="-mt-3 z-10 flex min-h-[48px] w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
-                    <div
-                      onClick={() => setShowArtistsDropdown(!showArtistsDropdown)}
-                      className="w-full flex items-center justify-between pl-2 pr-2 cursor-pointer"
-                    >
-                      <div className="flex flex-wrap gap-1.5 py-1.5 items-center">
-                        {selectedArtists.length === 0 ? (
-                          <span className="text-zinc-500 text-sm">{lang?.creators_select_artist || 'Выберите артистов...'}</span>
-                        ) : (
-                          selectedArtists.map((a) => (
-                            <span
-                              key={a.id}
-                              className="bg-zinc-700 border border-zinc-600/30 text-white text-xs px-3 py-1 rounded-full font-medium"
-                            >
-                              {a.name}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                      <ActionIcon
-                        className={`w-5 h-5 fill-zinc-400 shrink-0 transition-transform duration-200 ${showArtistsDropdown ? 'rotate-180' : ''
-                          }`}
-                        name="IC-chevron-down"
-                      />
-                    </div>
-                  </div>
-
-                  {showArtistsDropdown && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowArtistsDropdown(false)} />
-                      <div className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-600/30 rounded-3xl shadow-2xl max-h-56 overflow-y-auto z-50 p-2 flex flex-col gap-1">
-                        {allArtists.map((a) => (
-                          <label
-                            key={a.id}
-                            className="flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 rounded-full cursor-pointer text-zinc-200 text-sm duration-200"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={artistsIds.includes(String(a.id))}
-                              onChange={(e) => {
-                                if (e.target.checked) setArtistsIds([...artistsIds, String(a.id)]);
-                                else setArtistsIds(artistsIds.filter((aid) => aid !== String(a.id)));
-                              }}
-                              className="w-4 h-4 rounded bg-zinc-900 border-zinc-500 text-white focus:ring-0 cursor-pointer"
-                            />
-                            <span>{a.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+              <PulseArtistLinkPicker
+                artists={allArtists}
+                label={lang?.creators_link_artists || 'Привязка к профилям артистов'}
+                placeholder={lang?.creators_select_artist || 'Выберите артистов...'}
+                selectedIds={artistsIds}
+                onChange={setArtistsIds}
+              />
 
               {/* Genre (Canonical select) */}
               <div className="flex w-full flex-col">
@@ -368,7 +325,7 @@ function EditTrackContent() {
                 </div>
 
                 <div className="flex w-full flex-col">
-                  <span className="z-20 pl-4 text-zinc-400">Статус</span>
+                  <span className="z-20 pl-4 text-zinc-400">{lang?.creators_status_label || 'Статус'}</span>
                   <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                     <select
                       value={status}
@@ -392,10 +349,10 @@ function EditTrackContent() {
             {saving ? (
               <>
                 <ActionIcon className="h-5 w-5 animate-spin fill-black" name="IC-loader" />
-                <span>Сохранение...</span>
+                <span>{lang?.creators_saving || 'Сохранение...'}</span>
               </>
             ) : (
-              <span>Сохранить изменения</span>
+              <span>{lang?.creators_save_changes || 'Сохранить изменения'}</span>
             )}
           </button>
         </form>

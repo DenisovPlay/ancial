@@ -326,11 +326,11 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                   <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
                     <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-speaker" />
                     <span>{loadingTracks ? <ActionIcon className="h-6 w-6 animate-spin fill-purple-500" name="IC-loader" /> : listensTotal}</span>
-                    <span className="text-xs text-zinc-400 duration-300 hover:text-lg">за всё время</span>
+                    <span className="text-xs text-zinc-400 duration-300 hover:text-lg">{lang?.pulse_all_time || 'за всё время'}</span>
                   </span>
                   {verifyStatus === '0' ? (
                     <span className="w-fit rounded-box bg-content-100 px-2 py-1 text-xs text-zinc-300 opacity-95 shadow duration-300">
-                      <ActionIcon className="inline h-5 w-5 fill-amber-500" name="IC-verify" /> - данные настоящие, но оригинальный владелец не имеет доступа к публикуемым трекам.
+                      <ActionIcon className="inline h-5 w-5 fill-amber-500" name="IC-verify" /> - {lang?.pulse_unverified_note || 'данные настоящие, но оригинальный владелец не имеет доступа к публикуемым трекам.'}
                     </span>
                   ) : null}
                   {verifyStatus === '1' && owner ? (
