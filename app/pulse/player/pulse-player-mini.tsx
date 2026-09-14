@@ -312,9 +312,13 @@ export function PulsePlayerMini({
         // fixed, а не absolute внутри fixed-оверлея: на Android при скролле панель браузера меняет
         // высоту вьюпорта, и вложенный absolute догонял её рывком, а fixed у низа ведёт композитор.
         // starting: — выезд снизу и при монтировании уже видимым (выход из чата, где плеер был в шапке).
-        'fixed inset-x-0 bottom-16 z-[60] flex justify-center px-1.5 pb-2.5 transition-transform duration-500 motion-reduce:transition-none starting:translate-y-[200%] lg:bottom-1.5 lg:justify-end lg:pb-1.5',
+        // Скрытое положение — своя высота + bottom-16 + запас на тень: пилюля уходит за нижний край целиком
+        // (200% от высоты обёртки не перекрывали отступ над навигацией). Уход быстрее появления.
+        'fixed inset-x-0 bottom-16 z-[60] flex justify-center px-1.5 pb-2.5 transition-transform motion-reduce:transition-none starting:translate-y-[calc(100%_+_5rem)] lg:bottom-1.5 lg:justify-end lg:pb-1.5',
         MINI_EASE,
-        isVisible ? 'pointer-events-auto translate-y-0' : 'pointer-events-none translate-y-[200%]',
+        isVisible
+          ? 'pointer-events-auto translate-y-0 duration-500'
+          : 'pointer-events-none translate-y-[calc(100%_+_5rem)] duration-300',
       )}
     >
       {shell}

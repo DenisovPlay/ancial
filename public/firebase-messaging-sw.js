@@ -1,7 +1,7 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-// v23: HTML-навигация переведена с Network-First на Stale-While-Revalidate —
+// v24: HTML-навигация переведена с Network-First на Stale-While-Revalidate —
 // офлайн (и просто быстрее) показываем кэш мгновенно, сеть обновляет кэш в фоне
-const SW_VERSION = '23';
+const SW_VERSION = '24';
 
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
