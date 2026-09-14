@@ -209,7 +209,7 @@ export function PulseSectionTitle({
   className?: string;
 }) {
   return (
-    <span className={cn('w-full max-w-screen-2xl px-3 text-2xl font-black cutetext lg:px-0 lg:text-3xl xl:text-4xl', className)}>
+    <span className={cn('relative z-20 w-full max-w-screen-2xl px-3 text-2xl font-black cutetext lg:px-0 lg:text-3xl xl:text-4xl', className)}>
       {children}
     </span>
   );
@@ -328,7 +328,7 @@ export function PulseArtistTile({
     <button
       type="button"
       onClick={onOpen}
-      className="group relative flex cursor-pointer flex-col items-center justify-center duration-300 active:scale-95"
+      className="group relative flex shrink-0 cursor-pointer flex-col items-center justify-center duration-300 active:scale-95"
     >
       <div className="relative z-[2] h-32 w-32 overflow-hidden rounded-full opacity-0 blur-sm duration-300 group-hover:opacity-100 lg:h-48 lg:w-48">
         <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
@@ -880,15 +880,15 @@ export function PulseScrollSection({
     <div className={cn('relative w-full max-w-screen-2xl', wrapperClassName)}>
       <div
         ref={leftGradRef}
-        className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
+        className="pointer-events-none absolute left-0 -top-6 -bottom-6 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
       />
       <div
         ref={rightGradRef}
-        className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-l from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
+        className="pointer-events-none absolute right-0 -top-6 -bottom-6 z-10 hidden w-16 bg-gradient-to-l from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
       />
       <div
         ref={ref}
-        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 lg:px-0', className)}
+        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-6 -my-6', className)}
       >
         {children}
       </div>

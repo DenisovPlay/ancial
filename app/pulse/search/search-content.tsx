@@ -302,7 +302,7 @@ export default function PulseSearchContent() {
   }, [router, searchValue]);
 
   const sectionHeader = useCallback((text: string, href: string) => (
-    <div className="flex w-full items-center justify-between gap-3 px-3 lg:px-0">
+    <div className="relative z-20 flex w-full items-center justify-between gap-3 px-3 lg:px-0">
       <span className="cutetext text-2xl font-black lg:text-3xl xl:text-4xl">
         {text}
       </span>

@@ -181,7 +181,7 @@ function PulseArtistCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group relative flex cursor-pointer flex-col items-center justify-center duration-300 active:scale-95"
+      className="group relative flex shrink-0 cursor-pointer flex-col items-center justify-center duration-300 active:scale-95"
     >
       <div className="relative z-[2] h-32 w-32 overflow-hidden rounded-full opacity-0 blur-sm duration-300 group-hover:opacity-100 lg:h-48 lg:w-48">
         <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
@@ -378,7 +378,7 @@ export default function PulseContent() {
     const finalId = resolvedTrackId || rawId;
 
     setShareUrl(getPulseExternalUrl(getTrackPath(finalId)));
-    
+
     if (track) {
       setShareAttachment({
         widgets: [{ type: 'music', track_id: finalId.toString() }],
@@ -391,7 +391,7 @@ export default function PulseContent() {
     } else {
       setShareAttachment(null);
     }
-    
+
     setIsShareModalOpen(true);
   }, [getResolvedId, lang]);
 
