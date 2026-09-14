@@ -19,6 +19,7 @@ import YandexRtb from '../components/yandex-rtb';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
+import { setMiniPlayerSlot } from '../pulse/player/mini-player-slot';
 import AccountName from '../components/account-name';
 import ImageViewerModal from '../components/image-viewer-modal';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
@@ -282,6 +283,18 @@ export default function MessagesContent() {
   const scrollToLatest = (behavior: ScrollBehavior = 'auto') => {
     messageScrollRef.current?.scrollTo({ top: 0, behavior });
   };
+
+  // Шапка чата парит над лентой, а её высота живая (мини-плеер Pulse появляется и уходит),
+  // поэтому верхний отступ ленты берём из реального размера шапки, а не из магических чисел.
+  const observeChatHeader = useCallback((header: HTMLDivElement | null) => {
+    if (!header) return;
+    const observer = new ResizeObserver(() => {
+      // Нижний p-2 шапки (8px) + 4px = отступ 12px до первого сообщения.
+      messageScrollRef.current?.style.setProperty('padding-top', `${header.offsetHeight + 4}px`);
+    });
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const composerPaneRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -2474,7 +2487,7 @@ export default function MessagesContent() {
                   onClick={() => setCreateGroupModalOpen(true)}
                   className={cn(
                     'fixed right-3 lg:absolute z-40 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 text-white shadow-2xl hover:bg-purple-500 active:scale-95 duration-300 border border-zinc-600/30 cursor-pointer transition-all ease-in-out',
-                    isPulsePlayerActive ? 'bottom-32 lg:bottom-22' : 'bottom-21 lg:bottom-3',
+                    isPulsePlayerActive ? 'bottom-32 lg:bottom-[77px]' : 'bottom-21 lg:bottom-3',
                     isPlusVisible
                       ? 'translate-y-0 opacity-100 scale-100'
                       : 'translate-y-28 opacity-0 scale-90 pointer-events-none',
@@ -2528,150 +2541,156 @@ export default function MessagesContent() {
                       <span className="text-lg font-bold text-zinc-200">Перетащите изображения для прикрепления</span>
                     </div>
                   )}
-                  <div className="absolute inset-x-0 top-0 z-[20] flex items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent lg:from-transparent lg:via-transparent p-2">
-                    <div className="flex w-23 shrink-0">
-                      <button
-                        type="button"
-                        onClick={handleDialogClose}
-                        className="flex h-10 w-10 cursor-pointer items-center justify-start text-lg font-medium duration-300 hover:scale-95 lg:hidden"
-                      >
-                        <Icon name="IC-chevron-left" className="h-8 w-8 fill-white" />
-                      </button>
-                    </div>
-
-                    <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isGroupDialog) {
-                            setGroupInfoModalOpen(true);
-                          }
-                        }}
-                        className={cn(
-                          'lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:rounded-3xl lg:px-3 lg:py-1.5 duration-300',
-                          isGroupDialog && 'cursor-pointer active:scale-95 hover:text-purple-300'
-                        )}
-                      >
-                        <span className="max-w-full truncate text-base font-bold">
-                          {dialogTitle || '...'}
-                        </span>
-                        <span className="max-w-full truncate text-xs text-zinc-300 lg:text-sm">{dialogStatusLabel}</span>
-                      </button>
-                    </div>
-
-                    <div className="flex w-23 shrink-0 items-center justify-end gap-3">
-                      {!isGroupDialog && (
+                  <div ref={observeChatHeader} className="absolute inset-x-0 top-0 z-[20] flex flex-col bg-gradient-to-b from-black via-black/90 to-transparent lg:from-transparent lg:via-transparent p-2">
+                    {/* z-10: плеер в шапке выезжает из-под этой строки, а меню аватарки ложится поверх плеера. */}
+                    <div className="relative z-10 flex items-center justify-center">
+                      <div className="flex w-23 shrink-0">
                         <button
-                          id="call-button"
                           type="button"
-                          onClick={handleStartCall}
-                          className={cn(
-                            'lg:shadow flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95',
-                            hasActiveCall ? 'bg-lime-500 hover:bg-lime-400 animate-pulse' : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:border lg:border-zinc-600/30 hover:bg-zinc-700'
-                          )}
+                          onClick={handleDialogClose}
+                          className="flex h-10 w-10 cursor-pointer items-center justify-start text-lg font-medium duration-300 hover:scale-95 lg:hidden"
                         >
-                          <Icon name="IC-call" className="h-7 w-7 fill-white" />
+                          <Icon name="IC-chevron-left" className="h-8 w-8 fill-white" />
                         </button>
-                      )}
+                      </div>
 
-                      {groupVoiceEnabled && communityChatAccess.canConnectVoice && (
+                      <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
                         <button
-                          id="group-voice-button"
                           type="button"
                           onClick={() => {
-                            const dialogHash = normalizeHash(selectedDialog?.hash || routeHash);
-                            if (!dialogHash) return;
-                            const returnPath = `/messages/${dialogHash}`;
-                            if (isPlaying) togglePlay();
-                            router.push(`/call/group/${encodeURIComponent(dialogHash)}?return=${encodeURIComponent(returnPath)}`);
+                            if (isGroupDialog) {
+                              setGroupInfoModalOpen(true);
+                            }
                           }}
-                          aria-label={lang?.voice_room_title || 'Голосовая комната'}
                           className={cn(
-                            'relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:border lg:border-zinc-600/30 lg:shadow',
-                            voiceRoomParticipantCount > 0
-                              ? 'bg-green-600 hover:bg-green-500'
-                              : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 hover:bg-zinc-700',
+                            'lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:rounded-3xl lg:px-3 lg:py-1.5 duration-300',
+                            isGroupDialog && 'cursor-pointer active:scale-95 hover:text-purple-300'
                           )}
                         >
-                          <Icon name="IC-call" className="h-7 w-7 fill-white" />
-                          {voiceRoomParticipantCount > 0 && (
-                            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-black bg-purple-600 px-1 text-[10px] font-bold text-white">
-                              {voiceRoomParticipantCount}
-                            </span>
-                          )}
+                          <span className="max-w-full truncate text-base font-bold">
+                            {dialogTitle || '...'}
+                          </span>
+                          <span className="max-w-full truncate text-xs text-zinc-300 lg:text-sm">{dialogStatusLabel}</span>
                         </button>
-                      )}
+                      </div>
 
-                      <Dropdown
-                        position="bottom"
-                        align="end"
-                        triggerSize="sm"
-                        width="auto"
-                        menuClassName="min-w-[13rem]"
-                        triggerAriaLabel={lang?.chat_settings || 'Настройки чата'}
-                        triggerClassName="h-10 w-10 overflow-hidden rounded-full p-0 shadow hover:bg-zinc-700/80"
-                        triggerNode={
-                          <img
-                            id="dialog-avatar"
-                            src={dialogAvatarUrl}
-                            alt={dialogTitle || 'Dialog avatar'}
-                            className="lg:shadow h-10 w-10 rounded-full object-cover"
-                          />
-                        }
-                      >
+                      <div className="flex w-23 shrink-0 items-center justify-end gap-3">
                         {!isGroupDialog && (
-                          <DropdownItem
-                            icon="IC-user"
-                            onClick={() => {
-                              const username = normalizeText(currentForeignUserRef.current?.username);
-                              if (!hasMeaningfulValue(username)) {
-                                return;
-                              }
+                          <button
+                            id="call-button"
+                            type="button"
+                            onClick={handleStartCall}
+                            className={cn(
+                              'lg:shadow flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95',
+                              hasActiveCall ? 'bg-lime-500 hover:bg-lime-400 animate-pulse' : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:border lg:border-zinc-600/30 hover:bg-zinc-700'
+                            )}
+                          >
+                            <Icon name="IC-call" className="h-7 w-7 fill-white" />
+                          </button>
+                        )}
 
-                              router.push(`/@${username}`);
-                            }}
-                          >
-                            {lang?.userpage || 'Страница'}
-                          </DropdownItem>
-                        )}
-                        {isGroupDialog && selectedDialog?.community_link ? (
-                          <DropdownItem
-                            icon="IC-groups"
+                        {groupVoiceEnabled && communityChatAccess.canConnectVoice && (
+                          <button
+                            id="group-voice-button"
+                            type="button"
                             onClick={() => {
-                              const communityLink = normalizeText(selectedDialog?.community_link);
-                              if (!communityLink) return;
-                              router.push(`/group/${encodeURIComponent(communityLink)}`);
+                              const dialogHash = normalizeHash(selectedDialog?.hash || routeHash);
+                              if (!dialogHash) return;
+                              const returnPath = `/messages/${dialogHash}`;
+                              if (isPlaying) togglePlay();
+                              router.push(`/call/group/${encodeURIComponent(dialogHash)}?return=${encodeURIComponent(returnPath)}`);
                             }}
+                            aria-label={lang?.voice_room_title || 'Голосовая комната'}
+                            className={cn(
+                              'relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:border lg:border-zinc-600/30 lg:shadow',
+                              voiceRoomParticipantCount > 0
+                                ? 'bg-green-600 hover:bg-green-500'
+                                : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 hover:bg-zinc-700',
+                            )}
                           >
-                            {lang?.open_community || 'Открыть сообщество'}
-                          </DropdownItem>
-                        ) : null}
-                        {!blockedDialog && (
-                          <DropdownItem
-                            icon="IC-settings"
-                            onClick={() => {
-                              if (isGroupDialog) {
-                                setGroupInfoModalOpen(true);
-                              } else {
-                                setSettingsModalOpen(true);
-                              }
-                            }}
-                          >
-                            {isGroupDialog ? (lang?.group_settings || 'Настройки беседы') : (lang?.chat_settings || 'Настройки чата')}
-                          </DropdownItem>
+                            <Icon name="IC-call" className="h-7 w-7 fill-white" />
+                            {voiceRoomParticipantCount > 0 && (
+                              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-black bg-purple-600 px-1 text-[10px] font-bold text-white">
+                                {voiceRoomParticipantCount}
+                              </span>
+                            )}
+                          </button>
                         )}
-                        {!isGroupDialog && (
-                          <DropdownItem
-                            icon="IC-trash"
-                            onClick={() => {
-                              setDeleteDialogModalOpen(true);
-                            }}
-                          >
-                            {lang?.dialogdelete || 'Удалить диалог'}
-                          </DropdownItem>
-                        )}
-                      </Dropdown>
+
+                        <Dropdown
+                          position="bottom"
+                          align="end"
+                          triggerSize="sm"
+                          width="auto"
+                          menuClassName="min-w-[13rem]"
+                          triggerAriaLabel={lang?.chat_settings || 'Настройки чата'}
+                          triggerClassName="h-10 w-10 overflow-hidden rounded-full p-0 shadow hover:bg-zinc-700/80"
+                          triggerNode={
+                            <img
+                              id="dialog-avatar"
+                              src={dialogAvatarUrl}
+                              alt={dialogTitle || 'Dialog avatar'}
+                              className="lg:shadow h-10 w-10 rounded-full object-cover"
+                            />
+                          }
+                        >
+                          {!isGroupDialog && (
+                            <DropdownItem
+                              icon="IC-user"
+                              onClick={() => {
+                                const username = normalizeText(currentForeignUserRef.current?.username);
+                                if (!hasMeaningfulValue(username)) {
+                                  return;
+                                }
+
+                                router.push(`/@${username}`);
+                              }}
+                            >
+                              {lang?.userpage || 'Страница'}
+                            </DropdownItem>
+                          )}
+                          {isGroupDialog && selectedDialog?.community_link ? (
+                            <DropdownItem
+                              icon="IC-groups"
+                              onClick={() => {
+                                const communityLink = normalizeText(selectedDialog?.community_link);
+                                if (!communityLink) return;
+                                router.push(`/group/${encodeURIComponent(communityLink)}`);
+                              }}
+                            >
+                              {lang?.open_community || 'Открыть сообщество'}
+                            </DropdownItem>
+                          ) : null}
+                          {!blockedDialog && (
+                            <DropdownItem
+                              icon="IC-settings"
+                              onClick={() => {
+                                if (isGroupDialog) {
+                                  setGroupInfoModalOpen(true);
+                                } else {
+                                  setSettingsModalOpen(true);
+                                }
+                              }}
+                            >
+                              {isGroupDialog ? (lang?.group_settings || 'Настройки беседы') : (lang?.chat_settings || 'Настройки чата')}
+                            </DropdownItem>
+                          )}
+                          {!isGroupDialog && (
+                            <DropdownItem
+                              icon="IC-trash"
+                              onClick={() => {
+                                setDeleteDialogModalOpen(true);
+                              }}
+                            >
+                              {lang?.dialogdelete || 'Удалить диалог'}
+                            </DropdownItem>
+                          )}
+                        </Dropdown>
+                      </div>
                     </div>
+
+                    {/* Сюда PulsePlayerContext порталит мини-плеер, пока открыт чат. */}
+                    <div ref={setMiniPlayerSlot} data-pulse-mini-slot />
                   </div>
 
                   <div

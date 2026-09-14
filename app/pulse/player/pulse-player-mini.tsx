@@ -15,6 +15,8 @@ type PulsePlayerMiniProps = {
   currentTime: number;
   desktopCurrentTimeLabelRef: RefObject<HTMLDivElement | null>;
   desktopSeekInputRef: RefObject<HTMLInputElement | null>;
+  /** В слоте страницы (шапка чата): обычный поток вместо плавающей пилюли снизу, на ПК — компактнее. */
+  docked: boolean;
   duration: number;
   isPlaying: boolean;
   isSwiping: boolean;
@@ -48,7 +50,8 @@ type PulsePlayerMiniProps = {
   volumeSliderRef: RefObject<HTMLInputElement | null>;
 };
 
-const MINI_ICON_BUTTON = 'hidden h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-white/10 active:scale-95 lg:flex';
+const MINI_ICON_BUTTON = 'hidden shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-white/10 active:scale-95 lg:flex';
+const MINI_EASE = 'ease-[cubic-bezier(0.32,0.72,0,1)]';
 
 /** Prop-driven mini player presentation. Playback and gesture ownership stay in the provider. */
 export function PulsePlayerMini({
@@ -57,6 +60,7 @@ export function PulsePlayerMini({
   currentTime,
   desktopCurrentTimeLabelRef,
   desktopSeekInputRef,
+  docked,
   duration,
   isPlaying,
   isSwiping,
@@ -123,154 +127,197 @@ export function PulsePlayerMini({
     }
     : undefined;
 
+  const shell = (
+    <div
+      id="NAVPmini"
+      className={cn(
+        'pulse-player-mini-shell relative flex w-full cursor-pointer touch-none items-center lg:cursor-auto gap-1 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-900/20 lg:gap-3 lg:p-1 shadow backdrop-blur-md backdrop-saturate-200',
+        // Прозрачность — на самой стеклянной пилюле: у предка она отключила бы backdrop-blur.
+        docked ? cn(
+          'transition-opacity duration-500 motion-reduce:transition-none starting:opacity-0',
+          MINI_EASE,
+          isVisible ? 'opacity-100' : 'opacity-0',
+        ) : 'duration-300',
+      )}
+      onTouchStart={(event) => {
+        touchOriginRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+        touchMovedRef.current = false;
+        onTouchStart(event);
+      }}
+      onTouchMove={(event) => {
+        const origin = touchOriginRef.current;
+        if (origin && Math.hypot(event.touches[0].clientX - origin.x, event.touches[0].clientY - origin.y) > 10) {
+          touchMovedRef.current = true;
+        }
+        onTouchMove(event);
+      }}
+      onTouchEnd={onTouchEnd}
+      onClick={(event) => {
+        if (window.innerWidth >= 1024 || touchMovedRef.current) return;
+        if ((event.target as HTMLElement).closest('[data-mini-controls]')) return;
+        onOpenFull();
+      }}
+    >
+      {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
+      <div className="relative flex min-w-0 flex-1 items-center lg:flex-none lg:shrink-0">
+        {/* Предыдущий трек (подкладывается только во время свайпа) */}
+        {hasSwipe && prevArtwork ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 flex items-center gap-1 lg:hidden"
+            style={prevPeekStyle}
+          >
+            <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow">
+              <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={prevArtwork} />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="w-full truncate text-sm text-white">{prevTitle}</span>
+              <span className="w-full truncate text-xs text-zinc-300">{prevArtist}</span>
+            </span>
+          </div>
+        ) : null}
+
+        {/* Текущий трек */}
+        <div
+          className="relative z-10 flex min-w-0 flex-1 items-center gap-1 lg:flex-none lg:shrink-0 lg:gap-3"
+          style={slideStyle}
+        >
+          <button
+            type="button"
+            onClick={(event) => {
+              // На телефоне тап обрабатывает вся пилюля (с защитой от свайпа), на ПК — только обложка.
+              if (window.innerWidth < 1024) return;
+              event.stopPropagation();
+              onOpenFull();
+            }}
+            className={cn(
+              'group relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95',
+              !docked && 'lg:h-14 lg:w-14',
+            )}
+          >
+            <PulseCoverImage alt={playerTitle} className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={playerArtwork} />
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 opacity-0 duration-300 group-hover:opacity-100">
+              <Icon name="IC-full-mode" className={cn('h-6 w-6 fill-white', !docked && 'lg:h-7 lg:w-7')} />
+            </div>
+          </button>
+
+          <div className="flex min-w-0 flex-1 flex-col lg:w-56 lg:flex-none">
+            <span className={cn('w-full truncate text-sm font-medium text-white', !docked && 'lg:text-base')}>{playerTitle}</span>
+            <span className={cn('w-full truncate text-xs text-zinc-400', !docked && 'lg:text-sm')}>{playerArtist}</span>
+          </div>
+        </div>
+
+        {/* Следующий трек (подкладывается только во время свайпа) */}
+        {hasSwipe && nextArtwork ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 flex items-center gap-1 lg:hidden"
+            style={nextPeekStyle}
+          >
+            <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow">
+              <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={nextArtwork} />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="w-full truncate text-sm text-white">{nextTitle}</span>
+              <span className="w-full truncate text-xs text-zinc-300">{nextArtist}</span>
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Перемотка — только десктоп: таймкоды по бокам дорожки, моноширинно, чтобы не прыгали. */}
+      <div className="hidden min-w-0 flex-grow items-center justify-center gap-3 lg:flex">
+        <div ref={desktopCurrentTimeLabelRef} className="w-10 shrink-0 text-right text-xs tabular-nums text-zinc-400">
+          {formatPlaybackTime(desktopSeekTime)}
+        </div>
+        <PulseRangeTrack
+          className="max-w-md"
+          min={0}
+          max={duration || 0}
+          step="0.01"
+          aria-label={lang?.pulse_seek || 'Перемотка'}
+          value={desktopSeekTime}
+          inputRef={desktopSeekInputRef}
+          onPointerDown={onDesktopSeekStart}
+          onPointerUp={onDesktopSeekSubmit}
+          onPointerCancel={onDesktopSeekCancel}
+          onLostPointerCapture={onDesktopSeekCancel}
+          onChange={(event) => onDesktopSeekChange(Number(event.target.value))}
+        />
+        <div className="w-10 shrink-0 text-xs tabular-nums text-zinc-400">{formatPlaybackTime(duration)}</div>
+      </div>
+
+      <div data-mini-controls className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:gap-3 lg:pr-1">
+        <div className="hidden w-28 items-center gap-3 lg:flex" title={lang?.volume || 'Громкость'}>
+          <Icon name="IC-speaker" className="h-5 w-5 shrink-0 fill-zinc-400" />
+          <PulseRangeTrack
+            min={0}
+            max={1}
+            step="0.005"
+            aria-label={lang?.volume || 'Громкость'}
+            value={volume}
+            inputRef={volumeSliderRef}
+            progressPercent={volume * 100}
+            onChange={(event) => onChangeVolume(event.target.value)}
+          />
+        </div>
+
+        {/* prev/next — только десктоп; на телефонах треки листаются свайпом */}
+        <button type="button" onClick={onPrevTrack} className={cn(MINI_ICON_BUTTON, docked ? 'h-8 w-8' : 'h-10 w-10')}>
+          <Icon name="IC-moveback" className={cn('fill-white', docked ? 'h-6 w-6' : 'h-7 w-7')} />
+        </button>
+
+        <button
+          type="button"
+          onClick={onTogglePlay}
+          className={cn(
+            'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:bg-purple-500 lg:shadow lg:hover:bg-purple-400',
+            !docked && 'lg:h-12 lg:w-12',
+          )}
+        >
+          <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className={cn('h-7 w-7 fill-white', docked ? 'lg:h-6 lg:w-6' : 'lg:h-8 lg:w-8')} />
+        </button>
+
+        <button type="button" onClick={onNextTrack} className={cn(MINI_ICON_BUTTON, docked ? 'h-8 w-8' : 'h-10 w-10')}>
+          <Icon name="IC-moveforward" className={cn('fill-white', docked ? 'h-6 w-6' : 'h-7 w-7')} />
+        </button>
+      </div>
+    </div>
+  );
+
+  if (docked) {
+    // В шапке чата плеер мягко выплывает из-под строки шапки и уходит под неё же: при открытии чата,
+    // старте и закрытии трека, переходе в full. Без клипа — жёсткий край резал пилюлю; вместо него
+    // короткий сдвиг + лёгкий масштаб (здесь) и растворение (на пилюле).
+    // Место в шапке держится и в скрытом состоянии, чтобы лента не прыгала.
+    return (
+      <div className="pt-3">
+        <div
+          aria-hidden={!isVisible}
+          className={cn(
+            'relative flex origin-top transition-transform duration-500 motion-reduce:transition-none starting:-translate-y-6 starting:scale-95',
+            MINI_EASE,
+            isVisible ? 'pointer-events-auto translate-y-0 scale-100' : 'pointer-events-none -translate-y-6 scale-95',
+          )}
+        >
+          {shell}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
-        'absolute inset-x-0 bottom-16 z-[60] flex justify-center px-1.5 pb-2.5 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] lg:bottom-1.5 lg:justify-end lg:pb-1.5',
+        // fixed, а не absolute внутри fixed-оверлея: на Android при скролле панель браузера меняет
+        // высоту вьюпорта, и вложенный absolute догонял её рывком, а fixed у низа ведёт композитор.
+        // starting: — выезд снизу и при монтировании уже видимым (выход из чата, где плеер был в шапке).
+        'fixed inset-x-0 bottom-16 z-[60] flex justify-center px-1.5 pb-2.5 transition-transform duration-500 motion-reduce:transition-none starting:translate-y-[200%] lg:bottom-1.5 lg:justify-end lg:pb-1.5',
+        MINI_EASE,
         isVisible ? 'pointer-events-auto translate-y-0' : 'pointer-events-none translate-y-[200%]',
       )}
     >
-      <div
-        id="NAVPmini"
-        className="pulse-player-mini-shell relative flex w-full cursor-pointer touch-none items-center lg:cursor-auto gap-1 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-900/20 lg:gap-3 lg:p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300"
-        onTouchStart={(event) => {
-          touchOriginRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
-          touchMovedRef.current = false;
-          onTouchStart(event);
-        }}
-        onTouchMove={(event) => {
-          const origin = touchOriginRef.current;
-          if (origin && Math.hypot(event.touches[0].clientX - origin.x, event.touches[0].clientY - origin.y) > 10) {
-            touchMovedRef.current = true;
-          }
-          onTouchMove(event);
-        }}
-        onTouchEnd={onTouchEnd}
-        onClick={(event) => {
-          if (window.innerWidth >= 1024 || touchMovedRef.current) return;
-          if ((event.target as HTMLElement).closest('[data-mini-controls]')) return;
-          onOpenFull();
-        }}
-      >
-        {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
-        <div className="relative flex min-w-0 flex-1 items-center lg:flex-none lg:shrink-0">
-          {/* Предыдущий трек (подкладывается только во время свайпа) */}
-          {hasSwipe && prevArtwork ? (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 flex items-center gap-1 lg:hidden"
-              style={prevPeekStyle}
-            >
-              <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow lg:h-14 lg:w-14">
-                <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={prevArtwork} />
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="w-full truncate text-sm text-white lg:text-base">{prevTitle}</span>
-                <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{prevArtist}</span>
-              </span>
-            </div>
-          ) : null}
-
-          {/* Текущий трек */}
-          <div
-            className="relative z-10 flex min-w-0 flex-1 items-center gap-1 lg:flex-none lg:shrink-0 lg:gap-3"
-            style={slideStyle}
-          >
-            <button
-              type="button"
-              onClick={(event) => {
-                // На телефоне тап обрабатывает вся пилюля (с защитой от свайпа), на ПК — только обложка.
-                if (window.innerWidth < 1024) return;
-                event.stopPropagation();
-                onOpenFull();
-              }}
-              className="group relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-14 lg:w-14"
-            >
-              <PulseCoverImage alt={playerTitle} className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={playerArtwork} />
-              <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 opacity-0 duration-300 group-hover:opacity-100">
-                <Icon name="IC-full-mode" className="h-7 w-7 fill-white" />
-              </div>
-            </button>
-
-            <div className="flex min-w-0 flex-1 flex-col lg:w-56 lg:flex-none">
-              <span className="w-full truncate text-sm font-medium text-white lg:text-base">{playerTitle}</span>
-              <span className="w-full truncate text-xs text-zinc-400 lg:text-sm">{playerArtist}</span>
-            </div>
-          </div>
-
-          {/* Следующий трек (подкладывается только во время свайпа) */}
-          {hasSwipe && nextArtwork ? (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 flex items-center gap-1 lg:hidden"
-              style={nextPeekStyle}
-            >
-              <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow lg:h-14 lg:w-14">
-                <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={nextArtwork} />
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="w-full truncate text-sm text-white lg:text-base">{nextTitle}</span>
-                <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{nextArtist}</span>
-              </span>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Перемотка — только десктоп: таймкоды по бокам дорожки, моноширинно, чтобы не прыгали. */}
-        <div className="hidden min-w-0 flex-grow items-center justify-center gap-3 lg:flex">
-          <div ref={desktopCurrentTimeLabelRef} className="w-10 shrink-0 text-right text-xs tabular-nums text-zinc-400">
-            {formatPlaybackTime(desktopSeekTime)}
-          </div>
-          <PulseRangeTrack
-            className="max-w-md"
-            min={0}
-            max={duration || 0}
-            step="0.01"
-            aria-label={lang?.pulse_seek || 'Перемотка'}
-            value={desktopSeekTime}
-            inputRef={desktopSeekInputRef}
-            onPointerDown={onDesktopSeekStart}
-            onPointerUp={onDesktopSeekSubmit}
-            onPointerCancel={onDesktopSeekCancel}
-            onLostPointerCapture={onDesktopSeekCancel}
-            onChange={(event) => onDesktopSeekChange(Number(event.target.value))}
-          />
-          <div className="w-10 shrink-0 text-xs tabular-nums text-zinc-400">{formatPlaybackTime(duration)}</div>
-        </div>
-
-        <div data-mini-controls className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:gap-3 lg:pr-1">
-          <div className="hidden w-28 items-center gap-3 lg:flex" title={lang?.volume || 'Громкость'}>
-            <Icon name="IC-speaker" className="h-5 w-5 shrink-0 fill-zinc-400" />
-            <PulseRangeTrack
-              min={0}
-              max={1}
-              step="0.005"
-              aria-label={lang?.volume || 'Громкость'}
-              value={volume}
-              inputRef={volumeSliderRef}
-              progressPercent={volume * 100}
-              onChange={(event) => onChangeVolume(event.target.value)}
-            />
-          </div>
-
-          {/* prev/next — только десктоп; на телефонах треки листаются свайпом */}
-          <button type="button" onClick={onPrevTrack} className={MINI_ICON_BUTTON}>
-            <Icon name="IC-moveback" className="h-7 w-7 fill-white" />
-          </button>
-
-          <button
-            type="button"
-            onClick={onTogglePlay}
-            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:h-12 lg:w-12 lg:bg-purple-500 lg:shadow lg:hover:bg-purple-400"
-          >
-            <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className="h-7 w-7 fill-white lg:h-8 lg:w-8" />
-          </button>
-
-          <button type="button" onClick={onNextTrack} className={MINI_ICON_BUTTON}>
-            <Icon name="IC-moveforward" className="h-7 w-7 fill-white" />
-          </button>
-        </div>
-      </div>
+      {shell}
     </div>
   );
 }

@@ -39,7 +39,9 @@ export default function ChatImage({ alt, className, draggable, fit = 'cover', he
   const wrapperStyle: CSSProperties | undefined = maxHeight !== undefined && width && height && width > 0 && height > 0
     ? {
       aspectRatio: `${width} / ${height}`,
-      width: `min(100%, ${Math.round((maxHeight * width) / height)}px, ${width}px)`,
+      // Только px: процент в ширине ломает shrink-to-fit родителя (он меряет картинку по оригиналу),
+      // а по родителю ограничивает max-w-full.
+      width: `${Math.min(Math.round((maxHeight * width) / height), width)}px`,
     }
     : undefined;
   // Одиночная картинка без известных размеров: после загрузки берёт натуральный размер.

@@ -9,7 +9,7 @@ import React, {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { flushSync } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
@@ -30,6 +30,10 @@ import { PulsePlayerFull } from '../pulse/player/pulse-player-full';
 import type { RepeatMode } from '../pulse/player/pulse-player-full-controls';
 import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
+import { useMiniPlayerSlot } from '../pulse/player/mini-player-slot';
+
+// Длительность переезда мини-плеера снизу в шапку чата (совпадает с duration-500 в pulse-player-mini).
+const MINI_PLAYER_HANDOFF_MS = 500;
 import { shouldRunPulseFullPlayerWork } from '../pulse/player/pulse-player-visibility';
 import {
   getCachedAudioObjectUrl,
@@ -221,6 +225,9 @@ export function PulsePlayerProvider({
   const seekingSliderRef = useRef<'desktop' | 'mobile' | null>(null);
 
   const volumeSliderRef = useRef<HTMLInputElement | null>(null);
+  const ghostMiniSeekInputRef = useRef<HTMLInputElement | null>(null);
+  const ghostMiniTimeLabelRef = useRef<HTMLDivElement | null>(null);
+  const ghostMiniVolumeSliderRef = useRef<HTMLInputElement | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
   const mediaSessionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playerCloseTimerRef = useRef<number | null>(null);
@@ -320,9 +327,23 @@ export function PulsePlayerProvider({
   const playerArtwork = getPlayerTrackArtwork(currentTrack);
   const prevArtwork = getPlayerTrackArtwork(prevTrackObj);
   const nextArtwork = getPlayerTrackArtwork(nextTrackObj);
-  const hiddenByMessagesDialog = Boolean(pathname?.startsWith('/messages/'));
   const isCinema = Boolean(pathname?.startsWith('/cinema'));
-  const effectivePlayerVisible = isMounted && !hiddenByMessagesDialog && !isCinema;
+  // Открытый чат забирает мини-плеер к себе в шапку. Нижний при этом ещё полсекунды остаётся
+  // смонтированным и уезжает вниз, пока плеер в шапке выезжает сверху.
+  const miniPlayerSlot = useMiniPlayerSlot();
+  const [prevMiniPlayerSlot, setPrevMiniPlayerSlot] = useState<HTMLElement | null>(null);
+  const [bottomMiniLeaving, setBottomMiniLeaving] = useState(false);
+  if (miniPlayerSlot !== prevMiniPlayerSlot) {
+    setPrevMiniPlayerSlot(miniPlayerSlot);
+    setBottomMiniLeaving(Boolean(miniPlayerSlot && !prevMiniPlayerSlot));
+  }
+  const showBottomMiniPlayer = !miniPlayerSlot || bottomMiniLeaving;
+  useEffect(() => {
+    if (!bottomMiniLeaving) return;
+    const timer = window.setTimeout(() => setBottomMiniLeaving(false), MINI_PLAYER_HANDOFF_MS);
+    return () => window.clearTimeout(timer);
+  }, [bottomMiniLeaving]);
+  const effectivePlayerVisible = isMounted && !isCinema;
 
   useEffect(() => {
     if (isCinema) {
@@ -1832,6 +1853,130 @@ export function PulsePlayerProvider({
     };
   }, [effectivePlayerVisible, isFullMode]);
 
+  // Живой мини-плеер — в шапке чата, если она открыта, иначе нижний. Уезжающая копия получает пустые ref'ы,
+  // чтобы rAF-цикл перемотки и громкость не писали в уходящий DOM.
+  const renderMiniPlayer = (docked: boolean) => {
+    const live = docked || !miniPlayerSlot;
+    return (
+      <PulsePlayerMini
+        Icon={PlayerIcon}
+        activeSeekSlider={activeSeekSlider}
+        currentTime={currentTime}
+        desktopCurrentTimeLabelRef={live ? desktopCurrentTimeLabelRef : ghostMiniTimeLabelRef}
+        desktopSeekInputRef={live ? desktopSeekInputRef : ghostMiniSeekInputRef}
+        docked={docked}
+        duration={duration}
+        isPlaying={isPlaying}
+        isSwiping={isSwiping}
+        isVisible={live && !isFullMode && isPlayerAnimatingIn}
+        lang={lang}
+        onChangeVolume={changeVolume}
+        onDesktopSeekCancel={() => finishSeek(false)}
+        onDesktopSeekChange={setSeekValue}
+        onDesktopSeekStart={() => {
+          seekingSliderRef.current = 'desktop';
+          setActiveSeekSlider('desktop');
+          setSeekValue(currentTime);
+        }}
+        onDesktopSeekSubmit={() => finishSeek(true)}
+        onNextTrack={() => { void nextTrack(); }}
+        onOpenFull={() => setMode('full')}
+        onPrevTrack={() => { void prevTrack(); }}
+        onTouchStart={(event) => {
+          if (window.innerWidth >= 1024) return;
+          touchStartMiniRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+          const shell = document.getElementById('NAVPmini');
+          const width = shell?.clientWidth ?? 0;
+          if (width > 0) setMiniShellWidth(width);
+          setIsSwiping(false);
+        }}
+        onTouchMove={(event) => {
+          // Живое перелистывание: сдвигаем содержимое пилюли за пальцем (только горизонталь).
+          // Вертикальный жест остаётся «свайпом вверх для full» и не двигает контент.
+          const start = touchStartMiniRef.current;
+          if (!start || window.innerWidth >= 1024) return;
+          const deltaX = event.touches[0].clientX - start.x;
+          const deltaY = event.touches[0].clientY - start.y;
+          if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+            if ((deltaX > 0 && !prevTrackObj) || (deltaX < 0 && !nextTrackObj && !isRadioModeRef.current)) {
+              setSwipeX(deltaX * 0.3);
+            } else {
+              setSwipeX(deltaX);
+            }
+          } else {
+            setSwipeX(0);
+          }
+        }}
+        onTouchEnd={(event) => {
+          const start = touchStartMiniRef.current;
+          if (!start) return;
+          touchStartMiniRef.current = null;
+          if (window.innerWidth >= 1024) return;
+
+          const deltaY = event.changedTouches[0].clientY - start.y;
+          const deltaX = event.changedTouches[0].clientX - start.x;
+
+          // Свайп вверх — открыть полный плеер. В шапке чата жест не работает: плеер уже наверху.
+          if (!miniPlayerSlot && deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
+            setSwipeX(0);
+            setMode('full');
+            return;
+          }
+
+          // Горизонтальный свайп — перелистывание трека.
+          // Докат на полную ширину пилюли: входящий трек заходит через скругление с одного края
+          // и садится в 0px, а уходящий уходит за противоположный край капсулы (clipped overflow-hidden).
+          const threshold = 60;
+          const slideDistance = Math.max(miniShellWidth || 0, 360);
+
+          if (deltaX < -threshold && (nextTrackObj || isRadioModeRef.current)) {
+            flushSync(() => setIsSwiping(true));
+            requestAnimationFrame(() => {
+              setSwipeX(-slideDistance);
+              setTimeout(() => {
+                void nextTrack();
+                setIsSwiping(false);
+                setSwipeX(0);
+              }, 250);
+            });
+          } else if (deltaX > threshold && prevTrackObj) {
+            flushSync(() => setIsSwiping(true));
+            requestAnimationFrame(() => {
+              setSwipeX(slideDistance);
+              setTimeout(() => {
+                void prevTrack();
+                setIsSwiping(false);
+                setSwipeX(0);
+              }, 250);
+            });
+          } else {
+            // Отмена свайпа: возврат на место с transition
+            flushSync(() => setIsSwiping(true));
+            requestAnimationFrame(() => {
+              setSwipeX(0);
+              setTimeout(() => setIsSwiping(false), 250);
+            });
+          }
+        }}
+        onTogglePlay={togglePlay}
+        playerArtist={playerArtist}
+        playerArtwork={playerArtwork}
+        playerTitle={playerTitle}
+        nextTitle={getTrackDisplayTitle(nextTrackObj, lang)}
+        nextArtist={getTrackArtist(nextTrackObj, lang)}
+        prevTitle={getTrackDisplayTitle(prevTrackObj, lang)}
+        prevArtist={getTrackArtist(prevTrackObj, lang)}
+        nextArtwork={nextArtwork}
+        prevArtwork={prevArtwork}
+        seekValue={seekValue}
+        shellWidth={miniShellWidth}
+        swipeX={swipeX}
+        volume={volume}
+        volumeSliderRef={live ? volumeSliderRef : ghostMiniVolumeSliderRef}
+      />
+    );
+  };
+
   return (
     <PulsePlayerContext.Provider value={contextValue}>
       {children}
@@ -2030,121 +2175,8 @@ export function PulsePlayerProvider({
             />
           ) : null}
 
-          <PulsePlayerMini
-            Icon={PlayerIcon}
-            activeSeekSlider={activeSeekSlider}
-            currentTime={currentTime}
-            desktopCurrentTimeLabelRef={desktopCurrentTimeLabelRef}
-            desktopSeekInputRef={desktopSeekInputRef}
-            duration={duration}
-            isPlaying={isPlaying}
-            isSwiping={isSwiping}
-            isVisible={!isFullMode && isPlayerAnimatingIn}
-            lang={lang}
-            onChangeVolume={changeVolume}
-            onDesktopSeekCancel={() => finishSeek(false)}
-            onDesktopSeekChange={setSeekValue}
-            onDesktopSeekStart={() => {
-              seekingSliderRef.current = 'desktop';
-              setActiveSeekSlider('desktop');
-              setSeekValue(currentTime);
-            }}
-            onDesktopSeekSubmit={() => finishSeek(true)}
-            onNextTrack={() => { void nextTrack(); }}
-            onOpenFull={() => setMode('full')}
-            onPrevTrack={() => { void prevTrack(); }}
-            onTouchStart={(event) => {
-              if (window.innerWidth >= 1024) return;
-              touchStartMiniRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
-              const shell = document.getElementById('NAVPmini');
-              const width = shell?.clientWidth ?? 0;
-              if (width > 0) setMiniShellWidth(width);
-              setIsSwiping(false);
-            }}
-            onTouchMove={(event) => {
-              // Живое перелистывание: сдвигаем содержимое пилюли за пальцем (только горизонталь).
-              // Вертикальный жест остаётся «свайпом вверх для full» и не двигает контент.
-              const start = touchStartMiniRef.current;
-              if (!start || window.innerWidth >= 1024) return;
-              const deltaX = event.touches[0].clientX - start.x;
-              const deltaY = event.touches[0].clientY - start.y;
-              if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
-                if ((deltaX > 0 && !prevTrackObj) || (deltaX < 0 && !nextTrackObj && !isRadioModeRef.current)) {
-                  setSwipeX(deltaX * 0.3);
-                } else {
-                  setSwipeX(deltaX);
-                }
-              } else {
-                setSwipeX(0);
-              }
-            }}
-            onTouchEnd={(event) => {
-              const start = touchStartMiniRef.current;
-              if (!start) return;
-              touchStartMiniRef.current = null;
-              if (window.innerWidth >= 1024) return;
-
-              const deltaY = event.changedTouches[0].clientY - start.y;
-              const deltaX = event.changedTouches[0].clientX - start.x;
-
-              // Свайп вверх — открыть полный плеер (как раньше).
-              if (deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
-                setSwipeX(0);
-                setMode('full');
-                return;
-              }
-
-              // Горизонтальный свайп — перелистывание трека.
-              // Докат на полную ширину пилюли: входящий трек заходит через скругление с одного края
-              // и садится в 0px, а уходящий уходит за противоположный край капсулы (clipped overflow-hidden).
-              const threshold = 60;
-              const slideDistance = Math.max(miniShellWidth || 0, 360);
-
-              if (deltaX < -threshold && (nextTrackObj || isRadioModeRef.current)) {
-                flushSync(() => setIsSwiping(true));
-                requestAnimationFrame(() => {
-                  setSwipeX(-slideDistance);
-                  setTimeout(() => {
-                    void nextTrack();
-                    setIsSwiping(false);
-                    setSwipeX(0);
-                  }, 250);
-                });
-              } else if (deltaX > threshold && prevTrackObj) {
-                flushSync(() => setIsSwiping(true));
-                requestAnimationFrame(() => {
-                  setSwipeX(slideDistance);
-                  setTimeout(() => {
-                    void prevTrack();
-                    setIsSwiping(false);
-                    setSwipeX(0);
-                  }, 250);
-                });
-              } else {
-                // Отмена свайпа: возврат на место с transition
-                flushSync(() => setIsSwiping(true));
-                requestAnimationFrame(() => {
-                  setSwipeX(0);
-                  setTimeout(() => setIsSwiping(false), 250);
-                });
-              }
-            }}
-            onTogglePlay={togglePlay}
-            playerArtist={playerArtist}
-            playerArtwork={playerArtwork}
-            playerTitle={playerTitle}
-            nextTitle={getTrackDisplayTitle(nextTrackObj, lang)}
-            nextArtist={getTrackArtist(nextTrackObj, lang)}
-            prevTitle={getTrackDisplayTitle(prevTrackObj, lang)}
-            prevArtist={getTrackArtist(prevTrackObj, lang)}
-            nextArtwork={nextArtwork}
-            prevArtwork={prevArtwork}
-            seekValue={seekValue}
-            shellWidth={miniShellWidth}
-            swipeX={swipeX}
-            volume={volume}
-            volumeSliderRef={volumeSliderRef}
-          />
+          {showBottomMiniPlayer ? renderMiniPlayer(false) : null}
+          {miniPlayerSlot ? createPortal(renderMiniPlayer(true), miniPlayerSlot) : null}
         </div>
       ) : null}
 

@@ -259,6 +259,13 @@ body.pulse-player-full #main-content {
   }
 }
 
+/* Мини-плеер перенесён в шапку чата: резерв под плавающую пилюлю снизу не нужен
+   (верхний отступ ленты под шапку считает ResizeObserver в messages-content). */
+body:has([data-pulse-mini-slot]:not(:empty)) #main-content,
+body:has([data-pulse-mini-slot]:not(:empty)) #dialog-list-container {
+  padding-bottom: 0 !important;
+}
+
 @media (min-width: 768px) {
   body:has(.no-pc-nav-padding) #main-content {
     padding-left: 0 !important;
