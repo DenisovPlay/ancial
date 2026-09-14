@@ -153,7 +153,7 @@ export function PulsePlayerMini({
         }}
       >
         {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
-        <div className="relative flex shrink-0 items-center">
+        <div className="relative flex min-w-0 flex-1 items-center lg:flex-none lg:shrink-0">
           {/* Предыдущий трек (подкладывается только во время свайпа) */}
           {hasSwipe && prevArtwork ? (
             <div
@@ -164,7 +164,7 @@ export function PulsePlayerMini({
               <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow lg:h-14 lg:w-14">
                 <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={prevArtwork} />
               </span>
-              <span className="flex w-40 shrink-0 flex-col lg:w-64">
+              <span className="flex min-w-0 flex-1 flex-col">
                 <span className="w-full truncate text-sm text-white lg:text-base">{prevTitle}</span>
                 <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{prevArtist}</span>
               </span>
@@ -173,7 +173,7 @@ export function PulsePlayerMini({
 
           {/* Текущий трек */}
           <div
-            className="relative z-10 flex shrink-0 items-center gap-1 lg:gap-3"
+            className="relative z-10 flex min-w-0 flex-1 items-center gap-1 lg:flex-none lg:shrink-0 lg:gap-3"
             style={slideStyle}
           >
             <button
@@ -192,7 +192,7 @@ export function PulsePlayerMini({
               </div>
             </button>
 
-            <div className="flex w-40 shrink-0 flex-col lg:w-56">
+            <div className="flex min-w-0 flex-1 flex-col lg:w-56 lg:flex-none">
               <span className="w-full truncate text-sm font-medium text-white lg:text-base">{playerTitle}</span>
               <span className="w-full truncate text-xs text-zinc-400 lg:text-sm">{playerArtist}</span>
             </div>
@@ -208,15 +208,13 @@ export function PulsePlayerMini({
               <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow lg:h-14 lg:w-14">
                 <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={nextArtwork} />
               </span>
-              <span className="flex w-40 shrink-0 flex-col lg:w-64">
+              <span className="flex min-w-0 flex-1 flex-col">
                 <span className="w-full truncate text-sm text-white lg:text-base">{nextTitle}</span>
                 <span className="w-full truncate text-xs text-zinc-300 lg:text-sm">{nextArtist}</span>
               </span>
             </div>
           ) : null}
         </div>
-
-        <div className="flex-grow lg:hidden" />
 
         {/* Перемотка — только десктоп: таймкоды по бокам дорожки, моноширинно, чтобы не прыгали. */}
         <div className="hidden min-w-0 flex-grow items-center justify-center gap-3 lg:flex">

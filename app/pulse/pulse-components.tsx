@@ -230,7 +230,21 @@ export function PulsePlaylistTileSkeleton({
   );
 }
 
-export function PulseArtistTileSkeleton() {
+export function PulseArtistTileSkeleton({
+  variant = 'compact',
+}: {
+  variant?: 'big' | 'compact';
+}) {
+  // big — ячейка сетки (размер от колонки), compact — фиксированный круг для горизонтального ряда.
+  if (variant === 'big') {
+    return (
+      <div className="flex w-full min-w-0 flex-col items-center gap-3">
+        <div className="aspect-square w-full animate-pulse rounded-full border border-zinc-600/30 bg-zinc-800 shadow" />
+        <div className="h-4 w-2/3 animate-pulse rounded-full bg-zinc-800" />
+      </div>
+    );
+  }
+
   return (
     <div className="h-32 w-32 shrink-0 animate-pulse overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-800 shadow lg:h-48 lg:w-48" />
   );
@@ -316,13 +330,32 @@ export function PulsePlaylistTile({
 export function PulseArtistTile({
   artist,
   onOpen,
+  variant = 'compact',
 }: {
   artist: PulseArtistCardData;
   onOpen: () => void;
+  variant?: 'big' | 'compact';
 }) {
   const { lang } = useAuth();
   const imageUrl = getImageUrl(artist.img, DEFAULT_TRACK_IMAGE);
   const name = decodeHtmlEntities(artist.name) || lang?.artist || 'Артист';
+
+  // big — ячейка сетки: круг тянется на ширину колонки, подпись под ним. Эффект compact с прячущейся
+  // под круг подписью завязан на фиксированный размер 192px и в сетке разъезжается.
+  if (variant === 'big') {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className="group flex w-full min-w-0 cursor-pointer flex-col items-center gap-3 duration-300 active:scale-95"
+      >
+        <div className="aspect-square w-full overflow-hidden rounded-full border border-zinc-600/30 shadow">
+          <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
+        </div>
+        <span className="w-full truncate text-center text-sm font-medium text-zinc-100 lg:text-base">{name}</span>
+      </button>
+    );
+  }
 
   return (
     <button

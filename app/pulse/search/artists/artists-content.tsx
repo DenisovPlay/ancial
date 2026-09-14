@@ -111,7 +111,7 @@ export default function PulseSearchArtistsContent() {
         {loading && !artists.length ? (
           <div className="grid grid-cols-3 gap-3 px-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 lg:px-0">
             {Array.from({ length: 12 }).map((_, index) => (
-              <PulseArtistTileSkeleton key={index} />
+              <PulseArtistTileSkeleton key={index} variant="big" />
             ))}
           </div>
         ) : null}
@@ -121,6 +121,7 @@ export default function PulseSearchArtistsContent() {
           <div className="grid grid-cols-3 gap-3 px-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 lg:px-0">
             {artists.map((artist) => (
               <PulseArtistTile
+                variant="big"
                 artist={artist}
                 key={`search-all-artist-${artist.id ?? artist.name}`}
                 onOpen={() =>
