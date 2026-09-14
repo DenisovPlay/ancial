@@ -186,7 +186,9 @@ export function PulsePageHeader({
   onBack: () => void;
 }) {
   return (
-    <div className={cn("sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3", className)}>
+    // z-[1300]: выше всего контента страницы — заголовков секций (z-20) и меню треков, у которых z-index
+    // до 1200 (getPulseTrackDropdownZIndex, чтобы меню перекрывало соседние строки), — но ниже модалок (z-[9999]).
+    <div className={cn("sticky top-0 z-[1300] flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3", className)}>
       <div className="w-full max-w-screen-2xl px-3 lg:px-0">
         <button
           type="button"
