@@ -623,6 +623,29 @@ body.pulse-player-full #main-content {
   }
 }
 
+/* Прелоадер картинок чата: мягкий перелив подложки, как в Telegram. */
+@keyframes chat-image-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+
+  to {
+    background-position: -50% 0;
+  }
+}
+
+.chat-image-skeleton {
+  background-image: linear-gradient(110deg, rgb(39 39 42 / 0.9) 30%, rgb(63 63 70 / 0.9) 50%, rgb(39 39 42 / 0.9) 70%);
+  background-size: 200% 100%;
+  animation: chat-image-shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-image-skeleton {
+    animation: none;
+  }
+}
+
 /* Текст не обрубается по краям панели, а растворяется — как у стримингов. */
 .pulse-lyrics-fade {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 86%, transparent 100%);

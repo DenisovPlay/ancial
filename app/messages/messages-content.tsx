@@ -4,7 +4,6 @@
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -86,9 +85,7 @@ import {
   readMessageCacheByHash,
   resolvePresenceLastOnline,
   seedSevenTvStickerCache,
-  type ScrollAction,
   type SevenTvSticker,
-  shouldStickToBottom,
   sortMessages,
   toNumber,
   writeDialogsCache,
@@ -280,12 +277,16 @@ export default function MessagesContent() {
   const dialogsLastFetchAtRef = useRef(0);
   const dialogSessionRef = useRef(0);
   const messageScrollRef = useRef<HTMLDivElement | null>(null);
+  // Лента развёрнута column-reverse: низ с последними сообщениями — это scrollTop 0, вверх — в минус.
+  // Браузер сам держит низ, когда догружаются картинки и стикеры, и позицию при подгрузке истории.
+  const scrollToLatest = (behavior: ScrollBehavior = 'auto') => {
+    messageScrollRef.current?.scrollTo({ top: 0, behavior });
+  };
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const composerPaneRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const wsRefreshTimerRef = useRef<number | null>(null);
-  const scrollActionRef = useRef<ScrollAction | null>(null);
   const currentDialogMetaRef = useRef<DialogMeta | null>(null);
   const currentDialogIdRef = useRef(0);
   const currentDialogHashRef = useRef('');
@@ -623,7 +624,6 @@ export default function MessagesContent() {
     setEditingValue('');
     setActiveDialogImageKey(null);
     setActiveDialogImageKey(null);
-    scrollActionRef.current = null;
     setHasActiveCall(false);
     if (activeCallTimeoutRef.current !== null) {
       window.clearTimeout(activeCallTimeoutRef.current);
@@ -770,7 +770,7 @@ export default function MessagesContent() {
     const lastCachedId = getLatestMessageId(cachedMessages);
 
     if (cachedMessages.length) {
-      if (!preserveScroll) scrollActionRef.current = { type: 'bottom' };
+      if (!preserveScroll) scrollToLatest();
       setMessages(cachedMessages);
       if (cached?.foreignUser) {
         const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, cached.foreignUser);
@@ -778,7 +778,7 @@ export default function MessagesContent() {
         setForeignUser(nextForeignUser);
       }
     } else {
-      if (!preserveScroll) scrollActionRef.current = { type: 'bottom' };
+      if (!preserveScroll) scrollToLatest();
       setMessages([]);
     }
 
@@ -807,9 +807,7 @@ export default function MessagesContent() {
         nextMessages: mergedMessages,
       });
 
-      if (!preserveScroll) {
-        scrollActionRef.current = { type: 'bottom' };
-      }
+      if (!preserveScroll) scrollToLatest();
 
       if (lastCachedId > getLatestMessageId(freshMessages)) {
         void loadMessagesNewer(session);
@@ -842,7 +840,8 @@ export default function MessagesContent() {
       ? mergeMessages(cachedMsgs, memoryMsgs)
       : (memoryMsgs.length ? memoryMsgs : cachedMsgs);
     const latestId = getLatestMessageId(currentMessages);
-    const stickToBottom = shouldStickToBottom(messageScrollRef.current);
+    // Внизу ленты (scrollTop около 0) новые сообщения останутся в поле зрения сами.
+    const stickToBottom = Math.abs(messageScrollRef.current?.scrollTop ?? 0) < 180;
 
     try {
       const result = await AncialAPI.getDialog<DialogMessagesResponse>(
@@ -875,9 +874,7 @@ export default function MessagesContent() {
         nextMessages: mergedMessages,
       });
 
-      if (stickToBottom) {
-        scrollActionRef.current = { type: 'bottom' };
-      } else {
+      if (!stickToBottom) {
         setUnreadCount((prev) => prev + newerMessages.length);
       }
     } catch (error) {
@@ -908,13 +905,6 @@ export default function MessagesContent() {
       return;
     }
 
-    const scrollContainer = messageScrollRef.current;
-    scrollActionRef.current = {
-      prevHeight: scrollContainer?.scrollHeight ?? 0,
-      prevTop: scrollContainer?.scrollTop ?? 0,
-      type: 'preserve',
-    };
-
     setLoadingOlder(true);
 
     try {
@@ -934,7 +924,6 @@ export default function MessagesContent() {
       const olderMessages = sortMessages(nextMessages);
       if (!olderMessages.length) {
         setHasMoreMessages(false);
-        scrollActionRef.current = null;
         return;
       }
 
@@ -951,7 +940,6 @@ export default function MessagesContent() {
       setHasMoreMessages(getEarliestMessageId(mergedMessages) > 1);
     } catch (error) {
       console.error('Failed to load older messages', error);
-      scrollActionRef.current = null;
     } finally {
       if (session === dialogSessionRef.current) {
         setLoadingOlder(false);
@@ -1008,13 +996,6 @@ export default function MessagesContent() {
     }
 
     if (currentMessages.length > messages.length) {
-      const scrollContainer = messageScrollRef.current;
-      scrollActionRef.current = {
-        prevHeight: scrollContainer?.scrollHeight ?? 0,
-        prevTop: scrollContainer?.scrollTop ?? 0,
-        type: 'preserve',
-      };
-
       if (newForeignUser) {
         const nextForeignUser = mergeDialogUser(currentForeignUserRef.current, newForeignUser);
         currentForeignUserRef.current = nextForeignUser;
@@ -1140,9 +1121,7 @@ export default function MessagesContent() {
       const cachedMsgs = cached?.messages ? sortMessages(cached.messages) : [];
       // Always set messages (even empty) to immediately clear the previous dialog's messages
       setMessages(cachedMsgs);
-      if (cachedMsgs.length) {
-        scrollActionRef.current = { type: 'bottom' };
-      }
+      scrollToLatest();
       setDialogLoading(false);
     } else {
       setDialogLoading(true);
@@ -1337,18 +1316,6 @@ export default function MessagesContent() {
     });
   };
 
-  // Когда появляется typing bubble — плавно скроллим вниз (если пользователь уже был внизу)
-  const prevTypingCountRef = useRef(0);
-  useEffect(() => {
-    const count = activeTypingUserIds.length;
-    if (count > 0 && prevTypingCountRef.current === 0 && isAtBottom) {
-      const el = messageScrollRef.current;
-      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-    }
-    prevTypingCountRef.current = count;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTypingUserIds.length]);
-
   const scheduleWsRefresh = () => {
     if (wsRefreshTimerRef.current !== null) return;
 
@@ -1510,23 +1477,6 @@ export default function MessagesContent() {
     // WS subscriptions are keyed by dialog/user ids; handlers intentionally keep current state via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blockedDialog, isAuthenticated, selectedDialog?.id, foreignUser?.id, routeHash]);
-
-  useLayoutEffect(() => {
-    const scrollContainer = messageScrollRef.current;
-    if (!scrollContainer) return;
-
-    const pendingAction = scrollActionRef.current;
-    if (!pendingAction) return;
-
-    if (pendingAction.type === 'bottom') {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight;
-    } else {
-      scrollContainer.scrollTop =
-        scrollContainer.scrollHeight - pendingAction.prevHeight + pendingAction.prevTop;
-    }
-
-    scrollActionRef.current = null;
-  }, [messages, routeHash]);
 
   useEffect(() => {
     if (!routeHash || !selectedDialogId) return;
@@ -2059,14 +2009,8 @@ export default function MessagesContent() {
     setAttachedImages([]);
     setComposerText('');
     setReplyingTo(null);
-    scrollActionRef.current = { type: 'bottom' };
+    scrollToLatest();
     setMessages((prev) => [...prev, optimisticMsg]);
-
-    window.requestAnimationFrame(() => {
-      if (messageScrollRef.current) {
-        messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
-      }
-    });
 
     // Fire-and-forget: don't block the input — send in background
     (async () => {
@@ -2149,14 +2093,8 @@ export default function MessagesContent() {
 
     setStickerDropdownOpen(false);
     setReplyingTo(null);
-    scrollActionRef.current = { type: 'bottom' };
+    scrollToLatest();
     setMessages((prev) => [...prev, optimisticMsg]);
-
-    window.requestAnimationFrame(() => {
-      if (messageScrollRef.current) {
-        messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
-      }
-    });
 
     (async () => {
       try {
@@ -2222,14 +2160,8 @@ export default function MessagesContent() {
 
     setStickerDropdownOpen(false);
     setReplyingTo(null);
-    scrollActionRef.current = { type: 'bottom' };
+    scrollToLatest();
     setMessages((prev) => [...prev, optimisticMsg]);
-
-    window.requestAnimationFrame(() => {
-      if (messageScrollRef.current) {
-        messageScrollRef.current.scrollTop = messageScrollRef.current.scrollHeight;
-      }
-    });
 
     setSendingMessage(true);
 
@@ -2284,11 +2216,15 @@ export default function MessagesContent() {
     const scrollContainer = messageScrollRef.current;
     if (!scrollContainer) return;
 
-    if (scrollContainer.scrollTop < 160 && hasMoreMessages && !loadingOlder) {
+    // column-reverse: scrollTop 0 — самый низ, при прокрутке вверх уходит в минус.
+    const distanceFromLatest = Math.abs(scrollContainer.scrollTop);
+    const distanceFromOldest = scrollContainer.scrollHeight - scrollContainer.clientHeight - distanceFromLatest;
+
+    if (distanceFromOldest < 160 && hasMoreMessages && !loadingOlder) {
       void loadMessagesOlder(dialogSessionRef.current);
     }
 
-    const atBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 150;
+    const atBottom = distanceFromLatest < 150;
     setIsAtBottom(atBottom);
     if (atBottom) {
       setUnreadCount(0);
@@ -2742,7 +2678,7 @@ export default function MessagesContent() {
                     ref={messageScrollRef}
                     id="msg-scroll"
                     onScroll={handleMessagesScroll}
-                    className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pt-[calc(100vh-116px)]"
+                    className="flex min-h-0 flex-1 flex-col-reverse overflow-y-auto px-3 pt-18"
                   >
                     {dialogLoading && !selectedDialog ? (
                       <div className="flex h-full min-h-[50vh] items-center justify-center">
@@ -2753,7 +2689,7 @@ export default function MessagesContent() {
                         <span>{dialogError}</span>
                       </div>
                     ) : (
-                      <div id="msgbox" className="flex min-h-full flex-col">
+                      <div id="msgbox" className="flex min-h-full shrink-0 flex-col">
                         <div
                           className="mt-auto transition-all duration-200"
                           style={{ paddingBottom: `${composerHeight + (replyingTo ? 54 : 12)}px` }}
@@ -2879,14 +2815,7 @@ export default function MessagesContent() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      if (messageScrollRef.current) {
-                        messageScrollRef.current.scrollTo({
-                          top: messageScrollRef.current.scrollHeight,
-                          behavior: 'smooth'
-                        });
-                      }
-                    }}
+                    onClick={() => scrollToLatest('smooth')}
                     style={{ bottom: `${composerHeight + (replyingTo ? 54 : 12)}px` }}
                     className={cn(
                       "cursor-pointer absolute right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-800/70 backdrop-blur-lg backdrop-saturate-200 backdrop-hue-200 text-white shadow-lg border border-zinc-600/30 hover:bg-zinc-700/70 active:scale-95 duration-300 transition-all",

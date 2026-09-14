@@ -1,7 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sanitizeUserHtml } from '../../lib/sanitize-html';
 import { SITE_DOMAIN } from '../../config';
@@ -43,6 +42,7 @@ import { isSingleSticker } from '../../lib/stickers-service';
 import PostPreview from './post-preview';
 import TrackPreview from './track-preview';
 import MessageAttachments from './message-attachments';
+import ChatImage from './chat-image';
 
 function SevenTvStickerMessage({
   stickerId,
@@ -95,20 +95,19 @@ function SevenTvStickerMessage({
   if (directStickerUrl || resolvedSticker?.url) {
     return (
       <div
-        className="overflow-hidden rounded-lg"
+        className="pointer-events-none select-none overflow-hidden rounded-3xl"
         // data-sticker — маркер для меню сообщения: правый клик / удержание по стикеру
         // открывает наше меню вместо браузерного (см. isMessageMenuIgnoredTarget).
         data-sticker={`7tv-${stickerName}`}
         style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
       >
-        <Image
+        <ChatImage
           src={directStickerUrl || resolvedSticker?.url || ''}
           alt={resolvedSticker?.name || stickerName}
-          unoptimized
-          width={220}
-          height={220}
           draggable={false}
-          className="h-auto max-h-48 w-auto max-w-full rounded-lg object-contain shadow lg:max-h-64 select-none pointer-events-none"
+          fit="contain"
+          maxHeight={192}
+          className="rounded-3xl"
         />
       </div>
     );
@@ -686,13 +685,12 @@ export default function MessageBubble({
                                     key={getDialogImageKey(messageId, imageIndex)}
                                     className="overflow-hidden rounded-3xl"
                                   >
-                                    <img
+                                    <ChatImage
                                       src={image.src}
                                       alt={image.alt || `Sticker ${imageIndex + 1}`}
-                                      className={cn(
-                                        'rounded-3xl object-contain shadow',
-                                        messageImages.length === 1 ? 'max-h-96 w-auto max-w-full' : 'max-h-48 w-full object-cover'
-                                      )}
+                                      fit={messageImages.length === 1 ? 'contain' : 'cover'}
+                                      maxHeight={messageImages.length === 1 ? 384 : undefined}
+                                      className={cn('rounded-3xl shadow', messageImages.length > 1 && 'h-48 w-full')}
                                     />
                                   </div>
                                 ) : (
@@ -704,15 +702,12 @@ export default function MessageBubble({
                                     }}
                                     className="cursor-pointer overflow-hidden rounded-3xl duration-300 active:scale-95"
                                   >
-                                    <img
+                                    <ChatImage
                                       src={image.src}
                                       alt={image.alt || `Message image ${imageIndex + 1}`}
-                                      className={cn(
-                                        'rounded-3xl shadow',
-                                        messageImages.length === 1
-                                          ? 'max-h-96 w-auto max-w-full object-contain'
-                                          : 'max-h-48 w-full object-cover'
-                                      )}
+                                      fit={messageImages.length === 1 ? 'contain' : 'cover'}
+                                      maxHeight={messageImages.length === 1 ? 384 : undefined}
+                                      className={cn('rounded-3xl shadow', messageImages.length > 1 && 'h-48 w-full')}
                                     />
                                   </button>
                                 )

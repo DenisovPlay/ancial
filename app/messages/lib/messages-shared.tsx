@@ -186,15 +186,6 @@ export type MessageTimelineItem =
     message: DialogMessage;
   };
 
-export type ScrollAction =
-  | {
-    type: 'bottom';
-  }
-  | {
-    prevHeight: number;
-    prevTop: number;
-    type: 'preserve';
-  };
 
 export type WsPayloadData = Record<string, unknown> & {
   last_online?: number | string | null;
@@ -1315,11 +1306,6 @@ export function getPayloadMessageText(payload: unknown) {
   if (directText) return directText;
 
   return normalizeText((payload as WsPayload).data?.new_text as string | null | undefined);
-}
-
-export function shouldStickToBottom(element: HTMLDivElement | null) {
-  if (!element) return true;
-  return element.scrollHeight - element.scrollTop - element.clientHeight < 180;
 }
 
 export function getDialogTitle(user: DialogUser | null) {

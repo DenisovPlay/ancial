@@ -1,4 +1,5 @@
 import React from 'react';
+import ChatImage from './chat-image';
 import { MessageAttachment, normalizeAssetUrl, getDialogImageKey, cn } from '../lib/messages-shared';
 
 interface MessageAttachmentsProps {
@@ -20,7 +21,7 @@ export default function MessageAttachments({
   const displayAttachments = attachments.slice(0, 9);
   const count = displayAttachments.length;
 
-  // Одиночное изображение: сохраняем реальное соотношение сторон (без принудительного квадрата)
+  // Одиночное изображение: реальное соотношение сторон из media_files, прелоадер сразу точной формы.
   if (count === 1) {
     const att = displayAttachments[0];
     const isBlob = att.url.startsWith('blob:');
@@ -34,11 +35,13 @@ export default function MessageAttachments({
           onClick={() => onOpenImage?.(imageKey)}
           className="group relative block overflow-hidden rounded-3xl cursor-pointer duration-300 active:scale-95 text-left max-w-full focus:outline-none"
         >
-          <img
+          <ChatImage
             src={imgSrc}
             alt="Вложение"
-            className="max-h-96 w-auto max-w-full rounded-3xl object-contain shadow"
-            loading="lazy"
+            width={att.width}
+            height={att.height}
+            maxHeight={384}
+            className="rounded-3xl shadow"
           />
         </button>
       </div>
@@ -71,11 +74,10 @@ export default function MessageAttachments({
               isFeatured ? 'col-span-2 aspect-[16/9]' : 'aspect-square'
             )}
           >
-            <img
+            <ChatImage
               src={imgSrc}
               alt={`Вложение ${index + 1}`}
-              className="w-full h-full object-cover rounded-3xl shadow"
-              loading="lazy"
+              className="h-full w-full rounded-3xl shadow"
             />
           </button>
         );
