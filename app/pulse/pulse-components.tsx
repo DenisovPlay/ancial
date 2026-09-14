@@ -588,7 +588,8 @@ export function PulseTrackRow({
             openBlockedTrackModal();
           }
         }}
-        className="relative h-16 w-16 shrink-0 cursor-pointer active:scale-95 duration-300"
+        // isolate: z-20 значков (корона, офлайн, 18+) действует только внутри обложки и не лезет поверх липкого хедера.
+        className="relative isolate h-16 w-16 shrink-0 cursor-pointer active:scale-95 duration-300"
       >
         {isOwnTrack ? (
           <ActionIcon
