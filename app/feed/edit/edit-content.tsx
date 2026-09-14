@@ -47,6 +47,8 @@ type GetPostResponse = {
 
 type EditPostContentProps = {
   postId: string | null;
+  /** Редактирование открыто со страницы этого поста — после сохранения просто возвращаемся на неё. */
+  returnToPost?: boolean;
 };
 
 function flag(value: boolean | number | string | null | undefined) {
@@ -75,7 +77,7 @@ function toDraftImages(images: PostImage[] | null | undefined): DraftImage[] {
   }));
 }
 
-export default function EditPostContent({ postId }: EditPostContentProps) {
+export default function EditPostContent({ postId, returnToPost = false }: EditPostContentProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading, lang } = useAuth();
   const { showNote } = useNotification();
@@ -446,6 +448,14 @@ export default function EditPostContent({ postId }: EditPostContentProps) {
         type: 'success',
         time: 5,
       });
+
+      // Открыли со страницы поста — шаг назад на неё, чтобы в истории не было двух одинаковых записей.
+      // Иначе заменяем редактор страницей поста: её «назад» ведёт туда, откуда открывали редактирование.
+      if (returnToPost && window.history.length > 1) {
+        router.back();
+      } else {
+        router.replace(`/feed/post/${encodeURIComponent(postId)}`);
+      }
     } catch (nextError) {
       console.error('Edit post failed', nextError);
       showNote({

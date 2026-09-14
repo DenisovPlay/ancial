@@ -50,7 +50,7 @@ type PulsePlayerMiniProps = {
   volumeSliderRef: RefObject<HTMLInputElement | null>;
 };
 
-const MINI_ICON_BUTTON = 'hidden shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-white/10 active:scale-95 lg:flex';
+const MINI_ICON_BUTTON = 'hidden shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95 lg:flex';
 const MINI_EASE = 'ease-[cubic-bezier(0.32,0.72,0,1)]';
 
 /** Prop-driven mini player presentation. Playback and gesture ownership stay in the provider. */
@@ -291,7 +291,7 @@ export function PulsePlayerMini({
     // короткий сдвиг + лёгкий масштаб (здесь) и растворение (на пилюле).
     // Место в шапке держится и в скрытом состоянии, чтобы лента не прыгала.
     return (
-      <div className="pt-3">
+      <div className="pt-3 lg:pt-1.5">
         <div
           aria-hidden={!isVisible}
           className={cn(

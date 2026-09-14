@@ -21,7 +21,7 @@ type PulsePlayerFullControlsProps = {
 };
 
 // Вторичные кнопки: включённое состояние выглядит ровно как hover — без акцентного цвета.
-const secondaryButton = 'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10';
+const secondaryButton = 'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10';
 
 export function PulsePlayerFullControls({
   Icon,
@@ -45,7 +45,7 @@ export function PulsePlayerFullControls({
           type="button"
           onClick={onOpenQueue}
           title={lang?.pulse_queue_title || 'Очередь воспроизведения'}
-          className={cn(secondaryButton, !hasQueue && 'cursor-not-allowed opacity-30 hover:bg-transparent')}
+          className={cn(secondaryButton, !hasQueue && 'cursor-not-allowed opacity-30 hover:border-transparent hover:bg-transparent')}
         >
           <Icon name="IC-list-ul" className="h-5 w-5 fill-white" />
         </button>
@@ -56,7 +56,7 @@ export function PulsePlayerFullControls({
           type="button"
           onClick={onPrev}
           title={lang?.pulse_prev_track || 'Предыдущий трек'}
-          className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+          className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10"
         >
           <Icon name="IC-moveback" className="h-9 w-9 fill-white" />
         </button>
@@ -71,7 +71,7 @@ export function PulsePlayerFullControls({
           type="button"
           onClick={onNext}
           title={lang?.pulse_next_track || 'Следующий трек'}
-          className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+          className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10"
         >
           <Icon name="IC-moveforward" className="h-9 w-9 fill-white" />
         </button>
@@ -88,7 +88,7 @@ export function PulsePlayerFullControls({
                 ? (lang?.pulse_repeat_all || 'Повтор всех треков')
                 : (lang?.pulse_repeat_off || 'Повтор выключен')
           }
-          className={cn(secondaryButton, isRepeatOn && 'bg-white/10')}
+          className={cn(secondaryButton, isRepeatOn && 'border-zinc-600/30 bg-white/10')}
         >
           <Icon
             name={repeatMode === 'one' ? 'IC-repeat-one' : 'IC-repeat'}

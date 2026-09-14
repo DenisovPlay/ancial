@@ -30,7 +30,7 @@ export function PulsePlayerFullHeader({
       <button
         type="button"
         onClick={onClose}
-        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10"
       >
         <Icon name="IC-times" className="h-6 w-6 fill-white" />
       </button>
@@ -58,7 +58,7 @@ export function PulsePlayerFullHeader({
       <button
         type="button"
         onClick={onMinimize}
-        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10"
       >
         <Icon name="IC-chevron-down" className="h-6 w-6 fill-white" />
       </button>

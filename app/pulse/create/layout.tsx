@@ -2,14 +2,16 @@
 
 import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { goBackOr } from '../../lib/go-back';
 import { useDragScroll } from '../../hooks/useDragScroll';
 import { ActionIcon, cn } from '../pulse-components';
 
 export default function PulseCreateLayout({ children }: { children: React.ReactNode }) {
   const { lang, isAuthenticated } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
 
   const navScrollRef = useDragScroll({ speed: 2 });
   const leftGradRef = useRef<HTMLDivElement | null>(null);
@@ -94,14 +96,15 @@ export default function PulseCreateLayout({ children }: { children: React.ReactN
       >
         <div className="w-full max-w-screen-2xl px-3 lg:px-0 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link
-              href="/pulse/my"
+            <button
+              type="button"
+              onClick={() => goBackOr(router, '/pulse/my')}
               aria-label={lang?.creators_back_to_pulse || 'Вернуться в Pulse'}
               className="flex items-center gap-3 hover:opacity-80 duration-300 cursor-pointer active:scale-95"
             >
               <ActionIcon className="w-8 h-8 fill-white shrink-0" name="IC-chevron-left" />
               <img src="/img/logos/creators.svg" alt="Creators" className="h-6 sm:h-7 object-contain shrink-0" />
-            </Link>
+            </button>
           </div>
 
           <Link

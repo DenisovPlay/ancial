@@ -1,7 +1,7 @@
 'use client';
 import { coerceToFinite as toNumber } from '../../../lib/convert';
 
-import Link from 'next/link';
+import { goBackOr } from '../../../lib/go-back';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { sanitizeUserHtml } from '../../../lib/sanitize-html';
@@ -535,8 +535,9 @@ export default function SinglePostContent({ postId }: { postId: string }) {
   return (
     <div className="flex flex-col jusitify-center items-center gap-3 pb-64">
       <div className="max-w-3xl w-full flex pt-3 pl-3 md:pl-0 -mb-3 z-[30]">
-        <Link
-          href="/feed"
+        <button
+          type="button"
+          onClick={() => goBackOr(router, '/feed')}
           className="text-3xl font-extralight flex items-center gap-1.5 duration-300 active:scale-95 cursor-pointer"
         >
           <SvgIcon
@@ -544,7 +545,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
             id="IC-chevron-left"
           />
           <span>{strings.post}</span>
-        </Link>
+        </button>
       </div>
 
       <div className="w-full flex flex-col gap-3 justify-center items-center pt-3">
@@ -566,6 +567,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                   setDeleteTarget(targetPost);
                   setIsDeleteModalOpen(true);
                 }}
+                onEdit={(targetPost) => router.push(`/feed/edit?id=${targetPost.id}&from=post`)}
                 onNavigate={(href) => router.push(href)}
                 onReport={(targetPost) => {
                   setReportTarget({ id: targetPost.id, type: 2 });

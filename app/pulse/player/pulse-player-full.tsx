@@ -422,7 +422,7 @@ export function PulsePlayerFull({
                     id="player_likebutton_title"
                     type="button"
                     onClick={onLike}
-                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10"
                   >
                     <Icon
                       name={activeLike ? 'IC-heart-filled' : 'IC-heart'}
@@ -480,7 +480,7 @@ export function PulsePlayerFull({
                     title={lang?.add_to_playlist || 'В плейлист'}
                     type="button"
                     onClick={onAddToPlaylist}
-                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 hover:bg-white/10"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10"
                   >
                     <Icon name="IC-plus" className="h-6 w-6 fill-white duration-300" />
                   </button>
@@ -546,7 +546,7 @@ export function PulsePlayerFull({
             }}
             className={cn(
               'absolute left-1/2 z-[20] flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-sm text-white duration-300 active:scale-95 border',
-              lyricsEnabled ? 'bg-white/10 border-zinc-600/30' : 'opacity-70 hover:bg-white/10 hover:opacity-100 border-transparent',
+              lyricsEnabled ? 'bg-white/10 border-zinc-600/30' : 'opacity-70 hover:border-zinc-600/30 hover:bg-white/10 hover:opacity-100 border-transparent',
             )}
             style={{ bottom: 'max(12px, env(safe-area-inset-bottom))' }}
           >

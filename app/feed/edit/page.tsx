@@ -11,6 +11,7 @@ export const metadata: Metadata = createPageMetadata({
 
 type EditPageProps = {
   searchParams: Promise<{
+    from?: string | string[] | undefined;
     id?: string | string[] | undefined;
   }>;
 };
@@ -20,6 +21,7 @@ export default async function EditPostPage({ searchParams }: EditPageProps) {
   const postId = Array.isArray(resolvedSearchParams.id)
     ? (resolvedSearchParams.id[0] ?? null)
     : (resolvedSearchParams.id ?? null);
+  const from = Array.isArray(resolvedSearchParams.from) ? resolvedSearchParams.from[0] : resolvedSearchParams.from;
 
-  return <EditPostContent postId={postId} />;
+  return <EditPostContent postId={postId} returnToPost={from === 'post'} />;
 }
