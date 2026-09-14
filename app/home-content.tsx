@@ -82,6 +82,10 @@ export default function HomeContent() {
 
   const [searchVal, setSearchVal] = useState(queryParam);
   const [imageModal, setImageModal] = useState<{ src: string; title: string; url: string; pageUrl: string } | null>(null);
+  // Google CSE (скрипт + ~280 строк стилей выдачи) нужен только для поиска: грузим при первом ?q=
+  // и дальше держим — повторный поиск не перезагружает скрипт и не теряет отрендеренный элемент.
+  const [cseRequested, setCseRequested] = useState(Boolean(queryParam));
+  if (queryParam && !cseRequested) setCseRequested(true);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -618,6 +622,8 @@ export default function HomeContent() {
       {/* 2. Search Results View (persists in DOM, only hidden when q is empty) */}
       < div className={`w-full h-screen overflow-y-auto flex flex-col items-center lg:items-start p-3 pt-0 gap-3 absolute inset-0 duration-300 transition-opacity ${queryParam ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`
       }>
+        {cseRequested ? (
+        <>
         <Script
           id="google-cse"
           async
@@ -898,6 +904,8 @@ export default function HomeContent() {
               border-color:rgba(113,113,122,0.45) !important;
               color:white !important;
           }
+          .gsc-results .gsc-cursor-box .gsc-cursor-numbered-page,
+          .gsc-cursor-numbered-page{ color:white !important; }
           .gsc-cursor-next-page{ color:rgb(212,212,216) !important; font-size:0.875rem !important; }
           .gsc-cursor-chevron{ fill:rgb(212,212,216) !important; }
           .gsc-cursor-container-next{
@@ -911,6 +919,8 @@ export default function HomeContent() {
               background:transparent !important;
           }
         ` }} />
+        </>
+        ) : null}
 
         {/* Search Header Bar */}
         <div className="w-full flex flex-col items-center lg:flex-row gap-3 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[9999]">

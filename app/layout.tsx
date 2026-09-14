@@ -62,13 +62,13 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-black text-white">
         <AndroidGlassProfile />
-        <Script
+        {/*<Script
           id="google-adsense"
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9947484450577422"
           crossOrigin="anonymous"
           strategy="afterInteractive"
-        />
+        />*/}
         <Script id="yandex-metrika" strategy="afterInteractive">
           {`
             (function(m,e,t,r,i,k,a){

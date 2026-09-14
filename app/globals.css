@@ -25,10 +25,6 @@
   }
 }
 
-html {
-  scrollbar-gutter: stable;
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
@@ -192,6 +188,14 @@ html.android-glass-off .gsc-imageResult.gsc-result {
 .animate-page-enter {
   /* Важно: не используем forwards, чтобы после завершения анимации все CSS свойства сбрасывались */
   animation: page-enter 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* translateY(8px) на входе удлинял страницу на 8px — у страниц высотой в экран мелькал скроллбар.
+   clip обрезает этот хвост, но (в отличие от hidden) не делает элемент контейнером прокрутки,
+   поэтому sticky-хедеры страниц работают как раньше. Раньше мелькание гасили scrollbar-gutter: stable
+   на html, из-за чего на Windows все fixed-элементы у правого края (мини-плеер) отъезжали от него. */
+:has(> .animate-page-enter) {
+  overflow-y: clip;
 }
 
 /* Утилита для скрытия нижнего паддинга навигации на определенных страницах */
