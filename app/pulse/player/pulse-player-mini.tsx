@@ -1,6 +1,6 @@
 'use client';
 
-import type { ComponentType, RefObject, TouchEventHandler } from 'react';
+import { useRef, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
@@ -90,6 +90,10 @@ export function PulsePlayerMini({
   volumeSliderRef,
 }: PulsePlayerMiniProps) {
   const hasSwipe = swipeX !== 0;
+  // Тап по пилюле (кроме play) открывает full. Касание, сдвинувшее палец, — это жест (свайп вверх
+  // или листание трека), и его click игнорируется: иначе после свайпа трека открылся бы full.
+  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const touchMovedRef = useRef(false);
   const desktopSeekTime = activeSeekSlider === 'desktop' ? seekValue : currentTime;
 
   const w = Math.max(shellWidth || 0, 360);
@@ -128,10 +132,25 @@ export function PulsePlayerMini({
     >
       <div
         id="NAVPmini"
-        className="pulse-player-mini-shell relative flex w-full touch-none items-center gap-1 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-900/20 lg:gap-3 lg:p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
+        className="pulse-player-mini-shell relative flex w-full cursor-pointer touch-none items-center lg:cursor-auto gap-1 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-900/20 lg:gap-3 lg:p-1 shadow backdrop-blur-md backdrop-saturate-200 duration-300"
+        onTouchStart={(event) => {
+          touchOriginRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+          touchMovedRef.current = false;
+          onTouchStart(event);
+        }}
+        onTouchMove={(event) => {
+          const origin = touchOriginRef.current;
+          if (origin && Math.hypot(event.touches[0].clientX - origin.x, event.touches[0].clientY - origin.y) > 10) {
+            touchMovedRef.current = true;
+          }
+          onTouchMove(event);
+        }}
         onTouchEnd={onTouchEnd}
+        onClick={(event) => {
+          if (window.innerWidth >= 1024 || touchMovedRef.current) return;
+          if ((event.target as HTMLElement).closest('[data-mini-controls]')) return;
+          onOpenFull();
+        }}
       >
         {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
         <div className="relative flex shrink-0 items-center">
@@ -159,7 +178,12 @@ export function PulsePlayerMini({
           >
             <button
               type="button"
-              onClick={onOpenFull}
+              onClick={(event) => {
+                // На телефоне тап обрабатывает вся пилюля (с защитой от свайпа), на ПК — только обложка.
+                if (window.innerWidth < 1024) return;
+                event.stopPropagation();
+                onOpenFull();
+              }}
               className="group relative h-10 w-10 shrink-0 cursor-pointer overflow-hidden rounded-full bg-zinc-800 shadow duration-300 active:scale-95 lg:h-14 lg:w-14"
             >
               <PulseCoverImage alt={playerTitle} className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={playerArtwork} />
@@ -216,7 +240,7 @@ export function PulsePlayerMini({
           <div className="w-10 shrink-0 text-xs tabular-nums text-zinc-400">{formatPlaybackTime(duration)}</div>
         </div>
 
-        <div className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:gap-3 lg:pr-1">
+        <div data-mini-controls className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:gap-3 lg:pr-1">
           <div className="hidden w-28 items-center gap-3 lg:flex" title={lang?.volume || 'Громкость'}>
             <Icon name="IC-speaker" className="h-5 w-5 shrink-0 fill-zinc-400" />
             <PulseRangeTrack
