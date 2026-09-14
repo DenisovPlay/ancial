@@ -547,8 +547,13 @@ export default function HomeContent() {
           transition={{ duration: 0.3 }}
           className="-mt-32 /hidden w-full max-w-screen-md flex items-center gap-3 shadow relative z-10 select-none"
         >
-          <div className="flex flex-col items-center justify-center text-center w-full">
-            <img src="/img/zypo/letter.svg" className='h-8 lg:h-10 duration-300 inline pointer-events-none select-none' draggable={false} alt="Zypo" />
+          {/* Высота фиксирована: логотип уезжает в шапку выдачи (layoutId), а карточка не схлопывается. */}
+          <div className="flex h-8 flex-col items-center justify-center text-center w-full lg:h-10">
+            {!queryParam && (
+              <motion.div layoutId="home-logo" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="inline-flex">
+                <img src="/img/zypo/letter.svg" className='h-8 lg:h-10 inline pointer-events-none select-none' draggable={false} alt="Zypo" />
+              </motion.div>
+            )}
           </div>
         </motion.div>
 
@@ -924,20 +929,17 @@ export default function HomeContent() {
 
         {/* Search Header Bar */}
         <div className="w-full flex flex-col items-center lg:flex-row gap-3 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[9999]">
-          <motion.div
-            initial={false}
-            animate={{ opacity: queryParam ? 1 : 0 }}
-            transition={{ duration: 0.4 }}
-            className="shrink-0"
-          >
-            <Link
-              href="/"
-              className="cursor-pointer hover:opacity-90 active:scale-95 duration-300 block"
-            >
-              {/* Multi-gradient ancial text logo */}
-              <Image alt="Ancial Logo" className="h-12" width={120} height={120} src="/img/zypo/letter.svg" />
-            </Link>
-          </motion.div>
+          {/* Логотип переезжает сюда из центра главной так же, как инпут (общий layoutId). */}
+          {queryParam && (
+            <motion.div layoutId="home-logo" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="shrink-0">
+              <Link
+                href="/"
+                className="cursor-pointer hover:opacity-90 active:scale-95 duration-300 block"
+              >
+                <Image alt="Ancial Logo" className="h-12" width={120} height={120} src="/img/zypo/letter.svg" />
+              </Link>
+            </motion.div>
+          )}
 
           {queryParam && (
             <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
