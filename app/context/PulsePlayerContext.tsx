@@ -32,6 +32,18 @@ import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
 import { useMiniPlayerSlot } from '../pulse/player/mini-player-slot';
 
+/**
+ * Индекс трека в очереди: по ID, если он известен (порядок очереди и списка на странице может различаться),
+ * иначе по индексу. -1 — нужного трека в списке нет.
+ */
+function findTrackIndex(tracks: PulseTrack[], expectedTrackId: number, fallbackIndex: number) {
+  if (expectedTrackId) {
+    if (toNumber(tracks[fallbackIndex]?.sid) === expectedTrackId) return fallbackIndex;
+    return tracks.findIndex((track) => toNumber(track.sid) === expectedTrackId);
+  }
+  return fallbackIndex >= 0 && fallbackIndex < tracks.length ? fallbackIndex : -1;
+}
+
 // Длительность переезда мини-плеера снизу в шапку чата (совпадает с duration-500 в pulse-player-mini).
 const MINI_PLAYER_HANDOFF_MS = 500;
 import { shouldRunPulseFullPlayerWork } from '../pulse/player/pulse-player-visibility';
@@ -1068,11 +1080,12 @@ export function PulsePlayerProvider({
         return;
       }
 
-      if (Number(shuffle) === 0 && startIndex >= 0 && startIndex < playlistRef.current.length) {
-        const cachedTrack = playlistRef.current[startIndex];
-        if (!expectedTrackId || toNumber(cachedTrack?.sid) === expectedTrackId) {
-          setPlaylistIndex(startIndex);
-          await playLoadedTrack(cachedTrack);
+      if (Number(shuffle) === 0) {
+        // Порядок очереди может не совпадать со списком на странице — ищем трек по ID, индекс лишь подсказка.
+        const cachedIndex = findTrackIndex(playlistRef.current, expectedTrackId, startIndex);
+        if (cachedIndex >= 0) {
+          setPlaylistIndex(cachedIndex);
+          await playLoadedTrack(playlistRef.current[cachedIndex]);
           showPlayer();
           return;
         }
@@ -1091,9 +1104,10 @@ export function PulsePlayerProvider({
       kind !== 'track' && Number(shuffle) === 1
         ? nextTracks.slice().sort(() => 0.5 - Math.random())
         : nextTracks.slice();
-    const nextIndex = kind === 'track'
-      ? 0
-      : clamp(startIndex, 0, Math.max(preparedTracks.length - 1, 0));
+    // Страница передаёт индекс в СВОЁМ списке (например popular_tracks артиста), а коллекция с сервера
+    // бывает отсортирована иначе — поэтому сначала ID трека, по которому кликнули, и только потом индекс.
+    const matchedIndex = kind === 'track' ? 0 : findTrackIndex(preparedTracks, expectedTrackId, startIndex);
+    const nextIndex = matchedIndex >= 0 ? matchedIndex : clamp(startIndex, 0, Math.max(preparedTracks.length - 1, 0));
     const nextTrack = preparedTracks[nextIndex] ?? null;
 
     if (kind === 'track' && !isTrackPlayable(nextTrack, userCountry)) {
