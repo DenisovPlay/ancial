@@ -20,6 +20,8 @@ import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { setMiniPlayerSlot } from '../pulse/player/mini-player-slot';
 import AccountName from '../components/account-name';
+import MarqueeText from '../components/marquee-text';
+import { PresenceCoverBadge } from '../components/presence-activity';
 import ImageViewerModal from '../components/image-viewer-modal';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { deleteUploadedImage, uploadImage, uploadImageDetailed } from '../lib/upload';
@@ -2416,14 +2418,7 @@ export default function MessagesContent() {
                                         src={normalizeAssetUrl(dialog.Uimg, FALLBACK_AVATAR)}
                                         alt={dialogName || 'Dialog avatar'}
                                       />
-                                      {counterpartPresence?.status !== 'offline' && counterpartPresence?.activity_type === 'music' ? (
-                                        <span
-                                          className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-900 bg-purple-500 shadow"
-                                          title={getPresenceText(counterpartPresence, lang)}
-                                        >
-                                          <Icon name="IC-music" className="h-3.5 w-3.5 fill-white" />
-                                        </span>
-                                      ) : null}
+                                      <PresenceCoverBadge presence={counterpartPresence} className="absolute bottom-0 left-0" />
                                       {dialog.type === 'group' && dialog.community_img ? (
                                         <img
                                           className="absolute bottom-0 right-0 h-6 w-6 rounded-full border border-zinc-900 bg-zinc-900 object-cover shadow"
@@ -2561,14 +2556,14 @@ export default function MessagesContent() {
                             }
                           }}
                           className={cn(
-                            'lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:rounded-3xl lg:px-3 lg:py-1.5 duration-300',
+                            'w-full min-w-0 max-w-full lg:w-auto lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:rounded-3xl lg:px-3 lg:py-1.5 duration-300',
                             isGroupDialog && 'cursor-pointer active:scale-95 hover:text-purple-300'
                           )}
                         >
                           <span className="max-w-full truncate text-base font-bold">
                             {dialogTitle || '...'}
                           </span>
-                          <span className="max-w-full truncate text-xs text-zinc-300 lg:text-sm">{dialogStatusLabel}</span>
+                          <MarqueeText className="max-w-full text-xs text-zinc-300 lg:w-auto lg:max-w-60 lg:text-sm">{dialogStatusLabel}</MarqueeText>
                         </button>
                       </div>
 

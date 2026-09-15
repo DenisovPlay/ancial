@@ -1147,6 +1147,8 @@ export default function GroupProfileContent({ link }: { link: string }) {
         emptyText="Нет подписчиков..."
         isOpen={isSubscribersModalOpen}
         items={groupData?.subscribers || []}
+        notFoundText={lang?.search_not_found || 'Ничего не найдено'}
+        searchPlaceholder={lang?.search || 'Поиск...'}
         onClose={() => setIsSubscribersModalOpen(false)}
         onOpen={(value) => {
           setIsSubscribersModalOpen(false);

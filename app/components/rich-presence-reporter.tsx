@@ -12,7 +12,7 @@ import { getPlayerTrackArtwork } from '../pulse/player/player-utils';
 const PRESENCE_HEARTBEAT_MS = 120_000;
 const PRESENCE_OVERRIDE_EVENT = 'zypo:presence-activity';
 
-type PresenceStatus = 'online' | 'idle' | 'offline';
+type PresenceStatus = 'online' | 'idle';
 
 type PresenceActivity = {
   activity_type: 'none' | 'page' | 'music' | 'chat' | 'call' | 'custom';
@@ -74,8 +74,7 @@ export default function RichPresenceReporter() {
 
   const sendPresence = useCallback((status: PresenceStatus = 'online') => {
     if (!isAuthenticated) return;
-    const payload = status === 'offline' ? { status, ...NO_ACTIVITY } : { status, ...activity };
-    void AncialAPI.updatePresence(payload, { keepalive: true }).catch(() => { });
+    void AncialAPI.updatePresence({ status, ...activity }, { keepalive: true }).catch(() => { });
   }, [activity, isAuthenticated]);
 
   useEffect(() => {
@@ -88,14 +87,13 @@ export default function RichPresenceReporter() {
     if (!isAuthenticated) return;
     const timer = window.setInterval(() => sendPresence(document.hidden ? 'idle' : 'online'), PRESENCE_HEARTBEAT_MS);
     const handleVisibilityChange = () => sendPresence(document.hidden ? 'idle' : 'online');
-    // Закрытие вкладки: сразу «не в сети», не дожидаясь истечения heartbeat.
-    const handlePageHide = () => sendPresence('offline');
+    // «Не в сети» ставит WS-сервер, когда закрывается ПОСЛЕДНЕЕ соединение пользователя. Отправлять
+    // offline при закрытии вкладки нельзя: при двух открытых вкладках закрытие одной гасило статус,
+    // хотя во второй человек на сайте и слушает музыку.
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', handlePageHide);
     return () => {
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', handlePageHide);
     };
   }, [isAuthenticated, sendPresence]);
 

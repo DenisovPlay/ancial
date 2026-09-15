@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useState, type ReactNode } from 'react';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { cn, SvgIcon } from '../feed/editor-shared';
 import Modal from './modal';
@@ -25,11 +26,14 @@ export interface GroupPreview {
 }
 
 export function UserMiniCard({
+  badge,
   image,
   isOnline,
   label,
   onClick,
 }: {
+  /** Значок поверх аватарки (например, обложка играющего трека); позиционируется самим значком. */
+  badge?: ReactNode;
   image: string;
   isOnline?: boolean;
   label: string;
@@ -42,17 +46,20 @@ export function UserMiniCard({
       onClick={onClick}
       className="flex flex-col gap-0.5 cursor-pointer duration-500 group overflow-hidden justify-center items-center w-full active:scale-95"
     >
-      <Image
-        alt="User Profile"
-        width={64}
-        height={64}
-        src={avatarSrc}
-        className={cn(
-          'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
-          isOnline && 'border-lime-500',
-          !isOnline && 'border-transparent',
-        )}
-      />
+      <span className="relative block">
+        <Image
+          alt="User Profile"
+          width={64}
+          height={64}
+          src={avatarSrc}
+          className={cn(
+            'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
+            isOnline && 'border-lime-500',
+            !isOnline && 'border-transparent',
+          )}
+        />
+        {badge}
+      </span>
       <span className="text-zinc-300 w-16 text-center text-sm truncate">{label}</span>
     </button>
   );
@@ -130,24 +137,62 @@ export function RelationGridModal({
   emptyText,
   isOpen,
   items,
+  notFoundText = 'Ничего не найдено',
   onClose,
   onOpen,
+  renderBadge,
+  searchPlaceholder = 'Поиск...',
   title,
   type,
 }: {
   emptyText: string;
   isOpen: boolean;
   items: Array<GroupPreview | UserPreview>;
+  notFoundText?: string;
   onClose: () => void;
   onOpen: (value: GroupPreview | UserPreview) => void;
+  /** Значок поверх аватарки пользователя (обложка играющего трека); позиционируется самим значком. */
+  renderBadge?: (user: UserPreview) => ReactNode;
+  searchPlaceholder?: string;
   title: string;
   type: 'groups' | 'users';
 }) {
+  const [query, setQuery] = useState('');
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleItems = normalizedQuery
+    ? items.filter((item) => {
+      const fields = type === 'groups'
+        ? [(item as GroupPreview).name, (item as GroupPreview).slnk]
+        : [(item as UserPreview).fname, (item as UserPreview).lname, (item as UserPreview).name, (item as UserPreview).username, (item as UserPreview).login];
+      return fields.filter(Boolean).join(' ').toLowerCase().includes(normalizedQuery);
+    })
+    : items;
+
+  const handleClose = () => {
+    setQuery('');
+    onClose();
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} width="lg">
-      <div className="grid grid-cols-4 lg:grid-cols-5 gap-3">
+    <Modal isOpen={isOpen} onClose={handleClose} title={title} width="lg">
+      <div className="flex flex-col gap-3">
         {items.length > 0 ? (
-          items.map((item) => {
+          <div className="relative flex h-12 w-full items-center rounded-full border border-zinc-600/30 bg-zinc-900/50 p-1 shadow backdrop-blur-sm backdrop-saturate-200">
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={searchPlaceholder}
+              autoComplete="off"
+              className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
+            />
+            <SvgIcon className="mr-2 h-6 w-6 shrink-0 fill-zinc-500" id="IC-search" viewBox="0 0 48 48" />
+          </div>
+        ) : null}
+
+      <div className="grid grid-cols-4 lg:grid-cols-5 gap-3">
+        {visibleItems.length > 0 ? (
+          visibleItems.map((item) => {
             const image = item.img || (type === 'groups' ? '/img/placeholders/group.png' : '/img/placeholders/user.png');
 
             if (type === 'groups') {
@@ -183,6 +228,7 @@ export function RelationGridModal({
                 onClick={() => onOpen(user)}
                 className="cursor-pointer flex flex-col items-center justify-center"
               >
+                <div className="relative">
                 <div className="flex items-center justify-center overflow-hidden rounded-full max-w-16">
                   <Image
                     alt="User Profile"
@@ -200,6 +246,8 @@ export function RelationGridModal({
                     )}
                   />
                 </div>
+                {renderBadge?.(user)}
+                </div>
                 <p className="text-center truncate overflow-hidden w-20">
                   {user.fname || ''}
                 </p>
@@ -207,8 +255,9 @@ export function RelationGridModal({
             );
           })
         ) : (
-          <p className="p-5 text-lg col-span-4 lg:col-span-5">{emptyText}</p>
+          <p className="p-5 text-lg col-span-4 lg:col-span-5">{items.length > 0 ? notFoundText : emptyText}</p>
         )}
+      </div>
       </div>
     </Modal>
   );

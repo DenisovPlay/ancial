@@ -834,7 +834,8 @@ export function TrackCollectionPanel({
             type="button"
             onClick={onPlayCollection}
             className={cn(
-              'shrink-0 cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500 p-3 shadow duration-300 hover:bg-purple-600 active:scale-95',
+              // relative z-20: боковые затемнения карусели выше (-bottom-6, z-10) заходят на заголовок панели.
+              'relative z-20 shrink-0 cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500 p-3 shadow duration-300 hover:bg-purple-600 active:scale-95',
               panelIsActive && 'bg-purple-600',
             )}
             aria-label={panelIsActive ? `Pause ${collectionId}` : `Play ${collectionId}`}
@@ -924,7 +925,7 @@ export function PulseScrollSection({
       />
       <div
         ref={ref}
-        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-6 -my-6', className)}
+        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-6 -my-6 lg:px-0', className)}
       >
         {children}
       </div>

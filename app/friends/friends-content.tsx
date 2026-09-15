@@ -33,6 +33,7 @@ interface Friend {
 }
 
 import AccountName from '../components/account-name';
+import { PresenceCoverBadge } from '../components/presence-activity';
 
 // Отдельный компонент для контента, чтобы использовать useSearchParams безопасно
 function FriendsContent() {
@@ -242,6 +243,7 @@ function FriendsContent() {
                       className={`shadow w-16 h-16 rounded-full shrink-0 bg-cover bg-center border ${isOnline ? 'border-lime-500' : 'border-transparent'}`}
                       style={{ backgroundImage: `url(${friend.img || '/img/placeholders/user.png'})` }}
                     ></div>
+                    <PresenceCoverBadge presence={presence} className="absolute bottom-0 left-0" />
                   </Link>
 
                   {/* Инфо */}

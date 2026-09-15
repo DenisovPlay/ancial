@@ -43,8 +43,8 @@ import {
 import { uploadImage } from '../../lib/upload';
 import AccountName from '../../components/account-name';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
-import { usePresence, type UserPresence } from '../../lib/presence';
-import PresenceActivity from '../../components/presence-activity';
+import { usePresence, usePresences, type UserPresence } from '../../lib/presence';
+import PresenceActivity, { PresenceCoverBadge } from '../../components/presence-activity';
 
 type Id = string | number;
 
@@ -320,6 +320,18 @@ export default function UserProfileContent({ login }: { login: string }) {
   // Живой статус (WS-сигнал → Status.php); до первой загрузки — presence из ответа профиля.
   const livePresence = usePresence(userData?.id);
   const profilePresence = livePresence ?? userData?.presence;
+  // Статусы тех, кого видно в виджетах «Друзья» и «Подписчики» (по 6), — для обложки играющего трека.
+  const peoplePresences = usePresences([
+    ...(mappedFriends || []).slice(0, 6),
+    ...(mappedSubscribers || []).slice(0, 6),
+  ].map((person) => person.id));
+  // Статусы для модалки друзей/подписчиков — загружаются только пока она открыта.
+  const modalPresences = usePresences(
+    (isFriendsModalOpen ? mappedFriends : isSubscribersModalOpen ? mappedSubscribers : null)?.map((person) => person.id) ?? [],
+  );
+  const renderModalPresenceBadge = (person: UserPreview) => (
+    <PresenceCoverBadge presence={modalPresences[Number(person.id)]} className="absolute bottom-0 left-0" />
+  );
 
   const hasFriends = Boolean(mappedFriends?.length);
   const hasSubscribers = Boolean(mappedSubscribers?.length);
@@ -951,8 +963,8 @@ export default function UserProfileContent({ login }: { login: string }) {
                     sizeClassName="h-16 w-16 md:h-24 md:w-24"
                   />
 
-                  {/* Активность — снизу справа, в пару к кнопке смены аватарки сверху справа (на своей странице тоже). */}
-                  <div className="absolute -bottom-1.5 -right-1.5 z-[20]">
+                  {/* Активность — снизу слева: не прижимается к имени и описанию справа и не пересекается с кнопкой смены аватарки. */}
+                  <div className="absolute -bottom-1.5 -left-1.5 z-[20]">
                     <PresenceActivity presence={profilePresence} />
                   </div>
                 </div>
@@ -1076,6 +1088,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                     <UserMiniCard
                       key={String(friend.id)}
                       image={friend.img || '/img/placeholders/user.png'}
+                      badge={<PresenceCoverBadge presence={peoplePresences[Number(friend.id)]} className="absolute bottom-0 left-0" />}
                       isOnline={flag(friend.online)}
                       label={friend.fname || friend.name || ''}
                       onClick={() => navigateToUser(friend.username || friend.login)}
@@ -1096,6 +1109,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                     <UserMiniCard
                       key={String(subscriber.id)}
                       image={subscriber.img || '/img/placeholders/user.png'}
+                      badge={<PresenceCoverBadge presence={peoplePresences[Number(subscriber.id)]} className="absolute bottom-0 left-0" />}
                       isOnline={flag(subscriber.online)}
                       label={subscriber.fname || subscriber.name || ''}
                       onClick={() => navigateToUser(subscriber.username || subscriber.login)}
@@ -1135,6 +1149,9 @@ export default function UserProfileContent({ login }: { login: string }) {
         emptyText={lang?.no_friends || "Нет друзей..."}
         isOpen={isFriendsModalOpen}
         items={mappedFriends || []}
+        notFoundText={lang?.search_not_found || 'Ничего не найдено'}
+        renderBadge={renderModalPresenceBadge}
+        searchPlaceholder={lang?.search || 'Поиск...'}
         onClose={() => setIsFriendsModalOpen(false)}
         onOpen={(value) => {
           setIsFriendsModalOpen(false);
@@ -1148,6 +1165,9 @@ export default function UserProfileContent({ login }: { login: string }) {
         emptyText={lang?.no_subscribers || "Нет подписчиков..."}
         isOpen={isSubscribersModalOpen}
         items={mappedSubscribers || []}
+        notFoundText={lang?.search_not_found || 'Ничего не найдено'}
+        renderBadge={renderModalPresenceBadge}
+        searchPlaceholder={lang?.search || 'Поиск...'}
         onClose={() => setIsSubscribersModalOpen(false)}
         onOpen={(value) => {
           setIsSubscribersModalOpen(false);
@@ -1161,6 +1181,8 @@ export default function UserProfileContent({ login }: { login: string }) {
         emptyText={lang?.no_groups || "Нет групп..."}
         isOpen={isGroupsModalOpen}
         items={mappedGroups || []}
+        notFoundText={lang?.search_not_found || 'Ничего не найдено'}
+        searchPlaceholder={lang?.search || 'Поиск...'}
         onClose={() => setIsGroupsModalOpen(false)}
         onOpen={(value) => {
           setIsGroupsModalOpen(false);

@@ -1,13 +1,42 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { cn } from '../lib/cn';
 import { getPresenceText, isPresenceOnline, type UserPresence } from '../lib/presence';
+import { getPulseExternalUrl } from '../pulse/pulse-navigation';
 import { Dropdown, DropdownItem } from './navigation';
+import ShareModal from './share-modal';
+
+/**
+ * Маленькая обложка играющего трека на аватарке в списках (чаты, друзья, виджет друзей).
+ * Без меню: клик по строке списка и так ведёт в чат/профиль. Показывается только при музыке.
+ */
+export function PresenceCoverBadge({ className, presence }: { className?: string; presence: UserPresence | null | undefined }) {
+  const { lang } = useAuth();
+  if (!presence || !isPresenceOnline(presence) || presence.activity_type !== 'music') return null;
+
+  const cover = presence.activity_meta?.cover;
+  return (
+    <span
+      title={getPresenceText(presence, lang)}
+      className={cn('flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border-2 border-zinc-900 bg-purple-500 shadow', className)}
+    >
+      {cover ? (
+        <img src={cover} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <svg className="h-3.5 w-3.5 fill-white" viewBox="0 0 48 48">
+          <use href="#IC-music"></use>
+        </svg>
+      )}
+    </span>
+  );
+}
 
 const ACTIVITY_ICONS: Record<string, string> = {
   call: 'IC-call',
@@ -16,71 +45,120 @@ const ACTIVITY_ICONS: Record<string, string> = {
   page: 'IC-compass',
 };
 
+// Как ряд «Изменить / Удалить» в меню постов: иконки в одну строку.
+const MENU_ICON_BUTTON = 'flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95';
+const GRID_COLUMNS = ['', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3'];
+
+type MenuAction = { icon: string; key: string; label: string; onClick: () => void };
+
 /**
  * Значок активности на аватарке профиля — в пару к кнопке смены аватарки. Сервер уже отфильтровал
  * всё по настройкам приватности (свою активность владелец видит всегда). По клику — что именно
- * происходит и действия: «Включить» трек, «Присоединиться» к групповому звонку, «Открыть».
- * «Не в сети» и «В сети» без активности не показываем: это и так видно по кольцу аватарки.
+ * происходит и действия: для музыки «Включить», «Открыть», «Поделиться»; для группового звонка —
+ * «Присоединиться». «Не в сети» и «В сети» без активности не показываем: это видно по кольцу аватарки.
  */
 export default function PresenceActivity({ presence }: { presence: UserPresence | null | undefined }) {
   const router = useRouter();
   const { lang } = useAuth();
+  const { showNote } = useNotification();
   const { playTrack } = usePulsePlayer();
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   if (!presence || !isPresenceOnline(presence)) return null;
   const icon = ACTIVITY_ICONS[presence.activity_type];
   if (!icon) return null;
 
   const isMusic = presence.activity_type === 'music';
-  const cover = isMusic ? presence.activity_meta?.cover : '';
-  const songId = isMusic ? presence.activity_meta?.song_id : '';
+  const meta = presence.activity_meta;
+  const cover = isMusic ? meta?.cover : '';
+  const songId = isMusic ? meta?.song_id : '';
   const activityUrl = presence.activity_url || '';
   const canJoinCall = presence.activity_type === 'call' && presence.can_join && activityUrl;
   const text = getPresenceText(presence, lang);
+  const shareUrl = isMusic && activityUrl ? getPulseExternalUrl(activityUrl) : '';
+
+  const musicActions: MenuAction[] = [];
+  if (songId) {
+    musicActions.push({ icon: 'IC-play', key: 'play', label: lang?.presence_play_track || 'Включить', onClick: () => void playTrack(songId) });
+  }
+  if (isMusic && activityUrl) {
+    musicActions.push({ icon: 'IC-link', key: 'open', label: lang?.open || 'Открыть', onClick: () => router.push(activityUrl) });
+  }
+  if (shareUrl) {
+    musicActions.push({ icon: 'IC-share', key: 'share', label: lang?.share || 'Поделиться', onClick: () => setIsShareOpen(true) });
+  }
 
   return (
-    <Dropdown
-      position="bottom"
-      align="start"
-      width="auto"
-      triggerSize="sm"
-      triggerAriaLabel={text}
-      triggerClassName="overflow-hidden p-0 shadow"
-      triggerNode={
-        <span
-          title={text}
-          className={cn(
-            'flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-800/80 backdrop-blur-lg',
-            isMusic && 'ring-2 ring-purple-500',
-          )}
-        >
-          {cover ? (
-            <img src={cover} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <svg className="h-5 w-5 fill-white" viewBox="0 0 48 48">
-              <use href={`#${icon}`}></use>
-            </svg>
-          )}
-        </span>
-      }
-      menuClassName="min-w-[14rem] max-w-[18rem]"
-    >
-      <div className="px-3 py-1.5 text-sm text-zinc-200">{text}</div>
-      {songId ? (
-        <DropdownItem icon="IC-play" onClick={() => void playTrack(songId)}>
-          {lang?.presence_play_track || 'Включить'}
-        </DropdownItem>
+    <>
+      <Dropdown
+        position="bottom"
+        align="start"
+        width="auto"
+        triggerSize="sm"
+        triggerAriaLabel={text}
+        triggerClassName="overflow-hidden p-0 shadow"
+        triggerNode={
+          <span
+            title={text}
+            className={cn(
+              'flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-800/80 backdrop-blur-lg',
+              isMusic && 'ring-2 ring-purple-500',
+            )}
+          >
+            {cover ? (
+              <img src={cover} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <svg className="h-5 w-5 fill-white" viewBox="0 0 48 48">
+                <use href={`#${icon}`}></use>
+              </svg>
+            )}
+          </span>
+        }
+        menuClassName="!mt-1.5 min-w-[14rem] max-w-[18rem]"
+      >
+        <div className="px-3 py-1.5 text-sm text-zinc-200">{text}</div>
+        {musicActions.length > 0 ? (
+          <div className={cn('grid w-full gap-1.5', GRID_COLUMNS[musicActions.length])}>
+            {musicActions.map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                aria-label={action.label}
+                title={action.label}
+                onClick={action.onClick}
+                className={MENU_ICON_BUTTON}
+              >
+                <svg className="h-6 w-6 fill-white" viewBox="0 0 48 48">
+                  <use href={`#${action.icon}`}></use>
+                </svg>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {canJoinCall ? (
+          <DropdownItem icon="IC-call" onClick={() => router.push(activityUrl)}>
+            {lang?.presence_join_call || 'Присоединиться'}
+          </DropdownItem>
+        ) : null}
+      </Dropdown>
+
+      {shareUrl ? (
+        <ShareModal
+          copyLabel={lang?.copylink || 'Скопировать ссылку'}
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          onCopied={() => showNote({ content: lang?.linkcopied || 'Ссылка скопирована', type: 'success', time: 3 })}
+          onCopyFailed={() => showNote({ content: shareUrl, type: 'info', time: 5 })}
+          shareUrl={shareUrl}
+          title={lang?.share || 'Поделиться'}
+          attachmentWidgets={songId ? [{ type: 'music', track_id: songId }] : undefined}
+          attachmentPreview={{
+            authorName: meta?.artist || lang?.artist || 'Исполнитель',
+            authorImg: cover || '/img/noimg.png',
+            contentSnippet: meta?.title || lang?.untitled || 'Без названия',
+          }}
+        />
       ) : null}
-      {canJoinCall ? (
-        <DropdownItem icon="IC-call" onClick={() => router.push(activityUrl)}>
-          {lang?.presence_join_call || 'Присоединиться'}
-        </DropdownItem>
-      ) : null}
-      {isMusic && activityUrl ? (
-        <DropdownItem icon="IC-link" onClick={() => router.push(activityUrl)}>
-          {lang?.open || 'Открыть'}
-        </DropdownItem>
-      ) : null}
-    </Dropdown>
+    </>
   );
 }
