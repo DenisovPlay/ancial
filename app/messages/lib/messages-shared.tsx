@@ -23,6 +23,8 @@ export type DialogListItem = {
   hash?: string | null;
   id?: number | string | null;
   type?: 'direct' | 'group' | string | null;
+  creator_id?: number | string | null;
+  recipient_id?: number | string | null;
   title?: string | null;
   avatar?: string | null;
   invite_code?: string | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ import Link from 'next/link';
 import YandexRtb from '../components/yandex-rtb';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
+import { getPresenceText, isPresenceOnline, usePresences } from '../lib/presence';
 
 interface Friend {
   id: string | number;
@@ -45,8 +46,14 @@ function FriendsContent() {
   const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
-  // Для отслеживания онлайна
-  const [onlineUsers, setOnlineUsers] = useState<Record<string, boolean>>({});
+  // Статусы с учётом приватности каждого друга; онлайн-друзья поднимаются выше (в поиске порядок не трогаем).
+  const presences = usePresences(friends.map((friend) => friend.id));
+  const sortedFriends = useMemo(() => {
+    if (searchQuery) return friends;
+    return [...friends].sort((a, b) =>
+      Number(isPresenceOnline(presences[Number(b.id)])) - Number(isPresenceOnline(presences[Number(a.id)])),
+    );
+  }, [friends, presences, searchQuery]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -211,8 +218,9 @@ function FriendsContent() {
             <span className="text-sm text-zinc-300 w-full text-center font-medium">{lang?.nosfriendsdesc}</span>
           </div>
         ) : (
-          friends.map((friend, i) => {
-            const isOnline = onlineUsers[friend.id] || friend.online || friend.isOnline;
+          sortedFriends.map((friend, i) => {
+            const presence = presences[Number(friend.id)];
+            const isOnline = isPresenceOnline(presence) || friend.online || friend.isOnline;
             const isPending = friend.status === 0 || friend.isPending || friend.is_request;
             const isIncoming = friend.is_incoming || friend.isIncoming;
             const actionId = friend.id || friend.friendId || friend.relation_id || '';
@@ -247,9 +255,12 @@ function FriendsContent() {
                       className="text-zinc-200 lg:text-lg font-medium cursor-pointer"
                       nameClassName="text-zinc-200 lg:text-lg font-medium truncate"
                     />
-                    {friend.id === user?.id && (
+                    {friend.id === user?.id ? (
                       <div className="text-sm text-lime-500 font-medium">👆 {lang?.friends_your_account || 'Это ваш аккаунт'}</div>
-                    )}
+                    ) : !isPending && isPresenceOnline(presence) && presence?.activity_type !== 'none' ? (
+                      // Только реальная активность: «не в сети»/«в сети» и так видно по рамке аватарки.
+                      <span className="truncate text-sm text-zinc-400">{getPresenceText(presence, lang)}</span>
+                    ) : null}
                   </Link>
 
                   {/* Кнопки */}

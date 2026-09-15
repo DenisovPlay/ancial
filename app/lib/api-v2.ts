@@ -702,6 +702,10 @@ export class AncialAPI {
     return this.request<T>(`/presence/Status.php?ids=${encodeURIComponent(userIds.join(','))}`);
   }
 
+  static async getFriendsListening<T = unknown>(): Promise<T> {
+    return this.request<T>('/presence/FriendsListening.php');
+  }
+
   static async getPresencePrivacy<T = unknown>(): Promise<T> {
     return this.request<T>('/presence/Privacy.php');
   }

@@ -199,15 +199,18 @@ export default function PrivacySecurityContent() {
         <div className="flex flex-col gap-3">
           <span className="text-xl">{lang?.presence_privacy_title || 'Видимость активности'}</span>
           {([
-            ['online_visibility', lang?.presence_online_visibility || 'Статус в сети'],
-            ['page_visibility', lang?.presence_page_visibility || 'Просматриваемая страница'],
-            ['music_visibility', lang?.presence_music_visibility || 'Прослушиваемая музыка'],
-            ['chat_visibility', lang?.presence_chat_visibility || 'Активность в чатах'],
-            ['call_visibility', lang?.presence_call_visibility || 'Участие в звонках'],
-            ['allow_call_join', lang?.presence_call_join_visibility || 'Кто может подключаться к звонкам'],
-          ] as Array<[keyof PresencePrivacy, string]>).map(([key, label]) => (
-            <label key={key} className="flex gap-1.5 text-zinc-300 items-center justify-between">
-              <span className="flex-grow">{label}</span>
+            ['online_visibility', lang?.presence_online_visibility || 'Статус в сети', lang?.presence_online_visibility_hint || 'Зелёная точка и «был(а) в сети» в чатах, профиле и списках друзей'],
+            ['page_visibility', lang?.presence_page_visibility || 'Просматриваемая страница', lang?.presence_page_visibility_hint || 'Только раздел сайта, например «В Pulse», — без конкретных страниц'],
+            ['music_visibility', lang?.presence_music_visibility || 'Прослушиваемая музыка', lang?.presence_music_visibility_hint || 'Трек в профиле, шапке чата, списке диалогов и в блоке «Друзья слушают»'],
+            ['chat_visibility', lang?.presence_chat_visibility || 'Активность в чатах', lang?.presence_chat_visibility_hint || 'Только «общается в чате» — без собеседника'],
+            ['call_visibility', lang?.presence_call_visibility || 'Участие в звонках', lang?.presence_call_visibility_hint || '«Участвует в звонке»; название чата видят только его участники'],
+            ['allow_call_join', lang?.presence_call_join_visibility || 'Кто может подключаться к звонкам', lang?.presence_call_join_visibility_hint || 'Кнопка «Присоединиться» у групповых звонков — только участникам этого чата'],
+          ] as Array<[keyof PresencePrivacy, string, string]>).map(([key, label, hint]) => (
+            <label key={key} className="flex gap-3 text-zinc-300 items-center justify-between">
+              <span className="flex flex-grow flex-col">
+                <span>{label}</span>
+                <span className="text-xs text-zinc-500">{hint}</span>
+              </span>
               <select
                 value={presencePrivacy[key]}
                 onChange={(event) =>

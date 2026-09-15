@@ -48,6 +48,61 @@ import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigatio
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-track-modal';
 import { PulseHeader } from './pulse-header';
 import { useUserCountry } from '../lib/user-geo';
+import type { UserPresence } from '../lib/presence';
+
+type FriendListening = {
+  presence: UserPresence;
+  user: {
+    fname?: string | null;
+    id: number;
+    img?: string | null;
+    lname?: string | null;
+    username?: string | null;
+  };
+};
+
+const FRIENDS_LISTENING_REFRESH_MS = 60_000;
+
+/** Плитка «Друзья слушают»: обложка трека запускает его, аватарка ведёт в профиль друга. */
+function FriendListeningTile({
+  item,
+  onOpenProfile,
+  onPlay,
+}: {
+  item: FriendListening;
+  onOpenProfile: () => void;
+  onPlay: () => void;
+}) {
+  const meta = item.presence.activity_meta;
+  const friendName = decodeHtmlEntities([item.user.fname, item.user.lname].filter(Boolean).join(' ')) || item.user.username || '';
+
+  return (
+    <div className="group relative h-32 w-32 shrink-0 overflow-hidden rounded-3xl border border-zinc-600/30 shadow duration-300 active:scale-95 lg:h-48 lg:w-48">
+      <button type="button" onClick={onPlay} className="h-full w-full cursor-pointer" aria-label={meta?.title || 'Play'}>
+        <PulseCoverImage
+          alt={meta?.title || ''}
+          className="duration-300 group-hover:scale-105"
+          sizes={PULSE_COVER_IMAGE_SIZES.playlistTile}
+          src={getImageUrl(meta?.cover, DEFAULT_TRACK_IMAGE)}
+        />
+      </button>
+
+      <button
+        type="button"
+        onClick={onOpenProfile}
+        aria-label={friendName}
+        className="absolute left-1.5 top-1.5 h-10 w-10 cursor-pointer overflow-hidden rounded-full border border-zinc-600/30 shadow duration-300 active:scale-95"
+      >
+        <img src={getImageUrl(item.user.img, '/img/placeholders/user.png')} alt="" className="h-full w-full object-cover" />
+      </button>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col bg-gradient-to-t from-black via-black/90 to-transparent p-3 text-left">
+        <span className="truncate text-sm font-medium text-white">{meta?.title || 'Pulse'}</span>
+        <span className="truncate text-xs text-zinc-300">{friendName}</span>
+      </div>
+    </div>
+  );
+}
 
 type PulseHomePlaylistCard = {
   creator?: string | null;
@@ -280,7 +335,28 @@ export default function PulseContent() {
     playGenlist,
     playNextTrack,
     playPlaylist,
+    playTrack,
   } = usePulsePlayer();
+
+  const friendsListeningScrollRef = useDragScroll({ speed: 2 });
+  const [friendsListening, setFriendsListening] = useState<FriendListening[]>([]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let active = true;
+    const loadFriendsListening = () => AncialAPI.getFriendsListening<{ listeners?: FriendListening[] }>()
+      .then((result) => {
+        if (active) setFriendsListening(result?.listeners ?? []);
+      })
+      .catch(() => { });
+
+    void loadFriendsListening();
+    const timer = window.setInterval(() => void loadFriendsListening(), FRIENDS_LISTENING_REFRESH_MS);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [isAuthenticated]);
 
   const fromPulseScrollRef = useDragScroll({ speed: 2 });
   const artistsScrollRef = useDragScroll({ speed: 2 });
@@ -777,6 +853,25 @@ export default function PulseContent() {
               />
             ) : null}
           </div>
+        </>
+      ) : null}
+
+      {isAuthenticated && friendsListening.length > 0 ? (
+        <>
+          <PulseSectionTitle>{lang?.pulse_friends_listening || 'Друзья слушают'}</PulseSectionTitle>
+          <PulseScrollSection scrollRef={friendsListeningScrollRef}>
+            {friendsListening.map((item) => (
+              <FriendListeningTile
+                key={`friend-listening-${item.user.id}`}
+                item={item}
+                onOpenProfile={() => router.push(`/@${item.user.username || item.user.id}`)}
+                onPlay={() => {
+                  const songId = item.presence.activity_meta?.song_id;
+                  if (songId) void playTrack(songId);
+                }}
+              />
+            ))}
+          </PulseScrollSection>
         </>
       ) : null}
 

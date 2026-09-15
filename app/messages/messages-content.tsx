@@ -7,7 +7,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
@@ -28,6 +27,7 @@ import { extractImagesFromClipboard } from '../lib/clipboard-image';
 import { cache } from '../lib/cache.ts';
 import { globalWS } from '../lib/global-ws';
 import { formatRelativeTime } from '../lib/time';
+import { getPresenceText, isPresenceOnline, usePresence, usePresences } from '../lib/presence';
 import CreateGroupModal from './components/create-group-modal';
 import GroupInfoModal from './components/group-info-modal';
 import MessageBubble from './components/message-bubble';
@@ -159,7 +159,6 @@ export default function MessagesContent() {
   const [dialogsError, setDialogsError] = useState('');
   const [selectedDialog, setSelectedDialog] = useState<DialogMeta | null>(null);
   const [foreignUser, setForeignUser] = useState<DialogUser | null>(null);
-  const [dialogPresenceOnline, setDialogPresenceOnline] = useState<boolean | null>(null);
   const [blockedDialog, setBlockedDialog] = useState(false);
   const [dialogLoading, setDialogLoading] = useState(false);
   const [dialogError, setDialogError] = useState('');
@@ -227,6 +226,16 @@ export default function MessagesContent() {
       return dialogName.includes(q) || username.includes(q) || title.includes(q) || msg.includes(q);
     });
   }, [dialogs, dialogSearchQuery]);
+
+  // Собеседник личного диалога — тот из creator/recipient, кто не текущий пользователь.
+  const getDialogCounterpartId = (dialog: DialogListItem, myId: number) => {
+    const creatorId = toNumber(dialog.creator_id);
+    return creatorId === myId ? toNumber(dialog.recipient_id) : creatorId;
+  };
+  // Статусы собеседников для списка (кольцо «в сети», нота «слушает») — с учётом их приватности.
+  const dialogPresences = usePresences(
+    dialogs.filter((dialog) => dialog.type !== 'group').map((dialog) => getDialogCounterpartId(dialog, currentUserId)),
+  );
 
   const [isPlusVisible, setIsPlusVisible] = useState(true);
   const lastDialogsScrollTopRef = useRef(0);
@@ -370,7 +379,7 @@ export default function MessagesContent() {
     if (signal.kind === 'status' || signal.kind === 'snapshot') {
       setVoiceRoomParticipantCount(Array.isArray(signal.participants) ? signal.participants.length : 0);
     }
-  }, []);
+  }, [setVoiceRoomParticipantCount]);
   const groupMembersCount = selectedDialog?.members?.length || Number(selectedDialog?.members_count) || Number(dialogListItem?.members_count) || 0;
 
   const dialogTitle = isGroupDialog
@@ -392,23 +401,8 @@ export default function MessagesContent() {
 
   const dialogBackgroundUrl = normalizeAssetUrl(rawBg, '');
   const selectedDialogId = toNumber(selectedDialog?.id);
-  const wsPresencePayload = useSyncExternalStore<WsPayload | null>(
-    globalWS.subscribePresenceStore,
-    () => {
-      const foreignUserId = toNumber(effectiveForeignUser?.id);
-      return foreignUserId > 0 ? globalWS.getPresencePayload(foreignUserId) : null;
-    },
-    () => null,
-  );
-  const wsPresenceLastOnline: number | null = wsPresencePayload
-    ? resolvePresenceLastOnline(wsPresencePayload)
-    : null;
-  const dialogOnline =
-    wsPresenceLastOnline === null
-      ? dialogPresenceOnline === null
-        ? isOnline(effectiveForeignUser?.lastonlinetime)
-        : dialogPresenceOnline
-      : wsPresenceLastOnline > 0 && isOnline(wsPresenceLastOnline);
+  // Статус собеседника с учётом его настроек приватности: «Слушает…», «В сети», «Был(а) в сети N назад».
+  const foreignUserPresence = usePresence(isGroupDialog ? 0 : effectiveForeignUser?.id);
 
   const [typingUsers, setTypingUsers] = useState<Record<number, { name?: string; until: number }>>({});
   const lastTypingSentRef = useRef<number>(0);
@@ -463,9 +457,7 @@ export default function MessagesContent() {
       ? (lang?.unknown || 'неизвестно')
       : dialogLoading || messagesLoading || loadingNewer
         ? lang?.['updating...'] || 'Обновление...'
-        : dialogOnline
-          ? lang?.online || 'В сети'
-          : lang?.offline || 'Не в сети';
+        : getPresenceText(foreignUserPresence, lang);
 
   useEffect(() => {
     if (!activeDialogImageKey) return;
@@ -619,7 +611,6 @@ export default function MessagesContent() {
     currentDialogMetaRef.current = null;
     setForeignUser(null);
     currentForeignUserRef.current = null;
-    setDialogPresenceOnline(null);
     setBlockedDialog(false);
     setDialogLoading(false);
     setDialogError('');
@@ -1142,7 +1133,6 @@ export default function MessagesContent() {
       setSelectedDialog(null);
       currentDialogMetaRef.current = null;
       setForeignUser(null);
-      setDialogPresenceOnline(null);
       setMessages([]);
     }
 
@@ -1210,14 +1200,11 @@ export default function MessagesContent() {
 
     const nextLastOnline = resolvePresenceLastOnline(payload as WsPayload);
     if (nextLastOnline === null) return;
-    const nextPresenceOnline = nextLastOnline > 0 && isOnline(nextLastOnline);
 
     if (currentForeignUserId === 0) {
       currentForeignUserIdRef.current = userId;
       globalWS.subscribePresence([userId]);
     }
-
-    setDialogPresenceOnline(nextPresenceOnline);
 
     setForeignUser((currentForeignUser) => {
       if (!currentForeignUser) {
@@ -1764,7 +1751,7 @@ export default function MessagesContent() {
           );
         });
     });
-  }, []);
+  }, [setAttachedImages]);
 
   const removeAttachment = useCallback((id: string) => {
     setAttachedImages((prev) => {
@@ -1780,7 +1767,7 @@ export default function MessagesContent() {
       }
       return prev.filter((i) => i.id !== id);
     });
-  }, []);
+  }, [setAttachedImages]);
 
   const handleChatPaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
     // Синхронно проверяем наличие image-файлов в DataTransfer
@@ -2401,6 +2388,9 @@ export default function MessagesContent() {
                                 dialog.Mmessage?.startsWith('You:')
                               );
                               const unreadCount = Number(dialog.unread_count || 0);
+                              const counterpartPresence = dialog.type === 'group'
+                                ? undefined
+                                : dialogPresences[getDialogCounterpartId(dialog, currentUserId)];
 
                               return (
                                 <React.Fragment key={dialogHash || String(dialog.id)}>
@@ -2421,11 +2411,19 @@ export default function MessagesContent() {
                                       <img
                                         className={cn(
                                           'h-16 w-16 rounded-full object-cover shadow',
-                                          isOnline(dialog.Ulastonline) && 'ring-2 ring-lime-500',
+                                          (isPresenceOnline(counterpartPresence) || isOnline(dialog.Ulastonline)) && 'ring-2 ring-lime-500',
                                         )}
                                         src={normalizeAssetUrl(dialog.Uimg, FALLBACK_AVATAR)}
                                         alt={dialogName || 'Dialog avatar'}
                                       />
+                                      {counterpartPresence?.status !== 'offline' && counterpartPresence?.activity_type === 'music' ? (
+                                        <span
+                                          className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-900 bg-purple-500 shadow"
+                                          title={getPresenceText(counterpartPresence, lang)}
+                                        >
+                                          <Icon name="IC-music" className="h-3.5 w-3.5 fill-white" />
+                                        </span>
+                                      ) : null}
                                       {dialog.type === 'group' && dialog.community_img ? (
                                         <img
                                           className="absolute bottom-0 right-0 h-6 w-6 rounded-full border border-zinc-900 bg-zinc-900 object-cover shadow"

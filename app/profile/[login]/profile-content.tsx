@@ -43,7 +43,8 @@ import {
 import { uploadImage } from '../../lib/upload';
 import AccountName from '../../components/account-name';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
-import { globalWS } from '../../lib/global-ws';
+import { usePresence, type UserPresence } from '../../lib/presence';
+import PresenceActivity from '../../components/presence-activity';
 
 type Id = string | number;
 
@@ -68,13 +69,7 @@ interface UserPageData {
   lname?: string | null;
   login?: string | null;
   online?: boolean | number | string | null;
-  presence?: {
-    status?: 'online' | 'idle' | 'dnd' | 'offline' | string;
-    activity_type?: 'none' | 'page' | 'music' | 'chat' | 'call' | 'custom' | string;
-    activity_key?: string | null;
-    activity_label?: string | null;
-    activity_url?: string | null;
-  } | null;
+  presence?: UserPresence | null;
   subscribers?: UserPreview[] | null;
   verify?: boolean | number | string | null;
   full_data?: {
@@ -261,10 +256,6 @@ export default function UserProfileContent({ login }: { login: string }) {
       writetouser: 'Написать',
       yes: 'Да',
       translate: 'Перевести',
-      presence_browsing: 'Просматривает',
-      presence_listening: 'Слушает',
-      presence_chatting: 'Общается в чате',
-      presence_calling: 'Участвует в звонке',
     };
 
     return {
@@ -319,10 +310,6 @@ export default function UserProfileContent({ login }: { login: string }) {
       writetouser: lang?.writetouser || fallback.writetouser,
       yes: lang?.yes || fallback.yes,
       translate: lang?.translate || fallback.translate,
-      presence_browsing: lang?.presence_browsing || fallback.presence_browsing,
-      presence_listening: lang?.presence_listening || fallback.presence_listening,
-      presence_chatting: lang?.presence_chatting || fallback.presence_chatting,
-      presence_calling: lang?.presence_calling || fallback.presence_calling,
     };
   }, [lang]);
 
@@ -330,24 +317,9 @@ export default function UserProfileContent({ login }: { login: string }) {
   const mappedSubscribers = userData?.full_data?.subscribers || userData?.subscribers;
   const mappedGroups = userData?.full_data?.groups || userData?.groups;
 
-  useEffect(() => {
-    const profileUserId = Number(userData?.id || 0);
-    if (!profileUserId) return;
-
-    const refreshPresence = () => {
-      void AncialAPI.getPresence<{ statuses?: Record<string, NonNullable<UserPageData['presence']>> }>([profileUserId])
-        .then((result) => {
-          const presence = result?.statuses?.[String(profileUserId)];
-          if (!presence) return;
-          setUserData((current) => current ? { ...current, presence } : current);
-        })
-        .catch(() => { });
-    };
-
-    globalWS.addPresenceListener(profileUserId, refreshPresence);
-    globalWS.subscribePresence([profileUserId]);
-    return () => globalWS.removePresenceListener(profileUserId, refreshPresence);
-  }, [userData?.id]);
+  // Живой статус (WS-сигнал → Status.php); до первой загрузки — presence из ответа профиля.
+  const livePresence = usePresence(userData?.id);
+  const profilePresence = livePresence ?? userData?.presence;
 
   const hasFriends = Boolean(mappedFriends?.length);
   const hasSubscribers = Boolean(mappedSubscribers?.length);
@@ -978,6 +950,11 @@ export default function UserProfileContent({ login }: { login: string }) {
                     isOnline={flag(userData.online)}
                     sizeClassName="h-16 w-16 md:h-24 md:w-24"
                   />
+
+                  {/* Активность — снизу справа, в пару к кнопке смены аватарки сверху справа (на своей странице тоже). */}
+                  <div className="absolute -bottom-1.5 -right-1.5 z-[20]">
+                    <PresenceActivity presence={profilePresence} />
+                  </div>
                 </div>
 
                 <div className="flex flex-col min-w-0">
@@ -990,29 +967,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                     <span className="text-xs md:text-sm text-zinc-300 lg:truncate lg:w-96">
                       {userData.description}
                     </span>
-                  ) : null}
-                  {userData.presence?.activity_type && userData.presence.activity_type !== 'none' ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (userData.presence?.activity_url) router.push(userData.presence.activity_url);
-                      }}
-                      disabled={!userData.presence.activity_url}
-                      className="mt-1 flex w-fit max-w-full cursor-pointer items-center gap-1.5 rounded-3xl bg-zinc-800/70 px-2 py-1 text-left text-xs text-zinc-300 duration-300 active:scale-95 disabled:cursor-default disabled:active:scale-100"
-                    >
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                      <span className="truncate">
-                        {userData.presence.activity_type === 'music'
-                          ? `${strings.presence_listening}: ${userData.presence.activity_label || 'Pulse'}`
-                          : userData.presence.activity_type === 'chat'
-                            ? strings.presence_chatting
-                            : userData.presence.activity_type === 'call'
-                              ? strings.presence_calling
-                              : `${strings.presence_browsing}: ${userData.presence.activity_key || '/'}`}
-                      </span>
-                    </button>
-                  ) : null}
-                </div>
+                  ) : null}                </div>
               </div>
 
               <div className="flex flex-col md:flex-row gap-3 items-center shrink-0">
