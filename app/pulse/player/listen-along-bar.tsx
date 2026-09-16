@@ -30,7 +30,9 @@ export function ListenAlongBar({ className }: { className?: string }) {
   const others = listenAlong.listeners.filter((listener) => listener.id !== currentUserId);
   const people = isFollower && listenAlong.host ? [listenAlong.host, ...others] : others;
 
-  if (people.length === 0) return null;
+  // Пока едет первый трек хоста, полоску показываем с пометкой «подключаемся».
+  const isConnecting = isFollower && !listenAlong.state;
+  if (!isFollower && people.length === 0) return null;
 
   const visible = people.slice(0, VISIBLE_AVATARS);
   const restCount = people.length - visible.length;
@@ -53,9 +55,11 @@ export function ListenAlongBar({ className }: { className?: string }) {
       </span>
 
       <span className="min-w-0 flex-1 truncate">
-        {isFollower
-          ? `${lang?.listen_along_with || 'Слушаете вместе с'} ${hostName || ''}`.trim()
-          : `${people.length} ${lang?.listen_along_listeners || 'слушают вместе'}`}
+        {isConnecting
+          ? `${lang?.listen_along_connecting || 'Подключаемся'}${hostName ? ` ${lang?.listen_along_to || 'к'} ${hostName}` : ''}…`
+          : isFollower
+            ? `${lang?.listen_along_with || 'Слушаете вместе с'} ${hostName || ''}`.trim()
+            : `${people.length} ${lang?.listen_along_listeners || 'слушают вместе'}`}
       </span>
 
       {isFollower ? (

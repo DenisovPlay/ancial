@@ -12,6 +12,8 @@ export const LISTEN_IN_SYNC_MS = 150;
 export const LISTEN_RATE_WINDOW = 0.03;
 /** Опорная точка от хоста, даже если ничего не менялось. */
 export const LISTEN_STATE_INTERVAL_MS = 10_000;
+/** Сколько ждём первое состояние после подключения, прежде чем считать, что хост недоступен. */
+export const LISTEN_JOIN_TIMEOUT_MS = 8_000;
 
 export type ListenAlongListener = {
   id: number;

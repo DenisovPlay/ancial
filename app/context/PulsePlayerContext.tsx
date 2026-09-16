@@ -38,6 +38,7 @@ import {
   getTargetPositionMs,
   closeListenAlongRoom,
   joinListenAlong,
+  LISTEN_JOIN_TIMEOUT_MS,
   leaveListenAlong,
   resumeListenAlong,
   LISTEN_HARD_SEEK_MS,
@@ -500,6 +501,16 @@ export function PulsePlayerProvider({
   const followerPausedRef = useRef(false);
   /** Играет ли сейчас хост — чтобы отличать свою паузу от паузы хоста. */
   const hostPlayingRef = useRef(false);
+
+  /**
+   * Подключаемся к чужому прослушиванию: свою музыку сразу останавливаем, иначе она продолжала бы
+   * играть, пока едет первый трек хоста, а контролы уже вели бы себя как у ведомого.
+   */
+  const handleJoinListenAlong = (hostId: number | string) => {
+    audioRef.current?.pause();
+    followerPausedRef.current = false;
+    joinListenAlong(hostId);
+  };
 
   /** Слушатель включил свою музыку — управление только у хоста, поэтому выходим из комнаты. */
   const leaveRoomOnOwnPlayback = () => {
@@ -1941,9 +1952,9 @@ export function PulsePlayerProvider({
     playQueueTrack,
     removeQueueTrack,
     moveQueueTrack,
+    joinListenAlong: handleJoinListenAlong,
     listenAlongHostId: followingHostId,
     listenAlongListeners: listenAlong.listeners,
-    joinListenAlong,
     leaveListenAlong,
   };
 
@@ -2004,6 +2015,20 @@ export function PulsePlayerProvider({
       document.removeEventListener('visibilitychange', handleVisible);
     };
   }, [emitListenState, followingHostId, listenAlong.listeners.length]);
+
+  // Хост не ответил: не оставляем человека в вечном «подключаемся».
+  useEffect(() => {
+    if (followingHostId <= 0 || listenAlong.state) return;
+    const timer = window.setTimeout(() => {
+      leaveListenAlong();
+      notify({
+        content: lang?.listen_along_failed || 'Не удалось подключиться: хост не отвечает',
+        type: 'error',
+        time: 5,
+      });
+    }, LISTEN_JOIN_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [followingHostId, lang?.listen_along_failed, listenAlong.state, notify]);
 
   // Ведомый: включаем тот же трек, что у хоста.
   const followedTrackId = listenAlong.state?.trackId || '';
