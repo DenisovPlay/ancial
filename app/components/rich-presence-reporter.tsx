@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { AncialAPI } from '../lib/api-v2';
+import { globalWS } from '../lib/global-ws';
 import { getPresenceSection } from '../lib/presence';
 import { getPlayerTrackArtwork } from '../pulse/player/player-utils';
 
@@ -81,6 +82,15 @@ export default function RichPresenceReporter() {
     if (!isAuthenticated) return;
     const timer = window.setTimeout(() => sendPresence(document.hidden ? 'idle' : 'online'), 500);
     return () => window.clearTimeout(timer);
+  }, [isAuthenticated, sendPresence]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    // Связь восстановилась после обрыва — сразу возвращаем статус и активность, не дожидаясь
+    // очередного heartbeat: иначе «слушает…» пропадало бы на пару минут.
+    const handleReconnect = () => sendPresence(document.hidden ? 'idle' : 'online');
+    globalWS.addDialogListener('auth_ok', handleReconnect);
+    return () => globalWS.removeDialogListener('auth_ok', handleReconnect);
   }, [isAuthenticated, sendPresence]);
 
   useEffect(() => {
