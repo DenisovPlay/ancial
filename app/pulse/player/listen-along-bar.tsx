@@ -45,7 +45,8 @@ export function ListenAlongBar({ className }: { className?: string }) {
             src={person.img || FALLBACK_AVATAR}
             alt=""
             title={person.name}
-            className={cn('h-5 w-5 rounded-full object-cover ring-1 ring-black/60', index > 0 && '-ml-1.5')}
+            // Кольцо нужно только чтобы разделять налезающие аватарки: для одной это просто лишний контур.
+            className={cn('h-5 w-5 rounded-full object-cover', people.length > 1 && 'ring-1 ring-black/60', index > 0 && '-ml-1.5')}
           />
         ))}
         {restCount > 0 ? <span className="ml-1">+{restCount}</span> : null}
