@@ -37,7 +37,7 @@ export function ListenAlongBar({ className }: { className?: string }) {
   const hostName = listenAlong.host?.name?.trim();
 
   return (
-    <div className={cn('flex w-full items-center gap-1.5 text-xs text-zinc-400', className)}>
+    <div className={cn('animate-smooth-appear flex w-full items-center gap-1.5 text-xs text-zinc-400', className)}>
       <span className="flex shrink-0 items-center">
         {visible.map((person, index) => (
           <img

@@ -508,9 +508,13 @@ export function PulsePlayerProvider({
     }
   };
 
-  /** Хост отдаёт слушателям трек, позицию и признак «играет». Без слушателей молчим. */
-  const emitListenState = useCallback(() => {
-    if (!hasListenersRef.current) return;
+  /**
+   * Хост отдаёт слушателям трек, позицию и признак «играет». Без слушателей молчим.
+   * force — когда сервер сам просит состояние для только что подключившегося: признак «есть слушатели»
+   * к этому моменту ещё не обновился эффектом, и обычная отправка потерялась бы.
+   */
+  const emitListenState = useCallback((force = false) => {
+    if (!force && !hasListenersRef.current) return;
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -1960,7 +1964,12 @@ export function PulsePlayerProvider({
 
   // Подключился новый слушатель — сервер просит хоста отдать состояние немедленно.
   useEffect(() => {
-    setHostSyncRequestHandler(emitListenState);
+    setHostSyncRequestHandler(() => {
+      // Слушатель уже в комнате: помечаем это сразу, иначе первая отправка уйдёт в никуда,
+      // и человек ждал бы следующей опорной точки (до 10 секунд).
+      hasListenersRef.current = true;
+      emitListenState(true);
+    });
     return () => setHostSyncRequestHandler(null);
   }, [emitListenState]);
 
