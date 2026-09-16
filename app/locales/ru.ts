@@ -1425,6 +1425,7 @@ export const ru: Record<string, string> = {
     "listen_along_leave": "Отключиться",
     "listen_along_with": "Слушаете вместе с",
     "listen_along_listeners": "слушают вместе",
+    "listen_along_closed": "Совместное прослушивание завершено: хост отключился",
     "failed_create_chat": "Не удалось создать чат",
     "error_creating_group": "Ошибка при создании группы",
     "create_group": "Создать групповой чат",

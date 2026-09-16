@@ -44,6 +44,7 @@ import {
   LISTEN_STATE_INTERVAL_MS,
   sendListenState,
   setHostSyncRequestHandler,
+  setListenClosedHandler,
   subscribeListenAlong,
   type ListenAlongListener,
 } from '../pulse/player/listen-along';
@@ -1962,6 +1963,19 @@ export function PulsePlayerProvider({
     setHostSyncRequestHandler(emitListenState);
     return () => setHostSyncRequestHandler(null);
   }, [emitListenState]);
+
+  // Хост ушёл или закрыл плеер: музыка у слушателя продолжает играть, но об окончании надо сказать.
+  useEffect(() => {
+    setListenClosedHandler(({ wasFollowing }) => {
+      if (!wasFollowing) return;
+      notify({
+        content: lang?.listen_along_closed || 'Совместное прослушивание завершено: хост отключился',
+        type: 'info',
+        time: 5,
+      });
+    });
+    return () => setListenClosedHandler(null);
+  }, [lang?.listen_along_closed, notify]);
 
   // Опорная точка раз в 10 секунд: без неё ведомый копил бы расхождение между событиями.
   useEffect(() => {

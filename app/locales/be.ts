@@ -1425,6 +1425,7 @@ export const be: Record<string, string> = {
     "listen_along_leave": "Адключыцца",
     "listen_along_with": "Слухаеце разам з",
     "listen_along_listeners": "слухаюць разам",
+    "listen_along_closed": "Сумеснае праслухоўванне скончана: хост адключыўся",
     "failed_create_chat": "Не ўдалося стварыць чат",
     "error_creating_group": "Памылка пры стварэнні групы",
     "create_group": "Стварыць групавы чат",

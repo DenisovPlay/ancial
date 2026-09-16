@@ -1425,6 +1425,7 @@ export const en: Record<string, string> = {
   "listen_along_leave": "Disconnect",
   "listen_along_with": "Listening along with",
   "listen_along_listeners": "listening along",
+  "listen_along_closed": "Listening along ended: the host disconnected",
   "failed_create_chat": "Failed to create chat",
   "error_creating_group": "Error creating group",
   "create_group": "Create group chat",

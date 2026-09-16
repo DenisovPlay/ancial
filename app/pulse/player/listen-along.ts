@@ -44,6 +44,7 @@ const EMPTY_SNAPSHOT: ListenAlongSnapshot = { followingHostId: 0, host: null, li
 
 let snapshot: ListenAlongSnapshot = EMPTY_SNAPSHOT;
 let hostSyncRequestHandler: (() => void) | null = null;
+let listenClosedHandler: ((info: { reason: string; wasFollowing: boolean }) => void) | null = null;
 let bridgeReady = false;
 const storeListeners = new Set<StoreListener>();
 
@@ -112,8 +113,12 @@ function ensureBridge() {
   globalWS.addDialogListener('listen:closed', (payload) => {
     const data = readData(payload);
     const hostId = Number(data.host_id) || 0;
-    if (hostId && hostId !== snapshot.followingHostId) return;
+    const wasFollowing = snapshot.followingHostId > 0 && (!hostId || hostId === snapshot.followingHostId);
+    // Событие приходит обеим сторонам: слушателю — что хост ушёл, хосту — что его комнаты больше нет.
+    if (snapshot.followingHostId > 0 && !wasFollowing) return;
+
     setSnapshot({ followingHostId: 0, host: null, listeners: [], state: null });
+    listenClosedHandler?.({ reason: String(data.reason ?? ''), wasFollowing });
   });
 
   // После обрыва связи заново входим в комнату, иначе остались бы «подключены» только на словах.
@@ -151,6 +156,11 @@ export function useIsListenFollower() {
 /** Хост отдаёт состояние по запросу сервера (подключился новый слушатель). */
 export function setHostSyncRequestHandler(handler: (() => void) | null) {
   hostSyncRequestHandler = handler;
+}
+
+/** Комната закрылась (хост ушёл или закрыл плеер) — чтобы плеер мог сказать об этом человеку. */
+export function setListenClosedHandler(handler: ((info: { reason: string; wasFollowing: boolean }) => void) | null) {
+  listenClosedHandler = handler;
 }
 
 export function joinListenAlong(hostId: number | string) {
