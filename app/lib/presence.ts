@@ -33,8 +33,11 @@ const PRESENCE_SECTION_PREFIXES: Array<[prefix: string, section: string]> = [
   ['/feed', 'feed'],
   ['/pulse', 'pulse'],
   ['/cinema', 'cinema'],
+  // next.config.ts подменяет адреса: /@логин → /profile/..., /$ссылка → /group/... . В браузере остаётся
+  // короткий адрес, и usePathname отдаёт именно его — поэтому нужны оба варианта префикса.
   ['/@', 'profile'],
   ['/profile', 'profile'],
+  ['/$', 'groups'],
   ['/group', 'groups'],
   ['/friends', 'friends'],
   ['/apps', 'apps'],

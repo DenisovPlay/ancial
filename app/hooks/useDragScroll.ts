@@ -15,9 +15,6 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
   useEffect(() => {
     if (!enabled) return () => {};
 
-    const el = ref.current;
-    if (!el) return () => {};
-
     // Touch devices use native smooth touch scroll
     if ('ontouchstart' in window && navigator.maxTouchPoints > 2) return () => {};
 
@@ -25,18 +22,33 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
     let startX = 0;
     let startY = 0;
     let scrollLeft = 0;
+    let dragEl: HTMLDivElement | null = null;
     let clickResetTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Слушаем document, а ряд ищем уже в момент события: ряд может появиться позже монтирования
+    // (в поиске Pulse секции рендерятся после загрузки), и обработчики на ref.current в эффекте
+    // тогда просто не навешивались — перетаскивание не работало.
+    const getElement = (target: EventTarget | null) => {
+      const el = ref.current;
+      if (!el || !(target instanceof Node) || !el.contains(target)) return null;
+      return el;
+    };
+
     const onDragStart = (e: DragEvent) => {
+      if (!getElement(e.target)) return;
       e.preventDefault();
     };
 
     const onMouseDown = (e: MouseEvent) => {
+      const el = getElement(e.target);
+      if (!el) return;
+
       // Ignore form inputs where typing or text selection is required
       const target = e.target as HTMLElement;
       if (target.closest('input, select, textarea, [contenteditable="true"]')) return;
 
       isDown = true;
+      dragEl = el;
       didMoveRef.current = false;
       startX = e.clientX;
       startY = e.clientY;
@@ -44,7 +56,7 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!isDown) return;
+      if (!isDown || !dragEl) return;
 
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
@@ -52,47 +64,49 @@ export function useDragScroll(options: UseDragScrollOptions = {}) {
       // Threshold of 6px to differentiate click/tap from drag scroll
       if (!didMoveRef.current && Math.sqrt(dx * dx + dy * dy) > 6) {
         didMoveRef.current = true;
-        el.classList.add('dragging');
-        el.style.userSelect = 'none';
-        el.style.cursor = 'grabbing';
+        dragEl.classList.add('dragging');
+        dragEl.style.userSelect = 'none';
+        dragEl.style.cursor = 'grabbing';
       }
 
       if (didMoveRef.current) {
         e.preventDefault();
-        el.scrollLeft = scrollLeft - dx * speed;
+        dragEl.scrollLeft = scrollLeft - dx * speed;
       }
     };
 
     const onMouseUp = () => {
       if (!isDown) return;
       isDown = false;
-      el.classList.remove('dragging');
-      el.style.userSelect = '';
-      el.style.cursor = '';
+      if (dragEl) {
+        dragEl.classList.remove('dragging');
+        dragEl.style.userSelect = '';
+        dragEl.style.cursor = '';
+      }
+      dragEl = null;
     };
 
     const onClickCapture = (e: MouseEvent) => {
-      if (didMoveRef.current) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (clickResetTimer) clearTimeout(clickResetTimer);
-        clickResetTimer = setTimeout(() => {
-          didMoveRef.current = false;
-        }, 0);
-      }
+      if (!didMoveRef.current || !getElement(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (clickResetTimer) clearTimeout(clickResetTimer);
+      clickResetTimer = setTimeout(() => {
+        didMoveRef.current = false;
+      }, 0);
     };
 
-    el.addEventListener('dragstart', onDragStart);
-    el.addEventListener('mousedown', onMouseDown);
-    el.addEventListener('click', onClickCapture, true);
+    document.addEventListener('dragstart', onDragStart);
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('click', onClickCapture, true);
     document.addEventListener('mouseup', onMouseUp);
     document.addEventListener('mousemove', onMouseMove);
 
     return () => {
       if (clickResetTimer) clearTimeout(clickResetTimer);
-      el.removeEventListener('dragstart', onDragStart);
-      el.removeEventListener('mousedown', onMouseDown);
-      el.removeEventListener('click', onClickCapture, true);
+      document.removeEventListener('dragstart', onDragStart);
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('click', onClickCapture, true);
       document.removeEventListener('mouseup', onMouseUp);
       document.removeEventListener('mousemove', onMouseMove);
     };

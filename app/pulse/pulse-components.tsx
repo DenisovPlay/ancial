@@ -917,15 +917,15 @@ export function PulseScrollSection({
     <div className={cn('relative w-full max-w-screen-2xl', wrapperClassName)}>
       <div
         ref={leftGradRef}
-        className="pointer-events-none absolute left-0 -top-6 -bottom-6 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
+        className="pointer-events-none absolute -top-6 -bottom-6 left-0 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:-left-3 lg:block"
       />
       <div
         ref={rightGradRef}
-        className="pointer-events-none absolute right-0 -top-6 -bottom-6 z-10 hidden w-16 bg-gradient-to-l from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
+        className="pointer-events-none absolute -top-6 -bottom-6 right-0 z-10 hidden w-16 bg-gradient-to-l from-black to-transparent opacity-0 transition-opacity duration-300 lg:-right-3 lg:block"
       />
       <div
         ref={ref}
-        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-6 -my-6 lg:px-0', className)}
+        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-6 -my-6 lg:-mx-3', className)}
       >
         {children}
       </div>
