@@ -31,6 +31,22 @@ import type { RepeatMode } from '../pulse/player/pulse-player-full-controls';
 import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
 import { useMiniPlayerSlot } from '../pulse/player/mini-player-slot';
+import {
+  getCatchUpRate,
+  getListenAlongSnapshot,
+  getServerListenAlongSnapshot,
+  getTargetPositionMs,
+  closeListenAlongRoom,
+  joinListenAlong,
+  leaveListenAlong,
+  resumeListenAlong,
+  LISTEN_HARD_SEEK_MS,
+  LISTEN_STATE_INTERVAL_MS,
+  sendListenState,
+  setHostSyncRequestHandler,
+  subscribeListenAlong,
+  type ListenAlongListener,
+} from '../pulse/player/listen-along';
 
 /**
  * Индекс трека в очереди: по ID, если он известен (порядок очереди и списка на странице может различаться),
@@ -112,6 +128,11 @@ type PulsePlayerContextValue = {
   playQueueTrack: (index: number) => void;
   removeQueueTrack: (index: number) => void;
   moveQueueTrack: (fromIndex: number, toIndex: number) => void;
+  /** Совместное прослушивание: чьё повторяем (0 — своё), кто слушает вместе, вход и выход. */
+  listenAlongHostId: number;
+  listenAlongListeners: ListenAlongListener[];
+  joinListenAlong: (hostId: number | string) => void;
+  leaveListenAlong: () => void;
 };
 
 declare global {
@@ -350,6 +371,10 @@ export function PulsePlayerProvider({
     setBottomMiniLeaving(Boolean(miniPlayerSlot && !prevMiniPlayerSlot));
   }
   const showBottomMiniPlayer = !miniPlayerSlot || bottomMiniLeaving;
+
+  // Совместное прослушивание: с кем слушаем, кто слушает вместе и последнее состояние хоста.
+  const listenAlong = useSyncExternalStore(subscribeListenAlong, getListenAlongSnapshot, getServerListenAlongSnapshot);
+  const followingHostId = listenAlong.followingHostId;
   useEffect(() => {
     if (!bottomMiniLeaving) return;
     const timer = window.setTimeout(() => setBottomMiniLeaving(false), MINI_PLAYER_HANDOFF_MS);
@@ -465,8 +490,45 @@ export function PulsePlayerProvider({
     updateMediaPositionState();
   };
 
+  // Ведомый не управляет воспроизведением: проверки читают ref, чтобы не пересоздавать обработчики.
+  const followingHostIdRef = useRef(0);
+  const hasListenersRef = useRef(false);
+  /** true, пока трек включает сама синхронизация: такой запуск из комнаты не выкидывает. */
+  const followDrivenPlayRef = useRef(false);
+  /** Слушатель сам поставил паузу: она переживает смену трека, пока он не нажмёт плей. */
+  const followerPausedRef = useRef(false);
+  /** Играет ли сейчас хост — чтобы отличать свою паузу от паузы хоста. */
+  const hostPlayingRef = useRef(false);
+
+  /** Слушатель включил свою музыку — управление только у хоста, поэтому выходим из комнаты. */
+  const leaveRoomOnOwnPlayback = () => {
+    if (followingHostIdRef.current > 0 && !followDrivenPlayRef.current) {
+      leaveListenAlong();
+    }
+  };
+
+  /** Хост отдаёт слушателям трек, позицию и признак «играет». Без слушателей молчим. */
+  const emitListenState = useCallback(() => {
+    if (!hasListenersRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    sendListenState({
+      playing: !audio.paused && !audio.ended,
+      positionMs: Math.round((Number.isFinite(audio.currentTime) ? audio.currentTime : 0) * 1000),
+      trackId: currentSongIdRef.current,
+    });
+  }, []);
+
   const finishSeek = (commit: boolean) => {
     if (!seekingSliderRef.current) return;
+
+    // Перемотка ведомому запрещена: позицию задаёт хост.
+    if (followingHostIdRef.current > 0) {
+      seekingSliderRef.current = null;
+      setActiveSeekSlider(null);
+      return;
+    }
 
     const audio = audioRef.current;
     if (commit && audio) {
@@ -479,6 +541,7 @@ export function PulsePlayerProvider({
     if (commit) {
       setCurrentTime(seekValue);
       forceUpdateMediaPositionState();
+      emitListenState();
     } else if (audio && Number.isFinite(audio.currentTime)) {
       setCurrentTime(audio.currentTime);
       setSeekValue(audio.currentTime);
@@ -703,6 +766,13 @@ export function PulsePlayerProvider({
   };
 
   const closePlayer = () => {
+    // Закрыли плеер — выходим из чужой комнаты, а свою распускаем: слушать больше нечего.
+    if (followingHostIdRef.current > 0) {
+      leaveListenAlong();
+    } else if (hasListenersRef.current) {
+      closeListenAlongRoom();
+    }
+
     const audio = audioRef.current;
     if (audio) {
       audio.pause();
@@ -816,6 +886,9 @@ export function PulsePlayerProvider({
         time: 5,
         html: true,
       });
+
+      // Ведомый не листает сам: трек недоступен в его стране — ждём следующий от хоста.
+      if (followingHostIdRef.current > 0) return;
 
       if (currentIsPlaylistRef.current && indexRef.current < playlistRef.current.length - 1) {
         window.nextplaylisttrack?.();
@@ -1056,6 +1129,7 @@ export function PulsePlayerProvider({
     startIndex = 0,
     expectedSongId?: number | string | null,
   ) => {
+    leaveRoomOnOwnPlayback();
     const resolvedId = normalizeText(String(id));
     const playId = kind === 'artist' ? `artist_${resolvedId}` : resolvedId;
     const shouldForceReload = forceReload === true;
@@ -1167,6 +1241,7 @@ export function PulsePlayerProvider({
   };
 
   const prevTrack = async () => {
+    if (followingHostIdRef.current > 0) return;
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) return;
 
     const nextIndex = indexRef.current > 0 ? indexRef.current - 1 : 0;
@@ -1222,6 +1297,9 @@ export function PulsePlayerProvider({
   };
 
   const nextTrack = async () => {
+    // Листать нельзя: ведомый идёт за хостом, следующий трек придёт от него.
+    if (followingHostIdRef.current > 0) return;
+
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -1294,6 +1372,8 @@ export function PulsePlayerProvider({
     if (!audio) return;
 
     if (audio.paused) {
+      // Слушатель вернулся к прослушиванию — снимаем свою паузу и дальше идём за хостом.
+      followerPausedRef.current = false;
       void audio.play().catch(() => {
         // ignore blocked autoplay
       });
@@ -1443,6 +1523,8 @@ export function PulsePlayerProvider({
       setIsBlockedTrackModalOpen(true);
       return;
     }
+    // Очередь запускает трек в обход playCollection — выходим из комнаты здесь же.
+    if (followingHostIdRef.current > 0) leaveListenAlong();
     setPlaylistIndex(targetIndex);
     void playLoadedTrackRef.current(targetTrack);
   }, [userCountry]);
@@ -1536,6 +1618,12 @@ export function PulsePlayerProvider({
       startProgressLoop();
       startVisualProgressLoop();
       syncTrackProgress({ forceProgressUpdate: true });
+      emitListenState();
+
+      // Следующий трек от хоста не должен снимать паузу, которую поставил сам слушатель.
+      if (followingHostIdRef.current > 0 && followerPausedRef.current) {
+        audioRef.current?.pause();
+      }
     };
 
     const handlePause = () => {
@@ -1548,6 +1636,12 @@ export function PulsePlayerProvider({
       stopProgressLoop();
       stopVisualProgressLoop();
       syncTrackProgress({ forceProgressUpdate: true });
+      emitListenState();
+
+      // Пауза хоста — общая, её запоминать не нужно; своя пауза слушателя переживает смену трека.
+      if (followingHostIdRef.current > 0 && hostPlayingRef.current) {
+        followerPausedRef.current = true;
+      }
     };
 
     const handleEnded = () => {
@@ -1578,6 +1672,8 @@ export function PulsePlayerProvider({
 
     const handleLoadedMetadata = () => {
       syncTrackProgress({ forceProgressUpdate: true });
+      // Трек сменился — слушателям нужна новая опорная точка.
+      emitListenState();
     };
 
     const handleTimeUpdate = () => {
@@ -1840,7 +1936,115 @@ export function PulsePlayerProvider({
     playQueueTrack,
     removeQueueTrack,
     moveQueueTrack,
+    listenAlongHostId: followingHostId,
+    listenAlongListeners: listenAlong.listeners,
+    joinListenAlong,
+    leaveListenAlong,
   };
+
+  // --- Совместное прослушивание ---------------------------------------------------------------
+
+  useEffect(() => {
+    followingHostIdRef.current = followingHostId;
+    if (followingHostId === 0) followerPausedRef.current = false;
+  }, [followingHostId]);
+
+  useEffect(() => {
+    hostPlayingRef.current = Boolean(listenAlong.state?.playing);
+  }, [listenAlong.state?.playing]);
+
+  useEffect(() => {
+    hasListenersRef.current = listenAlong.listeners.length > 0 && followingHostId === 0;
+  }, [followingHostId, listenAlong.listeners.length]);
+
+  // Подключился новый слушатель — сервер просит хоста отдать состояние немедленно.
+  useEffect(() => {
+    setHostSyncRequestHandler(emitListenState);
+    return () => setHostSyncRequestHandler(null);
+  }, [emitListenState]);
+
+  // Опорная точка раз в 10 секунд: без неё ведомый копил бы расхождение между событиями.
+  useEffect(() => {
+    if (followingHostId > 0 || listenAlong.listeners.length === 0) return;
+    const timer = window.setInterval(emitListenState, LISTEN_STATE_INTERVAL_MS);
+
+    // Хост вернулся из фона: слушатели ждут свежую опорную точку, таймер там стоял.
+    const handleVisible = () => {
+      if (document.hidden) return;
+      resumeListenAlong();
+      emitListenState();
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisible);
+    };
+  }, [emitListenState, followingHostId, listenAlong.listeners.length]);
+
+  // Ведомый: включаем тот же трек, что у хоста.
+  const followedTrackId = listenAlong.state?.trackId || '';
+  useEffect(() => {
+    if (followingHostId <= 0 || !followedTrackId) return;
+    if (String(currentSongIdRef.current) === followedTrackId) return;
+
+    // Это переключение пришло от хоста, а не от человека — из комнаты не выходим.
+    followDrivenPlayRef.current = true;
+    void playTrack(followedTrackId).finally(() => {
+      followDrivenPlayRef.current = false;
+    });
+  }, [followedTrackId, followingHostId, playTrack]);
+
+  // Ведомый: держим позицию. Сами звук не включаем — это и политика браузеров про автозапуск,
+  // и правило «поставил паузу — стоишь, пока не подключишься обратно».
+  const followedState = listenAlong.state;
+  useEffect(() => {
+    if (followingHostId <= 0 || !followedState) return;
+
+    const align = () => {
+      const audio = audioRef.current;
+      if (!audio || String(currentSongIdRef.current) !== followedState.trackId) return;
+
+      if (!followedState.playing) {
+        if (!audio.paused) audio.pause();
+        return;
+      }
+
+      // Хост играет: сами возобновляем, только если слушатель не ставил паузу вручную.
+      if (audio.paused) {
+        if (followerPausedRef.current) return;
+        void audio.play().catch(() => {
+          // автозапуск заблокирован — слушатель нажмёт плей сам
+        });
+        return;
+      }
+
+      const driftMs = getTargetPositionMs(followedState) - audio.currentTime * 1000;
+      if (Math.abs(driftMs) > LISTEN_HARD_SEEK_MS) {
+        audio.currentTime = Math.max(0, getTargetPositionMs(followedState) / 1000);
+        audio.playbackRate = 1;
+        return;
+      }
+      audio.playbackRate = getCatchUpRate(driftMs);
+    };
+
+    align();
+    const timer = window.setInterval(align, 1000);
+
+    // В PWA на телефоне таймеры в фоне замораживаются, а звук играет дальше: вернулись — сразу ровняемся.
+    const handleVisible = () => {
+      if (document.hidden) return;
+      resumeListenAlong();
+      align();
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisible);
+      if (audioRef.current) audioRef.current.playbackRate = 1;
+    };
+  }, [followedState, followingHostId]);
 
   const isFullMode = mode === 'full';
 

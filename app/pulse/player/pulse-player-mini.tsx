@@ -5,6 +5,7 @@ import { useRef, type ComponentType, type RefObject, type TouchEventHandler } fr
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
 import { PulseRangeTrack } from './pulse-range-track';
+import { useIsListenFollower } from './listen-along';
 
 type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 type ActiveSeekSlider = 'desktop' | 'mobile' | null;
@@ -50,7 +51,8 @@ type PulsePlayerMiniProps = {
   volumeSliderRef: RefObject<HTMLInputElement | null>;
 };
 
-const MINI_ICON_BUTTON = 'hidden shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95 lg:flex';
+// disabled — для слушателя в совместном прослушивании: листать и перематывать может только хост.
+const MINI_ICON_BUTTON = 'hidden shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 disabled:hover:border-transparent disabled:hover:bg-transparent lg:flex';
 const MINI_EASE = 'ease-[cubic-bezier(0.32,0.72,0,1)]';
 
 /** Prop-driven mini player presentation. Playback and gesture ownership stay in the provider. */
@@ -100,6 +102,7 @@ export function PulsePlayerMini({
   const touchMovedRef = useRef(false);
   const desktopSeekTime = activeSeekSlider === 'desktop' ? seekValue : currentTime;
 
+  const isFollower = useIsListenFollower();
   const w = Math.max(shellWidth || 0, 360);
   const transition = isSwiping ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
 
@@ -232,6 +235,7 @@ export function PulsePlayerMini({
         </div>
         <PulseRangeTrack
           className="max-w-md"
+          disabled={isFollower}
           min={0}
           max={duration || 0}
           step="0.01"
@@ -263,7 +267,7 @@ export function PulsePlayerMini({
         </div>
 
         {/* prev/next — только десктоп; на телефонах треки листаются свайпом */}
-        <button type="button" onClick={onPrevTrack} className={cn(MINI_ICON_BUTTON, docked ? 'h-8 w-8' : 'h-10 w-10')}>
+        <button type="button" onClick={onPrevTrack} disabled={isFollower} className={cn(MINI_ICON_BUTTON, docked ? 'h-8 w-8' : 'h-10 w-10')}>
           <Icon name="IC-moveback" className={cn('fill-white', docked ? 'h-6 w-6' : 'h-7 w-7')} />
         </button>
 
@@ -278,7 +282,7 @@ export function PulsePlayerMini({
           <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className={cn('h-7 w-7 fill-white', docked ? 'lg:h-6 lg:w-6' : 'lg:h-8 lg:w-8')} />
         </button>
 
-        <button type="button" onClick={onNextTrack} className={cn(MINI_ICON_BUTTON, docked ? 'h-8 w-8' : 'h-10 w-10')}>
+        <button type="button" onClick={onNextTrack} disabled={isFollower} className={cn(MINI_ICON_BUTTON, docked ? 'h-8 w-8' : 'h-10 w-10')}>
           <Icon name="IC-moveforward" className={cn('fill-white', docked ? 'h-6 w-6' : 'h-7 w-7')} />
         </button>
       </div>

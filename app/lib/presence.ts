@@ -9,6 +9,10 @@ import { formatRelativeTime } from './time';
 export type PresenceMusicMeta = {
   artist?: string;
   cover?: string;
+  /** Человек слушает вместе с другим: в блоке «Друзья слушают» такие записи не показываем. */
+  listen_host_id?: number;
+  /** Кто слушает вместе с ним — аватарки на плитке, чтобы было видно, что человек не один. */
+  listen_listeners?: Array<{ id: number; img: string }>;
   song_id?: string;
   title?: string;
 };

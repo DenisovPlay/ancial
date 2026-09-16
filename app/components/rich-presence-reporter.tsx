@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
@@ -9,6 +9,11 @@ import { AncialAPI } from '../lib/api-v2';
 import { globalWS } from '../lib/global-ws';
 import { getPresenceSection } from '../lib/presence';
 import { getPlayerTrackArtwork } from '../pulse/player/player-utils';
+import {
+  getListenAlongSnapshot,
+  getServerListenAlongSnapshot,
+  subscribeListenAlong,
+} from '../pulse/player/listen-along';
 
 const PRESENCE_HEARTBEAT_MS = 120_000;
 const PRESENCE_OVERRIDE_EVENT = 'zypo:presence-activity';
@@ -36,6 +41,8 @@ export default function RichPresenceReporter() {
   const { isAuthenticated } = useAuth();
   const { currentTrackObj, isPlaying } = usePulsePlayer();
   const [activityOverride, setActivityOverride] = useState<PresenceActivity | null>(null);
+  // Совместное прослушивание попадает в активность: так блок «Друзья слушают» не зацикливается.
+  const listenAlong = useSyncExternalStore(subscribeListenAlong, getListenAlongSnapshot, getServerListenAlongSnapshot);
   const trackId = String(currentTrackObj?.sid || '');
   const trackTitle = String(currentTrackObj?.title || '').trim();
   const trackArtist = String(currentTrackObj?.artist || '').trim();
@@ -50,7 +57,18 @@ export default function RichPresenceReporter() {
         activity_key: trackId,
         activity_label: [trackTitle, trackArtist].filter(Boolean).join(' — '),
         activity_url: `/pulse/track/${encodeURIComponent(trackId)}`,
-        activity_meta: { song_id: trackId, title: trackTitle, artist: trackArtist, cover: trackCover },
+        activity_meta: {
+          song_id: trackId,
+          title: trackTitle,
+          artist: trackArtist,
+          cover: trackCover,
+          // Слушаю вместе с кем-то — такие записи не попадают в блок «Друзья слушают».
+          listen_host_id: listenAlong.followingHostId,
+          // Мои слушатели — их аватарки видны на моей плитке в блоке.
+          listen_listeners: listenAlong.followingHostId > 0
+            ? []
+            : listenAlong.listeners.slice(0, 4).map((listener) => ({ id: listener.id, img: listener.img })),
+        },
       };
     }
 
@@ -62,7 +80,7 @@ export default function RichPresenceReporter() {
     // Страница — только раздел сайта; служебные разделы (настройки, кошелёк, вход) не сообщаем.
     const section = getPresenceSection(pathname);
     return section ? { ...NO_ACTIVITY, activity_type: 'page', activity_key: section } : NO_ACTIVITY;
-  }, [activityOverride, isPlaying, pathname, trackArtist, trackCover, trackId, trackTitle]);
+  }, [activityOverride, isPlaying, listenAlong.followingHostId, listenAlong.listeners, pathname, trackArtist, trackCover, trackId, trackTitle]);
 
   useEffect(() => {
     const handleOverride = (event: Event) => {

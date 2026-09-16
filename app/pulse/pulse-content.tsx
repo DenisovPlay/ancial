@@ -64,40 +64,69 @@ type FriendListening = {
 const FRIENDS_LISTENING_REFRESH_MS = 60_000;
 
 /** Плитка «Друзья слушают»: обложка трека запускает его, аватарка ведёт в профиль друга. */
+/**
+ * Плитка «Друзья слушают»: два действия без лишних кнопок — нажатие по аватарке открывает профиль,
+ * нажатие по всей остальной плитке подключает к совместному прослушиванию.
+ * Кнопка подключения лежит слоем под аватаркой: вложенные кнопки в разметке недопустимы.
+ */
 function FriendListeningTile({
   item,
+  onListenAlong,
   onOpenProfile,
-  onPlay,
 }: {
   item: FriendListening;
+  onListenAlong: () => void;
   onOpenProfile: () => void;
-  onPlay: () => void;
 }) {
+  const { lang } = useAuth();
   const meta = item.presence.activity_meta;
   const friendName = decodeHtmlEntities([item.user.fname, item.user.lname].filter(Boolean).join(' ')) || item.user.username || '';
+  const trackTitle = meta?.title || 'Pulse';
+  const coListeners = (meta?.listen_listeners || []).slice(0, 3);
 
   return (
     <div className="group relative h-32 w-32 shrink-0 overflow-hidden rounded-3xl border border-zinc-600/30 shadow duration-300 active:scale-95 lg:h-48 lg:w-48">
-      <button type="button" onClick={onPlay} className="h-full w-full cursor-pointer" aria-label={meta?.title || 'Play'}>
-        <PulseCoverImage
-          alt={meta?.title || ''}
-          className="duration-300 group-hover:scale-105"
-          sizes={PULSE_COVER_IMAGE_SIZES.playlistTile}
-          src={getImageUrl(meta?.cover, DEFAULT_TRACK_IMAGE)}
-        />
-      </button>
+      <PulseCoverImage
+        alt={trackTitle}
+        className="duration-300 group-hover:scale-105"
+        sizes={PULSE_COVER_IMAGE_SIZES.playlistTile}
+        src={getImageUrl(meta?.cover, DEFAULT_TRACK_IMAGE)}
+      />
+
+      <button
+        type="button"
+        onClick={onListenAlong}
+        title={`${lang?.listen_along || 'Слушать вместе'}: ${trackTitle}`}
+        aria-label={`${lang?.listen_along || 'Слушать вместе'}: ${trackTitle}`}
+        className="absolute inset-0 z-[1] cursor-pointer"
+      />
 
       <button
         type="button"
         onClick={onOpenProfile}
+        title={friendName}
         aria-label={friendName}
-        className="absolute left-1.5 top-1.5 h-10 w-10 cursor-pointer overflow-hidden rounded-full border border-zinc-600/30 shadow duration-300 active:scale-95"
+        className="absolute left-1.5 top-1.5 z-[3] h-10 w-10 cursor-pointer overflow-hidden rounded-full border border-zinc-600/30 shadow duration-300 active:scale-95"
       >
         <img src={getImageUrl(item.user.img, '/img/placeholders/user.png')} alt="" className="h-full w-full object-cover" />
       </button>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col bg-gradient-to-t from-black via-black/90 to-transparent p-3 text-left">
-        <span className="truncate text-sm font-medium text-white">{meta?.title || 'Pulse'}</span>
+      {/* Кто слушает вместе с ним: видно, что человек не один. */}
+      {coListeners.length > 0 ? (
+        <span className="pointer-events-none absolute right-1.5 top-1.5 z-[2] flex items-center">
+          {coListeners.map((listener, index) => (
+            <img
+              key={listener.id}
+              src={getImageUrl(listener.img, '/img/placeholders/user.png')}
+              alt=""
+              className={cn('h-6 w-6 rounded-full object-cover ring-1 ring-black/60', index > 0 && '-ml-1.5')}
+            />
+          ))}
+        </span>
+      ) : null}
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex flex-col bg-gradient-to-t from-black via-black/90 to-transparent p-3 text-left">
+        <span className="truncate text-sm font-medium text-white">{trackTitle}</span>
         <span className="truncate text-xs text-zinc-300">{friendName}</span>
       </div>
     </div>
@@ -335,7 +364,7 @@ export default function PulseContent() {
     playGenlist,
     playNextTrack,
     playPlaylist,
-    playTrack,
+    joinListenAlong,
   } = usePulsePlayer();
 
   const friendsListeningScrollRef = useDragScroll({ speed: 2 });
@@ -864,11 +893,8 @@ export default function PulseContent() {
               <FriendListeningTile
                 key={`friend-listening-${item.user.id}`}
                 item={item}
+                onListenAlong={() => joinListenAlong(item.user.id)}
                 onOpenProfile={() => router.push(`/@${item.user.username || item.user.id}`)}
-                onPlay={() => {
-                  const songId = item.presence.activity_meta?.song_id;
-                  if (songId) void playTrack(songId);
-                }}
               />
             ))}
           </PulseScrollSection>

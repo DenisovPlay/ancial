@@ -57,11 +57,18 @@ type MenuAction = { icon: string; key: string; label: string; onClick: () => voi
  * происходит и действия: для музыки «Включить», «Открыть», «Поделиться»; для группового звонка —
  * «Присоединиться». «Не в сети» и «В сети» без активности не показываем: это видно по кольцу аватарки.
  */
-export default function PresenceActivity({ presence }: { presence: UserPresence | null | undefined }) {
+export default function PresenceActivity({
+  presence,
+  userId,
+}: {
+  presence: UserPresence | null | undefined;
+  /** ID хозяина активности; задан — можно подключиться к его прослушиванию (на своей странице не нужно). */
+  userId?: number | string;
+}) {
   const router = useRouter();
   const { lang } = useAuth();
   const { showNote } = useNotification();
-  const { playTrack } = usePulsePlayer();
+  const { joinListenAlong, playTrack } = usePulsePlayer();
   const [isShareOpen, setIsShareOpen] = useState(false);
 
   if (!presence || !isPresenceOnline(presence)) return null;
@@ -86,6 +93,14 @@ export default function PresenceActivity({ presence }: { presence: UserPresence 
   }
   if (shareUrl) {
     musicActions.push({ icon: 'IC-share', key: 'share', label: lang?.share || 'Поделиться', onClick: () => setIsShareOpen(true) });
+  }
+  if (isMusic && Number(userId) > 0) {
+    musicActions.push({
+      icon: 'IC-speaker',
+      key: 'listen-along',
+      label: lang?.listen_along || 'Слушать вместе',
+      onClick: () => joinListenAlong(Number(userId)),
+    });
   }
 
   return (

@@ -965,7 +965,7 @@ export default function UserProfileContent({ login }: { login: string }) {
 
                   {/* Активность — снизу слева: не прижимается к имени и описанию справа и не пересекается с кнопкой смены аватарки. */}
                   <div className="absolute -bottom-1.5 -left-1.5 z-[20]">
-                    <PresenceActivity presence={profilePresence} />
+                    <PresenceActivity presence={profilePresence} userId={flag(userData.is_owner) ? undefined : userData.id} />
                   </div>
                 </div>
 

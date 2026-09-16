@@ -21,6 +21,8 @@ type PulseRangeTrackProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'classNa
 };
 
 export function PulseRangeTrack({ className, inputRef, onChange, progressPercent, ...inputProps }: PulseRangeTrackProps) {
+  // Выключенная дорожка (слушатель в совместном прослушивании): гасим и не ловим нажатия.
+  const isDisabled = Boolean(inputProps.disabled);
   // Стартовое заполнение до первого кадра цикла (например, плеер открыт на паузе).
   useEffect(() => {
     if (inputRef?.current) setRangeProgressVar(inputRef.current);
@@ -28,7 +30,7 @@ export function PulseRangeTrack({ className, inputRef, onChange, progressPercent
 
   return (
     <div
-      className={cn('group/track relative flex h-4 w-full items-center', className)}
+      className={cn('group/track relative flex h-4 w-full items-center', isDisabled && 'pointer-events-none opacity-40', className)}
       style={progressPercent === undefined ? undefined : ({ '--pulse-progress': `${progressPercent}%` } as CSSProperties)}
     >
       <div className="pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/20 transition-[height] duration-300 lg:group-hover/track:h-1.5">

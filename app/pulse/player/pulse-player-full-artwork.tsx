@@ -4,6 +4,7 @@ import type { RefObject } from 'react';
 
 import { formatPlaybackTime } from './player-utils';
 import { PulseRangeTrack } from './pulse-range-track';
+import { useIsListenFollower } from './listen-along';
 
 type PulsePlayerFullArtworkProps = {
   displayedCurrentTime: number;
@@ -29,9 +30,13 @@ export function PulsePlayerFullArtwork({
   onSeekSubmit,
   lang,
 }: PulsePlayerFullArtworkProps) {
+  // Перемотка у слушателя выключена: позицию задаёт хост.
+  const isFollower = useIsListenFollower();
+
   return (
     <div className="group relative mt-3 flex w-full flex-col items-center justify-center">
       <PulseRangeTrack
+        disabled={isFollower}
         min={0}
         max={duration || 0}
         step="0.01"

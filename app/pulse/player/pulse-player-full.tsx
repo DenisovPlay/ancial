@@ -15,6 +15,7 @@ import { PulsePlayerFullHeader } from './pulse-player-full-header';
 import { PulsePlayerFullArtwork } from './pulse-player-full-artwork';
 import { PulsePlayerFullControls, type RepeatMode } from './pulse-player-full-controls';
 import { PulseQueueModal } from './pulse-queue-modal';
+import { ListenAlongBar } from './listen-along-bar';
 import { Dropdown, DropdownItem } from '../../components/navigation';
 import type { PulseTrack } from '../../context/PulsePlayerContext';
 
@@ -401,6 +402,9 @@ export function PulsePlayerFull({
                 </div>
               </div>
             </div>
+
+            {/* Совместное прослушивание: аватарки слушающих и выход. Без комнаты не рисуется. */}
+            <ListenAlongBar className="mt-3" />
 
             {/* Track title + artist + actions row — direct child of w-full column */}
             <div className="mt-3 flex w-full items-center justify-between gap-3">
