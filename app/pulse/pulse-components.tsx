@@ -925,7 +925,7 @@ export function PulseScrollSection({
       />
       <div
         ref={ref}
-        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-6 -my-6 lg:-mx-3', className)}
+        className={cn('viewport dragscroll flex w-full max-w-screen-2xl flex-nowrap gap-3 overflow-x-auto px-3 py-6 -my-6 lg:-mx-3 lg:w-[calc(100%_+_1.5rem)] lg:max-w-[calc(100%_+_1.5rem)]', className)}
       >
         {children}
       </div>

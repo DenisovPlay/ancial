@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/cn';
@@ -15,10 +15,13 @@ import {
 const FALLBACK_AVATAR = '/img/placeholders/user.png';
 /** Сколько аватарок показываем, остальные — числом (как у «прочитали» в групповых чатах). */
 const VISIBLE_AVATARS = 4;
+/** Длительность сворачивания — столько же держим блок в разметке, чтобы анимация доиграла. */
+const EXIT_MS = 300;
 
 /**
  * Полоска совместного прослушивания: у ведомого — «Слушаете вместе с …» и выход,
- * у хоста — аватарки тех, кто слушает вместе. Комнаты нет — ничего не рисуем.
+ * у хоста — аватарки тех, кто слушает вместе.
+ * Появляется и исчезает разворачиванием по высоте: соседние блоки плеера не дёргаются.
  */
 export function ListenAlongBar({ className }: { className?: string }) {
   const { lang, user } = useAuth();
@@ -29,48 +32,83 @@ export function ListenAlongBar({ className }: { className?: string }) {
   // Себя в списке не показываем: важно, с кем ты слушаешь, а не что ты тут есть.
   const others = listenAlong.listeners.filter((listener) => listener.id !== currentUserId);
   const people = isFollower && listenAlong.host ? [listenAlong.host, ...others] : others;
+  const visible = isFollower || others.length > 0;
 
-  // Пока едет первый трек хоста, полоску показываем с пометкой «подключаемся».
-  const isConnecting = isFollower && !listenAlong.state;
-  if (!isFollower && people.length === 0) return null;
+  // Держим блок в разметке, пока идёт сворачивание, иначе он пропадал бы рывком.
+  const [mounted, setMounted] = useState(visible);
+  const [leaving, setLeaving] = useState(false);
+  const [prevVisible, setPrevVisible] = useState(visible);
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    if (visible) {
+      setMounted(true);
+      setLeaving(false);
+    } else {
+      setLeaving(true);
+    }
+  }
 
-  const visible = people.slice(0, VISIBLE_AVATARS);
-  const restCount = people.length - visible.length;
+  useEffect(() => {
+    if (!leaving) return;
+    const timer = window.setTimeout(() => {
+      setMounted(false);
+      setLeaving(false);
+    }, EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [leaving]);
+
+  if (!mounted) return null;
+
+  const shownPeople = people.slice(0, VISIBLE_AVATARS);
+  const restCount = people.length - shownPeople.length;
   const hostName = listenAlong.host?.name?.trim();
+  // Пока едет первый трек хоста, показываем «подключаемся».
+  const isConnecting = isFollower && !listenAlong.state;
 
   return (
-    <div className={cn('animate-smooth-appear flex w-full items-center gap-1.5 text-xs text-zinc-400', className)}>
-      <span className="flex shrink-0 items-center">
-        {visible.map((person, index) => (
-          <img
-            key={person.id}
-            src={person.img || FALLBACK_AVATAR}
-            alt=""
-            title={person.name}
-            // Кольцо нужно только чтобы разделять налезающие аватарки: для одной это просто лишний контур.
-            className={cn('h-5 w-5 rounded-full object-cover', people.length > 1 && 'ring-1 ring-black/60', index > 0 && '-ml-1.5')}
-          />
-        ))}
-        {restCount > 0 ? <span className="ml-1">+{restCount}</span> : null}
-      </span>
+    <div
+      className={cn(
+        'grid w-full transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+        'starting:grid-rows-[0fr] starting:opacity-0',
+        leaving ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100',
+      )}
+    >
+      <div className="min-h-0 overflow-hidden">
+        {/* Внешний отступ живёт внутри, иначе у свёрнутого блока оставался бы пустой зазор. */}
+        <div className={cn('flex w-full items-center gap-1.5 text-xs text-zinc-400', className)}>
+          <span className="flex shrink-0 items-center">
+            {shownPeople.map((person, index) => (
+              <img
+                key={person.id}
+                src={person.img || FALLBACK_AVATAR}
+                alt=""
+                title={person.name}
+                // Кольцо нужно только чтобы разделять налезающие аватарки: для одной это лишний контур.
+                className={cn('h-5 w-5 rounded-full object-cover', people.length > 1 && 'ring-1 ring-black/60', index > 0 && '-ml-1.5')}
+              />
+            ))}
+            {restCount > 0 ? <span className="ml-1">+{restCount}</span> : null}
+          </span>
 
-      <span className="min-w-0 flex-1 truncate">
-        {isConnecting
-          ? `${lang?.listen_along_connecting || 'Подключаемся'}${hostName ? ` ${lang?.listen_along_to || 'к'} ${hostName}` : ''}…`
-          : isFollower
-            ? `${lang?.listen_along_with || 'Слушаете вместе с'} ${hostName || ''}`.trim()
-            : `${people.length} ${lang?.listen_along_listeners || 'слушают вместе'}`}
-      </span>
+          <span className="min-w-0 flex-1 truncate">
+            {isConnecting
+              ? `${lang?.listen_along_connecting || 'Подключаемся'}${hostName ? ` ${lang?.listen_along_to || 'к'} ${hostName}` : ''}…`
+              : isFollower
+                ? `${lang?.listen_along_with || 'Слушаете вместе с'} ${hostName || ''}`.trim()
+                : `${people.length} ${lang?.listen_along_listeners || 'слушают вместе'}`}
+          </span>
 
-      {isFollower ? (
-        <button
-          type="button"
-          onClick={leaveListenAlong}
-          className="shrink-0 cursor-pointer text-zinc-300 underline-offset-2 duration-300 hover:text-white hover:underline"
-        >
-          {lang?.listen_along_leave || 'Отключиться'}
-        </button>
-      ) : null}
+          {isFollower ? (
+            <button
+              type="button"
+              onClick={leaveListenAlong}
+              className="ml-auto shrink-0 cursor-pointer rounded-full border border-transparent px-3 py-1 text-xs text-zinc-300 duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/80 hover:text-white active:scale-95"
+            >
+              {lang?.listen_along_leave || 'Отключиться'}
+            </button>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
