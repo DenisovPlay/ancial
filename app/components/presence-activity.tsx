@@ -94,7 +94,9 @@ export default function PresenceActivity({
   if (shareUrl) {
     musicActions.push({ icon: 'IC-share', key: 'share', label: lang?.share || 'Поделиться', onClick: () => setIsShareOpen(true) });
   }
-  if (isMusic && Number(userId) > 0) {
+  // Он сам слушает вместе с кем-то — своей очередью не управляет, подключаться к нему некуда.
+  const isFollowingSomeone = isMusic && Number(meta?.listen_host_id) > 0;
+  if (isMusic && Number(userId) > 0 && !isFollowingSomeone) {
     musicActions.push({
       icon: 'IC-speaker',
       key: 'listen-along',

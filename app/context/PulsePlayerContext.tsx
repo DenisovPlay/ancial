@@ -2181,6 +2181,18 @@ export function PulsePlayerProvider({
     setListenClosedHandler(({ reason, wasFollowing }) => {
       // Отключение по кнопке приходит всем устройствам аккаунта: это не уход хоста.
       if (!wasFollowing || reason === 'self_leave') return;
+
+      if (reason === 'listen_host_busy' || reason === 'access_denied') {
+        notify({
+          content: reason === 'listen_host_busy'
+            ? lang?.listen_along_busy || 'Этот человек сам слушает вместе с кем-то'
+            : lang?.listen_along_denied || 'Этот человек не разрешает слушать вместе',
+          type: 'error',
+          time: 5,
+        });
+        return;
+      }
+
       notify({
         content: lang?.listen_along_closed || 'Совместное прослушивание завершено: хост отключился',
         type: 'info',
@@ -2188,7 +2200,7 @@ export function PulsePlayerProvider({
       });
     });
     return () => setListenClosedHandler(null);
-  }, [lang?.listen_along_closed, notify]);
+  }, [lang?.listen_along_busy, lang?.listen_along_closed, lang?.listen_along_denied, notify]);
 
   // Опорная точка раз в 10 секунд: без неё ведомый копил бы расхождение между событиями.
   useEffect(() => {

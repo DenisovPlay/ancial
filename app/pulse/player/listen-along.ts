@@ -132,6 +132,18 @@ function ensureBridge() {
     listenClosedHandler?.({ reason: String(data.reason ?? ''), wasFollowing });
   });
 
+  // Сервер отказал в подключении: не оставляем человека в вечном «подключаемся».
+  globalWS.addDialogListener('ws:error', (payload) => {
+    const data = readData(payload);
+    const code = String(data.code ?? '');
+    if (code !== 'listen_host_busy' && code !== 'access_denied') return;
+    // Ошибка про наше подключение, только пока мы ждём первое состояние хоста.
+    if (snapshot.followingHostId <= 0 || snapshot.state) return;
+
+    setSnapshot({ followingHostId: 0, host: null, listeners: [], state: null });
+    listenClosedHandler?.({ reason: code, wasFollowing: true });
+  });
+
   // После обрыва связи заново входим в комнату, иначе остались бы «подключены» только на словах.
   globalWS.addDialogListener('auth_ok', () => {
     if (snapshot.followingHostId > 0) {

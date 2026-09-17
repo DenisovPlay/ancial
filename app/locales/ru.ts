@@ -1429,6 +1429,8 @@ export const ru: Record<string, string> = {
     "listen_along_connecting": "Подключаемся",
     "listen_along_to": "к",
     "listen_along_failed": "Не удалось подключиться: хост не отвечает",
+    "listen_along_busy": "Этот человек сам слушает вместе с кем-то",
+    "listen_along_denied": "Этот человек не разрешает слушать вместе",
     "pulse_devices": "Устройства",
     "pulse_devices_hint": "Звук играет только на одном устройстве, остальные управляют им.",
     "pulse_device_playing": "Играет здесь",

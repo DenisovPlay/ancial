@@ -1429,6 +1429,8 @@ export const en: Record<string, string> = {
   "listen_along_connecting": "Connecting",
   "listen_along_to": "to",
   "listen_along_failed": "Could not connect: the host is not responding",
+  "listen_along_busy": "This person is listening along with someone else",
+  "listen_along_denied": "This person does not allow listening along",
   "pulse_devices": "Devices",
   "pulse_devices_hint": "Audio plays on one device only, the others control it.",
   "pulse_device_playing": "Playing here",
