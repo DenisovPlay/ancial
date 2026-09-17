@@ -47,7 +47,7 @@ const ACTIVITY_ICONS: Record<string, string> = {
 
 // Как ряд «Изменить / Удалить» в меню постов: иконки в одну строку.
 const MENU_ICON_BUTTON = 'flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95';
-const GRID_COLUMNS = ['', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3'];
+const GRID_COLUMNS = ['', 'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4'];
 
 type MenuAction = { icon: string; key: string; label: string; onClick: () => void };
 
@@ -133,7 +133,7 @@ export default function PresenceActivity({
       >
         <div className="px-3 py-1.5 text-sm text-zinc-200">{text}</div>
         {musicActions.length > 0 ? (
-          <div className={cn('grid w-full gap-1.5', GRID_COLUMNS[musicActions.length])}>
+          <div className={cn('grid w-full gap-1.5', GRID_COLUMNS[Math.min(musicActions.length, GRID_COLUMNS.length - 1)])}>
             {musicActions.map((action) => (
               <button
                 key={action.key}
