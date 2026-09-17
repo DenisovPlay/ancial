@@ -47,6 +47,8 @@ export type RemoteQueue = {
 
 export type RemoteDevicesSnapshot = {
   activeDeviceId: string;
+  /** Сколько соединений у аккаунта: две вкладки одного браузера — одно устройство, но два слушателя. */
+  connections: number;
   devices: RemoteDevice[];
   /** Звук принадлежит именно этому соединению. */
   isActiveSelf: boolean;
@@ -56,7 +58,21 @@ export type RemoteDevicesSnapshot = {
 };
 
 export type RemoteCommand = {
-  action: 'close' | 'next' | 'pause' | 'play' | 'prev' | 'queue_index' | 'seek' | 'takeover';
+  action:
+    | 'close'
+    | 'next'
+    | 'pause'
+    | 'play'
+    | 'play_collection'
+    | 'prev'
+    | 'queue_index'
+    | 'queue_move'
+    | 'queue_next'
+    | 'queue_remove'
+    | 'seek'
+    | 'takeover';
+  /** Подробности команды — сейчас только для запуска коллекции. */
+  params: Record<string, unknown> | null;
   value: number;
 };
 
@@ -64,6 +80,7 @@ type StoreListener = () => void;
 
 const EMPTY_SNAPSHOT: RemoteDevicesSnapshot = {
   activeDeviceId: '',
+  connections: 0,
   devices: [],
   isActiveSelf: false,
   isRemote: false,
@@ -195,17 +212,21 @@ function ensureBridge() {
   globalWS.addDialogListener('device:list', (payload) => {
     const data = readData(payload);
     const activeDeviceId = String(data.active_device_id ?? '');
+    const wasPlaying = Boolean(snapshot.state?.playing);
     setSnapshot({
       activeDeviceId,
+      connections: Math.max(0, Number(data.connections) || 0),
       devices: parseDevices(data.devices),
       isActiveSelf: Boolean(data.active_self),
       // Звук нигде не играет — прошлое состояние пульта показывать нечему.
       state: activeDeviceId === '' ? null : snapshot.state,
     });
+    notifyClock(wasPlaying);
   });
 
   globalWS.addDialogListener('device:state', (payload) => {
     const data = readData(payload);
+    const wasPlaying = Boolean(snapshot.state?.playing);
     setSnapshot({
       state: {
         durationMs: Math.max(0, Number(data.duration_ms) || 0),
@@ -216,6 +237,7 @@ function ensureBridge() {
         trackId: String(data.track_id ?? ''),
       },
     });
+    notifyClock(wasPlaying);
   });
 
   globalWS.addDialogListener('device:queue', (payload) => {
@@ -235,7 +257,11 @@ function ensureBridge() {
     const data = readData(payload);
     const action = String(data.action ?? '');
     if (!action) return;
-    commandHandler?.({ action: action as RemoteCommand['action'], value: Number(data.value) || 0 });
+    commandHandler?.({
+      action: action as RemoteCommand['action'],
+      params: data.params && typeof data.params === 'object' ? (data.params as Record<string, unknown>) : null,
+      value: Number(data.value) || 0,
+    });
   });
 
   globalWS.addDialogListener('device:stop', (payload) => {
@@ -290,9 +316,9 @@ export function isRemotePlayback() {
   return snapshot.isRemote;
 }
 
-/** Есть кому показывать состояние и очередь. */
+/** Есть кому показывать состояние и очередь: другая вкладка считается так же, как другое устройство. */
 export function hasOtherDevices() {
-  return snapshot.devices.length > 1;
+  return snapshot.connections > 1 || snapshot.devices.length > 1;
 }
 
 export function announceDevice() {
@@ -359,8 +385,8 @@ export function sendDeviceQueue(queue: {
   });
 }
 
-export function sendDeviceCommand(action: RemoteCommand['action'], value = 0) {
-  globalWS.send({ type: 'device:command', action, value });
+export function sendDeviceCommand(action: RemoteCommand['action'], value = 0, params: Record<string, unknown> | null = null) {
+  globalWS.send({ type: 'device:command', action, params, value });
 }
 
 /** «Играть там»: звук забирает названное устройство — оно уже знает очередь и позицию. */
@@ -387,6 +413,31 @@ export function setDeviceSyncHandler(handler: (() => void) | null) {
 
 export function setDeviceUnreachableHandler(handler: (() => void) | null) {
   unreachableHandler = handler;
+}
+
+/**
+ * Часы удалённого воспроизведения для текста песни: тот же интерфейс, что у аудио,
+ * только время берётся из состояния играющего устройства.
+ */
+class RemotePlaybackClock extends EventTarget {
+  get currentTime() {
+    return snapshot.state ? getRemotePositionMs(snapshot.state) / 1000 : 0;
+  }
+
+  get paused() {
+    return !snapshot.state?.playing;
+  }
+}
+
+const remoteClock = new RemotePlaybackClock();
+
+/** Подставляется вместо аудиоэлемента там, где звук идёт на другом устройстве. */
+export const remotePlaybackClockRef = { current: remoteClock };
+
+function notifyClock(wasPlaying: boolean) {
+  const isPlaying = Boolean(snapshot.state?.playing);
+  // Строка текста должна перестроиться и на паузе, поэтому «перемотку» шлём всегда.
+  remoteClock.dispatchEvent(new Event(isPlaying === wasPlaying ? 'seeked' : isPlaying ? 'play' : 'pause'));
 }
 
 /** Где играющее устройство сейчас: позиция плюс время, прошедшее с прихода состояния. */

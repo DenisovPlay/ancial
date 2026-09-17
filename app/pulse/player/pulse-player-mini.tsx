@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
+import { useEffect, useRef, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
@@ -27,7 +27,8 @@ type PulsePlayerMiniProps = {
   nextArtist: string;
   nextArtwork: string;
   nextTitle: string;
-  onChangeVolume: (volume: string) => void;
+  onChangeVolume: (volume: number | string) => void;
+  onToggleMute: () => void;
   onDesktopSeekCancel: () => void;
   onDesktopSeekChange: (value: number) => void;
   onDesktopSeekStart: () => void;
@@ -73,6 +74,7 @@ export function PulsePlayerMini({
   nextArtwork,
   nextTitle,
   onChangeVolume,
+  onToggleMute,
   onDesktopSeekCancel,
   onDesktopSeekChange,
   onDesktopSeekStart,
@@ -104,6 +106,21 @@ export function PulsePlayerMini({
   const desktopSeekTime = activeSeekSlider === 'desktop' ? seekValue : currentTime;
 
   const isFollower = useIsListenFollower();
+  const isMuted = volume <= 0;
+
+  useEffect(() => {
+    const slider = volumeSliderRef?.current;
+    if (!slider) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onChangeVolume(Number.parseFloat(slider.value) + (event.deltaY < 0 ? 0.025 : -0.025));
+    };
+
+    slider.addEventListener('wheel', handleWheel, { passive: false });
+    return () => slider.removeEventListener('wheel', handleWheel);
+  }, [onChangeVolume, volumeSliderRef]);
   // Звук может идти на другом устройстве: тогда кнопки здесь — пульт, и об этом надо сказать.
   const devices = useRemoteDevices();
   const activeDevice = devices.isRemote ? devices.devices.find((device) => device.active) ?? null : null;
@@ -264,13 +281,31 @@ export function PulsePlayerMini({
       </div>
 
       <div data-mini-controls className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:gap-3 lg:pr-1">
-        <div className="hidden w-28 items-center gap-3 lg:flex" title={lang?.volume || 'Громкость'}>
-          <Icon name="IC-speaker" className="h-5 w-5 shrink-0 fill-zinc-400" />
+        <div className="hidden w-28 items-center gap-3 lg:flex">
+          <button
+            type="button"
+            title={
+              devices.isRemote
+                ? lang?.pulse_volume_remote || 'Громкость меняется на устройстве, где идёт звук'
+                : isMuted
+                  ? lang?.pulse_unmute || 'Включить звук'
+                  : lang?.pulse_mute || 'Выключить звук'
+            }
+            disabled={devices.isRemote}
+            onClick={() => onToggleMute()}
+            className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 disabled:hover:border-transparent disabled:hover:bg-transparent"
+          >
+            <Icon
+              name={isMuted ? 'IC-speaker-off' : 'IC-speaker'}
+              className={cn('h-5 w-5 shrink-0 duration-300', isMuted ? 'fill-zinc-500' : 'fill-zinc-400')}
+            />
+          </button>
           <PulseRangeTrack
             min={0}
             max={1}
             step="0.005"
             aria-label={lang?.volume || 'Громкость'}
+            disabled={devices.isRemote}
             value={volume}
             inputRef={volumeSliderRef}
             progressPercent={volume * 100}

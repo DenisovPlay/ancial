@@ -59,6 +59,7 @@ import {
   hasOtherDevices as hasOtherDevicesNow,
   isRemotePlayback,
   releaseActiveDevice,
+  remotePlaybackClockRef,
   sendDeviceCommand,
   sendDeviceQueue,
   sendDeviceState,
@@ -228,6 +229,10 @@ const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
 const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;
 const PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
+/** Сервис текстов иногда просто не отвечает: без повтора трек доигрывал бы без текста до перезагрузки. */
+const PULSE_COLLECTION_KINDS: PulseCollectionKind[] = ['artist', 'downloads', 'genlist', 'playlist', 'track'];
+const LYRICS_RETRY_LIMIT = 2;
+const LYRICS_RETRY_DELAY_MS = 2000;
 
 type SyncTrackProgressOptions = {
   forceProgressUpdate?: boolean;
@@ -407,7 +412,8 @@ export function PulsePlayerProvider({
   const remoteDevices = useSyncExternalStore(subscribeRemoteDevices, getRemoteDevicesSnapshot, getServerRemoteDevicesSnapshot);
   const isRemoteDevice = remoteDevices.isRemote;
   const isActiveDevice = remoteDevices.isActiveSelf;
-  const hasOtherDevices = remoteDevices.devices.length > 1;
+  // Соседняя вкладка — такой же получатель состояния, хотя устройство то же самое.
+  const hasOtherDevices = remoteDevices.connections > 1 || remoteDevices.devices.length > 1;
   const remoteState = remoteDevices.state;
   const [remoteTime, setRemoteTime] = useState(0);
   const followingHostId = listenAlong.followingHostId;
@@ -1221,11 +1227,24 @@ export function PulsePlayerProvider({
     startIndex = 0,
     expectedSongId?: number | string | null,
   ) => {
+    // Пульт включает музыку не у себя, а там, где она уже идёт — как в Spotify.
+    // «Сохранённые» исключение: это офлайн-файлы конкретного устройства, у другого их нет.
+    if (isRemotePlayback() && kind !== 'downloads') {
+      sendDeviceCommand('play_collection', 0, {
+        expected_song_id: expectedSongId ?? null,
+        force_reload: forceReload === true,
+        id: String(id),
+        kind,
+        shuffle: Number(shuffle) || 0,
+        start_index: Number(startIndex) || 0,
+      });
+      return;
+    }
+
     leaveRoomOnOwnPlayback();
     const resolvedId = normalizeText(String(id));
     const playId = kind === 'artist' ? `artist_${resolvedId}` : resolvedId;
-    // На пульте та же коллекция уже лежит в очереди, но звука здесь нет: включаем по-настоящему,
-    // иначе кнопка play на странице только дёргала бы пустой аудиоэлемент.
+    // «Сохранённые» на пульте: своей копии коллекции здесь нет, поэтому грузим заново.
     const shouldForceReload = forceReload === true || isRemotePlayback();
     const expectedTrackId = toNumber(expectedSongId);
 
@@ -1503,6 +1522,10 @@ export function PulsePlayerProvider({
     }
   };
 
+  const volumeRef = useRef(0.7);
+  /** Громкость до выключения звука — чтобы кнопка вернула ровно её, а не значение по умолчанию. */
+  const preMuteVolumeRef = useRef(0.7);
+
   const changeVolume = useCallback((nextVolume: number | string) => {
     const resolvedVolume = clamp(Number.parseFloat(String(nextVolume)), 0, 1);
     setVolume(resolvedVolume);
@@ -1515,22 +1538,24 @@ export function PulsePlayerProvider({
   }, []);
 
   useEffect(() => {
-    const slider = volumeSliderRef.current;
-    if (!slider) return;
+    volumeRef.current = volume;
+  }, [volume]);
 
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      changeVolume(Number.parseFloat(slider.value) + (event.deltaY < 0 ? 0.025 : -0.025));
-    };
-
-    slider.addEventListener('wheel', handleWheel, { passive: false });
-    return () => {
-      slider.removeEventListener('wheel', handleWheel);
-    };
-  }, [changeVolume, effectivePlayerVisible]);
+  const toggleMute = useCallback(() => {
+    if (volumeRef.current > 0) {
+      preMuteVolumeRef.current = volumeRef.current;
+      changeVolume(0);
+      return;
+    }
+    changeVolume(preMuteVolumeRef.current > 0 ? preMuteVolumeRef.current : 0.7);
+  }, [changeVolume]);
 
   const queueTrackNext = async (trackId: number | string) => {
+    if (isRemotePlayback()) {
+      sendDeviceCommand('queue_next', 0, { track_id: String(trackId) });
+      notify({ content: lang?.pulse_will_play_next || 'Будет играть следующим', type: 'success', time: 3 });
+      return;
+    }
     queueDirtyRef.current = true;
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) {
       notify({
@@ -1577,6 +1602,10 @@ export function PulsePlayerProvider({
   const removeQueueTrack = useCallback((targetIndex: number) => {
     const currentList = playlistRef.current;
     if (targetIndex < 0 || targetIndex >= currentList.length) return;
+    if (isRemotePlayback()) {
+      sendDeviceCommand('queue_remove', targetIndex);
+      return;
+    }
     // Очередь правили руками — пультам её теперь придётся слать списком.
     queueDirtyRef.current = true;
 
@@ -1613,6 +1642,10 @@ export function PulsePlayerProvider({
   }, [lang, notify]);
 
   const moveQueueTrack = useCallback((fromIndex: number, toIndex: number) => {
+    if (isRemotePlayback()) {
+      sendDeviceCommand('queue_move', 0, { from: fromIndex, to: toIndex });
+      return;
+    }
     queueDirtyRef.current = true;
     const list = playlistRef.current.slice();
     if (
@@ -1912,16 +1945,31 @@ export function PulsePlayerProvider({
     }
 
     void (async () => {
-      try {
-        const lyricsData = await loadPulseLyrics(capturedTrack, controller.signal);
-        if (cancelled) return;
+      for (let attempt = 0; attempt <= LYRICS_RETRY_LIMIT; attempt += 1) {
+        try {
+          const lyricsData = await loadPulseLyrics(capturedTrack, controller.signal);
+          if (cancelled) return;
 
-        setLyricsLines(lyricsData.lines);
-        setLyricsSource(lyricsData.source);
-      } catch (e) {
-        if (e instanceof Error && e.name !== 'AbortError') {
+          // Текста нет — так и есть. Сервис не ответил — пробуем ещё раз, а не ждём перезагрузки.
+          if (!lyricsData.failed || attempt === LYRICS_RETRY_LIMIT) {
+            setLyricsLines(lyricsData.lines);
+            setLyricsSource(lyricsData.source);
+            return;
+          }
+        } catch (e) {
+          if (e instanceof Error && e.name === 'AbortError') return;
           console.error('Failed to load lyrics', e);
+          if (attempt === LYRICS_RETRY_LIMIT) return;
         }
+
+        const waited = await new Promise<boolean>((resolve) => {
+          const timer = window.setTimeout(() => resolve(true), LYRICS_RETRY_DELAY_MS);
+          controller.signal.addEventListener('abort', () => {
+            window.clearTimeout(timer);
+            resolve(false);
+          }, { once: true });
+        });
+        if (!waited || cancelled) return;
       }
     })();
 
@@ -2179,8 +2227,9 @@ export function PulsePlayerProvider({
   const followedTrackId = listenAlong.state?.trackId || '';
   useEffect(() => {
     if (followingHostId <= 0 || !followedTrackId) return;
-    // На пульте звука нет: трек за хостом включает то устройство, которое играет.
-    if (isRemoteDevice) return;
+    // Трек за хостом включает только то устройство, которому принадлежит звук аккаунта.
+    // Пульту нельзя: иначе после ухода игравшего устройства он заиграл бы сам.
+    if (!isActiveDevice) return;
     if (String(currentSongIdRef.current) === followedTrackId) return;
 
     // Это переключение пришло от хоста, а не от человека — из комнаты не выходим.
@@ -2188,17 +2237,17 @@ export function PulsePlayerProvider({
     void playTrack(followedTrackId).finally(() => {
       followDrivenPlayRef.current = false;
     });
-  }, [followedTrackId, followingHostId, isRemoteDevice, playTrack]);
+  }, [followedTrackId, followingHostId, isActiveDevice, playTrack]);
 
   // Ведомый: держим позицию. Сами звук не включаем — это и политика браузеров про автозапуск,
   // и правило «поставил паузу — стоишь, пока не подключишься обратно».
   const followedState = listenAlong.state;
   useEffect(() => {
-    if (followingHostId <= 0 || !followedState || isRemoteDevice) return;
+    if (followingHostId <= 0 || !followedState || !isActiveDevice) return;
 
     const align = () => {
       // Звук мог уехать на другое устройство прямо между тиками: иначе поймали бы два источника.
-      if (isRemotePlayback()) return;
+      if (!getRemoteDevicesSnapshot().isActiveSelf) return;
       const audio = audioRef.current;
       if (!audio || String(currentSongIdRef.current) !== followedState.trackId) return;
 
@@ -2241,7 +2290,7 @@ export function PulsePlayerProvider({
       document.removeEventListener('visibilitychange', handleVisible);
       if (audioRef.current) audioRef.current.playbackRate = 1;
     };
-  }, [followedState, followingHostId, isRemoteDevice]);
+  }, [followedState, followingHostId, isActiveDevice]);
 
   // --- Устройства аккаунта ---------------------------------------------------------------------
 
@@ -2296,7 +2345,10 @@ export function PulsePlayerProvider({
   // Пульт: позиция едет сама, событий от играющего устройства ждать нечего.
   useEffect(() => {
     if (!isRemoteDevice || !remoteState) return undefined;
-    const tick = () => setRemoteTime(getRemotePositionMs(remoteState) / 1000);
+    const tick = () => {
+      const positionMs = getRemotePositionMs(remoteState);
+      setRemoteTime((remoteState.durationMs > 0 ? Math.min(positionMs, remoteState.durationMs) : positionMs) / 1000);
+    };
     tick();
     if (!remoteState.playing) return undefined;
     const timer = window.setInterval(tick, 500);
@@ -2352,9 +2404,32 @@ export function PulsePlayerProvider({
       case 'queue_index':
         playQueueTrack(Math.round(command.value));
         return;
+      case 'queue_next':
+        void queueTrackNext(String(command.params?.track_id ?? ''));
+        return;
+      case 'queue_remove':
+        removeQueueTrack(Math.round(command.value));
+        return;
+      case 'queue_move':
+        moveQueueTrack(Math.round(Number(command.params?.from) || 0), Math.round(Number(command.params?.to) || 0));
+        return;
       case 'close':
         closePlayer();
         return;
+      case 'play_collection': {
+        const params = command.params ?? {};
+        const kind = String(params.kind ?? '');
+        if (!PULSE_COLLECTION_KINDS.includes(kind as PulseCollectionKind)) return;
+        void playCollection(
+          kind as PulseCollectionKind,
+          String(params.id ?? ''),
+          Boolean(params.force_reload),
+          Number(params.shuffle) || 0,
+          Number(params.start_index) || 0,
+          (params.expected_song_id as number | string | null) ?? null,
+        );
+        return;
+      }
       default:
     }
   };
@@ -2480,6 +2555,7 @@ export function PulsePlayerProvider({
         isVisible={live && !isFullMode && isPlayerAnimatingIn}
         lang={lang}
         onChangeVolume={changeVolume}
+        onToggleMute={toggleMute}
         onDesktopSeekCancel={() => finishSeek(false)}
         onDesktopSeekChange={setSeekValue}
         onDesktopSeekStart={() => {
@@ -2600,7 +2676,7 @@ export function PulsePlayerProvider({
           {isMounted ? (
             <PulsePlayerFull
             Icon={PlayerIcon}
-            audioRef={audioRef}
+            audioRef={isRemoteDevice ? remotePlaybackClockRef : audioRef}
             mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}
             mobileSeekInputRef={mobileSeekInputRef}
 
@@ -2636,7 +2712,7 @@ export function PulsePlayerProvider({
             activeLike={activeLike}
             isAuthenticated={isAuthenticated}
 
-            lyricsLines={isFullPlayerActive && !isRemoteDevice ? lyricsLines : []}
+            lyricsLines={isFullPlayerActive ? lyricsLines : []}
             lyricsEnabled={lyricsEnabled}
             onToggleLyrics={() => setLyricsEnabled(!lyricsEnabled)}
 
@@ -2775,6 +2851,12 @@ export function PulsePlayerProvider({
             onTogglePlay={togglePlay}
 
             onLyricsSeek={(nextTime) => {
+              // Ведомый позицию не задаёт, а пульт перематывает командой.
+              if (followingHostIdRef.current > 0) return;
+              if (isRemotePlayback()) {
+                sendDeviceCommand('seek', Math.round(nextTime * 1000));
+                return;
+              }
               if (!audioRef.current) return;
               audioRef.current.currentTime = nextTime;
               setCurrentTime(nextTime);

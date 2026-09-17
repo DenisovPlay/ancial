@@ -4,6 +4,17 @@ import React, { type CSSProperties, useEffect, useRef } from 'react';
 import { normalizeText } from './player-utils';
 import { cn } from '../../lib/cn';
 
+/**
+ * Часы для текста песни. Обычно это само аудио, но когда звук идёт на другом устройстве —
+ * подставляем часы удалённого воспроизведения: интерфейс у них одинаковый.
+ */
+export type PulseLyricsClock = {
+  addEventListener(type: string, listener: () => void): void;
+  currentTime: number;
+  paused: boolean;
+  removeEventListener(type: string, listener: () => void): void;
+};
+
 export type PulseLyricsLine = {
   text: string;
   time: number;
@@ -141,7 +152,7 @@ function renderLyricWords(text: string) {
  * React перерисовывается лишь при смене строки, прогресс внутри строки пишется в CSS-переменную.
  */
 function useActiveLyric<T extends HTMLElement>(
-  audioRef: React.RefObject<HTMLAudioElement | null>,
+  audioRef: React.RefObject<PulseLyricsClock | null>,
   lines: PulseLyricsLine[],
   initialIndex = -1,
 ) {
@@ -219,7 +230,7 @@ export function PulseLyricsMobile({
   lines,
   onExpand,
 }: {
-  audioRef: React.RefObject<HTMLAudioElement | null>;
+  audioRef: React.RefObject<PulseLyricsClock | null>;
   expandLabel: string;
   leaving?: boolean;
   lines: PulseLyricsLine[];
@@ -352,7 +363,7 @@ export function PulseLyricsMobileSheet({
   lines,
   onSeek,
 }: {
-  audioRef: React.RefObject<HTMLAudioElement | null>;
+  audioRef: React.RefObject<PulseLyricsClock | null>;
   initialIndex?: number;
   leaving?: boolean;
   lines: PulseLyricsLine[];
@@ -403,7 +414,7 @@ export function PulseLyricsDesktop({
   lines,
   onSeek,
 }: {
-  audioRef: React.RefObject<HTMLAudioElement | null>;
+  audioRef: React.RefObject<PulseLyricsClock | null>;
   leaving?: boolean;
   lines: PulseLyricsLine[];
   onSeek: (time: number) => void;

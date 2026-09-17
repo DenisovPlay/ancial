@@ -6,6 +6,7 @@ import { GLASS_MODE_CHANGE_EVENT, GLASS_MODE_STORAGE_KEY, readGlassMode } from '
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import {
   PulseLyricsDesktop,
+  type PulseLyricsClock,
   PulseLyricsMobile,
   PulseLyricsMobileSheet,
   type PulseLyricsLine,
@@ -51,7 +52,7 @@ function usePresence(visible: boolean, exitMs = LYRICS_MODE_EXIT_MS) {
 export type PulsePlayerFullProps = {
   // Icons / refs
   Icon: PlayerIcon;
-  audioRef: RefObject<HTMLAudioElement | null>;
+  audioRef: RefObject<PulseLyricsClock | null>;
   mobileCurrentTimeLabelRef: RefObject<HTMLDivElement | null>;
   mobileSeekInputRef: RefObject<HTMLInputElement | null>;
 

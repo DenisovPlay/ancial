@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Modal from '../../components/modal';
 import type { PulseTrack } from '../../context/PulsePlayerContext';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
@@ -31,6 +31,17 @@ export function PulseQueueModal({
   onRemoveTrack,
   onMoveTrack,
 }: PulseQueueModalProps) {
+  const currentRowRef = useRef<HTMLDivElement | null>(null);
+
+  // Открыли очередь — показываем то, что играет сейчас, а не начало списка.
+  useEffect(() => {
+    if (!isOpen) return;
+    const frame = window.requestAnimationFrame(() => {
+      currentRowRef.current?.scrollIntoView({ block: 'center' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [currentIndex, isOpen]);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -60,6 +71,7 @@ export function PulseQueueModal({
             return (
               <div
                 key={`${track.sid || i}-${i}`}
+                ref={isCurrent ? currentRowRef : undefined}
                 className={cn(
                   'group flex items-center justify-between gap-3 hover:pr-1.5 rounded-3xl overflow-hidden transition-all duration-200',
                   isCurrent

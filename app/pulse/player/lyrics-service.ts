@@ -12,6 +12,8 @@ type LyricsTrack = {
 };
 
 export type PulseLyricsData = {
+  /** Ни один запрос не дошёл (сеть, 5xx) — значит, текст стоит попросить ещё раз. */
+  failed?: boolean;
   lines: PulseLyricsLine[];
   source: string;
 };
@@ -53,13 +55,18 @@ export async function loadPulseLyrics(
   // 2. Fetch from UniLyrics API using fallback candidate queries
   const artistCandidates = Array.from(new Set([mainArtist, rawArtist])).filter(Boolean);
   const titleCandidates = Array.from(new Set([title, rawTitle])).filter(Boolean);
+  // Отличаем «у трека нет текста» от «сервис не ответил»: повторять имеет смысл только второе.
+  let requestFailed = false;
 
   for (const artistQuery of artistCandidates) {
     for (const titleQuery of titleCandidates) {
       try {
         const url = `${PULSE_LYRICS_BASE}/UniLyrics.php?a=${encodeURIComponent(artistQuery)}&t=${encodeURIComponent(titleQuery)}&d=0&type=alternative`;
         const res = await fetch(url, { cache: 'no-store', signal });
-        if (!res.ok) continue;
+        if (!res.ok) {
+          if (res.status >= 500) requestFailed = true;
+          continue;
+        }
         const text = await res.text();
         const lines = parseLyricsText(text);
 
@@ -73,6 +80,7 @@ export async function loadPulseLyrics(
       } catch (e: unknown) {
         if (e instanceof Error && e.name === 'AbortError') throw e;
         // Continue trying fallback candidates on fetch failure
+        requestFailed = true;
       }
     }
   }
@@ -83,5 +91,5 @@ export async function loadPulseLyrics(
     if (stale && Array.isArray(stale.lines) && stale.lines.length > 0) return stale;
   } catch { /* ignore */ }
 
-  return EMPTY_LYRICS;
+  return requestFailed ? { ...EMPTY_LYRICS, failed: true } : EMPTY_LYRICS;
 }
