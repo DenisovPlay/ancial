@@ -23,10 +23,13 @@ type PulseRangeTrackProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'classNa
 export function PulseRangeTrack({ className, inputRef, onChange, progressPercent, ...inputProps }: PulseRangeTrackProps) {
   // Выключенная дорожка (слушатель в совместном прослушивании): гасим и не ловим нажатия.
   const isDisabled = Boolean(inputProps.disabled);
-  // Стартовое заполнение до первого кадра цикла (например, плеер открыт на паузе).
+  const { max: inputMax, min: inputMin, value: inputValue } = inputProps;
+  // Заполнение обычно двигает rAF-цикл локального аудио. Но его нет, когда звук идёт на другом
+  // устройстве или плеер стоит на паузе: тогда дорожку ведут пропсы, иначе она бы застыла.
   useEffect(() => {
-    if (inputRef?.current) setRangeProgressVar(inputRef.current);
-  }, [inputRef]);
+    if (progressPercent !== undefined || !inputRef?.current) return;
+    setRangeProgressVar(inputRef.current);
+  }, [inputMax, inputMin, inputRef, inputValue, progressPercent]);
 
   return (
     <div

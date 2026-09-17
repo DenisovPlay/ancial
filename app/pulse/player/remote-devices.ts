@@ -1,0 +1,396 @@
+'use client';
+
+import { useSyncExternalStore } from 'react';
+
+import { globalWS } from '../../lib/global-ws';
+import type { PulseCollectionKind, PulseTrack } from './pulse-player-types';
+
+/** Опорная точка от играющего устройства, даже если ничего не менялось. */
+export const DEVICE_STATE_INTERVAL_MS = 10_000;
+/** Идентификатор устройства переживает перезагрузку: вкладки одного браузера — одно устройство. */
+const DEVICE_ID_KEY = 'pulse_device_id';
+
+export type RemoteDeviceKind = 'desktop' | 'mobile';
+
+export type RemoteDevice = {
+  /** Играет ли звук на этом устройстве. */
+  active: boolean;
+  id: string;
+  kind: RemoteDeviceKind;
+  name: string;
+  /** Это устройство, за которым человек сидит сейчас. */
+  self: boolean;
+};
+
+export type RemotePlaybackState = {
+  durationMs: number;
+  /** Позиция в очереди — чтобы пульт показывал тот же трек. */
+  index: number;
+  playing: boolean;
+  positionMs: number;
+  /** Момент прихода по локальным часам: от него считаем, сколько трек уже проиграл. */
+  receivedAt: number;
+  trackId: string;
+};
+
+export type RemoteQueue = {
+  /** «Чистый» идентификатор для повторного запроса коллекции. */
+  collectionId: string;
+  /** Ключ коллекции в плеере (artist_12, radio_5, -5) — по нему подсвечиваются страницы. */
+  collectionKey: string;
+  index: number;
+  isPlaylist: boolean;
+  kind: PulseCollectionKind | '';
+  /** Приходит, только если очередь нельзя пересобрать по коллекции (перемешивание, правки, радио). */
+  tracks: PulseTrack[] | null;
+};
+
+export type RemoteDevicesSnapshot = {
+  activeDeviceId: string;
+  devices: RemoteDevice[];
+  /** Звук принадлежит именно этому соединению. */
+  isActiveSelf: boolean;
+  /** Играет другое устройство (или другая вкладка) — мы пульт. */
+  isRemote: boolean;
+  state: RemotePlaybackState | null;
+};
+
+export type RemoteCommand = {
+  action: 'close' | 'next' | 'pause' | 'play' | 'prev' | 'queue_index' | 'seek' | 'takeover';
+  value: number;
+};
+
+type StoreListener = () => void;
+
+const EMPTY_SNAPSHOT: RemoteDevicesSnapshot = {
+  activeDeviceId: '',
+  devices: [],
+  isActiveSelf: false,
+  isRemote: false,
+  state: null,
+};
+
+let snapshot: RemoteDevicesSnapshot = EMPTY_SNAPSHOT;
+let deviceId = '';
+let deviceName = '';
+let deviceKind: RemoteDeviceKind = 'desktop';
+let bridgeReady = false;
+let announced = false;
+const storeListeners = new Set<StoreListener>();
+
+let commandHandler: ((command: RemoteCommand) => void) | null = null;
+let queueHandler: ((queue: RemoteQueue) => void) | null = null;
+let stopHandler: (() => void) | null = null;
+let syncHandler: (() => void) | null = null;
+let unreachableHandler: (() => void) | null = null;
+
+function setSnapshot(next: Partial<RemoteDevicesSnapshot>) {
+  const merged = { ...snapshot, ...next };
+  snapshot = { ...merged, isRemote: merged.activeDeviceId !== '' && !merged.isActiveSelf };
+  storeListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (error) {
+      console.error('[PulseDevices] Store listener failed', error);
+    }
+  });
+}
+
+function readPayload(payload: unknown) {
+  return (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
+}
+
+function readData(payload: unknown) {
+  const envelope = readPayload(payload);
+  return readPayload(envelope.data ?? envelope);
+}
+
+function createDeviceId() {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch {
+    // ниже — запасной вариант
+  }
+  return `d${Date.now().toString(36)}${Math.floor(Math.random() * 1e9).toString(36)}`;
+}
+
+/** Имя устройства собираем из user-agent: в БД ничего не храним, человек ничего не настраивает. */
+function detectDevice() {
+  if (deviceId || typeof window === 'undefined') return;
+
+  try {
+    const stored = window.localStorage.getItem(DEVICE_ID_KEY);
+    deviceId = stored && stored.length > 3 ? stored : createDeviceId();
+    if (deviceId !== stored) window.localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  } catch {
+    // приватный режим — идентификатор живёт до перезагрузки вкладки
+    deviceId = deviceId || createDeviceId();
+  }
+
+  const ua = navigator.userAgent || '';
+  const isTouch = /android|iphone|ipad|ipod|mobile/i.test(ua);
+  deviceKind = isTouch ? 'mobile' : 'desktop';
+
+  const platform = /iphone|ipod/i.test(ua)
+    ? 'iPhone'
+    : /ipad/i.test(ua)
+      ? 'iPad'
+      : /android/i.test(ua)
+        ? 'Android'
+        : /windows/i.test(ua)
+          ? 'Windows'
+          : /mac os/i.test(ua)
+            ? 'Mac'
+            : /linux/i.test(ua)
+              ? 'Linux'
+              : '';
+  const browser = /edg\//i.test(ua)
+    ? 'Edge'
+    : /opr\/|opera/i.test(ua)
+      ? 'Opera'
+      : /firefox|fxios/i.test(ua)
+        ? 'Firefox'
+        : /chrome|crios/i.test(ua)
+          ? 'Chrome'
+          : /safari/i.test(ua)
+            ? 'Safari'
+            : '';
+
+  let standalone = false;
+  try {
+    standalone = window.matchMedia('(display-mode: standalone)').matches;
+  } catch {
+    // старый браузер — считаем обычной вкладкой
+  }
+
+  deviceName = standalone
+    ? [platform, 'Zypo'].filter(Boolean).join(' · ')
+    : [platform, browser].filter(Boolean).join(' · ');
+  if (!deviceName) deviceName = isTouch ? 'Смартфон' : 'Компьютер';
+}
+
+function parseDevices(raw: unknown): RemoteDevice[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      const device = readPayload(item);
+      const id = String(device.id ?? '');
+      return {
+        active: Boolean(device.active),
+        id,
+        kind: device.kind === 'mobile' ? ('mobile' as const) : ('desktop' as const),
+        name: String(device.name ?? ''),
+        self: id === deviceId,
+      };
+    })
+    .filter((device) => device.id !== '');
+}
+
+/** Подписка на события сокета — один раз за жизнь вкладки. */
+function ensureBridge() {
+  if (bridgeReady) return;
+  bridgeReady = true;
+  detectDevice();
+
+  globalWS.addDialogListener('device:list', (payload) => {
+    const data = readData(payload);
+    const activeDeviceId = String(data.active_device_id ?? '');
+    setSnapshot({
+      activeDeviceId,
+      devices: parseDevices(data.devices),
+      isActiveSelf: Boolean(data.active_self),
+      // Звук нигде не играет — прошлое состояние пульта показывать нечему.
+      state: activeDeviceId === '' ? null : snapshot.state,
+    });
+  });
+
+  globalWS.addDialogListener('device:state', (payload) => {
+    const data = readData(payload);
+    setSnapshot({
+      state: {
+        durationMs: Math.max(0, Number(data.duration_ms) || 0),
+        index: Math.max(0, Number(data.index) || 0),
+        playing: Boolean(data.playing),
+        positionMs: Math.max(0, Number(data.position_ms) || 0),
+        receivedAt: Date.now(),
+        trackId: String(data.track_id ?? ''),
+      },
+    });
+  });
+
+  globalWS.addDialogListener('device:queue', (payload) => {
+    const data = readData(payload);
+    const rawTracks = data.tracks;
+    queueHandler?.({
+      collectionId: String(data.collection_id ?? ''),
+      collectionKey: String(data.collection_key ?? ''),
+      index: Math.max(0, Number(data.index) || 0),
+      isPlaylist: Boolean(data.is_playlist),
+      kind: (String(data.kind ?? '') || '') as PulseCollectionKind | '',
+      tracks: Array.isArray(rawTracks) ? (rawTracks as PulseTrack[]) : null,
+    });
+  });
+
+  globalWS.addDialogListener('device:command', (payload) => {
+    const data = readData(payload);
+    const action = String(data.action ?? '');
+    if (!action) return;
+    commandHandler?.({ action: action as RemoteCommand['action'], value: Number(data.value) || 0 });
+  });
+
+  globalWS.addDialogListener('device:stop', (payload) => {
+    const data = readData(payload);
+    const activeId = String(data.device_id ?? '');
+    // Помечаем себя пультом до остановки звука: пауза не должна уехать тем, кто слушает вместе.
+    setSnapshot({ activeDeviceId: activeId || snapshot.activeDeviceId, isActiveSelf: false });
+    stopHandler?.();
+  });
+
+  // Команду некому исполнить: устройство ушло, а мы всё ещё показываем его играющим.
+  globalWS.addDialogListener('device:unreachable', () => {
+    unreachableHandler?.();
+  });
+
+  // Подключилось новое устройство — оно ждёт очередь и позицию, а не следующей опорной точки.
+  globalWS.addDialogListener('device:sync', () => {
+    syncHandler?.();
+  });
+
+  // После обрыва связи заново представляемся, иначе нас не будет в списке устройств.
+  globalWS.addDialogListener('auth_ok', () => {
+    announced = false;
+    announceDevice();
+    // Телефон теряет сокет при каждом уходе в фон, а музыка играет дальше: возвращаем себе звук.
+    if (snapshot.isActiveSelf) globalWS.send({ type: 'device:claim' });
+  });
+}
+
+export function subscribeRemoteDevices(listener: StoreListener) {
+  ensureBridge();
+  storeListeners.add(listener);
+  return () => {
+    storeListeners.delete(listener);
+  };
+}
+
+export function getRemoteDevicesSnapshot() {
+  return snapshot;
+}
+
+export function getServerRemoteDevicesSnapshot() {
+  return EMPTY_SNAPSHOT;
+}
+
+export function useRemoteDevices() {
+  return useSyncExternalStore(subscribeRemoteDevices, getRemoteDevicesSnapshot, getServerRemoteDevicesSnapshot);
+}
+
+/** Звук идёт на другом устройстве или в другой вкладке — читаем из стора, он свежее рефов. */
+export function isRemotePlayback() {
+  return snapshot.isRemote;
+}
+
+/** Есть кому показывать состояние и очередь. */
+export function hasOtherDevices() {
+  return snapshot.devices.length > 1;
+}
+
+export function announceDevice() {
+  ensureBridge();
+  if (announced || !deviceId) return;
+  announced = true;
+  globalWS.send({ type: 'device:hello', device_id: deviceId, kind: deviceKind, name: deviceName });
+}
+
+/** Здесь начали играть — звук на остальных устройствах аккаунта гасим. */
+export function claimActiveDevice() {
+  ensureBridge();
+  if (snapshot.isActiveSelf) return;
+  announceDevice();
+  // Ждать ответа сервера нельзя: контролы должны сразу работать как локальные.
+  setSnapshot({ activeDeviceId: deviceId, isActiveSelf: true, state: null });
+  globalWS.send({ type: 'device:claim' });
+}
+
+/** Плеер закрыли — звука на аккаунте больше нет, пультам показывать нечего. */
+export function releaseActiveDevice() {
+  if (!snapshot.isActiveSelf) return;
+  setSnapshot({ activeDeviceId: '', isActiveSelf: false, state: null });
+  globalWS.send({ type: 'device:release' });
+}
+
+export function sendDeviceState(state: {
+  durationMs: number;
+  index: number;
+  playing: boolean;
+  positionMs: number;
+  trackId: number | string;
+}) {
+  globalWS.send({
+    type: 'device:state',
+    duration_ms: Math.max(0, Math.round(state.durationMs)),
+    index: Math.max(0, Math.round(state.index)),
+    playing: state.playing,
+    position_ms: Math.max(0, Math.round(state.positionMs)),
+    track_id: String(state.trackId ?? ''),
+  });
+}
+
+/**
+ * Очередь для пультов. Обычно хватает описания коллекции — список каждый соберёт сам
+ * (он лежит в кэше). Треки шлём, только когда очередь уже не совпадает с коллекцией.
+ */
+export function sendDeviceQueue(queue: {
+  collectionId: string;
+  collectionKey: string;
+  index: number;
+  isPlaylist: boolean;
+  kind: string;
+  tracks: PulseTrack[] | null;
+}) {
+  globalWS.send({
+    type: 'device:queue',
+    collection_id: queue.collectionId,
+    collection_key: queue.collectionKey,
+    index: Math.max(0, Math.round(queue.index)),
+    is_playlist: queue.isPlaylist,
+    kind: queue.kind,
+    tracks: queue.tracks,
+  });
+}
+
+export function sendDeviceCommand(action: RemoteCommand['action'], value = 0) {
+  globalWS.send({ type: 'device:command', action, value });
+}
+
+/** «Играть там»: звук забирает названное устройство — оно уже знает очередь и позицию. */
+export function sendTakeoverCommand(targetDeviceId: string) {
+  if (!targetDeviceId || targetDeviceId === deviceId) return;
+  globalWS.send({ type: 'device:command', action: 'takeover', target_device_id: targetDeviceId, value: 0 });
+}
+
+export function setDeviceCommandHandler(handler: ((command: RemoteCommand) => void) | null) {
+  commandHandler = handler;
+}
+
+export function setDeviceQueueHandler(handler: ((queue: RemoteQueue) => void) | null) {
+  queueHandler = handler;
+}
+
+export function setDeviceStopHandler(handler: (() => void) | null) {
+  stopHandler = handler;
+}
+
+export function setDeviceSyncHandler(handler: (() => void) | null) {
+  syncHandler = handler;
+}
+
+export function setDeviceUnreachableHandler(handler: (() => void) | null) {
+  unreachableHandler = handler;
+}
+
+/** Где играющее устройство сейчас: позиция плюс время, прошедшее с прихода состояния. */
+export function getRemotePositionMs(state: RemotePlaybackState, now = Date.now()) {
+  if (!state.playing) return state.positionMs;
+  return state.positionMs + Math.max(0, now - state.receivedAt);
+}

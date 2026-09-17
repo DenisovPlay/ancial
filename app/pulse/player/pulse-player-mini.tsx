@@ -6,6 +6,7 @@ import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
 import { PulseRangeTrack } from './pulse-range-track';
 import { useIsListenFollower } from './listen-along';
+import { useRemoteDevices } from './remote-devices';
 
 type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 type ActiveSeekSlider = 'desktop' | 'mobile' | null;
@@ -103,6 +104,9 @@ export function PulsePlayerMini({
   const desktopSeekTime = activeSeekSlider === 'desktop' ? seekValue : currentTime;
 
   const isFollower = useIsListenFollower();
+  // Звук может идти на другом устройстве: тогда кнопки здесь — пульт, и об этом надо сказать.
+  const devices = useRemoteDevices();
+  const activeDevice = devices.isRemote ? devices.devices.find((device) => device.active) ?? null : null;
   const w = Math.max(shellWidth || 0, 360);
   const transition = isSwiping ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
 
@@ -206,7 +210,15 @@ export function PulsePlayerMini({
 
           <div className="flex min-w-0 flex-1 flex-col lg:w-56 lg:flex-none">
             <span className={cn('w-full truncate text-sm font-medium text-white', !docked && 'lg:text-base')}>{playerTitle}</span>
-            <span className={cn('w-full truncate text-xs text-zinc-400', !docked && 'lg:text-sm')}>{playerArtist}</span>
+            <span className={cn('flex w-full items-center gap-1.5 text-xs text-zinc-400', !docked && 'lg:text-sm')}>
+              {activeDevice ? (
+                <Icon
+                  name={activeDevice.kind === 'mobile' ? 'IC-mobile' : 'IC-laptop'}
+                  className="h-3.5 w-3.5 shrink-0 fill-purple-400"
+                />
+              ) : null}
+              <span className="truncate">{activeDevice ? activeDevice.name || playerArtist : playerArtist}</span>
+            </span>
           </div>
         </div>
 

@@ -77,17 +77,25 @@ export function PlaybackStatusBar({ Icon, className }: { Icon: PlayerIcon; class
   // Пока едет первый трек хоста, показываем «подключаемся».
   const isConnecting = isFollower && !listenAlong.state;
 
-  const deviceLabel = isSameDevice
-    ? lang?.pulse_device_other_tab || 'Играет в другой вкладке'
-    : `${lang?.pulse_device_playing_on || 'Играет на'} ${activeDevice?.name || lang?.pulse_device_other || 'другом устройстве'}`;
+  // «на Windows · Chrome» или «в другой вкладке» — хвост, который дописываем к любому тексту.
+  const deviceSuffix = isSameDevice
+    ? lang?.pulse_device_in_other_tab || 'в другой вкладке'
+    : `${lang?.pulse_device_on || 'на'} ${activeDevice?.name || lang?.pulse_device_other || 'другом устройстве'}`;
 
-  const label = devices.isRemote
-    ? deviceLabel
-    : isConnecting
-      ? `${lang?.listen_along_connecting || 'Подключаемся'}${hostName ? ` ${lang?.listen_along_to || 'к'} ${hostName}` : ''}…`
-      : isFollower
-        ? `${lang?.listen_along_with || 'Слушаете вместе с'} ${hostName || ''}`.trim()
-        : `${people.length} ${lang?.listen_along_listeners || 'слушают вместе'}`;
+  const listenLabel = isConnecting
+    ? `${lang?.listen_along_connecting || 'Подключаемся'}${hostName ? ` ${lang?.listen_along_to || 'к'} ${hostName}` : ''}…`
+    : isFollower
+      ? `${lang?.listen_along_with || 'Слушаете вместе с'} ${hostName || ''}`.trim()
+      : `${people.length} ${lang?.listen_along_listeners || 'слушают вместе'}`;
+
+  // Слушаем вместе и звук на другом устройстве — человеку важны оба факта сразу.
+  const label = !devices.isRemote
+    ? listenLabel
+    : isFollower || others.length > 0
+      ? `${listenLabel} ${deviceSuffix}`
+      : isSameDevice
+        ? lang?.pulse_device_other_tab || 'Играет в другой вкладке'
+        : `${lang?.pulse_device_playing_on || 'Играет на'} ${activeDevice?.name || lang?.pulse_device_other || 'другом устройстве'}`;
 
   return (
     <div
@@ -123,21 +131,21 @@ export function PlaybackStatusBar({ Icon, className }: { Icon: PlayerIcon; class
 
           <span className="min-w-0 flex-1 truncate">{label}</span>
 
-          {devices.isRemote ? (
-            <button
-              type="button"
-              onClick={transferPlaybackHere}
-              className="ml-auto shrink-0 cursor-pointer rounded-full border border-transparent px-3 py-1 text-xs text-zinc-300 duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/80 hover:text-white active:scale-95"
-            >
-              {lang?.pulse_device_play_here || 'Перенести сюда'}
-            </button>
-          ) : isFollower ? (
+          {isFollower ? (
             <button
               type="button"
               onClick={leaveListenAlong}
               className="ml-auto shrink-0 cursor-pointer rounded-full border border-transparent px-3 py-1 text-xs text-zinc-300 duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/80 hover:text-white active:scale-95"
             >
               {lang?.listen_along_leave || 'Отключиться'}
+            </button>
+          ) : devices.isRemote ? (
+            <button
+              type="button"
+              onClick={transferPlaybackHere}
+              className="ml-auto shrink-0 cursor-pointer rounded-full border border-transparent px-3 py-1 text-xs text-zinc-300 duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/80 hover:text-white active:scale-95"
+            >
+              {lang?.pulse_device_play_here || 'Перенести сюда'}
             </button>
           ) : null}
         </div>

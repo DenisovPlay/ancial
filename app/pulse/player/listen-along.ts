@@ -107,7 +107,16 @@ function ensureBridge() {
   globalWS.addDialogListener('listen:listeners', (payload) => {
     const data = readData(payload);
     const host = parseListeners([data.host])[0] ?? null;
-    setSnapshot({ host, listeners: parseListeners(data.listeners) });
+    const hostId = Number(data.host_id) || 0;
+    // В комнату входит человек, а не вкладка: остальные его устройства узнают об этом отсюда.
+    // Иначе пульт не знал бы, что аккаунт кого-то слушает, и не блокировал бы контролы.
+    const following = data.role === 'listener' && hostId > 0;
+
+    setSnapshot({
+      host,
+      listeners: parseListeners(data.listeners),
+      ...(following ? { followingHostId: hostId } : {}),
+    });
     // Пришёл новый слушатель — хосту нужно немедленно отдать текущее состояние.
     if (data.sync) hostSyncRequestHandler?.();
   });

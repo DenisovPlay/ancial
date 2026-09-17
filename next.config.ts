@@ -30,6 +30,9 @@ const IMAGE_HOSTS: { hostname: string; insecure?: boolean }[] = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // Дев-сервер по умолчанию отдаёт свои ресурсы (HMR и прочее) только своему хосту.
+  // Разрешаем локальную сеть, чтобы открывать сборку с телефона и второго компьютера.
+  allowedDevOrigins: ['192.168.1.18', '192.168.1.*', '*.local'],
   transpilePackages: ['gradualblur'],
   images: {
     localPatterns: [

@@ -49,6 +49,28 @@ import {
   subscribeListenAlong,
   type ListenAlongListener,
 } from '../pulse/player/listen-along';
+import {
+  announceDevice,
+  claimActiveDevice,
+  DEVICE_STATE_INTERVAL_MS,
+  getRemoteDevicesSnapshot,
+  getRemotePositionMs,
+  getServerRemoteDevicesSnapshot,
+  hasOtherDevices as hasOtherDevicesNow,
+  isRemotePlayback,
+  releaseActiveDevice,
+  sendDeviceCommand,
+  sendDeviceQueue,
+  sendDeviceState,
+  setDeviceCommandHandler,
+  setDeviceQueueHandler,
+  setDeviceStopHandler,
+  setDeviceSyncHandler,
+  setDeviceUnreachableHandler,
+  subscribeRemoteDevices,
+  type RemoteCommand,
+  type RemoteQueue,
+} from '../pulse/player/remote-devices';
 
 /**
  * Индекс трека в очереди: по ID, если он известен (порядок очереди и списка на странице может различаться),
@@ -135,6 +157,8 @@ type PulsePlayerContextValue = {
   listenAlongListeners: ListenAlongListener[];
   joinListenAlong: (hostId: number | string) => void;
   leaveListenAlong: () => void;
+  /** Забрать звук с другого устройства аккаунта на это. */
+  transferPlaybackHere: () => void;
 };
 
 declare global {
@@ -212,7 +236,10 @@ type SyncTrackProgressOptions = {
 function readSavedVolume() {
   if (typeof window === 'undefined') return 0.7;
 
-  const savedVolume = Number.parseFloat(cache.get<string>('pulse-volume') || '');
+  // Ключ постоянный, поэтому хранится сырой строкой и читается уже числом: тишина (0) —
+  // валидное значение, и отбрасывать её как «пусто» нельзя, иначе звук сам прыгал на 70%.
+  const rawVolume = cache.get<number | string>('pulse-volume');
+  const savedVolume = typeof rawVolume === 'number' ? rawVolume : Number.parseFloat(String(rawVolume ?? ''));
   if (!Number.isFinite(savedVolume)) return 0.7;
   return clamp(savedVolume, 0, 1);
 }
@@ -376,6 +403,13 @@ export function PulsePlayerProvider({
 
   // Совместное прослушивание: с кем слушаем, кто слушает вместе и последнее состояние хоста.
   const listenAlong = useSyncExternalStore(subscribeListenAlong, getListenAlongSnapshot, getServerListenAlongSnapshot);
+  // Устройства аккаунта: звук всегда только на одном, остальные работают пультами.
+  const remoteDevices = useSyncExternalStore(subscribeRemoteDevices, getRemoteDevicesSnapshot, getServerRemoteDevicesSnapshot);
+  const isRemoteDevice = remoteDevices.isRemote;
+  const isActiveDevice = remoteDevices.isActiveSelf;
+  const hasOtherDevices = remoteDevices.devices.length > 1;
+  const remoteState = remoteDevices.state;
+  const [remoteTime, setRemoteTime] = useState(0);
   const followingHostId = listenAlong.followingHostId;
   useEffect(() => {
     if (!bottomMiniLeaving) return;
@@ -395,7 +429,11 @@ export function PulsePlayerProvider({
 
   const isPlayerAnimatingIn = isVisible && isMounted;
   const isFullPlayerActive = shouldRunPulseFullPlayerWork(mode, isVisible, isMounted);
-  const displayedCurrentTime = activeSeekSlider ? seekValue : currentTime;
+  // На пульте плеер показывает чужое воспроизведение: своё аудио здесь пустое.
+  const effectiveIsPlaying = isRemoteDevice ? Boolean(remoteState?.playing) : isPlaying;
+  const effectiveDuration = isRemoteDevice ? (remoteState?.durationMs ?? 0) / 1000 : duration;
+  const effectiveCurrentTime = isRemoteDevice ? remoteTime : currentTime;
+  const displayedCurrentTime = activeSeekSlider ? seekValue : effectiveCurrentTime;
 
   const notify = useCallback(({
     content,
@@ -502,11 +540,21 @@ export function PulsePlayerProvider({
   /** Играет ли сейчас хост — чтобы отличать свою паузу от паузы хоста. */
   const hostPlayingRef = useRef(false);
 
+  /** Вид и «чистый» идентификатор коллекции — по ним пульт соберёт ту же очередь у себя. */
+  const currentCollectionKindRef = useRef<PulseCollectionKind | ''>('');
+  const currentCollectionRawIdRef = useRef('');
+  /** Очередь разошлась с коллекцией (перемешивание, правки, радио, «Сохранённые») — шлём её целиком. */
+  const queueDirtyRef = useRef(false);
+  /** Позиция, на которую надо встать сразу после загрузки трека (перенос с другого устройства). */
+  const pendingSeekMsRef = useRef(0);
+
   /**
    * Подключаемся к чужому прослушиванию: свою музыку сразу останавливаем, иначе она продолжала бы
    * играть, пока едет первый трек хоста, а контролы уже вели бы себя как у ведомого.
    */
   const handleJoinListenAlong = (hostId: number | string) => {
+    // Слушаем чужое здесь — значит, звук аккаунта переезжает на это устройство.
+    claimActiveDevice();
     audioRef.current?.pause();
     followerPausedRef.current = false;
     joinListenAlong(hostId);
@@ -524,23 +572,44 @@ export function PulsePlayerProvider({
    * force — когда сервер сам просит состояние для только что подключившегося: признак «есть слушатели»
    * к этому моменту ещё не обновился эффектом, и обычная отправка потерялась бы.
    */
-  const emitListenState = useCallback((force = false) => {
-    if (!force && !hasListenersRef.current) return;
+  const emitPlaybackState = useCallback((force = false) => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    sendListenState({
-      playing: !audio.paused && !audio.ended,
-      positionMs: Math.round((Number.isFinite(audio.currentTime) ? audio.currentTime : 0) * 1000),
-      trackId: currentSongIdRef.current,
-    });
+    const playing = !audio.paused && !audio.ended;
+    const positionMs = Math.round((Number.isFinite(audio.currentTime) ? audio.currentTime : 0) * 1000);
+
+    // Пультам — трек, позиция и место в очереди. Пульт сам ничего не вещает: звук не у него.
+    if (!isRemotePlayback() && (force || hasOtherDevicesNow())) {
+      sendDeviceState({
+        durationMs: Number.isFinite(audio.duration) ? Math.round(audio.duration * 1000) : 0,
+        index: indexRef.current,
+        playing,
+        positionMs,
+        trackId: currentSongIdRef.current,
+      });
+    }
+
+    if (isRemotePlayback()) return;
+    if (!force && !hasListenersRef.current) return;
+
+    sendListenState({ playing, positionMs, trackId: currentSongIdRef.current });
   }, []);
 
   const finishSeek = (commit: boolean) => {
     if (!seekingSliderRef.current) return;
 
-    // Перемотка ведомому запрещена: позицию задаёт хост.
+    // Перемотка ведомому запрещена: позицию задаёт хост. Проверяем до пульта,
+    // иначе с пульта можно было бы перемотать чужое совместное прослушивание.
     if (followingHostIdRef.current > 0) {
+      seekingSliderRef.current = null;
+      setActiveSeekSlider(null);
+      return;
+    }
+
+    // Пульт перематывает чужой звук — командой, своё аудио не трогаем.
+    if (isRemotePlayback()) {
+      if (commit) sendDeviceCommand('seek', Math.round(seekValue * 1000));
       seekingSliderRef.current = null;
       setActiveSeekSlider(null);
       return;
@@ -557,7 +626,7 @@ export function PulsePlayerProvider({
     if (commit) {
       setCurrentTime(seekValue);
       forceUpdateMediaPositionState();
-      emitListenState();
+      emitPlaybackState();
     } else if (audio && Number.isFinite(audio.currentTime)) {
       setCurrentTime(audio.currentTime);
       setSeekValue(audio.currentTime);
@@ -767,10 +836,10 @@ export function PulsePlayerProvider({
       playerCloseTimerRef.current = null;
     }
 
-    const savedVolume = readSavedVolume();
-    setVolume(savedVolume);
+    // Громкость уже живёт в состоянии плеера — перечитывать хранилище на каждом открытии нельзя:
+    // плеер открывается и при смене трека, и при синхронизации с другим устройством.
     if (audioRef.current) {
-      audioRef.current.volume = savedVolume;
+      audioRef.current.volume = volume;
     }
 
     setIsMounted(true);
@@ -782,12 +851,19 @@ export function PulsePlayerProvider({
   };
 
   const closePlayer = () => {
+    // Крестик на пульте закрывает воспроизведение, а не только своё окно: музыка на аккаунте одна,
+    // и оставлять её играть на другом устройстве после закрытия было бы странно.
+    if (isRemotePlayback()) sendDeviceCommand('close');
+
     // Закрыли плеер — выходим из чужой комнаты, а свою распускаем: слушать больше нечего.
+    // На пульте комната чужая только на вид: её ведёт то устройство, где идёт звук.
     if (followingHostIdRef.current > 0) {
       leaveListenAlong();
-    } else if (hasListenersRef.current) {
+    } else if (hasListenersRef.current && !isRemotePlayback()) {
       closeListenAlongRoom();
     }
+    // Звука на аккаунте больше нет — пультам показывать нечего.
+    releaseActiveDevice();
 
     const audio = audioRef.current;
     if (audio) {
@@ -1148,7 +1224,9 @@ export function PulsePlayerProvider({
     leaveRoomOnOwnPlayback();
     const resolvedId = normalizeText(String(id));
     const playId = kind === 'artist' ? `artist_${resolvedId}` : resolvedId;
-    const shouldForceReload = forceReload === true;
+    // На пульте та же коллекция уже лежит в очереди, но звука здесь нет: включаем по-настоящему,
+    // иначе кнопка play на странице только дёргала бы пустой аудиоэлемент.
+    const shouldForceReload = forceReload === true || isRemotePlayback();
     const expectedTrackId = toNumber(expectedSongId);
 
     if (
@@ -1205,6 +1283,12 @@ export function PulsePlayerProvider({
       return;
     }
 
+    // Пульт соберёт ту же очередь сам — по виду коллекции и её идентификатору.
+    currentCollectionKindRef.current = kind;
+    currentCollectionRawIdRef.current = resolvedId;
+    // «Сохранённые» лежат в IndexedDB каждого устройства, перемешанный порядок не повторить.
+    queueDirtyRef.current = kind === 'downloads' || Number(shuffle) === 1;
+
     setPlaylistState(preparedTracks);
     setPlaylistIndex(nextIndex);
     setPlaylistMode(kind !== 'track', kind !== 'track' ? playId : '0');
@@ -1257,6 +1341,13 @@ export function PulsePlayerProvider({
   };
 
   const prevTrack = async () => {
+    // Ведомый не листает вообще: треки переключает хост. Кнопки у него выключены,
+    // но есть ещё свайп по мини-плееру и кнопки на наушниках — их закрываем здесь.
+    if (followingHostIdRef.current > 0) return;
+    if (isRemotePlayback()) {
+      sendDeviceCommand('prev');
+      return;
+    }
     if (followingHostIdRef.current > 0) return;
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) return;
 
@@ -1313,6 +1404,12 @@ export function PulsePlayerProvider({
   };
 
   const nextTrack = async () => {
+    // Трек кончился или его пролистнули — у ведомого следующий всё равно придёт от хоста.
+    if (followingHostIdRef.current > 0) return;
+    if (isRemotePlayback()) {
+      sendDeviceCommand('next');
+      return;
+    }
     // Листать нельзя: ведомый идёт за хостом, следующий трек придёт от него.
     if (followingHostIdRef.current > 0) return;
 
@@ -1331,6 +1428,8 @@ export function PulsePlayerProvider({
         radioPlayedIdsRef.current = new Set([sid]);
         // Переводим плеер в playlist-режим, чтобы очередь работала
         setPlaylistMode(true, `radio_${sid}`);
+        // Волна собирается на лету: повторить её по идентификатору коллекции нельзя.
+        queueDirtyRef.current = true;
         await fillRadioWave();
       } else {
         audio.currentTime = 0;
@@ -1384,6 +1483,12 @@ export function PulsePlayerProvider({
   };
 
   const togglePlay = () => {
+    // Пульт: звук на другом устройстве, здесь только команда.
+    if (isRemotePlayback()) {
+      sendDeviceCommand(getRemoteDevicesSnapshot().state?.playing ? 'pause' : 'play');
+      return;
+    }
+
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -1426,6 +1531,7 @@ export function PulsePlayerProvider({
   }, [changeVolume, effectivePlayerVisible]);
 
   const queueTrackNext = async (trackId: number | string) => {
+    queueDirtyRef.current = true;
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) {
       notify({
         content:
@@ -1471,6 +1577,8 @@ export function PulsePlayerProvider({
   const removeQueueTrack = useCallback((targetIndex: number) => {
     const currentList = playlistRef.current;
     if (targetIndex < 0 || targetIndex >= currentList.length) return;
+    // Очередь правили руками — пультам её теперь придётся слать списком.
+    queueDirtyRef.current = true;
 
     const newPlaylist = currentList.filter((_, i) => i !== targetIndex);
     if (newPlaylist.length === 0) {
@@ -1505,6 +1613,7 @@ export function PulsePlayerProvider({
   }, [lang, notify]);
 
   const moveQueueTrack = useCallback((fromIndex: number, toIndex: number) => {
+    queueDirtyRef.current = true;
     const list = playlistRef.current.slice();
     if (
       fromIndex < 0 ||
@@ -1534,6 +1643,10 @@ export function PulsePlayerProvider({
 
   const playQueueTrack = useCallback((targetIndex: number) => {
     if (targetIndex < 0 || targetIndex >= playlistRef.current.length) return;
+    if (isRemotePlayback()) {
+      sendDeviceCommand('queue_index', targetIndex);
+      return;
+    }
     const targetTrack = playlistRef.current[targetIndex] ?? null;
     if (targetTrack && !isTrackPlayable(targetTrack, userCountry)) {
       setIsBlockedTrackModalOpen(true);
@@ -1619,6 +1732,8 @@ export function PulsePlayerProvider({
 
     const handlePlay = () => {
       setIsPlaying(true);
+      // Заиграло здесь — значит, звук аккаунта теперь тут, остальные устройства становятся пультами.
+      claimActiveDevice();
       // Граф поднимаем только если эквалайзер реально что-то делает — иначе звук
       // не должен зависеть от живучести WebAudio-контекста.
       if (hasActiveEq()) {
@@ -1634,7 +1749,7 @@ export function PulsePlayerProvider({
       startProgressLoop();
       startVisualProgressLoop();
       syncTrackProgress({ forceProgressUpdate: true });
-      emitListenState();
+      emitPlaybackState();
 
       // Следующий трек от хоста не должен снимать паузу, которую поставил сам слушатель.
       if (followingHostIdRef.current > 0 && followerPausedRef.current) {
@@ -1652,7 +1767,7 @@ export function PulsePlayerProvider({
       stopProgressLoop();
       stopVisualProgressLoop();
       syncTrackProgress({ forceProgressUpdate: true });
-      emitListenState();
+      emitPlaybackState();
 
       // Пауза хоста — общая, её запоминать не нужно; своя пауза слушателя переживает смену трека.
       if (followingHostIdRef.current > 0 && hostPlayingRef.current) {
@@ -1687,9 +1802,14 @@ export function PulsePlayerProvider({
     };
 
     const handleLoadedMetadata = () => {
+      // Перенос с другого устройства: встаём на ту же секунду, а не в начало трека.
+      if (pendingSeekMsRef.current > 0 && audioRef.current) {
+        audioRef.current.currentTime = pendingSeekMsRef.current / 1000;
+        pendingSeekMsRef.current = 0;
+      }
       syncTrackProgress({ forceProgressUpdate: true });
       // Трек сменился — слушателям нужна новая опорная точка.
-      emitListenState();
+      emitPlaybackState();
     };
 
     const handleTimeUpdate = () => {
@@ -1927,13 +2047,36 @@ export function PulsePlayerProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** «Перенести сюда»: звук уходит с другого устройства на это, с той же секунды. */
+  const transferPlaybackHere = useCallback(() => {
+    const snapshot = getRemoteDevicesSnapshot();
+    if (!snapshot.isRemote) return;
+
+    const targetIndex = snapshot.state ? Math.min(snapshot.state.index, playlistRef.current.length - 1) : indexRef.current;
+    const targetTrack = playlistRef.current[targetIndex] ?? null;
+    if (!targetTrack) return;
+
+    // Слушаем вместе с кем-то: входим в комнату и этим соединением, иначе после ухода прежнего
+    // устройства аккаунт остался бы в ней только на бумаге. Свою паузу при переносе снимаем.
+    if (followingHostIdRef.current > 0) {
+      followerPausedRef.current = false;
+      joinListenAlong(followingHostIdRef.current);
+    }
+
+    pendingSeekMsRef.current = snapshot.state ? getRemotePositionMs(snapshot.state) : 0;
+    setPlaylistIndex(targetIndex);
+    // Звук забираем не «по заявке», а когда он здесь реально пошёл: иначе при заблокированном
+    // автозапуске музыка замолчала бы у обоих устройств.
+    void playLoadedTrackRef.current(targetTrack);
+  }, []);
+
   const contextValue: PulsePlayerContextValue = {
     closePlayer,
     currentCollectionId: playlistId,
     currentSongId,
     currentTrackObj: currentTrack || null,
     isOpen: isVisible,
-    isPlaying,
+    isPlaying: effectiveIsPlaying,
     mode,
     openAddToPlaylist,
     openBlockedTrackModal,
@@ -1953,6 +2096,7 @@ export function PulsePlayerProvider({
     removeQueueTrack,
     moveQueueTrack,
     joinListenAlong: handleJoinListenAlong,
+    transferPlaybackHere,
     listenAlongHostId: followingHostId,
     listenAlongListeners: listenAlong.listeners,
     leaveListenAlong,
@@ -1979,15 +2123,16 @@ export function PulsePlayerProvider({
       // Слушатель уже в комнате: помечаем это сразу, иначе первая отправка уйдёт в никуда,
       // и человек ждал бы следующей опорной точки (до 10 секунд).
       hasListenersRef.current = true;
-      emitListenState(true);
+      emitPlaybackState(true);
     });
     return () => setHostSyncRequestHandler(null);
-  }, [emitListenState]);
+  }, [emitPlaybackState]);
 
   // Хост ушёл или закрыл плеер: музыка у слушателя продолжает играть, но об окончании надо сказать.
   useEffect(() => {
-    setListenClosedHandler(({ wasFollowing }) => {
-      if (!wasFollowing) return;
+    setListenClosedHandler(({ reason, wasFollowing }) => {
+      // Отключение по кнопке приходит всем устройствам аккаунта: это не уход хоста.
+      if (!wasFollowing || reason === 'self_leave') return;
       notify({
         content: lang?.listen_along_closed || 'Совместное прослушивание завершено: хост отключился',
         type: 'info',
@@ -2000,13 +2145,13 @@ export function PulsePlayerProvider({
   // Опорная точка раз в 10 секунд: без неё ведомый копил бы расхождение между событиями.
   useEffect(() => {
     if (followingHostId > 0 || listenAlong.listeners.length === 0) return;
-    const timer = window.setInterval(emitListenState, LISTEN_STATE_INTERVAL_MS);
+    const timer = window.setInterval(emitPlaybackState, LISTEN_STATE_INTERVAL_MS);
 
     // Хост вернулся из фона: слушатели ждут свежую опорную точку, таймер там стоял.
     const handleVisible = () => {
       if (document.hidden) return;
       resumeListenAlong();
-      emitListenState();
+      emitPlaybackState();
     };
     document.addEventListener('visibilitychange', handleVisible);
 
@@ -2014,11 +2159,11 @@ export function PulsePlayerProvider({
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisible);
     };
-  }, [emitListenState, followingHostId, listenAlong.listeners.length]);
+  }, [emitPlaybackState, followingHostId, listenAlong.listeners.length]);
 
   // Хост не ответил: не оставляем человека в вечном «подключаемся».
   useEffect(() => {
-    if (followingHostId <= 0 || listenAlong.state) return;
+    if (followingHostId <= 0 || listenAlong.state || isRemoteDevice) return;
     const timer = window.setTimeout(() => {
       leaveListenAlong();
       notify({
@@ -2028,12 +2173,14 @@ export function PulsePlayerProvider({
       });
     }, LISTEN_JOIN_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
-  }, [followingHostId, lang?.listen_along_failed, listenAlong.state, notify]);
+  }, [followingHostId, isRemoteDevice, lang?.listen_along_failed, listenAlong.state, notify]);
 
   // Ведомый: включаем тот же трек, что у хоста.
   const followedTrackId = listenAlong.state?.trackId || '';
   useEffect(() => {
     if (followingHostId <= 0 || !followedTrackId) return;
+    // На пульте звука нет: трек за хостом включает то устройство, которое играет.
+    if (isRemoteDevice) return;
     if (String(currentSongIdRef.current) === followedTrackId) return;
 
     // Это переключение пришло от хоста, а не от человека — из комнаты не выходим.
@@ -2041,15 +2188,17 @@ export function PulsePlayerProvider({
     void playTrack(followedTrackId).finally(() => {
       followDrivenPlayRef.current = false;
     });
-  }, [followedTrackId, followingHostId, playTrack]);
+  }, [followedTrackId, followingHostId, isRemoteDevice, playTrack]);
 
   // Ведомый: держим позицию. Сами звук не включаем — это и политика браузеров про автозапуск,
   // и правило «поставил паузу — стоишь, пока не подключишься обратно».
   const followedState = listenAlong.state;
   useEffect(() => {
-    if (followingHostId <= 0 || !followedState) return;
+    if (followingHostId <= 0 || !followedState || isRemoteDevice) return;
 
     const align = () => {
+      // Звук мог уехать на другое устройство прямо между тиками: иначе поймали бы два источника.
+      if (isRemotePlayback()) return;
       const audio = audioRef.current;
       if (!audio || String(currentSongIdRef.current) !== followedState.trackId) return;
 
@@ -2092,7 +2241,201 @@ export function PulsePlayerProvider({
       document.removeEventListener('visibilitychange', handleVisible);
       if (audioRef.current) audioRef.current.playbackRate = 1;
     };
-  }, [followedState, followingHostId]);
+  }, [followedState, followingHostId, isRemoteDevice]);
+
+  // --- Устройства аккаунта ---------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    announceDevice();
+  }, [isAuthenticated]);
+
+  /**
+   * Очередь для пультов. Смена трека сюда не относится: место в очереди едет в состоянии,
+   * а лишняя пересборка списка на пульте только сбивала бы перемешанный порядок.
+   */
+  const publishDeviceQueue = useCallback((full: boolean) => {
+    if (isRemotePlayback()) return;
+    if (!full && !hasOtherDevicesNow()) return;
+    const tracks = playlistRef.current;
+    if (!tracks.length) return;
+
+    sendDeviceQueue({
+      collectionId: currentCollectionRawIdRef.current,
+      collectionKey: currentCollectionIdRef.current,
+      index: indexRef.current,
+      isPlaylist: currentIsPlaylistRef.current,
+      kind: currentCollectionKindRef.current,
+      // Пересобрать по коллекции нельзя (перемешали, правили, радио) — значит, треки едут списком.
+      // Без вида коллекции пульт тоже ничего не соберёт, поэтому шлём список и в этом случае.
+      tracks: queueDirtyRef.current || !currentCollectionKindRef.current ? tracks : null,
+    });
+  }, []);
+
+  // Играющее устройство: очередь пультам — когда она действительно поменялась.
+  useEffect(() => {
+    if (isRemoteDevice || !hasOtherDevices) return;
+    publishDeviceQueue(false);
+  }, [hasOtherDevices, isRemoteDevice, playlist, playlistId, publishDeviceQueue]);
+
+  // Звук только что стал нашим: очередь, ушедшая до этого, сервером отброшена — он принимает её
+  // лишь от играющего устройства. Поэтому отдаём всё заново, и пульт показывает плеер сразу.
+  useEffect(() => {
+    if (!isActiveDevice) return;
+    publishDeviceQueue(true);
+    emitPlaybackState(true);
+  }, [emitPlaybackState, isActiveDevice, publishDeviceQueue]);
+
+  // Опорная точка: без неё позиция на пульте застывала бы между событиями.
+  useEffect(() => {
+    if (isRemoteDevice || !hasOtherDevices) return;
+    const timer = window.setInterval(() => emitPlaybackState(), DEVICE_STATE_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [emitPlaybackState, hasOtherDevices, isRemoteDevice]);
+
+  // Пульт: позиция едет сама, событий от играющего устройства ждать нечего.
+  useEffect(() => {
+    if (!isRemoteDevice || !remoteState) return undefined;
+    const tick = () => setRemoteTime(getRemotePositionMs(remoteState) / 1000);
+    tick();
+    if (!remoteState.playing) return undefined;
+    const timer = window.setInterval(tick, 500);
+    return () => window.clearInterval(timer);
+  }, [isRemoteDevice, remoteState]);
+
+  // Пульт: играющее устройство переключило трек — показываем тот же.
+  const remoteIndex = remoteState?.index ?? -1;
+  const remoteTrackId = remoteState?.trackId ?? '';
+  useEffect(() => {
+    if (!isRemoteDevice || remoteIndex < 0) return;
+
+    // Очередь могла собраться чуть иначе (коллекция обновилась) — сначала ищем трек по ID.
+    const expectedTrackId = toNumber(remoteTrackId);
+    const matchedIndex = findTrackIndex(playlistRef.current, expectedTrackId, remoteIndex);
+    const nextIndex = matchedIndex >= 0 ? matchedIndex : remoteIndex;
+    if (nextIndex === indexRef.current || nextIndex >= playlistRef.current.length) return;
+    setPlaylistIndex(nextIndex);
+  }, [isRemoteDevice, remoteIndex, remoteTrackId]);
+
+  /** Команда с пульта: исполняет её только то устройство, на котором идёт звук. */
+  const handleDeviceCommand = (command: RemoteCommand) => {
+    // «Забери звук себе» приходит как раз пульту — он и становится играющим.
+    if (command.action === 'takeover') {
+      transferPlaybackHere();
+      return;
+    }
+    if (isRemotePlayback()) return;
+    const audio = audioRef.current;
+
+    switch (command.action) {
+      case 'play':
+        followerPausedRef.current = false;
+        void audio?.play().catch(() => {
+          // автозапуск заблокирован — человек нажмёт плей на самом устройстве
+        });
+        return;
+      case 'pause':
+        audio?.pause();
+        return;
+      case 'next':
+        void nextTrack();
+        return;
+      case 'prev':
+        void prevTrack();
+        return;
+      case 'seek':
+        if (audio) {
+          audio.currentTime = Math.max(0, command.value / 1000);
+          emitPlaybackState();
+        }
+        return;
+      case 'queue_index':
+        playQueueTrack(Math.round(command.value));
+        return;
+      case 'close':
+        closePlayer();
+        return;
+      default:
+    }
+  };
+
+  /** Очередь с играющего устройства: показываем её у себя, звук при этом не трогаем. */
+  const applyRemoteQueue = async (queue: RemoteQueue) => {
+    if (!isRemotePlayback()) return;
+
+    let tracks = queue.tracks;
+    if (!tracks?.length) {
+      if (!queue.kind || !queue.collectionId) return;
+      tracks = await fetchTrackCollection(queue.kind, queue.collectionId);
+    }
+    if (!tracks.length || !isRemotePlayback()) return;
+
+    currentCollectionKindRef.current = queue.kind;
+    currentCollectionRawIdRef.current = queue.collectionId;
+    queueDirtyRef.current = Boolean(queue.tracks?.length);
+
+    setPlaylistState(tracks);
+    setPlaylistIndex(Math.min(queue.index, tracks.length - 1));
+    setPlaylistMode(queue.isPlaylist, queue.collectionKey || '0');
+    showPlayer();
+  };
+
+  /**
+   * Звук забрало другое устройство: просто замолкаем. Оставаться ли аккаунту в комнате совместного
+   * прослушивания, решает то устройство, которое звук забрало: включило своё — выйдет само,
+   * подключилось к другу — только что вошло. Выходить отсюда значило бы рушить чужой вход.
+   */
+  const handleDeviceStop = () => {
+    audioRef.current?.pause();
+  };
+
+  /** Подключилось новое устройство — отдаём ему очередь и позицию, не дожидаясь опорной точки. */
+  const handleDeviceSync = () => {
+    if (isRemotePlayback()) return;
+    // Список устройств приедет своим событием, а очередь и позиция нужны прямо сейчас.
+    publishDeviceQueue(true);
+    emitPlaybackState(true);
+  };
+
+  const deviceHandlersRef = useRef({
+    command: handleDeviceCommand,
+    queue: applyRemoteQueue,
+    stop: handleDeviceStop,
+    sync: handleDeviceSync,
+  });
+  useEffect(() => {
+    deviceHandlersRef.current = {
+      command: handleDeviceCommand,
+      queue: applyRemoteQueue,
+      stop: handleDeviceStop,
+      sync: handleDeviceSync,
+    };
+  });
+
+  // Устройство, которому адресована команда, уже не на связи — говорим об этом, а не молчим.
+  useEffect(() => {
+    setDeviceUnreachableHandler(() => {
+      notify({
+        content: lang?.pulse_device_unreachable || 'Устройство недоступно',
+        type: 'error',
+        time: 4,
+      });
+    });
+    return () => setDeviceUnreachableHandler(null);
+  }, [lang?.pulse_device_unreachable, notify]);
+
+  useEffect(() => {
+    setDeviceCommandHandler((command) => deviceHandlersRef.current.command(command));
+    setDeviceQueueHandler((queue) => { void deviceHandlersRef.current.queue(queue); });
+    setDeviceStopHandler(() => deviceHandlersRef.current.stop());
+    setDeviceSyncHandler(() => deviceHandlersRef.current.sync());
+    return () => {
+      setDeviceCommandHandler(null);
+      setDeviceQueueHandler(null);
+      setDeviceStopHandler(null);
+      setDeviceSyncHandler(null);
+    };
+  }, []);
 
   const isFullMode = mode === 'full';
 
@@ -2127,12 +2470,12 @@ export function PulsePlayerProvider({
       <PulsePlayerMini
         Icon={PlayerIcon}
         activeSeekSlider={activeSeekSlider}
-        currentTime={currentTime}
+        currentTime={effectiveCurrentTime}
         desktopCurrentTimeLabelRef={live ? desktopCurrentTimeLabelRef : ghostMiniTimeLabelRef}
         desktopSeekInputRef={live ? desktopSeekInputRef : ghostMiniSeekInputRef}
         docked={docked}
-        duration={duration}
-        isPlaying={isPlaying}
+        duration={effectiveDuration}
+        isPlaying={effectiveIsPlaying}
         isSwiping={isSwiping}
         isVisible={live && !isFullMode && isPlayerAnimatingIn}
         lang={lang}
@@ -2142,7 +2485,7 @@ export function PulsePlayerProvider({
         onDesktopSeekStart={() => {
           seekingSliderRef.current = 'desktop';
           setActiveSeekSlider('desktop');
-          setSeekValue(currentTime);
+          setSeekValue(effectiveCurrentTime);
         }}
         onDesktopSeekSubmit={() => finishSeek(true)}
         onNextTrack={() => { void nextTrack(); }}
@@ -2285,15 +2628,15 @@ export function PulsePlayerProvider({
             isSwiping={isSwiping}
 
             displayedCurrentTime={displayedCurrentTime}
-            duration={duration}
+            duration={effectiveDuration}
 
-            isPlaying={isPlaying}
+            isPlaying={effectiveIsPlaying}
             isVisible={isFullMode && isPlayerAnimatingIn}
 
             activeLike={activeLike}
             isAuthenticated={isAuthenticated}
 
-            lyricsLines={isFullPlayerActive ? lyricsLines : []}
+            lyricsLines={isFullPlayerActive && !isRemoteDevice ? lyricsLines : []}
             lyricsEnabled={lyricsEnabled}
             onToggleLyrics={() => setLyricsEnabled(!lyricsEnabled)}
 
@@ -2383,7 +2726,7 @@ export function PulsePlayerProvider({
             onSeekStart={() => {
               seekingSliderRef.current = 'mobile';
               setActiveSeekSlider('mobile');
-              setSeekValue(currentTime);
+              setSeekValue(effectiveCurrentTime);
             }}
             onSeekSubmit={() => finishSeek(true)}
 
