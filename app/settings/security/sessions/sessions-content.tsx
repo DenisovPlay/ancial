@@ -26,8 +26,9 @@ function methodLabel(session: AuthSession, lang: Record<string, string> | null):
         : session.auth_method === 'legacy'
           ? lang?.method_legacy || 'Совместимость'
           : lang?.method_password || 'Пароль';
-  if (session.second_factor === 'totp') return `${base} + 2FA`;
-  if (session.second_factor === 'passkey') return `${base} + Passkey`;
+  // Второй фактор дописываем, только если он реально другой метод (passkey-вход и так «Passkey»).
+  if (session.second_factor === 'totp' && session.auth_method !== 'totp') return `${base} + 2FA`;
+  if (session.second_factor === 'passkey' && session.auth_method !== 'passkey') return `${base} + Passkey`;
   return base;
 }
 
