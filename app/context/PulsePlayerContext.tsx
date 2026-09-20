@@ -974,6 +974,9 @@ export function PulsePlayerProvider({
     : false;
 
   const playLoadedTrack = async (track: PulseTrack | null, retryCount = 0): Promise<void> => {
+    // Осознанное локальное воспроизведение — забираем звук на это устройство ДО события play,
+    // чтобы гейт в handlePlay не принял его за случайное возобновление на пульте.
+    if (track) claimActiveDevice();
     const audio = audioRef.current;
     if (!audio || !track) return;
 
@@ -1764,6 +1767,12 @@ export function PulsePlayerProvider({
     };
 
     const handlePlay = () => {
+      // Пульт: локального звука быть не должно. Частый случай — ОС возобновила старый трек
+      // после сна ноутбука, пока играющим стало другое устройство. Глушим и не «крадём» звук.
+      if (isRemotePlayback()) {
+        audioRef.current?.pause();
+        return;
+      }
       setIsPlaying(true);
       // Заиграло здесь — значит, звук аккаунта теперь тут, остальные устройства становятся пультами.
       claimActiveDevice();
@@ -2310,6 +2319,11 @@ export function PulsePlayerProvider({
     if (!isAuthenticated) return;
     announceDevice();
   }, [isAuthenticated]);
+
+  // Стали пультом (в т.ч. после переподключения, когда device:stop не дошёл) — глушим локальный звук.
+  useEffect(() => {
+    if (isRemoteDevice) audioRef.current?.pause();
+  }, [isRemoteDevice]);
 
   /**
    * Очередь для пультов. Смена трека сюда не относится: место в очереди едет в состоянии,

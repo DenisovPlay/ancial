@@ -7,7 +7,25 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, type Passkey } from '../../../lib/api-v2';
+import { cache } from '../../../lib/cache';
 import { createPasskey, isPasskeySupported } from '../../../lib/webauthn';
+import Modal from '../../../components/modal';
+
+function PasskeysSkeleton() {
+  return (
+    <div className="rounded-3xl flex flex-col border border-zinc-600/30 bg-zinc-900 overflow-hidden">
+      {[0, 1].map((i) => (
+        <div key={i} className="flex items-center gap-3 p-3 border-b border-zinc-600/20 last:border-b-0">
+          <div className="h-11 w-11 shrink-0 rounded-full bg-zinc-700/60 animate-pulse" />
+          <div className="flex min-w-0 flex-grow flex-col gap-2">
+            <div className="h-4 w-32 rounded-full bg-zinc-700/60 animate-pulse" />
+            <div className="h-3 w-44 rounded-full bg-zinc-800 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function PasskeysContent() {
   const router = useRouter();
@@ -18,6 +36,9 @@ export default function PasskeysContent() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [supported, setSupported] = useState(true);
+  // Модалка ввода названия: mode 'add' — назвать перед добавлением, 'rename' — переименовать.
+  const [nameModal, setNameModal] = useState<{ mode: 'add' | 'rename'; id: number } | null>(null);
+  const [nameValue, setNameValue] = useState('');
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -34,11 +55,22 @@ export default function PasskeysContent() {
   useEffect(() => {
     if (!isAuthenticated) return;
     let cancelled = false;
+
+    // Кеш-first: сразу показываем сохранённые ключи, затем фоновое обновление.
+    const cached = cache.get<Passkey[]>('passkeys_cache', { category: 'profile', subcategory: 'passkeys' });
+    if (cached && cached.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPasskeys(cached);
+      setLoading(false);
+    }
+
     void (async () => {
       try {
         const result = await AncialAPI.passkeyList();
         if (cancelled) return;
-        setPasskeys(Array.isArray(result.passkeys) ? result.passkeys : []);
+        const list = Array.isArray(result.passkeys) ? result.passkeys : [];
+        setPasskeys(list);
+        cache.set('passkeys_cache', list, { category: 'profile', subcategory: 'passkeys' });
       } catch {
         // тихо
       } finally {
@@ -50,14 +82,14 @@ export default function PasskeysContent() {
     };
   }, [isAuthenticated]);
 
-  const addPasskey = async () => {
+  // Клик в модалке — это пользовательский жест, поэтому ceremony WebAuthn можно запускать отсюда.
+  const addPasskey = async (nickname: string) => {
     setBusy(true);
     try {
       const options = await AncialAPI.passkeyRegistrationOptions();
       const created = await createPasskey(options);
-      const nickname = window.prompt(lang?.passkey_name_prompt || 'Название ключа', 'Passkey') || 'Passkey';
-      const result = await AncialAPI.passkeyRegistrationVerify({ ...created, nickname });
-      setPasskeys(Array.isArray(result.passkeys) ? result.passkeys : []);
+      const result = await AncialAPI.passkeyRegistrationVerify({ ...created, nickname: nickname.trim() || 'Passkey' });
+      { const list = Array.isArray(result.passkeys) ? result.passkeys : []; setPasskeys(list); cache.set('passkeys_cache', list, { category: 'profile', subcategory: 'passkeys' }); }
       showNote({ content: lang?.passkey_added || 'Passkey добавлен', type: 'success', time: 3 });
     } catch (err) {
       if (err instanceof Error && err.name === 'NotAllowedError') return; // пользователь отменил
@@ -67,21 +99,41 @@ export default function PasskeysContent() {
     }
   };
 
-  const rename = async (id: number, current: string | null) => {
-    const nickname = window.prompt(lang?.passkey_name_prompt || 'Название ключа', current || 'Passkey');
-    if (!nickname) return;
+  const rename = async (id: number, nickname: string) => {
     try {
-      const result = await AncialAPI.passkeyRename(id, nickname);
-      setPasskeys(Array.isArray(result.passkeys) ? result.passkeys : []);
+      const result = await AncialAPI.passkeyRename(id, nickname.trim() || 'Passkey');
+      { const list = Array.isArray(result.passkeys) ? result.passkeys : []; setPasskeys(list); cache.set('passkeys_cache', list, { category: 'profile', subcategory: 'passkeys' }); }
     } catch {
       showNote({ content: lang?.passkey_rename_error || 'Не удалось переименовать', type: 'error', time: 4 });
+    }
+  };
+
+  const openAddModal = () => {
+    setNameValue('Passkey');
+    setNameModal({ mode: 'add', id: 0 });
+  };
+
+  const openRenameModal = (id: number, current: string | null) => {
+    setNameValue(current || 'Passkey');
+    setNameModal({ mode: 'rename', id });
+  };
+
+  const submitNameModal = async () => {
+    const mode = nameModal?.mode;
+    const id = nameModal?.id ?? 0;
+    const value = nameValue;
+    setNameModal(null);
+    if (mode === 'add') {
+      await addPasskey(value);
+    } else if (mode === 'rename') {
+      await rename(id, value);
     }
   };
 
   const revoke = async (id: number) => {
     try {
       const result = await AncialAPI.passkeyRevoke(id);
-      setPasskeys(Array.isArray(result.passkeys) ? result.passkeys : []);
+      { const list = Array.isArray(result.passkeys) ? result.passkeys : []; setPasskeys(list); cache.set('passkeys_cache', list, { category: 'profile', subcategory: 'passkeys' }); }
       showNote({ content: lang?.passkey_removed || 'Passkey удалён', type: 'success', time: 3 });
     } catch {
       showNote({ content: lang?.passkey_remove_error || 'Не удалось удалить passkey', type: 'error', time: 4 });
@@ -100,7 +152,7 @@ export default function PasskeysContent() {
   if (!isAuthenticated || !user) return null;
 
   return (
-    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-blue-400/25 md:from-transparent via-transparent to-transparent">
+    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-teal-400/25 md:from-transparent via-transparent to-transparent">
       <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40">
         <div className="w-full max-w-3xl flex items-center gap-3">
           <Link
@@ -126,12 +178,8 @@ export default function PasskeysContent() {
           </div>
         ) : null}
 
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <svg className="w-8 h-8 animate-spin fill-purple-500" viewBox="0 0 48 48">
-              <use href="#IC-loader"></use>
-            </svg>
-          </div>
+        {loading && passkeys.length === 0 ? (
+          <PasskeysSkeleton />
         ) : passkeys.length === 0 ? (
           <div className="rounded-3xl border border-zinc-600/30 bg-zinc-900 p-6 text-center text-sm text-zinc-500">
             {lang?.passkeys_empty || 'Passkeys пока не добавлены.'}
@@ -153,7 +201,7 @@ export default function PasskeysContent() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => void rename(passkey.id, passkey.nickname)}
+                  onClick={() => openRenameModal(passkey.id, passkey.nickname)}
                   className="shrink-0 cursor-pointer rounded-full border border-transparent px-3 py-2 text-xs text-zinc-300 duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/80 hover:text-white active:scale-95"
                 >
                   {lang?.passkey_rename || 'Переименовать'}
@@ -173,7 +221,7 @@ export default function PasskeysContent() {
         {supported ? (
           <button
             type="button"
-            onClick={() => void addPasskey()}
+            onClick={openAddModal}
             disabled={busy}
             className="w-full cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500 px-4 py-2.5 text-sm font-medium text-white duration-300 hover:bg-purple-600 active:scale-95 disabled:opacity-40"
           >
@@ -183,6 +231,42 @@ export default function PasskeysContent() {
       </div>
 
       <div className="lg:hidden"><br /><br /><br /><br /></div>
+
+      <Modal
+        isOpen={nameModal !== null}
+        onClose={() => setNameModal(null)}
+        title={nameModal?.mode === 'rename' ? (lang?.passkey_rename || 'Переименовать') : (lang?.passkey_add || 'Добавить passkey')}
+        width="sm"
+      >
+        <form
+          onSubmit={(e) => { e.preventDefault(); void submitNameModal(); }}
+          className="flex flex-col gap-3"
+        >
+          <input
+            autoFocus
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            maxLength={120}
+            placeholder={lang?.passkey_name_prompt || 'Название ключа'}
+            className="h-12 px-3 rounded-full bg-zinc-800 border border-zinc-600/30 text-white focus:outline-0"
+          />
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setNameModal(null)}
+              className="flex-1 cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-300 duration-300 hover:bg-zinc-700 active:scale-95"
+            >
+              {lang?.cancel || 'Отмена'}
+            </button>
+            <button
+              type="submit"
+              className="flex-1 cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500 px-4 py-2.5 text-sm font-medium text-white duration-300 hover:bg-purple-600 active:scale-95"
+            >
+              {nameModal?.mode === 'rename' ? (lang?.save || 'Сохранить') : (lang?.passkey_add || 'Добавить passkey')}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

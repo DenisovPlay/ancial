@@ -1452,6 +1452,7 @@ export const be: Record<string, string> = {
     "twofa_wrong_code": "Няправільны код",
     "twofa_scan_title": "Дадайце акаўнт у дадатак",
     "twofa_scan_hint": "Увядзіце гэты ключ у дадатак-аўтэнтыфікатар (Google Authenticator, Aegis, 1Password) уручную або адкрыйце спасылку на тэлефоне, потым увядзіце код.",
+    "twofa_qr_alt": "QR-код для дадатку-аўтэнтыфікатара",
     "twofa_open_app": "Адкрыць у дадатку",
     "twofa_code_placeholder": "Код 6 лічбаў",
     "twofa_recovery_placeholder": "xxxx-xxxx",

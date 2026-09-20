@@ -30,7 +30,7 @@ export type CacheSubcategory<C extends CacheCategory> =
     : C extends 'groups'
     ? 'list' | 'profile'
     : C extends 'profile'
-    ? 'profile_data'
+    ? 'profile_data' | 'sessions' | 'passkeys' | 'twofa'
     : C extends 'notifications'
     ? 'list'
     : C extends 'apps'

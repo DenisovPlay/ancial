@@ -1,6 +1,6 @@
 {
   "name": "ancial",
-  "version": "3.6.9",
+  "version": "3.7.0",
   "private": true,
   "engines": {
     "node": ">=22"
@@ -20,6 +20,7 @@
     "gradualblur": "^2.3.6",
     "jsqr": "^1.4.0",
     "next": "16.2.1",
+    "qrcode-generator": "^2.0.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "sharp": "^0.33.5"

@@ -1452,6 +1452,7 @@ export const en: Record<string, string> = {
   "twofa_wrong_code": "Wrong code",
   "twofa_scan_title": "Add the account to your app",
   "twofa_scan_hint": "Enter this key into an authenticator app (Google Authenticator, Aegis, 1Password) manually, or open the link on your phone, then enter the code.",
+  "twofa_qr_alt": "Authenticator app QR code",
   "twofa_open_app": "Open in app",
   "twofa_code_placeholder": "6-digit code",
   "twofa_recovery_placeholder": "xxxx-xxxx",

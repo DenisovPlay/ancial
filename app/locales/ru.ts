@@ -1452,6 +1452,7 @@ export const ru: Record<string, string> = {
     "twofa_wrong_code": "Неверный код",
     "twofa_scan_title": "Добавьте аккаунт в приложение",
     "twofa_scan_hint": "Введите этот ключ в приложение-аутентификатор (Google Authenticator, Aegis, 1Password) вручную или откройте ссылку на телефоне, затем введите код.",
+    "twofa_qr_alt": "QR-код для приложения-аутентификатора",
     "twofa_open_app": "Открыть в приложении",
     "twofa_code_placeholder": "Код 6 цифр",
     "twofa_recovery_placeholder": "xxxx-xxxx",

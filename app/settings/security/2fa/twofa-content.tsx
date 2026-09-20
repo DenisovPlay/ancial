@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
+import { cache } from '../../../lib/cache';
 
 type View = 'idle' | 'enable_password' | 'enable_confirm' | 'recovery' | 'disable';
 
@@ -31,6 +32,7 @@ export default function TwoFactorContent() {
   const [useRecovery, setUseRecovery] = useState(false);
   const [secret, setSecret] = useState('');
   const [otpauth, setOtpauth] = useState('');
+  const [qrUrl, setQrUrl] = useState('');
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
 
   useEffect(() => {
@@ -42,12 +44,23 @@ export default function TwoFactorContent() {
   useEffect(() => {
     if (!isAuthenticated) return;
     let cancelled = false;
+
+    // Кеш-first: сразу показываем сохранённый статус, затем фоновое обновление.
+    const cached = cache.get<{ enabled: boolean; recovery_remaining: number }>('twofa_status_cache', { category: 'profile', subcategory: 'twofa' });
+    if (cached) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEnabled(Boolean(cached.enabled));
+      setRecoveryRemaining(Number(cached.recovery_remaining) || 0);
+      setStatusLoading(false);
+    }
+
     void (async () => {
       try {
         const status = await AncialAPI.twoFactorStatus();
         if (cancelled) return;
         setEnabled(Boolean(status.enabled));
         setRecoveryRemaining(Number(status.recovery_remaining) || 0);
+        cache.set('twofa_status_cache', { enabled: Boolean(status.enabled), recovery_remaining: Number(status.recovery_remaining) || 0 }, { category: 'profile', subcategory: 'twofa' });
       } catch {
         // тихо: страница покажет текущее (выключенное) состояние
       } finally {
@@ -64,6 +77,7 @@ export default function TwoFactorContent() {
     setCode('');
     setUseRecovery(false);
     setError(null);
+    setQrUrl('');
   };
 
   const startSetup = async () => {
@@ -73,6 +87,16 @@ export default function TwoFactorContent() {
       const result = await AncialAPI.twoFactorSetup(password);
       setSecret(result.secret);
       setOtpauth(result.otpauth);
+      // QR генерируем на клиенте: otpauth-секрет никуда не уходит (в отличие от wallet-QR).
+      try {
+        const qrcode = (await import('qrcode-generator')).default;
+        const qr = qrcode(0, 'M');
+        qr.addData(result.otpauth);
+        qr.make();
+        setQrUrl(qr.createDataURL(6, 2));
+      } catch {
+        setQrUrl('');
+      }
       setCode('');
       setView('enable_confirm');
     } catch (err) {
@@ -90,6 +114,7 @@ export default function TwoFactorContent() {
       setRecoveryCodes(Array.isArray(result.recovery_codes) ? result.recovery_codes : []);
       setEnabled(true);
       setRecoveryRemaining(result.recovery_codes?.length || 0);
+      cache.set('twofa_status_cache', { enabled: true, recovery_remaining: result.recovery_codes?.length || 0 }, { category: 'profile', subcategory: 'twofa' });
       setView('recovery');
     } catch (err) {
       setError(getApiMessage(err instanceof Error ? err.message : '', lang, lang?.twofa_wrong_code || 'Неверный код'));
@@ -105,6 +130,7 @@ export default function TwoFactorContent() {
       await AncialAPI.twoFactorDisable(password, code, useRecovery);
       setEnabled(false);
       setRecoveryRemaining(0);
+      cache.set('twofa_status_cache', { enabled: false, recovery_remaining: 0 }, { category: 'profile', subcategory: 'twofa' });
       resetForms();
       setView('idle');
       showNote({ content: lang?.twofa_disabled || 'Двухфакторная защита отключена', type: 'success', time: 3 });
@@ -138,7 +164,7 @@ export default function TwoFactorContent() {
   ) : null;
 
   return (
-    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-blue-400/25 md:from-transparent via-transparent to-transparent">
+    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-rose-400/25 md:from-transparent via-transparent to-transparent">
       <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40">
         <div className="w-full max-w-3xl flex items-center gap-3">
           <Link
@@ -156,10 +182,16 @@ export default function TwoFactorContent() {
       <div className="flex flex-col gap-3 w-full max-w-3xl px-3 lg:px-0">
         <div className="rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 flex flex-col gap-3">
           {statusLoading ? (
-            <div className="flex justify-center py-6">
-              <svg className="w-8 h-8 animate-spin fill-purple-500" viewBox="0 0 48 48">
-                <use href="#IC-loader"></use>
-              </svg>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 shrink-0 rounded-full bg-zinc-700/60 animate-pulse" />
+                <div className="flex flex-col gap-2">
+                  <div className="h-4 w-40 rounded-full bg-zinc-700/60 animate-pulse" />
+                  <div className="h-3 w-24 rounded-full bg-zinc-800 animate-pulse" />
+                </div>
+              </div>
+              <div className="h-3 w-full rounded-full bg-zinc-800 animate-pulse" />
+              <div className="h-11 w-full rounded-full bg-zinc-800 animate-pulse" />
             </div>
           ) : view === 'recovery' ? (
             <>
@@ -184,8 +216,20 @@ export default function TwoFactorContent() {
             <>
               <span className="text-lg font-bold text-white">{lang?.twofa_scan_title || 'Добавьте аккаунт в приложение'}</span>
               <p className="text-sm text-zinc-400">
-                {lang?.twofa_scan_hint || 'Введите этот ключ в приложение-аутентификатор (Google Authenticator, Aegis, 1Password) вручную или откройте ссылку на телефоне, затем введите код.'}
+                {lang?.twofa_scan_hint || 'Отсканируйте QR в приложении-аутентификаторе (Google Authenticator, Aegis, 1Password) или введите ключ вручную, затем введите код.'}
               </p>
+              {qrUrl ? (
+                <div className="flex justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={qrUrl}
+                    alt={lang?.twofa_qr_alt || 'QR-код для приложения-аутентификатора'}
+                    width={200}
+                    height={200}
+                    className="h-[200px] w-[200px] rounded-3xl bg-white p-3"
+                  />
+                </div>
+              ) : null}
               <div className="rounded-3xl bg-zinc-800/60 p-3 text-center">
                 <div className="font-mono text-base tracking-widest text-white break-all">{formatSecret(secret)}</div>
               </div>

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, type AuthSession } from '../../../lib/api-v2';
+import { cache } from '../../../lib/cache';
 
 function formatDateTime(value: string, langName?: string): string {
   const ts = value?.includes('T') ? value : value?.replace(' ', 'T');
@@ -38,6 +39,23 @@ function deviceIcon(deviceType: AuthSession['device_type']): string {
   return deviceType === 'mobile' || deviceType === 'tablet' ? 'IC-mobile' : 'IC-laptop';
 }
 
+function SessionsSkeleton() {
+  return (
+    <div className="rounded-3xl flex flex-col border border-zinc-600/30 bg-zinc-900 overflow-hidden">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="flex items-center gap-3 p-3 border-b border-zinc-600/20 last:border-b-0">
+          <div className="h-11 w-11 shrink-0 rounded-full bg-zinc-700/60 animate-pulse" />
+          <div className="flex min-w-0 flex-grow flex-col gap-2">
+            <div className="h-4 w-40 rounded-full bg-zinc-700/60 animate-pulse" />
+            <div className="h-3 w-56 rounded-full bg-zinc-800 animate-pulse" />
+            <div className="h-3 w-32 rounded-full bg-zinc-800 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function SessionsContent() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, lang } = useAuth();
@@ -55,16 +73,27 @@ export default function SessionsContent() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Загрузка списка при монтировании: сеттлеры стоят после await — это разрешённый паттерн.
+  // Кеш-first: сначала показываем сохранённый список, затем фоновое обновление и запись в кеш.
   useEffect(() => {
     if (!isAuthenticated) return;
     let cancelled = false;
+
+    const cached = cache.get<AuthSession[]>('auth_sessions_cache', { category: 'profile', subcategory: 'sessions' });
+    if (cached && cached.length > 0) {
+      // Есть кеш — показываем сразу, скелетон не нужен.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSessions(cached);
+      setLoading(false);
+    }
+
     void (async () => {
       try {
         const result = await AncialAPI.authSessions();
         if (cancelled) return;
-        setSessions(Array.isArray(result.sessions) ? result.sessions : []);
+        const list = Array.isArray(result.sessions) ? result.sessions : [];
+        setSessions(list);
         setFailed(false);
+        cache.set('auth_sessions_cache', list, { category: 'profile', subcategory: 'sessions' });
       } catch {
         if (!cancelled) setFailed(true);
       } finally {
@@ -82,7 +111,9 @@ export default function SessionsContent() {
       try {
         // Список перечитываем из ответа сервера: строка должна реально исчезнуть, а не оптимистично.
         const result = await AncialAPI.revokeAuthSession(id);
-        setSessions(Array.isArray(result.sessions) ? result.sessions : []);
+        const list = Array.isArray(result.sessions) ? result.sessions : [];
+        setSessions(list);
+        cache.set('auth_sessions_cache', list, { category: 'profile', subcategory: 'sessions' });
         showNote({ content: lang?.sessions_revoked_ok || 'Сессия завершена', type: 'success', time: 3 });
       } catch {
         showNote({ content: lang?.sessions_revoke_error || 'Не удалось завершить сессию', type: 'error', time: 4 });
@@ -97,7 +128,9 @@ export default function SessionsContent() {
     setRevokingOthers(true);
     try {
       const result = await AncialAPI.revokeOtherAuthSessions();
-      setSessions(Array.isArray(result.sessions) ? result.sessions : []);
+      const list = Array.isArray(result.sessions) ? result.sessions : [];
+      setSessions(list);
+      cache.set('auth_sessions_cache', list, { category: 'profile', subcategory: 'sessions' });
       showNote({ content: lang?.sessions_revoked_ok || 'Сессии завершены', type: 'success', time: 3 });
     } catch {
       showNote({ content: lang?.sessions_revoke_error || 'Не удалось завершить сессии', type: 'error', time: 4 });
@@ -121,7 +154,7 @@ export default function SessionsContent() {
   const hasOthers = sessions.some((session) => !session.current);
 
   return (
-    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-blue-400/25 md:from-transparent via-transparent to-transparent">
+    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-sky-400/25 md:from-transparent via-transparent to-transparent">
       <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40">
         <div className="w-full max-w-3xl flex items-center gap-3">
           <Link
@@ -141,13 +174,9 @@ export default function SessionsContent() {
           {lang?.sessions_subtitle || 'Устройства и браузеры, в которых выполнен вход в ваш аккаунт.'}
         </p>
 
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <svg className="w-8 h-8 animate-spin fill-purple-500" viewBox="0 0 48 48">
-              <use href="#IC-loader"></use>
-            </svg>
-          </div>
-        ) : failed ? (
+        {loading && sessions.length === 0 ? (
+          <SessionsSkeleton />
+        ) : failed && sessions.length === 0 ? (
           <div className="rounded-3xl border border-zinc-600/30 bg-zinc-900 p-6 text-center text-sm text-zinc-400">
             {lang?.sessions_load_error || 'Не удалось загрузить список сессий.'}
           </div>
