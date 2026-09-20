@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
+import { getPasskey, isPasskeySupported } from '../lib/webauthn';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 
 const greetings = [
@@ -35,12 +36,18 @@ export default function LoginPage() {
   const router = useRouter();
   const { checkAuth, isAuthenticated, lang } = useAuth();
   const [greeting, setGreeting] = useState(greetings[0]);
+  // Второй фактор: если сервер вернул requires_second_factor, показываем ввод кода.
+  const [twofaChallenge, setTwofaChallenge] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
 
   useEffect(() => {
     // Случайное приветствие и hostname доступны только на клиенте — сеттлеры здесь источник правды.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(greetings[Math.floor(Math.random() * greetings.length)]);
     setHostname(window.location.host);
+    setPasskeySupported(isPasskeySupported());
   }, []);
 
   useEffect(() => {
@@ -57,10 +64,15 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const result = await AncialAPI.loginResponse<{ token?: string }>({ login, password });
+      const result = await AncialAPI.loginResponse<{ token?: string; requires_second_factor?: string; challenge?: string }>({ login, password });
 
       if (!result.success) {
         setError(getApiMessage(result.error, lang, lang?.login_error || 'Ошибка авторизации'));
+      } else if (result.data?.requires_second_factor && result.data?.challenge) {
+        // Пароль верный, но нужен второй фактор — переключаемся на ввод кода.
+        setTwofaChallenge(result.data.challenge);
+        setCode('');
+        setUseRecovery(false);
       } else {
         setAuthToken(result.data?.token || '');
         await checkAuth({ force: true });
@@ -69,6 +81,55 @@ export default function LoginPage() {
     } catch (err) {
       console.error(err);
       setError(lang?.server_connection_error || 'Ошибка соединения с сервером');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerify = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!twofaChallenge || !code) return;
+
+    setError(null);
+    setIsLoading(true);
+    try {
+      const result = await AncialAPI.twoFactorVerifyLoginResponse<{ token?: string }>(twofaChallenge, code, useRecovery);
+      if (!result.success) {
+        setError(getApiMessage(result.error, lang, lang?.twofa_wrong_code || 'Неверный код'));
+      } else {
+        setAuthToken(result.data?.token || '');
+        await checkAuth({ force: true });
+        router.push('/');
+      }
+    } catch (err) {
+      console.error(err);
+      setError(lang?.server_connection_error || 'Ошибка соединения с сервером');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const options = await AncialAPI.passkeyAuthenticationOptions();
+      const assertion = await getPasskey(options);
+      const result = await AncialAPI.passkeyAuthenticationVerifyResponse<{ token?: string }>(assertion);
+      if (!result.success) {
+        setError(getApiMessage(result.error, lang, lang?.passkey_login_error || 'Не удалось войти по passkey'));
+      } else {
+        setAuthToken(result.data?.token || '');
+        await checkAuth({ force: true });
+        router.push('/');
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'NotAllowedError') {
+        // пользователь отменил — молча
+      } else {
+        console.error(err);
+        setError(lang?.passkey_login_error || 'Не удалось войти по passkey');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -146,6 +207,64 @@ export default function LoginPage() {
               )}
             </span>
 
+            {twofaChallenge ? (
+            <form onSubmit={handleVerify} className="flex flex-col gap-3 justify-center items-center w-full">
+              <div className="w-full text-sm text-zinc-300">
+                {useRecovery
+                  ? (lang?.twofa_enter_recovery || 'Введите резервный код')
+                  : (lang?.twofa_enter_code || 'Введите код из приложения-аутентификатора')}
+              </div>
+              <div className="flex items-center bg-zinc-900 rounded-3xl border border-zinc-600/30 w-full shadow">
+                <input
+                  placeholder={useRecovery ? (lang?.twofa_recovery_placeholder || 'xxxx-xxxx') : (lang?.twofa_code_placeholder || 'Код 6 цифр')}
+                  type="text"
+                  inputMode={useRecovery ? 'text' : 'numeric'}
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  disabled={isLoading}
+                  className="px-3 py-2 bg-transparent w-full flex-grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl tracking-widest text-center"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              {error && (
+                <div className="px-3 py-2 bg-red-500/25 text-red-500 shadow rounded-3xl w-full border border-zinc-600/30">
+                  <div className="flex items-center w-full gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="w-6 h-6 shrink-0 stroke-current">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <label className="text-sm lg:text-base w-full break-words">{error}</label>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-3xl border border-zinc-600/30 shadow flex items-center justify-center bg-purple-500 hover:bg-purple-600 active:scale-95 disabled:opacity-50 duration-300 px-3 py-2 font-bold uppercase cursor-pointer text-white"
+              >
+                {isLoading ? (
+                  <svg className="w-6 h-6 inline animate-spin fill-white" viewBox="0 0 48 48">
+                    <use href="#IC-auth-loader"></use>
+                  </svg>
+                ) : (
+                  lang?.twofa_confirm || 'Подтвердить'
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setUseRecovery(!useRecovery); setCode(''); setError(null); }}
+                className="text-purple-400 hover:text-purple-300 text-sm cursor-pointer"
+              >
+                {useRecovery
+                  ? (lang?.twofa_use_code || 'Использовать код из приложения')
+                  : (lang?.twofa_use_recovery || 'Использовать резервный код')}
+              </button>
+            </form>
+            ) : (
             <form onSubmit={handleLogin} className="flex flex-col gap-3 justify-center items-center w-full">
               <div className="flex items-center bg-zinc-900 rounded-3xl rounded-b-none border-t border-x border-zinc-600/30 w-full shadow">
                 <input
@@ -203,7 +322,22 @@ export default function LoginPage() {
                   lang?.login || 'Войти'
                 )}
               </button>
+
+              {passkeySupported ? (
+                <button
+                  type="button"
+                  onClick={() => void handlePasskeyLogin()}
+                  disabled={isLoading}
+                  className="w-full rounded-3xl border border-zinc-600/30 shadow flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 active:scale-95 disabled:opacity-50 duration-300 px-3 py-2 font-medium cursor-pointer text-zinc-200"
+                >
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 48 48">
+                    <use href="#IC-lock"></use>
+                  </svg>
+                  {lang?.passkey_login || 'Войти по passkey'}
+                </button>
+              ) : null}
             </form>
+            )}
           </div>
         </div>
         <div className="lg:hidden"><br /><br /><br /></div>

@@ -81,6 +81,39 @@ export default function SecuritySettingsContent() {
               </svg>
             }
           />
+
+          <SettingsItem
+            href="/settings/security/2fa"
+            title={lang?.twofa_title || 'Двухфакторная защита'}
+            iconBgClass="bg-rose-500/10"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-rose-500" viewBox="0 0 48 48">
+                <use href="#IC-lock"></use>
+              </svg>
+            }
+          />
+
+          <SettingsItem
+            href="/settings/security/passkeys"
+            title={lang?.passkeys_title || 'Passkeys'}
+            iconBgClass="bg-teal-500/10"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-teal-500" viewBox="0 0 48 48">
+                <use href="#IC-lock"></use>
+              </svg>
+            }
+          />
+
+          <SettingsItem
+            href="/settings/security/sessions"
+            title={lang?.active_sessions || 'Активные сессии'}
+            iconBgClass="bg-sky-500/10"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-sky-500" viewBox="0 0 48 48">
+                <use href="#IC-laptop"></use>
+              </svg>
+            }
+          />
         </div>
       </div>
 

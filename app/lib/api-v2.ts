@@ -15,6 +15,57 @@ import type {
 /**
  * Standard Ancial API V2 Response wrapper
  */
+export interface Passkey {
+  id: number;
+  nickname: string | null;
+  transports: string | null;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+export interface PasskeyRegistrationOptions {
+  challenge: string;
+  rp: { id: string; name: string };
+  user: { id: string; name: string; displayName: string };
+  pubKeyCredParams: { type: 'public-key'; alg: number }[];
+  excludeCredentials: string[];
+  authenticatorSelection: Record<string, unknown>;
+  timeout: number;
+  attestation: string;
+}
+
+export interface PasskeyAuthenticationOptions {
+  challenge: string;
+  rpId: string;
+  timeout: number;
+  userVerification: string;
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  recovery_remaining: number;
+}
+
+export interface AuthSession {
+  id: number;
+  current: boolean;
+  auth_method: 'password' | 'totp' | 'passkey' | 'oauth' | 'legacy';
+  second_factor: 'none' | 'totp' | 'passkey' | 'recovery_code';
+  is_trusted: boolean;
+  trusted_until: string | null;
+  device_label: string | null;
+  device_type: 'desktop' | 'mobile' | 'tablet' | 'bot' | 'unknown';
+  browser: string | null;
+  browser_version: string | null;
+  operating_system: string | null;
+  os_version: string | null;
+  ip_masked: string | null;
+  country_code: string | null;
+  country_name: string | null;
+  created_at: string;
+  last_seen_at: string;
+}
+
 export interface AncialV2Response<T> {
   success: boolean;
   data: T;
@@ -405,6 +456,134 @@ export class AncialAPI {
 
   static async checkStatus<T = unknown>(): Promise<T> {
     return this.request<T>('/auth/CheckStatus.php');
+  }
+
+  // --- ACTIVE SESSIONS (реестр входов) ---
+
+  static authSessions(): Promise<{ sessions: AuthSession[] }> {
+    return this.request<{ sessions: AuthSession[] }>('/auth/Sessions.php?action=list');
+  }
+
+  static revokeAuthSession(id: number): Promise<{ sessions: AuthSession[] }> {
+    return this.request<{ sessions: AuthSession[] }>('/auth/Sessions.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'revoke', id: String(id) }),
+    });
+  }
+
+  static revokeOtherAuthSessions(): Promise<{ revoked: number; sessions: AuthSession[] }> {
+    return this.request<{ revoked: number; sessions: AuthSession[] }>('/auth/Sessions.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'revoke_others' }),
+    });
+  }
+
+  // --- TWO-FACTOR (TOTP) ---
+
+  static twoFactorStatusResponse(): Promise<AncialV2Response<TwoFactorStatus>> {
+    return this.requestRaw<TwoFactorStatus>('/auth/TwoFactor.php?action=status');
+  }
+
+  static twoFactorStatus(): Promise<TwoFactorStatus> {
+    return this.request<TwoFactorStatus>('/auth/TwoFactor.php?action=status');
+  }
+
+  static twoFactorSetup(password: string): Promise<{ secret: string; otpauth: string }> {
+    return this.request<{ secret: string; otpauth: string }>('/auth/TwoFactor.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'setup', password }),
+    });
+  }
+
+  static twoFactorConfirm(code: string): Promise<{ enabled: boolean; recovery_codes: string[] }> {
+    return this.request<{ enabled: boolean; recovery_codes: string[] }>('/auth/TwoFactor.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'confirm_setup', code }),
+    });
+  }
+
+  static twoFactorDisable(password: string, code: string, recovery = false): Promise<{ enabled: boolean }> {
+    return this.request<{ enabled: boolean }>('/auth/TwoFactor.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'disable', password, code, recovery: recovery ? '1' : '' }),
+    });
+  }
+
+  static twoFactorRegenerateRecovery(password: string): Promise<{ recovery_codes: string[] }> {
+    return this.request<{ recovery_codes: string[] }>('/auth/TwoFactor.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'regenerate_recovery_codes', password }),
+    });
+  }
+
+  static twoFactorVerifyLoginResponse<T = { token?: string }>(
+    challenge: string,
+    code: string,
+    recovery = false,
+  ): Promise<AncialV2Response<T>> {
+    return this.requestRaw<T>('/auth/TwoFactor.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'verify_login', challenge, code, recovery: recovery ? '1' : '' }),
+    });
+  }
+
+  // --- PASSKEY / WEBAUTHN ---
+
+  static passkeyList(): Promise<{ passkeys: Passkey[] }> {
+    return this.request<{ passkeys: Passkey[] }>('/auth/Passkey.php?action=list');
+  }
+
+  static passkeyRegistrationOptions(): Promise<PasskeyRegistrationOptions> {
+    return this.request<PasskeyRegistrationOptions>('/auth/Passkey.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'registration_options' }),
+    });
+  }
+
+  static passkeyRegistrationVerify(payload: {
+    id: string;
+    clientDataJSON: string;
+    attestationObject: string;
+    transports: string;
+    nickname: string;
+  }): Promise<{ passkeys: Passkey[] }> {
+    return this.request<{ passkeys: Passkey[] }>('/auth/Passkey.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'registration_verify', ...payload }),
+    });
+  }
+
+  static passkeyAuthenticationOptions(): Promise<PasskeyAuthenticationOptions> {
+    return this.request<PasskeyAuthenticationOptions>('/auth/Passkey.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'authentication_options' }),
+    });
+  }
+
+  static passkeyAuthenticationVerifyResponse<T = { token?: string }>(payload: {
+    id: string;
+    clientDataJSON: string;
+    authenticatorData: string;
+    signature: string;
+  }): Promise<AncialV2Response<T>> {
+    return this.requestRaw<T>('/auth/Passkey.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'authentication_verify', ...payload }),
+    });
+  }
+
+  static passkeyRename(id: number, nickname: string): Promise<{ passkeys: Passkey[] }> {
+    return this.request<{ passkeys: Passkey[] }>('/auth/Passkey.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'rename', id: String(id), nickname }),
+    });
+  }
+
+  static passkeyRevoke(id: number): Promise<{ passkeys: Passkey[] }> {
+    return this.request<{ passkeys: Passkey[] }>('/auth/Passkey.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'revoke', id: String(id) }),
+    });
   }
 
   static async checkLinkGuard(link: string): Promise<LinkGuardAnalysis> {

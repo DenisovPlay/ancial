@@ -16,6 +16,7 @@
 /DeployUbuntu
 /FRAME-APP
 /.agents
+/.hermes
 
 # next.js
 /.next/
