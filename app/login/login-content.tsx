@@ -286,7 +286,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => { setUseRecovery(!useRecovery); setCode(''); setError(null); }}
-                className="text-purple-400 hover:text-purple-300 text-sm cursor-pointer"
+                className="text-purple-400 hover:text-purple-300 text-sm cursor-pointer duration-300 active:scale-95"
               >
                 {useRecovery
                   ? (lang?.twofa_use_code || 'Использовать код из приложения')
