@@ -1485,6 +1485,7 @@ export const be: Record<string, string> = {
     "twofa_code_sent": "Код таксама адпраўлены",
     "twofa_via_push": "push",
     "twofa_resend": "Адправіць зноў",
+    "twofa_code_limited": "Занадта шмат запытаў. Паспрабуйце пазней.",
     "twofa_use_code": "Выкарыстаць код з дадатку",
     "continue_btn": "Працягнуць",
     "method_password": "Пароль",

@@ -1485,6 +1485,7 @@ export const ru: Record<string, string> = {
     "twofa_code_sent": "Код также отправлен",
     "twofa_via_push": "push",
     "twofa_resend": "Отправить снова",
+    "twofa_code_limited": "Слишком много запросов. Попробуйте позже.",
     "twofa_use_code": "Использовать код из приложения",
     "continue_btn": "Продолжить",
     "method_password": "Пароль",

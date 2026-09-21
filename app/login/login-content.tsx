@@ -43,7 +43,7 @@ export default function LoginPage() {
   const [useRecovery, setUseRecovery] = useState(false);
   const [passkeySupported, setPasskeySupported] = useState(false);
   // Код второго фактора продублирован на почту/в push — показываем, куда ушёл, и даём переотправку.
-  const [codeInfo, setCodeInfo] = useState<{ email_masked: string | null; push: boolean } | null>(null);
+  const [codeInfo, setCodeInfo] = useState<{ email_masked: string | null; push: boolean; limited: boolean } | null>(null);
   const [resendIn, setResendIn] = useState(0);
   const sendingCodeRef = useRef(false);
   const sentForRef = useRef<string | null>(null);
@@ -53,7 +53,8 @@ export default function LoginPage() {
     sendingCodeRef.current = true;
     try {
       const res = await AncialAPI.twoFactorSendLoginCode(challenge);
-      if (res.email || res.push) setCodeInfo({ email_masked: res.email_masked, push: res.push });
+      // Показываем куда ушёл код (или что упёрлись в лимит) даже на кулдауне/после перезагрузки.
+      setCodeInfo({ email_masked: res.email_masked, push: !!res.push, limited: !!res.limited });
       setResendIn(res.cooldown || 30);
     } catch {
       // best-effort: код всё равно можно ввести из приложения-аутентификатора
@@ -268,22 +269,25 @@ export default function LoginPage() {
                 </span>
               </div>
               {!useRecovery && codeInfo ? (
-                <div className="w-full flex flex-col gap-1">
-                  <span className="text-xs text-zinc-500">
-                    {lang?.twofa_code_sent || 'Код также отправлен'}
-                    {codeInfo.email_masked ? ` · ${codeInfo.email_masked}` : ''}
-                    {codeInfo.push ? ` · ${lang?.twofa_via_push || 'push'}` : ''}
+                <div className="w-full flex items-center justify-between gap-3">
+                  <span className="text-xs text-zinc-500 min-w-0 truncate">
+                    {codeInfo.limited
+                      ? (lang?.twofa_code_limited || 'Слишком много запросов. Попробуйте позже.')
+                      : `${lang?.twofa_code_sent || 'Код также отправлен'}${codeInfo.email_masked ? ` · ${codeInfo.email_masked}` : ''}${codeInfo.push ? ` · ${lang?.twofa_via_push || 'push'}` : ''}`}
                   </span>
-                  <button
-                    type="button"
-                    disabled={resendIn > 0}
-                    onClick={() => { if (twofaChallenge) void sendLoginCode(twofaChallenge); }}
-                    className="w-fit rounded-3xl border border-transparent px-3 py-2 text-purple-400 hover:text-purple-300 text-sm cursor-pointer duration-300 active:scale-95 disabled:opacity-40 disabled:cursor-default"
-                  >
-                    {resendIn > 0
-                      ? `${lang?.twofa_resend || 'Отправить снова'} (${resendIn})`
-                      : (lang?.twofa_resend || 'Отправить снова')}
-                  </button>
+                  {resendIn > 0 ? (
+                    <span className="shrink-0 text-xs text-zinc-600 tabular-nums">
+                      {`${lang?.twofa_resend || 'Отправить снова'} · ${resendIn}`}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { if (twofaChallenge) void sendLoginCode(twofaChallenge); }}
+                      className="shrink-0 text-xs font-medium text-purple-400 hover:text-purple-300 cursor-pointer duration-300 active:scale-95"
+                    >
+                      {lang?.twofa_resend || 'Отправить снова'}
+                    </button>
+                  )}
                 </div>
               ) : null}
               {useRecovery ? (

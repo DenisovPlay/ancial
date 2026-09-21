@@ -1485,6 +1485,7 @@ export const en: Record<string, string> = {
   "twofa_code_sent": "Code also sent",
   "twofa_via_push": "push",
   "twofa_resend": "Resend",
+  "twofa_code_limited": "Too many requests. Try again later.",
   "twofa_use_code": "Use the app code",
   "continue_btn": "Continue",
   "method_password": "Password",
