@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
@@ -42,6 +42,25 @@ export default function LoginPage() {
   const [code, setCode] = useState('');
   const [useRecovery, setUseRecovery] = useState(false);
   const [passkeySupported, setPasskeySupported] = useState(false);
+  // Код второго фактора продублирован на почту/в push — показываем, куда ушёл, и даём переотправку.
+  const [codeInfo, setCodeInfo] = useState<{ email_masked: string | null; push: boolean } | null>(null);
+  const [resendIn, setResendIn] = useState(0);
+  const sendingCodeRef = useRef(false);
+  const sentForRef = useRef<string | null>(null);
+
+  const sendLoginCode = useCallback(async (challenge: string) => {
+    if (sendingCodeRef.current) return;
+    sendingCodeRef.current = true;
+    try {
+      const res = await AncialAPI.twoFactorSendLoginCode(challenge);
+      if (res.email || res.push) setCodeInfo({ email_masked: res.email_masked, push: res.push });
+      setResendIn(res.cooldown || 30);
+    } catch {
+      // best-effort: код всё равно можно ввести из приложения-аутентификатора
+    } finally {
+      sendingCodeRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     // Случайное приветствие и hostname доступны только на клиенте — сеттлеры здесь источник правды.
@@ -56,6 +75,21 @@ export default function LoginPage() {
       router.push('/');
     }
   }, [isAuthenticated, router]);
+
+  // Появился шаг 2FA — один раз дублируем код на почту/в push для этого challenge.
+  useEffect(() => {
+    if (!twofaChallenge) { sentForRef.current = null; return; }
+    if (sentForRef.current === twofaChallenge) return;
+    sentForRef.current = twofaChallenge;
+    void sendLoginCode(twofaChallenge);
+  }, [twofaChallenge, sendLoginCode]);
+
+  // Обратный отсчёт для кнопки «Отправить снова».
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setInterval(() => setResendIn((n) => (n <= 1 ? 0 : n - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendIn]);
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -219,7 +253,7 @@ export default function LoginPage() {
               <div className="w-full flex flex-col gap-1">
                 <button
                   type="button"
-                  onClick={() => { setTwofaChallenge(null); setCode(''); setUseRecovery(false); setError(null); }}
+                  onClick={() => { setTwofaChallenge(null); setCode(''); setUseRecovery(false); setError(null); setCodeInfo(null); setResendIn(0); }}
                   className="flex items-center gap-1.5 text-zinc-200 text-lg font-bold hover:text-white duration-300 active:scale-95 cursor-pointer w-fit"
                 >
                   <svg className="w-6 h-6 fill-current shrink-0" viewBox="0 0 48 48">
@@ -230,9 +264,28 @@ export default function LoginPage() {
                 <span className="text-zinc-400 text-sm">
                   {useRecovery
                     ? (lang?.twofa_enter_recovery || 'Введите резервный код')
-                    : (lang?.twofa_enter_code || 'Введите код из приложения-аутентификатора')}
+                    : (lang?.twofa_enter_code || 'Введите код из аутентификатора, почты или push')}
                 </span>
               </div>
+              {!useRecovery && codeInfo ? (
+                <div className="w-full flex flex-col gap-1">
+                  <span className="text-xs text-zinc-500">
+                    {lang?.twofa_code_sent || 'Код также отправлен'}
+                    {codeInfo.email_masked ? ` · ${codeInfo.email_masked}` : ''}
+                    {codeInfo.push ? ` · ${lang?.twofa_via_push || 'push'}` : ''}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={resendIn > 0}
+                    onClick={() => { if (twofaChallenge) void sendLoginCode(twofaChallenge); }}
+                    className="w-fit rounded-3xl border border-transparent px-3 py-2 text-purple-400 hover:text-purple-300 text-sm cursor-pointer duration-300 active:scale-95 disabled:opacity-40 disabled:cursor-default"
+                  >
+                    {resendIn > 0
+                      ? `${lang?.twofa_resend || 'Отправить снова'} (${resendIn})`
+                      : (lang?.twofa_resend || 'Отправить снова')}
+                  </button>
+                </div>
+              ) : null}
               {useRecovery ? (
                 <div className="flex items-center bg-zinc-900 rounded-3xl border border-zinc-600/30 w-full shadow">
                   <input
@@ -286,7 +339,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => { setUseRecovery(!useRecovery); setCode(''); setError(null); }}
-                className="text-purple-400 hover:text-purple-300 text-sm cursor-pointer duration-300 active:scale-95"
+                className="rounded-3xl border border-transparent text-purple-400 hover:text-purple-300 text-sm cursor-pointer duration-300 active:scale-95"
               >
                 {useRecovery
                   ? (lang?.twofa_use_code || 'Использовать код из приложения')

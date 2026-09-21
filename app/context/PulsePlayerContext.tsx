@@ -2645,9 +2645,9 @@ export function PulsePlayerProvider({
           setSeekValue(effectiveCurrentTime);
         }}
         onDesktopSeekSubmit={() => finishSeek(true)}
-        onNextTrack={() => { void nextTrack(); }}
-        onOpenFull={() => setMode('full')}
-        onPrevTrack={() => { void prevTrack(); }}
+        onNextTrack={() => { void nextTrack(); }} /* eslint-disable-line react-hooks/refs -- обработчик клика: nextTrack/prevTrack/setMode вызываются по событию, а не в рендере; ложное срабатывание react-compiler (finishSeek с тем же телом и этот же вызов ниже по дереву не флагаются) */
+        onOpenFull={() => setMode('full')} /* eslint-disable-line react-hooks/refs -- обработчик клика: nextTrack/prevTrack/setMode вызываются по событию, а не в рендере; ложное срабатывание react-compiler (finishSeek с тем же телом и этот же вызов ниже по дереву не флагаются) */
+        onPrevTrack={() => { void prevTrack(); }} /* eslint-disable-line react-hooks/refs -- обработчик клика: nextTrack/prevTrack/setMode вызываются по событию, а не в рендере; ложное срабатывание react-compiler (finishSeek с тем же телом и этот же вызов ниже по дереву не флагаются) */
         onTouchStart={(event) => {
           if (window.innerWidth >= 1024) return;
           touchStartMiniRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };

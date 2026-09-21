@@ -516,6 +516,13 @@ export class AncialAPI {
     });
   }
 
+  static twoFactorSendLoginCode(challenge: string): Promise<{ email: boolean; push: boolean; email_masked: string | null; cooldown: number; resent: boolean }> {
+    return this.request<{ email: boolean; push: boolean; email_masked: string | null; cooldown: number; resent: boolean }>('/auth/TwoFactor.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'send_login_code', challenge }),
+    });
+  }
+
   static twoFactorVerifyLoginResponse<T = { token?: string }>(
     challenge: string,
     code: string,

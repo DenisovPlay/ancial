@@ -1273,4 +1273,17 @@ body:has(.apps-overlay-route) #main-content {
   }
 }
 
-
+/* Тёмный автозаполнитель: браузерный бело-жёлтый фон autofill «съедает» тёмный фон инпутов.
+   Перекрываем через inset -webkit-box-shadow — именно его Chrome использует для autofill-фона. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #fafafa;
+  -webkit-box-shadow: 0 0 0 1000px #18181b inset;
+  caret-color: #fafafa;
+  border-radius: inherit;
+  transition: background-color 9999s ease-in-out 0s;
+}
