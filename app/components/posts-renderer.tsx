@@ -1087,7 +1087,7 @@ function PostCardInner({
       </div>
 
       {showAd && (
-        <div className="w-full overflow-hidden md:rounded-3xl">
+        <div className="w-full overflow-hidden md:rounded-3xl border border-transparent md:border-zinc-600/30">
           <YandexRtb />
         </div>
       )}

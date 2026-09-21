@@ -103,7 +103,11 @@ let unreachableHandler: (() => void) | null = null;
 
 function setSnapshot(next: Partial<RemoteDevicesSnapshot>) {
   const merged = { ...snapshot, ...next };
-  snapshot = { ...merged, isRemote: merged.activeDeviceId !== '' && !merged.isActiveSelf };
+  // Пультом считаемся только если есть ЖИВОЕ активное устройство в списке. Призрачный
+  // activeDeviceId (устройство отключилось, а 20-секундный grace ещё держит его id) — не пульт,
+  // иначе play уходил бы командой в никуда («Устройство недоступно»).
+  const hasLiveActive = merged.devices.some((device) => device.active);
+  snapshot = { ...merged, isRemote: merged.activeDeviceId !== '' && !merged.isActiveSelf && hasLiveActive };
   storeListeners.forEach((listener) => {
     try {
       listener();

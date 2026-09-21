@@ -285,6 +285,8 @@ export function PulsePlayerProvider({
   const playbackSessionRef = useRef(0);
   const listenReportedSessionRef = useRef<number | null>(null);
   const currentSongIdRef = useRef(0);
+  /** Счётчик авто-ретраев при сбое ЗАГРУЗКИ трека (сеть/таймаут), чтобы не путать с регион-блоком. */
+  const loadErrorRetryRef = useRef(0);
   const currentCollectionIdRef = useRef('0');
   const currentIsPlaylistRef = useRef(false);
   const playlistRef = useRef<PulseTrack[]>([]);
@@ -460,6 +462,12 @@ export function PulsePlayerProvider({
     });
   }, [showNote]);
 
+  // lang для использования внутри статичного audio-эффекта (там прямое замыкание было бы устаревшим).
+  const langRef = useRef(lang);
+  useEffect(() => {
+    langRef.current = lang;
+  }, [lang]);
+
   const syncWindowState = () => {
     if (typeof window === 'undefined') return;
 
@@ -549,6 +557,8 @@ export function PulsePlayerProvider({
   /** Вид и «чистый» идентификатор коллекции — по ним пульт соберёт ту же очередь у себя. */
   const currentCollectionKindRef = useRef<PulseCollectionKind | ''>('');
   const currentCollectionRawIdRef = useRef('');
+  /** Что мы попросили включить на активном устройстве — на случай, если оно окажется недоступно. */
+  const pendingRemotePlayRef = useRef<{ kind: PulseCollectionKind; id: number | string; forceReload: boolean; shuffle: number; startIndex: number; expectedSongId: number | string | null | undefined; at: number } | null>(null);
   /** Очередь разошлась с коллекцией (перемешивание, правки, радио, «Сохранённые») — шлём её целиком. */
   const queueDirtyRef = useRef(false);
   /** Позиция, на которую надо встать сразу после загрузки трека (перенос с другого устройства). */
@@ -1233,6 +1243,8 @@ export function PulsePlayerProvider({
     // Пульт включает музыку не у себя, а там, где она уже идёт — как в Spotify.
     // «Сохранённые» исключение: это офлайн-файлы конкретного устройства, у другого их нет.
     if (isRemotePlayback() && kind !== 'downloads') {
+      // Запоминаем интент: если активное устройство недоступно, включим здесь (см. unreachable-обработчик).
+      pendingRemotePlayRef.current = { kind, id, forceReload: forceReload === true, shuffle: Number(shuffle) || 0, startIndex: Number(startIndex) || 0, expectedSongId, at: Date.now() };
       sendDeviceCommand('play_collection', 0, {
         expected_song_id: expectedSongId ?? null,
         force_reload: forceReload === true,
@@ -1764,6 +1776,8 @@ export function PulsePlayerProvider({
 
     const handleCanPlay = () => {
       setStatusAudio('Ready');
+      // Трек догрузился — сбрасываем счётчик сетевых ретраев.
+      loadErrorRetryRef.current = 0;
     };
 
     const handlePlay = () => {
@@ -1864,10 +1878,42 @@ export function PulsePlayerProvider({
       stopProgressLoop();
       stopVisualProgressLoop();
 
+      const audio = audioRef.current;
       const track = playlistRef.current[indexRef.current] ?? null;
-      if (track) {
-        setIsBlockedTrackModalOpen(true);
+      if (!audio || !track) return;
+
+      // Сами прервали загрузку (смена трека/сброс src) — это не сбой.
+      if (audio.error && audio.error.code === MediaError.MEDIA_ERR_ABORTED) return;
+      if (!audio.src && !audio.currentSrc) return;
+
+      // ВАЖНО: регион-блок известен заранее (isTrackPlayable до воспроизведения). Сюда попадают
+      // ТОЛЬКО сбои загрузки/сети/декодирования — их НЕ показываем как «недоступен в регионе».
+      // Ретраим несколько раз с бэкоффом, перезагружая источник.
+      if (loadErrorRetryRef.current < 3) {
+        loadErrorRetryRef.current += 1;
+        const attempt = loadErrorRetryRef.current;
+        window.setTimeout(() => {
+          const current = playlistRef.current[indexRef.current] ?? null;
+          const el = audioRef.current;
+          if (el && current && toNumber(current.sid) === toNumber(track.sid)) {
+            try {
+              el.load();
+              void el.play().catch(() => {});
+            } catch {
+              // повторный сбой придёт новым error-событием
+            }
+          }
+        }, 1200 * attempt);
+        return;
       }
+
+      // Ретраи исчерпаны — это сеть/таймаут, а не регион. Оставляем трек заряженным: можно нажать play.
+      loadErrorRetryRef.current = 0;
+      notify({
+        content: langRef.current?.pulse_track_load_error || 'Не удалось загрузить трек. Проверьте соединение и попробуйте снова.',
+        type: 'error',
+        time: 5,
+      });
     };
 
     audio.addEventListener('loadstart', handleLoadStart);
@@ -2498,11 +2544,29 @@ export function PulsePlayerProvider({
     emitPlaybackState(true);
   };
 
+  // Команда ушла на активное устройство, а оно недоступно. Если мы только что просили включить
+  // музыку — включаем здесь же (интент был «играть»), иначе показываем ошибку.
+  const handleDeviceUnreachable = () => {
+    const intent = pendingRemotePlayRef.current;
+    if (intent && Date.now() - intent.at < 8000) {
+      pendingRemotePlayRef.current = null;
+      claimActiveDevice();
+      void playCollection(intent.kind, intent.id, intent.forceReload, intent.shuffle, intent.startIndex, intent.expectedSongId);
+      return;
+    }
+    notify({
+      content: lang?.pulse_device_unreachable || 'Устройство недоступно',
+      type: 'error',
+      time: 4,
+    });
+  };
+
   const deviceHandlersRef = useRef({
     command: handleDeviceCommand,
     queue: applyRemoteQueue,
     stop: handleDeviceStop,
     sync: handleDeviceSync,
+    unreachable: handleDeviceUnreachable,
   });
   useEffect(() => {
     deviceHandlersRef.current = {
@@ -2510,31 +2574,22 @@ export function PulsePlayerProvider({
       queue: applyRemoteQueue,
       stop: handleDeviceStop,
       sync: handleDeviceSync,
+      unreachable: handleDeviceUnreachable,
     };
   });
-
-  // Устройство, которому адресована команда, уже не на связи — говорим об этом, а не молчим.
-  useEffect(() => {
-    setDeviceUnreachableHandler(() => {
-      notify({
-        content: lang?.pulse_device_unreachable || 'Устройство недоступно',
-        type: 'error',
-        time: 4,
-      });
-    });
-    return () => setDeviceUnreachableHandler(null);
-  }, [lang?.pulse_device_unreachable, notify]);
 
   useEffect(() => {
     setDeviceCommandHandler((command) => deviceHandlersRef.current.command(command));
     setDeviceQueueHandler((queue) => { void deviceHandlersRef.current.queue(queue); });
     setDeviceStopHandler(() => deviceHandlersRef.current.stop());
     setDeviceSyncHandler(() => deviceHandlersRef.current.sync());
+    setDeviceUnreachableHandler(() => deviceHandlersRef.current.unreachable());
     return () => {
       setDeviceCommandHandler(null);
       setDeviceQueueHandler(null);
       setDeviceStopHandler(null);
       setDeviceSyncHandler(null);
+      setDeviceUnreachableHandler(null);
     };
   }, []);
 

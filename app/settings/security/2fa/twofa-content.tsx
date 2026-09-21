@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache';
+import { OtpInput } from '../../../components/otp-input';
 
 type View = 'idle' | 'enable_password' | 'enable_confirm' | 'recovery' | 'disable';
 
@@ -106,11 +107,12 @@ export default function TwoFactorContent() {
     }
   };
 
-  const confirmSetup = async () => {
+  const confirmSetup = async (codeOverride?: string) => {
+    const useCode = codeOverride ?? code;
     setBusy(true);
     setError(null);
     try {
-      const result = await AncialAPI.twoFactorConfirm(code);
+      const result = await AncialAPI.twoFactorConfirm(useCode);
       setRecoveryCodes(Array.isArray(result.recovery_codes) ? result.recovery_codes : []);
       setEnabled(true);
       setRecoveryRemaining(result.recovery_codes?.length || 0);
@@ -214,38 +216,44 @@ export default function TwoFactorContent() {
             </>
           ) : view === 'enable_confirm' ? (
             <>
-              <span className="text-lg font-bold text-white">{lang?.twofa_scan_title || 'Добавьте аккаунт в приложение'}</span>
+              <span className="text-lg font-bold text-white">{lang?.twofa_scan_title || 'Отсканируйте код'}</span>
               <p className="text-sm text-zinc-400">
-                {lang?.twofa_scan_hint || 'Отсканируйте QR в приложении-аутентификаторе (Google Authenticator, Aegis, 1Password) или введите ключ вручную, затем введите код.'}
+                {lang?.twofa_scan_hint || 'Наведите приложение-аутентификатор на QR, затем введите 6-значный код из приложения.'}
               </p>
+
               {qrUrl ? (
-                <div className="flex justify-center">
+                <div className="flex justify-center py-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={qrUrl}
                     alt={lang?.twofa_qr_alt || 'QR-код для приложения-аутентификатора'}
-                    width={200}
-                    height={200}
-                    className="h-[200px] w-[200px] rounded-3xl bg-white p-3"
+                    width={196}
+                    height={196}
+                    className="h-[196px] w-[196px] rounded-3xl bg-white p-3"
                   />
                 </div>
               ) : null}
-              <div className="rounded-3xl bg-zinc-800/60 p-3 text-center">
-                <div className="font-mono text-base tracking-widest text-white break-all">{formatSecret(secret)}</div>
-              </div>
-              <a
-                href={otpauth}
-                className="w-full text-center rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2 text-sm text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95"
-              >
-                {lang?.twofa_open_app || 'Открыть в приложении'}
-              </a>
-              <input
-                placeholder={lang?.twofa_code_placeholder || 'Код 6 цифр'}
-                inputMode="numeric"
-                autoComplete="one-time-code"
+
+              {/* Ручной ввод — ненавязчиво, для тех, кто не может отсканировать. */}
+              <details className="group text-center">
+                <summary className="cursor-pointer list-none text-xs text-zinc-500 hover:text-zinc-300 duration-300">
+                  {lang?.twofa_cant_scan || 'Не получается отсканировать?'}
+                </summary>
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="select-all font-mono text-sm tracking-widest text-zinc-200 break-all">{formatSecret(secret)}</div>
+                  <a href={otpauth} className="text-xs text-purple-400 hover:text-purple-300 duration-300">
+                    {lang?.twofa_open_app || 'Открыть в приложении'}
+                  </a>
+                </div>
+              </details>
+
+              <OtpInput
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="h-12 px-3 rounded-full bg-zinc-800 border border-zinc-600/30 text-center tracking-widest focus:outline-0"
+                onChange={setCode}
+                onComplete={(full) => { void confirmSetup(full); }}
+                disabled={busy}
+                autoFocus
+                ariaLabel={lang?.twofa_code_placeholder || 'Код'}
               />
               {errorBlock}
               <div className="flex gap-3">
@@ -279,13 +287,16 @@ export default function TwoFactorContent() {
                 className="h-12 px-3 rounded-full bg-zinc-800 border border-zinc-600/30 focus:outline-0"
               />
               {view === 'disable' ? (
-                <input
-                  placeholder={useRecovery ? (lang?.twofa_recovery_placeholder || 'xxxx-xxxx') : (lang?.twofa_code_placeholder || 'Код 6 цифр')}
-                  inputMode={useRecovery ? 'text' : 'numeric'}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="h-12 px-3 rounded-full bg-zinc-800 border border-zinc-600/30 text-center tracking-widest focus:outline-0"
-                />
+                useRecovery ? (
+                  <input
+                    placeholder={lang?.twofa_recovery_placeholder || 'xxxx-xxxx'}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="h-12 px-3 rounded-full bg-zinc-800 border border-zinc-600/30 text-center tracking-widest focus:outline-0"
+                  />
+                ) : (
+                  <OtpInput value={code} onChange={setCode} disabled={busy} ariaLabel={lang?.twofa_code_placeholder || 'Код'} />
+                )
               ) : null}
               {errorBlock}
               <div className="flex gap-3">

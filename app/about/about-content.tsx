@@ -26,7 +26,7 @@ export default function Home() {
                 <Link href="/settings" className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Zypo`}</Link>
             </div>
 
-            <div className="px-3 lg:px-0 w-full max-w-3xl">
+            <div className="px-3 lg:px-0 w-full max-w-3xl hidden">
                 <div className="border border-zinc-600/30 p-3 bg-blue-500/25 text-blue-500 shadow rounded-3xl flex items-center w-full gap-3">
                     <svg className="w-8 h-8 fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-warning`}></use></svg>
                     <span className="text-sm lg:text-base w-full">Документы переехали - теперь они находятся на отдельной странице!</span>
@@ -92,9 +92,10 @@ export default function Home() {
                     <svg className="w-8 h-8 fill-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-warning`}></use></svg>
                     <span className="text-sm lg:text-base w-full">Используя Zypo, вы автоматически соглашаетесь с правилами и политиками сторонних сервисов, интегрированных в Zypo.</span>
                 </div>
-                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-green-400">Icons8</b> - все иконки на сайте</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-orange-400">GCore</b> - защита от DDOS-атак</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">Yandex</b>, <b className="text-blue-400">Telegram</b> - авторизация/верификация</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-green-400">Icons8</b> - некоторые старые иконки на сайте</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-orange-400">GCore</b> - DNS-хостинг</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-red-400">Yandex</b>, <b className="text-sky-400">Telegram</b> - авторизация/верификация</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-blue-400">VK Cloud</b> - хранение больших данных</span>
             </div>
 
             <span className="w-full max-w-3xl text-xl font-bold px-3 lg:px-0 z-[10]">Технологии</span>
@@ -128,7 +129,7 @@ export default function Home() {
                 <span className="w-full max-w-3xl text-lg text-zinc-300">В 2020 мы придумали финальное название - <span className="text-purple-500">Intex.Uno</span>, сейчас уже звучит не очень, правда? ;) В этой версии мы добавили наш кошелёк в качестве приложения, придумали универсальный сервис авторизации и в <span className="text-purple-500">Intex</span>, и в <span className="text-purple-500">GG-Pay</span>. Такую авторизацию, к слову, мы используем и до сих пор, разве что усилили её безопасность в разы.</span>
 
                 <span className="text-xl font-bold text-white mt-3">2021</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">НО! Самый ключевой момент - 1 января 2021 года, мы пришли к более знакомому названию - <span className="text-purple-500">AncialNeure</span>, приобрели домен Ancial.ru и начали творить - переделали все интерфейсы, придумали логотип.</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">НО! Самый ключевой момент - 1 января 2021 года, мы пришли к более знакомому названию - <span className="text-purple-500">AncialNeure</span>, приобрели домен Ancial.ru и начали творить - переделали все интерфейсы, придумали логотип. Позднее сократили название до <span className="text-purple-500">Ancial</span>, а <span className="text-purple-500">Neure</span> оставили названием одного из уровней подписки.</span>
 
                 <span className="text-xl font-bold text-white mt-3">2022 - 2024</span>
                 <span className="w-full max-w-3xl text-lg text-zinc-300">В 2022-2024 мы меняли интерфейсы, создали сервисы, которые есть сейчас, придумали новый логотип с рукописным &quot;an&quot; и спокойными цветами. Создали подназвание <span className="text-purple-500">&quot;Ancial Group&quot;</span> для тех, кто занимался разработкой именно <span className="text-purple-500">Ancial</span>. Сделали чат с нейросетями (<span className="text-purple-500">Anci</span>) и <span className="text-purple-500">dot-Tell</span> - приватный мессенджер в виде клейких листов. Оба этих сервиса пали жертвой оптимизации расходов, но кто знает, может они вернутся... О, ещё - придумали Ancial Коннект для входа в эти сервисы)</span>
@@ -137,14 +138,14 @@ export default function Home() {
                 <span className="w-full max-w-3xl text-lg text-zinc-300">В 2025 запустили в разработку новый отдельный Pulse (Музыка) и Zeni (Финтех). А ещё - <span className="text-purple-500">Ancial Lite</span> - более мощную и более лёгкую версию Ancial на новой кодовой базе, освежили логотип, взяли более яркие и броские цвета. Вместо <span className="text-purple-500">Ctrl C + Ctrl V</span> и <span className="text-purple-500">Ancial Group</span> решили назвать себя проще - <span className="text-purple-500">ZeniFlow</span>, в честь не вышедшего финтех сервиса <span className="text-purple-500">Zeni</span>.</span>
 
                 <span className="text-xl font-bold text-white mt-3">2026</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">Начали новую эпоху - опубликовались на Product Radar и начали делать React-версию клиента.<br /> Выпустили React версию и решились сменить название на Zypo.cc.</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">Начали новую эпоху - опубликовались на Product Radar и начали делать React-версию клиента.<br /> Выпустили React версию и решились сменить название на Zypo.cc. <br />Изменили очень многое: обновили чаты, музыку, посты и кучу других мелочей. <br />Переписали GG-Connect для максимальной безопасности, с поддержкой новых способов входа (2FA и PassKey), полностью разделили Backend и Frontend, создав идеальный API для взаимодействия с платформой, дав возможность писать своих ботов на основе React-клиента на любом удобном языке.</span>
 
                 <span className="text-xl font-bold text-white mt-3">Сейчас</span>
-                <span className="w-full max-w-3xl text-lg text-zinc-300">Ну вроде как мы живы, если вы это читаете ;)<br />Главное помните, что Zypo - <b className="text-white">больше, чем социальная сеть</b>!</span>
+                <span className="w-full max-w-3xl text-lg text-zinc-300">Ну вроде как мы живы, если вы это читаете ;)<br />Главное помните, что <span className="line-through text-zinc-300">Ancial</span> <b className="text-white">Zypo</b> - <b className="text-white">больше, чем социальная сеть</b>! <br /> По крайней мере очень скоро таким будет!</span>
 
             </div>
 
             <div className="lg:hidden"><br /><br /><br /><br /></div>
-        </div>
+        </div >
     );
 }

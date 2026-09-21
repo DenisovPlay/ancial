@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
 import { getPasskey, isPasskeySupported } from '../lib/webauthn';
+import { OtpInput } from '../components/otp-input';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 
 const greetings = [
@@ -86,14 +87,15 @@ export default function LoginPage() {
     }
   };
 
-  const handleVerify = async (e?: React.FormEvent) => {
+  const handleVerify = async (e?: React.FormEvent, codeOverride?: string) => {
     if (e) e.preventDefault();
-    if (!twofaChallenge || !code) return;
+    const useCode = codeOverride ?? code;
+    if (!twofaChallenge || !useCode) return;
 
     setError(null);
     setIsLoading(true);
     try {
-      const result = await AncialAPI.twoFactorVerifyLoginResponse<{ token?: string }>(twofaChallenge, code, useRecovery);
+      const result = await AncialAPI.twoFactorVerifyLoginResponse<{ token?: string }>(twofaChallenge, useCode, useRecovery);
       if (!result.success) {
         setError(getApiMessage(result.error, lang, lang?.twofa_wrong_code || 'Неверный код'));
       } else {
@@ -183,51 +185,78 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-auto pt-4 text-center">
-              <span className="text-zinc-400 text-sm">{lang?.no_account || 'Нет аккаунта? '}</span>
-              <Link href="/signup" className="text-purple-400 hover:text-purple-300 text-sm font-medium">
-                {lang?.register || 'Зарегистрироваться'}
-              </Link>
-            </div>
+            {!twofaChallenge && (
+              <div className="mt-auto pt-4 text-center">
+                <span className="text-zinc-400 text-sm">{lang?.no_account || 'Нет аккаунта? '}</span>
+                <Link href="/signup" className="text-purple-400 hover:text-purple-300 text-sm font-medium">
+                  {lang?.register || 'Зарегистрироваться'}
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="bg-zinc-800 duration-300 flex flex-col gap-3 p-3 lg:max-w-xs justify-center items-center shadow">
-            <span className="text-zinc-200 text-lg font-bold w-full">
-              {/* Тексты статические (в массиве выше), но одна цитата содержит <br> —
-                  рендерим через санитайзер, чтобы разметка работала, а не показывалась текстом */}
-              <span dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(greeting.text) }}></span>
-              {(greeting.author || greeting.source) && (
-                <>
-                  <br />
-                  <span className={`text-zinc-300 text-xs ${greeting.author ? 'font-normal' : 'font-bold'}`}>
-                    {greeting.author && <span>{greeting.author} - </span>}
-                    {greeting.source && <span className="font-bold">{greeting.source}</span>}
-                  </span>
-                </>
-              )}
-            </span>
+            {/* На шаге ввода кода 2FA цитата не нужна — прячем, как и поля логина. */}
+            {!twofaChallenge && (
+              <span className="text-zinc-200 text-lg font-bold w-full">
+                {/* Тексты статические (в массиве выше), но одна цитата содержит <br> —
+                    рендерим через санитайзер, чтобы разметка работала, а не показывалась текстом */}
+                <span dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(greeting.text) }}></span>
+                {(greeting.author || greeting.source) && (
+                  <>
+                    <br />
+                    <span className={`text-zinc-300 text-xs ${greeting.author ? 'font-normal' : 'font-bold'}`}>
+                      {greeting.author && <span>{greeting.author} - </span>}
+                      {greeting.source && <span className="font-bold">{greeting.source}</span>}
+                    </span>
+                  </>
+                )}
+              </span>
+            )}
 
             {twofaChallenge ? (
             <form onSubmit={handleVerify} className="flex flex-col gap-3 justify-center items-center w-full">
-              <div className="w-full text-sm text-zinc-300">
-                {useRecovery
-                  ? (lang?.twofa_enter_recovery || 'Введите резервный код')
-                  : (lang?.twofa_enter_code || 'Введите код из приложения-аутентификатора')}
+              <div className="w-full flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => { setTwofaChallenge(null); setCode(''); setUseRecovery(false); setError(null); }}
+                  className="flex items-center gap-1.5 text-zinc-200 text-lg font-bold hover:text-white duration-300 active:scale-95 cursor-pointer w-fit"
+                >
+                  <svg className="w-6 h-6 fill-current shrink-0" viewBox="0 0 48 48">
+                    <use href="#IC-chevron-left"></use>
+                  </svg>
+                  {lang?.twofa_login_title || 'Подтверждение входа'}
+                </button>
+                <span className="text-zinc-400 text-sm">
+                  {useRecovery
+                    ? (lang?.twofa_enter_recovery || 'Введите резервный код')
+                    : (lang?.twofa_enter_code || 'Введите код из приложения-аутентификатора')}
+                </span>
               </div>
-              <div className="flex items-center bg-zinc-900 rounded-3xl border border-zinc-600/30 w-full shadow">
-                <input
-                  placeholder={useRecovery ? (lang?.twofa_recovery_placeholder || 'xxxx-xxxx') : (lang?.twofa_code_placeholder || 'Код 6 цифр')}
-                  type="text"
-                  inputMode={useRecovery ? 'text' : 'numeric'}
-                  autoComplete="one-time-code"
+              {useRecovery ? (
+                <div className="flex items-center bg-zinc-900 rounded-3xl border border-zinc-600/30 w-full shadow">
+                  <input
+                    placeholder={lang?.twofa_recovery_placeholder || 'xxxx-xxxx'}
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    disabled={isLoading}
+                    className="px-3 py-2 bg-transparent w-full flex-grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl tracking-widest text-center"
+                    required
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <OtpInput
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={setCode}
+                  onComplete={(full) => { setCode(full); void handleVerify(undefined, full); }}
                   disabled={isLoading}
-                  className="px-3 py-2 bg-transparent w-full flex-grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl tracking-widest text-center"
-                  required
                   autoFocus
+                  bgClass="bg-zinc-900"
+                  ariaLabel={lang?.twofa_code_placeholder || 'Код'}
                 />
-              </div>
+              )}
 
               {error && (
                 <div className="px-3 py-2 bg-red-500/25 text-red-500 shadow rounded-3xl w-full border border-zinc-600/30">

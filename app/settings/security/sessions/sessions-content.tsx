@@ -202,12 +202,12 @@ export default function SessionsContent() {
                   <span className="flex items-center gap-1.5 truncate text-sm font-medium text-white">
                     {deviceTitle(session, lang)}
                     {session.current ? (
-                      <span className="shrink-0 rounded-full bg-emerald-500/15 px-3 py-0.5 text-xs text-emerald-400">
+                      <span className="shrink-0 rounded-full bg-emerald-500/15 px-1 py-0.5 text-xs text-emerald-400">
                         {lang?.session_this_device || 'Это устройство'}
                       </span>
                     ) : null}
                     {session.is_trusted ? (
-                      <span className="shrink-0 rounded-full bg-purple-500/15 px-3 py-0.5 text-xs text-purple-300">
+                      <span className="shrink-0 rounded-full bg-purple-500/15 px-1 py-0.5 text-xs text-purple-300">
                         {lang?.session_trusted || 'Доверенное'}
                       </span>
                     ) : null}
