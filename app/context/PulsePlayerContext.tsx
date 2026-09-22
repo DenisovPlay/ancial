@@ -350,6 +350,9 @@ export function PulsePlayerProvider({
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(() => readSavedVolume());
+  // Живая громкость для обработчиков, привязанных один раз (ended → nextTrack → showPlayer):
+  // их замыкание держит громкость с момента загрузки страницы.
+  const volumeRef = useRef(volume);
   const [lyricsLines, setLyricsLines] = useState<PulseLyricsLine[]>([]);
   const [lyricsSource, setLyricsSource] = useState('');
   const lyricsEnabled = useSyncExternalStore(
@@ -855,7 +858,7 @@ export function PulsePlayerProvider({
     // Громкость уже живёт в состоянии плеера — перечитывать хранилище на каждом открытии нельзя:
     // плеер открывается и при смене трека, и при синхронизации с другим устройством.
     if (audioRef.current) {
-      audioRef.current.volume = volume;
+      audioRef.current.volume = volumeRef.current;
     }
 
     setIsMounted(true);
@@ -1537,7 +1540,6 @@ export function PulsePlayerProvider({
     }
   };
 
-  const volumeRef = useRef(0.7);
   /** Громкость до выключения звука — чтобы кнопка вернула ровно её, а не значение по умолчанию. */
   const preMuteVolumeRef = useRef(0.7);
 

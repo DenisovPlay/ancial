@@ -515,7 +515,10 @@ export const DropdownItem = ({
   badgeCount,
 }: DropdownItemProps) => {
   const pathname = usePathname();
-  const isActive = href ? pathname === href : false;
+  // Подстраницы (/settings/security и т.п.) держат подсветку раздела — как у пилла-аватарки.
+  const isActive = href
+    ? pathname === href || (href !== '/' && !!pathname?.startsWith(`${href}/`))
+    : false;
   const itemRef = useRef<HTMLDivElement | null>(null);
 
   // Эффект Liquid Glass активен эксклюзивно для режима "Полное"
