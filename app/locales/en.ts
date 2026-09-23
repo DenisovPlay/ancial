@@ -1494,7 +1494,7 @@ export const en: Record<string, string> = {
   "passkey_remove_error": "Could not remove passkey",
   "passkey_name_prompt": "Key name",
   "passkey_added_at": "Added",
-  "passkey_login": "Sign in with passkey",
+  "passkey_login": "PassKey",
   "passkey_login_error": "Could not sign in with passkey",
   "twofa_enter_code": "Enter the code from your authenticator, email or push",
   "twofa_login_title": "Confirm sign-in",

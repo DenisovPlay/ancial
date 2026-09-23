@@ -9,6 +9,7 @@ import { setAuthToken } from '../lib/cache-helpers';
 import { getPasskey, isPasskeySupported } from '../lib/webauthn';
 import { OtpInput } from '../components/otp-input';
 import OAuthButtons from '../components/oauth-buttons';
+import { takePendingChallenge } from '../lib/oauth-login';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
@@ -72,6 +73,9 @@ export default function LoginPage() {
     setGreeting(greetings[Math.floor(Math.random() * greetings.length)]);
     setHostname(window.location.host);
     setPasskeySupported(isPasskeySupported());
+    // Пришли с регистрации через Яндекс/Telegram в аккаунт с 2FA — сразу шаг ввода кода.
+    const pendingChallenge = takePendingChallenge();
+    if (pendingChallenge) setTwofaChallenge(pendingChallenge);
   }, []);
 
   useEffect(() => {
@@ -409,7 +413,7 @@ export default function LoginPage() {
                   className="w-full rounded-3xl border border-zinc-600/30 shadow flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 active:scale-95 disabled:opacity-50 duration-300 px-3 py-2 font-medium cursor-pointer text-zinc-200"
                 >
                   <Icon name="IC-lock" className="w-5 h-5 fill-current" />
-                  {lang?.passkey_login || 'Войти по passkey'}
+                  {lang?.passkey_login || 'Вход с ключом'}
                 </button>
               ) : null}
 

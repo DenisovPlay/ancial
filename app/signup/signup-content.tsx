@@ -9,6 +9,7 @@ import { setAuthToken } from '../lib/cache-helpers';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
 import OAuthButtons from '../components/oauth-buttons';
+import { stashPendingChallenge } from '../lib/oauth-login';
 
 export default function SignupContent() {
   const [login, setLogin] = useState('');
@@ -251,7 +252,7 @@ export default function SignupContent() {
                 action="signup"
                 disabled={isLoading}
                 onToken={(token) => void completeSignup(token)}
-                onChallenge={() => router.push('/login')}
+                onChallenge={(challenge) => { stashPendingChallenge(challenge); router.push('/login'); }}
                 onError={setError}
               />
             </form>

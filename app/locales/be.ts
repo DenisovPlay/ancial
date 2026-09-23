@@ -1494,7 +1494,7 @@ export const be: Record<string, string> = {
     "passkey_remove_error": "Не ўдалося выдаліць passkey",
     "passkey_name_prompt": "Назва ключа",
     "passkey_added_at": "Дададзены",
-    "passkey_login": "Увайсці па passkey",
+    "passkey_login": "Уваход з ключом",
     "passkey_login_error": "Не ўдалося ўвайсці па passkey",
     "twofa_enter_code": "Увядзіце код з аўтэнтыфікатара, пошты або push",
     "twofa_login_title": "Пацвярджэнне ўваходу",

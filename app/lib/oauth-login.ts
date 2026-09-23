@@ -79,3 +79,31 @@ export function yandexLogin(): Promise<string> {
     window.addEventListener('message', onMessage);
   });
 }
+
+/**
+ * Передача 2FA-challenge со страницы регистрации на страницу входа: шаг ввода кода живёт там.
+ * sessionStorage, а не адрес — challenge не должен оседать в истории и логах. Живёт 5 минут, как сам challenge.
+ */
+const PENDING_CHALLENGE_KEY = 'pending_2fa_challenge';
+const PENDING_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+
+export function stashPendingChallenge(challenge: string): void {
+  try {
+    sessionStorage.setItem(PENDING_CHALLENGE_KEY, JSON.stringify({ challenge, at: Date.now() }));
+  } catch {
+    // приватный режим / запрет хранилища — человек просто войдёт заново
+  }
+}
+
+/** Забирает challenge один раз (и сразу удаляет); просроченный — игнорирует. */
+export function takePendingChallenge(): string | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_CHALLENGE_KEY);
+    sessionStorage.removeItem(PENDING_CHALLENGE_KEY);
+    if (!raw) return null;
+    const { challenge, at } = JSON.parse(raw) as { challenge?: string; at?: number };
+    return challenge && at && Date.now() - at < PENDING_CHALLENGE_TTL_MS ? challenge : null;
+  } catch {
+    return null;
+  }
+}

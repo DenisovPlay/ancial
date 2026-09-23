@@ -1494,7 +1494,7 @@ export const ru: Record<string, string> = {
     "passkey_remove_error": "Не удалось удалить passkey",
     "passkey_name_prompt": "Название ключа",
     "passkey_added_at": "Добавлен",
-    "passkey_login": "Войти по passkey",
+    "passkey_login": "Вход с ключом",
     "passkey_login_error": "Не удалось войти по passkey",
     "twofa_enter_code": "Введите код из аутентификатора, почты или push",
     "twofa_login_title": "Подтверждение входа",
