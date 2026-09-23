@@ -884,7 +884,7 @@ export default function WalletContent() {
                 return (
                   <div key={gateway.id} onClick={() => handleGatewayClick(gateway)} className="border border-zinc-600/30 relative group shrink-0 p-1.5 flex items-center gap-1.5 justify-center bg-zinc-800/70 rounded-3xl shadow-lg hover:scale-105 active:scale-95 duration-300 cursor-pointer w-48">
                     <div className={`shadow-2xl group-hover:shadow-2xl h-14 w-14 lg:h-16 lg:w-16 p-1.5 rounded-3xl shrink-0 duration-300 flex items-center justify-center bg-${gtcolor}-500/25 group-hover:shadow-${gtcolor}-500/25`}>
-                      <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
+                      <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full rounded-full object-contain" />
                     </div>
                     <div className="flex flex-col justify-center flex-grow">
                       <span className="text-sm lg:text-base text-zinc-100">{gateway.name}</span>

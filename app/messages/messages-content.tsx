@@ -2329,10 +2329,10 @@ export default function MessagesContent() {
                         </div>
                       ) : dialogsError && dialogs.length === 0 ? (
                         <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-                          <AppImage
+                          <AppImage skeleton={false}
                             width={160}
                             height={160}
-                            src="/img/stickers/sponge.gif"
+                            src="/img/status/sponge.gif"
                             alt=""
                             className="mb-3 h-40 w-40 object-contain"
                           />
@@ -2510,7 +2510,7 @@ export default function MessagesContent() {
                   id="welcome-pane"
                   className="hidden h-full w-full flex-col items-center justify-center gap-3 p-3 text-center lg:flex lg:flex-row"
                 >
-                  <AppImage
+                  <AppImage skeleton={false}
                     width={256}
                     height={256}
                     src={FALLBACK_WELCOME_IMAGE}

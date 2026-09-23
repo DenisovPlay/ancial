@@ -64,7 +64,7 @@ export function WithdrawModal({
           {selectedGateway && (
             <div className="flex items-center gap-3">
               <div className="h-14 w-14 p-1 bg-zinc-800 rounded-2xl border border-zinc-600/30 flex items-center justify-center shrink-0">
-                <AppImage width={56} height={56} alt={selectedGateway.name} src={selectedGateway.image} className="h-full w-full object-contain" />
+                <AppImage width={56} height={56} alt={selectedGateway.name} src={selectedGateway.image} className="h-full w-full rounded-full object-contain" />
               </div>
               <div className="flex flex-col">
                 <span className="text-base font-semibold">{(gatewayConfig?.withdrawal_fields && typeof gatewayConfig.withdrawal_fields !== 'string' ? gatewayConfig.withdrawal_fields.title : undefined) || selectedGateway.name}</span>

@@ -306,7 +306,7 @@ function AppsContentInner() {
 
       {!loading && error && (
         <div className="text-center w-full max-w-screen-2xl flex flex-col gap-0.5 justify-center items-center py-20 px-3">
-          <AppImage width={224} height={224} alt="" className="h-56 w-auto" src="/img/stickers/sponge.gif" />
+          <AppImage skeleton={false} width={224} height={224} alt="" className="h-56 w-auto" src="/img/status/sponge.gif" />
           <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
           <span className="text-content-600">{lang?.try_refresh || 'Попробуйте обновить страницу'}</span>
           <span className="text-xs text-zinc-400">{error}</span>
@@ -334,7 +334,7 @@ function AppsContentInner() {
               onClick={() => setModalAppId(toAppId(app.id))}
               type="button"
             >
-              <AppImage width={1280} height={720} sizes="(max-width: 768px) 100vw, 512px" alt={app.name} className="rounded-3xl w-full" src={app.cover} />
+              <AppImage width={611} height={785} sizes="(max-width: 768px) 50vw, 256px" alt={app.name} className="rounded-3xl w-full" src={app.cover} />
               <div className="bg-zinc-900/50 group-hover:backdrop-blur-md w-full h-full absolute top-0 left-0 opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100 duration-300 rounded-3xl flex flex-col">
                 <span className="text-2xl text-white font-bold pt-3 pl-3 shrink-0 pr-8 break-words">
                   {app.name}

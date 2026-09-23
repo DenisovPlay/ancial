@@ -328,7 +328,7 @@ export default function PayContent() {
                       className="border border-zinc-600/30 relative group shrink-0 p-1.5 flex items-center gap-1.5 justify-center bg-zinc-800/70 rounded-3xl shadow-lg cursor-not-allowed opacity-80"
                     >
                       <div className={`shadow-2xl h-14 w-14 lg:h-16 lg:w-16 p-1.5 rounded-3xl shrink-0 flex items-center justify-center ${themeBg}`}>
-                        <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
+                        <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full rounded-full object-contain" />
                       </div>
                       <div className="flex flex-col justify-center flex-grow min-w-0">
                         <span className="text-sm lg:text-base text-zinc-100 truncate">{gateway.description}</span>
@@ -361,7 +361,7 @@ export default function PayContent() {
                       {isRedirecting ? (
                         <Icon name="IC-loader" className="w-10 h-10 inline animate-spin fill-purple-500" />
                       ) : (
-                        <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
+                        <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full rounded-full object-contain" />
                       )}
                     </div>
 
@@ -388,7 +388,7 @@ export default function PayContent() {
             {gateway_pending && (
               <div className="flex items-center justify-center w-full my-2">
                 <div className={`animate-pulse h-24 w-24 flex items-center justify-center rounded-full border border-zinc-600/30 ${getThemeBgClass(gateway_pending.theme_color)}`}>
-                  <AppImage width={64} height={64} className="h-16 w-16 object-contain" src={gateway_pending.image} alt={gateway_pending.name} />
+                  <AppImage width={64} height={64} className="h-16 w-16 rounded-full object-contain" src={gateway_pending.image} alt={gateway_pending.name} />
                 </div>
               </div>
             )}

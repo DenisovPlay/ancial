@@ -238,15 +238,15 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
               </div>
               <div className="flex items-center justify-center shrink-0">
                 <AppImage
-                  width={256}
-                  height={256}
+                  width={611}
+                  height={785}
                   alt={app.name}
                   className="border border-zinc-600/30 shadow rounded-3xl w-24 lg:w-64 z-20 lg:rounded-3xl"
                   src={app.cover}
                 />
                 <AppImage
-                  width={224}
-                  height={224}
+                  width={611}
+                  height={785}
                   skeleton={false}
                   alt=""
                   aria-hidden="true"
@@ -341,8 +341,8 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                       type="button"
                     >
                       <AppImage
-                        width={256}
-                        height={256}
+                        width={1000}
+                        height={640}
                         alt={`${app.name} screenshot ${index + 1}`}
                         className="h-36 sm:h-48 lg:h-64 object-cover bg-zinc-800 shadow-lg rounded-2xl border border-zinc-700/40 select-none pointer-events-none w-auto"
                         draggable={false}
@@ -459,7 +459,7 @@ function AppInfoError({ error }: { error: string }) {
   const { lang } = useAuth();
   return (
     <div className="min-h-[70vh] flex flex-col justify-center items-center w-full h-full">
-      <AppImage width={224} height={224} unoptimized className="h-auto w-auto" alt="" src="/img/stickers/sponge.gif" />
+      <AppImage skeleton={false} width={224} height={224} unoptimized className="h-auto w-auto" alt="" src="/img/status/sponge.gif" />
       <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
       <span className="text-content-600">{lang?.try_refresh_page || 'Попробуйте обновить страницу'}</span>
       <span className="text-xs text-zinc-400">{error}</span>
