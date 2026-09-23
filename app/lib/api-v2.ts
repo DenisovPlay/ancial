@@ -85,6 +85,9 @@ export interface VoiceInviteTurn {
   iceServers: RTCIceServer[];
 }
 
+/** source: author | musixmatch | lrclib | none. */
+export type PulseLyricsResponse = { lyrics: string; synced: boolean; source: string };
+
 export class AncialAPIError extends Error {
   constructor(
     message: string,
@@ -1184,6 +1187,11 @@ export class AncialAPI {
         (data as FormData).append('action', action);
     }
     return this.request<T>('/pulse/Management.php', { method: 'POST', body });
+  }
+
+  /** Текст песни: сохранённый (автор, прошлый автопоиск) или найденный сейчас. 502 — провайдеры не ответили. */
+  static pulseLyrics(songId: number, options?: RequestInit): Promise<PulseLyricsResponse> {
+    return this.request<PulseLyricsResponse>(`/pulse/Lyrics.php?id=${songId}`, options);
   }
 
   // --- OTHERS ---

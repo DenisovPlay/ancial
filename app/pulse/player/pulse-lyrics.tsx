@@ -3,6 +3,7 @@
 import React, { type CSSProperties, useEffect, useRef } from 'react';
 import { normalizeText } from './player-utils';
 import { cn } from '../../lib/cn';
+import type { LyricsLine } from '../../lib/lrc';
 
 /**
  * Часы для текста песни. Обычно это само аудио, но когда звук идёт на другом устройстве —
@@ -15,77 +16,10 @@ export type PulseLyricsClock = {
   removeEventListener(type: string, listener: () => void): void;
 };
 
-export type PulseLyricsLine = {
-  text: string;
-  time: number;
-};
+export type PulseLyricsLine = LyricsLine;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
-}
-
-/** Parses LRC or plain text lyrics into timestamped lines. */
-export function parseLyricsText(value: string): PulseLyricsLine[] {
-  if (!value || typeof value !== 'string') return [];
-
-  // Remove UTF-8 BOM if present
-  let cleanValue = value.replace(/^\uFEFF/, '').trim();
-
-  // If JSON encoded, extract text field
-  if (cleanValue.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(cleanValue);
-      cleanValue = parsed.lyrics || parsed.text || parsed.lrc || cleanValue;
-    } catch { /* ignore */ }
-  }
-
-  // Convert HTML breaks to newlines & strip HTML tags if present
-  cleanValue = cleanValue
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]*>/g, '');
-
-  const rawLines = cleanValue.split(/\r\n|\n/);
-  const lyricPattern = /^\s*\[(\d+):(\d+(?:\.\d+)?)\](.*)/;
-
-  const lines: PulseLyricsLine[] = [];
-
-  rawLines.forEach((line) => {
-    const match = line.match(lyricPattern);
-    if (!match) return;
-
-    const minutes = Number.parseInt(match[1], 10);
-    const seconds = Number.parseFloat(match[2]);
-    const time = minutes * 60 + seconds;
-    const text = normalizeText(match[3]);
-    if (!text) return;
-
-    lines.push({ text, time });
-  });
-
-  if (lines.length > 0) {
-    lines.sort((left, right) => left.time - right.time);
-
-    if (lines[0].time > 0.5) {
-      lines.unshift({ text: '♪', time: 0 });
-    }
-
-    return lines;
-  }
-
-  // Fallback: If UniLyrics returned plain text without LRC timestamps
-  const plainLines = rawLines
-    .map((l) => normalizeText(l))
-    .filter((l) => l.length > 0 && !l.startsWith('[') && !l.startsWith('{'));
-
-  if (plainLines.length > 0) {
-    const generatedLines: PulseLyricsLine[] = [{ text: '♪', time: 0 }];
-    plainLines.forEach((text, i) => {
-      generatedLines.push({ text, time: (i + 1) * 3.5 });
-    });
-    return generatedLines;
-  }
-
-  return [];
 }
 
 export function getActiveLyricState(lines: PulseLyricsLine[], currentTime: number) {
@@ -413,11 +347,14 @@ export function PulseLyricsDesktop({
   leaving = false,
   lines,
   onSeek,
+  widthClassName = 'lg:w-[420px] xl:w-[480px] 2xl:w-[540px]',
 }: {
   audioRef: React.RefObject<PulseLyricsClock | null>;
   leaving?: boolean;
   lines: PulseLyricsLine[];
   onSeek: (time: number) => void;
+  /** Ширина панели; предпросмотр в Creators растягивает её на карточку. */
+  widthClassName?: string;
 }) {
   const { activeIndex, activeLineRef } = useActiveLyric<HTMLButtonElement>(audioRef, lines);
   const { containerRef, handleUserScroll } = useLyricsAutoScroll(activeIndex, activeLineRef);
@@ -425,7 +362,8 @@ export function PulseLyricsDesktop({
   return (
     <div
       className={cn(
-        'flex h-full shrink-0 lg:w-[420px] xl:w-[480px] 2xl:w-[540px]',
+        'flex h-full shrink-0',
+        widthClassName,
         leaving ? 'pulse-lyrics-panel-out pointer-events-none' : 'pulse-lyrics-panel-in',
       )}
     >
@@ -452,6 +390,58 @@ export function PulseLyricsDesktop({
           <div className="h-[45vh] shrink-0"></div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Текст без тайм-кодов: целиком, без подсветки и перемотки — строки не к чему привязать.
+ * На телефоне показывается только списком (одну «текущую» строку не определить).
+ */
+export function PulseLyricsPlain({
+  label,
+  leaving = false,
+  lines,
+  variant,
+  widthClassName = 'lg:w-[420px] xl:w-[480px] 2xl:w-[540px]',
+}: {
+  label: string;
+  leaving?: boolean;
+  lines: PulseLyricsLine[];
+  variant: 'desktop' | 'mobile';
+  /** Ширина панели на десктопе; предпросмотр в Creators растягивает её на карточку. */
+  widthClassName?: string;
+}) {
+  const list = (
+    <div
+      className={cn(
+        'viewport pulse-lyrics-fade flex flex-col items-center gap-3 overflow-y-auto overflow-x-hidden px-3 text-center font-semibold leading-snug text-white/80',
+        variant === 'desktop' ? 'h-full w-full py-32 text-xl lg:text-2xl' : 'absolute inset-0 py-24 text-lg',
+        variant === 'mobile' && (leaving ? 'pulse-lyrics-sheet-out pointer-events-none' : 'pulse-lyrics-line-in'),
+      )}
+    >
+      <span className="shrink-0 rounded-full border border-zinc-600/30 bg-zinc-800/80 px-3 py-1.5 text-xs font-normal text-zinc-400">
+        {label}
+      </span>
+      {lines.map((line, lineIndex) => (
+        <p key={`${lineIndex}:${line.text}`} className="w-full break-words">
+          {line.text}
+        </p>
+      ))}
+    </div>
+  );
+
+  if (variant === 'mobile') return list;
+
+  return (
+    <div
+      className={cn(
+        'flex h-full shrink-0',
+        widthClassName,
+        leaving ? 'pulse-lyrics-panel-out pointer-events-none' : 'pulse-lyrics-panel-in',
+      )}
+    >
+      <div className="relative h-full w-full">{list}</div>
     </div>
   );
 }

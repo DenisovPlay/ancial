@@ -1,95 +1,58 @@
 'use client';
 
-import { PULSE_LYRICS_BASE } from '../../config';
+import { AncialAPI, AncialAPIError } from '../../lib/api-v2';
 import { cache } from '../../lib/cache';
-import { parseLyricsText, type PulseLyricsLine } from './pulse-lyrics';
-import { normalizeText } from './player-utils';
+import { parseLyricsText, type LyricsLine } from '../../lib/lrc';
+import { toNumber } from './player-utils';
 
 type LyricsTrack = {
-  artist?: string | null;
   sid?: number | string | null;
-  title?: string | null;
 };
 
 export type PulseLyricsData = {
-  /** Ни один запрос не дошёл (сеть, 5xx) — значит, текст стоит попросить ещё раз. */
+  /** Сервер не ответил (сеть, 5xx) — значит, текст стоит попросить ещё раз. */
   failed?: boolean;
-  lines: PulseLyricsLine[];
+  lines: LyricsLine[];
   source: string;
 };
 
 const EMPTY_LYRICS: PulseLyricsData = { lines: [], source: '' };
+const CACHE_OPTIONS = { category: 'pulse', subcategory: 'lyrics' } as const;
+// Автор может поправить текст в Creators — слушатели увидят правку не позже чем через сутки.
+const LYRICS_CACHE_TTL = 24 * 60 * 60 * 1000;
 
-function cleanTrackTitle(rawTitle: string | null | undefined): string {
-  const title = normalizeText(rawTitle);
-  const cleaned = title
-    .replace(/[\(\[\{](?:Remix|Sped Up|Slowed|Explicit|Clean|Deluxe|Bonus Track|Live|Version|Ver\.|Prod\.|feat\.|ft\.).*?[\)\]\}]/gi, '')
-    .trim();
-  return cleaned || title;
+/** v2: до перехода на music_lyrics в кэше лежали ответы старого поиска — их не читаем. */
+export function lyricsCacheKey(songId: number): string {
+  return `lyrics:v2:${songId}`;
 }
 
-/** Loads synchronized lyrics for a track. */
+/** Текст трека: локальный кэш, иначе сервер (он сам хранит текст и ищет у провайдеров). */
 export async function loadPulseLyrics(
   track: LyricsTrack | null,
   signal?: AbortSignal,
 ): Promise<PulseLyricsData> {
-  if (!track) return EMPTY_LYRICS;
+  const songId = toNumber(track?.sid);
+  if (songId <= 0) return EMPTY_LYRICS;
 
-  const rawTitle = normalizeText(track.title);
-  const title = cleanTrackTitle(rawTitle);
-  const rawArtist = normalizeText(track.artist);
-  const mainArtist = rawArtist.split(/[,/&]/)[0].trim();
-
-  if (!rawTitle || !rawArtist) return EMPTY_LYRICS;
-
-  const cacheKey = `lyrics:${track.sid || `${mainArtist}_${title}`}`;
-
-  // 1. Try cache first
+  const cacheKey = lyricsCacheKey(songId);
   try {
-    const hit = cache.get<PulseLyricsData>(cacheKey, { category: 'pulse', subcategory: 'lyrics' });
-    if (hit && Array.isArray(hit.lines) && hit.lines.length > 0) {
-      return hit;
-    }
-  } catch { /* ignore cache read error */ }
+    const hit = cache.get<PulseLyricsData>(cacheKey, CACHE_OPTIONS);
+    if (hit && Array.isArray(hit.lines) && hit.lines.length > 0) return hit;
+  } catch { /* битый кэш — просто спросим сервер */ }
 
-  // 2. Fetch from UniLyrics API using fallback candidate queries
-  const artistCandidates = Array.from(new Set([mainArtist, rawArtist])).filter(Boolean);
-  const titleCandidates = Array.from(new Set([title, rawTitle])).filter(Boolean);
-  // Отличаем «у трека нет текста» от «сервис не ответил»: повторять имеет смысл только второе.
-  let requestFailed = false;
-
-  for (const artistQuery of artistCandidates) {
-    for (const titleQuery of titleCandidates) {
+  try {
+    const response = await AncialAPI.pulseLyrics(songId, { cache: 'no-store', signal });
+    const data: PulseLyricsData = { lines: parseLyricsText(response.lyrics), source: response.source };
+    if (data.lines.length > 0) {
       try {
-        const url = `${PULSE_LYRICS_BASE}/UniLyrics.php?a=${encodeURIComponent(artistQuery)}&t=${encodeURIComponent(titleQuery)}&d=0&type=alternative`;
-        const res = await fetch(url, { cache: 'no-store', signal });
-        if (!res.ok) {
-          if (res.status >= 500) requestFailed = true;
-          continue;
-        }
-        const text = await res.text();
-        const lines = parseLyricsText(text);
-
-        if (lines.length > 0) {
-          const data: PulseLyricsData = { lines, source: 'Pulse' };
-          try {
-            cache.set(cacheKey, data, { category: 'pulse', subcategory: 'lyrics' });
-          } catch { /* ignore */ }
-          return data;
-        }
-      } catch (e: unknown) {
-        if (e instanceof Error && e.name === 'AbortError') throw e;
-        // Continue trying fallback candidates on fetch failure
-        requestFailed = true;
-      }
+        cache.set(cacheKey, data, { ...CACHE_OPTIONS, ttl: LYRICS_CACHE_TTL });
+      } catch { /* best-effort */ }
     }
+    return data;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') throw err;
+    // 4xx — трека нет или он скрыт: повторять бессмысленно. Сеть и 5xx — стоит.
+    if (err instanceof AncialAPIError && err.status < 500) return EMPTY_LYRICS;
+    return { ...EMPTY_LYRICS, failed: true };
   }
-
-  // 3. Fallback: try cache even if stale
-  try {
-    const stale = cache.get<PulseLyricsData>(cacheKey, { category: 'pulse', subcategory: 'lyrics' });
-    if (stale && Array.isArray(stale.lines) && stale.lines.length > 0) return stale;
-  } catch { /* ignore */ }
-
-  return requestFailed ? { ...EMPTY_LYRICS, failed: true } : EMPTY_LYRICS;
 }

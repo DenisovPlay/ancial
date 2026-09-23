@@ -9,7 +9,9 @@ import {
   type PulseLyricsClock,
   PulseLyricsMobile,
   PulseLyricsMobileSheet,
+  PulseLyricsPlain,
   type PulseLyricsLine } from './pulse-lyrics';
+import { isSyncedLyrics } from '../../lib/lrc';
 import { cn } from './player-utils';
 import { PulsePlayerFullHeader } from './pulse-player-full-header';
 import { PulsePlayerFullArtwork } from './pulse-player-full-artwork';
@@ -230,17 +232,19 @@ export function PulsePlayerFull({
   const hasLyrics = lyricsEnabled && lyricsLines.length > 0;
   const showDesktopLyrics = hasLyrics && isDesktopLayout;
   const showMobileLyrics = hasLyrics && !isDesktopLayout;
-  const showMobileSheet = showMobileLyrics && isLyricsExpanded;
   const [expandFromIndex, setExpandFromIndex] = useState(-1);
   // Пока текст уходит анимацией, нужны прежние строки: провайдер очищает их сразу.
   const [stickyLines, setStickyLines] = useState(lyricsLines);
   if (lyricsLines.length > 0 && lyricsLines !== stickyLines) setStickyLines(lyricsLines);
+  // Без тайм-кодов нет «текущей строки»: на телефоне сразу весь текст, без режима одной строки.
+  const lyricsSynced = isSyncedLyrics(stickyLines);
+  const showMobileSheet = showMobileLyrics && (isLyricsExpanded || !lyricsSynced);
   const mobileLyricsPresence = usePresence(showMobileLyrics);
   // Совпадает с длительностью pulse-lyrics-slot-out в globals.css.
   const desktopLyricsPresence = usePresence(showDesktopLyrics, 380);
   // Строка и список сменяют друг друга симметрично: уходящий догасает, потом проявляется новый.
   // Внутри гаснущей подложки строка остаётся, чтобы текст не пропадал раньше блюра.
-  const linePresence = usePresence(!isLyricsExpanded);
+  const linePresence = usePresence(!isLyricsExpanded && lyricsSynced);
   const sheetPresence = usePresence(showMobileSheet && !linePresence.mounted);
   const showMobileLine = linePresence.mounted && !sheetPresence.mounted;
   const glassMode = useSyncExternalStore(
@@ -344,13 +348,22 @@ export function PulsePlayerFull({
                           mobileLyricsPresence.leaving ? 'pulse-lyrics-backdrop-out' : 'pulse-lyrics-backdrop-in',
                         )}
                       >
-                        {sheetPresence.mounted ? (
+                        {sheetPresence.mounted && lyricsSynced ? (
                           <PulseLyricsMobileSheet
                             audioRef={audioRef}
                             initialIndex={expandFromIndex}
                             leaving={sheetPresence.leaving}
                             lines={stickyLines}
                             onSeek={onLyricsSeek}
+                          />
+                        ) : null}
+
+                        {sheetPresence.mounted && !lyricsSynced ? (
+                          <PulseLyricsPlain
+                            label={lang?.pulse_lyrics_unsynced || 'Текст без синхронизации'}
+                            leaving={sheetPresence.leaving}
+                            lines={stickyLines}
+                            variant="mobile"
                           />
                         ) : null}
 
@@ -367,7 +380,7 @@ export function PulsePlayerFull({
                           />
                         ) : null}
 
-                        {sheetPresence.mounted && !sheetPresence.leaving ? (
+                        {sheetPresence.mounted && !sheetPresence.leaving && lyricsSynced ? (
                           <button
                             type="button"
                             onClick={() => setIsLyricsExpanded(false)}
@@ -530,12 +543,21 @@ export function PulsePlayerFull({
                 desktopLyricsPresence.leaving ? 'pulse-lyrics-slot-out' : 'pulse-lyrics-slot-in',
               )}
             >
-              <PulseLyricsDesktop
-                audioRef={audioRef}
-                leaving={desktopLyricsPresence.leaving}
-                lines={stickyLines}
-                onSeek={onLyricsSeek}
-              />
+              {lyricsSynced ? (
+                <PulseLyricsDesktop
+                  audioRef={audioRef}
+                  leaving={desktopLyricsPresence.leaving}
+                  lines={stickyLines}
+                  onSeek={onLyricsSeek}
+                />
+              ) : (
+                <PulseLyricsPlain
+                  label={lang?.pulse_lyrics_unsynced || 'Текст без синхронизации'}
+                  leaving={desktopLyricsPresence.leaving}
+                  lines={stickyLines}
+                  variant="desktop"
+                />
+              )}
             </div>
           ) : null}
         </div>

@@ -348,6 +348,15 @@ export default function PulseCreateTracksPage() {
                   </Link>
 
                   <Link
+                    href={`/pulse/create/lyrics?id=${track.id}`}
+                    aria-label={lang?.creators_lyrics || 'Текст песни'}
+                    title={lang?.creators_lyrics || 'Текст песни'}
+                    className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
+                  >
+                    <Icon name="IC-quote" className="inline w-4 h-4 fill-current" />
+                  </Link>
+
+                  <Link
                     href={`/pulse/create/edit-track?id=${track.id}`}
                     aria-label={lang?.edittrack || 'Редактировать трек'}
                     title={lang?.edittrack || 'Редактировать'}

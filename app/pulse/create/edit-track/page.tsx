@@ -5,6 +5,7 @@ import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { uploadImage } from '../../../lib/upload';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PULSE_GENRES, PULSE_MOODS, PULSE_TRACK_LANGUAGES } from '../../pulse-constants';
 import { PulseArtistLinkPicker } from '../pulse-artist-link-picker';
@@ -207,6 +208,14 @@ function EditTrackContent() {
                   <audio controls src={src} className="w-full h-10 rounded-full" />
                 </div>
               )}
+
+              <Link
+                href={`/pulse/create/lyrics?id=${id}`}
+                className="w-full mt-3 px-4 py-2 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-200 text-sm font-medium hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Icon name="IC-quote" className="inline w-4 h-4 fill-current" />
+                {lang?.creators_lyrics || 'Текст песни'}
+              </Link>
             </div>
 
             {/* Inputs Grid */}
