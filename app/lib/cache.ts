@@ -73,6 +73,7 @@ export const SETTING_KEY_CACHE_TTL = 'ancial:cache_ttl_setting';
 export const DEFAULT_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export const SETTING_KEY_CACHE_PLAYED_TRACKS = 'ancial:cache_played_tracks_setting';
+export type AudioAutoSaveMode = 'listened' | 'liked' | 'none';
 export const SETTING_KEY_MAX_AUDIO_CACHE_SIZE = 'ancial:max_audio_cache_size_setting';
 export const DEFAULT_MAX_AUDIO_CACHE_SIZE = -1; // -1 = unlimited
 
@@ -351,20 +352,26 @@ function getDB(): Promise<IDBDatabase | null> {
 
 export const cache = {
   audio: {
-    isPlayedTracksCachingEnabled(): boolean {
-      if (typeof window === 'undefined') return true;
+    /**
+     * Какие треки сохранять офлайн автоматически: все прослушиваемые, только лайкнутые
+     * (после засчитанного прослушивания) или никакие. Ключ прежний: старые 'true'/'false'
+     * читаются как 'listened'/'none', поэтому выбор пользователя не теряется.
+     */
+    getAutoSaveMode(): AudioAutoSaveMode {
+      if (typeof window === 'undefined') return 'listened';
       try {
         const val = window.localStorage.getItem(SETTING_KEY_CACHE_PLAYED_TRACKS);
-        return val === null ? true : val === 'true';
+        if (val === 'liked' || val === 'none') return val;
+        return val === 'false' ? 'none' : 'listened';
       } catch {
-        return true;
+        return 'listened';
       }
     },
 
-    setPlayedTracksCachingEnabled(enabled: boolean): void {
+    setAutoSaveMode(mode: AudioAutoSaveMode): void {
       if (typeof window === 'undefined') return;
       try {
-        window.localStorage.setItem(SETTING_KEY_CACHE_PLAYED_TRACKS, String(enabled));
+        window.localStorage.setItem(SETTING_KEY_CACHE_PLAYED_TRACKS, mode);
       } catch {}
     },
 
@@ -479,8 +486,8 @@ export const cache = {
       signal?: AbortSignal,
       force = false
     ): Promise<boolean> {
-      if (!force && !this.isPlayedTracksCachingEnabled()) {
-        return false; // Caching played tracks is disabled by user
+      if (!force && this.getAutoSaveMode() === 'none') {
+        return false; // Автосохранение выключено пользователем
       }
       const maxMB = this.getMaxCacheSizeMB();
       if (!force && maxMB === 0) {

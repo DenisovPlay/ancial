@@ -67,9 +67,10 @@ export function usePulseFavorites({
     if (isAuthenticated) void ensureLikedSongsLoaded(true);
   }, [ensureLikedSongsLoaded, isAuthenticated]);
 
-  const toggleSongLike = useCallback(async (songId: number | string, options?: ToggleSongLikeOptions) => {
+  /** Возвращает true, если трек теперь лайкнут (сервер подтвердил добавление). */
+  const toggleSongLike = useCallback(async (songId: number | string, options?: ToggleSongLikeOptions): Promise<boolean> => {
     const rawId = String(songId ?? '').trim();
-    if (!rawId) return;
+    if (!rawId) return false;
 
     try {
       let resolvedSongId = toNumber(rawId);
@@ -104,8 +105,10 @@ export function usePulseFavorites({
       } else if (result === 'UND_SONG') {
         notify({ content: lang?.pulse_unknown_song || 'Неизвестная песня...', type: 'error', time: 5 });
       }
+      return result === 'ADDED' || result === 'CREATED_ADDED';
     } catch (err) {
       notify({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), type: 'error', time: 5 });
+      return false;
     }
   }, [getFavoriteIds, lang, navigate, notify, setLikedSongsState]);
 

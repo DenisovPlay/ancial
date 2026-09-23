@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { getAuthToken, setAuthToken } from '../../lib/cache-helpers';
+import { getAuthToken } from '../../lib/cache-helpers';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -10,22 +10,8 @@ import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { SITE_URL } from '../../config';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
+import { loadScript } from '../../lib/load-script';
 
-// Helper to dynamically load external scripts
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve();
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load script ${src}`));
-    document.body.appendChild(script);
-  });
-}
 
 /** Результат инициализации Яндекс ID (YaAuthSuggest). */
 interface YandexAuthResult {
@@ -78,11 +64,8 @@ export default function SocialsContent() {
       if (event.origin !== SITE_URL) return;
 
       if (event.data && event.data.type === 'oauth_success') {
-        const token = event.data.token;
-        if (token) {
-          setAuthToken(token);
-          checkAuth();
-        }
+        // Привязка идёт в текущей сессии — токен не передаётся, только обновляем данные пользователя.
+        void checkAuth({ force: true });
       }
     };
 

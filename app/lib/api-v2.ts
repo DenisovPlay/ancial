@@ -436,7 +436,6 @@ export class AncialAPI {
     email: string;
     fname: string;
     lname: string;
-    phone: string;
     password: string;
     password_2: string;
   }): Promise<AncialV2Response<T>> {
@@ -513,6 +512,18 @@ export class AncialAPI {
     return this.request<{ recovery_codes: string[] }>('/auth/TwoFactor.php', {
       method: 'POST',
       body: new URLSearchParams({ action: 'regenerate_recovery_codes', password }),
+    });
+  }
+
+  /** Вход или регистрация через Яндекс ID / Telegram. Ответ — как у входа по паролю (token или 2FA-challenge). */
+  static oauthLoginResponse<T = { token?: string; requires_second_factor?: string; challenge?: string }>(
+    provider: 'yandex' | 'telegram',
+    action: 'login' | 'signup',
+    payload: Record<string, string>,
+  ): Promise<AncialV2Response<T>> {
+    return this.requestRaw<T>(`/oauth/${provider === 'yandex' ? 'Yandex' : 'Telegram'}.php`, {
+      method: 'POST',
+      body: new URLSearchParams({ ...payload, action }),
     });
   }
 

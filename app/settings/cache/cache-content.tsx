@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { cache, PERSISTENT_KEYS, resolveKeyInfo, DEFAULT_CACHE_TTL, SETTING_KEY_CACHE_TTL } from '../../lib/cache';
+import { cache, PERSISTENT_KEYS, resolveKeyInfo, DEFAULT_CACHE_TTL, SETTING_KEY_CACHE_TTL, type AudioAutoSaveMode } from '../../lib/cache';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/modal';
 import Icon from '../../components/svg-icon';
@@ -112,6 +112,45 @@ const CacheSkeleton = () => (
   </div>
 );
 
+
+/** Строка настройки как в «Приватности»: название с подсказкой слева, select справа. */
+function SettingSelect<T extends string | number>({
+  label,
+  hint,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <label className="flex gap-3 text-zinc-300 items-center justify-between">
+      <span className="flex flex-grow flex-col">
+        <span>{label}</span>
+        <span className="text-xs text-zinc-500">{hint}</span>
+      </span>
+      <select
+        value={String(value)}
+        onChange={(event) => {
+          const picked = options.find((option) => String(option.value) === event.target.value);
+          if (picked) onChange(picked.value);
+        }}
+        className="h-10 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 text-white outline-none"
+      >
+        {options.map((option) => (
+          <option key={String(option.value)} value={String(option.value)}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export default function CacheSettingsPage() {
   const router = useRouter();
   const { lang, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -123,7 +162,7 @@ export default function CacheSettingsPage() {
 
   const [isTtlModalOpen, setIsTtlModalOpen] = useState(false);
   const [currentTtl, setCurrentTtl] = useState<number>(DEFAULT_CACHE_TTL);
-  const [isPlayedTracksCachingEnabled, setIsPlayedTracksCachingEnabled] = useState<boolean>(() => cache.audio.isPlayedTracksCachingEnabled());
+  const [autoSaveMode, setAutoSaveModeState] = useState<AudioAutoSaveMode>(() => cache.audio.getAutoSaveMode());
   const [maxAudioCacheSizeMB, setMaxAudioCacheSizeMB] = useState<number>(() => cache.audio.getMaxCacheSizeMB());
   const [isLoadingCacheData, setIsLoadingCacheData] = useState<boolean>(true);
 
@@ -154,6 +193,7 @@ export default function CacheSettingsPage() {
       notifications: { label: lang?.category_notifications || 'Уведомления', color: '#eab308' }, // yellow
       home: { label: lang?.category_home || 'Главная', color: '#71717a' }, // zinc
       apps: { label: lang?.category_apps || 'Игры (Zynt)', color: '#22c55e' }, // green
+      users: { label: lang?.category_users || 'Пользователи', color: '#14b8a6' }, // teal
       other: { label: lang?.category_other || 'Другое', color: '#71717a' }, // zinc/grey
     };
   }, [lang]);
@@ -192,6 +232,11 @@ export default function CacheSettingsPage() {
       pwa_cache: lang?.subcategory_pwa_cache || 'Файлы сайта (офлайн-доступ)',
       images_cache: lang?.subcategory_images_cache || 'Изображения и обложки',
       notifications_list: lang?.subcategory_notifications_list || 'Список уведомлений',
+      twofa: lang?.subcategory_twofa || 'Двухфакторная аутентификация',
+      sessions: lang?.subcategory_sessions || 'Активные сессии',
+      passkeys: lang?.subcategory_passkeys || 'Passkeys',
+      info: lang?.subcategory_user_info || 'Карточки пользователей',
+      geo: lang?.subcategory_geo || 'Местоположение',
       // Apps (Zynt)
       home: lang?.subcategory_apps_home || 'Главная страница',
       category: lang?.subcategory_apps_category || 'Игры по категориям',
@@ -216,6 +261,18 @@ export default function CacheSettingsPage() {
     { value: 5000, label: '5 GB', shortLabel: '5 GB' },
     { value: -1, label: lang?.cache_size_unlimited || 'Без ограничений', shortLabel: '∞' },
   ], [lang]);
+
+  const autoSaveOptions = useMemo<{ value: AudioAutoSaveMode; label: string }[]>(() => [
+    { value: 'listened', label: lang?.cache_autosave_listened || 'Прослушиваемые' },
+    { value: 'liked', label: lang?.cache_autosave_liked || 'Лайкнутые' },
+    { value: 'none', label: lang?.cache_autosave_none || 'Никакие' },
+  ], [lang]);
+
+  const autoSaveDescriptions: Record<AudioAutoSaveMode, string> = {
+    listened: lang?.cache_autosave_listened_desc || 'Каждый трек сохраняется для офлайна, как только начинает играть',
+    liked: lang?.cache_autosave_liked_desc || 'Сохраняются только лайкнутые треки — после того как вы их прослушали',
+    none: lang?.cache_autosave_none_desc || 'Треки сохраняются только вручную, кнопкой «Сохранить»',
+  };
 
   const ttlIdx = useMemo(() => {
     const idx = ttlOptions.findIndex((o) => o.value === currentTtl);
@@ -560,16 +617,10 @@ export default function CacheSettingsPage() {
     void loadCacheData();
   };
 
-  const handleTogglePlayedTracksCaching = (enabled: boolean) => {
-    cache.audio.setPlayedTracksCachingEnabled(enabled);
-    setIsPlayedTracksCachingEnabled(enabled);
-    showNote({
-      content: enabled
-        ? (lang?.cache_played_tracks_enabled || 'Кэширование прослушанных треков включено')
-        : (lang?.cache_played_tracks_disabled || 'Кэширование прослушанных треков отключено'),
-      type: 'info',
-      time: 3,
-    });
+  const handleSelectAutoSaveMode = (mode: AudioAutoSaveMode) => {
+    cache.audio.setAutoSaveMode(mode);
+    setAutoSaveModeState(mode);
+    showNote({ content: lang?.cache_settings_saved || 'Настройки кэша сохранены', type: 'success', time: 3 });
   };
 
   const handleSelectMaxAudioCacheSize = (sizeMB: number) => {
@@ -847,118 +898,29 @@ export default function CacheSettingsPage() {
         isOpen={isTtlModalOpen}
         onClose={() => setIsTtlModalOpen(false)}
         title={lang?.cache_settings || 'Настройки кэша и памяти'}
-        bodyClassName="p-3 pt-14 pb-8"
       >
-        <div className="flex flex-col gap-4">
-          {/* Срок хранения кэша */}
-          <div className="flex flex-col gap-3 p-4 bg-zinc-900/60 rounded-3xl border border-zinc-800/80">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-bold text-white">
-                  {lang?.cache_settings_ttl || 'Срок хранения кэша'}
-                </span>
-                <span className="text-xs text-zinc-400">
-                  {lang?.cache_ttl_desc || 'Выберите, как долго хранить данные в кэше'}
-                </span>
-              </div>
-              <span className="px-3 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-2xl font-bold text-xs shrink-0">
-                {ttlOptions[ttlIdx]?.label}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-1">
-              <input
-                type="range"
-                min={0}
-                max={ttlOptions.length - 1}
-                step={1}
-                value={ttlIdx}
-                onChange={(e) => {
-                  const idx = parseInt(e.target.value, 10);
-                  if (ttlOptions[idx]) {
-                    handleSaveTtl(ttlOptions[idx].value);
-                  }
-                }}
-                className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400"
-              />
-              <div className="flex justify-between px-1 text-[11px] font-medium text-zinc-400 select-none">
-                {ttlOptions.map((opt, i) => (
-                  <span
-                    key={i}
-                    onClick={() => handleSaveTtl(opt.value)}
-                    className={`cursor-pointer duration-300 hover:text-white ${i === ttlIdx ? 'text-purple-400 font-bold' : ''}`}
-                  >
-                    {opt.shortLabel}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Кэширование воспроизводимых треков */}
-          <div className="flex flex-col gap-3 p-4 bg-zinc-900/60 rounded-3xl border border-zinc-800/80">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-bold text-white">
-                  {lang?.cache_played_tracks || 'Кэшировать воспроизводимые треки'}
-                </span>
-                <span className="text-xs text-zinc-400">
-                  {lang?.cache_played_tracks_desc || 'Автоматически сохранять прослушиваемые аудиозаписи для офлайн-доступа'}
-                </span>
-              </div>
-              <div
-                onClick={() => handleTogglePlayedTracksCaching(!isPlayedTracksCachingEnabled)}
-                className={`w-11 h-6 flex items-center rounded-full p-1 duration-300 cursor-pointer shrink-0 ${isPlayedTracksCachingEnabled ? 'bg-purple-600 justify-end' : 'bg-zinc-700 justify-start'}`}
-              >
-                <div className="w-4 h-4 rounded-full bg-white shadow-md"></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Максимальный размер аудиокэша */}
-          <div className="flex flex-col gap-3 p-4 bg-zinc-900/60 rounded-3xl border border-zinc-800/80">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm font-bold text-white">
-                  {lang?.max_audio_cache_size || 'Максимальный размер аудиокэша'}
-                </span>
-                <span className="text-xs text-zinc-400">
-                  {lang?.max_audio_cache_size_desc || 'При превышении лимита старые треки удаляются'}
-                </span>
-              </div>
-              <span className="px-3 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-2xl font-bold text-xs shrink-0">
-                {maxAudioSizeOptions[maxAudioIdx]?.label}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-1">
-              <input
-                type="range"
-                min={0}
-                max={maxAudioSizeOptions.length - 1}
-                step={1}
-                value={maxAudioIdx}
-                onChange={(e) => {
-                  const idx = parseInt(e.target.value, 10);
-                  if (maxAudioSizeOptions[idx]) {
-                    handleSelectMaxAudioCacheSize(maxAudioSizeOptions[idx].value);
-                  }
-                }}
-                className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400"
-              />
-              <div className="flex justify-between px-1 text-[11px] font-medium text-zinc-400 select-none">
-                {maxAudioSizeOptions.map((opt, i) => (
-                  <span
-                    key={i}
-                    onClick={() => handleSelectMaxAudioCacheSize(opt.value)}
-                    className={`cursor-pointer duration-300 hover:text-white ${i === maxAudioIdx ? 'text-purple-400 font-bold' : ''}`}
-                  >
-                    {opt.shortLabel}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+        <div className="flex flex-col gap-3">
+          <SettingSelect
+            label={lang?.cache_settings_ttl || 'Срок хранения кэша'}
+            hint={lang?.cache_ttl_desc || 'Выберите, как долго хранить данные в кэше'}
+            options={ttlOptions}
+            value={ttlOptions[ttlIdx]?.value ?? DEFAULT_CACHE_TTL}
+            onChange={handleSaveTtl}
+          />
+          <SettingSelect
+            label={lang?.cache_autosave || 'Автосохранение треков'}
+            hint={autoSaveDescriptions[autoSaveMode]}
+            options={autoSaveOptions}
+            value={autoSaveMode}
+            onChange={handleSelectAutoSaveMode}
+          />
+          <SettingSelect
+            label={lang?.max_audio_cache_size || 'Максимальный размер аудиокэша'}
+            hint={lang?.max_audio_cache_size_desc || 'При превышении лимита старые треки удаляются'}
+            options={maxAudioSizeOptions}
+            value={maxAudioSizeOptions[maxAudioIdx]?.value ?? -1}
+            onChange={handleSelectMaxAudioCacheSize}
+          />
         </div>
       </Modal>
     </div>

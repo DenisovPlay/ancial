@@ -8,6 +8,7 @@ import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
 import { getPasskey, isPasskeySupported } from '../lib/webauthn';
 import { OtpInput } from '../components/otp-input';
+import OAuthButtons from '../components/oauth-buttons';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
@@ -93,6 +94,12 @@ export default function LoginPage() {
     const t = setInterval(() => setResendIn((n) => (n <= 1 ? 0 : n - 1)), 1000);
     return () => clearInterval(t);
   }, [resendIn]);
+
+  const completeLogin = async (token: string) => {
+    setAuthToken(token);
+    await checkAuth({ force: true });
+    router.push('/');
+  };
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -285,6 +292,7 @@ export default function LoginPage() {
               {useRecovery ? (
                 <div className="flex items-center bg-zinc-900 rounded-3xl border border-zinc-600/30 w-full shadow">
                   <input
+                    autoComplete="one-time-code"
                     placeholder={lang?.twofa_recovery_placeholder || 'xxxx-xxxx'}
                     type="text"
                     value={code}
@@ -342,6 +350,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="flex flex-col gap-3 justify-center items-center w-full">
               <div className="flex items-center bg-zinc-900 rounded-3xl rounded-b-none border-t border-x border-zinc-600/30 w-full shadow">
                 <input
+                  autoComplete="username"
                   placeholder={lang?.login_or_email_phone || "Логин, почта или телефон"}
                   type="text"
                   value={login}
@@ -354,6 +363,7 @@ export default function LoginPage() {
 
               <div className="-mt-3 flex items-center bg-zinc-900 rounded-3xl rounded-t-none border-t border-b border-x border-zinc-600/30 w-full shadow pr-1">
                 <input
+                  autoComplete="current-password"
                   placeholder={lang?.password || "Пароль"}
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -402,6 +412,14 @@ export default function LoginPage() {
                   {lang?.passkey_login || 'Войти по passkey'}
                 </button>
               ) : null}
+
+              <OAuthButtons
+                action="login"
+                disabled={isLoading}
+                onToken={(token) => void completeLogin(token)}
+                onChallenge={(challenge) => { setTwofaChallenge(challenge); setCode(''); setUseRecovery(false); setError(null); }}
+                onError={setError}
+              />
             </form>
             )}
           </div>

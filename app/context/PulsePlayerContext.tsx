@@ -298,6 +298,11 @@ export function PulsePlayerProvider({
 
   const { changeEqGain, eqGains, hasActiveEq, initWebAudio, resetEqGains, resumeWebAudio } = useEqualizer(audioRef);
   const likedSongIdsRef = useRef<number[]>([]);
+  /** Лайкнут ли играющий трек (по рефам — безопасно из обработчиков, привязанных при монтировании). */
+  const isCurrentTrackLiked = () => {
+    const collection = currentCollectionIdRef.current;
+    return collection === '-5' || collection === 'playlist_-5' || likedSongIdsRef.current.includes(currentSongIdRef.current);
+  };
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [canUseEqualizer, setCanUseEqualizer] = useState(false);
@@ -753,6 +758,10 @@ export function PulsePlayerProvider({
     ) {
       listenReportedSessionRef.current = playbackSessionRef.current;
       setListenCounted(true);
+      // Режим «лайкнутые»: трек сохраняется офлайн, только когда он прослушан и лайкнут.
+      if (cache.audio.getAutoSaveMode() === 'liked' && isCurrentTrackLiked()) {
+        cacheCurrentTrackInBackground(playlistRef.current[indexRef.current] ?? null);
+      }
       AncialAPI.pulseTrackAction('listened', currentSongIdRef.current).catch(() => {
         // ignore listen counter errors
       });
@@ -960,7 +969,11 @@ export function PulsePlayerProvider({
 
   const likeCurrentSong = async () => {
     if (!currentSongIdRef.current) return;
-    await toggleSongLike(currentSongIdRef.current);
+    const likedNow = await toggleSongLike(currentSongIdRef.current);
+    // Лайк уже после засчитанного прослушивания — в режиме «лайкнутые» сохраняем сразу.
+    if (likedNow && listenCounted && cache.audio.getAutoSaveMode() === 'liked') {
+      cacheCurrentTrackInBackground(playlistRef.current[indexRef.current] ?? null);
+    }
   };
 
   useEffect(() => {
@@ -1097,8 +1110,8 @@ export function PulsePlayerProvider({
       audio.load();
     }
 
-    // Если трек играет из сети, запускаем фоновое асинхронное кэширование с передачей метаданных
-    if (!resolvedFromCache && trackId > 0 && trackSource) {
+    // Режим «прослушиваемые»: трек из сети сохраняется офлайн в фоне сразу при запуске.
+    if (!resolvedFromCache && trackId > 0 && trackSource && cache.audio.getAutoSaveMode() === 'listened') {
       cacheCurrentTrackInBackground(track);
     }
 

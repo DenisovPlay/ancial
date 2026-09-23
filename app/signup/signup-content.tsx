@@ -8,13 +8,13 @@ import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import OAuthButtons from '../components/oauth-buttons';
 
 export default function SignupContent() {
   const [login, setLogin] = useState('');
   const [email, setEmail] = useState('');
   const [fname, setFname] = useState('');
   const [lname, setLname] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [password_2, setPassword2] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +34,12 @@ export default function SignupContent() {
     }
   }, [isAuthenticated, router]);
 
+  const completeSignup = async (token: string) => {
+    setAuthToken(token);
+    await checkAuth({ force: true });
+    router.push('/');
+  };
+
   const handleRegister = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
@@ -46,7 +52,6 @@ export default function SignupContent() {
         email,
         fname,
         lname,
-        phone,
         password,
         password_2,
       });
@@ -127,7 +132,7 @@ export default function SignupContent() {
             <form onSubmit={handleRegister} className="flex flex-col gap-3 justify-center items-center w-full">
               <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
                 <input
-                  autoComplete="off"
+                  autoComplete="username"
                   placeholder={lang?.username || "Имя пользователя"}
                   type="text"
                   maxLength={63}
@@ -144,6 +149,7 @@ export default function SignupContent() {
               <div className="grid grid-cols-2 gap-3 w-full">
                 <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
                   <input
+                    autoComplete="given-name"
                     placeholder={lang?.name || "Имя"}
                     maxLength={31}
                     type="text"
@@ -155,6 +161,7 @@ export default function SignupContent() {
                 </div>
                 <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
                   <input
+                    autoComplete="family-name"
                     placeholder={lang?.lname || "Фамилия"}
                     maxLength={31}
                     type="text"
@@ -168,9 +175,10 @@ export default function SignupContent() {
 
               <span className="text-zinc-400 text-sm -my-1.5 w-full">{lang?.regcont || 'Контактные данные'}</span>
 
-              <div className="grid grid-cols-2 gap-3 w-full">
+              <div className="flex w-full">
                 <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
                   <input
+                    autoComplete="email"
                     placeholder={lang?.email || "E-mail"}
                     type="email"
                     maxLength={254}
@@ -181,17 +189,6 @@ export default function SignupContent() {
                     required
                   />
                 </div>
-                <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
-                  <input
-                    placeholder={lang?.phone || "Телефон"}
-                    type="tel"
-                    maxLength={12}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    disabled={isLoading}
-                    className="px-3 py-2 bg-transparent w-full grow focus:ring-0 focus:outline-0 focus:border-0 placeholder-zinc-600 rounded-3xl"
-                  />
-                </div>
               </div>
 
               <span className="text-zinc-400 text-sm -my-1.5 w-full">{lang?.regpass || 'Придумайте пароль'}</span>
@@ -199,6 +196,7 @@ export default function SignupContent() {
               <div className="grid grid-cols-2 gap-3 w-full">
                 <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30">
                   <input
+                    autoComplete="new-password"
                     placeholder={lang?.password || "Пароль"}
                     type={showPassword ? "text" : "password"}
                     value={password}
@@ -210,6 +208,7 @@ export default function SignupContent() {
                 </div>
                 <div className="flex items-center bg-zinc-900 rounded-3xl w-full shadow border border-zinc-600/30 relative">
                   <input
+                    autoComplete="new-password"
                     placeholder={lang?.passwordrep || "Повторите пароль"}
                     type={showPassword ? "text" : "password"}
                     value={password_2}
@@ -247,6 +246,14 @@ export default function SignupContent() {
                   lang?.signup || 'Зарегистрироваться'
                 )}
               </button>
+
+              <OAuthButtons
+                action="signup"
+                disabled={isLoading}
+                onToken={(token) => void completeSignup(token)}
+                onChallenge={() => router.push('/login')}
+                onError={setError}
+              />
             </form>
           </div>
         </div>

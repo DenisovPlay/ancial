@@ -21,3 +21,12 @@ export const CINEMA_API_BASE = 'https://backend.ru.zypo.cc/api/V2/cinema';
 
 /** Внешний прокси/кэш изображений Cinema */
 export const CINEMA_IMAGE_PROXY_BASE = `${CINEMA_API_BASE}/image-proxy.php`;
+
+/** Яндекс ID: публичный client_id приложения (бэкенд сверяет его у каждого токена). */
+export const YANDEX_CLIENT_ID = 'b9cad7a054c14c518c94de0183c3f000';
+
+/**
+ * Telegram Login: числовой id бота @ancialbot (число до «:» в его токене; не меняется при перевыпуске токена).
+ * Вход работает только на домене, привязанном к боту в BotFather (/setdomain).
+ */
+export const TELEGRAM_BOT_ID = 7063264466;
