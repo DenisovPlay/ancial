@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import AppImage from '../../../components/app-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -9,7 +9,7 @@ import Modal from '../../../components/modal';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
-import { SvgIcon } from '../../../feed/editor-shared';
+import Icon from '../../../components/svg-icon';
 
 function flag(value: boolean | number | string | null | undefined) {
   return value === true || value === 1 || value === '1' || value === 'true';
@@ -51,7 +51,7 @@ function StatusBadge({
     <div
       className={`rounded-full h-5 w-5 text-xs ${toneClass} flex items-center justify-center text-white duration-300 shrink-0`}
     >
-      <SvgIcon className="h-4 w-4 fill-white" id={iconId} />
+      <Icon name={iconId} className="h-4 w-4 fill-white" />
     </div>
   );
 }
@@ -176,9 +176,7 @@ export default function ContactsSecurityContent() {
   if (isLoading && !user) {
     return (
       <div className="flex justify-center items-center w-full h-[60vh]">
-        <svg className="w-10 h-10 animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
       </div>
     );
   }
@@ -197,9 +195,7 @@ export default function ContactsSecurityContent() {
               href="/settings/security"
               className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
-              <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                <use href="#IC-chevron-left"></use>
-              </svg>
+              <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
               {lang?.phoneandnumber || 'Телефон и почта'}
             </Link>
           </div>
@@ -207,7 +203,7 @@ export default function ContactsSecurityContent() {
 
         <div className="grid lg:grid-cols-2 gap-3 w-full max-w-3xl px-3 lg:px-0">
           <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center">
-            <Image
+            <AppImage
               alt="Zypo logo"
               className="w-12 h-12 shadow rounded-2xl mb-3"
               height={48}
@@ -253,7 +249,7 @@ export default function ContactsSecurityContent() {
           {hasConnectedYandex ? (
             <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center">
               <div className="mb-3 rounded-2xl h-12 w-12 shadow flex items-center justify-center relative">
-                <Image
+                <AppImage
                   alt="Yandex"
                   className="w-12 h-12 shadow rounded-2xl"
                   height={48}
@@ -263,7 +259,7 @@ export default function ContactsSecurityContent() {
                 />
                 {hasYandexPhone ? (
                   <div className="rounded-full h-4 w-4 bg-green-500 flex items-center justify-center text-white duration-300 absolute -bottom-0.5 -right-0.5 shadow">
-                    <SvgIcon className="h-3 w-3 fill-white" id="IC-check" />
+                    <Icon name="IC-check" className="h-3 w-3 fill-white" />
                   </div>
                 ) : null}
               </div>
@@ -290,7 +286,7 @@ export default function ContactsSecurityContent() {
           ) : (
             <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center">
               <div className="mb-3 rounded-full h-12 w-12 shadow flex items-center justify-center relative overflow-hidden">
-                <Image
+                <AppImage
                   alt="Yandex"
                   className="w-12 h-12 shadow rounded-full"
                   height={48}

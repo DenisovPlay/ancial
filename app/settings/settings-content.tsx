@@ -1,10 +1,11 @@
 'use client';
 
-import Image from 'next/image';
+import AppImage from '../components/app-image';
 import { useAuth } from '../context/AuthContext';
 import { SettingsItem } from '../components/settings-item';
 import AccountName from '../components/account-name';
 import { normalizeAvatarUrl } from '../lib/avatar';
+import Icon from '../components/svg-icon';
 
 export default function SettingsPage() {
   const { user, isAuthenticated, lang } = useAuth();
@@ -19,11 +20,11 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-3 w-full max-w-3xl">
         {isAuthenticated && user && (
           <div className="flex items-center gap-3 w-full px-3 lg:px-0 min-w-0">
-            <Image
+            <AppImage
               src={userAvatarSrc}
               width={80}
               height={80}
-              priority
+              preload
               className="w-16 h-16 lg:w-20 lg:h-20 rounded-full shadow border border-zinc-600/30 object-cover shrink-0"
               alt="avatar"
             />
@@ -41,7 +42,7 @@ export default function SettingsPage() {
                 title={lang?.account || 'Аккаунт'}
                 iconBgClass="bg-pink-500/10"
                 icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-pink-500" viewBox="0 0 48 48"><use href={`#IC-me`}></use></svg>
+                  <Icon name="IC-user" className="w-6 h-6 fill-pink-500" />
                 }
               />
 
@@ -50,7 +51,7 @@ export default function SettingsPage() {
                 title={lang?.security || 'Безопасность'}
                 iconBgClass="bg-blue-500/10"
                 icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-blue-500" viewBox="0 0 48 48"><use href={`#IC-lock`}></use></svg>
+                  <Icon name="IC-lock" className="w-6 h-6 fill-blue-500" />
                 }
               />
 
@@ -59,7 +60,7 @@ export default function SettingsPage() {
                 title={lang?.socialnetworks || 'Социальные сети'}
                 iconBgClass="bg-lime-500/10"
                 icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-lime-500" viewBox="0 0 48 48"><use href={`#IC-socials`}></use></svg>
+                  <Icon name="IC-socials" className="w-6 h-6 fill-lime-500" />
                 }
               />
 
@@ -68,7 +69,7 @@ export default function SettingsPage() {
                 title={lang?.notif || 'Уведомления'}
                 iconBgClass="bg-amber-500/10"
                 icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-amber-500" viewBox="0 0 48 48"><use href={`#IC-notification`}></use></svg>
+                  <Icon name="IC-notification" className="w-6 h-6 fill-amber-500" />
                 }
               />
 
@@ -77,7 +78,7 @@ export default function SettingsPage() {
                 title={lang?.cache_settings || 'Память'}
                 iconBgClass="bg-purple-500/10"
                 icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-purple-500" viewBox="0 0 48 48"><use href={`#IC-database`}></use></svg>
+                  <Icon name="IC-database" className="w-6 h-6 fill-purple-500" />
                 }
               />
             </>
@@ -88,7 +89,7 @@ export default function SettingsPage() {
             title={lang?.interface_settings || 'Интерфейс'}
             iconBgClass="bg-cyan-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-cyan-400" viewBox="0 0 48 48"><use href="#IC-full-mode"></use></svg>
+              <Icon name="IC-full-mode" className="w-6 h-6 fill-cyan-400" />
             }
           />
 
@@ -97,7 +98,7 @@ export default function SettingsPage() {
             title={`${lang?.about || 'О'} Zypo`}
             iconBgClass="bg-emerald-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-emerald-500" viewBox="0 0 48 48"><use href={`#IC-book`}></use></svg>
+              <Icon name="IC-book" className="w-6 h-6 fill-emerald-500" />
             }
           />
 

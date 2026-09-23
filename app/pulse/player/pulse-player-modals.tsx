@@ -1,22 +1,21 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import type { ComponentType, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { PulseModal } from '../pulse-modal';
 import { cn } from '../pulse-components';
 import type { PulsePlaylistOption } from './use-add-to-playlist';
+import Icon from '../../components/svg-icon';
 
 const PulsePlaylistEditorModal = dynamic(() => import('../pulse-playlist-editor-modal'), { ssr: false });
 const PulseEqualizerModal = dynamic(() => import('./pulse-equalizer-modal').then((m) => m.PulseEqualizerModal), { ssr: false });
 const PulseBlockedTrackModal = dynamic(() => import('./pulse-blocked-track-modal').then((m) => m.PulseBlockedTrackModal), { ssr: false });
 
-type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 type Notice = (notice: { content: ReactNode; time?: number; type?: 'error' | 'info' | 'success' }) => void;
 
 type PulsePlayerModalsProps = {
-  Icon: PlayerIcon;
   addToPlaylistSongId: number;
   canUseEqualizer: boolean;
   changeEqGain: (index: number, gain: number) => void;
@@ -40,7 +39,6 @@ type PulsePlayerModalsProps = {
 
 /** Presentation-only modals owned by the Pulse player shell. */
 export function PulsePlayerModals({
-  Icon,
   addToPlaylistSongId,
   canUseEqualizer,
   changeEqGain,

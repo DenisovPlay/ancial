@@ -8,6 +8,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { cache, PERSISTENT_KEYS, resolveKeyInfo, DEFAULT_CACHE_TTL, SETTING_KEY_CACHE_TTL } from '../../lib/cache';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/modal';
+import Icon from '../../components/svg-icon';
 
 // Helper for formatting sizes
 const formatSize = (bytes: number) => {
@@ -615,18 +616,14 @@ export default function CacheSettingsPage() {
       <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent" style={{ zIndex: 99 }}>
         <div className="w-full max-w-3xl flex items-center justify-between gap-3">
           <Link href="/settings" className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-3 cursor-pointer">
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href={`#IC-chevron-left`}></use>
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {lang?.cache_settings || 'Память'}
           </Link>
           <button
             onClick={() => setIsTtlModalOpen(true)}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-zinc-800/50 hover:bg-zinc-700/50 duration-300 active:scale-95 cursor-pointer text-zinc-300 border border-zinc-600/30"
           >
-            <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.73 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.3-.08.63-.08.94s.04.64.08.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.49-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
-            </svg>
+            <Icon name="IC-gear-material" className="w-6 h-6 fill-current" />
           </button>
         </div>
       </div>
@@ -727,9 +724,7 @@ export default function CacheSettingsPage() {
                         }}
                       >
                         {isSelected && (
-                          <svg className="w-3 h-3 fill-black" viewBox="0 0 24 24">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                          </svg>
+                          <Icon name="IC-check-material" className="w-3 h-3 fill-black" />
                         )}
                       </div>
 
@@ -744,13 +739,7 @@ export default function CacheSettingsPage() {
                           <span className="text-zinc-400 font-mono text-sm">{formatSize(catData.size)}</span>
                           {subKeys.length > 0 && (
                             <div className="p-1 hover:bg-zinc-800/50 rounded-full duration-300">
-                              <svg
-                                className={`w-6 h-6 fill-zinc-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 48 48"
-                              >
-                                <use href="#IC-chevron-down"></use>
-                              </svg>
+                              <Icon name="IC-chevron-down" className={`w-6 h-6 fill-zinc-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                             </div>
                           )}
                         </div>
@@ -790,9 +779,7 @@ export default function CacheSettingsPage() {
                                     }}
                                   >
                                     {isSubSelected && (
-                                      <svg className="w-2.5 h-2.5 fill-black" viewBox="0 0 24 24">
-                                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                      </svg>
+                                      <Icon name="IC-check-material" className="w-2.5 h-2.5 fill-black" />
                                     )}
                                   </div>
                                   <span className="text-zinc-300 text-sm">{subLabel}</span>
@@ -832,9 +819,7 @@ export default function CacheSettingsPage() {
                                             className="p-1 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-red-400 duration-300 active:scale-90 cursor-pointer"
                                             title={lang?.delete_from_device || 'Удалить из устройства'}
                                           >
-                                            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                                              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                                            </svg>
+                                            <Icon name="IC-delete-material" className="w-5 h-5 fill-current" />
                                           </button>
                                         </div>
                                       </div>

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, {
@@ -96,6 +95,7 @@ import {
   type WsPayload,
   type WsPayloadData,
 } from './lib/messages-shared';
+import AppImage from '../components/app-image';
 
 /** Обёртка ответа API: сервер может вернуть объект напрямую или в поле data. */
 type ApiEnvelope<T> = T & { data?: T | null };
@@ -2304,9 +2304,7 @@ export default function MessagesContent() {
                         type="button"
                         className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700/50 border border-transparent hover:border-zinc-600/30"
                       >
-                        <svg className="inline w-8 h-8 fill-white" viewBox="0 0 48 48">
-                          <use href="#IC-search"></use>
-                        </svg>
+                        <Icon name="IC-search" className="inline w-8 h-8 fill-white" />
                       </button>
                     </div>
                   </div>
@@ -2331,7 +2329,9 @@ export default function MessagesContent() {
                         </div>
                       ) : dialogsError && dialogs.length === 0 ? (
                         <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-                          <img
+                          <AppImage
+                            width={160}
+                            height={160}
                             src="/img/stickers/sponge.gif"
                             alt=""
                             className="mb-3 h-40 w-40 object-contain"
@@ -2357,7 +2357,7 @@ export default function MessagesContent() {
                         </div>
                       ) : dialogs.length === 0 ? (
                         <div className="flex h-full flex-col items-center justify-center gap-0.5 pb-3 text-center">
-                          <img src={NOTHING_FOUND_IMAGE} alt="" className="h-56 w-56 object-contain" />
+                          <AppImage width={224} height={224} src={NOTHING_FOUND_IMAGE} alt="" className="h-56 w-56 object-contain" />
                           <span className="w-full text-base font-black text-zinc-100">
                             {lang?.emptycomments || 'Пока ничего нет'}
                           </span>
@@ -2410,7 +2410,10 @@ export default function MessagesContent() {
                                     )}
                                   >
                                     <div className="relative shrink-0">
-                                      <img
+                                      <AppImage
+                                        width={64}
+                                        height={64}
+                                        fallbackSrc={FALLBACK_AVATAR}
                                         className={cn(
                                           'h-16 w-16 rounded-full object-cover shadow',
                                           (isPresenceOnline(counterpartPresence) || isOnline(dialog.Ulastonline)) && 'ring-2 ring-lime-500',
@@ -2420,7 +2423,10 @@ export default function MessagesContent() {
                                       />
                                       <PresenceCoverBadge presence={counterpartPresence} className="absolute bottom-0 left-0" />
                                       {dialog.type === 'group' && dialog.community_img ? (
-                                        <img
+                                        <AppImage
+                                          width={24}
+                                          height={24}
+                                          fallbackSrc={FALLBACK_AVATAR}
                                           className="absolute bottom-0 right-0 h-6 w-6 rounded-full border border-zinc-900 bg-zinc-900 object-cover shadow"
                                           src={normalizeAssetUrl(dialog.community_img, FALLBACK_AVATAR)}
                                           alt={dialog.community_name || ''}
@@ -2487,9 +2493,7 @@ export default function MessagesContent() {
                   )}
                   title={lang?.create_group || 'Создать групповой чат'}
                 >
-                  <svg className="w-7 h-7 fill-white" viewBox="0 0 24 24">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                  </svg>
+                  <Icon name="IC-plus-material" className="w-7 h-7 fill-white" />
                 </button>
               </div>
             </div>
@@ -2506,7 +2510,9 @@ export default function MessagesContent() {
                   id="welcome-pane"
                   className="hidden h-full w-full flex-col items-center justify-center gap-3 p-3 text-center lg:flex lg:flex-row"
                 >
-                  <img
+                  <AppImage
+                    width={256}
+                    height={256}
                     src={FALLBACK_WELCOME_IMAGE}
                     alt=""
                     className="-rotate-45 w-64 animate-pulse object-contain"
@@ -2619,7 +2625,9 @@ export default function MessagesContent() {
                           triggerAriaLabel={lang?.chat_settings || 'Настройки чата'}
                           triggerClassName="h-10 w-10 overflow-hidden rounded-full p-0 shadow hover:bg-zinc-700/80"
                           triggerNode={
-                            <img
+                            <AppImage
+                              width={40}
+                              height={40}
                               id="dialog-avatar"
                               src={dialogAvatarUrl}
                               alt={dialogTitle || 'Dialog avatar'}
@@ -2834,9 +2842,7 @@ export default function MessagesContent() {
                       !isAtBottom ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
                     )}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 fill-white" viewBox="0 0 24 24" fill="currentColor">
-                      <use href="#IC-chevron-down"></use>
-                    </svg>
+                    <Icon name="IC-chevron-down" className="h-6 w-6 fill-white" fill="currentColor" />
                     {unreadCount > 0 && (
                       <div className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-purple-500 px-1 text-xs font-bold text-white shadow">
                         {unreadCount > 99 ? '99+' : unreadCount}
@@ -2858,9 +2864,7 @@ export default function MessagesContent() {
                       </span>
                     </div>
                     <button type="button" onClick={() => setReplyingTo(null)} className="shrink-0 p-1 rounded-full hover:bg-zinc-700/50 text-zinc-400 cursor-pointer active:scale-95 duration-300">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
-                      </svg>
+                      <Icon name="IC-close-material" className="w-5 h-5 fill-current" />
                     </button>
                   </div>
 
@@ -2877,7 +2881,7 @@ export default function MessagesContent() {
                         <div className="flex gap-3 overflow-x-auto w-full pb-23 -mx-3 -mb-20 px-3 bg-gradient-to-b from-transparent via-black/90 to-black lg:via-transparent lg:to-transparent">
                           {attachedImages.map((att) => (
                             <div key={att.id} className="relative group shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-zinc-600/30">
-                              <img src={att.previewUrl} alt="Attached" className="w-full h-full object-cover" />
+                              <AppImage width={64} height={64} src={att.previewUrl} alt="Attached" className="w-full h-full object-cover" />
                               {att.uploading && (
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                                   <Icon name="IC-loader" className="w-6 h-6 animate-spin fill-purple-400" />

@@ -8,6 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 
 interface FriendItem {
@@ -208,7 +210,7 @@ export default function CreateGroupModal({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <button className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700">
-              <svg className="inline w-8 h-8 fill-white"><use href="#IC-search"></use></svg>
+              <Icon name="IC-search" className="inline w-8 h-8 fill-white" />
             </button>
           </div>
         </div>
@@ -238,7 +240,10 @@ export default function CreateGroupModal({
                     }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <img
+                    <AppImage
+                      width={48}
+                      height={48}
+                      fallbackSrc={FALLBACK_AVATAR}
                       src={normalizeAssetUrl(friend.img, FALLBACK_AVATAR)}
                       alt=""
                       className="w-12 h-12 rounded-full object-cover shrink-0"
@@ -251,9 +256,7 @@ export default function CreateGroupModal({
                     </div>
                   </div>
                   {isSelected && (
-                    <svg className="w-5 h-5 fill-purple-500 shrink-0" viewBox="0 0 24 24">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                    </svg>
+                    <Icon name="IC-check-material" className="w-5 h-5 fill-purple-500 shrink-0" />
                   )}
                 </div>
               );

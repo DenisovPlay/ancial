@@ -1,11 +1,11 @@
-/* eslint-disable @next/next/no-img-element */
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { BackIcon } from '../apps-icons';
 import { getOverlayGame } from '../apps-model';
 import WeatherContent from '../included/weather/weather-content';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 type AppsOverlayProps = {
   gameId: string;
@@ -26,7 +26,7 @@ export default function AppsOverlay({ gameId }: AppsOverlayProps) {
           className="p-1.5 flex items-center group justify-center rounded-full fixed top-3 left-3 cursor-pointer active:scale-95 duration-300 bg-zinc-900/40 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 h-10 w-10 z-[9999]"
           href={game.backHref || '/'}
         >
-          <BackIcon className="w-6 h-6 fill-white inline shrink-0" />
+          <Icon name="IC-chevron-left" className="w-6 h-6 fill-white inline shrink-0" />
         </Link>
         <WeatherContent />
       </div>
@@ -42,9 +42,11 @@ export default function AppsOverlay({ gameId }: AppsOverlayProps) {
             }`}
           href={game.backHref}
         >
-          <BackIcon className="w-6 h-6 fill-white inline shrink-0" />
+          <Icon name="IC-chevron-left" className="w-6 h-6 fill-white inline shrink-0" />
           {game.backHref !== '/' && (
-            <img
+            <AppImage
+              width={358}
+              height={154}
               alt="Zynt"
               className="group-hover:ml-1.5 shrink-0 w-0 group-hover:w-16 duration-300"
               src="/img/logos/zynt.svg"

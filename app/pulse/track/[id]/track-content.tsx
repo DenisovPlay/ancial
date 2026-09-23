@@ -14,7 +14,6 @@ import { cache } from '../../../lib/cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
 import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import {
-  ActionIcon,
   DEFAULT_TRACK_IMAGE,
   PulseEmptyState,
   PulseLegalFooter,
@@ -34,6 +33,7 @@ import {
 import { getPulseExternalUrl } from '../../pulse-navigation';
 import { PulseHeader } from '../../pulse-header';
 import { useUserCountry } from '../../../lib/user-geo';
+import Icon from '../../../components/svg-icon';
 
 type PulseTrackPageTrack = {
   artist?: string | null;
@@ -273,7 +273,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
               />
               {!available && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-black/60 backdrop-blur-[2px] gap-2 p-4 text-center">
-                  <ActionIcon className="h-14 w-14 fill-zinc-300" name="IC-lock" />
+                  <Icon name="IC-lock" className="inline h-14 w-14 fill-zinc-300" />
                   <span className="text-base font-semibold text-rose-400">
                     {lang?.track_unavailable || 'Трек недоступен'}
                   </span>
@@ -293,7 +293,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                   )}
                 </h1>
                 <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
-                  <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-speaker" />
+                  <Icon name="IC-speaker" className="inline h-8 w-8 fill-zinc-300" />
                   <span>{toNumber(track?.listens)}</span>
                 </span>
               </div>
@@ -306,7 +306,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                     position="bottom"
                     triggerClassName="h-16 w-16 rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow hover:bg-zinc-700"
                     triggerIcon="IC-more"
-                    triggerNode={<ActionIcon className="h-10 w-10 text-white" name="IC-more" />}
+                    triggerNode={<Icon name="IC-more" className="inline fill-current h-10 w-10 text-white" />}
                     triggerSize="sm"
                   >
                     {isAuthenticated ? (
@@ -345,7 +345,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                         : 'bg-zinc-800/80 opacity-60 hover:bg-zinc-700',
                     )}
                   >
-                    <ActionIcon className="h-10 w-10 fill-white" name={active ? 'IC-pause' : 'IC-play'} />
+                    <Icon name={active ? 'IC-pause' : 'IC-play'} className="inline h-10 w-10 fill-white" />
                   </button>
                   <span className="text-sm text-content-500">{lang?.listen || 'Слушать'}</span>
                 </div>
@@ -360,7 +360,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                       isAuthenticated ? 'cursor-pointer hover:bg-zinc-700 active:scale-95' : 'cursor-not-allowed opacity-30',
                     )}
                   >
-                    <ActionIcon className="h-10 w-10" name={isLiked ? 'IC-heart-filled' : 'IC-heart'} />
+                    <Icon name={isLiked ? 'IC-heart-filled' : 'IC-heart'} className="inline fill-current h-10 w-10" />
                   </button>
                   <span className="text-sm text-content-500">{lang?.favorites || 'Избранное'}</span>
                 </div>

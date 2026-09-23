@@ -82,3 +82,25 @@ test('svg-иконки тулбара редактора сохраняются'
     assert.ok(clean.includes('viewbox') || clean.includes('viewBox'), 'viewBox должен сохраниться');
     assert.ok(clean.includes('#IC-edit'), 'use href должен сохраниться');
 });
+
+test('preloadImages помечает картинки прелоадером, по умолчанию — нет', () => {
+    const html = '<p>x</p><img src="/img/a.webp" class="w-10 rounded-full">';
+    const plain = sanitizeUserHtml(html);
+    assert.ok(!plain.includes('data-zimg'), 'без опции разметка не меняется (редактор)');
+    assert.ok(!plain.includes('img-skeleton'));
+
+    const marked = sanitizeUserHtml(html, { preloadImages: true });
+    assert.ok(marked.includes('data-zimg'), 'маркер делегирования сохраняется');
+    assert.ok(marked.includes('img-skeleton') && marked.includes('img-loading'));
+    assert.ok(marked.includes('w-10') && marked.includes('rounded-full'), 'свои классы картинки не теряются');
+
+    // Флаг не «протекает» на следующий вызов.
+    assert.ok(!sanitizeUserHtml(html).includes('data-zimg'));
+});
+
+test('preloadImages не трогает SVG', () => {
+    const marked = sanitizeUserHtml('<img src="/img/branding/7tv.svg?id=-1" class="h-5"><img src="/img/a.webp">', { preloadImages: true });
+    const [svgTag, rasterTag] = marked.split('<img').slice(1);
+    assert.ok(!svgTag.includes('img-skeleton') && !svgTag.includes('data-zimg'), 'у svg нет прелоадера');
+    assert.ok(rasterTag.includes('img-skeleton'), 'у растровой картинки прелоадер есть');
+});

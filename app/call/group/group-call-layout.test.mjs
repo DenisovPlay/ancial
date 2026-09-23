@@ -38,8 +38,8 @@ assert.match(ruLocale, /"voice_return_to_grid"/);
 assert.match(enLocale, /"voice_focus_video"/);
 assert.match(enLocale, /"voice_return_to_grid"/);
 assert.match(clientSource, /availableCameras\.map/);
-assert.match(clientSource, /ScreenIcon active=/);
-assert.match(clientSource, /SpeakerIcon off=/);
+assert.match(clientSource, /name=\{call\.screenEnabled \? 'IC-call-screen-stop' : 'IC-call-screen-share'\}/);
+assert.match(clientSource, /name=\{call\.deafened \? 'IC-call-speaker-off' : 'IC-call-speaker'\}/);
 
 const hookSource = readFileSync(new URL('./[hash]/use-group-call.ts', import.meta.url), 'utf8');
 assert.match(hookSource, /signalQueuesRef/);

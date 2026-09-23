@@ -1,8 +1,7 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import Image from 'next/image';
+import AppImage from '../../../components/app-image';
 import Link from 'next/link';
 import { useAuth } from '../../../context/AuthContext';
 import { cache } from '../../../lib/cache';
@@ -18,20 +17,13 @@ import {
   type WeatherAppData,
   type WeatherForecastIconKey,
 } from './weather-model';
+import Icon from '../../../components/svg-icon';
 
 type WeatherApiResponse = {
   success: boolean;
   data: WeatherAppData | null;
   error: string | null;
 };
-
-function SpinnerIcon() {
-  return (
-    <svg className="inline h-24 w-24 animate-spin fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <path d="M24 4a1.5 1.5 0 1 0 0 3c6.256 0 11.766 3.407 14.703 8.455a1.5 1.5 0 1 0 2.594-1.51C37.834 7.994 31.344 4 24 4Z" />
-    </svg>
-  );
-}
 
 function WeatherSkeleton() {
   return (
@@ -110,60 +102,15 @@ function WeatherSkeleton() {
   );
 }
 
-function LocationIcon() {
-  return (
-    <svg className="inline h-7 w-7 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <path d="M24 4C14.629 4 7 11.629 7 21c0 4.207 1.543 8.065 4.078 11.031l.008.008.006.008s7.232 8.252 9.807 10.709c1.724 1.644 4.477 1.644 6.201 0 2.934-2.799 9.811-10.713 9.811-10.713l.004-.006.006-.006C39.457 29.065 41 25.207 41 21 41 11.629 33.371 4 24 4Zm0 3c7.749 0 14 6.251 14 14 0 3.475-1.266 6.633-3.361 9.082-.014.016-7.049 8.061-9.61 10.504-.594.566-1.466.566-2.06 0-2.14-2.042-9.588-10.479-9.609-10.504l-.002-.002C11.265 27.631 10 24.474 10 21 10 13.251 16.251 7 24 7Zm0 8c-1.875 0-3.471.757-4.496 1.91C18.479 18.063 18 19.542 18 21s.479 2.937 1.504 4.09C20.529 26.243 22.125 27 24 27s3.471-.757 4.496-1.91C29.521 23.937 30 22.458 30 21s-.479-2.937-1.504-4.09C27.471 15.757 25.875 15 24 15Zm0 3c1.125 0 1.779.368 2.254.902.475.535.746 1.306.746 2.098s-.271 1.563-.746 2.098c-.475.534-1.129.902-2.254.902s-1.779-.368-2.254-.902C21.271 22.563 21 21.792 21 21s.271-1.563.746-2.098C22.221 18.368 22.875 18 24 18Z" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg className="inline h-7 w-7 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <path d="M20.5 6C12.51 6 6 12.51 6 20.5S12.51 35 20.5 35c3.456 0 6.634-1.221 9.129-3.25l9.81 9.811a1.5 1.5 0 1 0 2.122-2.121l-9.811-9.811C33.779 27.134 35 23.956 35 20.5 35 12.51 28.49 6 20.5 6Zm0 3C26.869 9 32 14.131 32 20.5c0 3.103-1.224 5.906-3.209 7.971a1.5 1.5 0 0 0-.32.32C26.406 30.776 23.603 32 20.5 32 14.131 32 9 26.869 9 20.5 9 14.131 14.131 9 20.5 9Z" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg className="inline h-24 w-24 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <path d="M24 3C12.402 3 3 12.402 3 24s9.402 21 21 21 21-9.402 21-21S35.598 3 24 3Zm8.121 13.758a1.5 1.5 0 0 1 .121 2.121L27.121 24l5.121 5.121a1.5 1.5 0 1 1-2.121 2.121L25 26.121l-5.121 5.121a1.5 1.5 0 0 1-2.121-2.121L22.879 24l-5.121-5.121a1.5 1.5 0 1 1 2.121-2.121L25 21.879l5.121-5.121a1.5 1.5 0 0 1 2 0Z" />
-    </svg>
-  );
-}
+/** Иконка прогноза из спрайта; всё, что не облако/снег/дождь, — солнце. */
+const FORECAST_ICONS: Partial<Record<WeatherForecastIconKey, string>> = {
+  cloud: 'IC-weather-cloud',
+  snow: 'IC-weather-snow',
+  rain: 'IC-weather-rain',
+};
 
 function ForecastIcon({ iconKey }: { iconKey: WeatherForecastIconKey }) {
-  if (iconKey === 'cloud') {
-    return (
-      <svg className="h-10 w-10 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <path d="M24 8c-7.477 0-13.584 5.72-14.348 13H9c-4.953 0-9 4.047-9 9s4.047 9 9 9h30c4.953 0 9-4.047 9-9s-4.047-9-9-9h-.652C37.584 13.72 31.477 8 24 8Zm0 3c6.369 0 11.5 5.131 11.5 11.5A1.5 1.5 0 0 0 37 24h2c3.331 0 6 2.669 6 6s-2.669 6-6 6H9c-3.331 0-6-2.669-6-6s2.669-6 6-6h2A1.5 1.5 0 0 0 12.5 22.5C12.5 16.131 17.631 11 24 11Z" />
-      </svg>
-    );
-  }
-
-  if (iconKey === 'snow') {
-    return (
-      <svg className="h-10 w-10 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <path d="M23.977 2.979A1.5 1.5 0 0 0 22.5 4.5v2.586l-1.129-.807a1.5 1.5 0 1 0-1.742 2.442l2.871 2.05V15h-2.83a1.5 1.5 0 0 0-1.299.75l-1.414 2.451-3.662-2.115-.342-3.512a1.5 1.5 0 0 0-2.984.289l.133 1.381-2.239-1.293a1.5 1.5 0 1 0-1.5 2.598l2.239 1.293-1.262.574a1.5 1.5 0 1 0 1.242 2.73l3.213-1.461 3.662 2.113-1.416 2.451a1.5 1.5 0 0 0 0 1.5l1.416 2.451-3.662 2.113-3.213-1.461a1.5 1.5 0 1 0-1.242 2.73l1.262.574-2.239 1.293a1.5 1.5 0 1 0 1.5 2.598l2.239-1.293-.133 1.381a1.5 1.5 0 1 0 2.984.289l.342-3.512 3.662-2.115 1.414 2.451a1.5 1.5 0 0 0 1.299.75h2.83v4.229l-2.871 2.05a1.5 1.5 0 1 0 1.742 2.442l1.129-.807V43.5a1.5 1.5 0 1 0 3 0v-2.586l1.129.807a1.5 1.5 0 1 0 1.742-2.442l-2.871-2.05V33h2.83a1.5 1.5 0 0 0 1.299-.75l1.414-2.451 3.662 2.115.342 3.512a1.5 1.5 0 1 0 2.984-.289l-.133-1.381 2.239 1.293a1.5 1.5 0 1 0 1.5-2.598l-2.239-1.293 1.262-.574a1.5 1.5 0 1 0-1.242-2.73l-3.213 1.461-3.662-2.113 1.416-2.451a1.5 1.5 0 0 0 0-1.5l-1.416-2.451 3.662-2.113 3.213 1.461a1.5 1.5 0 1 0 1.242-2.73l-1.262-.574 2.239-1.293a1.5 1.5 0 1 0-1.5-2.598l-2.239 1.293.133-1.381a1.5 1.5 0 1 0-2.984-.289l-.342 3.512-3.662 2.115-1.414-2.451A1.5 1.5 0 0 0 28.33 15H25.5v-4.229l2.871-2.05a1.5 1.5 0 1 0-1.742-2.442l-1.129.807V4.5a1.5 1.5 0 0 0-1.523-1.521ZM20.535 18h6.93l1.578 2.734L30.928 24l-1.606 2.783L27.465 30h-6.93l-1.609-2.789L17.072 24l1.578-2.732L20.535 18Z" />
-      </svg>
-    );
-  }
-
-  if (iconKey === 'rain') {
-    return (
-      <svg className="h-10 w-10 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <path d="M24 6c-6.255 0-11.261 4.88-11.797 11H11.5C6.823 17 3 20.823 3 25.5S6.823 34 11.5 34h25C41.177 34 45 30.177 45 25.5S41.177 17 36.5 17h-.703C35.261 10.88 30.255 6 24 6Zm0 3c4.988 0 9 4.012 9 9v.5A1.5 1.5 0 0 0 34.5 20h2c3.055 0 5.5 2.445 5.5 5.5S39.555 31 36.5 31h-25C8.445 31 6 28.555 6 25.5S8.445 20 11.5 20h2A1.5 1.5 0 0 0 15 18.5V18c0-4.988 4.012-9 9-9Zm-12.023 26.979A1.5 1.5 0 0 0 10.5 37.5v2a1.5 1.5 0 1 0 3 0v-2a1.5 1.5 0 0 0-1.523-1.521Zm12 0A1.5 1.5 0 0 0 22.5 37.5v2a1.5 1.5 0 1 0 3 0v-2a1.5 1.5 0 0 0-1.523-1.521Zm12 0A1.5 1.5 0 0 0 34.5 37.5v2a1.5 1.5 0 1 0 3 0v-2a1.5 1.5 0 0 0-1.523-1.521ZM17.977 38.979A1.5 1.5 0 0 0 16.5 40.5v2a1.5 1.5 0 1 0 3 0v-2a1.5 1.5 0 0 0-1.523-1.521Zm12 0A1.5 1.5 0 0 0 28.5 40.5v2a1.5 1.5 0 1 0 3 0v-2a1.5 1.5 0 0 0-1.523-1.521Z" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg className="h-10 w-10 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <path d="M23.977 3.979A1.5 1.5 0 0 0 22.5 5.5v3a1.5 1.5 0 1 0 3 0v-3a1.5 1.5 0 0 0-1.523-1.521ZM10.902 9.404a1.5 1.5 0 0 0-1.045 2.576l2.121 2.121a1.501 1.501 0 0 0 2.123-2.123l-2.121-2.121a1.5 1.5 0 0 0-1.078-.453Zm26.148 0a1.5 1.5 0 0 0-1.031.453l-2.121 2.121a1.501 1.501 0 0 0 2.123 2.123l2.121-2.121A1.5 1.5 0 0 0 37.05 9.404ZM24 13c-6.057 0-11 4.943-11 11s4.943 11 11 11 11-4.943 11-11-4.943-11-11-11Zm0 3c4.436 0 8 3.564 8 8s-3.564 8-8 8-8-3.564-8-8 3.564-8 8-8ZM5.5 22.5a1.5 1.5 0 1 0 0 3h3a1.5 1.5 0 1 0 0-3Zm34 0a1.5 1.5 0 1 0 0 3h3a1.5 1.5 0 1 0 0-3ZM13.01 33.445a1.5 1.5 0 0 0-1.032.453l-2.121 2.121a1.501 1.501 0 1 0 2.123 2.123l2.121-2.121a1.5 1.5 0 0 0-1.091-2.576Zm21.933 0a1.5 1.5 0 0 0-1.045 2.576l2.121 2.121a1.501 1.501 0 1 0 2.123-2.123l-2.121-2.121a1.5 1.5 0 0 0-1.078-.453Zm-10.966 4.533A1.5 1.5 0 0 0 22.5 39.5v3a1.5 1.5 0 1 0 3 0v-3a1.5 1.5 0 0 0-1.523-1.521Z" />
-    </svg>
-  );
+  return <Icon name={FORECAST_ICONS[iconKey] ?? 'IC-weather-sun'} className="h-10 w-10 fill-white" />;
 }
 
 type RecommendedCity = {
@@ -486,7 +433,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
         {!showLoadingOverlay && errorMessage && (
           <div className="absolute inset-0 z-[999] overflow-hidden">
             <div className="flex h-full w-full flex-col items-center justify-center gap-3 overflow-hidden bg-zinc-900/80 p-3 text-center backdrop-blur-sm">
-              <CloseIcon />
+              <Icon name="IC-weather-close" className="inline h-24 w-24 fill-white" />
               <span className="text-3xl text-zinc-300">{lang?.weather_error_happend || 'An error occurred'}</span>
               <span className="text-xl text-zinc-400">{lang?.weather_try_again || 'Try again later'}</span>
               {searchCity ? (
@@ -522,7 +469,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                   onClick={handleResetLocation}
                   type="button"
                 >
-                  <LocationIcon />
+                  <Icon name="IC-location" className="inline h-7 w-7 fill-white" />
                 </button>
 
                 <input
@@ -538,7 +485,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                   className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-[background-color,transform] duration-300 hover:bg-zinc-700 active:scale-95"
                   type="submit"
                 >
-                  <SearchIcon />
+                  <Icon name="IC-search" className="inline h-7 w-7 fill-white" />
                 </button>
               </form>
 
@@ -636,9 +583,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-zinc-400 font-medium">{lang?.weather_humidity || 'Влажность'}</span>
-                          <svg className="w-4 h-4 fill-cyan-400/80 shrink-0" viewBox="0 0 24 24">
-                            <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
-                          </svg>
+                          <Icon name="IC-weather-humidity" className="w-4 h-4 fill-cyan-400/80 shrink-0" />
                         </div>
                         <div className="mt-2 flex items-baseline gap-1">
                           <span className="text-2xl text-white font-semibold">{weatherData.details.humidity}</span>
@@ -649,9 +594,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-zinc-400 font-medium">{lang?.weather_wind || 'Ветер'}</span>
-                          <svg className="w-4 h-4 stroke-teal-300 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
-                          </svg>
+                          <Icon name="IC-weather-wind" className="w-4 h-4 stroke-teal-300 fill-none stroke-[2] shrink-0" strokeLinecap="round" strokeLinejoin="round" />
                         </div>
                         <div className="mt-2 flex items-baseline gap-1">
                           <span className="text-2xl text-white font-semibold">{weatherData.details.windSpeed}</span>
@@ -662,11 +605,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-zinc-400 font-medium">{lang?.weather_pressure || 'Давление'}</span>
-                          <svg className="w-4 h-4 stroke-amber-300 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-                            <circle cx="12" cy="12" r="5" />
-                            <path d="M12 12l2.5-2.5" />
-                          </svg>
+                          <Icon name="IC-weather-pressure" className="w-4 h-4 stroke-amber-300 fill-none stroke-[2] shrink-0" strokeLinecap="round" strokeLinejoin="round" />
                         </div>
                         <div className="mt-2 flex items-baseline gap-1">
                           <span className="text-2xl text-white font-semibold">{weatherData.details.pressure}</span>
@@ -677,10 +616,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-zinc-400 font-medium">{lang?.weather_visibility || 'Видимость'}</span>
-                          <svg className="w-4 h-4 stroke-sky-300 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
+                          <Icon name="IC-weather-visibility" className="w-4 h-4 stroke-sky-300 fill-none stroke-[2] shrink-0" strokeLinecap="round" strokeLinejoin="round" />
                         </div>
                         <div className="mt-2 flex items-baseline gap-1">
                           <span className="text-2xl text-white font-semibold">{weatherData.details.visibility}</span>
@@ -705,9 +641,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
 
                       <div className="mt-4 grid grid-cols-2 gap-4">
                         <div className="flex items-center gap-3">
-                          <svg className="w-8 h-8 stroke-amber-400 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2v6m-3-3l3-3 3 3M4.93 10.93l1.41 1.41M17.66 12.34l1.41-1.41M2 18h20M20 18a8 8 0 0 0-16 0" />
-                          </svg>
+                          <Icon name="IC-weather-sunrise" className="w-8 h-8 stroke-amber-400 fill-none stroke-[2] shrink-0" strokeLinecap="round" strokeLinejoin="round" />
                           <div className="flex flex-col">
                             <span className="text-xs text-zinc-400">{lang?.weather_sunrise || 'Восход'}</span>
                             <span className="text-xl text-white font-semibold">{weatherData?.astro?.sunrise || '05:30'}</span>
@@ -715,9 +649,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <svg className="w-8 h-8 stroke-indigo-300 fill-none stroke-[2] shrink-0" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2v6M9 5l3 3 3-3M4.93 10.93l1.41 1.41M17.66 12.34l1.41-1.41M2 18h20M20 18a8 8 0 0 0-16 0" />
-                          </svg>
+                          <Icon name="IC-weather-sunset" className="w-8 h-8 stroke-indigo-300 fill-none stroke-[2] shrink-0" strokeLinecap="round" strokeLinejoin="round" />
                           <div className="flex flex-col">
                             <span className="text-xs text-zinc-400">{lang?.weather_sunset || 'Закат'}</span>
                             <span className="text-xl text-white font-semibold">{weatherData?.astro?.sunset || '21:15'}</span>
@@ -736,9 +668,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                       </div>
 
                       <div className="mt-4 flex items-center gap-3">
-                        <svg className="w-8 h-8 fill-purple-300 shrink-0" viewBox="0 0 24 24">
-                          <path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
-                        </svg>
+                        <Icon name="IC-weather-moon" className="w-8 h-8 fill-purple-300 shrink-0" />
                         <div className="flex flex-col">
                           <span className="text-xs text-zinc-400">{lang?.weather_moon || 'Фаза луны'}</span>
                           <span className="text-lg text-white font-semibold">{weatherData?.astro?.moonPhase || 'Полнолуние'}</span>
@@ -761,27 +691,35 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                           <span className="flex items-center justify-center gap-0.5">
                             {locale === 'ru' ? (
                               <>
-                                <img
+                                <AppImage
+                                  width={80}
+                                  height={20}
                                   alt="Yandex"
-                                  className="h-5 shrink-0"
+                                  className="h-5 w-auto shrink-0"
                                   src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/ru_white.6900a042.svg"
                                 />
-                                <img
+                                <AppImage
+                                  width={80}
+                                  height={20}
                                   alt="Weather"
-                                  className="h-5 shrink-0"
+                                  className="h-5 w-auto shrink-0"
                                   src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/ru_white.43698d95.svg"
                                 />
                               </>
                             ) : (
                               <>
-                                <img
+                                <AppImage
+                                  width={80}
+                                  height={20}
                                   alt="Yandex"
-                                  className="h-5 shrink-0"
+                                  className="h-5 w-auto shrink-0"
                                   src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/com_white.e2f9fd51.svg"
                                 />
-                                <img
+                                <AppImage
+                                  width={80}
+                                  height={20}
                                   alt="Weather"
-                                  className="h-5 shrink-0"
+                                  className="h-5 w-auto shrink-0"
                                   src="https://yastatic.net/s3/weather-frontend/front2/_next/static/media/weather_white.138770f1.svg"
                                 />
                               </>
@@ -803,11 +741,9 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                           </span>
                           <span className="absolute bottom-3 right-3 z-[99] text-xs px-3 py-1.5 rounded-full bg-black/60 text-white border border-white/20 backdrop-blur-md flex items-center gap-1 group-hover:bg-blue-600/80 transition-colors">
                             <span>{langCode === 'en' ? 'Open interactive map' : 'Открыть интерактивную карту'}</span>
-                            <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-[2]" viewBox="0 0 24 24">
-                              <path d="M5 12h14M12 5l7 7-7 7" />
-                            </svg>
+                            <Icon name="IC-arrow-right" className="w-3.5 h-3.5 fill-none stroke-current stroke-[2]" />
                           </span>
-                          <Image
+                          <AppImage
                             alt="Map"
                             className="object-cover opacity-90"
                             fill
@@ -815,7 +751,8 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                             src={mapLinks.mapUrl}
                             unoptimized
                           />
-                          <Image
+                          <AppImage
+                            skeleton={false}
                             alt="Precipitation overlay"
                             className="object-cover animate-pulse rounded-2xl brightness-125 contrast-200 saturate-200"
                             fill

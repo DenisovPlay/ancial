@@ -60,6 +60,8 @@ const ALLOWED_ATTR = [
 const URI_REGEX = /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+?:[^a-z+.-])/i;
 
 let hookInstalled = false;
+/** Включается на время одного sanitizeUserHtml(…, { preloadImages: true }) — вызов синхронный. */
+let markImages = false;
 
 function installUriGuard(): void {
     if (hookInstalled || typeof window === 'undefined') return;
@@ -74,22 +76,42 @@ function installUriGuard(): void {
             }
         }
     });
+    // Картинки в отображаемом HTML получают прелоадер (см. image-loading.ts). Атрибут ставится
+    // уже после фильтрации атрибутов, поэтому ALLOW_DATA_ATTR: false его не срезает.
+    DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+        if (!markImages || node.nodeName !== 'IMG') return;
+        const element = node as Element;
+        // SVG рисуется сразу — прелоадер не нужен (= isSvgSrc из image-loading.ts, литерал из-за node-тестов).
+        const src = (element.getAttribute('src') || '').trim().toLowerCase();
+        if (src.startsWith('data:image/svg+xml') || /\.svg(?:[?#]|$)/.test(src)) return;
+        // = HTML_IMAGE_ATTR из image-loading.ts (литерал: node-тесты не резолвят импорт без расширения).
+        element.setAttribute('data-zimg', '');
+        element.classList.add('img-skeleton', 'img-loading');
+    });
 }
 
 /**
  * Санитизирует пользовательский HTML. Единственная точка входа
  * для контента, попадающего в dangerouslySetInnerHTML.
+ *
+ * preloadImages — только для отображения (лента, пост, сообщения): картинки получают скелетон.
+ * В редакторе не включать: служебные классы уехали бы в сохранённый контент.
  */
-export function sanitizeUserHtml(html: string): string {
+export function sanitizeUserHtml(html: string, options?: { preloadImages?: boolean }): string {
     if (!html) return '';
     if (typeof window === 'undefined') return html; // SSR: DOMPurify недоступен
     installUriGuard();
-    return DOMPurify.sanitize(html, {
-        ALLOWED_TAGS,
-        ALLOWED_ATTR,
-        FORBID_ATTR: ['style', 'srcset', 'srcdoc', 'formaction', 'xlink:href'],
-        ALLOW_DATA_ATTR: false,
-        KEEP_CONTENT: true,
-        RETURN_TRUSTED_TYPE: false,
-    });
+    markImages = options?.preloadImages === true;
+    try {
+        return DOMPurify.sanitize(html, {
+            ALLOWED_TAGS,
+            ALLOWED_ATTR,
+            FORBID_ATTR: ['style', 'srcset', 'srcdoc', 'formaction', 'xlink:href'],
+            ALLOW_DATA_ATTR: false,
+            KEEP_CONTENT: true,
+            RETURN_TRUSTED_TYPE: false,
+        });
+    } finally {
+        markImages = false;
+    }
 }

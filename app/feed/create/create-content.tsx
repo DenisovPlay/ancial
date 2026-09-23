@@ -26,6 +26,7 @@ import {
   uploadImage,
   uploadPostImageFiles,
 } from '../editor-shared';
+import Icon from '../../components/svg-icon';
 
 type AvailableAuthor = {
   id: string;
@@ -390,9 +391,7 @@ export default function CreatePostContent() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
       </div>
     );
   }
@@ -400,9 +399,7 @@ export default function CreatePostContent() {
   if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
       </div>
     );
   }

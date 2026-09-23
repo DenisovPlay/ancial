@@ -4,7 +4,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AncialAPI } from '../../lib/api-v2';
 import { useAuth } from '../../context/AuthContext';
-import { getPulseBackgroundColorByMood, ActionIcon } from '../pulse-components';
+import { getPulseBackgroundColorByMood, } from '../pulse-components';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 type StatsData = {
   total_listens: number;
@@ -66,7 +68,7 @@ export default function PulseCreateOverviewPage() {
 
       {loading ? (
         <div className="flex w-full items-center justify-center p-6">
-          <ActionIcon className="h-8 w-8 animate-spin fill-zinc-500" name="IC-loader" />
+          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
         </div>
       ) : (
         <>
@@ -79,7 +81,7 @@ export default function PulseCreateOverviewPage() {
                 <span className="text-3xl font-bold text-white">{formatNumber(stats?.total_listens || 0)}</span>
               </div>
               <span className="text-blue-400 relative p-3 bg-zinc-900 h-fit border-l border-b border-zinc-600/30 rounded-bl-3xl">
-                <ActionIcon className="w-10 h-10 fill-blue-400 z-30 relative" name="IC-play" />
+                <Icon name="IC-play" className="inline w-10 h-10 fill-blue-400 z-30 relative" />
                 <div className="z-10 w-10 h-10 blur-xl bg-blue-400 absolute top-1.5 right-1.5 /animate-pulse"></div>
               </span>
             </div>
@@ -95,7 +97,7 @@ export default function PulseCreateOverviewPage() {
                 <span className="text-3xl font-bold text-white">{formatNumber(stats?.total_tracks || 0)}</span>
               </div>
               <span className="text-purple-400 relative p-3 bg-zinc-900 h-fit border-l border-b border-zinc-600/30 rounded-bl-3xl">
-                <ActionIcon className="w-10 h-10 fill-purple-400 z-30 relative" name="IC-music" />
+                <Icon name="IC-music" className="inline w-10 h-10 fill-purple-400 z-30 relative" />
                 <div className="z-10 w-10 h-10 blur-xl bg-purple-400 absolute top-1.5 right-1.5 /animate-pulse"></div>
               </span>
             </Link>
@@ -111,7 +113,7 @@ export default function PulseCreateOverviewPage() {
                 <span className="text-3xl font-bold text-white">{formatNumber(stats?.total_artists || 0)}</span>
               </div>
               <span className="text-emerald-400 relative p-3 bg-zinc-900 h-fit border-l border-b border-zinc-600/30 rounded-bl-3xl">
-                <ActionIcon className="w-10 h-10 fill-emerald-400 z-30 relative" name="IC-user" />
+                <Icon name="IC-user" className="inline w-10 h-10 fill-emerald-400 z-30 relative" />
                 <div className="z-10 w-10 h-10 blur-xl bg-emerald-400 absolute top-1.5 right-1.5 /animate-pulse"></div>
               </span>
             </Link>
@@ -127,7 +129,7 @@ export default function PulseCreateOverviewPage() {
                 <span className="text-3xl font-bold text-white">{formatNumber(stats?.total_album_likes || 0)}</span>
               </div>
               <span className="text-rose-400 relative p-3 bg-zinc-900 h-fit border-l border-b border-zinc-600/30 rounded-bl-3xl">
-                <ActionIcon className="w-10 h-10 fill-rose-400 z-30 relative" name="IC-heart-filled" />
+                <Icon name="IC-heart-filled" className="inline w-10 h-10 fill-rose-400 z-30 relative" />
                 <div className="z-10 w-10 h-10 blur-xl bg-rose-400 absolute top-1.5 right-1.5 /animate-pulse"></div>
               </span>
             </Link>
@@ -142,7 +144,7 @@ export default function PulseCreateOverviewPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 duration-300">
-                    <ActionIcon className="w-6 h-6 fill-purple-400" name="IC-music" />
+                    <Icon name="IC-music" className="inline w-6 h-6 fill-purple-400" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-base font-semibold text-white">
@@ -161,7 +163,7 @@ export default function PulseCreateOverviewPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 duration-300">
-                    <ActionIcon className="w-6 h-6 fill-blue-400" name="IC-album" />
+                    <Icon name="IC-album" className="inline w-6 h-6 fill-blue-400" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-base font-semibold text-white">
@@ -180,7 +182,7 @@ export default function PulseCreateOverviewPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 duration-300">
-                    <ActionIcon className="w-6 h-6 fill-emerald-400" name="IC-user" />
+                    <Icon name="IC-user" className="inline w-6 h-6 fill-emerald-400" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-base font-semibold text-white">
@@ -206,7 +208,7 @@ export default function PulseCreateOverviewPage() {
                   href="/pulse/create/tracks"
                   className="shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 border border-zinc-600/30 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95"
                 >
-                  <ActionIcon className="w-5 h-5 fill-current" name="IC-chevron-right" />
+                  <Icon name="IC-chevron-right" className="inline w-5 h-5 fill-current" />
                   <span>{lang?.all || 'Все'}</span>
                 </Link>
               </div>
@@ -235,14 +237,16 @@ export default function PulseCreateOverviewPage() {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {track.img ? (
-                          <img
+                          <AppImage
+                            width={56}
+                            height={56}
                             src={track.img}
                             alt={track.name}
                             className="w-14 h-14 rounded-full object-cover shrink-0"
                           />
                         ) : (
                           <div className="w-14 h-14 rounded-full bg-zinc-700 flex items-center justify-center shrink-0 text-zinc-400">
-                            <ActionIcon className="w-6 h-6 fill-zinc-400" name="IC-music" />
+                            <Icon name="IC-music" className="inline w-6 h-6 fill-zinc-400" />
                           </div>
                         )}
 
@@ -287,7 +291,7 @@ export default function PulseCreateOverviewPage() {
                         </span>
 
                         <span className="hidden sm:flex items-center gap-1 text-xs text-zinc-400">
-                          <ActionIcon className="w-3.5 h-3.5 fill-zinc-400" name="IC-play" />
+                          <Icon name="IC-play" className="inline w-3.5 h-3.5 fill-zinc-400" />
                           {formatNumber(track.listens || 0)}
                         </span>
 
@@ -296,7 +300,7 @@ export default function PulseCreateOverviewPage() {
                           aria-label={lang?.edittrack || 'Редактировать трек'}
                           className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                         >
-                          <ActionIcon className="w-4 h-4 fill-current" name="IC-edit" />
+                          <Icon name="IC-edit" className="inline w-4 h-4 fill-current" />
                         </Link>
                       </div>
                     </div>
@@ -310,7 +314,7 @@ export default function PulseCreateOverviewPage() {
           <div className="border border-zinc-600/30 p-3 bg-amber-400/15 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="text-amber-400">
-                <ActionIcon className="w-10 h-10 fill-amber-400" name="IC-warning" />
+                <Icon name="IC-warning" className="inline w-10 h-10 fill-amber-400" />
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-amber-400">

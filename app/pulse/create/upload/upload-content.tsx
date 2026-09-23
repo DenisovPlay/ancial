@@ -7,8 +7,9 @@ import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { uploadImage } from '../../../lib/upload';
 import { PULSE_GENRES, PULSE_MOODS, PULSE_TRACK_LANGUAGES } from '../../pulse-constants';
-import { ActionIcon } from '../../pulse-components';
 import { PulseArtistLinkPicker } from '../pulse-artist-link-picker';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 const MEDIA_TAGS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js';
 
@@ -491,7 +492,7 @@ export default function UploadContent() {
               >
                 {singleCover ? (
                   <>
-                    <img src={singleCover} alt="Cover" className="w-full h-full object-cover" />
+                    <AppImage width={224} height={224} src={singleCover} alt="Cover" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300 backdrop-blur-xs">
                       <span className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-600/30">
                         {lang?.replacetrackcover || 'Заменить обложку'}
@@ -501,7 +502,7 @@ export default function UploadContent() {
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-2 text-center p-3">
                     <div className="p-3 rounded-full bg-zinc-700/60 text-zinc-300">
-                      <ActionIcon className="w-8 h-8 fill-current" name="IC-plus" />
+                      <Icon name="IC-plus" className="inline w-8 h-8 fill-current" />
                     </div>
                     <span className="text-sm font-semibold text-zinc-200">
                       {lang?.creators_cover_drop_title || 'Загрузить обложку'}
@@ -531,7 +532,7 @@ export default function UploadContent() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="p-2 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
-                      <ActionIcon className="w-6 h-6 fill-current" name="IC-music" />
+                      <Icon name="IC-music" className="inline w-6 h-6 fill-current" />
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-semibold text-white truncate">
@@ -720,7 +721,7 @@ export default function UploadContent() {
           >
             {loading ? (
               <>
-                <ActionIcon className="h-5 w-5 animate-spin fill-black" name="IC-loader" />
+                <Icon name="IC-loader" className="inline h-5 w-5 animate-spin fill-black" />
                 <span>{statusText || 'Публикация...'}</span>
               </>
             ) : (
@@ -751,7 +752,7 @@ export default function UploadContent() {
               >
                 {albumCover ? (
                   <>
-                    <img src={albumCover} alt="Cover" className="w-full h-full object-cover" />
+                    <AppImage width={224} height={224} src={albumCover} alt="Cover" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300 backdrop-blur-xs">
                       <span className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-600/30">
                         {lang?.replacetrackcover || 'Заменить обложку'}
@@ -761,7 +762,7 @@ export default function UploadContent() {
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-2 text-center p-3">
                     <div className="p-3 rounded-full bg-zinc-700/60 text-zinc-300">
-                      <ActionIcon className="w-8 h-8 fill-current" name="IC-plus" />
+                      <Icon name="IC-plus" className="inline w-8 h-8 fill-current" />
                     </div>
                     <span className="text-sm font-semibold text-zinc-200">
                       {lang?.creators_cover_drop_title || 'Обложка альбома'}
@@ -887,7 +888,7 @@ export default function UploadContent() {
               disabled={albumTracks.length >= 20}
               className="px-4 py-2 rounded-full border border-zinc-600/30 bg-zinc-800 text-xs font-semibold text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center gap-1.5"
             >
-              <ActionIcon className="w-4 h-4 fill-current" name="IC-plus" />
+              <Icon name="IC-plus" className="inline w-4 h-4 fill-current" />
               <span>{lang?.trackadd || 'Добавить трек'}</span>
             </button>
           </div>
@@ -993,7 +994,7 @@ export default function UploadContent() {
                         : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                         }`}
                     >
-                      <ActionIcon className="w-3.5 h-3.5 fill-current" name="IC-music" />
+                      <Icon name="IC-music" className="inline w-3.5 h-3.5 fill-current" />
                       <span>
                         {t.uploading
                           ? (lang?.loading || 'Загрузка...')
@@ -1010,7 +1011,7 @@ export default function UploadContent() {
                         aria-label={lang?.deletetrack || 'Удалить трек'}
                         className="w-8 h-8 rounded-full border border-zinc-600/30 bg-zinc-800 text-red-400 hover:text-red-300 hover:bg-red-500/20 duration-300 active:scale-95 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                       >
-                        <ActionIcon className="w-4 h-4 fill-current" name="IC-trash" />
+                        <Icon name="IC-trash" className="inline w-4 h-4 fill-current" />
                       </button>
                     )}
                   </div>
@@ -1042,7 +1043,7 @@ export default function UploadContent() {
           >
             {loading ? (
               <>
-                <ActionIcon className="h-5 w-5 animate-spin fill-black" name="IC-loader" />
+                <Icon name="IC-loader" className="inline h-5 w-5 animate-spin fill-black" />
                 <span>{statusText || 'Публикация...'}</span>
               </>
             ) : (

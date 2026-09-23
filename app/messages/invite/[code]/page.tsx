@@ -7,6 +7,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../../lib/messages-shared';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 interface InviteData {
   id: number;
@@ -115,9 +117,7 @@ export default function InvitePage() {
         ) : error ? (
           <div className="flex flex-col items-center gap-3">
             <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
-              <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-              </svg>
+              <Icon name="IC-error-circle" className="w-8 h-8 fill-current" />
             </div>
             <span className="text-lg font-bold text-white">{error}</span>
             <Link
@@ -130,7 +130,10 @@ export default function InvitePage() {
         ) : inviteData ? (
           <>
             <div className="flex flex-row w-full gap-3 items-center">
-              <img
+              <AppImage
+                width={96}
+                height={96}
+                fallbackSrc={FALLBACK_AVATAR}
                 src={normalizeAssetUrl(inviteData.avatar, FALLBACK_AVATAR)}
                 alt=""
                 className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover shadow-xl border border-zinc-600/30"
@@ -145,7 +148,10 @@ export default function InvitePage() {
                     <div className="flex flex-col items-center">
                       <div className="flex items-center -space-x-3">
                         {inviteData.sample_members.map((m) => (
-                          <img
+                          <AppImage
+                            width={36}
+                            height={36}
+                            fallbackSrc={FALLBACK_AVATAR}
                             key={m.id}
                             src={normalizeAssetUrl(m.img, FALLBACK_AVATAR)}
                             alt=""

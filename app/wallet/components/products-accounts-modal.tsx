@@ -3,6 +3,7 @@
 import Modal from '../../components/modal';
 import type { FormEvent, MouseEvent } from 'react';
 import type { WalletAccount } from '../../lib/api-v2';
+import Icon from '../../components/svg-icon';
 
 interface ProductsAccountsModalProps {
   isOpen: boolean;
@@ -70,9 +71,7 @@ export function ProductsAccountsModal({
                     <span className="text-lg">{acc.name} <span className="text-sm">({acc.id})</span></span>
                     <span className="text-2xl font-extrabold">
                       {acc.balance}{' '}
-                      <svg className="w-6 h-6 lg:w-8 lg:h-8 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                        <use href="/icons.svg#IC-anci"></use>
-                      </svg>
+                      <Icon name="IC-anci" className="w-6 h-6 lg:w-8 lg:h-8 inline fill-purple-500 -mt-1.5" />
                     </span>
                   </div>
                   <button
@@ -80,9 +79,7 @@ export function ProductsAccountsModal({
                     onClick={(e) => handleDeleteAccountClick(e, acc)}
                     className="flex items-center px-1.5 duration-300 rounded-3xl cursor-pointer"
                   >
-                    <svg className="fill-white w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 39.486328 6.9785156 A 1.50015 1.50015 0 0 0 38.439453 7.4394531 L 24 21.878906 L 9.5605469 7.4394531 A 1.50015 1.50015 0 0 0 8.484375 6.984375 A 1.50015 1.50015 0 0 0 7.4394531 9.5605469 L 21.878906 24 L 7.4394531 38.439453 A 1.50015 1.50015 0 1 0 9.5605469 40.560547 L 24 26.121094 L 38.439453 40.560547 A 1.50015 1.50015 0 1 0 40.560547 38.439453 L 26.121094 24 L 40.560547 9.5605469 A 1.50015 1.50015 0 0 0 39.486328 6.9785156 z"></path>
-                    </svg>
+                    <Icon name="IC-times" className="fill-white w-8 h-8" />
                   </button>
                 </div>
               ))}
@@ -97,9 +94,7 @@ export function ProductsAccountsModal({
                     <span className="text-xs lg:text-lg">{lang?.t_account_desc || 'Откройте новый счёт'}</span>
                   </div>
                   <div className="flex items-center px-1.5 duration-300">
-                    <svg className="fill-white w-10 h-10" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 23.976562 4.9785156 A 1.50015 1.50015 0 0 0 22.5 6.5 L 22.5 22.5 L 6.5 22.5 A 1.50015 1.50015 0 1 0 6.5 25.5 L 22.5 25.5 L 22.5 41.5 A 1.50015 1.50015 0 1 0 25.5 41.5 L 25.5 25.5 L 41.5 25.5 A 1.50015 1.50015 0 1 0 41.5 22.5 L 25.5 22.5 L 25.5 6.5 A 1.50015 1.50015 0 0 0 23.976562 4.9785156 z"></path>
-                    </svg>
+                    <Icon name="IC-plus-circle" className="fill-white w-10 h-10" />
                   </div>
                 </button>
                 <button
@@ -112,9 +107,7 @@ export function ProductsAccountsModal({
                     <span className="text-xs lg:text-lg">{lang?.merchant_desc || 'Подключение сайтов'}</span>
                   </div>
                   <div className="flex items-center px-1.5 duration-300">
-                    <svg className="fill-white w-10 h-10" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 23.976562 4.9785156 A 1.50015 1.50015 0 0 0 22.5 6.5 L 22.5 22.5 L 6.5 22.5 A 1.50015 1.50015 0 1 0 6.5 25.5 L 22.5 25.5 L 22.5 41.5 A 1.50015 1.50015 0 1 0 25.5 41.5 L 25.5 25.5 L 41.5 25.5 A 1.50015 1.50015 0 1 0 41.5 22.5 L 25.5 22.5 L 25.5 6.5 A 1.50015 1.50015 0 0 0 23.976562 4.9785156 z"></path>
-                    </svg>
+                    <Icon name="IC-plus-circle" className="fill-white w-10 h-10" />
                   </div>
                 </button>
               </div>

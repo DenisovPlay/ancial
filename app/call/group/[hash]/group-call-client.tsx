@@ -20,6 +20,7 @@ import {
   type GroupCallParticipant,
 } from '../lib/group-call-state';
 import { useGroupCall } from './use-group-call';
+import Icon from '../../../components/svg-icon';
 
 type CommunityVoicePermissions = {
   connect_voice?: boolean;
@@ -184,46 +185,6 @@ function CallControlButton({
         </div>
       </button>
     </motion.div>
-  );
-}
-
-function MicIcon({ off }: { off: boolean }) {
-  return (
-    <svg className="h-8 w-8 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M24 2c-4.95 0-9 4.05-9 9v15c0 4.95 4.05 9 9 9s9-4.05 9-9V11c0-4.95-4.05-9-9-9M10.48 20.98A1.5 1.5 0 0 0 9 22.5V26c0 7.76 5.93 14.17 13.5 14.92v4.58a1.5 1.5 0 1 0 3 0v-4.58C33.07 40.17 39 33.76 39 26v-3.5a1.5 1.5 0 1 0-3 0V26c0 6.59-5.26 11.89-11.82 11.99h-.37C17.26 37.89 12 32.58 12 26v-3.5a1.5 1.5 0 0 0-1.52-1.52" />
-      {off ? <path d="m7.5 4.5 36 36-3 3-36-36z" /> : null}
-    </svg>
-  );
-}
-
-function CameraIcon({ off }: { off: boolean }) {
-  return (
-    <svg className="h-8 w-8 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M10.5 9A6.5 6.5 0 0 0 4 15.5v17a6.5 6.5 0 0 0 6.5 6.5h17a6.5 6.5 0 0 0 6.5-6.5v-1.35l7.73 4.64A1.5 1.5 0 0 0 44 34.5v-21a1.5 1.5 0 0 0-2.27-1.29L34 16.85V15.5A6.5 6.5 0 0 0 27.5 9z" />
-      {off ? <path d="m7.5 4.5 36 36-3 3-36-36z" /> : null}
-    </svg>
-  );
-}
-
-function ScreenIcon({ active }: { active: boolean }) {
-  return (
-    <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M7 8a4 4 0 0 0-4 4v21a4 4 0 0 0 4 4h13v4h-6a1.5 1.5 0 1 0 0 3h20a1.5 1.5 0 1 0 0-3h-6v-4h13a4 4 0 0 0 4-4V12a4 4 0 0 0-4-4zm0 3h34a1 1 0 0 1 1 1v21a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V12a1 1 0 0 1 1-1" />
-      {active ? (
-        <path d="M18 17.5A2.5 2.5 0 0 1 20.5 15h7a2.5 2.5 0 0 1 2.5 2.5v7a2.5 2.5 0 0 1-2.5 2.5h-7a2.5 2.5 0 0 1-2.5-2.5z" />
-      ) : (
-        <path d="m24 15-7 7h5v8h4v-8h5z" />
-      )}
-    </svg>
-  );
-}
-
-function SpeakerIcon({ off }: { off: boolean }) {
-  return (
-    <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M27.22 6.1c-.7 0-1.37.25-1.88.7L16.12 15H9.5A4.5 4.5 0 0 0 5 19.5v9A4.5 4.5 0 0 0 9.5 33h6.62l9.22 8.2c1.82 1.61 4.66.32 4.66-2.1V8.9a2.8 2.8 0 0 0-2.78-2.8M27 9.34v29.32l-9.32-8.28A1.5 1.5 0 0 0 16.69 30H9.5A1.5 1.5 0 0 1 8 28.5v-9A1.5 1.5 0 0 1 9.5 18h7.19c.37 0 .72-.14.99-.38zM38.76 11.98a1.5 1.5 0 0 0-1.33 2.21c3.46 6.63 3.46 12.99 0 19.62a1.5 1.5 0 1 0 2.66 1.38c3.84-7.35 3.84-15.03 0-22.38a1.5 1.5 0 0 0-1.33-.83" />
-      {off ? <path d="m7.5 4.5 36 36-3 3-36-36z" /> : null}
-    </svg>
   );
 }
 
@@ -455,9 +416,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
               onClick={handleLeave}
               className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform duration-300 active:scale-95"
             >
-              <svg className="h-8 w-8 fill-white" viewBox="0 0 48 48" aria-hidden="true">
-                <path d="M29.45 4.99a1.5 1.5 0 0 0-1.03.47l-17 17.5a1.5 1.5 0 0 0 0 2.09l17 17.5a1.5 1.5 0 1 0 2.16-2.09L14.59 24 30.58 7.54a1.5 1.5 0 0 0-1.13-2.55" />
-              </svg>
+              <Icon name="IC-chevron-left" className="h-8 w-8 fill-white" aria-hidden="true" />
             </button>
             <div className="min-w-0">
               <p className="truncate text-base font-medium text-zinc-100">{title}</p>
@@ -538,7 +497,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
             disabled={!config.canPublish}
             onClick={call.toggleMic}
           >
-            <MicIcon off={!call.micEnabled} />
+            <Icon name={!call.micEnabled ? 'IC-call-mic-off' : 'IC-call-mic'} className="h-8 w-8 fill-current" />
           </CallControlButton>
 
           <Dropdown
@@ -551,7 +510,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
                 disabled={!config.canPublish || call.screenEnabled}
                 className="relative z-10"
               >
-                <CameraIcon off={!call.camEnabled || call.screenEnabled} />
+                <Icon name={(!call.camEnabled || call.screenEnabled) ? 'IC-call-camera-off' : 'IC-call-camera'} className="h-8 w-8 fill-current" />
               </CallControlButton>
             }
             renderTrigger={false}
@@ -569,13 +528,9 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
                 onClick={() => void switchCamera(cam.deviceId)}
                 iconNode={
                   call.selectedCameraId === cam.deviceId ? (
-                    <svg className="inline w-6 h-6 fill-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 40.980469 8.9902344 A 2.0002 2.0002 0 0 0 39.585938 9.5859375 L 19 30.171875 L 8.4140625 19.585938 A 2.0002 2.0002 0 1 0 5.5859375 22.414062 L 17.585938 34.414062 A 2.0002 2.0002 0 0 0 20.414062 34.414062 L 42.414062 12.414062 A 2.0002 2.0002 0 0 0 40.980469 8.9902344 z" />
-                    </svg>
+                    <Icon name="IC-check-bold" className="inline w-6 h-6 fill-purple-400" />
                   ) : (
-                    <svg className="inline w-6 h-6 fill-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z" />
-                    </svg>
+                    <Icon name="IC-camera" className="inline w-6 h-6 fill-zinc-400" />
                   )
                 }
                 className={call.selectedCameraId === cam.deviceId ? 'text-purple-300' : ''}
@@ -587,9 +542,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
             <DropdownItem
               onClick={() => void disableCamFromDropdown()}
               iconNode={
-                <svg className="inline w-6 h-6 fill-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                  <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z" />
-                </svg>
+                <Icon name="IC-camera-off" className="inline w-6 h-6 fill-red-400" />
               }
               className="text-red-400"
             >
@@ -604,7 +557,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
             disabled={!config.canPublish}
             onClick={() => void call.toggleScreenShare()}
           >
-            <ScreenIcon active={call.screenEnabled} />
+            <Icon name={call.screenEnabled ? 'IC-call-screen-stop' : 'IC-call-screen-share'} className="h-7 w-7 fill-current" />
           </CallControlButton>
 
           <CallControlButton
@@ -612,7 +565,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
             off={call.deafened}
             onClick={call.toggleDeafen}
           >
-            <SpeakerIcon off={call.deafened} />
+            <Icon name={call.deafened ? 'IC-call-speaker-off' : 'IC-call-speaker'} className="h-7 w-7 fill-current" />
           </CallControlButton>
 
           <CallControlButton
@@ -621,15 +574,11 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
             disabled={!config.canPublish}
             onClick={() => void handleCopyInvite()}
           >
-            <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-              <use href="/icons.svg#IC-link" />
-            </svg>
+            <Icon name="IC-link" className="h-7 w-7 fill-current" aria-hidden="true" />
           </CallControlButton>
 
           <CallControlButton danger label={lang?.voice_room_leave || 'Выйти'} onClick={handleLeave}>
-            <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-              <use href="/icons.svg#IC-exit" />
-            </svg>
+            <Icon name="IC-exit" className="h-7 w-7 fill-current" aria-hidden="true" />
           </CallControlButton>
         </motion.div>
       </div>
@@ -774,9 +723,7 @@ export default function GroupCallClient() {
   if (!config) {
     return (
       <div className="fixed inset-0 z-[3000] flex min-h-dvh items-center justify-center bg-black">
-        <svg className="h-12 w-12 animate-spin fill-purple-500" viewBox="0 0 48 48" aria-label={lang?.loading || 'Загрузка'}>
-          <path d="M24 4a1.5 1.5 0 1 0 0 3c6.26 0 11.77 3.41 14.7 8.46a1.5 1.5 0 1 0 2.6-1.51A20 20 0 0 0 24 4" />
-        </svg>
+        <Icon name="IC-loader" className="h-12 w-12 animate-spin fill-purple-500" aria-label={lang?.loading || 'Загрузка'} />
       </div>
     );
   }

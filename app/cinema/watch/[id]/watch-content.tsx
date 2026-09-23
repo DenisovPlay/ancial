@@ -11,6 +11,7 @@ import CustomPlayer from '../../components/custom-player';
 import { CacheManager } from '../../../lib/cache';
 import { getCinemaCache } from '../../cinema-cache';
 import { getMovieProgress, saveWatchHistoryItem } from '../../cinema-history';
+import Icon from '../../../components/svg-icon';
 
 interface WatchContentProps {
   id: string;
@@ -286,9 +287,7 @@ export default function WatchContent({ id }: WatchContentProps) {
               tabIndex={0}
               className="focusable-tv p-2.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
             >
-              <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
+              <Icon name="IC-chevron-left-stroke" className="w-5 h-5 stroke-white fill-none stroke-[2.5]" />
             </button>
             <h1 className="text-lg lg:text-xl font-black text-white line-clamp-1">Загрузка...</h1>
           </div>

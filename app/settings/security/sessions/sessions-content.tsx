@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, type AuthSession } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache';
+import Icon from '../../../components/svg-icon';
 
 function formatDateTime(value: string, langName?: string): string {
   const ts = value?.includes('T') ? value : value?.replace(' ', 'T');
@@ -143,9 +144,7 @@ export default function SessionsContent() {
   if (isLoading && !user) {
     return (
       <div className="flex justify-center items-center w-full h-[60vh]">
-        <svg className="w-10 h-10 animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
       </div>
     );
   }
@@ -162,9 +161,7 @@ export default function SessionsContent() {
             href="/settings/security"
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="#IC-chevron-left"></use>
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {lang?.active_sessions || 'Активные сессии'}
           </Link>
         </div>
@@ -193,9 +190,7 @@ export default function SessionsContent() {
                 className="flex items-center gap-3 p-3 border-b border-zinc-600/20 last:border-b-0"
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky-500/10">
-                  <svg className="h-6 w-6 fill-sky-400" viewBox="0 0 48 48">
-                    <use href={`#${deviceIcon(session.device_type)}`}></use>
-                  </svg>
+                  <Icon name={deviceIcon(session.device_type)} className="h-6 w-6 fill-sky-400" />
                 </div>
 
                 <div className="flex min-w-0 flex-grow flex-col">

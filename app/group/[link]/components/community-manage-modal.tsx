@@ -23,6 +23,7 @@ import {
 } from '../lib/community-types';
 import { communityErrorText } from '../lib/community-error';
 import { communityAuditActionLabel, formatCommunityAuditDate } from '../lib/community-presentation';
+import Icon from '../../../components/svg-icon';
 
 type Props = {
   communityId: number;
@@ -203,7 +204,7 @@ export default function CommunityManageModal({ communityDescription, communityId
               onClick={closeManagement}
               className="flex cursor-pointer rounded-full border border-transparent p-1.5 duration-300 hover:border-zinc-600/30 hover:bg-zinc-800/50 focus-visible:outline-2 focus-visible:outline-purple-400 active:scale-95"
             >
-              <svg className="h-5 w-5 fill-zinc-300" viewBox="0 0 24 24"><use href="#IC-times" /></svg>
+              <Icon name="IC-times" className="h-5 w-5 fill-zinc-300" />
             </button>
           </div>
 

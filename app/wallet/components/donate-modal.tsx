@@ -6,6 +6,8 @@ import { AncialAPI, getApiMessage, type WalletAccount } from '../../lib/api-v2';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import AccountName from '../../components/account-name';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 export interface DonateModalProps {
   isOpen: boolean;
@@ -13,14 +15,6 @@ export interface DonateModalProps {
   recipientUsername?: string;
   recipientName?: string;
   recipientImg?: string;
-}
-
-function RubleIcon({ className = 'w-6 h-6 fill-purple-500' }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <path d="M 23.449219 5 A 1.50015 1.50015 0 0 0 22.439453 5.4394531 L 13.994141 13.886719 A 1.50015 1.50015 0 0 0 13.886719 13.992188 L 5.4394531 22.439453 A 1.50015 1.50015 0 0 0 5.0039062 23.599609 L 6.0039062 38.599609 A 1.50015 1.50015 0 0 0 7.3671875 39.994141 L 41.367188 42.994141 A 1.50015 1.50015 0 0 0 42.994141 41.367188 L 39.994141 7.3671875 A 1.50015 1.50015 0 0 0 38.599609 6.0039062 L 23.599609 5.0039062 A 1.50015 1.50015 0 0 0 23.449219 5 z M 26.046875 8.171875 L 35.103516 8.7753906 L 29.328125 14.550781 L 26.046875 8.171875 z M 23.107422 9.0136719 L 26.376953 15.371094 L 18.123047 13.998047 L 23.107422 9.0136719 z M 37.289062 10.832031 L 39.332031 34.007812 L 30.767578 17.353516 L 37.289062 10.832031 z M 16.824219 16.824219 L 25.595703 18.283203 L 18.283203 25.595703 L 16.824219 16.824219 z M 13.998047 18.123047 L 15.371094 26.376953 L 9.0136719 23.107422 L 13.998047 18.123047 z M 28.541016 19.580078 L 38.027344 38.027344 L 19.580078 28.541016 L 28.541016 19.580078 z M 8.171875 26.046875 L 14.550781 29.328125 L 8.7773438 35.101562 L 8.171875 26.046875 z M 17.353516 30.767578 L 34.007812 39.333984 L 10.832031 37.289062 L 17.353516 30.767578 z"></path>
-    </svg>
-  );
 }
 
 export function DonateModal({
@@ -201,7 +195,10 @@ export function DonateModal({
                 {/* Recipient info card */}
                 {(recipientUser || recipientUsername) && (
                   <div className="flex items-center gap-3 w-full">
-                    <img
+                    <AppImage
+                      width={56}
+                      height={56}
+                      fallbackSrc="/img/placeholders/user.png"
                       src={recipientUser?.img || recipientImg || '/img/placeholders/user.png'}
                       className="w-14 h-14 rounded-full object-cover border border-zinc-700"
                       alt="Avatar"
@@ -245,7 +242,7 @@ export function DonateModal({
                         >
                           <span className="flex items-center gap-1.5 text-3xl font-bold">
                             {preset.value}
-                            <RubleIcon className="w-7 h-7 fill-purple-500" />
+                            <Icon name="IC-anci" className="w-7 h-7 fill-purple-500" />
                           </span>
                           <span className="text-sm font-medium">{preset.value} ₽</span>
                         </div>
@@ -280,7 +277,7 @@ export function DonateModal({
                       autoComplete="off"
                       className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-3 placeholder-zinc-500 text-white text-base"
                     />
-                    <RubleIcon className="w-6 h-6 fill-purple-500 mr-3 shrink-0" />
+                    <Icon name="IC-anci" className="w-6 h-6 fill-purple-500 mr-3 shrink-0" />
                   </form>
                 </div>
 
@@ -306,7 +303,7 @@ export function DonateModal({
               <div className="rounded-3xl border border-zinc-600/30 bg-zinc-800 flex items-center justify-center p-3">
                 <span className="flex items-center gap-1.5 text-4xl font-bold">
                   {amount}
-                  <RubleIcon className="w-8 h-8 fill-purple-500" />
+                  <Icon name="IC-anci" className="w-8 h-8 fill-purple-500" />
                 </span>
               </div>
             </div>
@@ -341,7 +338,7 @@ export function DonateModal({
                         </span>
                         <span className="text-2xl font-extrabold flex items-center gap-1 mt-0.5">
                           {acc.balance}
-                          <RubleIcon className="w-6 h-6 inline fill-purple-500 shrink-0" />
+                          <Icon name="IC-anci" className="w-6 h-6 inline fill-purple-500 shrink-0" />
                         </span>
                       </div>
                     </div>
@@ -382,9 +379,7 @@ export function DonateModal({
         {step === 'success' && (
           <div className="flex flex-col items-center justify-center gap-3 py-4 text-center w-full">
             <div className="w-16 h-16 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center border border-green-500/40">
-              <svg className="w-10 h-10 fill-current" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
+              <Icon name="IC-check-sm" className="w-10 h-10 fill-current" />
             </div>
             <span className="text-xl font-bold text-green-400">{lang?.donation_sent || 'Пожертвование отправлено!'}</span>
             <span className="text-zinc-300 text-sm">

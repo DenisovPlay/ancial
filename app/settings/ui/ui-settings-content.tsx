@@ -16,6 +16,7 @@ import {
   readGlassMode,
   type GlassMode,
 } from '../../lib/android-glass';
+import Icon from '../../components/svg-icon';
 
 function subscribeGlassMode(onStoreChange: () => void) {
   const handleStorage = (event: StorageEvent) => {
@@ -134,9 +135,7 @@ export default function UiSettingsContent() {
             href="/settings"
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="#IC-chevron-left"></use>
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {lang?.interface_settings || 'Интерфейс'}
           </Link>
         </div>
@@ -149,9 +148,7 @@ export default function UiSettingsContent() {
             <div className="flex flex-col gap-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <div className="w-10 h-10 rounded-full bg-cyan-500/10 flex items-center justify-center shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 fill-cyan-400" viewBox="0 0 48 48">
-                    <use href="#IC-full-mode"></use>
-                  </svg>
+                  <Icon name="IC-full-mode" className="w-5 h-5 fill-cyan-400" />
                 </div>
                 <span className="text-lg text-white">
                   {lang?.glass_effects || 'Эффекты стекла'}
@@ -220,9 +217,7 @@ export default function UiSettingsContent() {
             title={lang?.language || 'Язык'}
             iconBgClass="bg-red-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-red-500" viewBox="0 0 48 48">
-                <use href="#IC-globe"></use>
-              </svg>
+              <Icon name="IC-globe" className="w-6 h-6 fill-red-500" />
             }
             rightContent={
               <select

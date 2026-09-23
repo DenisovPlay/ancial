@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Modal from './modal';
-import { SvgIcon } from '../feed/editor-shared';
+import Icon from './svg-icon';
 
 type TableCell = {
   text: string;
@@ -156,7 +156,7 @@ export default function PostBlockTableModal({
               onClick={addRow}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/30 rounded-2xl duration-300 active:scale-95 cursor-pointer"
             >
-              <SvgIcon className="w-4 h-4 fill-current" id="IC-plus" />
+              <Icon name="IC-plus" className="w-4 h-4 fill-current" />
               <span>{strings?.add_row || '+ Строка'}</span>
             </button>
             <button
@@ -164,7 +164,7 @@ export default function PostBlockTableModal({
               onClick={addColumn}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/30 rounded-2xl duration-300 active:scale-95 cursor-pointer"
             >
-              <SvgIcon className="w-4 h-4 fill-current" id="IC-plus" />
+              <Icon name="IC-plus" className="w-4 h-4 fill-current" />
               <span>{strings?.add_column || '+ Столбец'}</span>
             </button>
           </div>
@@ -190,7 +190,7 @@ export default function PostBlockTableModal({
                           className="p-1 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-zinc-800 duration-200 cursor-pointer"
                           title="Удалить столбец"
                         >
-                          <SvgIcon className="w-3.5 h-3.5 fill-current" id="IC-trash" />
+                          <Icon name="IC-trash" className="w-3.5 h-3.5 fill-current" />
                         </button>
                       )}
                     </div>
@@ -221,7 +221,7 @@ export default function PostBlockTableModal({
                           className="p-1 text-zinc-500 hover:text-red-400 rounded-lg duration-200 cursor-pointer opacity-0 group-hover:opacity-100"
                           title="Удалить строку"
                         >
-                          <SvgIcon className="w-3.5 h-3.5 fill-current" id="IC-trash" />
+                          <Icon name="IC-trash" className="w-3.5 h-3.5 fill-current" />
                         </button>
                       )}
                     </div>

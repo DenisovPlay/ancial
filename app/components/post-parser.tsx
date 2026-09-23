@@ -134,17 +134,17 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
         const countBadgeClass = isPreview ? "carousel-count-badge is-preview" : "carousel-count-badge";
 
         const countBadge = count > 1
-            ? `<div class="${countBadgeClass}"><svg class="w-3.5 h-3.5 fill-current inline-block align-middle" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/></svg> ${count}</div>`
+            ? `<div class="${countBadgeClass}"><svg class="w-3.5 h-3.5 fill-current inline-block align-middle"><use href="#IC-photo-material"></use></svg> ${count}</div>`
             : '';
         const slides = items.map((url: string, i: number) =>
             `<div class="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] cursor-pointer duration-300 select-none"><img src="${url}" alt="Слайд ${i + 1}" class="h-64 md:h-96 w-full rounded-3xl object-contain bg-zinc-950/80 shadow border border-zinc-800/40 pointer-events-auto" loading="lazy" draggable="false" /></div>`
         ).join('');
 
         const leftArrow = count > 1
-            ? `<button type="button" data-carousel-scroll="-1" aria-label="Назад" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>`
+            ? `<button type="button" data-carousel-scroll="-1" aria-label="Назад" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-left-bold"></use></svg></button>`
             : '';
         const rightArrow = count > 1
-            ? `<button type="button" data-carousel-scroll="1" aria-label="Вперёд" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>`
+            ? `<button type="button" data-carousel-scroll="1" aria-label="Вперёд" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-right-bold"></use></svg></button>`
             : '';
 
         const overlay = isPreview

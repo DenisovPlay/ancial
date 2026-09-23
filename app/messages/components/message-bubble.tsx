@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -43,6 +42,7 @@ import PostPreview from './post-preview';
 import TrackPreview from './track-preview';
 import MessageAttachments from './message-attachments';
 import ChatImage from './chat-image';
+import AppImage from '../../components/app-image';
 
 function SevenTvStickerMessage({
   stickerId,
@@ -129,7 +129,7 @@ function MentionSafeHtml({ html }: { html: string }) {
     <span
       ref={ref}
       className="whitespace-pre-wrap break-words"
-      dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(html) }}
+      dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(html, { preloadImages: true }) }}
     />
   );
 }
@@ -474,7 +474,10 @@ export default function MessageBubble({
         >
           <div className={cn("relative flex w-full gap-2 items-end", isOwn ? "justify-end" : "justify-start")}>
             {!isOwn && senderAvatarUrl ? (
-              <img
+              <AppImage
+                width={28}
+                height={28}
+                fallbackSrc={FALLBACK_AVATAR}
                 src={normalizeAssetUrl(senderAvatarUrl, FALLBACK_AVATAR)}
                 alt={senderName || ''}
                 className={cn("w-7 h-7 rounded-full object-cover shrink-0 mb-1 border border-zinc-600/30 shadow", hideAvatar && "invisible")}
@@ -495,7 +498,9 @@ export default function MessageBubble({
                   <div className="-mt-11.5 flex items-center gap-2 rounded-3xl border border-zinc-700/40 bg-zinc-900/70 px-2 py-1 text-[10px] text-zinc-200 shadow backdrop-blur-sm duration-300 w-full">
                     <span className="flex items-center -space-x-2">
                       {readReceiptReaders.slice(0, 4).map((reader, index) => (
-                        <img
+                        <AppImage
+                          width={28}
+                          height={28}
                           key={reader.id}
                           src={reader.img}
                           alt=""
@@ -558,7 +563,7 @@ export default function MessageBubble({
 
                 {!message.isSending && canTranslateMessage && typeof translator === 'function' ? (
                   <DropdownItem
-                    icon="IC-translate"
+                    icon="IC-globe"
                     className="h-8"
                     onClick={() => {
                       translator(`msg-body-${messageId}`);
@@ -776,7 +781,9 @@ export default function MessageBubble({
                                     ownReaction && canAddReactions && 'cursor-pointer duration-300 hover:scale-110 hover:bg-zinc-600',
                                   )}
                                 >
-                                  <img
+                                  <AppImage
+                                    width={20}
+                                    height={20}
                                     src={avatar}
                                     alt=""
                                     className="h-5 w-5 rounded-full object-cover shadow"

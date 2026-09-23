@@ -1,4 +1,5 @@
 import React, { InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
+import Icon from './svg-icon';
 
 // --- INPUT ---
 export const Input = React.forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>((props, ref) => {
@@ -86,9 +87,7 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
         {props.children}
       </select>
       <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-        <svg className="w-5 h-5 fill-zinc-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d="M7 10l5 5 5-5H7z" />
-        </svg>
+        <Icon name="IC-caret-down" className="w-5 h-5 fill-zinc-500" />
       </div>
     </div>
   );

@@ -25,6 +25,8 @@ import { TransactionItem, TransactionDetailsModal } from './components/transacti
 import { SendMoneyModal } from './components/send-money-modal';
 import { ProductsAccountsModal } from './components/products-accounts-modal';
 import { WithdrawModal } from './components/withdraw-modal';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 
 const animationStyles = `
@@ -510,7 +512,7 @@ export default function WalletContent() {
       return;
     }
     if (amountVal > 15000) {
-      setTopupError(`${lang?.max_topup_amount || 'Максимальная сумма пополнения за один раз — 15 000 '}<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>`);
+      setTopupError(`${lang?.max_topup_amount || 'Максимальная сумма пополнения за один раз — 15 000 '}<Icon name="IC-anci" className="w-4 h-4 inline fill-purple-500 -mt-1.5" />`);
       return;
     }
 
@@ -799,13 +801,13 @@ export default function WalletContent() {
             <div className="flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300 hidden lg:flex">
               {/* QUICK_ACTIONS Desktop */}
               <button onClick={() => setIsSendMoneyModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
-                <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-send"></use></svg> {strings.send}
+                <Icon name="IC-send" className="fill-white w-5 h-5 inline" /> {strings.send}
               </button>
               <button onClick={() => setIsUserProfModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
-                <svg className="fill-white w-5 h-5 inline rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-send"></use></svg> {strings.receive}
+                <Icon name="IC-send" className="fill-white w-5 h-5 inline rotate-180" /> {strings.receive}
               </button>
               <button onClick={() => setIsCreateTopupModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
-                <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-topup"></use></svg> {strings.deposit}
+                <Icon name="IC-topup" className="fill-white w-5 h-5 inline" /> {strings.deposit}
               </button>
             </div>
           </div>
@@ -816,10 +818,10 @@ export default function WalletContent() {
               {/* Mobile quick actions (hidden on lg) */}
               <div className="flex flex-col gap-3 h-24 lg:hidden sticky left-0 z-[5]">
                 <button onClick={() => handleTopage('/wallet/qr')} className="lg:hidden cursor-pointer border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 shrink-0 flex items-center justify-center text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white hover:shadow active:scale-95 duration-300 rounded-3xl" style={{ width: 42, height: 42 }}>
-                  <svg className="fill-white w-7 h-7 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-qr-scanner"></use></svg>
+                  <Icon name="IC-qr-scanner" className="fill-white w-7 h-7 inline" />
                 </button>
                 <button onClick={() => { }} className="lg:hidden cursor-pointer border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 shrink-0 flex items-center justify-center text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white hover:shadow active:scale-95 duration-300 rounded-3xl" style={{ width: 42, height: 42 }} aria-label="Blockchain explorer">
-                  <svg className="fill-white w-7 h-7 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-poll"></use></svg>
+                  <Icon name="IC-poll" className="fill-white w-7 h-7 inline" />
                 </button>
               </div>
 
@@ -828,7 +830,7 @@ export default function WalletContent() {
                 <div key={acc.id} onClick={() => handleTopage(`/wallet/account/${acc.id}`)} className="shrink-0 p-3 flex flex-col border border-zinc-600/30 hover:bg-zinc-700 bg-zinc-800/70 rounded-3xl shadow-lg hover:scale-105 active:scale-95 duration-300 cursor-pointer w-48 lg:w-64 h-24 lg:h-32">
                   <span className="lg:font-black text-white text-xl lg:text-3xl">
                     {acc.balance}{' '}
-                    <svg className="w-6 h-6 lg:w-8 lg:h-8 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg>
+                    <Icon name="IC-anci" className="w-6 h-6 lg:w-8 lg:h-8 inline fill-purple-500 -mt-1.5" />
                   </span>
                   <span className="text-zinc-200 text-sm lg:text-lg">{acc.name}</span>
                   <div className="flex-grow"></div>
@@ -850,13 +852,13 @@ export default function WalletContent() {
           {/* QUICK_ACTIONS Mobile */}
           <div className="sticky pt-3 flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 w-full max-w-screen-2xl duration-300 lg:hidden shrink-0 z-[99]" style={{ top: '48px' }}>
             <button onClick={() => setIsSendMoneyModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
-              <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-send"></use></svg> {strings.send}
+              <Icon name="IC-send" className="fill-white w-5 h-5 inline" /> {strings.send}
             </button>
             <button onClick={() => setIsUserProfModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
-              <svg className="fill-white w-5 h-5 inline rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-send"></use></svg> {strings.receive}
+              <Icon name="IC-send" className="fill-white w-5 h-5 inline rotate-180" /> {strings.receive}
             </button>
             <button onClick={() => setIsCreateTopupModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
-              <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-topup"></use></svg> {strings.deposit}
+              <Icon name="IC-topup" className="fill-white w-5 h-5 inline" /> {strings.deposit}
             </button>
           </div>
 
@@ -866,7 +868,7 @@ export default function WalletContent() {
               <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">{strings.payments}</span>
               <div className="hidden lg:flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300">
                 <button className="shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 border border-zinc-600/30 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
-                  <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 18.484375 2.984375 A 1.50015 1.50015 0 0 0 17.439453 5.5605469 L 35.878906 24 L 17.439453 42.439453 A 1.50015 1.50015 0 1 0 19.560547 44.560547 L 39.060547 25.060547 A 1.50015 1.50015 0 0 0 39.060547 22.939453 L 19.560547 3.4394531 A 1.50015 1.50015 0 0 0 18.484375 2.984375 z"></path></svg> {strings.all}
+                  <Icon name="IC-chevron-right" className="fill-white w-5 h-5 inline" /> {strings.all}
                 </button>
               </div>
             </div>
@@ -882,7 +884,7 @@ export default function WalletContent() {
                 return (
                   <div key={gateway.id} onClick={() => handleGatewayClick(gateway)} className="border border-zinc-600/30 relative group shrink-0 p-1.5 flex items-center gap-1.5 justify-center bg-zinc-800/70 rounded-3xl shadow-lg hover:scale-105 active:scale-95 duration-300 cursor-pointer w-48">
                     <div className={`shadow-2xl group-hover:shadow-2xl h-14 w-14 lg:h-16 lg:w-16 p-1.5 rounded-3xl shrink-0 duration-300 flex items-center justify-center bg-${gtcolor}-500/25 group-hover:shadow-${gtcolor}-500/25`}>
-                      <img alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
+                      <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
                     </div>
                     <div className="flex flex-col justify-center flex-grow">
                       <span className="text-sm lg:text-base text-zinc-100">{gateway.name}</span>
@@ -901,7 +903,7 @@ export default function WalletContent() {
                 <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">{lang?.topups || 'Пополнения'}</span>
                 <div className="hidden lg:flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300">
                   <button className="shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 border border-zinc-600/30 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
-                    <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 18.484375 2.984375 A 1.50015 1.50015 0 0 0 17.439453 5.5605469 L 35.878906 24 L 17.439453 42.439453 A 1.50015 1.50015 0 1 0 19.560547 44.560547 L 39.060547 25.060547 A 1.50015 1.50015 0 0 0 39.060547 22.939453 L 19.560547 3.4394531 A 1.50015 1.50015 0 0 0 18.484375 2.984375 z"></path></svg> {strings.all}
+                    <Icon name="IC-chevron-right" className="fill-white w-5 h-5 inline" /> {strings.all}
                   </button>
                 </div>
               </div>
@@ -916,9 +918,7 @@ export default function WalletContent() {
                     <div key={order.id} className="hover:bg-zinc-700/50 relative group shrink-0 flex items-center gap-3 justify-between active:rounded-3xl active:scale-95 duration-300 w-full">
                       <Link href={buildPayUrl(order.order_hash)} className="pl-3 py-3 flex items-center gap-3 flex-grow min-w-0 cursor-pointer">
                         <div className={`border border-zinc-600/30 shadow-2xl h-10 w-10 lg:h-12 lg:w-12 p-1.5 ${statuscolor[1]} rounded-3xl shrink-0 duration-300 flex items-center justify-center`}>
-                          <svg className={`h-6 w-6 lg:w-8 lg:h-8 inline ${statuscolor[0]}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                            <path d="M 24 4 C 18.494917 4 14 8.494921 14 14 C 14 19.505079 18.494917 24 24 24 C 29.505083 24 34 19.505079 34 14 C 34 8.494921 29.505083 4 24 4 z M 24 7 C 27.883764 7 31 10.116238 31 14 C 31 17.883762 27.883764 21 24 21 C 20.116236 21 17 17.883762 17 14 C 17 10.116238 20.116236 7 24 7 z M 22.75 10 C 22.273,10,21.862531,10.336688,21.769531,10.804688 L21.269531,13.304688 C21.210531,13.598688,21.286562,13.903766,21.476562,14.134766 C21.666562,14.366766,21.95,14.5,22.25,14.5 L24.25,14.5 C24.664,14.5,25,14.836,25,15.25 C25,15.765,24.481,16,24,16 C23.115,16,22.583922,15.685156,22.544922,15.660156 C22.085922,15.363156,21.472969,15.489313,21.167969,15.945312 C20.861969,16.405313,20.986313,17.026031,21.445312,17.332031 C21.548313,17.400031,22.491,18,24,18 C25.71,18,27,16.818,27,15.25 C27,13.733,25.767,12.5,24.25,12.5 L23.470703,12.5 L23.570312,12 L25.5,12 C26.052,12,26.5,11.552,26.5,11 C26.5,10.448,26.052,10,25.5,10 z M 2.5,13 A 1.50015 1.50015 0 1 0 2.5,16 L5.5,16 C5.7950452,16,6,16.204955,6,16.5 L6,38.5 C6,41.519774,8.4802259,44,11.5,44 L36.5,44 C39.519774,44,42,41.519774,42,38.5 L42,16.5 C42,16.204955,42.204955,16,42.5,16 L45,16 A 1.50015 1.50015 0 1 0 45,13 L42.5,13 C40.585045,13,39,14.585045,39,16.5 L39,38.5 C39,39.898226,37.898226,41,36.5,41 L11.5,41 C10.101774,41,9,39.898226,9,38.5 L9,16.5 C9,14.585045,7.4149548,13,5.5,13 L2.5,13 z M 18.402344,27.980469 A 1.50015 1.50015 0 0 0 17.394531,30.513672 L22.894531,36.513672 A 1.50015 1.50015 0 0 0 25.105469,36.513672 L30.605469,30.513672 A 1.50015 1.50015 0 0 0 29.554688,27.984375 A 1.50015 1.50015 0 0 0 28.394531,28.486328 L24,32.986328 L20.402344,28.486328 A 1.50015 1.50015 0 0 0 18.402344,27.980469 z"></path>
-                          </svg>
+                          <Icon name="IC-topup" className={`h-6 w-6 lg:w-8 lg:h-8 inline ${statuscolor[0]}`} />
                         </div>
                         <div className="flex flex-col justify-center min-w-0">
                           <span className="text-sm lg:text-base text-zinc-100 truncate">[#{order.id}] {lang?.topup_of_account || 'Пополнение счёта №'}{order.label}</span>
@@ -928,7 +928,7 @@ export default function WalletContent() {
                         </div>
                       </Link>
                       <Link href={buildPayUrl(order.order_hash)} className="flex flex-col items-end shrink-0 py-3 pr-3 cursor-pointer">
-                        <span className="font-semibold text-zinc-300">{order.amount}<svg className="w-4 h-4 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-anci"></use></svg></span>
+                        <span className="font-semibold text-zinc-300">{order.amount}<Icon name="IC-anci" className="w-4 h-4 inline fill-purple-500 -mt-1.5" /></span>
                         <span className="text-zinc-400 text-xs lg:text-sm max-w-20 md:max-w-64 text-right">{order.created_at}</span>
                       </Link>
                     </div>
@@ -944,7 +944,7 @@ export default function WalletContent() {
               <span className="text-2xl lg:text-3xl font-bold text-white flex-grow shrink-0 px-3 lg:px-0 duration-300">{strings.history}</span>
               <div className="flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300">
                 <button onClick={() => handleTopage('/wallet/history')} className="shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 border border-zinc-600/30 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
-                  <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 18.484375 2.984375 A 1.50015 1.50015 0 0 0 17.439453 5.5605469 L 35.878906 24 L 17.439453 42.439453 A 1.50015 1.50015 0 1 0 19.560547 44.560547 L 39.060547 25.060547 A 1.50015 1.50015 0 0 0 39.060547 22.939453 L 19.560547 3.4394531 A 1.50015 1.50015 0 0 0 18.484375 2.984375 z"></path></svg> <span>{lang?.all || 'Все'}</span>
+                  <Icon name="IC-chevron-right" className="fill-white w-5 h-5 inline" /> <span>{lang?.all || 'Все'}</span>
                 </button>
               </div>
             </div>
@@ -1103,7 +1103,7 @@ export default function WalletContent() {
               {receiveLoading ? (
                 <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-zinc-400 border-t-transparent" />
               ) : receiveQrUrl ? (
-                <img src={receiveQrUrl} alt="Wallet QR" className="w-24 h-24" />
+                <AppImage width={96} height={96} src={receiveQrUrl} alt="Wallet QR" className="w-24 h-24" />
               ) : (
                 <span className="text-xs text-zinc-500 text-center px-2">{lang?.qr_unavailable || 'QR недоступен'}</span>
               )}

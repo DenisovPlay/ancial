@@ -6,7 +6,8 @@ import { uploadImage } from '../../../lib/upload';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ActionIcon } from '../../pulse-components';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 export default function EditArtistContent() {
   const { lang, isAuthenticated } = useAuth();
@@ -132,7 +133,7 @@ export default function EditArtistContent() {
 
       {loading ? (
         <div className="flex w-full items-center justify-center p-6">
-          <ActionIcon className="h-8 w-8 animate-spin fill-zinc-500" name="IC-loader" />
+          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
         </div>
       ) : (
         <form onSubmit={saveArtist} className="flex flex-col gap-3 w-full">
@@ -144,7 +145,7 @@ export default function EditArtistContent() {
             >
               {img ? (
                 <>
-                  <img className="w-full h-full object-cover" src={img} alt="Preview" />
+                  <AppImage width={176} height={176} className="w-full h-full object-cover" src={img} alt="Preview" />
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300 backdrop-blur-xs">
                     <span className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-600/30">
                       {lang?.creators_replace_photo || 'Заменить фото'}
@@ -154,7 +155,7 @@ export default function EditArtistContent() {
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 text-center p-3">
                   <div className="p-3 rounded-full bg-zinc-700/60 text-zinc-300">
-                    <ActionIcon className="w-8 h-8 fill-current" name="IC-user" />
+                    <Icon name="IC-user" className="inline w-8 h-8 fill-current" />
                   </div>
                   <span className="text-xs font-semibold text-zinc-300">{lang?.creators_artist_photo || 'Фото артиста'}</span>
                 </div>
@@ -213,7 +214,7 @@ export default function EditArtistContent() {
           >
             {saving ? (
               <>
-                <ActionIcon className="h-5 w-5 animate-spin fill-black" name="IC-loader" />
+                <Icon name="IC-loader" className="inline h-5 w-5 animate-spin fill-black" />
                 <span>{lang?.creators_saving || 'Сохранение...'}</span>
               </>
             ) : (

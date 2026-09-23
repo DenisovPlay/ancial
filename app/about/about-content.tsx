@@ -3,10 +3,11 @@
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import AppImage from '../components/app-image';
 import { useDragScroll } from '../hooks/useDragScroll';
 import { useScrollPingPong } from '../hooks/useScrollPingPong';
 import { APP_VERSION } from '../lib/app-version';
+import Icon from '../components/svg-icon';
 
 export default function Home() {
     const { lang } = useAuth() as {
@@ -23,12 +24,12 @@ export default function Home() {
     return (
         <div className="flex flex-col jusitify-center items-center gap-3 py-3">
             <div className="w-full max-w-3xl flex items-center">
-                <Link href="/settings" className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chevron-left`}></use></svg>{`${lang?.about || 'О'} Zypo`}</Link>
+                <Link href="/settings" className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"><Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />{`${lang?.about || 'О'} Zypo`}</Link>
             </div>
 
             <div className="px-3 lg:px-0 w-full max-w-3xl hidden">
                 <div className="border border-zinc-600/30 p-3 bg-blue-500/25 text-blue-500 shadow rounded-3xl flex items-center w-full gap-3">
-                    <svg className="w-8 h-8 fill-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-warning`}></use></svg>
+                    <Icon name="IC-warning" className="w-8 h-8 fill-blue-500" />
                     <span className="text-sm lg:text-base w-full">Документы переехали - теперь они находятся на отдельной странице!</span>
                 </div>
             </div>
@@ -51,28 +52,28 @@ export default function Home() {
                 <span className="w-full max-w-3xl text-lg text-zinc-300 px-3 lg:px-0">Zypo by ZeniFlow - это уникальный проект, объединяющий в себе множество полезных сервисов.</span>
                 <div className="flex items-center gap-3 w-full flex-nowrap overflow-x-auto drag-scroll viewport py-3 px-3 lg:px-0" ref={iconsScrollRef}>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-indigo-500 flex items-center justify-center shrink-0">
-                        <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-feed`}></use></svg>
+                        <Icon name="IC-feed" className="w-8 h-8 fill-white" />
                     </div>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-purple-500 flex items-center justify-center shrink-0">
-                        <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-search`}></use></svg>
+                        <Icon name="IC-search" className="inline w-8 h-8 fill-white" />
                     </div>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-blue-500 flex items-center justify-center shrink-0">
-                        <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-chats`}></use></svg>
+                        <Icon name="IC-chats" className="w-8 h-8 fill-white" />
                     </div>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-amber-500 flex items-center justify-center shrink-0">
-                        <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-play`}></use></svg>
+                        <Icon name="IC-play" className="inline w-8 h-8 fill-white" />
                     </div>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-pink-500 flex items-center justify-center shrink-0">
-                        <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-music`}></use></svg>
+                        <Icon name="IC-music" className="inline w-8 h-8 fill-white" />
                     </div>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-emerald-500 flex items-center justify-center shrink-0">
-                        <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-wallet`}></use></svg>
+                        <Icon name="IC-wallet" className="inline w-8 h-8 fill-white" />
                     </div>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-cyan-500 flex items-center justify-center shrink-0">
-                        <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-call`}></use></svg>
+                        <Icon name="IC-call" className="inline w-8 h-8 fill-white" />
                     </div>
                     <div className="w-14 h-14 rounded-2xl shadow bg-gradient-to-br from-black to-green-500 flex items-center justify-center shrink-0">
-                        <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-games`}></use></svg>
+                        <Icon name="IC-games" className="inline w-8 h-8 fill-white" />
                     </div>
                     <div className="h-14 rounded-2xl flex items-center justify-center shrink-0">
                         <span className="text-lg text-zinc-300">И другие...</span>
@@ -89,7 +90,7 @@ export default function Home() {
                 <span className="w-full max-w-3xl text-lg text-zinc-300">GG-Connect v3.3 (V2-API implementation)</span>
                 <span className="text-xl font-bold text-zinc-100 mt-1.5">Стороннее ПО</span>
                 <div className="border border-zinc-600/30 p-3 bg-amber-500/25 text-amber-500 shadow rounded-3xl flex items-center w-full gap-3">
-                    <svg className="w-8 h-8 fill-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href={`#IC-warning`}></use></svg>
+                    <Icon name="IC-warning" className="w-8 h-8 fill-amber-500" />
                     <span className="text-sm lg:text-base w-full">Используя Zypo, вы автоматически соглашаетесь с правилами и политиками сторонних сервисов, интегрированных в Zypo.</span>
                 </div>
                 <span className="w-full max-w-3xl text-lg text-zinc-300"><b className="text-green-400">Icons8</b> - некоторые старые иконки на сайте</span>
@@ -106,13 +107,13 @@ export default function Home() {
 
                 {/* Контент с анимацией */}
                 <div ref={contentRef} className="flex items-center gap-6 whitespace-nowrap px-3 lg:px-0">
-                    <Image src="/img/branding/next.svg" alt="Next" width={256} height={64} className="invert flex-shrink-0" />
-                    <Image src="/img/branding/php.svg" alt="PHP" width={150} height={64} className="invert flex-shrink-0" />
-                    <Image src="/img/branding/vercel.svg" alt="Vercel" width={64} height={64} className="flex-shrink-0" />
-                    <Image src="/img/branding/tailwindcss.svg" alt="Tailwind CSS" width={64} height={64} className="flex-shrink-0" />
-                    <Image src="/img/branding/vk-cloud.svg" alt="VK Cloud" width={256} height={64} className="flex-shrink-0" />
-                    <Image src="/img/branding/cloud-ru.svg" alt="Cloud.ru" width={264} height={64} className="flex-shrink-0" />
-                    <Image src="/img/branding/mysql.svg" alt="MySQL" width={150} height={64} className="-mt-8 flex-shrink-0" />
+                    <AppImage src="/img/branding/next.svg" alt="Next" width={256} height={64} className="invert flex-shrink-0" />
+                    <AppImage src="/img/branding/php.svg" alt="PHP" width={150} height={64} className="invert flex-shrink-0" />
+                    <AppImage src="/img/branding/vercel.svg" alt="Vercel" width={64} height={64} className="flex-shrink-0" />
+                    <AppImage src="/img/branding/tailwindcss.svg" alt="Tailwind CSS" width={64} height={64} className="flex-shrink-0" />
+                    <AppImage src="/img/branding/vk-cloud.svg" alt="VK Cloud" width={256} height={64} className="flex-shrink-0" />
+                    <AppImage src="/img/branding/cloud-ru.svg" alt="Cloud.ru" width={264} height={64} className="flex-shrink-0" />
+                    <AppImage src="/img/branding/mysql.svg" alt="MySQL" width={150} height={64} className="-mt-8 flex-shrink-0" />
                 </div>
             </div>
 

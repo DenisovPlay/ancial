@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Modal from './modal';
-import { SvgIcon } from '../feed/editor-shared';
 import { useAuth } from '../context/AuthContext';
+import Icon from './svg-icon';
 
 export type PollWidgetDraft = {
   type: 'poll';
@@ -88,7 +88,7 @@ export default function PostWidgetPollModal({ isOpen, onClose, onAdd }: PostWidg
                   className="w-10 h-10 flex shrink-0 items-center justify-center rounded-3xl bg-zinc-800 hover:bg-zinc-700 transition-colors border border-zinc-600/30 cursor-pointer active:scale-95 duration-300"
                   aria-label={lang?.remove_option || "Удалить вариант"}
                 >
-                  <SvgIcon className="w-5 h-5 fill-zinc-400" id="IC-times" />
+                  <Icon name="IC-times" className="w-5 h-5 fill-zinc-400" />
                 </button>
               )}
             </div>

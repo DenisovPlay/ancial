@@ -5,6 +5,7 @@ import Modal from '../../components/modal';
 import type { PulseTrack } from '../../context/PulsePlayerContext';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { getPlayerTrackArtwork, cn } from './player-utils';
+import Icon from '../../components/svg-icon';
 
 type PulseQueueModalProps = {
   isOpen: boolean;
@@ -53,9 +54,7 @@ export function PulseQueueModal({
         {/* Empty state */}
         {playlist.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-zinc-400">
-            <svg className="h-12 w-12 fill-zinc-600 mb-2" viewBox="0 0 48 48">
-              <use href="#IC-list-ul" />
-            </svg>
+            <Icon name="IC-list-ul" className="h-12 w-12 fill-zinc-600 mb-2" />
             <p className="text-sm font-medium">{lang?.pulse_queue_empty || 'Очередь воспроизведения пуста'}</p>
           </div>
         ) : null}
@@ -124,9 +123,7 @@ export function PulseQueueModal({
                         : 'text-zinc-300 hover:bg-zinc-700/60 hover:text-white cursor-pointer',
                     )}
                   >
-                    <svg className="h-5 w-5 fill-current rotate-180" viewBox="0 0 48 48">
-                      <use href="#IC-chevron-down" />
-                    </svg>
+                    <Icon name="IC-chevron-down" className="h-5 w-5 fill-current rotate-180" />
                   </button>
 
                   {/* Move Down */}
@@ -145,9 +142,7 @@ export function PulseQueueModal({
                         : 'text-zinc-300 hover:bg-zinc-700/60 hover:text-white cursor-pointer',
                     )}
                   >
-                    <svg className="h-5 w-5 fill-current" viewBox="0 0 48 48">
-                      <use href="#IC-chevron-down" />
-                    </svg>
+                    <Icon name="IC-chevron-down" className="h-5 w-5 fill-current" />
                   </button>
 
                   {/* Remove from queue */}
@@ -160,9 +155,7 @@ export function PulseQueueModal({
                     title={lang?.pulse_queue_remove || 'Удалить из очереди'}
                     className="flex h-8 w-8 items-center justify-center rounded-3xl text-zinc-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all duration-200 cursor-pointer active:scale-95"
                   >
-                    <svg className="h-5 w-5 fill-current" viewBox="0 0 48 48">
-                      <use href="#IC-trash" />
-                    </svg>
+                    <Icon name="IC-trash" className="h-5 w-5 fill-current" />
                   </button>
                 </div>
               </div>

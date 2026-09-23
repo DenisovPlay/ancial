@@ -3,6 +3,8 @@
 import Modal from '../../components/modal';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import type { WalletAccount, WalletGateway, WalletGatewayForm } from '../../lib/api-v2';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -62,7 +64,7 @@ export function WithdrawModal({
           {selectedGateway && (
             <div className="flex items-center gap-3">
               <div className="h-14 w-14 p-1 bg-zinc-800 rounded-2xl border border-zinc-600/30 flex items-center justify-center shrink-0">
-                <img alt={selectedGateway.name} src={selectedGateway.image} className="h-full w-full object-contain" />
+                <AppImage width={56} height={56} alt={selectedGateway.name} src={selectedGateway.image} className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
                 <span className="text-base font-semibold">{(gatewayConfig?.withdrawal_fields && typeof gatewayConfig.withdrawal_fields !== 'string' ? gatewayConfig.withdrawal_fields.title : undefined) || selectedGateway.name}</span>
@@ -73,9 +75,7 @@ export function WithdrawModal({
 
           {gatewayFormLoading ? (
             <div className="flex items-center justify-center py-8">
-              <svg className="w-10 h-10 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                <path d="M 24 4 A 1.50015 1.50015 0 1 0 24 7 C 30.255882 7 35.765936 10.406785 38.703125 15.455078 A 1.5005776 1.5005776 0 1 0 41.296875 13.945312 C 37.834064 7.9936061 31.344118 4 24 4 z"></path>
-              </svg>
+              <Icon name="IC-loader" className="w-10 h-10 inline animate-spin fill-purple-500" />
             </div>
           ) : gatewayFormError ? (
             <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-3xl text-center">

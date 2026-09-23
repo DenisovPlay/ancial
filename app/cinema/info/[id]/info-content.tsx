@@ -17,6 +17,7 @@ import { CacheManager } from '../../../lib/cache';
 import { getCinemaCache, setCinemaCache } from '../../cinema-cache';
 import { saveWatchHistoryItem, getMovieProgress } from '../../cinema-history';
 import { normalizeCinemaProgressState, selectCinemaProgressState } from '../../cinema-progress';
+import Icon from '../../../components/svg-icon';
 
 interface InfoContentProps {
   id: string;
@@ -407,9 +408,7 @@ export default function InfoContent({ id }: InfoContentProps) {
               onClick={() => handleWatch(savedProgress?.season || selectedSeason, savedProgress?.episode || selectedEpisode, selectedTranslation, selectedPlayerId)}
               className="focusable-tv px-8 py-3 rounded-3xl bg-white hover:bg-zinc-200 text-black font-black text-sm flex items-center gap-3 shadow-2xl transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-40"
             >
-              <svg className="w-5 h-5 fill-black ml-0.5" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+              <Icon name="IC-play-solid" className="w-5 h-5 fill-black ml-0.5" />
               <span>
                 {savedProgress
                   ? hasEpisodeSelection
@@ -476,10 +475,7 @@ export default function InfoContent({ id }: InfoContentProps) {
         ) : infoMovie.players && infoMovie.players.length > 0 ? (
           <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <Icon name="IC-play-circle-stroke" className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" />
               <span>Источники и плееры</span>
             </h3>
             <div className="flex flex-wrap items-center gap-2">
@@ -529,9 +525,7 @@ export default function InfoContent({ id }: InfoContentProps) {
           ) : hasEpisodeSelection ? (
             <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
+                <Icon name="IC-episodes" className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" />
                 <span>{hasMultipleSeasons ? 'Выбор сезона и серии' : 'Выбор серии'}</span>
               </h3>
 
@@ -607,9 +601,7 @@ export default function InfoContent({ id }: InfoContentProps) {
         {activeTranslations && activeTranslations.length > 0 && (
           <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" />
-              </svg>
+              <Icon name="IC-voiceover" className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" />
               <span>Озвучка и перевод ({activePlayerObj?.name || 'Плеер'})</span>
             </h3>
             <div className="flex flex-wrap items-center gap-2">

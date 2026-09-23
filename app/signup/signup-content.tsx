@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 export default function SignupContent() {
   const [login, setLogin] = useState('');
@@ -76,9 +78,7 @@ export default function SignupContent() {
       <div className="flex flex-col w-full md:w-fit">
         <div className="bg-purple-600/25 duration-300 text-purple-600 rounded-3xl rounded-b-none flex p-1 justify-center items-center pb-10 -mb-9 shadow">
           <span>
-            <svg className="w-5 h-5 inline fill-purple-600 mr-1" viewBox="0 0 48 48">
-              <use href="#IC-lock"></use>
-            </svg>
+            <Icon name="IC-lock" className="w-5 h-5 inline fill-purple-600 mr-1" />
             <span>{lang?.checkdomain || 'Проверяйте домен'}</span>: <b>https://</b>{hostname}
           </span>
         </div>
@@ -86,34 +86,28 @@ export default function SignupContent() {
         <div className="flex flex-col lg:grid grid-cols-1 lg:grid-cols-2 rounded-3xl overflow-hidden shadow-xl">
           <div className="bg-zinc-900 duration-300 flex flex-col lg:max-w-xs p-3 gap-3 shadow">
             <div className="flex flex-row gap-3 items-center">
-              <img className="w-16 h-16 rounded-2xl inline" src="/img/zypo/logo-rounded.webp" alt="Logo" />
+              <AppImage width={64} height={64} className="w-16 h-16 rounded-2xl inline" src="/img/zypo/logo-rounded.webp" alt="Logo" />
               <span className="text-zinc-200 text-lg">{lang?.reghello || 'Создайте аккаунт'}</span>
             </div>
 
             <div className="flex flex-col gap-3">
               <div className="flex gap-3 items-center">
                 <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                  <svg className="w-8 h-8 fill-white" viewBox="0 0 48 48">
-                    <use href="#IC-auth-feature-1"></use>
-                  </svg>
+                  <Icon name="IC-socials" className="w-8 h-8 fill-white" />
                 </div>
                 <span className="text-zinc-400 text-sm">{lang?.logfea1 || 'Безопасная авторизация'}</span>
               </div>
 
               <div className="flex gap-3 items-center">
                 <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                  <svg className="w-8 h-8 fill-white" viewBox="0 0 48 48">
-                    <use href="#IC-auth-feature-2"></use>
-                  </svg>
+                  <Icon name="IC-login" className="w-8 h-8 fill-white" />
                 </div>
                 <span className="text-zinc-400 text-sm">{lang?.logfea2 || 'Быстрый доступ'}</span>
               </div>
 
               <div className="flex gap-3 items-center">
                 <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                  <svg className="w-8 h-8 fill-white" viewBox="0 0 48 48">
-                    <use href="#IC-auth-feature-3"></use>
-                  </svg>
+                  <Icon name="IC-lock" className="w-8 h-8 fill-white" />
                 </div>
                 <span className="text-zinc-400 text-sm">{lang?.logfea3 || 'Защита данных'}</span>
               </div>
@@ -228,9 +222,7 @@ export default function SignupContent() {
                     className="absolute right-0 cursor-pointer w-9 h-9 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 duration-300 active:scale-95 rounded-3xl text-zinc-400"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    <svg className="w-6 h-6 fill-white" viewBox="0 0 48 48">
-                      <use href={showPassword ? "#IC-auth-eye-off" : "#IC-auth-eye"}></use>
-                    </svg>
+                    <Icon name={showPassword ? "IC-auth-eye-off" : "IC-auth-eye"} className="w-6 h-6 fill-white" />
                   </span>
                 </div>
               </div>
@@ -238,9 +230,7 @@ export default function SignupContent() {
               {error && (
                 <div className="px-3 py-2 bg-red-500/25 text-red-500 shadow rounded-3xl w-full border border-zinc-600/30 mt-1">
                   <div className="flex items-center w-full gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="w-6 h-6 shrink-0 stroke-current">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
+                    <Icon name="IC-info-circle" fill="none" className="w-6 h-6 shrink-0 stroke-current" />
                     <label className="text-sm lg:text-base w-full break-words">{error}</label>
                   </div>
                 </div>
@@ -252,9 +242,7 @@ export default function SignupContent() {
                 className="w-full rounded-3xl border border-zinc-600/30 shadow flex items-center justify-center bg-purple-500 hover:bg-purple-600 active:scale-95 disabled:opacity-50 duration-300 px-3 py-2 font-bold uppercase cursor-pointer text-white mt-1"
               >
                 {isLoading ? (
-                  <svg className="w-6 h-6 inline animate-spin fill-white" viewBox="0 0 48 48">
-                    <use href="#IC-auth-loader"></use>
-                  </svg>
+                  <Icon name="IC-loader" className="w-6 h-6 inline animate-spin fill-white" />
                 ) : (
                   lang?.signup || 'Зарегистрироваться'
                 )}

@@ -6,7 +6,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { goBackOr } from '../../lib/go-back';
 import { useDragScroll } from '../../hooks/useDragScroll';
-import { ActionIcon, cn } from '../pulse-components';
+import { cn } from '../pulse-components';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 export default function PulseCreateLayout({ children }: { children: React.ReactNode }) {
   const { lang, isAuthenticated } = useAuth();
@@ -102,8 +104,8 @@ export default function PulseCreateLayout({ children }: { children: React.ReactN
               aria-label={lang?.creators_back_to_pulse || 'Вернуться в Pulse'}
               className="flex items-center gap-3 hover:opacity-80 duration-300 cursor-pointer active:scale-95"
             >
-              <ActionIcon className="w-8 h-8 fill-white shrink-0" name="IC-chevron-left" />
-              <img src="/img/logos/creators.svg" alt="Creators" className="h-6 sm:h-7 object-contain shrink-0" />
+              <Icon name="IC-chevron-left" className="inline w-8 h-8 fill-white shrink-0" />
+              <AppImage width={166} height={28} src="/img/logos/creators.svg" alt="Creators" className="h-6 w-auto sm:h-7 object-contain shrink-0" />
             </button>
           </div>
 
@@ -111,7 +113,7 @@ export default function PulseCreateLayout({ children }: { children: React.ReactN
             href="/pulse/create/upload"
             className="px-4 py-2 rounded-full bg-white text-black font-semibold text-sm hover:bg-zinc-200 active:scale-95 duration-300 flex items-center gap-2 shadow shrink-0"
           >
-            <ActionIcon className="w-4 h-4 fill-black" name="IC-plus" />
+            <Icon name="IC-plus" className="inline w-4 h-4 fill-black" />
             <span>{lang?.creators_upload_release || 'Новый релиз'}</span>
           </Link>
         </div>

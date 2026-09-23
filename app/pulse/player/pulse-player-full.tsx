@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
+import { useEffect, useState, useSyncExternalStore, type RefObject, type TouchEventHandler } from 'react';
 import { GLASS_MODE_CHANGE_EVENT, GLASS_MODE_STORAGE_KEY, readGlassMode } from '../../lib/android-glass';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
@@ -9,8 +9,7 @@ import {
   type PulseLyricsClock,
   PulseLyricsMobile,
   PulseLyricsMobileSheet,
-  type PulseLyricsLine,
-} from './pulse-lyrics';
+  type PulseLyricsLine } from './pulse-lyrics';
 import { cn } from './player-utils';
 import { PulsePlayerFullHeader } from './pulse-player-full-header';
 import { PulsePlayerFullArtwork } from './pulse-player-full-artwork';
@@ -20,8 +19,8 @@ import { PlaybackStatusBar } from './playback-status-bar';
 import { PulseDevicesButton } from './pulse-devices-button';
 import { Dropdown, DropdownItem } from '../../components/navigation';
 import type { PulseTrack } from '../../context/PulsePlayerContext';
+import Icon from '../../components/svg-icon';
 
-type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 
 const DESKTOP_LAYOUT_QUERY = '(min-width: 1024px)';
 
@@ -51,7 +50,6 @@ function usePresence(visible: boolean, exitMs = LYRICS_MODE_EXIT_MS) {
 
 export type PulsePlayerFullProps = {
   // Icons / refs
-  Icon: PlayerIcon;
   audioRef: RefObject<PulseLyricsClock | null>;
   mobileCurrentTimeLabelRef: RefObject<HTMLDivElement | null>;
   mobileSeekInputRef: RefObject<HTMLInputElement | null>;
@@ -150,7 +148,6 @@ export type PulsePlayerFullProps = {
  * All state and callbacks are owned by PulsePlayerProvider — this component is purely presentational.
  */
 export function PulsePlayerFull({
-  Icon,
   audioRef,
   mobileCurrentTimeLabelRef,
   mobileSeekInputRef,
@@ -285,7 +282,6 @@ export function PulsePlayerFull({
         onTouchEnd={onTouchEndFull}
       >
         <PulsePlayerFullHeader
-          Icon={Icon}
           albumLabel={albumLabel}
           canOpenAlbum={canOpenAlbum}
           onClose={onClose}
@@ -406,7 +402,7 @@ export function PulsePlayerFull({
             </div>
 
             {/* Где идёт звук и с кем он общий. Без комнаты и без пульта не рисуется. */}
-            <PlaybackStatusBar Icon={Icon} className="mt-3" />
+            <PlaybackStatusBar className="mt-3" />
 
             {/* Track title + artist + actions row — direct child of w-full column */}
             <div className="mt-3 flex w-full items-center justify-between gap-3">
@@ -440,7 +436,7 @@ export function PulsePlayerFull({
                   </button>
                 ) : null}
 
-                <PulseDevicesButton Icon={Icon} lang={lang} />
+                <PulseDevicesButton lang={lang} />
 
                 {!isMobileDevice ? (
                   <Dropdown
@@ -511,7 +507,6 @@ export function PulsePlayerFull({
             </div>
 
             <PulsePlayerFullControls
-              Icon={Icon}
               isPlaying={isPlaying}
               repeatMode={repeatMode}
               onNext={onNext}

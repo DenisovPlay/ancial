@@ -7,6 +7,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage, type WalletMerchantDetails, type WalletMerchantOrder } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache.ts';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 function AboutContentInner() {
   const router = useRouter();
@@ -259,9 +261,7 @@ function AboutContentInner() {
           href="/wallet/merchant"
           className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer text-zinc-100"
         >
-          <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
-          </svg>
+          <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
           <span style={{ marginTop: '0.1rem' }} className="shrink-0 text-3xl font-bold bg-gradient-to-br from-lime-500 to-emerald-500 text-transparent bg-clip-text cutetext">
             {lang?.merchant || 'Мерчант'}
           </span>
@@ -277,7 +277,7 @@ function AboutContentInner() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 w-full max-w-screen-2xl">
         <div className="relative flex flex-col gap-3 justify-center w-full p-4 border border-zinc-700/30 bg-zinc-900/20 rounded-3xl text-left">
           <div className="flex items-center gap-3">
-            <img src={merchant.img || '/img/placeholders/user.png'} className="rounded-2xl h-14 w-14 object-cover" alt="Merchant Avatar" />
+            <AppImage width={56} height={56} fallbackSrc="/img/placeholders/user.png" src={merchant.img || '/img/placeholders/user.png'} className="rounded-2xl h-14 w-14 object-cover" alt="Merchant Avatar" />
             <div className="flex flex-col grow truncate">
               <span className="text-lg font-bold text-white truncate">{merchant.name}</span>
               <div className="flex items-center gap-1.5 text-zinc-400 text-xs">

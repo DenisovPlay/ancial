@@ -17,11 +17,10 @@ const UnifiedStickerPicker = dynamic(
 );
 import {
     type DraftImage,
-    StickersIcon,
-    PollIcon,
-    SvgIcon,
     cn,
 } from './editor-shared';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 type AvailableAuthor = {
     id: string;
     name: string;
@@ -158,7 +157,7 @@ export function FeedEditorUI({
                     onClick={onBack}
                     className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"
                 >
-                    <SvgIcon className="w-8 h-8 fill-white inline" id="IC-chevron-left" />
+                    <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
                     {mode === 'create' ? (
                         <span>{strings.newpost}</span>
                     ) : (
@@ -202,9 +201,7 @@ export function FeedEditorUI({
                             disabled={isSubmitting || hasUploadingImages || isContentOverLimit}
                             className="border border-zinc-600/30 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 px-3 py-1 shadow rounded-3xl shrink-0 text-sm cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
                         >
-                            <svg className="fill-white w-6 h-6 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                                <use href="#IC-send"></use>
-                            </svg>
+                            <Icon name="IC-send" className="fill-white w-6 h-6 inline" />
                             <span>{mode === 'create' ? strings.publicpost : strings.save}</span>
                         </button>
                     </div>
@@ -298,18 +295,16 @@ export function FeedEditorUI({
                                                 key={image.id}
                                                 type="button"
                                                 onClick={() => handleDeleteImage(image.id)}
-                                                className="h-32 w-32 rounded-2xl shadow bg-center bg-cover shrink-0 cursor-pointer relative overflow-hidden"
-                                                style={{ backgroundImage: `url(${image.previewUrl})` }}
+                                                className="h-32 w-32 rounded-2xl shadow shrink-0 cursor-pointer relative overflow-hidden isolate"
                                             >
+                                                <AppImage fill sizes="128px" src={image.previewUrl} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover" />
                                                 {image.status === 'uploading' ? (
                                                     <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full text-5xl font-bold duration-300">
-                                                        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                                                            <use href="#IC-loader"></use>
-                                                        </svg>
+                                                        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
                                                     </div>
                                                 ) : (
                                                     <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full opacity-0 hover:opacity-90 text-5xl font-bold duration-300">
-                                                        <SvgIcon className="w-8 h-8 inline fill-white" id="IC-times" />
+                                                        <Icon name="IC-times" className="w-8 h-8 inline fill-white" />
                                                     </div>
                                                 )}
                                             </button>
@@ -321,16 +316,19 @@ export function FeedEditorUI({
                                         {widgets.map((w, i) => (
                                             <div key={i} className="flex items-center gap-2 bg-zinc-800/50 rounded-3xl border border-zinc-700/40">
                                                 {w.type === 'music' ? (
-                                                    <div
-                                                        className="w-6 h-6 rounded-full bg-cover bg-center shrink-0 bg-zinc-700"
-                                                        style={{ backgroundImage: `url(${w.track_img})` }}
+                                                    <AppImage
+                                                        width={24}
+                                                        height={24}
+                                                        src={String(w.track_img ?? '')}
+                                                        alt=""
+                                                        className="w-6 h-6 rounded-full object-cover shrink-0 bg-zinc-700"
                                                     />
                                                 ) : (
                                                     <span className="shrink-0 flex items-center justify-center w-6 h-6">
                                                         {w.type === 'quote' ? (
-                                                            <SvgIcon className="w-4 h-4 fill-zinc-400" id="IC-share" />
+                                                            <Icon name="IC-share" className="w-4 h-4 fill-zinc-400" />
                                                         ) : (
-                                                            <PollIcon className="w-4 h-4 fill-zinc-400" />
+                                                            <Icon name="IC-poll" className="w-4 h-4 fill-zinc-400" />
                                                         )}
                                                     </span>
                                                 )}
@@ -338,7 +336,7 @@ export function FeedEditorUI({
                                                     {w.type === 'music' ? `${w.artist_name ?? ''} — ${w.track_name ?? ''}` : w.type === 'poll' ? String(w.question ?? '') : (strings.reply_to_post || 'Ответ')}
                                                 </span>
                                                 <button type="button" onClick={() => handleRemoveWidget(i)} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-zinc-700 hover:bg-zinc-600 duration-200 active:scale-95 cursor-pointer">
-                                                    <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-times" />
+                                                    <Icon name="IC-times" className="w-3.5 h-3.5 fill-zinc-300" />
                                                 </button>
                                             </div>
                                         ))}
@@ -360,11 +358,11 @@ export function FeedEditorUI({
                                             onClick={handleOpenFilePicker}
                                             className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 bg-zinc-700/0 hover:bg-zinc-700/95 font-medium text-white w-full"
                                         >
-                                            <SvgIcon className="w-6 h-6 inline fill-white mr-1" id="IC-photos" />
+                                            <Icon name="IC-photos" className="w-6 h-6 inline fill-white mr-1" />
                                             <span>{strings.photo}</span>
                                         </button>
                                         <div className="flex items-center hover:shadow rounded-2xl duration-150 px-1.5 py-0.5 font-medium bg-zinc-600/30 text-zinc-400 cursor-not-allowed w-full">
-                                            <SvgIcon className="inline w-6 h-6 fill-zinc-400 mr-1" id="IC-play" />
+                                            <Icon name="IC-play" className="inline w-6 h-6 fill-zinc-400 mr-1" />
                                             <span>{strings.video}</span>
                                         </div>
                                         <button
@@ -372,7 +370,7 @@ export function FeedEditorUI({
                                             onClick={() => setIsPollModalOpen(true)}
                                             className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
                                         >
-                                            <PollIcon className="inline h-6 w-6 mr-1 fill-white" />
+                                            <Icon name="IC-poll" className="inline h-6 w-6 mr-1 fill-white" />
                                             <span>{strings.poll}</span>
                                         </button>
                                         <button
@@ -380,7 +378,7 @@ export function FeedEditorUI({
                                             onClick={() => setIsMusicModalOpen(true)}
                                             className="flex items-center hover:shadow cursor-pointer rounded-2xl duration-150 px-1.5 py-0.5 font-medium text-white hover:bg-zinc-700/95 w-full"
                                         >
-                                            <SvgIcon className="inline w-6 h-6 fill-white mr-1" id="IC-music" />
+                                            <Icon name="IC-music" className="inline w-6 h-6 fill-white mr-1" />
                                             <span>{strings.music}</span>
                                         </button>
 
@@ -443,7 +441,7 @@ export function FeedEditorUI({
                                         closeOnChildClick={false}
                                         triggerClassName="h-7 w-7 border border-zinc-600/30 bg-zinc-900 hover:bg-zinc-700 rounded-3xl shadow text-white flex items-center justify-center cursor-pointer active:scale-95 duration-300"
                                         menuClassName="w-[18rem] sm:w-[21rem] !rounded-3xl !p-0 shadow-2xl overflow-hidden"
-                                        triggerNode={<StickersIcon className="w-5 h-5 fill-white" />}
+                                        triggerNode={<Icon name="IC-emoji" className="w-5 h-5 fill-white" />}
                                     >
                                         <UnifiedStickerPicker
                                             scope="posts"

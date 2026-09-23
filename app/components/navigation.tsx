@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+import AppImage from './app-image';
 import React, { useCallback, useState, useRef, useEffect, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ import { normalizeAvatarUrl } from '../lib/avatar';
 import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../lib/android-glass';
 import { cn } from '../lib/cn';
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
+import Icon from './svg-icon';
 
 const NavItem = ({
   href,
@@ -120,18 +121,16 @@ const NavItem = ({
       )}
       <div className="relative z-10 flex items-center justify-center w-full h-full">
         {avatarSrc ? (
-          <Image
+          <AppImage
             src={avatarSrc}
             alt="Avatar"
             width={56}
             height={56}
-            priority
+            preload
             className="w-14 h-14 rounded-full object-cover"
           />
         ) : icon ? (
-          <svg className="w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <use href={`#${icon}`}></use>
-          </svg>
+          <Icon name={icon} className="w-8 h-8 fill-white" />
         ) : null}
       </div>
       {Boolean(badgeCount && badgeCount > 0) && (
@@ -390,9 +389,7 @@ export const Dropdown = ({
           )}
         >
           {triggerNode ?? (
-            <svg className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href={`#${compactTriggerIcon}`}></use>
-            </svg>
+            <Icon name={compactTriggerIcon} className="w-5 h-5 fill-white" />
           )}
         </button>
       ) : null}
@@ -609,9 +606,7 @@ export const DropdownItem = ({
       )}
       <div className="relative inline-flex items-center shrink-0 z-10">
         {iconNode ?? (
-          <svg className={cn('inline w-6 h-6', !hasCustomFill && 'fill-white', iconClassName)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <use href={`#${icon}`}></use>
-          </svg>
+          <Icon name={icon ?? ''} className={cn('inline w-6 h-6', !hasCustomFill && 'fill-white', iconClassName)} />
         )}
       </div>
       <span className="flex-grow truncate z-10">{children}</span>

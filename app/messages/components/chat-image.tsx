@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
-import { cn, Icon } from '../lib/messages-shared';
+import AppImage from '../../components/app-image';
+import { cn } from '../lib/messages-shared';
 
 type ChatImageProps = {
   alt: string;
@@ -16,72 +17,53 @@ type ChatImageProps = {
   width?: number;
 };
 
-type LoadStatus = 'error' | 'loaded' | 'loading';
+/** Пока одиночная картинка без известных размеров грузится, держим под неё квадрат. */
+const NATURAL_PENDING_STYLE: CSSProperties = { width: '10rem', height: '10rem' };
 
 /**
- * Картинка чата с прелоадером как в Telegram: переливающаяся подложка, картинка проявляется из
- * размытия. Реальные размеры (из media_files) дают подложке точную форму будущей картинки; без них
- * подложка держит минимальный размер — ленту column-reverse догрузка всё равно не сдвигает.
+ * Раскладка картинок чата поверх общего AppImage (прелоадер, кэш, ошибка — там).
+ * Реальные размеры (из media_files) дают картинке точную форму ещё до загрузки; без них
+ * держится минимальный квадрат — ленту column-reverse догрузка всё равно не сдвигает.
  */
 export default function ChatImage({ alt, className, draggable, fit = 'cover', height, maxHeight, src, width }: ChatImageProps) {
-  const [status, setStatus] = useState<LoadStatus>('loading');
-  const [prevSrc, setPrevSrc] = useState(src);
-  if (src !== prevSrc) {
-    setPrevSrc(src);
-    setStatus('loading');
-  }
+  const sized = maxHeight !== undefined && width && height && width > 0 && height > 0;
+  // Одиночная картинка без известных размеров: после загрузки берёт натуральный размер.
+  const naturalSingle = maxHeight !== undefined && !sized;
 
-  // Картинка из кэша может загрузиться раньше, чем React навесит onLoad.
-  const attachImage = useCallback((element: HTMLImageElement | null) => {
-    if (element?.complete && element.naturalWidth > 0) setStatus('loaded');
-  }, []);
-
-  const wrapperStyle: CSSProperties | undefined = maxHeight !== undefined && width && height && width > 0 && height > 0
+  const sizedWidth = sized ? Math.min(Math.round((maxHeight * width) / height), width) : 0;
+  const style: CSSProperties | undefined = sized
     ? {
       aspectRatio: `${width} / ${height}`,
       // Только px: процент в ширине ломает shrink-to-fit родителя (он меряет картинку по оригиналу),
       // а по родителю ограничивает max-w-full.
-      width: `${Math.min(Math.round((maxHeight * width) / height), width)}px`,
+      width: `${sizedWidth}px`,
     }
-    : undefined;
-  // Одиночная картинка без известных размеров: после загрузки берёт натуральный размер.
-  const naturalSingle = maxHeight !== undefined && !wrapperStyle;
-  const isLoaded = status === 'loaded';
+    : naturalSingle
+      ? { maxHeight }
+      : undefined;
+
+  // Натуральный размер (оба измерения auto) — только без оптимизатора: вариант 2x из srcset
+  // отрисовался бы вдвое меньше. Иначе размеры — база srcset: точные px или ячейка сетки.
+  const sizeProps = sized
+    ? { width: sizedWidth, height: Math.max(1, Math.round((sizedWidth * height) / width)) }
+    : naturalSingle
+      ? { width: 160, height: 160, unoptimized: true }
+      : { width: 320, height: 320 };
 
   return (
-    <span
+    <AppImage
+      {...sizeProps}
+      src={src}
+      alt={alt}
+      draggable={draggable}
+      style={style}
+      pendingStyle={naturalSingle ? NATURAL_PENDING_STYLE : undefined}
       className={cn(
-        'relative block max-w-full overflow-hidden',
-        !isLoaded && 'chat-image-skeleton',
-        naturalSingle && !isLoaded && 'h-40 w-40',
+        'block max-w-full',
+        fit === 'cover' ? 'object-cover' : 'object-contain',
+        sized ? 'h-auto' : naturalSingle ? 'h-auto w-auto' : 'h-full w-full',
         className,
       )}
-      style={wrapperStyle}
-    >
-      {status === 'error' ? (
-        <span className="absolute inset-0 flex items-center justify-center">
-          <Icon name="IC-image" className="h-8 w-8 fill-zinc-600" />
-        </span>
-      ) : null}
-
-      <img
-        ref={attachImage}
-        src={src}
-        alt={alt}
-        loading="lazy"
-        decoding="async"
-        draggable={draggable}
-        onLoad={() => setStatus('loaded')}
-        onError={() => setStatus('error')}
-        style={naturalSingle && isLoaded ? { maxHeight } : undefined}
-        className={cn(
-          'block transition-[opacity,filter,transform] duration-500 ease-out',
-          fit === 'cover' ? 'object-cover' : 'object-contain',
-          naturalSingle && isLoaded ? 'h-auto w-auto max-w-full' : 'h-full w-full',
-          isLoaded ? 'scale-100 opacity-100 blur-[0px]' : 'scale-[1.03] opacity-0 blur-md',
-          status === 'error' && 'invisible',
-        )}
-      />
-    </span>
+    />
   );
 }

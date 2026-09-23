@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
+import Icon from '../components/svg-icon';
 
 function EmailVerifContentInner() {
   const { lang, checkAuth } = useAuth();
@@ -110,9 +111,7 @@ function EmailVerifContentInner() {
         {status === 'success' && (
           <div className="flex flex-col items-center gap-3 w-full">
             <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <svg className="w-7 h-7 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+              <Icon name="IC-check-stroke" className="w-7 h-7 fill-none stroke-current stroke-2" />
             </div>
 
             <div className="bg-emerald-950/40 border border-emerald-500/20 rounded-3xl p-3 text-emerald-200 text-sm leading-relaxed"

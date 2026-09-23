@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Movie, Episode } from '../types';
 import { getOptimizedImageUrl } from '../cinema-api';
+import Icon from '../../components/svg-icon';
 
 interface VideoPlayerModalProps {
   playingData: {
@@ -105,9 +106,7 @@ export default function VideoPlayerModal({ playingData, onClose }: VideoPlayerMo
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
-                <svg className="w-12 h-12 fill-white ml-1" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <Icon name="IC-play-solid" className="w-12 h-12 fill-white ml-1" />
               </div>
             </div>
           </div>
@@ -133,13 +132,7 @@ export default function VideoPlayerModal({ playingData, onClose }: VideoPlayerMo
               onClick={togglePlayPause}
               className="p-3 rounded-full bg-white text-black hover:bg-zinc-200 transition-all active:scale-95 cursor-pointer"
             >
-              <svg className="w-6 h-6 fill-black" viewBox="0 0 24 24">
-                {isPlaying ? (
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                ) : (
-                  <path d="M8 5v14l11-7z" />
-                )}
-              </svg>
+              <Icon name={isPlaying ? 'IC-pause-solid' : 'IC-play-solid'} className="w-6 h-6 fill-black" />
             </button>
             <span className="text-xs text-zinc-400 font-mono">
               {Math.floor(videoProgress)}%

@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Movie } from '../types';
 import { goToMovieInfo } from '../cinema-navigation';
 import { getOptimizedImageUrl } from '../cinema-api';
+import Icon from '../../components/svg-icon';
 
 interface HeroSliderProps {
   heroMovies?: Movie[];
@@ -107,9 +108,7 @@ export default function HeroSlider({ heroMovies = [], onPlayMovie }: HeroSliderP
             onClick={() => onPlayMovie(currentHero)}
             className="focusable-tv px-8 py-3.5 rounded-3xl bg-white hover:bg-zinc-200 text-black font-extrabold text-sm flex items-center gap-3 transition-all duration-300 active:scale-95 shadow-2xl cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-40"
           >
-            <svg className="w-5 h-5 fill-black ml-0.5" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
+            <Icon name="IC-play-solid" className="w-5 h-5 fill-black ml-0.5" />
             <span>{lang?.frame_watch_now || 'Смотреть'}</span>
           </button>
 
@@ -119,9 +118,7 @@ export default function HeroSlider({ heroMovies = [], onPlayMovie }: HeroSliderP
             onClick={() => goToMovieInfo(router, currentHero.id, currentHero)}
             className="focusable-tv p-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm flex items-center gap-3 backdrop-blur-xl transition-all duration-300 active:scale-95 border border-white/20 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-40"
           >
-            <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
-              <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-            </svg>
+            <Icon name="IC-info-outline" className="w-5 h-5 fill-white" />
           </button>
 
         </div>

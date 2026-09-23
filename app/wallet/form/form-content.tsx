@@ -7,6 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI, getApiMessage, type WalletAccount, type WalletOverview, type SendMoneyParams } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 function FormContentInner() {
   const router = useRouter();
@@ -394,9 +396,7 @@ function FormContentInner() {
       {!embeded && (
         <div className="w-full max-w-3xl h-14 flex items-center gap-3 px-3 lg:px-0 sticky top-0 bg-gradient-to-b from-zinc-950 via-zinc-950/90 to-transparent" style={{ zIndex: 99 }}>
           <Link href="/wallet" className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer">
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {lang?.payment_form || 'Платёжная форма'}
           </Link>
         </div>
@@ -422,7 +422,7 @@ function FormContentInner() {
               {/* Recipient User Profile Card */}
               {recipientUser && (
                 <div className="flex items-center gap-3 bg-zinc-900/60 p-4 rounded-3xl border border-zinc-800 text-left">
-                  <img src={recipientUser.img} className="w-16 h-16 rounded-2xl object-cover border border-zinc-800" alt="Avatar" />
+                  <AppImage width={64} height={64} src={recipientUser.img} className="w-16 h-16 rounded-2xl object-cover border border-zinc-800" alt="Avatar" />
                   <div className="flex flex-col">
                     <span className="text-zinc-400 text-xs uppercase tracking-wider font-bold">{lang?.donation_recipient || 'Получатель пожертвования:'}</span>
                     <span className="text-xl font-bold text-purple-400">@{recipientUser.username}</span>
@@ -589,7 +589,7 @@ function FormContentInner() {
             {/* If resolved profile */}
             {recipientUser ? (
               <div className="flex items-center gap-3 border-b border-zinc-800 pb-4">
-                <img src={recipientUser.img} className="w-16 h-16 rounded-2xl object-cover border border-zinc-800" alt="Avatar" />
+                <AppImage width={64} height={64} src={recipientUser.img} className="w-16 h-16 rounded-2xl object-cover border border-zinc-800" alt="Avatar" />
                 <div className="flex flex-col">
                   <span className="text-zinc-400 text-xs">{lang?.recipient_label || 'Получатель:'}</span>
                   <span className="text-xl font-bold">@{recipientUser.username}</span>

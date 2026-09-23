@@ -1,7 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +15,7 @@ import {
   SEVEN_TV_SEARCH_DEBOUNCE_MS,
   normalizeText,
 } from '../lib/messages-shared';
+import AppImage from '../../components/app-image';
 
 function StickerBtn({ sticker, onClick, disabled }: { sticker: StickerItem; onClick: () => void; disabled?: boolean }) {
   const [err, setErr] = useState(false);
@@ -31,7 +30,9 @@ function StickerBtn({ sticker, onClick, disabled }: { sticker: StickerItem; onCl
       {err ? (
         <span className="text-zinc-600 text-[9px]">{sticker.code.slice(0, 4)}</span>
       ) : (
-        <img
+        <AppImage
+          width={56}
+          height={56}
           src={sticker.image_url_avif ?? sticker.image_url}
           alt={sticker.shortcode}
           loading="lazy"
@@ -148,9 +149,7 @@ export default function StickerPickerDropdownContent({
             title={lang?.recent_stickers || 'Недавние'}
             className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-3xl border border-zinc-600/30 bg-zinc-900/60 hover:bg-zinc-800 duration-300 cursor-pointer active:scale-95"
           >
-            <svg className="w-4 h-4 fill-zinc-300" viewBox="0 0 24 24">
-              <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" />
-            </svg>
+            <Icon name="IC-recent" className="w-4 h-4 fill-zinc-300" />
           </button>
         )}
         {/* Pack icons */}
@@ -162,7 +161,7 @@ export default function StickerPickerDropdownContent({
             title={pack.title}
             className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-3xl border border-zinc-600/30 bg-zinc-900/60 hover:bg-zinc-800 duration-300 cursor-pointer active:scale-95"
           >
-            <img src={pack.icon_url} alt={pack.title} loading="lazy" draggable={false} className="w-5 h-5 object-contain rounded-full" />
+            <AppImage width={20} height={20} src={pack.icon_url} alt={pack.title} loading="lazy" draggable={false} className="w-5 h-5 object-contain rounded-full" />
           </button>
         ))}
 
@@ -180,7 +179,7 @@ export default function StickerPickerDropdownContent({
               : 'border-zinc-600/30 bg-zinc-900/60 hover:bg-zinc-800',
           )}
         >
-          <img src="/img/branding/7tv.svg?id=-1" alt="7TV" className="h-5 w-5" />
+          <AppImage width={20} height={20} src="/img/branding/7tv.svg?id=-1" alt="7TV" className="h-5 w-5" />
         </button>
       </div>
 
@@ -250,7 +249,7 @@ export default function StickerPickerDropdownContent({
                   title={sticker.name}
                   className="flex items-center justify-center shrink-0 h-14 w-14 overflow-hidden hover:rounded-2xl duration-300 hover:bg-zinc-900 disabled:opacity-50 cursor-pointer active:scale-95"
                 >
-                  <Image src={sticker.url} alt={sticker.name} unoptimized width={64} height={64} className="h-14 w-14 object-contain" />
+                  <AppImage src={sticker.url} alt={sticker.name} unoptimized width={64} height={64} className="h-14 w-14 object-contain" />
                 </button>
               ))}
             </div>

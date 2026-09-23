@@ -1,32 +1,8 @@
 import type { NextConfig } from "next";
 
-import { API_BASE, CINEMA_API_BASE, SITE_DOMAIN } from './app/config';
+import { API_BASE, CINEMA_API_BASE } from './app/config';
+import { IMAGE_HOSTS } from './app/lib/image-hosts';
 
-// Хосты, с которых next/image может оптимизировать картинки.
-// insecure: true — дополнительно разрешает http (легаси-контент старого бэкенда).
-const IMAGE_HOSTS: { hostname: string; insecure?: boolean }[] = [
-  { hostname: 'ibb.co', insecure: true },
-  { hostname: '*.ibb.co', insecure: true },
-  { hostname: 'imgur.com' },
-  { hostname: '*.imgur.com' },
-  { hostname: '*.scdn.co' },
-  { hostname: 'ancial.ru', insecure: true },
-  { hostname: '*.ancial.ru', insecure: true },
-  { hostname: SITE_DOMAIN, insecure: true },
-  { hostname: `*.${SITE_DOMAIN}`, insecure: true },
-  { hostname: 'cdn.betterttv.net' },
-  { hostname: '*.userapi.com' },
-  { hostname: '*.vk.com' },
-  { hostname: '*.vkusercontent.com' },
-  { hostname: '*.vk-cdn.net' },
-  { hostname: 'avatars.yandex.net' },
-  { hostname: '*.avatars.yandex.net' },
-  { hostname: 'tile.openstreetmap.org' },
-  { hostname: 'cartodb-basemaps-a.global.ssl.fastly.net' },
-  { hostname: 'tile.openweathermap.org' },
-  { hostname: 'yastatic.net' },
-  { hostname: '*.yastatic.net' },
-];
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -44,7 +20,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowLocalIP: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    remotePatterns: IMAGE_HOSTS.flatMap(({ hostname, insecure }) =>
+    remotePatterns: IMAGE_HOSTS.filter(({ optimize }) => optimize !== false).flatMap(({ hostname, insecure }) =>
       (insecure ? (['https', 'http'] as const) : (['https'] as const)).map((protocol) => ({
         protocol,
         hostname,

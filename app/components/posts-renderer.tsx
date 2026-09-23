@@ -11,7 +11,6 @@ import { ensureCarouselScrollDelegation } from './carousel-delegation';
 
 import ImageViewerModal, { type ImageViewerSlide } from './image-viewer-modal';
 import { Dropdown, DropdownItem } from './navigation';
-import { SvgIcon } from '../feed/editor-shared';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import YandexRtb from './yandex-rtb';
@@ -29,6 +28,8 @@ import { detectTextLanguage, htmlToPlainText, translateToLang } from '../lib/tra
 
 
 import AccountName from './account-name';
+import AppImage from './app-image';
+import Icon from './svg-icon';
 
 type Id = string | number;
 type VoteDirection = 'up' | 'down';
@@ -167,12 +168,13 @@ function ImageTile({
       onClick={onClick}
       className={cn(
         className,
-        'cursor-pointer shadow bg-center bg-contain bg-no-repeat bg-zinc-800 shrink-0',
+        'cursor-pointer shadow bg-zinc-800 shrink-0 overflow-hidden',
         blur && 'blur-lg',
       )}
-      style={{ backgroundImage: `url(${image.url})` }}
       aria-label="Open image"
-    />
+    >
+      <AppImage width={768} height={384} sizes="(max-width: 768px) 100vw, 768px" src={image.url} alt="" draggable={false} className="block h-full w-full object-contain" />
+    </button>
   );
 }
 
@@ -228,7 +230,7 @@ function ExpandablePostContent({
     ensureCarouselScrollDelegation();
   }, []);
 
-  const parsedHtml = sanitizeUserHtml(parsePostContentToHtml(content));
+  const parsedHtml = sanitizeUserHtml(parsePostContentToHtml(content), { preloadImages: true });
 
   if (noCollapse) {
     return (
@@ -272,10 +274,7 @@ function ExpandablePostContent({
           className="text-center text-purple-400 hover:text-purple-300 font-semibold cursor-pointer duration-200 py-1.5 mt-1 z-20 flex items-center justify-center gap-1 self-center text-sm"
         >
           <span>{isExpanded ? strings.less : strings.more}</span>
-          <SvgIcon
-            className={cn('w-4 h-4 fill-current transition-transform duration-300', isExpanded && 'rotate-180')}
-            id="IC-chevron-down"
-          />
+          <Icon name="IC-chevron-down" className={cn('w-4 h-4 fill-current transition-transform duration-300', isExpanded && 'rotate-180')} />
         </button>
       )}
     </div>
@@ -755,10 +754,11 @@ function PostCardInner({
         <div className="text-sm lg:text-base text-zinc-400 font-medium flex items-center gap-1.5 min-w-0">
           <Link
             href={authorHref}
-            className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow bg-cover bg-center cursor-pointer shrink-0"
-            style={{ backgroundImage: `url(${post.author.img})` }}
+            className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow cursor-pointer shrink-0 overflow-hidden"
             aria-label={post.author.name}
-          />
+          >
+            <AppImage width={40} height={40} src={post.author.img} fallbackSrc="/img/placeholders/user.png" alt="" className="block h-full w-full object-cover" />
+          </Link>
 
           <div className="flex flex-col min-w-0 shrink">
             <Link
@@ -779,7 +779,7 @@ function PostCardInner({
                 onClick={handleDonate}
                 className="h-10 w-10 cursor-pointer border border-zinc-600/30 flex items-center justify-center gap-3 duration-300 active:scale-95 bg-zinc-700 hover:bg-zinc-800 rounded-full shadow shrink-0"
               >
-                <SvgIcon className="h-7 w-7 fill-white" id="IC-donate" viewBox="0 0 48 48" />
+                <Icon name="IC-donate" className="h-7 w-7 fill-white" />
               </button>
             )}
             {showTranslateButton && (
@@ -799,7 +799,7 @@ function PostCardInner({
                     <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                   </span>
                 ) : (
-                  <SvgIcon className="h-7 w-7 fill-white shrink-0" id="IC-globe" viewBox="0 0 48 48" />
+                  <Icon name="IC-globe" className="h-7 w-7 fill-white shrink-0" />
                 )}
                 <span
                   className={cn(
@@ -829,7 +829,7 @@ function PostCardInner({
                   onClick={handleEdit}
                   className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
                 >
-                  <SvgIcon className="h-6 w-6 fill-white" id="IC-edit" viewBox="0 0 48 48" />
+                  <Icon name="IC-edit" className="h-6 w-6 fill-white" />
                 </button>
                 <button
                   type="button"
@@ -837,7 +837,7 @@ function PostCardInner({
                   onClick={handleDelete}
                   className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
                 >
-                  <SvgIcon className="h-6 w-6 fill-white" id="IC-times" viewBox="0 0 48 48" />
+                  <Icon name="IC-times" className="h-6 w-6 fill-white" />
                 </button>
               </div>
             )}
@@ -904,7 +904,7 @@ function PostCardInner({
                     }}
                     className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                   >
-                    <SvgIcon className="w-6 h-6 fill-white" id="IC-chevron-left" />
+                    <Icon name="IC-chevron-left" className="w-6 h-6 fill-white" />
                   </button>
 
                   {/* Right Arrow */}
@@ -919,12 +919,12 @@ function PostCardInner({
                     }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                   >
-                    <SvgIcon className="w-6 h-6 fill-white" id="IC-chevron-right" />
+                    <Icon name="IC-chevron-right" className="w-6 h-6 fill-white" />
                   </button>
 
                   <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
                     <span className="flex items-center gap-1.5">
-                      <SvgIcon className="w-4 h-4 fill-white" id="IC-photos" />
+                      <Icon name="IC-photos" className="w-4 h-4 fill-white" />
                       <span>{images.length}</span>
                     </span>
                   </div>
@@ -1011,13 +1011,10 @@ function PostCardInner({
               className="inline-flex items-center duration-300 active:scale-95"
               aria-label="Vote up"
             >
-              <SvgIcon
-                className={cn(
+              <Icon name="IC-vote-up" className={cn(
                   'w-6 h-6 hover:fill-green-500 duration-300 cursor-pointer inline',
                   voteUpClass,
-                )}
-                id="IC-vote-up"
-              />
+                )} />
             </button>
             <span className="mx-1" id={`rat${post.id}`}>{rating}</span>
             <button
@@ -1027,13 +1024,10 @@ function PostCardInner({
               className="inline-flex items-center duration-300 active:scale-95"
               aria-label="Vote down"
             >
-              <SvgIcon
-                className={cn(
+              <Icon name="IC-chevron-down" className={cn(
                   'w-6 h-6 hover:fill-red-500 duration-300 cursor-pointer inline',
                   voteDownClass,
-                )}
-                id="IC-vote-down"
-              />
+                )} />
             </button>
 
             {!hideComments && (
@@ -1044,7 +1038,7 @@ function PostCardInner({
                   className="ml-3 inline-flex items-center gap-1 duration-300 hover:fill-white hover:text-white active:scale-95"
                   aria-label="Comments"
                 >
-                  <SvgIcon className="w-6 h-6 cursor-pointer inline" id="IC-comments" />
+                  <Icon name="IC-comments" className="w-6 h-6 cursor-pointer inline" />
                   {Number(post.comments_count) > 0 && (
                     <span>{post.comments_count}</span>
                   )}
@@ -1058,15 +1052,12 @@ function PostCardInner({
               className="ml-3 inline-flex items-center gap-1 active:scale-95 duration-300 hover:text-white"
               aria-label="Bookmark post"
             >
-              <SvgIcon
-                id={isBookmarked ? 'IC-bookmark-filled' : 'IC-bookmark'}
-                className={cn(
+              <Icon name={isBookmarked ? 'IC-bookmark-filled' : 'IC-bookmark'} className={cn(
                   'w-6 h-6 cursor-pointer inline duration-300',
                   isBookmarked
                     ? 'fill-amber-500 hover:fill-amber-600'
                     : 'fill-zinc-400 hover:fill-white',
-                )}
-              />
+                )} />
               {Number(post.bookmarked_amount) > 0 && (
                 <span>{post.bookmarked_amount}</span>
               )}

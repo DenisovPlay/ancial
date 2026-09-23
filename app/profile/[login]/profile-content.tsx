@@ -1,7 +1,7 @@
 'use client';
 import { coerceToFinite as toNumber } from '../../lib/convert';
 
-import Image from 'next/image';
+import AppImage from '../../components/app-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -38,13 +38,13 @@ import { applyBookmarkResult } from '../../lib/post-bookmark';
 import { applyVoteResult } from '../../lib/post-vote';
 import {
   cn,
-  SvgIcon,
-} from '../../feed/editor-shared';
+  } from '../../feed/editor-shared';
 import { uploadImage } from '../../lib/upload';
 import AccountName from '../../components/account-name';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
 import { usePresence, usePresences, type UserPresence } from '../../lib/presence';
 import PresenceActivity, { PresenceCoverBadge } from '../../components/presence-activity';
+import Icon from '../../components/svg-icon';
 
 type Id = string | number;
 
@@ -876,9 +876,9 @@ export default function UserProfileContent({ login }: { login: string }) {
       colorClassName: isAddAction ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600',
       icon:
         button.action === 'add' || button.action === 'accept' ? (
-          <SvgIcon className="w-6 h-6 inline fill-white mr-2" id="IC-plus" />
+          <Icon name="IC-plus" className="w-6 h-6 inline fill-white mr-2" />
         ) : (
-          <SvgIcon className="w-6 h-6 inline fill-white mr-2" id="IC-times" />
+          <Icon name="IC-times" className="w-6 h-6 inline fill-white mr-2" />
         ),
       label:
         button.action === 'accept'
@@ -900,7 +900,7 @@ export default function UserProfileContent({ login }: { login: string }) {
         <ProfileSkeleton />
       ) : error ? (
         <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
-          <Image
+          <AppImage
             src="/img/load-placeholders/nothingfound.webp"
             alt="Profile error"
             width={224}
@@ -941,9 +941,13 @@ export default function UserProfileContent({ login }: { login: string }) {
                 className="h-32 w-full max-w-screen-2xl object-cover lg:h-48 blur-lg rounded-3xl rounded-b-none bg-cover bg-center"
                 style={{ backgroundImage: `url('${currentCover}')` }}
               />
-              <div
-                className="h-32 w-full max-w-screen-2xl object-cover lg:h-48 absolute rounded-3xl rounded-b-none bg-cover bg-center"
-                style={{ backgroundImage: `url('${currentCover}')` }}
+              <AppImage
+                width={1536}
+                height={192}
+                sizes="(max-width: 1536px) 100vw, 1536px"
+                src={currentCover}
+                alt=""
+                className="h-32 w-full max-w-screen-2xl object-cover lg:h-48 absolute rounded-3xl rounded-b-none"
               />
             </div>
 
@@ -1006,7 +1010,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                     onClick={() => void handleCreateDialog()}
                     className="border border-zinc-600/30 flex items-center justify-center px-3 py-1 bg-zinc-700 hover:bg-zinc-700/70 duration-300 active:scale-95 rounded-3xl w-full md:w-auto cursor-pointer"
                   >
-                    <SvgIcon className="inline w-6 h-6 fill-white mr-2" id="IC-comments" />
+                    <Icon name="IC-comments" className="inline w-6 h-6 fill-white mr-2" />
                     <span>{strings.writetouser}</span>
                   </button>
                 ) : null}
@@ -1016,7 +1020,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                     href="/settings/account"
                     className="border border-zinc-600/30 flex items-center justify-center px-3 py-1 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto cursor-pointer text-white"
                   >
-                    <SvgIcon className="w-6 h-6 fill-white inline mr-2" id="IC-edit" />
+                    <Icon name="IC-edit" className="w-6 h-6 fill-white inline mr-2" />
                     <span>{strings.edit}</span>
                   </Link>
                 ) : null}

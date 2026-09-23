@@ -7,8 +7,9 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PULSE_GENRES, PULSE_MOODS, PULSE_TRACK_LANGUAGES } from '../../pulse-constants';
-import { ActionIcon } from '../../pulse-components';
 import { PulseArtistLinkPicker } from '../pulse-artist-link-picker';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 function EditTrackContent() {
   const { lang, isAuthenticated } = useAuth();
@@ -170,7 +171,7 @@ function EditTrackContent() {
 
       {loading ? (
         <div className="flex w-full items-center justify-center p-6">
-          <ActionIcon className="h-8 w-8 animate-spin fill-zinc-500" name="IC-loader" />
+          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
         </div>
       ) : (
         <form onSubmit={saveTrack} className="flex flex-col gap-3 w-full">
@@ -184,7 +185,7 @@ function EditTrackContent() {
               >
                 {img ? (
                   <>
-                    <img className="w-full h-full object-cover" src={img} alt="Cover" />
+                    <AppImage width={224} height={224} className="w-full h-full object-cover" src={img} alt="Cover" />
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300 backdrop-blur-xs">
                       <span className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-600/30">
                         {lang?.replacetrackcover || 'Заменить обложку'}
@@ -194,7 +195,7 @@ function EditTrackContent() {
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-2 text-center p-3">
                     <div className="p-3 rounded-full bg-zinc-700/60 text-zinc-300">
-                      <ActionIcon className="w-8 h-8 fill-current" name="IC-plus" />
+                      <Icon name="IC-plus" className="inline w-8 h-8 fill-current" />
                     </div>
                     <span className="text-sm font-semibold text-zinc-200">{lang?.trackcover || 'Обложка трека'}</span>
                   </div>
@@ -348,7 +349,7 @@ function EditTrackContent() {
           >
             {saving ? (
               <>
-                <ActionIcon className="h-5 w-5 animate-spin fill-black" name="IC-loader" />
+                <Icon name="IC-loader" className="inline h-5 w-5 animate-spin fill-black" />
                 <span>{lang?.creators_saving || 'Сохранение...'}</span>
               </>
             ) : (

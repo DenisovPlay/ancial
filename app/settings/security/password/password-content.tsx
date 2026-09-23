@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
+import Icon from '../../../components/svg-icon';
 
 function guessNoteType(responseText: string) {
   const normalized = responseText.toLowerCase();
@@ -119,9 +120,7 @@ export default function PasswordContent() {
   if (isLoading && !user) {
     return (
       <div className="flex justify-center items-center w-full h-[60vh]">
-        <svg className="w-10 h-10 animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
       </div>
     );
   }
@@ -139,9 +138,7 @@ export default function PasswordContent() {
             href="/settings/security"
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="#IC-chevron-left"></use>
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {lang?.password || 'Пароль'}
           </Link>
         </div>

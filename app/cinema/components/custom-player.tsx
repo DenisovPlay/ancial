@@ -8,6 +8,7 @@ import {
   parseFlixPlaybackPayload,
   resolveResumeTime,
 } from '../cinema-progress';
+import Icon from '../../components/svg-icon';
 
 /** iOS Safari: нативный фуллскрин <video>. */
 type IosFullscreenVideo = {
@@ -766,9 +767,7 @@ export default function CustomPlayer({
               data-tv-player-control="back"
               className="focusable-tv p-2.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
             >
-              <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
+              <Icon name="IC-chevron-left-stroke" className="w-5 h-5 stroke-white fill-none stroke-[2.5]" />
             </button>
 
             <div>
@@ -788,9 +787,7 @@ export default function CustomPlayer({
               data-tv-player-control="picker"
               className="focusable-tv pointer-events-auto px-4 py-2 flex items-center gap-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-xl outline-none focus:outline-none focus:ring-4 focus:ring-white cursor-pointer active:scale-95"
             >
-              <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
+              <Icon name="IC-menu" className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" />
               <span>
                 {((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1)
                   ? `С${season || 1} Е${episode || 1} (Выбор серии)`
@@ -874,13 +871,9 @@ export default function CustomPlayer({
                   className="focusable-tv p-3 rounded-3xl bg-white hover:bg-zinc-200 text-black font-extrabold flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white shadow-xl"
                 >
                   {isPlaying ? (
-                    <svg className="w-5 h-5 fill-black" viewBox="0 0 24 24">
-                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                    </svg>
+                    <Icon name="IC-pause-solid" className="w-5 h-5 fill-black" />
                   ) : (
-                    <svg className="w-5 h-5 fill-black ml-0.5" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
+                    <Icon name="IC-play-solid" className="w-5 h-5 fill-black ml-0.5" />
                   )}
                 </button>
 
@@ -893,9 +886,7 @@ export default function CustomPlayer({
                     aria-label="Предыдущая серия"
                     className="hidden md:flex focusable-tv p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
                   >
-                    <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                      <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-                    </svg>
+                    <Icon name="IC-skip-prev" className="w-4 h-4 fill-white" />
                   </button>
                 )}
 
@@ -908,9 +899,7 @@ export default function CustomPlayer({
                     aria-label="Следующая серия"
                     className="hidden md:flex focusable-tv p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
                   >
-                    <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                      <path d="M6 18l8.5-6L6 6v12zm2.5-6l8.5 6V6z" />
-                    </svg>
+                    <Icon name="IC-skip-next" className="w-4 h-4 fill-white" />
                   </button>
                 )}
               </div>
@@ -923,9 +912,7 @@ export default function CustomPlayer({
                   aria-label="На весь экран"
                   className="focusable-tv p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
                 >
-                  <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
-                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-                  </svg>
+                  <Icon name="IC-fullscreen" className="w-5 h-5 fill-white" />
                 </button>
               </div>
             </div>
@@ -1008,9 +995,7 @@ export default function CustomPlayer({
             data-tv-player-control="back"
             className="focusable-tv p-2.5 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl shrink-0"
           >
-            <svg className="w-5 h-5 stroke-white fill-none stroke-[2.5]" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+            <Icon name="IC-chevron-left-stroke" className="w-5 h-5 stroke-white fill-none stroke-[2.5]" />
           </button>
 
           <div className="min-w-0 flex-1">
@@ -1031,9 +1016,7 @@ export default function CustomPlayer({
             aria-label="Выбор серии и озвучки"
             className="focusable-tv px-3 py-2 sm:px-4 sm:py-2 flex items-center gap-1.5 sm:gap-2 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs shadow-xl outline-none focus:outline-none focus:ring-4 focus:ring-white cursor-pointer active:scale-95 shrink-0"
           >
-            <svg className="w-4 h-4 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
+            <Icon name="IC-menu" className="w-4 h-4 text-indigo-400 shrink-0" fill="none" stroke="currentColor" />
             <span className="hidden sm:inline">
               {((totalSeasons || 0) > 1 || (totalEpisodes || 0) > 1)
                 ? `С${season || 1} Е${episode || 1} (Выбор серии)`
@@ -1057,9 +1040,7 @@ export default function CustomPlayer({
           className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-xs cursor-pointer z-30"
         >
           <button className="w-20 h-20 rounded-full bg-white/90 text-black flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95">
-            <svg className="w-10 h-10 fill-black ml-1" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
+            <Icon name="IC-play-solid" className="w-10 h-10 fill-black ml-1" />
           </button>
         </div>
       )}
@@ -1125,13 +1106,9 @@ export default function CustomPlayer({
               className="focusable-tv p-3 rounded-3xl bg-white hover:bg-zinc-200 text-black font-extrabold flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white shadow-xl"
             >
               {isPlaying ? (
-                <svg className="w-5 h-5 fill-black" viewBox="0 0 24 24">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                </svg>
+                <Icon name="IC-pause-solid" className="w-5 h-5 fill-black" />
               ) : (
-                <svg className="w-5 h-5 fill-black ml-0.5" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <Icon name="IC-play-solid" className="w-5 h-5 fill-black ml-0.5" />
               )}
             </button>
 
@@ -1144,9 +1121,7 @@ export default function CustomPlayer({
                 aria-label="Предыдущая серия"
                 className="hidden md:flex focusable-tv p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
               >
-                <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                  <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-                </svg>
+                <Icon name="IC-skip-prev" className="w-4 h-4 fill-white" />
               </button>
             )}
 
@@ -1159,9 +1134,7 @@ export default function CustomPlayer({
                 aria-label="Следующая серия"
                 className="hidden md:flex focusable-tv p-2.5 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white items-center gap-1 text-xs font-bold shrink-0"
               >
-                <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                  <path d="M6 18l8.5-6L6 6v12zm2.5-6l8.5 6V6z" />
-                </svg>
+                <Icon name="IC-skip-next" className="w-4 h-4 fill-white" />
               </button>
             )}
           </div>
@@ -1176,16 +1149,11 @@ export default function CustomPlayer({
                   data-tv-player-control="quality"
                   className="focusable-tv px-3.5 py-2 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-white font-bold text-xs flex items-center gap-1.5 transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg"
                 >
-                  <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+                  <Icon name="IC-gear" className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" />
                   <span>
                     {qualities.find((q) => (selectedQualityUrl ? selectedQualityUrl === q.url : src === q.url))?.label || qualities[0]?.label || 'Качество'}
                   </span>
-                  <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${showQualityDropdown ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <Icon name="IC-chevron-down-stroke" className={`w-3.5 h-3.5 transition-transform duration-200 ${showQualityDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" />
                 </button>
 
                 {showQualityDropdown && (
@@ -1217,9 +1185,7 @@ export default function CustomPlayer({
                         >
                           <span>{q.label}</span>
                           {isSelected && (
-                            <svg className="w-3.5 h-3.5 fill-black" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
+                            <Icon name="IC-check-sm" className="w-3.5 h-3.5 fill-black" />
                           )}
                         </button>
                       );
@@ -1237,13 +1203,7 @@ export default function CustomPlayer({
               aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Полноэкранный режим"}
               className="focusable-tv p-3 rounded-3xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md text-white transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white shadow-lg shrink-0 flex items-center justify-center"
             >
-              <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
-                {isFullscreen ? (
-                  <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
-                ) : (
-                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-                )}
-              </svg>
+              <Icon name={isFullscreen ? 'IC-fullscreen-exit' : 'IC-fullscreen'} className="w-5 h-5 fill-white" />
             </button>
           </div>
         </div>

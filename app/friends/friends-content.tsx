@@ -34,6 +34,8 @@ interface Friend {
 
 import AccountName from '../components/account-name';
 import { PresenceCoverBadge } from '../components/presence-activity';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 // Отдельный компонент для контента, чтобы использовать useSearchParams безопасно
 function FriendsContent() {
@@ -172,9 +174,7 @@ function FriendsContent() {
             }}
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"
           >
-            <svg className="w-8 h-8 fill-white inline" viewBox="0 0 48 48">
-              <use href="#IC-chevron-left"></use>
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             <span>{lang?.friends}</span>
           </span>
         </div>
@@ -190,9 +190,7 @@ function FriendsContent() {
             autoComplete="off"
           />
           <button type="submit" className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700/50 border border-transparent hover:border-zinc-600/30">
-            <svg className="inline w-8 h-8 fill-white" viewBox="0 0 48 48">
-              <use href="#IC-search"></use>
-            </svg>
+            <Icon name="IC-search" className="inline w-8 h-8 fill-white" />
           </button>
         </form>
       </div>
@@ -214,7 +212,7 @@ function FriendsContent() {
           </div>
         ) : friends.length === 0 ? (
           <div className="w-full flex flex-col gap-0.5 justify-center items-center py-10 duration-300">
-            <img src="/img/load-placeholders/nothingfound.webp" className="w-48 lg:w-56" alt="Nothing found" />
+            <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="w-48 lg:w-56" alt="Nothing found" />
             <span className="text-base text-zinc-100 w-full text-center font-black">{lang?.nofriends}</span>
             <span className="text-sm text-zinc-300 w-full text-center font-medium">{lang?.nosfriendsdesc}</span>
           </div>
@@ -239,10 +237,14 @@ function FriendsContent() {
                     className="flex-shrink-0 relative cursor-pointer"
                     href={`/@${friend.username || friend.login || friend.id}`}
                   >
-                    <div
-                      className={`shadow w-16 h-16 rounded-full shrink-0 bg-cover bg-center border ${isOnline ? 'border-lime-500' : 'border-transparent'}`}
-                      style={{ backgroundImage: `url(${friend.img || '/img/placeholders/user.png'})` }}
-                    ></div>
+                    <AppImage
+                      width={64}
+                      height={64}
+                      src={friend.img || '/img/placeholders/user.png'}
+                      fallbackSrc="/img/placeholders/user.png"
+                      alt=""
+                      className={`block shadow w-16 h-16 rounded-full shrink-0 object-cover border ${isOnline ? 'border-lime-500' : 'border-transparent'}`}
+                    />
                     <PresenceCoverBadge presence={presence} className="absolute bottom-0 left-0" />
                   </Link>
 
@@ -272,9 +274,7 @@ function FriendsContent() {
                         onClick={() => handleAction('add.php', 'frid', String(actionId))}
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
-                        <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                          <use href="#IC-plus"></use>
-                        </svg>
+                        <Icon name="IC-plus" className="inline w-6 h-6 fill-white" />
                       </div>
                     )}
 
@@ -283,9 +283,7 @@ function FriendsContent() {
                         onClick={() => handleAction('delete.php', 'frid', String(actionId))}
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
-                        <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                          <use href="#IC-times"></use>
-                        </svg>
+                        <Icon name="IC-times" className="inline w-6 h-6 fill-white" />
                       </div>
                     )}
 
@@ -294,9 +292,7 @@ function FriendsContent() {
                         onClick={() => handleCreateDialog(String(friend.id))}
                         className="h-10 w-10 border border-transparent hover:border-zinc-600/30 flex items-center justify-center p-1.5 hover:bg-zinc-700/50 duration-300 rounded-3xl cursor-pointer"
                       >
-                        <svg className="inline w-6 h-6 fill-white" viewBox="0 0 48 48">
-                          <use href="#IC-chats"></use>
-                        </svg>
+                        <Icon name="IC-chats" className="inline w-6 h-6 fill-white" />
                       </div>
                     ) : null}
 

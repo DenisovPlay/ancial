@@ -12,6 +12,7 @@ import { fetchCinemaSearch, fetchCinemaUpdates, cacheCinemaSearchResults, dedupl
 import { goToMovieInfo } from '../cinema-navigation';
 import { getCinemaCache, setCinemaCache } from '../cinema-cache';
 import { CacheManager } from '../../lib/cache';
+import Icon from '../../components/svg-icon';
 
 export default function SearchContent() {
   useTvNavigation();
@@ -169,15 +170,11 @@ export default function SearchContent() {
                   className="cursor-pointer shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-700/50"
                   aria-label="Очистить"
                 >
-                  <svg className="w-5 h-5 fill-zinc-400" viewBox="0 0 24 24">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                  </svg>
+                  <Icon name="IC-close-material" className="w-5 h-5 fill-zinc-400" />
                 </button>
               ) : (
                 <div className="shrink-0 w-8 h-8 flex items-center justify-center">
-                  <svg className="w-5 h-5 fill-zinc-400" viewBox="0 0 24 24">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-                  </svg>
+                  <Icon name="IC-search-material" className="w-5 h-5 fill-zinc-400" />
                 </div>
               )}
             </div>
@@ -207,9 +204,7 @@ export default function SearchContent() {
               </div>
             ) : query.trim() && searchResults.length === 0 ? (
               <div className="py-16 text-center text-zinc-500 space-y-3 bg-zinc-950/50 border border-zinc-900 rounded-3xl">
-                <svg className="w-12 h-12 fill-zinc-600 mx-auto" viewBox="0 0 24 24">
-                  <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-                </svg>
+                <Icon name="IC-search-material" className="w-12 h-12 fill-zinc-600 mx-auto" />
                 <p className="text-lg font-bold text-zinc-400">Ничего не найдено</p>
                 <p className="text-sm text-zinc-600">Проверьте название фильма или сериала</p>
               </div>

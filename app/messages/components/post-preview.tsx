@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import AppImage from '../../components/app-image';
 import Link from 'next/link';
 import { sanitizeUserHtml } from '../../lib/sanitize-html';
 
@@ -86,7 +86,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
     <Link href={`/feed/post/${post.id}`} className="block w-[300px] max-w-full rounded-3xl bg-zinc-900/40 border border-zinc-700/30 p-1.5 hover:bg-zinc-800/40 duration-300 shadow">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <Image
+          <AppImage
             src={post.author?.img || '/img/noimg.png'}
             alt={post.author?.name || 'Author'}
             width={32}
@@ -105,7 +105,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
 
         {post.images && post.images.length > 0 && (
           <div className="w-full h-32 rounded-xl overflow-hidden relative">
-            <Image
+            <AppImage
               src={post.images[0].url}
               alt="Post preview"
               fill
@@ -116,7 +116,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
         )}
 
         {post.content && (!post.images || post.images.length === 0) && (
-          <p className="text-xs text-zinc-300 line-clamp-3" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(post.content)) }} />
+          <p className="text-xs text-zinc-300 line-clamp-3" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(post.content), { preloadImages: true }) }} />
         )}
       </div>
     </Link>

@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { AncialAPI, getApiMessage, type PayOrderDetails, type PayGateway } from '../lib/api-v2';
 import { formatMerchantBadge } from './format-merchant-badge';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -221,9 +223,7 @@ export default function PayContent() {
           onClick={handleBack}
           className="mb-3 w-fit text-sm font-extralight hover:text-zinc-200 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer text-zinc-300"
         >
-          <svg className="w-4 h-4 fill-zinc-300 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
-          </svg>
+          <Icon name="IC-chevron-left" className="w-4 h-4 fill-zinc-300 inline" />
           {backButtonText}
         </span>
 
@@ -268,9 +268,7 @@ export default function PayContent() {
         onClick={handleBack}
         className="mb-3 mt-3 w-fit text-sm font-extralight hover:text-zinc-200 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer text-zinc-300"
       >
-        <svg className="w-4 h-4 fill-zinc-300 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
-        </svg>
+        <Icon name="IC-chevron-left" className="w-4 h-4 fill-zinc-300 inline" />
         {backButtonText}
       </span>
 
@@ -294,7 +292,7 @@ export default function PayContent() {
           <div className="mt-1.5">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-14 h-14 rounded-2xl overflow-hidden bg-zinc-800/50 border border-zinc-600/30 shadow-lg shrink-0">
-                <img src={merchant.img} alt={merchant.name} className="w-full h-full object-cover" />
+                <AppImage width={56} height={56} src={merchant.img} alt={merchant.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -330,7 +328,7 @@ export default function PayContent() {
                       className="border border-zinc-600/30 relative group shrink-0 p-1.5 flex items-center gap-1.5 justify-center bg-zinc-800/70 rounded-3xl shadow-lg cursor-not-allowed opacity-80"
                     >
                       <div className={`shadow-2xl h-14 w-14 lg:h-16 lg:w-16 p-1.5 rounded-3xl shrink-0 flex items-center justify-center ${themeBg}`}>
-                        <img alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
+                        <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
                       </div>
                       <div className="flex flex-col justify-center flex-grow min-w-0">
                         <span className="text-sm lg:text-base text-zinc-100 truncate">{gateway.description}</span>
@@ -361,11 +359,9 @@ export default function PayContent() {
 
                     <div className={`shadow-2xl h-14 w-14 lg:h-16 lg:w-16 p-1.5 rounded-3xl shrink-0 duration-300 flex items-center justify-center ${themeBg}`}>
                       {isRedirecting ? (
-                        <svg className="w-10 h-10 inline animate-spin fill-purple-500" viewBox="0 0 48 48">
-                          <path d="M 24 4 A 1.50015 1.50015 0 1 0 24 7 C 30.255882 7 35.765936 10.406785 38.703125 15.455078 A 1.5005776 1.5005776 0 1 0 41.296875 13.945312 C 37.834064 7.9936061 31.344118 4 24 4 z" />
-                        </svg>
+                        <Icon name="IC-loader" className="w-10 h-10 inline animate-spin fill-purple-500" />
                       ) : (
-                        <img alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
+                        <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full object-contain" />
                       )}
                     </div>
 
@@ -392,7 +388,7 @@ export default function PayContent() {
             {gateway_pending && (
               <div className="flex items-center justify-center w-full my-2">
                 <div className={`animate-pulse h-24 w-24 flex items-center justify-center rounded-full border border-zinc-600/30 ${getThemeBgClass(gateway_pending.theme_color)}`}>
-                  <img className="h-16 w-16 object-contain" src={gateway_pending.image} alt={gateway_pending.name} />
+                  <AppImage width={64} height={64} className="h-16 w-16 object-contain" src={gateway_pending.image} alt={gateway_pending.name} />
                 </div>
               </div>
             )}
@@ -505,9 +501,7 @@ export default function PayContent() {
         {/* Loading Overlay when redirecting to payment gateway */}
         {redirectingGatewayId && (
           <div className="w-full h-full absolute inset-0 rounded-3xl flex flex-col gap-3 items-center justify-center bg-zinc-900/90 backdrop-blur-lg z-50">
-            <svg className="w-10 h-10 inline animate-spin fill-purple-500" viewBox="0 0 48 48">
-              <path d="M 24 4 A 1.50015 1.50015 0 1 0 24 7 C 30.255882 7 35.765936 10.406785 38.703125 15.455078 A 1.5005776 1.5005776 0 1 0 41.296875 13.945312 C 37.834064 7.9936061 31.344118 4 24 4 z" />
-            </svg>
+            <Icon name="IC-loader" className="w-10 h-10 inline animate-spin fill-purple-500" />
             <span className="text-zinc-100">
               {lang?.pay_redirecting || 'Перенаправляем на'} {redirectingGatewayName}...
             </span>
@@ -518,7 +512,7 @@ export default function PayContent() {
       {/* Footer Branding & Links */}
       <div className="flex items-center justify-center mt-3 flex-wrap gap-6">
         <div className="flex items-center justify-center">
-          <img src="/img/logos/zeni.png" alt="ZeniFlow" className="w-10" />
+          <AppImage width={40} height={40} src="/img/logos/zeni.png" alt="ZeniFlow" className="w-10" />
           <div className="flex flex-col items-start justify-center">
             <span className={`text-lg text-lime-500 ${nauryzFont.className}`} style={{ marginTop: 0 }}>zENIFLOW</span>
             <span className="text-zinc-300 text-xs -mt-2">leap ahead</span>
@@ -526,9 +520,9 @@ export default function PayContent() {
         </div>
 
         <div className="flex items-center justify-center gap-2">
-          <img src="/img/zypo/logo-rounded.webp" alt="Zypo" className="w-8 rounded-xl" />
+          <AppImage width={32} height={32} src="/img/zypo/logo-rounded.webp" alt="Zypo" className="w-8 rounded-xl" />
           <div className="flex flex-col items-start justify-center">
-            <img src="/img/zypo/letter.svg" alt="Zypo" className="h-4 mt-1" />
+            <AppImage width={53} height={16} src="/img/zypo/letter.svg" alt="Zypo" className="h-4 w-auto mt-1" />
             <span className="text-zinc-300 text-xs">flow as one</span>
           </div>
         </div>

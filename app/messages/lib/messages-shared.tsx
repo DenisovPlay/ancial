@@ -280,19 +280,7 @@ let sevenTvStickerSearchCacheHydrated = false;
 
 export { cn } from '../../lib/cn';
 
-export function Icon({
-  name,
-  className,
-}: {
-  className?: string;
-  name: string;
-}) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <use href={`#${name}`}></use>
-    </svg>
-  );
-}
+export { default as Icon } from '../../components/svg-icon';
 
 import { normalizeText, parseToInt as toNumber } from '../../lib/convert';
 

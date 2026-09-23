@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
+import Icon from '../components/svg-icon';
 
 type NoteType = 'success' | 'error' | 'warning' | 'info';
 const NOTE_STACK_GAP_PX = 8;
@@ -161,7 +162,7 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
         {note.html && typeof note.content === 'string' ? (
           <span
             className="font-medium text-sm sm:text-base leading-tight break-words [&_a]:underline [&_a]:underline-offset-2"
-            dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(note.content) }}
+            dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(note.content, { preloadImages: true }) }}
           />
         ) : (
           <span className="font-medium text-sm sm:text-base leading-tight break-words">
@@ -169,9 +170,7 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
           </span>
         )}
         <button onClick={startClosing} className="ml-3 cursor-pointer p-1 opacity-60 hover:opacity-100 transition-opacity">
-          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-            <use href={`#IC-times`}></use>
-          </svg>
+          <Icon name="IC-times" className="w-5 h-5 fill-current" />
         </button>
       </div>
     </div>

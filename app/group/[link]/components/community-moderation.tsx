@@ -16,6 +16,7 @@ import {
 } from '../lib/community-types';
 import { communityErrorText } from '../lib/community-error';
 import { communityRoleBadgeStyle, communityRoleLabel } from '../lib/community-presentation';
+import Icon from '../../../components/svg-icon';
 
 type Props = {
   actorIsOwner: boolean;
@@ -140,7 +141,7 @@ export default function CommunityModeration({ actorIsOwner, actorPosition, commu
                     aria-label={lang?.community_add_role || ''}
                     className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-3xl bg-purple-600 text-white duration-300 hover:bg-purple-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <svg className="h-5 w-5 fill-current" viewBox="0 0 48 48"><use href="#IC-plus" /></svg>
+                    <Icon name="IC-plus" className="h-5 w-5 fill-current" />
                   </button>
                 </div>
               </div> : null}

@@ -1,18 +1,17 @@
 'use client';
 
-import { useEffect, useRef, type ComponentType, type RefObject, type TouchEventHandler } from 'react';
+import { useEffect, useRef, type RefObject, type TouchEventHandler } from 'react';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
 import { PulseRangeTrack } from './pulse-range-track';
 import { useIsListenFollower } from './listen-along';
 import { useRemoteDevices } from './remote-devices';
+import Icon from '../../components/svg-icon';
 
-type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 type ActiveSeekSlider = 'desktop' | 'mobile' | null;
 
 type PulsePlayerMiniProps = {
-  Icon: PlayerIcon;
   activeSeekSlider: ActiveSeekSlider;
   currentTime: number;
   desktopCurrentTimeLabelRef: RefObject<HTMLDivElement | null>;
@@ -59,7 +58,6 @@ const MINI_EASE = 'ease-[cubic-bezier(0.32,0.72,0,1)]';
 
 /** Prop-driven mini player presentation. Playback and gesture ownership stay in the provider. */
 export function PulsePlayerMini({
-  Icon,
   activeSeekSlider,
   currentTime,
   desktopCurrentTimeLabelRef,

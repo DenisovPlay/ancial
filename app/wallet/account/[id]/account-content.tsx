@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import AppImage from '../../../components/app-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -9,6 +9,7 @@ import { AncialAPI, getApiMessage, type WalletAccount, type WalletTransaction } 
 import { cache } from '../../../lib/cache.ts';
 import Modal from '../../../components/modal';
 import { TransactionItem, TransactionDetailsModal } from '../../components/transaction-item';
+import Icon from '../../../components/svg-icon';
 
 /** Плоское сравнение WalletAccount по полям: cache.get()/API отдают новый объект каждый раз. */
 function isSameAccount(a: WalletAccount | null, b: WalletAccount): boolean {
@@ -221,9 +222,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
       <div className="flex flex-col w-full items-center justify-start min-h-screen pb-3 lg:pb-6 gap-3 bg-gradient-to-b from-black to-black via-black text-white">
         <div className="w-full max-w-screen-2xl h-14 flex items-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[99]">
           <span className="w-fit text-3xl font-extralight flex items-center gap-1.5 cursor-pointer">
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {strings.bankaccount}
           </span>
         </div>
@@ -294,9 +293,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
           href="/wallet"
           className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
         >
-          <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
-          </svg>
+          <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
           {strings.bankaccount}
         </Link>
       </div>
@@ -307,9 +304,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
             <div className="shrink-0 p-3 flex flex-col border border-zinc-600/30 bg-zinc-800/70 rounded-3xl shadow-lg duration-300 w-48 lg:w-64 h-24 lg:h-32">
               <span className="lg:font-black text-white text-xl lg:text-3xl">
                 {currentAccount.balance}{' '}
-                <svg className="w-6 h-6 lg:w-8 lg:h-8 inline fill-purple-500 -mt-1.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                  <use href="/icons.svg#IC-anci"></use>
-                </svg>
+                <Icon name="IC-anci" className="w-6 h-6 lg:w-8 lg:h-8 inline fill-purple-500 -mt-1.5" />
               </span>
               <span className="text-zinc-200 text-sm lg:text-lg">{currentAccount.name}</span>
               <div className="flex-grow"></div>
@@ -324,16 +319,16 @@ export default function AccountContent({ accountId }: AccountContentProps) {
           <div className="sticky flex flex-col gap-3 w-full duration-300 shrink-0 lg:pt-0" style={{ zIndex: 98, top: '56px' }}>
             <div className="px-3 lg:px-0 flex flex-nowrap justify-start items-center gap-3 overflow-x-auto viewport w-full duration-300">
               <button onClick={() => setIsTopupModalOpen(true)} className="hidden shrink-0 items-center gap-3 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-lg">
-                <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-topup"></use></svg> {strings.deposit}
+                <Icon name="IC-topup" className="fill-white w-5 h-5 inline" /> {strings.deposit}
               </button>
               <button onClick={() => handleTopage(`/wallet/form?form=sendtouser&sender_id=${accountId}`)} className="hidden shrink-0 items-center gap-3 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-lg">
-                <svg className="fill-white w-5 h-5 inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-send"></use></svg> {strings.send}
+                <Icon name="IC-send" className="fill-white w-5 h-5 inline" /> {strings.send}
               </button>
               <button onClick={() => setIsReceiveModalOpen(true)} className="hidden shrink-0 items-center gap-3 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-lg">
-                <svg className="fill-white w-5 h-5 inline rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-send"></use></svg> {strings.receive}
+                <Icon name="IC-send" className="fill-white w-5 h-5 inline rotate-180" /> {strings.receive}
               </button>
               <button onClick={() => setIsCloseConfirmModalOpen(true)} className="shrink-0 flex items-center gap-3 text-red-500 bg-red-500/25 hover:bg-red-700/40 shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-lg border border-zinc-600/30">
-                <svg className="fill-red-500 w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="/icons.svg#IC-times"></use></svg>
+                <Icon name="IC-times" className="fill-red-500 w-5 h-5" />
                 {strings.closeaccount}
               </button>
             </div>
@@ -363,7 +358,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
               </div>
             ) : (
               <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
-                <Image src="/img/load-placeholders/nothingfound.webp" width={224} height={224} className="h-56 w-auto" alt="Empty" />
+                <AppImage src="/img/load-placeholders/nothingfound.webp" width={224} height={224} className="h-56 w-auto" alt="Empty" />
                 <span className="text-base text-zinc-100 w-full text-center font-black">{lang?.too_empty || 'Слишком пусто...'}</span>
                 <span className="text-sm text-zinc-300 w-full text-center font-medium">{lang?.maybe_filters_broken || 'Может фильтры сломались или ты ничего не переводил...'}</span>
               </div>
@@ -412,7 +407,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
               {receiveLoading ? (
                 <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-zinc-400 border-t-transparent" />
               ) : receiveQrUrl ? (
-                <Image
+                <AppImage
                   src={receiveQrUrl}
                   width={96}
                   height={96}

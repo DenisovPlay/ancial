@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import Modal from "../../components/modal";
+import Icon from '../../components/svg-icon';
 
 export default function LegalPage() {
   const { lang } = useAuth();
@@ -21,13 +22,7 @@ export default function LegalPage() {
             href="/about"
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 px-3 lg:px-0 cursor-pointer"
           >
-            <svg
-              className="w-8 h-8 fill-white inline"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 48 48"
-            >
-              <use href={`#IC-chevron-left`}></use>
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {lang?.documents || "Документы"}
           </Link>
           <div className="flex-grow"></div>
@@ -40,14 +35,8 @@ export default function LegalPage() {
                 : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 border-transparent"
                 }`}
             >
-              <svg
-                className={`w-6 h-6 inline duration-300 ${langFilter === "ALL" ? "fill-white" : "fill-zinc-400"
-                  }`}
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 48 48"
-              >
-                <use href={`#IC-globe`}></use>
-              </svg>
+              <Icon name="IC-globe" className={`w-6 h-6 inline duration-300 ${langFilter === "ALL" ? "fill-white" : "fill-zinc-400"
+                  }`} />
             </button>
             <button
               id="rubutton"
@@ -81,7 +70,7 @@ export default function LegalPage() {
             <span className="text-sm px-2 py-1 font-medium bg-purple-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               Русский
             </span>
-            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
+            <Icon name="IC-file" className="h-16 w-16 stroke-white fill-transparent" width="24" height="24" />
             <span className="text-zinc-200 text-center">
               Политика обработки персональных данных
             </span>
@@ -94,7 +83,7 @@ export default function LegalPage() {
             <span className="text-sm px-2 py-1 font-medium bg-purple-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               Русский
             </span>
-            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
+            <Icon name="IC-file" className="h-16 w-16 stroke-white fill-transparent" width="24" height="24" />
             <span className="text-zinc-200 text-center">Правила</span>
           </div>
           <div
@@ -105,7 +94,7 @@ export default function LegalPage() {
             <span className="text-sm px-2 py-1 font-medium bg-purple-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               Русский
             </span>
-            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
+            <Icon name="IC-file" className="h-16 w-16 stroke-white fill-transparent" width="24" height="24" />
             <span className="text-zinc-200 text-center">
               Правила публикации на Pulse
             </span>
@@ -118,7 +107,7 @@ export default function LegalPage() {
             <span className="text-sm px-2 py-1 font-medium bg-amber-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               English
             </span>
-            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
+            <Icon name="IC-file" className="h-16 w-16 stroke-white fill-transparent" width="24" height="24" />
             <span className="text-zinc-200 text-center">Terms of Service</span>
           </div>
           <div
@@ -129,7 +118,7 @@ export default function LegalPage() {
             <span className="text-sm px-2 py-1 font-medium bg-purple-500/50 rounded-3xl rounded-bl-none rounded-tr-none absolute top-0 left-0 text-default duration-300 shadow">
               Русский
             </span>
-            <svg className="h-16 w-16 stroke-white fill-transparent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><use href="/icons.svg#IC-file"></use></svg>
+            <Icon name="IC-file" className="h-16 w-16 stroke-white fill-transparent" width="24" height="24" />
             <span className="text-zinc-200 text-center">
               Политика использования файлов Cookie
             </span>

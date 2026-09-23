@@ -1,13 +1,14 @@
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
+
 export default function PulsePlaylistLoading() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 pb-0 duration-300 lg:pb-64">
       <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
         <div className="w-full max-w-screen-2xl px-3 lg:px-0">
           <div className="flex w-fit items-center gap-3">
-            <svg className="inline h-8 w-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="#IC-chevron-left" />
-            </svg>
-            <img src="/img/branding/pulse.svg" alt="Pulse Logo" className="w-32 shrink-0 sm:w-48" />
+            <Icon name="IC-chevron-left" className="inline h-8 w-8 fill-white" />
+            <AppImage width={821} height={157} src="/img/branding/pulse.svg" alt="Pulse Logo" className="w-32 shrink-0 sm:w-48" />
           </div>
         </div>
       </div>

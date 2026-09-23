@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ActionIcon, PulseLogo, cn } from './pulse-components';
+import { PulseLogo, cn } from './pulse-components';
+import Icon from '../components/svg-icon';
 
 export function PulseHeader({
   className,
@@ -69,7 +70,7 @@ export function PulseHeader({
             autoComplete="off"
           />
           <button className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95" type="submit">
-            <ActionIcon className="h-8 w-8 cursor-pointer" name="IC-search" />
+            <Icon name="IC-search" className="inline fill-current h-8 w-8 cursor-pointer" />
           </button>
         </form>
 
@@ -83,7 +84,7 @@ export function PulseHeader({
             )}
             aria-label="My Pulse"
           >
-            <ActionIcon className="h-8 w-8" name="IC-me" />
+            <Icon name="IC-user" className="inline fill-current h-8 w-8" />
           </button>
         ) : null}
       </div>

@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -22,7 +21,6 @@ import { getPulsePlaylistTracksCacheKey } from '../../playlist/playlist-model';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import {
-  ActionIcon,
   DEFAULT_TRACK_IMAGE,
   getPulseBackgroundColorByMood,
   getTrackArtwork,
@@ -44,6 +42,8 @@ import {
   type PulseShareAttachment,
   type PulseTrack,
 } from '../../pulse-components';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 type PulseArtistOwner = Pick<User, 'fname' | 'img' | 'lname' | 'username'>;
 
@@ -296,8 +296,8 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
               </>
             ) : (
               <>
-                <img className="h-full w-full rounded-full object-cover blur-xl" src={artistImage} alt="" />
-                <img className="absolute inset-x-0 z-[9] h-full w-full rounded-full object-cover" src={artistImage} alt={artistName} />
+                <AppImage width={288} height={288} skeleton={false} className="h-full w-full rounded-full object-cover blur-xl" src={artistImage} alt="" />
+                <AppImage width={288} height={288} className="absolute inset-x-0 z-[9] h-full w-full rounded-full object-cover" src={artistImage} alt={artistName} />
               </>
             )}
           </div>
@@ -314,23 +314,23 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                   <h1 className="flex max-w-[92vw] items-center gap-1.5 break-words text-2xl font-black leading-none md:text-4xl lg:max-w-4xl lg:text-7xl">
                     {artistName}
                     {verifyStatus === '0' || verifyStatus === '1' ? (
-                      <ActionIcon className={cn('h-5 w-5 md:h-8 md:w-8 lg:h-12 lg:w-12', verifyStatus === '1' ? 'fill-blue-500' : 'fill-amber-500')} name="IC-verify" />
+                      <Icon name="IC-verify" className={cn('inline', cn('h-5 w-5 md:h-8 md:w-8 lg:h-12 lg:w-12', verifyStatus === '1' ? 'fill-blue-500' : 'fill-amber-500'))} />
                     ) : null}
                   </h1>
                   {artistDescription ? (
                     <span
                       className="text-base text-zinc-200 md:text-lg lg:text-xl"
-                      dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(artistDescription.replace(/\n/g, '<br>')) }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(artistDescription.replace(/\n/g, '<br>'), { preloadImages: true }) }}
                     />
                   ) : null}
                   <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
-                    <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-speaker" />
-                    <span>{loadingTracks ? <ActionIcon className="h-6 w-6 animate-spin fill-purple-500" name="IC-loader" /> : listensTotal}</span>
+                    <Icon name="IC-speaker" className="inline h-8 w-8 fill-zinc-300" />
+                    <span>{loadingTracks ? <Icon name="IC-loader" className="inline h-6 w-6 animate-spin fill-purple-500" /> : listensTotal}</span>
                     <span className="text-xs text-zinc-400 duration-300 hover:text-lg">{lang?.pulse_all_time || 'за всё время'}</span>
                   </span>
                   {verifyStatus === '0' ? (
                     <span className="w-fit rounded-box bg-content-100 px-2 py-1 text-xs text-zinc-300 opacity-95 shadow duration-300">
-                      <ActionIcon className="inline h-5 w-5 fill-amber-500" name="IC-verify" /> - {lang?.pulse_unverified_note || 'данные настоящие, но оригинальный владелец не имеет доступа к публикуемым трекам.'}
+                      <Icon name="IC-verify" className="inline inline h-5 w-5 fill-amber-500" /> - {lang?.pulse_unverified_note || 'данные настоящие, но оригинальный владелец не имеет доступа к публикуемым трекам.'}
                     </span>
                   ) : null}
                   {verifyStatus === '1' && owner ? (
@@ -339,7 +339,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                       onClick={() => router.push(`/@${encodeURIComponent(normalizeText(owner.username) || 'id' + normalizeText(String(artist?.id ?? '')))}`)}
                       className="flex w-fit cursor-pointer items-center gap-2 rounded-full border border-zinc-600/30 bg-zinc-800 p-0.5 text-zinc-300 opacity-95 shadow duration-300 hover:bg-zinc-700/80 active:scale-95"
                     >
-                      <span className="h-10 w-10 shrink-0 rounded-full bg-cover bg-center" style={{ backgroundImage: `url(${getImageUrl(owner.img, DEFAULT_TRACK_IMAGE)})` }} />
+                      <AppImage width={40} height={40} src={getImageUrl(owner.img, DEFAULT_TRACK_IMAGE)} fallbackSrc={DEFAULT_TRACK_IMAGE} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
                       <span className="text-left text-sm text-zinc-200 lg:text-base">
                         {decodeHtmlEntities(`${owner.fname ?? ''} ${owner.lname ?? ''}`) || (lang?.user || 'Пользователь')} {lang?.manages_page || 'управляет данной страницей'}
                       </span>
@@ -363,7 +363,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                   className={cn('flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95')}
                   aria-label={artistCollectionActive ? 'Pause artist' : 'Play artist'}
                 >
-                  <ActionIcon className="h-10 w-10" name={artistCollectionActive ? 'IC-pause' : 'IC-play'} />
+                  <Icon name={artistCollectionActive ? 'IC-pause' : 'IC-play'} className="inline fill-current h-10 w-10" />
                 </button>
                 <button
                   type="button"
@@ -371,9 +371,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                   className="absolute bottom-0 -right-3 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-lime-500 shadow duration-300 hover:bg-lime-600 active:scale-95"
                   aria-label="Shuffle artist"
                 >
-                  <svg className="inline h-5 w-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M8.7,10a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41L3.84,2.29A1,1,0,0,0,2.42,3.71ZM21,14a1,1,0,0,0-1,1v3.59L15.44,14A1,1,0,0,0,14,15.44L18.59,20H15a1,1,0,0,0,0,2h6a1,1,0,0,0,.38-.08,1,1,0,0,0,.54-.54A1,1,0,0,0,22,21V15A1,1,0,0,0,21,14Zm.92-11.38a1,1,0,0,0-.54-.54A1,1,0,0,0,21,2H15a1,1,0,0,0,0,2h3.59L2.29,20.29a1,1,0,0,0,0,1.42,1,1,0,0,0,1.42,0L20,5.41V9a1,1,0,0,0,2,0V3A1,1,0,0,0,21.92,2.62Z" />
-                  </svg>
+                  <Icon name="IC-shuffle" className="inline h-5 w-5 fill-white" />
                 </button>
               </div>
             ) : null}

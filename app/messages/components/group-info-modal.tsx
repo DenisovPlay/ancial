@@ -18,6 +18,8 @@ import {
   getCommunityRoleLabel,
   type CommunityDisplayRole,
 } from '../lib/community-role';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 interface GroupMember {
   id: number;
@@ -553,7 +555,10 @@ export default function GroupInfoModal({
                 onClick={() => canManageChannel && avatarInputRef.current?.click()}
                 title={canManageChannel ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
               >
-                <img
+                <AppImage
+                  width={80}
+                  height={80}
+                  fallbackSrc={FALLBACK_AVATAR}
                   src={normalizeAssetUrl(currentAvatar || avatar, FALLBACK_AVATAR)}
                   alt=""
                   className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30 group-hover:opacity-85 duration-300"
@@ -563,9 +568,7 @@ export default function GroupInfoModal({
                     {uploadingAvatar ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
-                        <path d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 5z" />
-                      </svg>
+                      <Icon name="IC-add-photo" className="w-6 h-6 fill-white" />
                     )}
                   </div>
                 )}
@@ -588,9 +591,7 @@ export default function GroupInfoModal({
                   type="button"
                   onClick={copyInviteLink}
                   className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
-                    <use href="#IC-plus"></use>
-                  </svg>
+                  <Icon name="IC-plus" className="w-5 h-5 fill-current shrink-0" />
                   <span className="text-sm sm:text-md">{lang?.invite || 'Пригласить'}</span>
                 </button>
               ) : null}
@@ -602,9 +603,7 @@ export default function GroupInfoModal({
                     setView('edit_title');
                   }}
                   className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
-                    <use href="#IC-edit"></use>
-                  </svg>
+                  <Icon name="IC-edit" className="w-5 h-5 fill-current shrink-0" />
                   <span className="text-sm sm:text-md">{lang?.edit_action || 'Изменить'}</span>
                 </button>
               )}
@@ -613,9 +612,7 @@ export default function GroupInfoModal({
                   type="button"
                   onClick={() => void openCommunitySettings()}
                   className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                  <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
-                    <use href="#IC-settings"></use>
-                  </svg>
+                  <Icon name="IC-settings" className="w-5 h-5 fill-current shrink-0" />
                   <span className="text-sm sm:text-md">{lang?.settings || 'Настройки'}</span>
                 </button>
               )}
@@ -624,9 +621,7 @@ export default function GroupInfoModal({
                 onClick={handleLeaveGroup}
                 disabled={loadingAction}
                 className="col-span-full disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-red-800/25 hover:bg-red-800/50 text-red-500 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
-                  <use href="#IC-exit"></use>
-                </svg>
+                <Icon name="IC-exit" className="w-5 h-5 fill-current shrink-0" />
                 <span className="text-sm sm:text-md">{lang?.leave || 'Покинуть'}</span>
               </button>
             </div>
@@ -664,7 +659,10 @@ export default function GroupInfoModal({
                       className="flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 hover:bg-zinc-800/40 duration-300"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <img
+                        <AppImage
+                          width={48}
+                          height={48}
+                          fallbackSrc={FALLBACK_AVATAR}
                           src={normalizeAssetUrl(member.img, FALLBACK_AVATAR)}
                           alt=""
                           className="w-12 h-12 rounded-full object-cover shrink-0"
@@ -697,9 +695,7 @@ export default function GroupInfoModal({
                             className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-full transition-[color,background-color,transform] duration-300 active:scale-95 cursor-pointer shrink-0"
                             title={lang?.remove_from_group || 'Исключить из группы'}
                           >
-                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                            </svg>
+                            <Icon name="IC-close-material" className="w-4 h-4 fill-current" />
                           </button>
                         )}
                       </div>
@@ -720,7 +716,10 @@ export default function GroupInfoModal({
                 onClick={() => canManageChannel && avatarInputRef.current?.click()}
                 title={canManageChannel ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
               >
-                <img
+                <AppImage
+                  width={80}
+                  height={80}
+                  fallbackSrc={FALLBACK_AVATAR}
                   src={normalizeAssetUrl(currentAvatar || avatar, FALLBACK_AVATAR)}
                   alt=""
                   className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30 group-hover:opacity-85 duration-300"
@@ -730,9 +729,7 @@ export default function GroupInfoModal({
                     {uploadingAvatar ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
-                        <path d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5z" />
-                      </svg>
+                      <Icon name="IC-add-photo" className="w-6 h-6 fill-white" />
                     )}
                   </div>
                 )}
@@ -798,9 +795,9 @@ export default function GroupInfoModal({
                     <span className="w-full rounded-2xl rounded-br-none bg-purple-700/80 px-1.5 text-left text-sm text-white">Hi!</span>
                     <span className="flex h-full flex-grow items-end">
                       {uploadingBackground ? (
-                        <svg className="h-10 w-10 animate-spin fill-purple-100" viewBox="0 0 48 48"><use href="#IC-loader" /></svg>
+                        <Icon name="IC-loader" className="h-10 w-10 animate-spin fill-purple-100" />
                       ) : (
-                        <svg className="h-10 w-10 fill-purple-100" viewBox="0 0 48 48"><use href="#IC-image" /></svg>
+                        <Icon name="IC-image" className="h-10 w-10 fill-purple-100" />
                       )}
                     </span>
                   </button>
@@ -914,7 +911,10 @@ export default function GroupInfoModal({
               <span className="text-sm text-zinc-300">{lang?.chat_join_requests || 'Заявки на вступление'}</span>
               {joinRequests.length ? joinRequests.map((request) => (
                 <div key={request.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800 p-1.5">
-                  <img
+                  <AppImage
+                    width={40}
+                    height={40}
+                    fallbackSrc={FALLBACK_AVATAR}
                     src={normalizeAssetUrl(request.img, FALLBACK_AVATAR)}
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-full object-cover"
@@ -964,7 +964,7 @@ export default function GroupInfoModal({
                   type="button"
                   className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700"
                 >
-                  <svg className="inline w-8 h-8 fill-white"><use href="#IC-search"></use></svg>
+                  <Icon name="IC-search" className="inline w-8 h-8 fill-white" />
                 </button>
               </div>
             </div>
@@ -993,7 +993,10 @@ export default function GroupInfoModal({
                         }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <img
+                        <AppImage
+                          width={48}
+                          height={48}
+                          fallbackSrc={FALLBACK_AVATAR}
                           src={normalizeAssetUrl(friend.img, FALLBACK_AVATAR)}
                           alt=""
                           className="w-12 h-12 rounded-full object-cover shrink-0"
@@ -1006,9 +1009,7 @@ export default function GroupInfoModal({
                         </div>
                       </div>
                       {isSel && (
-                        <svg className="w-5 h-5 fill-purple-500 shrink-0" viewBox="0 0 24 24">
-                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                        </svg>
+                        <Icon name="IC-check-material" className="w-5 h-5 fill-purple-500 shrink-0" />
                       )}
                     </div>
                   );

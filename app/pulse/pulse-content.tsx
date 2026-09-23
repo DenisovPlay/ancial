@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,7 +15,6 @@ import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import { buildPulseTrackReportReasons } from '../lib/report-reasons';
 import {
-  ActionIcon,
   cn,
   decodeHtmlEntities,
   DEFAULT_TRACK_IMAGE,
@@ -49,6 +47,8 @@ import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-tra
 import { PulseHeader } from './pulse-header';
 import { useUserCountry } from '../lib/user-geo';
 import type { UserPresence } from '../lib/presence';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 type FriendListening = {
   presence: UserPresence;
@@ -108,14 +108,17 @@ function FriendListeningTile({
         aria-label={friendName}
         className="absolute left-1.5 top-1.5 z-[3] h-10 w-10 cursor-pointer overflow-hidden rounded-full border border-zinc-600/30 shadow duration-300 active:scale-95"
       >
-        <img src={getImageUrl(item.user.img, '/img/placeholders/user.png')} alt="" className="h-full w-full object-cover" />
+        <AppImage width={40} height={40} fallbackSrc="/img/placeholders/user.png" src={getImageUrl(item.user.img, '/img/placeholders/user.png')} alt="" className="h-full w-full object-cover" />
       </button>
 
       {/* Кто слушает вместе с ним: видно, что человек не один. */}
       {coListeners.length > 0 ? (
         <span className="pointer-events-none absolute right-1.5 top-1.5 z-[2] flex items-center">
           {coListeners.map((listener, index) => (
-            <img
+            <AppImage
+              width={24}
+              height={24}
+              fallbackSrc="/img/placeholders/user.png"
               key={listener.id}
               src={getImageUrl(listener.img, '/img/placeholders/user.png')}
               alt=""
@@ -272,7 +275,7 @@ function PulseArtistCard({
       </div>
 
       <div className="absolute top-0 z-[4] h-32 w-32 overflow-hidden rounded-full border border-zinc-600/30 shadow lg:h-48 lg:w-48">
-        <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
+        <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_TRACK_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
       </div>
 
       <span className="z-[1] flex max-w-32 items-center gap-1 truncate text-sm font-medium text-zinc-100 duration-300 lg:-translate-y-24 lg:group-hover:translate-y-0 lg:max-w-48">
@@ -307,7 +310,7 @@ function RecentlyListenedPill({
           src={getImageUrl(card.img, DEFAULT_TRACK_IMAGE)}
         />
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 duration-300 hover:bg-black/20">
-          <ActionIcon className="h-7 w-7 opacity-0 duration-300 hover:opacity-100" name={isPlaying ? 'IC-pause' : 'IC-play'} />
+          <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className="inline fill-current h-7 w-7 opacity-0 duration-300 hover:opacity-100" />
         </span>
       </button>
 
@@ -335,10 +338,10 @@ function OfflineDownloadsPill({
     <div className={cn('flex w-full items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/80 shadow duration-300 hover:bg-zinc-700 active:scale-95', className)}>
       <button type="button" onClick={onPlay} className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full xl:h-16 xl:w-16 2xl:h-20 2xl:w-20">
         <span className="flex h-full w-full items-center justify-center bg-zinc-800">
-          <ActionIcon className="h-7 w-7" name="IC-bookmark-filled" />
+          <Icon name="IC-bookmark-filled" className="inline fill-current h-7 w-7" />
         </span>
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 duration-300 hover:bg-black/20">
-          <ActionIcon className="h-7 w-7 opacity-0 duration-300 hover:opacity-100" name={isPlaying ? 'IC-pause' : 'IC-play'} />
+          <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className="inline fill-current h-7 w-7 opacity-0 duration-300 hover:opacity-100" />
         </span>
       </button>
 
@@ -843,7 +846,7 @@ export default function PulseContent() {
 
             {!isLoading && isAuthenticated && listened === 'empty' && downloadedCount === 0 ? (
               <div className="col-span-2 flex w-full flex-col items-center justify-center gap-3 sm:col-span-3 lg:col-span-4 xl:col-span-5">
-                <img src={THINKING_IMAGE} alt="Nothing listened yet" className="w-32 opacity-90" />
+                <AppImage width={128} height={128} src={THINKING_IMAGE} alt="Nothing listened yet" className="w-32 opacity-90" />
                 <div className="text-center text-zinc-200">{lang?.startlistening || 'Начните уже что-нибудь слушать...'}</div>
               </div>
             ) : null}
@@ -1035,7 +1038,7 @@ export default function PulseContent() {
                 <div className="absolute -right-24 top-0 flex items-center justify-center rounded-2xl rounded-bl-lg bg-purple-500 p-1 text-xs text-white 2xl:-right-32 2xl:text-base">
                   {lang?.whatareyoulistening || 'Что ты вообще слушаешь?'}
                 </div>
-                <img src={THINKING_IMAGE} alt="Guest pulse placeholder" className="w-32" />
+                <AppImage width={128} height={128} src={THINKING_IMAGE} alt="Guest pulse placeholder" className="w-32" />
               </div>
               <span>{guestYourPulseMessage}</span>
             </div>

@@ -3,8 +3,10 @@ import PostWidgetPoll from '../../components/post-widget-poll';
 import { parsePostContentToHtml } from '../../components/post-parser';
 import { sanitizeUserHtml } from '../../lib/sanitize-html';
 import { ensureCarouselScrollDelegation } from '../../components/carousel-delegation';
-import { cn, SvgIcon } from '../editor-shared';
+import { cn, } from '../editor-shared';
 import { useEffect } from 'react';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 type PreviewImage = {
     id: string;
     status: 'error' | 'uploaded' | 'uploading';
@@ -44,9 +46,13 @@ function PreviewAvatar({
 }) {
     if (authorImage) {
         return (
-            <div
-                className="w-10 h-10 rounded-full shadow bg-cover bg-center cursor-pointer"
-                style={{ backgroundImage: `url(${authorImage})` }}
+            <AppImage
+                width={40}
+                height={40}
+                src={authorImage}
+                fallbackSrc="/img/placeholders/user.png"
+                alt=""
+                className="block w-10 h-10 rounded-full shadow object-cover cursor-pointer"
             />
         );
     }
@@ -61,9 +67,13 @@ function PreviewImageBlock({ images, strings }: { images: PreviewImage[]; string
     if (images.length === 1) {
         return (
             <div className="relative group w-full">
-                <div
-                    className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0 bg-zinc-800 bg-center bg-contain bg-no-repeat"
-                    style={{ backgroundImage: `url(${images[0].url})` }}
+                <AppImage
+                    width={768}
+                    height={384}
+                    sizes="(max-width: 768px) 100vw, 768px"
+                    src={images[0].url}
+                    alt=""
+                    className="block h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0 bg-zinc-800 object-contain"
                 />
                 {images[0].status === 'uploading' && (
                     <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center">
@@ -78,16 +88,20 @@ function PreviewImageBlock({ images, strings }: { images: PreviewImage[]; string
             <div className="relative">
                 <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
                     <span className="flex items-center gap-1.5">
-                        <SvgIcon className="w-4 h-4 fill-white" id="IC-photos" />
+                        <Icon name="IC-photos" className="w-4 h-4 fill-white" />
                         <span>{images.length}</span>
                     </span>
                 </div>
                 <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth scroll-pl-3 scroll-pr-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden before:block before:w-3 before:shrink-0 before:content-[''] after:block after:w-3 after:shrink-0 after:content-['']">
                     {images.map((img) => (
                         <div key={`prev-${img.id}`} className="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] relative group">
-                            <div
-                                className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0 bg-zinc-800 bg-center bg-contain bg-no-repeat"
-                                style={{ backgroundImage: `url(${img.url})` }}
+                            <AppImage
+                                width={768}
+                                height={384}
+                                sizes="(max-width: 768px) 100vw, 768px"
+                                src={img.url}
+                                alt=""
+                                className="block h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0 bg-zinc-800 object-contain"
                             />
                             {img.status === 'uploading' && (
                                 <div className="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center">
@@ -134,7 +148,7 @@ export default function CreatePostPreview({
                     type="button"
                     className="flex justify-center items-center cursor-default rounded-2xl w-8 h-8 bg-zinc-800/0 text-zinc-400"
                 >
-                    <SvgIcon className="w-5 h-5 fill-white" id="IC-more" />
+                    <Icon name="IC-more" className="w-5 h-5 fill-white" />
                 </button>
             </div>
             {title?.trim() && (
@@ -154,7 +168,7 @@ export default function CreatePostPreview({
                         spoilerEl.classList.add('revealed');
                     }
                 }}
-                dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(safeText, false)) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(safeText, false), { preloadImages: true }) }}
             />
             <PreviewImageBlock images={images} strings={strings} />
             {widgets && widgets.length > 0 && (
@@ -183,10 +197,10 @@ export default function CreatePostPreview({
             )}
             <div className="text-base lg:text-lg text-zinc-400 font-medium flex items-center">
                 <div className="flex-grow flex items-center fill-zinc-400">
-                    <SvgIcon className="w-6 h-6 inline text-green-500 fill-green-500" id="IC-vote-up" />
+                    <Icon name="IC-vote-up" className="w-6 h-6 inline text-green-500 fill-green-500" />
                     <span>2</span>
-                    <SvgIcon className="w-6 h-6 inline" id="IC-vote-down" />
-                    <SvgIcon className="ml-3 w-6 h-6 inline" id="IC-comments" />
+                    <Icon name="IC-chevron-down" className="w-6 h-6 inline" />
+                    <Icon name="IC-comments" className="ml-3 w-6 h-6 inline" />
                     <span>2</span>
                 </div>
                 {tag?.trim() && tag.trim() !== 'null' && (

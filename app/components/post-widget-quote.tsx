@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import AppImage from './app-image';
 
 type QuoteAuthor = {
   type: 'user' | 'group';
@@ -56,9 +57,13 @@ export default function PostWidgetQuote({ post_id, quote_data }: PostWidgetQuote
         <div className="flex-1 min-w-0">
           {/* Автор */}
           <div className="flex items-center gap-1.5 mb-1">
-            <div
-              className="w-7 h-7 rounded-full bg-cover bg-center shrink-0 border border-zinc-600/30"
-              style={{ backgroundImage: `url(${quote_data.author.img || '/img/placeholders/user.png'})` }}
+            <AppImage
+              width={28}
+              height={28}
+              src={quote_data.author.img || '/img/placeholders/user.png'}
+              fallbackSrc="/img/placeholders/user.png"
+              alt=""
+              className="w-7 h-7 rounded-full object-cover shrink-0 border border-zinc-600/30"
             />
             <span className="text-zinc-300 text-xs font-semibold truncate">{quote_data.author.name}</span>
           </div>
@@ -71,9 +76,12 @@ export default function PostWidgetQuote({ post_id, quote_data }: PostWidgetQuote
         </div>
         {/* Первое фото */}
         {firstImage && (
-          <div
-            className="w-16 h-16 rounded-xl shrink-0 bg-cover bg-center bg-zinc-700"
-            style={{ backgroundImage: `url(${firstImage})` }}
+          <AppImage
+            width={64}
+            height={64}
+            src={firstImage}
+            alt=""
+            className="w-16 h-16 rounded-xl shrink-0 object-cover bg-zinc-700"
           />
         )}
       </div>

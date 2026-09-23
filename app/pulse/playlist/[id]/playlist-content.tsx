@@ -20,7 +20,6 @@ import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
 import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import PulsePlaylistEditorModal from '../../pulse-playlist-editor-modal';
 import {
-  ActionIcon,
   DEFAULT_TRACK_IMAGE,
   PulseLegalFooter,
   PulseLogo,
@@ -52,6 +51,7 @@ import {
   resolvePulsePlaylistTitle,
   type PulsePlaylistMeta,
 } from '../playlist-model';
+import Icon from '../../../components/svg-icon';
 
 type PlaylistPageResponse = {
   is_liked?: boolean;
@@ -499,7 +499,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
             href="/pulse"
             className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
           >
-            <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+            <Icon name="IC-chevron-left" className="inline fill-current h-8 w-8" />
             <PulseLogo className="w-32 sm:w-48" />
           </Link>
         </div>
@@ -564,8 +564,8 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                   ) : null}
                   {playlistType !== 3 ? (
                     <span className="flex w-full items-center justify-center gap-1 text-zinc-300 lg:justify-start">
-                      <ActionIcon className="h-8 w-8 fill-zinc-300" name="IC-speaker" />
-                      <span>{tracksLoading ? <ActionIcon className="h-6 w-6 animate-spin fill-purple-500" name="IC-loader" /> : listensTotal}</span>
+                      <Icon name="IC-speaker" className="inline h-8 w-8 fill-zinc-300" />
+                      <span>{tracksLoading ? <Icon name="IC-loader" className="inline h-6 w-6 animate-spin fill-purple-500" /> : listensTotal}</span>
                     </span>
                   ) : null}
                 </div>
@@ -579,7 +579,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                           onClick={openPlaylistEditor}
                           className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300 hover:bg-zinc-700 active:scale-95"
                         >
-                          <ActionIcon className="h-10 w-10" name="IC-edit" />
+                          <Icon name="IC-edit" className="inline fill-current h-10 w-10" />
                         </button>
                         <span className="text-sm text-content-500">{lang?.edit || 'Изменить'}</span>
                       </>
@@ -590,7 +590,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                           onClick={showSoon}
                           className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300 hover:bg-zinc-700 active:scale-95"
                         >
-                          <ActionIcon className="h-10 w-10" name="IC-download" />
+                          <Icon name="IC-download" className="inline fill-current h-10 w-10" />
                         </button>
                         <span className="text-sm text-content-500">{lang?.download || 'Скачать'}</span>
                       </>
@@ -605,7 +605,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                         className={cn('flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500 shadow duration-300 hover:bg-purple-600 active:scale-95', `playbuttonSVG${playlistPlayTarget.id}`)}
                         aria-label={playlistActive ? 'Pause playlist' : 'Play playlist'}
                       >
-                        <ActionIcon className="h-10 w-10" name={playlistActive ? 'IC-pause' : 'IC-play'} />
+                        <Icon name={playlistActive ? 'IC-pause' : 'IC-play'} className="inline fill-current h-10 w-10" />
                       </button>
                       <button
                         type="button"
@@ -613,9 +613,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                         className={cn('absolute bottom-0 -right-3 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-lime-500 shadow duration-300 hover:bg-lime-600 active:scale-95', `shufflebuttonSVG${playlistPlayTarget.id}`)}
                         aria-label="Shuffle playlist"
                       >
-                        <svg className="inline h-5 w-5 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                          <path d="M8.7,10a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41L3.84,2.29A1,1,0,0,0,2.42,3.71ZM21,14a1,1,0,0,0-1,1v3.59L15.44,14A1,1,0,0,0,14,15.44L18.59,20H15a1,1,0,0,0,0,2h6a1,1,0,0,0,.38-.08,1,1,0,0,0,.54-.54A1,1,0,0,0,22,21V15A1,1,0,0,0,21,14Zm.92-11.38a1,1,0,0,0-.54-.54A1,1,0,0,0,21,2H15a1,1,0,0,0,0,2h3.59L2.29,20.29a1,1,0,0,0,0,1.42,1,1,0,0,0,1.42,0L20,5.41V9a1,1,0,0,0,2,0V3A1,1,0,0,0,21.92,2.62Z" />
-                        </svg>
+                        <Icon name="IC-shuffle" className="inline h-5 w-5 fill-white" />
                       </button>
                     </div>
                     <span className="text-sm text-content-500">{lang?.listen || 'Слушать'}</span>
@@ -628,7 +626,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                         onClick={openUploadTrack}
                         className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300 hover:bg-zinc-700 active:scale-95"
                       >
-                        <ActionIcon className="h-10 w-10 rotate-180" name="IC-plus" />
+                        <Icon name="IC-plus" className="inline fill-current h-10 w-10 rotate-180" />
                       </button>
                       <span className="text-sm text-content-500">{lang?.addtrack || 'Добавить'}</span>
                     </div>
@@ -639,7 +637,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                         disabled
                         className="flex h-16 w-16 shrink-0 cursor-not-allowed items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 opacity-30 shadow"
                       >
-                        <ActionIcon className="h-10 w-10" name="IC-heart" />
+                        <Icon name="IC-heart" className="inline fill-current h-10 w-10" />
                       </button>
                       <span className="text-sm text-content-500">{playlistLikes}</span>
                     </div>
@@ -654,7 +652,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                           isAuthenticated ? 'cursor-pointer hover:bg-zinc-700 active:scale-95' : 'cursor-not-allowed opacity-30',
                         )}
                       >
-                        <ActionIcon className="h-10 w-10" name={playlistLiked ? 'IC-heart-filled' : 'IC-heart'} />
+                        <Icon name={playlistLiked ? 'IC-heart-filled' : 'IC-heart'} className="inline fill-current h-10 w-10" />
                       </button>
                       <span className="text-sm text-content-500">{playlistLikes}</span>
                     </div>
@@ -671,7 +669,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
             {!isLoading && error ? (
               <div className="flex min-h-72 flex-col items-center justify-center gap-3 text-center text-zinc-300">
-                <ActionIcon className="h-12 w-12" name="IC-warning" />
+                <Icon name="IC-warning" className="inline fill-current h-12 w-12" />
                 <span>{error}</span>
               </div>
             ) : null}

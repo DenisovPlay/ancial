@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { useFirebaseMessaging, FIREBASE_CONFIG } from '../../lib/useFirebaseMessaging';
-import { SvgIcon } from '../../feed/editor-shared';
+import Icon from '../../components/svg-icon';
 
 interface PushDevice {
   brand?: string;
@@ -229,23 +229,23 @@ export default function NotificationsSettingsContent() {
     
     if (os.includes('ios')) {
       return (
-        <SvgIcon className="w-12 h-12 fill-lime-500" id="IC-mobile" viewBox="0 0 48 48" />
+        <Icon name="IC-mobile" className="w-12 h-12 fill-lime-500" />
       );
     } else if (os.includes('mac')) {
       return (
-        <SvgIcon className="w-12 h-12 fill-lime-500" id="IC-laptop" viewBox="0 0 48 48" />
+        <Icon name="IC-laptop" className="w-12 h-12 fill-lime-500" />
       );
     } else if (os.includes('android')) {
       return (
-        <SvgIcon className="w-12 h-12 fill-lime-500" id="IC-android" viewBox="0 0 48 48" />
+        <Icon name="IC-android" className="w-12 h-12 fill-lime-500" />
       );
     } else if (os.includes('win')) {
       return (
-        <SvgIcon className="w-12 h-12 fill-lime-500" id="IC-windows" viewBox="0 0 48 48" />
+        <Icon name="IC-windows" className="w-12 h-12 fill-lime-500" />
       );
     } else {
       return (
-        <SvgIcon className="w-12 h-12 fill-lime-500" id="IC-notification" viewBox="0 0 48 48" />
+        <Icon name="IC-notification" className="w-12 h-12 fill-lime-500" />
       );
     }
   };
@@ -264,9 +264,7 @@ export default function NotificationsSettingsContent() {
       <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent" style={{ zIndex: 99 }}>
         <div className="w-full max-w-3xl flex items-center gap-3">
           <Link href="/settings" className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer">
-              <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                  <use href={`#IC-chevron-left`}></use>
-              </svg> 
+              <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" /> 
               {lang?.notif || 'Уведомления'}
           </Link>
         </div>
@@ -315,7 +313,7 @@ export default function NotificationsSettingsContent() {
             >
               {isDetecting ? (
                 <>
-                  <SvgIcon className="w-5 h-5 fill-white animate-spin" id="IC-loader" viewBox="0 0 48 48" />
+                  <Icon name="IC-loader" className="w-5 h-5 fill-white animate-spin" />
                   {lang?.connecting || 'Подключение...'}
                 </>
               ) : (

@@ -1,20 +1,19 @@
 'use client';
 
-import type { ComponentType } from 'react';
 import { useState } from 'react';
 
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { cn } from '../pulse-components';
 import { PulseModal } from '../pulse-modal';
 import { sendTakeoverCommand, useRemoteDevices } from './remote-devices';
+import Icon from '../../components/svg-icon';
 
-type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 
 /**
  * Выбор устройства, на котором играет звук. На аккаунте он всегда один:
  * выбрали другое — туда и переезжает воспроизведение, остальные становятся пультами.
  */
-export function PulseDevicesButton({ Icon, lang }: { Icon: PlayerIcon; lang: Record<string, string> | null }) {
+export function PulseDevicesButton({ lang }: { lang: Record<string, string> | null }) {
   const [isOpen, setIsOpen] = useState(false);
   const devices = useRemoteDevices();
   const { transferPlaybackHere } = usePulsePlayer();

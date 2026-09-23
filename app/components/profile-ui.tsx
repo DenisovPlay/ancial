@@ -1,11 +1,12 @@
 'use client';
 
-import Image from 'next/image';
+import AppImage from './app-image';
 import { useState, type ReactNode } from 'react';
 import { useDragScroll } from '../hooks/useDragScroll';
-import { cn, SvgIcon } from '../feed/editor-shared';
+import { cn, } from '../feed/editor-shared';
 import Modal from './modal';
 import { normalizeAvatarUrl } from '../lib/avatar';
+import Icon from './svg-icon';
 
 export interface UserPreview {
   fname?: string | null;
@@ -47,7 +48,7 @@ export function UserMiniCard({
       className="flex flex-col gap-0.5 cursor-pointer duration-500 group overflow-hidden justify-center items-center w-full active:scale-95"
     >
       <span className="relative block">
-        <Image
+        <AppImage
           alt="User Profile"
           width={64}
           height={64}
@@ -80,7 +81,7 @@ export function GroupMiniCard({
       onClick={onClick}
       className="flex flex-col gap-0.5 cursor-pointer duration-300 group overflow-hidden justify-center items-center w-full active:scale-95"
     >
-      <Image
+      <AppImage
         alt="Group"
         width={64}
         height={64}
@@ -186,7 +187,7 @@ export function RelationGridModal({
               autoComplete="off"
               className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
             />
-            <SvgIcon className="mr-2 h-6 w-6 shrink-0 fill-zinc-500" id="IC-search" viewBox="0 0 48 48" />
+            <Icon name="IC-search" className="mr-2 h-6 w-6 shrink-0 fill-zinc-500" />
           </div>
         ) : null}
 
@@ -205,7 +206,7 @@ export function RelationGridModal({
                   className="cursor-pointer flex flex-col items-center justify-center"
                 >
                   <div className="flex items-center justify-center overflow-hidden rounded-full max-w-16">
-                    <Image
+                    <AppImage
                       alt="Group"
                       width={64}
                       height={64}
@@ -230,7 +231,7 @@ export function RelationGridModal({
               >
                 <div className="relative">
                 <div className="flex items-center justify-center overflow-hidden rounded-full max-w-16">
-                  <Image
+                  <AppImage
                     alt="User Profile"
                     width={64}
                     height={64}
@@ -282,12 +283,12 @@ export function ProfileAvatar({
         !isOnline && 'ring-transparent',
       )}
     >
-      <Image
+      <AppImage
         src={avatarSrc}
         alt="Avatar"
         fill
         sizes="(max-width: 768px) 64px, 96px"
-        priority
+        preload
         className="object-cover rounded-full"
       />
     </div>
@@ -310,7 +311,7 @@ export function ProfileMediaButton({
         className,
       )}
     >
-      <SvgIcon className="w-6 h-6 fill-white inline" id="IC-edit" viewBox="0 0 48 48" />
+      <Icon name="IC-edit" className="w-6 h-6 fill-white inline" />
     </button>
   );
 }
@@ -324,7 +325,7 @@ export function EmptyIllustration({
 }) {
   return (
     <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6 border border-zinc-600/30">
-      <Image
+      <AppImage
         src="/img/load-placeholders/nothingfound.webp"
         alt="Nothing found"
         width={224}

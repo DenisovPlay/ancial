@@ -1,10 +1,11 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../../context/AuthContext';
 import { isDayTime } from '../weather-model';
+import AppImage from '../../../../components/app-image';
+import Icon from '../../../../components/svg-icon';
 
 function latLonToTileCoords(lat: number, lon: number, zoom: number) {
   const latRad = (lat * Math.PI) / 180;
@@ -398,9 +399,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
             onClick={handleBack}
             className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full border border-zinc-600/40 bg-zinc-900/80 text-white font-medium shadow-lg backdrop-blur-md transition-transform active:scale-95 hover:bg-zinc-800 cursor-pointer"
           >
-            <svg className="w-5 h-5 fill-none stroke-current stroke-[2.5]" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
+            <Icon name="IC-arrow-left" className="w-5 h-5 fill-none stroke-current stroke-[2.5]" strokeLinecap="round" strokeLinejoin="round" />
             <span>{lang?.save ? (langCode === 'en' ? 'Back' : 'Назад') : 'Назад'}</span>
           </button>
         </div>
@@ -441,7 +440,9 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
                 className="relative overflow-hidden"
               >
                 {/* Base Map Tile */}
-                <img
+                <AppImage
+                  fill
+                  unoptimized
                   src={t.mapTileUrl}
                   alt=""
                   loading="eager"
@@ -449,7 +450,10 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
                   draggable={false}
                 />
                 {/* Precipitation Tile Overlay */}
-                <img
+                <AppImage
+                  fill
+                  unoptimized
+                  skeleton={false}
                   src={t.precipTileUrl}
                   alt=""
                   loading="eager"
@@ -508,9 +512,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
           className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-600/40 bg-zinc-900/80 text-white shadow-xl backdrop-blur-md transition-transform active:scale-95 hover:bg-zinc-800 cursor-pointer"
           aria-label="Zoom in"
         >
-          <svg className="w-6 h-6 fill-none stroke-current stroke-[2.5]" viewBox="0 0 24 24">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
+          <Icon name="IC-zoom-in" className="w-6 h-6 fill-none stroke-current stroke-[2.5]" />
         </button>
         <button
           type="button"
@@ -521,9 +523,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
           className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-600/40 bg-zinc-900/80 text-white shadow-xl backdrop-blur-md transition-transform active:scale-95 hover:bg-zinc-800 cursor-pointer"
           aria-label="Zoom out"
         >
-          <svg className="w-6 h-6 fill-none stroke-current stroke-[2.5]" viewBox="0 0 24 24">
-            <path d="M5 12h14" />
-          </svg>
+          <Icon name="IC-zoom-out" className="w-6 h-6 fill-none stroke-current stroke-[2.5]" />
         </button>
       </div>
     </div>

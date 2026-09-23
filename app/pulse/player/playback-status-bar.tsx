@@ -1,7 +1,5 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
-import type { ComponentType } from 'react';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -11,9 +9,10 @@ import {
   getListenAlongSnapshot,
   getServerListenAlongSnapshot,
   leaveListenAlong,
-  subscribeListenAlong,
-} from './listen-along';
+  subscribeListenAlong } from './listen-along';
 import { useRemoteDevices } from './remote-devices';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 const FALLBACK_AVATAR = '/img/placeholders/user.png';
 /** Сколько аватарок показываем, остальные — числом (как у «прочитали» в групповых чатах). */
@@ -21,7 +20,6 @@ const VISIBLE_AVATARS = 4;
 /** Длительность сворачивания — столько же держим блок в разметке, чтобы анимация доиграла. */
 const EXIT_MS = 300;
 
-type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 
 /**
  * Полоска состояния плеера: где идёт звук и с кем он общий.
@@ -29,7 +27,7 @@ type PlayerIcon = ComponentType<{ className?: string; name: string }>;
  * на пульте — «Играет на …» и перенос звука сюда.
  * Появляется и исчезает разворачиванием по высоте: соседние блоки плеера не дёргаются.
  */
-export function PlaybackStatusBar({ Icon, className }: { Icon: PlayerIcon; className?: string }) {
+export function PlaybackStatusBar({ className }: { className?: string }) {
   const { lang, user } = useAuth();
   const { transferPlaybackHere } = usePulsePlayer();
   const listenAlong = useSyncExternalStore(subscribeListenAlong, getListenAlongSnapshot, getServerListenAlongSnapshot);
@@ -116,7 +114,10 @@ export function PlaybackStatusBar({ Icon, className }: { Icon: PlayerIcon; class
           ) : (
             <span className="flex shrink-0 items-center">
               {shownPeople.map((person, index) => (
-                <img
+                <AppImage
+                  width={20}
+                  height={20}
+                  fallbackSrc={FALLBACK_AVATAR}
                   key={person.id}
                   src={person.img || FALLBACK_AVATAR}
                   alt=""

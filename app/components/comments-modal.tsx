@@ -2,13 +2,14 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { cn, SvgIcon } from '../feed/editor-shared';
+import AppImage from './app-image';
+import { cn, } from '../feed/editor-shared';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import Modal from './modal';
 import { Dropdown, DropdownItem } from './navigation';
 import AccountName from './account-name';
 import { parsePostContentToHtml } from './post-parser';
+import Icon from './svg-icon';
 
 export interface FeedComment {
   content: string;
@@ -116,7 +117,7 @@ export function CommentsModal({
                   !commentInput.trim() && 'opacity-50',
                 )}
               >
-                <SvgIcon className="w-8 h-8 fill-white inline" id="IC-send" viewBox="0 0 48 48" />
+                <Icon name="IC-send" className="w-8 h-8 fill-white inline" />
               </button>
             </div>
           </form>
@@ -125,7 +126,7 @@ export function CommentsModal({
         <div ref={commentsContainerRef} className="flex flex-col gap-3">
           {isLoading ? (
             <div className="w-full flex items-center justify-center py-6">
-              <SvgIcon className="w-16 h-16 inline animate-spin fill-purple-500" id="IC-loader" viewBox="0 0 48 48" />
+              <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
             </div>
           ) : comments.length > 0 ? (
             comments.map((comment) => (
@@ -172,9 +173,10 @@ function CommentCard({
         <button
           type="button"
           onClick={() => onNavigateToUser(comment.user.username)}
-          className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow bg-cover bg-center shrink-0"
-          style={{ backgroundImage: `url('${comment.user.img}')` }}
-        />
+          className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow shrink-0 overflow-hidden"
+        >
+          <AppImage width={40} height={40} src={comment.user.img} fallbackSrc="/img/placeholders/user.png" alt="" className="block h-full w-full object-cover" />
+        </button>
 
         <div className="flex flex-col flex-grow min-w-0">
           <button
@@ -220,7 +222,7 @@ function CommentCard({
         </Dropdown>
       </div>
 
-      <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(comment.content)) }} />
+      <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(comment.content), { preloadImages: true }) }} />
     </div>
   );
 }
@@ -234,7 +236,7 @@ export function CommentsEmptyState({
 }) {
   return (
     <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center">
-      <Image
+      <AppImage
         src="/img/load-placeholders/nothingfound.webp"
         alt="No comments"
         width={224}

@@ -24,8 +24,9 @@ import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import { applyBookmarkResult } from '../lib/post-bookmark';
 import { applyVoteResult } from '../lib/post-vote';
-import { cn, SvgIcon } from './editor-shared';
+import { cn, } from './editor-shared';
 import FeedPostSkeleton from './feed-post-skeleton';
+import Icon from '../components/svg-icon';
 
 type Id = string | number;
 
@@ -107,7 +108,7 @@ function TopicButton({
             : 'bg-zinc-900 hover:bg-zinc-200 text-zinc-200 hover:text-zinc-800 fill-zinc-200 hover:fill-zinc-800',
         )}
       >
-        <SvgIcon className="w-8 h-8" id={icon} />
+        <Icon name={icon} className="w-8 h-8" />
         <span className="text-lg font-bold">{label}</span>
       </div>
     </div>
@@ -138,7 +139,7 @@ function MobileTopicCard({
         )}
       >
         <span className="text-2xl text-zinc-300 z-20">{label}</span>
-        <SvgIcon className="w-16 h-16 opacity-50 absolute -bottom-3 -right-3 fill-white" id={icon} />
+        <Icon name={icon} className="w-16 h-16 opacity-50 absolute -bottom-3 -right-3 fill-white" />
       </div>
     </button>
   );
@@ -340,7 +341,7 @@ export default function FeedContent() {
     { value: strings.photo, label: strings.photo, icon: 'IC-photos' },
     { value: strings.music, label: strings.music, icon: 'IC-music' },
     { value: strings.films, label: strings.films, icon: 'IC-cinema' },
-    { value: strings.humor, label: strings.humor, icon: 'IC-humor' },
+    { value: strings.humor, label: strings.humor, icon: 'IC-emoji' },
     { value: strings.science, label: strings.science, icon: 'IC-science' },
     { value: strings.tourism, label: strings.tourism, icon: 'IC-tour' },
     { value: strings.sport, label: strings.sport, icon: 'IC-sport' },
@@ -856,14 +857,8 @@ export default function FeedContent() {
                   : 'hover:bg-zinc-700/50',
               )}
             >
-              <SvgIcon
-                className={cn('h-6 w-6 fill-white group-hover:fill-zinc-300 duration-300', topic === 'bookmarked' && 'hidden')}
-                id="IC-bookmark"
-              />
-              <SvgIcon
-                className={cn('h-6 w-6 fill-white group-hover:fill-zinc-300 duration-300', topic !== 'bookmarked' && 'hidden')}
-                id="IC-bookmark-filled"
-              />
+              <Icon name="IC-bookmark" className={cn('h-6 w-6 fill-white group-hover:fill-zinc-300 duration-300', topic === 'bookmarked' && 'hidden')} />
+              <Icon name="IC-bookmark-filled" className={cn('h-6 w-6 fill-white group-hover:fill-zinc-300 duration-300', topic !== 'bookmarked' && 'hidden')} />
             </button>
           </>
         )}
@@ -893,7 +888,7 @@ export default function FeedContent() {
                 className="w-max flex-none lg:flex-grow rounded-full block"
               >
                 <div className="w-full relative flex rounded-full p-2 shadow border border-purple-500 bg-zinc-900 text-white fill-white hover:bg-zinc-200 hover:text-zinc-800 hover:fill-zinc-800 duration-300 cursor-pointer jusitfy-center items-center gap-1.5 active:scale-95">
-                  <SvgIcon className="w-8 h-8" id="IC-plus" />
+                  <Icon name="IC-plus" className="w-8 h-8" />
                   <span className="text-lg font-bold">{strings.post}</span>
                 </div>
               </Link>
@@ -972,7 +967,7 @@ export default function FeedContent() {
             <TopicButton
               active={topic === strings.humor}
               className="hidden sm:flex"
-              icon="IC-humor"
+              icon="IC-emoji"
               label={strings.humor}
               onClick={() => openTopic(strings.humor)}
             />
@@ -1014,7 +1009,7 @@ export default function FeedContent() {
               className="sm:hidden w-max flex-grow rounded-2xl shadow"
             >
               <div className="w-full h-full relative flex rounded-full p-2 duration-300 cursor-pointer jusitfy-center items-center gap-1.5 active:scale-95 bg-zinc-900 hover:bg-zinc-200 text-zinc-200 fill-zinc-200 hover:text-zinc-800 hover:fill-zinc-800 border border-zinc-600/30">
-                <SvgIcon className="w-8 h-8" id="IC-morebars" />
+                <Icon name="IC-morebars" className="w-8 h-8" />
                 <span className="text-lg font-bold">{strings.more}</span>
               </div>
             </div>

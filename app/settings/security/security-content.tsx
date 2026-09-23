@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { SettingsItem } from '../../components/settings-item';
+import Icon from '../../components/svg-icon';
 
 export default function SecuritySettingsContent() {
   const router = useRouter();
@@ -19,9 +20,7 @@ export default function SecuritySettingsContent() {
   if (isLoading && !user) {
     return (
       <div className="flex justify-center items-center w-full h-[60vh]">
-        <svg className="w-10 h-10 animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
       </div>
     );
   }
@@ -39,9 +38,7 @@ export default function SecuritySettingsContent() {
             href="/settings"
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="#IC-chevron-left"></use>
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {lang?.security || 'Безопасность'}
           </Link>
         </div>
@@ -54,9 +51,7 @@ export default function SecuritySettingsContent() {
             title={lang?.password || 'Пароль'}
             iconBgClass="bg-amber-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-amber-500" viewBox="0 0 48 48">
-                <use href="#IC-lock"></use>
-              </svg>
+              <Icon name="IC-lock" className="w-6 h-6 fill-amber-500" />
             }
           />
 
@@ -65,9 +60,7 @@ export default function SecuritySettingsContent() {
             title={lang?.phoneandnumber || 'Телефон и почта'}
             iconBgClass="bg-emerald-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-emerald-500" viewBox="0 0 48 48">
-                <use href="#IC-user"></use>
-              </svg>
+              <Icon name="IC-user" className="w-6 h-6 fill-emerald-500" />
             }
           />
 
@@ -76,9 +69,7 @@ export default function SecuritySettingsContent() {
             title={lang?.confidentiality || 'Конфиденциальность'}
             iconBgClass="bg-purple-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-purple-500" viewBox="0 0 48 48">
-                <use href="#IC-auth-eye"></use>
-              </svg>
+              <Icon name="IC-auth-eye" className="w-6 h-6 fill-purple-500" />
             }
           />
 
@@ -87,9 +78,7 @@ export default function SecuritySettingsContent() {
             title={lang?.twofa_title || 'Двухфакторная защита'}
             iconBgClass="bg-rose-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-rose-500" viewBox="0 0 48 48">
-                <use href="#IC-lock"></use>
-              </svg>
+              <Icon name="IC-lock" className="w-6 h-6 fill-rose-500" />
             }
           />
 
@@ -98,9 +87,7 @@ export default function SecuritySettingsContent() {
             title={lang?.passkeys_title || 'Passkeys'}
             iconBgClass="bg-teal-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-teal-500" viewBox="0 0 48 48">
-                <use href="#IC-lock"></use>
-              </svg>
+              <Icon name="IC-lock" className="w-6 h-6 fill-teal-500" />
             }
           />
 
@@ -109,9 +96,7 @@ export default function SecuritySettingsContent() {
             title={lang?.active_sessions || 'Активные сессии'}
             iconBgClass="bg-sky-500/10"
             icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 fill-sky-500" viewBox="0 0 48 48">
-                <use href="#IC-laptop"></use>
-              </svg>
+              <Icon name="IC-laptop" className="w-6 h-6 fill-sky-500" />
             }
           />
         </div>

@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,7 +13,6 @@ import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pu
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { resolvePulsePlaylistTitle } from '../playlist/playlist-model';
 import {
-  ActionIcon,
   DEFAULT_TRACK_IMAGE,
   PulseLogo,
   PulsePlaylistTile,
@@ -27,6 +25,8 @@ import {
   toNumber,
   type PulsePlaylistCardData,
 } from '../pulse-components';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 type PulseLibraryResponse = {
   favorite_playlist?: PulsePlaylistCardData | null;
@@ -243,7 +243,7 @@ export default function PulseMyContent() {
             className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
           >
             <div className="hidden lg:block">
-              <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+              <Icon name="IC-chevron-left" className="inline fill-current h-8 w-8" />
             </div>
             <PulseLogo className="w-32 md:w-48" />
           </Link>
@@ -263,8 +263,8 @@ export default function PulseMyContent() {
           <div className="relative flex h-48 w-48 shrink-0 rounded-full border border-zinc-600/30 shadow lg:h-64 lg:w-64">
             {user?.img ? (
               <>
-                <img className="h-48 w-48 rounded-full object-cover blur-xl lg:h-64 lg:w-64" src={user.img} alt="" />
-                <img className="absolute inset-x-0 z-[9] h-48 w-48 rounded-full object-cover lg:h-64 lg:w-64" src={user.img} alt={decodeHtmlEntities(`${user?.fname ?? ''} ${user?.lname ?? ''}`)} />
+                <AppImage width={256} height={256} skeleton={false} className="h-48 w-48 rounded-full object-cover blur-xl lg:h-64 lg:w-64" src={user.img} alt="" />
+                <AppImage width={256} height={256} className="absolute inset-x-0 z-[9] h-48 w-48 rounded-full object-cover lg:h-64 lg:w-64" src={user.img} alt={decodeHtmlEntities(`${user?.fname ?? ''} ${user?.lname ?? ''}`)} />
               </>
             ) : (
               <>
@@ -290,7 +290,7 @@ export default function PulseMyContent() {
               href="/pulse/library"
               className="flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/20 px-3 py-1.5 text-zinc-300 shadow duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
             >
-              <ActionIcon className="h-5 w-5" name="IC-chevron-right" />
+              <Icon name="IC-chevron-right" className="inline fill-current h-5 w-5" />
               <span>{lang?.all || 'Все'}</span>
             </Link>
           </div>
@@ -379,6 +379,6 @@ export default function PulseMyContent() {
 
 function PulseCreatorsLogo() {
   return (
-    <img src="/img/logos/creators.svg" alt="Pulse Creators Logo" className={cn('h-6 lg:h-8')} />
+    <AppImage width={190} height={32} src="/img/logos/creators.svg" alt="Pulse Creators Logo" className={cn('h-6 w-auto lg:h-8')} />
   );
 }

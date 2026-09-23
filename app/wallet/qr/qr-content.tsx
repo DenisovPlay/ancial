@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useCopyToClipboard } from '../../hooks/use-copy-to-clipboard';
 import { AncialAPI } from '../../lib/api-v2';
+import Icon from '../../components/svg-icon';
 
 /** Координаты углов QR-кода из jsQR (topLeftCorner и т.д.). */
 interface QRLocation {
@@ -532,9 +533,7 @@ export default function QRContent() {
           }}
           className="flex items-center justify-center gap-3 p-3 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-3xl duration-300 active:scale-95 border border-zinc-700/30"
         >
-          <svg className="w-6 h-6 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path d="M39.175,10.016c1.687,0,2.131,1.276,1.632,4.272c-0.571,3.426-2.216,14.769-3.528,21.83 c-0.502,2.702-1.407,3.867-2.724,3.867c-0.724,0-1.572-0.352-2.546-0.995c-1.32-0.872-7.984-5.279-9.431-6.314 c-1.32-0.943-3.141-2.078-0.857-4.312c0.813-0.796,6.14-5.883,10.29-9.842c0.443-0.423,0.072-1.068-0.42-1.068 c-0.112,0-0.231,0.034-0.347,0.111c-5.594,3.71-13.351,8.859-14.338,9.53c-0.987,0.67-1.949,1.1-3.231,1.1 c-0.655,0-1.394-0.112-2.263-0.362c-1.943-0.558-3.84-1.223-4.579-1.477c-2.845-0.976-2.17-2.241,0.593-3.457 c11.078-4.873,25.413-10.815,27.392-11.637C36.746,10.461,38.178,10.016,39.175,10.016 M39.175,7.016L39.175,7.016 c-1.368,0-3.015,0.441-5.506,1.474L33.37,8.614C22.735,13.03,13.092,17.128,6.218,20.152c-1.074,0.473-4.341,1.91-4.214,4.916 c0.054,1.297,0.768,3.065,3.856,4.124l0.228,0.078c0.862,0.297,2.657,0.916,4.497,1.445c1.12,0.322,2.132,0.478,3.091,0.478 c1.664,0,2.953-0.475,3.961-1.028c-0.005,0.168-0.001,0.337,0.012,0.507c0.182,2.312,1.97,3.58,3.038,4.338l0.149,0.106 c1.577,1.128,8.714,5.843,9.522,6.376c1.521,1.004,2.894,1.491,4.199,1.491c2.052,0,4.703-1.096,5.673-6.318 c0.921-4.953,1.985-11.872,2.762-16.924c0.331-2.156,0.603-3.924,0.776-4.961c0.349-2.094,0.509-4.466-0.948-6.185 C42.208,7.875,41.08,7.016,39.175,7.016L39.175,7.016z" />
-          </svg>
+          <Icon name="IC-send" className="w-6 h-6 fill-white" />
           <span>{lang?.send || 'Перевести'} {resolvedWallet.owner_name}</span>
         </button>
       );
@@ -626,9 +625,7 @@ export default function QRContent() {
           }}
           className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer text-zinc-100"
         >
-          <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z" />
-          </svg>
+          <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
           {strings.qrscanner}
         </span>
       </div>
@@ -676,18 +673,14 @@ export default function QRContent() {
                   : 'bg-zinc-900/40 border-zinc-700/30 hover:bg-zinc-800 text-zinc-300'
                   } ${!flashSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <svg className="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                <Icon name="IC-flash" className="w-5 h-5 fill-none stroke-current" />
                 <span className="font-bold">{strings.flash}</span>
               </button>
               <button
                 onClick={handleSwitchCamera}
                 className="flex-grow flex items-center justify-center gap-2 p-3 bg-zinc-900/40 border border-zinc-700/30 hover:bg-zinc-800 text-zinc-350 hover:text-white rounded-3xl backdrop-blur-lg active:scale-95 duration-300"
               >
-                <svg className="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+                <Icon name="IC-camera-switch" className="w-5 h-5 fill-none stroke-current" />
                 <span className="font-bold">{strings.camera}</span>
               </button>
             </div>
@@ -701,9 +694,7 @@ export default function QRContent() {
             {/* QR Content Box */}
             <div className="w-full p-4 bg-zinc-900/60 border border-zinc-800 backdrop-blur-lg rounded-3xl text-left">
               <div className="flex items-center gap-2 mb-2 text-zinc-400">
-                <svg className="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
+                <Icon name="IC-qr-data" className="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" />
                 <span className="text-xs font-bold uppercase tracking-wider">{lang?.qr_data || 'Данные QR-кода:'}</span>
               </div>
               <div className="w-full p-3.5 bg-black/45 rounded-2xl border border-zinc-800/40">

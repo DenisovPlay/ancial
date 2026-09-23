@@ -1,6 +1,7 @@
 'use client';
 
 import Modal from './modal';
+import Icon from './svg-icon';
 
 interface DeletePostModalProps {
   isOpen: boolean;
@@ -29,9 +30,7 @@ export default function DeletePostModal({
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 justify-center items-center">
-          <svg className="w-24 h-24 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <use href="#IC-trash"></use>
-          </svg>
+          <Icon name="IC-trash" className="w-24 h-24 fill-white" />
           <span className="text-base text-zinc-200 text-center">{strings.reallywantdeletepost}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">

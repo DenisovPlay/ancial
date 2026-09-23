@@ -13,12 +13,12 @@ import {
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { PulseModal, PulseModalField, PulseModalSelectField } from './pulse-modal';
 import {
-  ActionIcon,
   cn,
   decodeHtmlEntities,
   normalizeText,
   type PulseTrack,
 } from './pulse-components';
+import Icon from '../components/svg-icon';
 
 type PulseUploadTrackModalProps = {
   isOpen: boolean;
@@ -426,14 +426,14 @@ export default function PulseUploadTrackModal({
             onChange={handleAudioChange}
             type="file"
           />
-          <ActionIcon className="h-8 w-8 fill-zinc-400" name="IC-download" />
+          <Icon name="IC-download" className="inline h-8 w-8 fill-zinc-400" />
           <span className="text-sm text-zinc-400">{lang?.uploadtrackdesc || 'Выберите .mp3 файл (до 10 МБ)'}</span>
         </label>
       ) : null}
 
       {isAudioUploading ? (
         <div className="flex flex-col items-center gap-2 py-4 text-sm text-zinc-400">
-          <ActionIcon className="h-10 w-10 animate-spin fill-purple-400" name="IC-loader" />
+          <Icon name="IC-loader" className="inline h-10 w-10 animate-spin fill-purple-400" />
           <span>{statusText || (lang?.uploadingtrack || 'Загружаю трек...')}</span>
         </div>
       ) : null}
@@ -451,7 +451,7 @@ export default function PulseUploadTrackModal({
                   src={cover}
                 />
               ) : (
-                <ActionIcon className="h-7 w-7 fill-zinc-600" name="IC-music" />
+                <Icon name="IC-music" className="inline h-7 w-7 fill-zinc-600" />
               )}
             </label>
 
@@ -507,14 +507,14 @@ export default function PulseUploadTrackModal({
 
           {isSaving && !isEditingExistingTrack ? (
             <div className="flex items-center justify-center gap-2 py-1 text-sm text-zinc-400">
-              <ActionIcon className="h-4 w-4 animate-spin fill-purple-400" name="IC-loader" />
+              <Icon name="IC-loader" className="inline h-4 w-4 animate-spin fill-purple-400" />
               <span>{statusText || (lang?.savingtofavorites || 'Сохраняем в Избранное...')}</span>
             </div>
           ) : null}
 
           {isSaved && !isEditingExistingTrack ? (
             <div className="flex items-center gap-2 py-1 text-sm text-green-400">
-              <ActionIcon className="h-4 w-4 shrink-0 fill-green-400" name="IC-check" />
+              <Icon name="IC-check" className="inline h-4 w-4 shrink-0 fill-green-400" />
               <span>{lang?.savedtofavorites || 'Сохранено в Избранное'}</span>
             </div>
           ) : null}
@@ -529,7 +529,7 @@ export default function PulseUploadTrackModal({
                 canUpdate ? 'cursor-pointer hover:bg-purple-600 active:scale-95' : 'cursor-not-allowed opacity-60',
               )}
             >
-              <ActionIcon className={cn('h-4 w-4', isBusy && 'animate-spin')} name={isBusy ? 'IC-loader' : 'IC-check'} />
+              <Icon name={isBusy ? 'IC-loader' : 'IC-check'} className={cn('inline fill-current', cn('h-4 w-4', isBusy && 'animate-spin'))} />
               <span>{lang?.save || 'Сохранить'}</span>
             </button>
           ) : null}
@@ -587,7 +587,7 @@ export function PulseDeleteTrackModal({
       title={lang?.deletetrack || "Удалить трек"}
     >
       <div className="flex flex-col items-center gap-4 py-4">
-        <ActionIcon className="h-12 w-12 fill-red-500" name="IC-trash" />
+        <Icon name="IC-trash" className="inline h-12 w-12 fill-red-500" />
         <div className="text-center">
           <p className="text-sm text-zinc-300">{lang?.areyousuredeletetrack || 'Вы уверены, что хотите удалить трек?'}</p>
           <p className="mt-1 font-medium text-white">{title}</p>
@@ -608,7 +608,7 @@ export function PulseDeleteTrackModal({
             disabled={isDeleting}
             className="flex cursor-pointer items-center justify-center gap-2 rounded-full border border-zinc-600/30 bg-red-700 px-4 py-2.5 font-medium text-zinc-100 duration-300 hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isDeleting ? <ActionIcon className="h-4 w-4 animate-spin" name="IC-loader" /> : <ActionIcon className="h-4 w-4" name="IC-trash" />}
+            {isDeleting ? <Icon name="IC-loader" className="inline fill-current h-4 w-4 animate-spin" /> : <Icon name="IC-trash" className="inline fill-current h-4 w-4" />}
             <span>{lang?.delete || 'Удалить'}</span>
           </button>
         </div>

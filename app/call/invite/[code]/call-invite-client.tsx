@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element -- аватар диалога с внешнего хоста */
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -8,6 +7,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { AncialAPI, type VoiceInviteInfo } from '../../../lib/api-v2';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../../../messages/lib/messages-shared';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 function readInviteCodeFromLocation(): string {
   if (typeof window === 'undefined') return '';
@@ -75,9 +76,7 @@ export default function CallInviteClient() {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-black p-3 text-white">
         <div className="flex flex-col items-center gap-3">
-          <svg className="h-10 w-10 animate-spin fill-purple-500" viewBox="0 0 48 48" aria-label={lang?.loading || 'Загрузка'}>
-            <path d="M24 4a20 20 0 1 0 20 20h-6a14 14 0 1 1-14-14V4z" />
-          </svg>
+          <Icon name="IC-spinner-ring" className="h-10 w-10 animate-spin fill-purple-500" aria-label={lang?.loading || 'Загрузка'} />
         </div>
       </div>
     );
@@ -88,9 +87,7 @@ export default function CallInviteClient() {
       <div className="flex min-h-dvh items-center justify-center bg-black p-3 text-white">
         <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 text-center shadow-2xl">
           <div className="flex h-14 w-14 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10 text-red-400">
-            <svg className="h-7 w-7 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-            </svg>
+            <Icon name="IC-error-circle" className="h-7 w-7 fill-current" aria-hidden="true" />
           </div>
           <span className="text-lg font-semibold text-white">{lang?.voice_invite_invalid || 'Приглашение недействительно'}</span>
           <p className="text-sm text-zinc-400">
@@ -113,7 +110,10 @@ export default function CallInviteClient() {
     <div className="flex min-h-dvh items-center justify-center bg-black p-3 text-white">
       <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 text-center shadow-2xl">
         <div className="relative">
-          <img
+          <AppImage
+            width={80}
+            height={80}
+            fallbackSrc={FALLBACK_AVATAR}
             src={normalizeAssetUrl(info.avatar, FALLBACK_AVATAR)}
             alt=""
             className="h-20 w-20 rounded-full border border-zinc-600/30 object-cover shadow-md"

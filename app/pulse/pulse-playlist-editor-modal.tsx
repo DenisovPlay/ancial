@@ -9,10 +9,10 @@ import { type PulsePlaylistMeta } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { PulseModal, PulseModalField } from './pulse-modal';
 import {
-  ActionIcon,
   cn,
   normalizeText,
 } from './pulse-components';
+import Icon from '../components/svg-icon';
 
 async function uploadPlaylistCover(file: File) {
   const url = await uploadImage(file, { type: 'playlist_cover', targetType: 'playlist' });
@@ -133,7 +133,7 @@ export default function PulsePlaylistEditorModal({
               src={coverUrl}
             />
           ) : (
-            <ActionIcon className="h-7 w-7 fill-zinc-600" name={isCoverUploading ? 'IC-loader' : 'IC-music'} />
+            <Icon name={isCoverUploading ? 'IC-loader' : 'IC-music'} className="inline h-7 w-7 fill-zinc-600" />
           )}
         </label>
 
@@ -169,7 +169,7 @@ export default function PulsePlaylistEditorModal({
           isBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-purple-600 active:scale-95',
         )}
       >
-        <ActionIcon className={cn('h-4 w-4', isBusy && 'animate-spin')} name={isBusy ? 'IC-loader' : 'IC-check'} />
+        <Icon name={isBusy ? 'IC-loader' : 'IC-check'} className={cn('inline fill-current', cn('h-4 w-4', isBusy && 'animate-spin'))} />
         <span>{isEditing ? (lang?.savechanges || 'Сохранить изменения') : (lang?.save || 'Сохранить')}</span>
       </button>
     </PulseModal>

@@ -2,8 +2,10 @@
 
 import React, { useRef, useState } from 'react';
 import Modal from './modal';
-import { SvgIcon, makeId, safeRevokeObjectUrl } from '../feed/editor-shared';
+import { makeId, safeRevokeObjectUrl } from '../feed/editor-shared';
 import { uploadImage } from '../lib/upload';
+import AppImage from './app-image';
+import Icon from './svg-icon';
 
 type MediaMode = 'carousel' | 'collage';
 
@@ -186,7 +188,7 @@ export default function PostBlockMediaModal({
                 : 'text-zinc-400 hover:text-zinc-300'
             }`}
           >
-            <SvgIcon className="w-4 h-4 fill-current" id="IC-carousel" />
+            <Icon name="IC-carousel" className="w-4 h-4 fill-current" />
             <span>{strings?.editor_carousel || 'Карусель'}</span>
           </button>
           <button
@@ -198,7 +200,7 @@ export default function PostBlockMediaModal({
                 : 'text-zinc-400 hover:text-zinc-300'
             }`}
           >
-            <SvgIcon className="w-4 h-4 fill-current" id="IC-collage" />
+            <Icon name="IC-collage" className="w-4 h-4 fill-current" />
             <span>{strings?.editor_collage || 'Коллаж'}</span>
           </button>
         </div>
@@ -215,8 +217,9 @@ export default function PostBlockMediaModal({
           <div className="grid grid-cols-3 gap-1.5">
             {images.map((img, idx) => (
               <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/40 group/item">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <AppImage
+                  width={128}
+                  height={128}
                   src={img.previewUrl}
                   alt=""
                   className="w-full h-full object-cover"
@@ -224,14 +227,12 @@ export default function PostBlockMediaModal({
                 {/* Статус загрузки */}
                 {img.status === 'uploading' && (
                   <div className="absolute inset-0 bg-zinc-900/70 flex items-center justify-center">
-                    <svg className="w-7 h-7 animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <use href="#IC-loader" />
-                    </svg>
+                    <Icon name="IC-loader" className="w-7 h-7 animate-spin fill-purple-500" />
                   </div>
                 )}
                 {img.status === 'error' && (
                   <div className="absolute inset-0 bg-red-900/60 flex items-center justify-center">
-                    <SvgIcon className="w-6 h-6 fill-red-400" id="IC-times" />
+                    <Icon name="IC-times" className="w-6 h-6 fill-red-400" />
                   </div>
                 )}
 
@@ -245,7 +246,7 @@ export default function PostBlockMediaModal({
                         className="p-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white cursor-pointer active:scale-95 duration-200 pointer-events-auto"
                         title="Сдвинуть влево"
                       >
-                        <SvgIcon className="w-3.5 h-3.5 fill-current" id="IC-chevron-left" />
+                        <Icon name="IC-chevron-left" className="w-3.5 h-3.5 fill-current" />
                       </button>
                     ) : <div />}
 
@@ -256,7 +257,7 @@ export default function PostBlockMediaModal({
                         className="p-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white cursor-pointer active:scale-95 duration-200 pointer-events-auto"
                         title="Сдвинуть вправо"
                       >
-                        <SvgIcon className="w-3.5 h-3.5 fill-current" id="IC-chevron-right" />
+                        <Icon name="IC-chevron-right" className="w-3.5 h-3.5 fill-current" />
                       </button>
                     ) : <div />}
                   </div>
@@ -270,7 +271,7 @@ export default function PostBlockMediaModal({
                     className="absolute top-1 right-1 w-6 h-6 rounded-full bg-zinc-900/80 border border-zinc-600/40 flex items-center justify-center cursor-pointer active:scale-95 duration-300 hover:bg-zinc-800"
                     title="Удалить фото"
                   >
-                    <SvgIcon className="w-3.5 h-3.5 fill-zinc-300" id="IC-trash" />
+                    <Icon name="IC-trash" className="w-3.5 h-3.5 fill-zinc-300" />
                   </button>
                 )}
               </div>
@@ -286,7 +287,7 @@ export default function PostBlockMediaModal({
             disabled={isUploading}
             className="flex items-center justify-center gap-2 w-full py-2.5 rounded-3xl border border-dashed border-zinc-600/50 text-zinc-400 hover:text-zinc-300 hover:border-zinc-500/70 duration-300 cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            <SvgIcon className="w-5 h-5 fill-current" id="IC-photos" />
+            <Icon name="IC-photos" className="w-5 h-5 fill-current" />
             <span>
               {strings?.photo || 'Добавить фото'} ({images.length}/{MAX_IMAGES})
             </span>
@@ -317,8 +318,8 @@ export default function PostBlockMediaModal({
           className="w-full flex items-center justify-center gap-2 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold disabled:cursor-not-allowed disabled:active:scale-100"
         >
           {mode === 'carousel'
-            ? <><SvgIcon className="w-5 h-5 fill-current" id="IC-carousel" /><span>{strings?.editor_carousel || 'Вставить карусель'}</span></>
-            : <><SvgIcon className="w-5 h-5 fill-current" id="IC-collage" /><span>{strings?.editor_collage || 'Вставить коллаж'}</span></>}
+            ? <><Icon name="IC-carousel" className="w-5 h-5 fill-current" /><span>{strings?.editor_carousel || 'Вставить карусель'}</span></>
+            : <><Icon name="IC-collage" className="w-5 h-5 fill-current" /><span>{strings?.editor_collage || 'Вставить коллаж'}</span></>}
         </button>
       </div>
     </Modal>

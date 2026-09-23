@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { AncialAPI } from '../lib/api-v2';
 import { useAuth } from '../context/AuthContext';
+import Icon from './svg-icon';
 
 export type PollWidgetData = {
   type: 'poll';
@@ -117,9 +118,7 @@ export default function PostWidgetPoll({
           {total} {total === 1 ? 'голос' : total >= 2 && total <= 4 ? 'голоса' : 'голосов'}
         </span>
         {loading && (
-          <svg className="w-3 h-3 animate-spin fill-purple-400" viewBox="0 0 48 48">
-            <use href="#IC-loader"></use>
-          </svg>
+          <Icon name="IC-loader" className="w-3 h-3 animate-spin fill-purple-400" />
         )}
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import Image from 'next/image';
+import AppImage from '../../components/app-image';
 import Link from 'next/link';
 
 import { AncialAPI } from '../../lib/api-v2';
@@ -9,6 +9,7 @@ import { cache } from '../../lib/cache.ts';
 import type { PulseTrack } from '../../pulse/pulse-components';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { cn } from '../../pulse/pulse-components';
+import Icon from '../../components/svg-icon';
 
 type TrackPreviewProps = {
   trackId: string | number;
@@ -115,7 +116,7 @@ export default function TrackPreview({ trackId, onLoadSuccess, className }: Trac
   return (
     <Link href={`/pulse/track/${track.sid}`} className={cn("w-[300px] max-w-full rounded-3xl bg-zinc-900/40 border border-zinc-700/30 hover:bg-zinc-800/40 duration-300 flex items-center gap-1.5 shadow", className)}>
       <div className="w-10 h-10 rounded-3xl overflow-hidden relative shrink-0">
-        <Image
+        <AppImage
           src={coverSrc}
           alt={track.title || 'Track cover'}
           fill
@@ -135,9 +136,9 @@ export default function TrackPreview({ trackId, onLoadSuccess, className }: Trac
         className="cursor-pointer w-8 h-8 flex items-center justify-center rounded-full bg-purple-600 hover:bg-purple-500 text-white shadow shrink-0 mr-1 active:scale-95 duration-300"
       >
         {isThisTrackPlaying ? (
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current" viewBox="0 0 24 24"><use href="/icons.svg#IC-pause"></use></svg>
+          <Icon name="IC-pause" className="w-4 h-4 fill-current" />
         ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24"><use href="/icons.svg#IC-play"></use></svg>
+          <Icon name="IC-play" className="w-4 h-4 fill-current ml-0.5" />
         )}
       </button>
     </Link>

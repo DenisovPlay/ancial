@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Modal from './modal';
 import { AncialAPI } from '../lib/api-v2';
 import { useAuth } from '../context/AuthContext';
-import { SvgIcon } from '../feed/editor-shared';
+import AppImage from './app-image';
+import Icon from './svg-icon';
 
 type TrackSearchResult = {
   id: number | string;
@@ -135,7 +136,7 @@ export default function PostWidgetMusicModal({ isOpen, onClose, onAdd }: PostWid
               {searching ? (
                 <div className="w-5 h-5 rounded-full border-2 border-zinc-500/30 border-t-purple-500 animate-spin" />
               ) : (
-                <SvgIcon className="w-5 h-5 fill-zinc-500" id="IC-search" />
+                <Icon name="IC-search" className="w-5 h-5 fill-zinc-500" />
               )}
             </div>
             <input
@@ -164,15 +165,14 @@ export default function PostWidgetMusicModal({ isOpen, onClose, onAdd }: PostWid
               className="flex items-center gap-3 rounded-3xl hover:bg-zinc-800/80 cursor-pointer active:scale-95 duration-300 text-left w-full border border-transparent hover:border-zinc-600/30 group hover:pr-3"
             >
               <div className="w-14 h-14 shrink-0 rounded-2xl overflow-hidden bg-zinc-800">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={track.img} alt={track.name} className="w-full h-full object-cover" />
+                <AppImage width={56} height={56} src={track.img} alt={track.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0 flex flex-col justify-center">
                 <span className="text-sm font-medium text-zinc-100 truncate">{track.name}</span>
                 <span className="text-xs text-zinc-400 truncate">{track.artist}</span>
               </div>
               <div className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400 border border-zinc-600/30 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-500 transition-colors duration-300">
-                <SvgIcon className="w-4 h-4 fill-current" id="IC-plus" />
+                <Icon name="IC-plus" className="w-4 h-4 fill-current" />
               </div>
             </button>
           ))}

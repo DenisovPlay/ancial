@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Icon from '../../components/svg-icon';
 
-import { ActionIcon } from '../pulse-components';
 
 export type PulseLinkableArtist = {
   id?: number | string;
@@ -47,10 +47,7 @@ export function PulseArtistLinkPicker({ artists, label, onChange, placeholder, s
               ))
             )}
           </div>
-          <ActionIcon
-            className={`w-5 h-5 fill-zinc-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-            name="IC-chevron-down"
-          />
+          <Icon name="IC-chevron-down" className={`inline w-5 h-5 fill-zinc-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </div>
 

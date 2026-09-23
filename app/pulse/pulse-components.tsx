@@ -3,7 +3,6 @@
 import { decodeHtmlEntities, normalizeText } from '../lib/convert';
 import { cn } from '../lib/cn';
 export { cn };
-/* eslint-disable @next/next/no-img-element */
 
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
@@ -20,6 +19,8 @@ import {
   resolvePulsePlaylistTitle,
 } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 export type PulseTrackArtwork = {
   src?: string | null;
@@ -161,20 +162,7 @@ export function isTrackAvailable(track: PulseTrack | { status?: string | number 
 
 export function PulseLogo({ className }: { className?: string }) {
   return (
-    <img src="/img/branding/pulse.svg" alt="Pulse Logo" className={cn('shrink-0', className)} />
-  );
-}
-
-export function ActionIcon({ name, className }: { className?: string; name: string }) {
-  const hasFill = className ? /(?:^|\s)fill-/.test(className) : false;
-  return (
-    <svg
-      className={cn('inline', !hasFill && 'fill-current', className)}
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 48 48"
-    >
-      <use href={`#${name}`} />
-    </svg>
+    <AppImage width={821} height={157} src="/img/branding/pulse.svg" alt="Pulse Logo" className={cn('shrink-0', className)} />
   );
 }
 
@@ -195,7 +183,7 @@ export function PulsePageHeader({
           onClick={onBack}
           className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
         >
-          <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+          <Icon name="IC-chevron-left" className="inline fill-current h-8 w-8" />
           <PulseLogo className="w-32 sm:w-48" />
         </button>
       </div>
@@ -317,7 +305,7 @@ export function PulsePlaylistTile({
           className={cn('flex shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500/50 shadow backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-purple-600 active:scale-95', playButtonSize)}
           aria-label={isPlaying ? 'Pause playlist' : 'Play playlist'}
         >
-          <ActionIcon className={playIconSize} name={isPlaying ? 'IC-pause' : 'IC-play'} />
+          <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className={cn('inline fill-current', playIconSize)} />
         </button>
 
         <div className="flex min-w-0 flex-col gap-0 text-left">
@@ -352,7 +340,7 @@ export function PulseArtistTile({
         className="group flex w-full min-w-0 cursor-pointer flex-col items-center gap-3 duration-300 active:scale-95"
       >
         <div className="aspect-square w-full overflow-hidden rounded-full border border-zinc-600/30 shadow">
-          <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
+          <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_TRACK_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
         </div>
         <span className="w-full truncate text-center text-sm font-medium text-zinc-100 lg:text-base">{name}</span>
       </button>
@@ -370,7 +358,7 @@ export function PulseArtistTile({
       </div>
 
       <div className="absolute top-0 z-[4] h-32 w-32 overflow-hidden rounded-full border border-zinc-600/30 shadow lg:h-48 lg:w-48">
-        <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
+        <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_TRACK_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
       </div>
 
       <span className="z-[1] flex max-w-32 items-center gap-1 truncate text-sm font-medium text-zinc-100 duration-300 lg:-translate-y-24 lg:max-w-48 lg:group-hover:translate-y-0">
@@ -594,10 +582,7 @@ export function PulseTrackRow({
         className="relative isolate h-16 w-16 shrink-0 cursor-pointer active:scale-95 duration-300"
       >
         {isOwnTrack ? (
-          <ActionIcon
-            className="absolute -left-1.5 -top-1.5 z-20 h-6 w-6 rounded-full border border-zinc-600/30 bg-pink-500/50 stroke-white p-1 backdrop-blur-sm backdrop-saturate-200"
-            name="IC-crown"
-          />
+          <Icon name="IC-crown" className="inline fill-current absolute -left-1.5 -top-1.5 z-20 h-6 w-6 rounded-full border border-zinc-600/30 bg-pink-500/50 stroke-white p-1 backdrop-blur-sm backdrop-saturate-200" />
         ) : null}
 
         {isCached ? (
@@ -605,9 +590,7 @@ export function PulseTrackRow({
             className="absolute -right-1.5 -top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-emerald-500 text-white shadow-md backdrop-blur-sm"
             title={lang?.pulse_already_saved_offline || 'Сохранено офлайн'}
           >
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-            </svg>
+            <Icon name="IC-check-material" className="h-3.5 w-3.5 fill-white" />
           </div>
         ) : null}
 
@@ -621,9 +604,7 @@ export function PulseTrackRow({
         {/* Geo-block overlay */}
         {!isAvailable && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-black/60 backdrop-blur-[1px]">
-            <svg className="h-5 w-5 fill-zinc-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="/icons.svg#IC-lock" />
-            </svg>
+            <Icon name="IC-lock" className="h-5 w-5 fill-zinc-300" />
           </div>
         )}
 
@@ -659,7 +640,7 @@ export function PulseTrackRow({
 
       {isAuthenticated ? (
         <button type="button" onClick={() => void onLikeTrack(track)} className={cn('cursor-pointer active:scale-95', !isAvailable && 'opacity-60')}>
-          <ActionIcon className={cn('h-6 w-6 duration-300 hover:fill-zinc-300 lg:h-8 lg:w-8', isLiked ? 'fill-white' : 'fill-zinc-100')} name={isLiked ? 'IC-heart-filled' : 'IC-heart'} />
+          <Icon name={isLiked ? 'IC-heart-filled' : 'IC-heart'} className={cn('inline', cn('h-6 w-6 duration-300 hover:fill-zinc-300 lg:h-8 lg:w-8', isLiked ? 'fill-white' : 'fill-zinc-100'))} />
         </button>
       ) : null}
 
@@ -683,7 +664,7 @@ export function PulseTrackRow({
                 onClick={action.onClick}
                 className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
               >
-                <ActionIcon className="h-6 w-6" name={action.icon} />
+                <Icon name={action.icon} className="inline fill-current h-6 w-6" />
               </button>
             ))}
           </div>
@@ -740,7 +721,7 @@ export function PulseTrackRow({
               onClick={action.onClick}
               className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
             >
-              <ActionIcon className="h-6 w-6" name={action.icon} />
+              <Icon name={action.icon} className="inline fill-current h-6 w-6" />
             </button>
           ))}
         </div>
@@ -840,7 +821,7 @@ export function TrackCollectionPanel({
             )}
             aria-label={panelIsActive ? `Pause ${collectionId}` : `Play ${collectionId}`}
           >
-            <ActionIcon className="h-6 w-6" name={panelIsActive ? 'IC-pause' : 'IC-play'} />
+            <Icon name={panelIsActive ? 'IC-pause' : 'IC-play'} className="inline fill-current h-6 w-6" />
           </button>
         ) : null}
       </div>
@@ -858,7 +839,7 @@ export function TrackCollectionPanel({
         ) : null}
         {!isLoading && !tracks?.length ? (
           <div className="flex h-full min-h-72 flex-col items-center justify-center gap-3 text-center text-zinc-300">
-            <ActionIcon className="h-12 w-12 fill-white" name="IC-music" />
+            <Icon name="IC-music" className="inline h-12 w-12 fill-white" />
             <span className="text-sm text-zinc-400">{lang?.empty || 'Пока пусто'}</span>
           </div>
         ) : null}

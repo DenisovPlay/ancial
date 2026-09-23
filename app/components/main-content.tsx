@@ -4,6 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { createRouteScrollController, scrollAppToTop } from '../lib/route-scroll';
 import { cn } from '../lib/cn';
+import { ensureHtmlImageLoading } from '../lib/image-loading';
 
 export default function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -28,6 +29,11 @@ export default function MainContent({ children }: { children: React.ReactNode })
   useEffect(() => {
     routeScrollController.syncRoute(routeKey);
   }, [routeKey, routeScrollController]);
+
+  // Прелоадер картинок внутри HTML-строк (посты, комментарии, стикеры) — один раз на приложение.
+  useEffect(() => {
+    ensureHtmlImageLoading();
+  }, []);
 
   return (
     <div

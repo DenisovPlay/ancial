@@ -3,6 +3,7 @@
 import React from 'react';
 import Modal from '../../components/modal';
 import { useAuth } from '../../context/AuthContext';
+import AppImage from '../../components/app-image';
 
 type PulseBlockedTrackModalProps = {
   isOpen: boolean;
@@ -24,7 +25,9 @@ export function PulseBlockedTrackModal({
     >
       <div className="flex flex-col items-center justify-center text-center gap-3">
         <div className="relative h-32 w-32 shrink-0 flex items-center justify-center">
-          <img
+          <AppImage
+            width={128}
+            height={128}
             src="/img/stickers/nerd.avif"
             alt="Nerd sticker"
             className="w-full h-full object-contain pointer-events-none select-none"

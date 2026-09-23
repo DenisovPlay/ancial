@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Icon from './svg-icon';
 
 interface SettingsItemProps {
   icon: React.ReactNode;
@@ -30,13 +31,7 @@ export function SettingsItem({
       {rightContent ? (
         rightContent
       ) : (href || onClick) ? (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-6 h-6 fill-zinc-500 mr-1.5 group-hover:fill-zinc-600 duration-300"
-          viewBox="0 0 48 48"
-        >
-          <use href={`#IC-chevron-right`}></use>
-        </svg>
+        <Icon name="IC-chevron-right" className="w-6 h-6 fill-zinc-500 mr-1.5 group-hover:fill-zinc-600 duration-300" />
       ) : null}
     </div>
   );

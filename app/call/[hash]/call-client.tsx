@@ -10,6 +10,8 @@ import Modal from '../../components/modal';
 import { Dropdown, DropdownItem } from '../../components/navigation';
 import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../../lib/android-glass';
 import { motion, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 interface CameraDevice {
   deviceId: string;
@@ -872,7 +874,7 @@ export default function CallClient() {
         {errorMsg ? (
           <span className="text-white">{errorMsg}</span>
         ) : (
-          <svg className="w-12 h-12 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 4 A 1.50015 1.50015 0 1 0 24 7 C 30.255882 7 35.765936 10.406785 38.703125 15.455078 A 1.5005776 1.5005776 0 1 0 41.296875 13.945312 C 37.834064 7.9936061 31.344118 4 24 4 z" /></svg>
+          <Icon name="IC-loader" className="w-12 h-12 inline animate-spin fill-purple-500" />
         )}
       </div>
     );
@@ -907,7 +909,7 @@ export default function CallClient() {
         {showCover && (
           <div id="call-cover" className="absolute inset-0 flex items-center justify-center" style={{ pointerEvents: 'none' }}>
             <div className="w-full max-w-screen-sm px-6 text-center">
-              <img src={fAvatar} alt="" className="w-28 h-28 rounded-full shadow object-cover mx-auto" />
+              <AppImage width={112} height={112} src={fAvatar} alt="" className="w-28 h-28 rounded-full shadow object-cover mx-auto" />
               <div className="mt-4 text-zinc-100 text-2xl font-semibold">{fName}</div>
               <div className="mt-2 text-zinc-300">{coverStatusText}</div>
             </div>
@@ -917,18 +919,14 @@ export default function CallClient() {
         {/* Индикатор: партнёр выключил микрофон */}
         {remoteMicEnabled === false && (
           <div className="absolute top-6 right-6 bg-red-500/80 backdrop-blur-md p-2 rounded-full shadow-lg z-50">
-            <svg className="w-6 h-6 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <path d="M 24 2 C 19.047281 2 15 6.0472805 15 11 L 15 26 C 15 30.952719 19.047281 35 24 35 C 28.952719 35 33 30.952719 33 26 L 33 11 C 33 6.0472805 28.952719 2 24 2 M 10.476562 20.978516 A 1.50015 1.50015 0 0 0 9 22.5 L 9 26 C 9 33.760508 14.934038 40.16812 22.5 40.923828 L 22.5 45.5 A 1.50015 1.50015 0 1 0 25.5 45.5 L 25.5 40.923828 C 33.065962 40.16812 39 33.760508 39 26 L 39 22.5 A 1.50015 1.50015 0 1 0 36 22.5 L 36 26 C 36 32.585372 30.739679 37.894735 24.177734 37.990234 A 1.50015 1.50015 0 0 0 23.976562 37.978516 A 1.50015 1.50015 0 0 0 23.8125 37.990234 C 17.255134 37.889572 12 32.582085 12 26 L 12 22.5 A 1.50015 1.50015 0 0 0 10.476562 20.978516 M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/>
-            </svg>
+            <Icon name="IC-mic-off" className="w-6 h-6 fill-white" />
           </div>
         )}
 
         {/* Индикатор: партнёр демонстрирует экран */}
         {remoteScreenEnabled === true && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-purple-600/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg z-50 flex items-center gap-2">
-            <svg className="w-4 h-4 fill-white shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <path d="M 7 8 C 4.7940678 8 3 9.7940678 3 12 L 3 33 C 3 35.205932 4.7940678 37 7 37 L 20 37 L 20 41 L 14 41 A 1.50015 1.50015 0 1 0 14 44 L 34 44 A 1.50015 1.50015 0 1 0 34 41 L 28 41 L 28 37 L 41 37 C 43.205932 37 45 35.205932 45 33 L 45 12 C 45 9.7940678 43.205932 8 41 8 L 7 8 z M 7 11 L 41 11 C 41.551068 11 42 11.448932 42 12 L 42 33 C 42 33.551068 41.551068 34 41 34 L 7 34 C 6.4489322 34 6 33.551068 6 33 L 6 12 C 6 11.448932 6.4489322 11 7 11 z M 23 41 L 25 41 L 25 44 L 23 44 L 23 41 z"/>
-            </svg>
+            <Icon name="IC-screen-sharing" className="w-4 h-4 fill-white shrink-0" />
             <span className="text-white text-xs font-medium">{lang?.screen_sharing || 'Демонстрация экрана...'}</span>
           </div>
         )}
@@ -938,12 +936,10 @@ export default function CallClient() {
           <div className="max-w-screen-md mx-auto flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button style={{ zIndex: 999 }} onClick={() => router.back()} className="cursor-pointer duration-300 active:scale-95" type="button">
-                <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                  <path d="M 29.449219 4.9863281 A 1.50015 1.50015 0 0 0 28.423828 5.4550781 L 11.423828 22.955078 A 1.50015 1.50015 0 0 0 11.423828 25.044922 L 28.423828 42.544922 A 1.50015 1.50015 0 1 0 30.576172 40.455078 L 14.591797 24 L 30.576172 7.5449219 A 1.50015 1.50015 0 0 0 29.449219 4.9863281 z"></path>
-                </svg>
+                <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
               </button>
               <div className="flex items-start gap-2">
-                <img src={fAvatar} alt="" className="w-10 h-10 rounded-full shadow object-cover" />
+                <AppImage width={40} height={40} src={fAvatar} alt="" className="w-10 h-10 rounded-full shadow object-cover" />
                 <div className="flex flex-col leading-tight">
                   <div className="text-zinc-100 font-medium">{fName}</div>
                   <div className="text-zinc-300 text-sm max-w-48 lg:max-w-80">{callStatus}</div>
@@ -1038,9 +1034,9 @@ export default function CallClient() {
                 label={micEnabled ? (lang?.voice_mic_on || 'Микрофон включён') : (lang?.voice_mic_off || 'Микрофон выключен')}
               >
                 {micEnabled ? (
-                  <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 2 C 19.047281 2 15 6.0472805 15 11 L 15 26 C 15 30.952719 19.047281 35 24 35 C 28.952719 35 33 30.952719 33 26 L 33 11 C 33 6.0472805 28.952719 2 24 2 z M 24 5 C 27.331281 5 30 7.6687195 30 11 L 30 26 C 30 29.331281 27.331281 32 24 32 C 20.668719 32 18 29.331281 18 26 L 18 11 C 18 7.6687195 20.668719 5 24 5 z M 10.476562 20.978516 A 1.50015 1.50015 0 0 0 9 22.5 L 9 26 C 9 33.760508 14.934038 40.16812 22.5 40.923828 L 22.5 45.5 A 1.50015 1.50015 0 1 0 25.5 45.5 L 25.5 40.923828 C 33.065962 40.16812 39 33.760508 39 26 L 39 22.5 A 1.50015 1.50015 0 1 0 36 22.5 L 36 26 C 36 32.585372 30.739679 37.894735 24.177734 37.990234 A 1.50015 1.50015 0 0 0 23.976562 37.978516 A 1.50015 1.50015 0 0 0 23.8125 37.990234 C 17.255134 37.889572 12 32.582085 12 26 L 12 22.5 A 1.50015 1.50015 0 0 0 10.476562 20.978516 z"/></svg>
+                  <Icon name="IC-mic" className="h-8 w-8 fill-current" />
                 ) : (
-                  <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 24 2 C 19.047281 2 15 6.0472805 15 11 L 15 26 C 15 30.952719 19.047281 35 24 35 C 28.952719 35 33 30.952719 33 26 L 33 11 C 33 6.0472805 28.952719 2 24 2 M 10.476562 20.978516 A 1.50015 1.50015 0 0 0 9 22.5 L 9 26 C 9 33.760508 14.934038 40.16812 22.5 40.923828 L 22.5 45.5 A 1.50015 1.50015 0 1 0 25.5 45.5 L 25.5 40.923828 C 33.065962 40.16812 39 33.760508 39 26 L 39 22.5 A 1.50015 1.50015 0 1 0 36 22.5 L 36 26 C 36 32.585372 30.739679 37.894735 24.177734 37.990234 A 1.50015 1.50015 0 0 0 23.976562 37.978516 A 1.50015 1.50015 0 0 0 23.8125 37.990234 C 17.255134 37.889572 12 32.582085 12 26 L 12 22.5 A 1.50015 1.50015 0 0 0 10.476562 20.978516 M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/></svg>
+                  <Icon name="IC-mic-off" className="h-8 w-8 fill-current" />
                 )}
               </CallControlButton>
 
@@ -1056,9 +1052,9 @@ export default function CallClient() {
                     className="relative z-10"
                   >
                     {camEnabled && !isScreenSharing ? (
-                      <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z"/></svg>
+                      <Icon name="IC-camera" className="h-8 w-8 fill-current" />
                     ) : (
-                      <svg className="h-8 w-8 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/></svg>
+                      <Icon name="IC-camera-off" className="h-8 w-8 fill-current" />
                     )}
                   </CallControlButton>
                 }
@@ -1077,13 +1073,9 @@ export default function CallClient() {
                     onClick={() => switchCamera(cam.deviceId)}
                     iconNode={
                       selectedCameraId === cam.deviceId ? (
-                        <svg className="inline w-6 h-6 fill-purple-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                          <path d="M 40.980469 8.9902344 A 2.0002 2.0002 0 0 0 39.585938 9.5859375 L 19 30.171875 L 8.4140625 19.585938 A 2.0002 2.0002 0 1 0 5.5859375 22.414062 L 17.585938 34.414062 A 2.0002 2.0002 0 0 0 20.414062 34.414062 L 42.414062 12.414062 A 2.0002 2.0002 0 0 0 40.980469 8.9902344 z"/>
-                        </svg>
+                        <Icon name="IC-check-bold" className="inline w-6 h-6 fill-purple-400" />
                       ) : (
-                        <svg className="inline w-6 h-6 fill-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                          <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 10.5 12 L 27.5 12 C 29.450062 12 31 13.549938 31 15.5 L 31 19.453125 L 31 28.482422 L 31 32.5 C 31 34.450062 29.450062 36 27.5 36 L 10.5 36 C 8.5499381 36 7 34.450062 7 32.5 L 7 15.5 C 7 13.549938 8.5499381 12 10.5 12 z M 41 16.150391 L 41 31.849609 L 34 27.650391 L 34 20.349609 L 41 16.150391 z"/>
-                        </svg>
+                        <Icon name="IC-camera" className="inline w-6 h-6 fill-zinc-400" />
                       )
                     }
                     className={selectedCameraId === cam.deviceId ? 'text-purple-300' : ''}
@@ -1095,9 +1087,7 @@ export default function CallClient() {
                 <DropdownItem
                   onClick={disableCamFromDropdown}
                   iconNode={
-                    <svg className="inline w-6 h-6 fill-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 10.5 9 C 6.9280619 9 4 11.928062 4 15.5 L 4 32.5 C 4 36.071938 6.9280619 39 10.5 39 L 27.5 39 C 31.071938 39 34 36.071938 34 32.5 L 34 31.150391 L 41.728516 35.787109 A 1.50015 1.50015 0 0 0 44 34.5 L 44 13.5 A 1.50015 1.50015 0 0 0 42.455078 12 A 1.50015 1.50015 0 0 0 41.728516 12.212891 L 34 16.849609 L 34 15.5 C 34 11.928062 31.071938 9 27.5 9 L 10.5 9 z M 7.5 4.5 L 43.5 40.5 L 40.5 43.5 L 4.5 7.5 Z"/>
-                    </svg>
+                    <Icon name="IC-camera-off" className="inline w-6 h-6 fill-red-400" />
                   }
                   className="text-red-400"
                 >
@@ -1114,13 +1104,9 @@ export default function CallClient() {
                 className="hidden md:flex"
               >
                 {isScreenSharing ? (
-                  <svg className="h-7 w-7 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                    <path d="M 7 8 C 4.7940678 8 3 9.7940678 3 12 L 3 33 C 3 35.205932 4.7940678 37 7 37 L 20 37 L 20 41 L 14 41 A 1.50015 1.50015 0 1 0 14 44 L 34 44 A 1.50015 1.50015 0 1 0 34 41 L 28 41 L 28 37 L 41 37 C 43.205932 37 45 35.205932 45 33 L 45 12 C 45 9.7940678 43.205932 8 41 8 L 7 8 z M 7 11 L 41 11 C 41.551068 11 42 11.448932 42 12 L 42 33 C 42 33.551068 41.551068 34 41 34 L 7 34 C 6.4489322 34 6 33.551068 6 33 L 6 12 C 6 11.448932 6.4489322 11 7 11 z M 20 18 L 20 28 L 28 23 L 20 18 z M 23 41 L 25 41 L 25 44 L 23 44 L 23 41 z"/>
-                  </svg>
+                  <Icon name="IC-screen-share-stop" className="h-7 w-7 fill-current" />
                 ) : (
-                  <svg className="h-7 w-7 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                    <path d="M 7 8 C 4.7940678 8 3 9.7940678 3 12 L 3 33 C 3 35.205932 4.7940678 37 7 37 L 20 37 L 20 41 L 14 41 A 1.50015 1.50015 0 1 0 14 44 L 34 44 A 1.50015 1.50015 0 1 0 34 41 L 28 41 L 28 37 L 41 37 C 43.205932 37 45 35.205932 45 33 L 45 12 C 45 9.7940678 43.205932 8 41 8 L 7 8 z M 7 11 L 41 11 C 41.551068 11 42 11.448932 42 12 L 42 33 C 42 33.551068 41.551068 34 41 34 L 7 34 C 6.4489322 34 6 33.551068 6 33 L 6 12 C 6 11.448932 6.4489322 11 7 11 z M 23 41 L 25 41 L 25 44 L 23 44 L 23 41 z M 24 16 L 18 22 L 22 22 L 22 31 L 26 31 L 26 22 L 30 22 L 24 16 z"/>
-                  </svg>
+                  <Icon name="IC-screen-share" className="h-7 w-7 fill-current" />
                 )}
               </CallControlButton>
 
@@ -1131,9 +1117,7 @@ export default function CallClient() {
                 title={lang?.voice_room_leave || 'Завершить'}
                 onClick={() => router.back()}
               >
-                <svg className="h-7 w-7 fill-current" viewBox="0 0 48 48" aria-hidden="true">
-                  <use href="/icons.svg#IC-exit" />
-                </svg>
+                <Icon name="IC-exit" className="h-7 w-7 fill-current" aria-hidden="true" />
               </CallControlButton>
             </motion.div>
           </div>

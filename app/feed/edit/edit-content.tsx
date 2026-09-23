@@ -19,7 +19,6 @@ import { parsePostContentToHtml } from '../../components/post-parser';
 import {
   type DraftImage,
   MAX_IMAGES,
-  SvgIcon,
   decodeHtmlEntities,
   decodeHtmlToTextareaValue,
   insertStickerIntoEditor,
@@ -29,6 +28,7 @@ import {
   uploadImage,
   uploadPostImageFiles,
 } from '../editor-shared';
+import Icon from '../../components/svg-icon';
 
 
 type EditErrorState = 'error' | 'not_found' | 'permission_denied' | null;
@@ -476,9 +476,7 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
   if (isLoading) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
       </div>
     );
   }
@@ -486,9 +484,7 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
   if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <svg className="w-16 h-16 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
       </div>
     );
   }
@@ -526,7 +522,7 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
       <div className="w-full max-w-3xl px-3 lg:px-0">
         <div className="border border-zinc-600/30 text-center w-full flex flex-col gap-3 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6">
           <div className="rounded-2xl bg-red-500/25 shadow h-16 w-16 flex items-center justify-center duration-300">
-            <SvgIcon className="w-8 h-8 inline fill-white" id="IC-times" />
+            <Icon name="IC-times" className="w-8 h-8 inline fill-white" />
           </div>
           <span className="text-base text-zinc-200 w-full text-center font-black">
             {strings.notyourpost}

@@ -1,6 +1,5 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element */
 
 import { FormEvent, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -18,13 +17,8 @@ import {
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
 import AppInfoModal from './app-info-modal';
-import {
-  CategoryIcon,
-  SearchIcon,
-  SpinnerIcon,
-  StarIcon,
-  UserIcon,
-} from './apps-icons';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 
 type CategoryItem = {
@@ -223,7 +217,7 @@ function AppsContentInner() {
           className={`shrink-0 overflow-hidden duration-300 active:scale-95 ${focused ? 'w-0 opacity-0 scale-95' : 'mr-3 w-28 opacity-100 scale-100'}`}
           href="/apps"
         >
-          <img alt="Zynt" className="w-28 hover:opacity-80 duration-300 cursor-pointer" src="/img/logos/zynt.svg" />
+          <AppImage width={358} height={154} alt="Zynt" className="w-28 hover:opacity-80 duration-300 cursor-pointer" src="/img/logos/zynt.svg" />
         </Link>
         <form
           className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12"
@@ -241,14 +235,14 @@ function AppsContentInner() {
             value={query}
           />
           <button className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700" type="submit">
-            <SearchIcon className="inline w-8 h-8 fill-white" />
+            <Icon name="IC-search" className="inline w-8 h-8 fill-white" />
           </button>
         </form>
         <Link
           className="ml-3 cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full"
           href="/settings/account"
         >
-          <UserIcon className="inline w-8 h-8 fill-white" />
+          <Icon name="IC-user" className="inline w-8 h-8 fill-white" />
         </Link>
       </div>
 
@@ -272,12 +266,12 @@ function AppsContentInner() {
                     "border border-zinc-600/30 fill-purple-500 bg-purple-500/25 flex justify-center items-center rounded-full p-1.5 shadow duration-500 group-hover:w-44 group-hover:h-44",
                     isActive ? "w-44 h-44" : "w-14 h-14"
                   )}>
-                    <CategoryIcon
+                    <Icon
                       className={cn(
                         `${categoryAnimationIconClass(item.key)} duration-300 group-hover:h-16 group-hover:w-16`,
                         isActive ? "w-16 h-16" : "w-12 h-12"
                       )}
-                      name={item.icon}
+                      name={appCategoryIcon(item.icon)}
                     />
                   </div>
                 </div>
@@ -312,7 +306,7 @@ function AppsContentInner() {
 
       {!loading && error && (
         <div className="text-center w-full max-w-screen-2xl flex flex-col gap-0.5 justify-center items-center py-20 px-3">
-          <img alt="" className="h-56" src="/img/stickers/sponge.gif" />
+          <AppImage width={224} height={224} alt="" className="h-56 w-auto" src="/img/stickers/sponge.gif" />
           <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
           <span className="text-content-600">{lang?.try_refresh || 'Попробуйте обновить страницу'}</span>
           <span className="text-xs text-zinc-400">{error}</span>
@@ -321,7 +315,7 @@ function AppsContentInner() {
 
       {!loading && !error && apps.length === 0 && (
         <div className="text-center w-full max-w-screen-2xl flex flex-col gap-0.5 justify-center items-center py-20 px-3">
-          <img alt="" className="h-56" src="/img/load-placeholders/nothingfound.webp" />
+          <AppImage width={224} height={224} alt="" className="h-56 w-auto" src="/img/load-placeholders/nothingfound.webp" />
           <span className="text-base text-zinc-100 w-full text-center font-black">
             {lang?.emptycomments ?? 'Ничего не найдено'}
           </span>
@@ -340,7 +334,7 @@ function AppsContentInner() {
               onClick={() => setModalAppId(toAppId(app.id))}
               type="button"
             >
-              <img alt={app.name} className="rounded-3xl w-full" src={app.cover} />
+              <AppImage width={1280} height={720} sizes="(max-width: 768px) 100vw, 512px" alt={app.name} className="rounded-3xl w-full" src={app.cover} />
               <div className="bg-zinc-900/50 group-hover:backdrop-blur-md w-full h-full absolute top-0 left-0 opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100 duration-300 rounded-3xl flex flex-col">
                 <span className="text-2xl text-white font-bold pt-3 pl-3 shrink-0 pr-8 break-words">
                   {app.name}
@@ -351,7 +345,7 @@ function AppsContentInner() {
                 </div>
                 {toBooleanFlag(app.red_chois) && (
                   <div className="absolute top-1 right-1 bg-zinc-700 rounded-full p-1 w-8 h-8 flex items-center justify-center">
-                    <StarIcon className="w-5 h-5 fill-white" />
+                    <Icon name="IC-app-star" className="w-5 h-5 fill-white" />
                   </div>
                 )}
               </div>
@@ -369,11 +363,15 @@ function AppsContentInner() {
   );
 }
 
+/** Иконка категории из спрайта; неизвестная категория — как ролевые. */
+const APP_CATEGORY_ICONS = new Set(['adventure', 'sandbox', 'racing', 'arcade', 'roleplay', 'classic', 'social']);
+const appCategoryIcon = (key: string) => `IC-app-category-${APP_CATEGORY_ICONS.has(key) ? key : 'roleplay'}`;
+
 export default function AppsContent() {
   return (
     <Suspense fallback={
       <div className="flex h-screen items-center justify-center">
-        <SpinnerIcon className="w-12 h-12 fill-white animate-spin" />
+        <Icon name="IC-loader" className="w-12 h-12 fill-white animate-spin" />
       </div>
     }>
       <AppsContentInner />

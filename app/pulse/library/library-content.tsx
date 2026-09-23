@@ -9,7 +9,6 @@ import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { AncialAPI } from '../../lib/api-v2';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import {
-  ActionIcon,
   PulseEmptyState,
   PulseLogo,
   PulsePlaylistTile,
@@ -17,6 +16,7 @@ import {
   normalizeText,
   type PulsePlaylistCardData,
 } from '../pulse-components';
+import Icon from '../../components/svg-icon';
 
 type PulseLibraryResponse = {
   favorite_playlist?: PulsePlaylistCardData | null;
@@ -123,7 +123,7 @@ export default function PulseLibraryContent() {
             href="/pulse/my"
             className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
           >
-            <ActionIcon className="h-8 w-8" name="IC-chevron-left" />
+            <Icon name="IC-chevron-left" className="inline fill-current h-8 w-8" />
             <PulseLogo className="w-32 sm:w-48" />
           </Link>
         </div>

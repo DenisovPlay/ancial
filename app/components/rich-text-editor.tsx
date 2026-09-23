@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { cn, SvgIcon } from '../feed/editor-shared';
+import { cn, } from '../feed/editor-shared';
 import { parsePostContentToHtml, getVisibleLength } from './post-parser';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import { uploadImage } from '../lib/upload';
@@ -9,6 +9,7 @@ import { extractImagesFromClipboard } from '../lib/clipboard-image';
 import Modal from './modal';
 import PostBlockTableModal from './post-block-table-modal';
 import PostBlockMediaModal from './post-block-media-modal';
+import Icon from './svg-icon';
 
 const VISIBLE_CHAR_LIMIT = 3000;
 
@@ -1143,51 +1144,51 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           <s>S</s>
         </InlineBtn>
         <InlineBtn onClick={handleLink} active={activeFormats.link} title={strings?.editor_link_insert || 'Ссылка'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-link" />
+          <Icon name="IC-link" className="w-5 h-5 fill-current" />
         </InlineBtn>
 
         <Divider />
 
         {/* Заголовки */}
         <BlockBtn onClick={() => insertBlock('h1')} active={activeFormats.h1} title={strings?.editor_h1 || 'Заголовок H1'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-heading-1" />
+          <Icon name="IC-heading-1" className="w-5 h-5 fill-current" />
         </BlockBtn>
         <BlockBtn onClick={() => insertBlock('h2')} active={activeFormats.h2} title={strings?.editor_h2 || 'Заголовок H2'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-heading-2" />
+          <Icon name="IC-heading-2" className="w-5 h-5 fill-current" />
         </BlockBtn>
         <BlockBtn onClick={() => insertBlock('h3')} active={activeFormats.h3} title={strings?.editor_h3 || 'Заголовок H3'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-heading-3" />
+          <Icon name="IC-heading-3" className="w-5 h-5 fill-current" />
         </BlockBtn>
 
         <Divider />
 
         {/* Списки */}
         <BlockBtn onClick={() => insertBlock('ul')} active={activeFormats.ul} title={strings?.editor_list_ul || 'Список'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-list-ul" />
+          <Icon name="IC-list-ul" className="w-5 h-5 fill-current" />
         </BlockBtn>
         <BlockBtn onClick={() => insertBlock('ol')} active={activeFormats.ol} title={strings?.editor_list_ol || 'Нумерованный'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-list-ol" />
+          <Icon name="IC-list-ol" className="w-5 h-5 fill-current" />
         </BlockBtn>
 
         <Divider />
 
         {/* Блочные */}
         <BlockBtn onClick={() => { setTableModalBBCode(''); setIsTableModalOpen(true); }} active={false} title={strings?.create_table || 'Таблица'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-table" />
+          <Icon name="IC-table" className="w-5 h-5 fill-current" />
         </BlockBtn>
         {onCarouselOpen && (
           <BlockBtn onClick={onCarouselOpen} active={false} title={strings?.editor_carousel || 'Карусель / Коллаж'}>
-            <SvgIcon className="w-5 h-5 fill-current" id="IC-photos" />
+            <Icon name="IC-photos" className="w-5 h-5 fill-current" />
           </BlockBtn>
         )}
         <BlockBtn onClick={() => insertBlock('quote')} active={activeFormats.quote} title={strings?.editor_quote || 'Цитата'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-quote" />
+          <Icon name="IC-quote" className="w-5 h-5 fill-current" />
         </BlockBtn>
         <BlockBtn onClick={() => insertBlock('spoiler')} active={activeFormats.spoiler} title={strings?.editor_spoiler || 'Спойлер'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-spoiler" />
+          <Icon name="IC-spoiler" className="w-5 h-5 fill-current" />
         </BlockBtn>
         <BlockBtn onClick={() => insertBlock('fn')} active={activeFormats.fn} title={strings?.editor_footnote || 'Сноска'}>
-          <SvgIcon className="w-5 h-5 fill-current" id="IC-footnote" />
+          <Icon name="IC-footnote" className="w-5 h-5 fill-current" />
         </BlockBtn>
       </div>
 
@@ -1224,10 +1225,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           style={{ bottom: `calc(${getBottomOffset()} + 6px)` }}
           title={strings?.editor_resize || 'Растянуть поле ввода'}
         >
-          <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-            <path d="M20 20H4v-2h16v2zm0-8H4v-2h16v2zM4 4h16v2H4V4z" opacity="0.3" />
-            <path d="M8 9h8v2H8V9zm0 6h8v2H8v-2z" />
-          </svg>
+          <Icon name="IC-drag-handle" className="w-3.5 h-3.5 fill-current" />
         </div>
       </div>
 

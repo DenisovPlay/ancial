@@ -3,6 +3,7 @@
 import React, { useEffect, useId, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../lib/cn';
+import Icon from './svg-icon';
 
 interface ModalProps {
   align?: 'responsive' | 'center';
@@ -254,9 +255,7 @@ export default function Modal({
                           onClick={onBack}
                           className="cursor-pointer flex items-center justify-center w-9 h-9 rounded-full border border-zinc-600/30 hover:bg-zinc-800/50 duration-300 active:scale-95 shrink-0"
                       >
-                          <svg className="w-4 h-4 fill-zinc-300" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <use href="#IC-chevron-left"></use>
-                          </svg>
+                          <Icon name="IC-chevron-left" className="w-4 h-4 fill-zinc-300" />
                       </button>
                   </div>
                   <h2 id={titleId} className="text-xl font-bold text-white backdrop-shadow-lg flex-1 min-w-0 truncate">{title}</h2>
@@ -266,9 +265,7 @@ export default function Modal({
                       onClick={onClose}
                       className="cursor-pointer hidden sm:flex p-1.5 rounded-full border border-transparent hover:bg-zinc-800/50 hover:border-zinc-600/30 duration-300 active:scale-95 ml-2 shrink-0"
                   >
-                      <svg className="w-5 h-5 fill-zinc-300" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <use href="#IC-times"></use>
-                      </svg>
+                      <Icon name="IC-times" className="w-5 h-5 fill-zinc-300" />
                   </button>
               </div>
           </div>

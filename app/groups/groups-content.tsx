@@ -19,6 +19,8 @@ interface Group {
 }
 
 import AccountName from '../components/account-name';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 function GroupsContent() {
   const router = useRouter();
@@ -130,7 +132,7 @@ function GroupsContent() {
             }}
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-1.5 cursor-pointer"
           >
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-chevron-left"></use></svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             <span>{lang?.groups || 'Сообщества'}</span>
           </span>
         </div>
@@ -146,14 +148,14 @@ function GroupsContent() {
             autoComplete="off"
           />
           <button type="submit" className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700">
-            <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-search"></use></svg>
+            <Icon name="IC-search" className="inline w-8 h-8 fill-white" />
           </button>
         </form>
         <button
           onClick={() => setIsModalOpen(true)}
           className="cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full"
         >
-          <svg className="inline w-8 h-8 fill-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><use href="#IC-plus"></use></svg>
+          <Icon name="IC-plus" className="inline w-8 h-8 fill-white" />
         </button>
       </div>
 
@@ -173,7 +175,7 @@ function GroupsContent() {
           <div className="p-3 text-center text-zinc-400">{errorMsg}</div>
         ) : groups.length === 0 ? (
           <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
-            <img src="/img/load-placeholders/nothingfound.webp" className="h-56" alt="Not found" />
+            <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="Not found" />
             <span className="text-base text-zinc-100 w-full text-center font-black">{lang?.nogroups || 'Нет сообществ'}</span>
             <span className="text-sm text-zinc-300 w-full text-center font-medium">
               {isSearch ? (lang?.nosgroupsdesc || 'Ничего не найдено') : (lang?.nogroupsdesc || 'Вы еще никуда не подписались')}
@@ -187,10 +189,13 @@ function GroupsContent() {
                 href={`/$${group.slnk}`}
                 className="relative flex p-3 flex-grow hover:bg-zinc-800 duration-300 justify-center gap-3 cursor-pointer active:scale-95 active:rounded-3xl min-w-0"
               >
-                <div
-                  className="cursor-pointer shadow w-16 h-16 rounded-full shrink-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${group.img})` }}
-                ></div>
+                <AppImage
+                  width={64}
+                  height={64}
+                  src={group.img}
+                  alt=""
+                  className="block cursor-pointer shadow w-16 h-16 rounded-full shrink-0 object-cover"
+                />
                 <div className="flex flex-col flex-grow justify-center min-w-0">
                   <AccountName
                     user={group}

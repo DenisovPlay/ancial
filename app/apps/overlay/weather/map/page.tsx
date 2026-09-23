@@ -2,8 +2,8 @@
 
 import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { BackIcon } from '../../../apps-icons';
 import WeatherMapContent from '../../../included/weather/map/weather-map-content';
+import Icon from '../../../../components/svg-icon';
 
 export default function WeatherMapOverlayPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function WeatherMapOverlayPage() {
         onClick={handleBack}
         className="p-1.5 flex items-center group justify-center rounded-full fixed top-3 left-3 cursor-pointer active:scale-95 duration-300 bg-zinc-900/60 border border-zinc-600/40 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 h-10 w-10 z-[9999] shadow-lg"
       >
-        <BackIcon className="w-6 h-6 fill-white inline shrink-0" />
+        <Icon name="IC-chevron-left" className="w-6 h-6 fill-white inline shrink-0" />
       </button>
 
       {/* Map Content View with Overlay Support wrapped in Suspense */}

@@ -1,6 +1,5 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -18,7 +17,8 @@ import {
   splitScreenshots,
   toBooleanFlag,
 } from './apps-model';
-import { BoltIcon, CheckIcon, GamepadIcon, StarIcon } from './apps-icons';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 type AppInfoModalProps = {
   appId: number | string | null;
@@ -193,9 +193,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
           type="button"
           aria-label={lang?.close ?? 'Закрыть'}
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <Icon name="IC-close" className="w-5 h-5" fill="none" stroke="currentColor" />
         </button>
 
         {/* Драг-индикатор (стандартный хеддер/полоска) для мобильных устройств */}
@@ -218,12 +216,12 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                 </span>
 
                 <div className="divide-x divide-zinc-700 w-full my-3 hidden lg:flex">
-                  <StatItem icon={<GamepadIcon className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />} label={app.downloads} />
+                  <StatItem icon={<Icon name="IC-app-gamepad" className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />} label={app.downloads} />
                   {toBooleanFlag(app.red_chois) && (
-                    <StatItem icon={<StarIcon className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />} label={lang?.redchoise ?? 'Выбор редакции'} />
+                    <StatItem icon={<Icon name="IC-app-star" className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />} label={lang?.redchoise ?? 'Выбор редакции'} />
                   )}
-                  <StatItem icon={<BoltIcon className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />} label={lang?.without_install ?? 'Без установки'} />
-                  <StatItem icon={<CheckIcon className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />} label={lang?.appchecked ?? 'Проверено'} />
+                  <StatItem icon={<Icon name="IC-app-bolt" className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />} label={lang?.without_install ?? 'Без установки'} />
+                  <StatItem icon={<Icon name="IC-check" className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />} label={lang?.appchecked ?? 'Проверено'} />
                 </div>
 
                 <span id="favDescriptionPC" className="text-zinc-400 hidden lg:flex">
@@ -239,12 +237,17 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                 </button>
               </div>
               <div className="flex items-center justify-center shrink-0">
-                <img
+                <AppImage
+                  width={256}
+                  height={256}
                   alt={app.name}
                   className="border border-zinc-600/30 shadow rounded-3xl w-24 lg:w-64 z-20 lg:rounded-3xl"
                   src={app.cover}
                 />
-                <img
+                <AppImage
+                  width={224}
+                  height={224}
+                  skeleton={false}
                   alt=""
                   aria-hidden="true"
                   className="shadow rounded-3xl w-16 lg:w-56 absolute blur-xl animate-pulse z-10"
@@ -256,24 +259,24 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
             <div className="divide-x divide-zinc-700 w-full mt-3 lg:hidden px-3 flex">
               <StatItem
                 grow
-                icon={<GamepadIcon className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />}
+                icon={<Icon name="IC-app-gamepad" className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />}
                 label={app.downloads}
               />
               {toBooleanFlag(app.red_chois) && (
                 <StatItem
                   grow
-                  icon={<StarIcon className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />}
+                  icon={<Icon name="IC-app-star" className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />}
                   label={lang?.redchoise ?? 'Выбор редакции'}
                 />
               )}
               <StatItem
                 grow
-                icon={<BoltIcon className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />}
+                icon={<Icon name="IC-app-bolt" className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />}
                 label={lang?.without_install ?? 'Без установки'}
               />
               <StatItem
                 grow
-                icon={<CheckIcon className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />}
+                icon={<Icon name="IC-check" className="inline h-9 w-9 lg:w-12 lg:h-12 fill-white" />}
                 label={lang?.appchecked ?? 'Проверено'}
               />
             </div>
@@ -295,9 +298,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                       className="absolute left-3 top-1/2 -translate-y-1/2 z-20 hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                       aria-label="Previous screenshots"
                     >
-                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-                      </svg>
+                      <Icon name="IC-chevron-left-bold" className="w-6 h-6 fill-white" />
                     </button>
 
                     {/* Кнопка прокрутки вправо */}
@@ -313,17 +314,13 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                       className="absolute right-3 top-1/2 -translate-y-1/2 z-20 hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                       aria-label="Next screenshots"
                     >
-                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
-                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-                      </svg>
+                      <Icon name="IC-chevron-right-bold" className="w-6 h-6 fill-white" />
                     </button>
 
                     {/* Бедж количества скриншотов */}
                     <div className="absolute top-2 right-5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md pointer-events-none">
                       <span className="flex items-center gap-1.5">
-                        <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                          <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                        </svg>
+                        <Icon name="IC-photo" className="w-4 h-4 fill-white" />
                         <span>{screenshots.length}</span>
                       </span>
                     </div>
@@ -343,9 +340,11 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                       onClick={() => openScreenshot(index)}
                       type="button"
                     >
-                      <img
+                      <AppImage
+                        width={256}
+                        height={256}
                         alt={`${app.name} screenshot ${index + 1}`}
-                        className="h-36 sm:h-48 lg:h-64 object-cover bg-zinc-800 shadow-lg rounded-2xl border border-zinc-700/40 select-none pointer-events-none"
+                        className="h-36 sm:h-48 lg:h-64 object-cover bg-zinc-800 shadow-lg rounded-2xl border border-zinc-700/40 select-none pointer-events-none w-auto"
                         draggable={false}
                         src={image}
                       />
@@ -445,7 +444,7 @@ function SkeletonStat() {
 function AppInfoEmpty({ lang }: { lang: ReturnType<typeof useAuth>['lang'] }) {
   return (
     <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
-      <img alt="" className="h-56" src="/img/load-placeholders/nothingfound.webp" />
+      <AppImage width={224} height={224} alt="" className="h-56 w-auto" src="/img/load-placeholders/nothingfound.webp" />
       <span className="text-base text-zinc-100 w-full text-center font-black">
         {lang?.emptycomments ?? 'Ничего не найдено'}
       </span>
@@ -460,7 +459,7 @@ function AppInfoError({ error }: { error: string }) {
   const { lang } = useAuth();
   return (
     <div className="min-h-[70vh] flex flex-col justify-center items-center w-full h-full">
-      <img alt="" src="/img/stickers/sponge.gif" />
+      <AppImage width={224} height={224} unoptimized className="h-auto w-auto" alt="" src="/img/stickers/sponge.gif" />
       <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
       <span className="text-content-600">{lang?.try_refresh_page || 'Попробуйте обновить страницу'}</span>
       <span className="text-xs text-zinc-400">{error}</span>

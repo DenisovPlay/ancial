@@ -8,8 +8,11 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from 'react';
 
-import { SvgIcon } from '../feed/editor-shared';
 import Modal from './modal';
+import AppImage from './app-image';
+import Icon from './svg-icon';
+
+const VIEWER_PENDING_STYLE = { width: 'min(20rem, 80vw)', height: 'min(20rem, 60vh)' };
 
 type Point = { x: number; y: number };
 
@@ -522,7 +525,7 @@ export default function ImageViewerModal({
               className="cursor-pointer hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center rounded-full bg-zinc-900/70 border border-zinc-700 text-white hover:bg-zinc-800/90 duration-300 active:scale-95"
               aria-label="Previous image"
             >
-              <SvgIcon className="w-7 h-7 fill-white" id="IC-chevron-left" />
+              <Icon name="IC-chevron-left" className="w-7 h-7 fill-white" />
             </button>
           )}
 
@@ -535,7 +538,7 @@ export default function ImageViewerModal({
             className="hidden sm:flex cursor-pointer absolute top-3 right-3 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-zinc-900/70 border border-zinc-700 text-white hover:bg-zinc-800/90 duration-300 active:scale-95"
             aria-label="Close image"
           >
-            <SvgIcon className="w-6 h-6 fill-white" id="IC-times" />
+            <Icon name="IC-times" className="w-6 h-6 fill-white" />
           </button>
 
           <a
@@ -547,7 +550,7 @@ export default function ImageViewerModal({
             className="hidden sm:flex cursor-pointer absolute top-3 right-16 z-10 w-12 h-12 items-center justify-center rounded-full bg-zinc-900/70 border border-zinc-700 text-white hover:bg-zinc-800/90 duration-300 active:scale-95"
             aria-label="Download image"
           >
-            <SvgIcon className="w-5 h-5 fill-white" id="IC-download" />
+            <Icon name="IC-download" className="w-5 h-5 fill-white" />
           </a>
 
           {imagesLength > 1 && (
@@ -574,13 +577,18 @@ export default function ImageViewerModal({
                 key={img.url + idx}
                 className="w-full h-full shrink-0 flex flex-col items-center justify-center relative"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <AppImage
+                  width={1024}
+                  height={1024}
+                  unoptimized
                   ref={idx === activeIdx ? imageRef : null}
                   src={img.url}
                   alt={img.alt ?? `Image ${idx + 1}`}
-                  className="max-w-full max-h-[80vh] object-contain shadow-2xl"
+                  className="max-w-full max-h-[80vh] w-auto h-auto object-contain shadow-2xl"
                   style={idx === activeIdx ? imageStyle : {}}
+                  // Размер заранее неизвестен — пока грузится, держим место под скелетон.
+                  pendingStyle={VIEWER_PENDING_STYLE}
+                  loading="eager"
                   onDragStart={(event) => event.preventDefault()}
                 />
               </div>
@@ -597,7 +605,7 @@ export default function ImageViewerModal({
               className="cursor-pointer hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center rounded-full bg-zinc-900/70 border border-zinc-700 text-white hover:bg-zinc-800/90 duration-300 active:scale-95"
               aria-label="Next image"
             >
-              <SvgIcon className="w-7 h-7 fill-white" id="IC-chevron-right" />
+              <Icon name="IC-chevron-right" className="w-7 h-7 fill-white" />
             </button>
           )}
         </div>

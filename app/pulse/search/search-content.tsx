@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -21,7 +20,6 @@ import { PulseHeader } from '../pulse-header';
 import { readPulseJsonCache, writePulseJsonCache } from '../pulse-cache';
 import { usePulseFavoriteIds } from '../player/use-pulse-favorite-ids';
 import {
-  ActionIcon,
   getPulseBackgroundColorByMood,
   getTrackArtwork,
   getImageUrl,
@@ -38,6 +36,8 @@ import {
   type PulseShareAttachment,
   type PulseTrack,
 } from '../pulse-components';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 type PulseSearchResponse = {
   artists?: PulseArtistCardData[] | null;
@@ -311,7 +311,7 @@ export default function PulseSearchContent() {
         onClick={() => router.push(href)}
         className="flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/20 px-3 py-1.5 text-zinc-300 shadow duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
       >
-        <ActionIcon className="h-5 w-5" name="IC-chevron-right" />
+        <Icon name="IC-chevron-right" className="inline fill-current h-5 w-5" />
         <span>{lang?.all || 'Все'}</span>
       </button>
     </div>
@@ -414,7 +414,7 @@ export default function PulseSearchContent() {
 
         {empty ? (
           <div className="flex w-full flex-col items-center justify-center gap-0.5 text-center">
-            <img src="/img/load-placeholders/nothingfound.webp" className="h-56" alt="" />
+            <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="" />
             <span className="w-full text-center text-base font-black text-content-600">{lang?.noposts || 'Ничего не найдено'}</span>
             <span className="w-full text-center text-sm font-medium text-content-400">{lang?.nopostsdesc || 'Попробуйте другой запрос'}</span>
           </div>

@@ -18,6 +18,6 @@ assert.match(manageSource, /formatCommunityAuditDate/);
 assert.match(manageSource, /communityAuditActionLabel\(entry\.action, lang\)/);
 assert.doesNotMatch(manageSource, />\{entry\.action\}</);
 assert.doesNotMatch(callTileSource, />\s*[●×]\s*</);
-assert.match(callTileSource, /MicrophoneStatusIcon/);
+assert.match(callTileSource, /name=\{!participant\.mic_enabled \? 'IC-call-mic-off' : 'IC-call-mic'\}/);
 
 console.log('community presentation wiring: ok');

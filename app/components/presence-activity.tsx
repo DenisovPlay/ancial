@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -12,6 +11,8 @@ import { getPresenceText, isPresenceOnline, type UserPresence } from '../lib/pre
 import { getPulseExternalUrl } from '../pulse/pulse-navigation';
 import { Dropdown, DropdownItem } from './navigation';
 import ShareModal from './share-modal';
+import AppImage from './app-image';
+import Icon from './svg-icon';
 
 /**
  * Маленькая обложка играющего трека на аватарке в списках (чаты, друзья, виджет друзей).
@@ -28,11 +29,9 @@ export function PresenceCoverBadge({ className, presence }: { className?: string
       className={cn('flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border-2 border-zinc-900 bg-purple-500 shadow', className)}
     >
       {cover ? (
-        <img src={cover} alt="" className="h-full w-full object-cover" />
+        <AppImage width={48} height={48} src={cover} alt="" className="h-full w-full object-cover" />
       ) : (
-        <svg className="h-3.5 w-3.5 fill-white" viewBox="0 0 48 48">
-          <use href="#IC-music"></use>
-        </svg>
+        <Icon name="IC-music" className="h-3.5 w-3.5 fill-white" />
       )}
     </span>
   );
@@ -123,11 +122,9 @@ export default function PresenceActivity({
             )}
           >
             {cover ? (
-              <img src={cover} alt="" className="h-full w-full object-cover" />
+              <AppImage width={48} height={48} src={cover} alt="" className="h-full w-full object-cover" />
             ) : (
-              <svg className="h-5 w-5 fill-white" viewBox="0 0 48 48">
-                <use href={`#${icon}`}></use>
-              </svg>
+              <Icon name={icon} className="h-5 w-5 fill-white" />
             )}
           </span>
         }
@@ -145,9 +142,7 @@ export default function PresenceActivity({
                 onClick={action.onClick}
                 className={MENU_ICON_BUTTON}
               >
-                <svg className="h-6 w-6 fill-white" viewBox="0 0 48 48">
-                  <use href={`#${action.icon}`}></use>
-                </svg>
+                <Icon name={action.icon} className="h-6 w-6 fill-white" />
               </button>
             ))}
           </div>

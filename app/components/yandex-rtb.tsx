@@ -1,7 +1,7 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element */
 import React, { useEffect, useState } from 'react';
+import AppImage from './app-image';
 
 type BannerItem = {
   image: string;
@@ -82,7 +82,10 @@ export default function YandexRtb({
         className="relative block w-full h-full overflow-hidden group transition-opacity duration-300 bg-black"
       >
         <div className="z-[1] duration-300 opacity-50 group-hover:opacity-100 backdrop-blur-lg absolute top-0 right-0 px-1.5 text-[10px] text-white bg-zinc-800 rounded-bl-3xl">Реф. программа</div>
-        <img
+        <AppImage
+          width={728}
+          height={90}
+          sizes="(max-width: 768px) 100vw, 768px"
           src={selectedBanner.image}
           alt={selectedBanner.alt}
           className="w-full h-auto max-h-24 object-cover select-none pointer-events-none duration-300 group-hover:opacity-80"

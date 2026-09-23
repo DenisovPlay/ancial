@@ -1,18 +1,9 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
-
-import Image from 'next/image';
 
 import { cn } from '../lib/cn';
+import AppImage from '../components/app-image';
 
 const DEFAULT_PULSE_COVER = '/img/pulse/track.png';
-const NEXT_IMAGE_REMOTE_HOSTS = new Set([
-  'ancial.ru',
-  'cdn.betterttv.net',
-  'i.ibb.co',
-  'i.imgur.com',
-  'zypo.cc'
-]);
 
 export const PULSE_COVER_IMAGE_SIZES = {
   hero: '(max-width: 1023px) 18rem, 24rem',
@@ -29,29 +20,7 @@ function normalizePulseImageSrc(src: string | null | undefined, fallback: string
   const nextSrc = String(src ?? '').trim();
   if (!nextSrc) return fallback;
   if (nextSrc.startsWith('//')) return `https:${nextSrc}`;
-
-  try {
-    const url = new URL(nextSrc);
-    if (url.protocol === 'http:' && NEXT_IMAGE_REMOTE_HOSTS.has(url.hostname)) {
-      url.protocol = 'https:';
-      return url.toString();
-    }
-  } catch {
-    // Local paths and non-URL values are handled below.
-  }
-
   return nextSrc;
-}
-
-function canUseNextImage(src: string) {
-  if (src.startsWith('/')) return true;
-
-  try {
-    const url = new URL(src);
-    return url.protocol === 'https:' && NEXT_IMAGE_REMOTE_HOSTS.has(url.hostname);
-  } catch {
-    return false;
-  }
 }
 
 export function PulseCoverImage({
@@ -67,28 +36,15 @@ export function PulseCoverImage({
   sizes: string;
   src: string | null | undefined;
 }) {
-  const imageSrc = normalizePulseImageSrc(src, fallback);
-
-  if (!canUseNextImage(imageSrc)) {
-    return (
-      <img
-        src={imageSrc}
-        alt={alt}
-        draggable={false}
-        className={cn('absolute inset-0 h-full w-full object-cover select-none pointer-events-none', className)}
-      />
-    );
-  }
-
   return (
-    <Image
+    <AppImage
+      fill
+      sizes={sizes}
+      src={normalizePulseImageSrc(src, fallback)}
+      fallbackSrc={fallback}
       alt={alt}
       draggable={false}
       className={cn('object-cover select-none pointer-events-none', className)}
-      fill
-      sizes={sizes}
-      src={imageSrc}
     />
   );
 }
-

@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from './AuthContext';
 import { globalWS } from '../lib/global-ws';
+import Icon from '../components/svg-icon';
 
 function subscribeBrowserOnline(onStoreChange: () => void) {
   window.addEventListener('online', onStoreChange);
@@ -61,14 +62,7 @@ function NetStatusBanner() {
       aria-hidden={!isVisible}
     >
       <span className="p-1 bg-zinc-800/90 backdrop-blur-lg text-xs rounded-full flex gap-1 items-center border border-zinc-600/30 text-zinc-100 shadow-lg">
-        <svg
-          className="w-5 h-5 inline animate-spin fill-purple-500"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 48 48"
-          aria-hidden="true"
-        >
-          <path d="M24 4a1.5 1.5 0 0 0 0 3c6.256 0 11.766 3.407 14.703 8.455a1.5 1.5 0 1 0 2.594-1.51C37.834 7.994 31.344 4 24 4Z" />
-        </svg>
+        <Icon name="IC-loader" className="w-5 h-5 inline animate-spin fill-purple-500" aria-hidden="true" />
         <span>{lang?.reconnect || 'Переподключение...'}</span>
       </span>
     </div>

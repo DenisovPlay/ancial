@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI, getApiMessage, type LinkGuardAnalysis } from '../lib/api-v2';
+import AppImage from '../components/app-image';
+import Icon from '../components/svg-icon';
 
 function RedirectContentInner() {
   const router = useRouter();
@@ -80,7 +82,7 @@ function RedirectContentInner() {
         {/* Header box */}
         <div className="pb-20 flex items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-xl">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center">
-            <img alt="Zypo Logo" className="h-14 w-14" src="/img/zypo/logo-rounded.webp" />
+            <AppImage width={56} height={56} alt="Zypo Logo" className="h-14 w-14" src="/img/zypo/logo-rounded.webp" />
           </div>
           <div className="flex flex-col min-w-0">
             <h1 className="text-xl font-bold text-white lg:text-2xl">
@@ -121,9 +123,7 @@ function RedirectContentInner() {
           <div className={`flex flex-col gap-3 rounded-3xl border ${badgeColor} p-3 shadow-2xl backdrop-blur-xl`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <svg className="h-6 w-6 fill-current">
-                  <use href={`#${iconName}`} />
-                </svg>
+                <Icon name={iconName} className="h-6 w-6 fill-current" />
                 <span className="text-lg font-bold">
                   {riskTitle} ({score})
                 </span>

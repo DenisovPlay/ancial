@@ -8,6 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { SITE_URL } from '../../config';
+import AppImage from '../../components/app-image';
+import Icon from '../../components/svg-icon';
 
 // Helper to dynamically load external scripts
 function loadScript(src: string): Promise<void> {
@@ -265,9 +267,7 @@ export default function SocialsContent() {
   if (!isMounted || authLoading || !isAuthenticated || !user) {
     return (
       <div className="w-full flex items-center justify-center min-h-[50vh]">
-        <svg className="w-8 h-8 animate-spin fill-purple-500" viewBox="0 0 48 48">
-          <use href="#IC-loader"></use>
-        </svg>
+        <Icon name="IC-loader" className="w-8 h-8 animate-spin fill-purple-500" />
       </div>
     );
   }
@@ -281,9 +281,7 @@ export default function SocialsContent() {
             href="/settings"
             className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-3 cursor-pointer"
           >
-            <svg className="w-8 h-8 fill-white inline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-              <use href="#IC-chevron-left"></use>
-            </svg>
+            <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
             {lang?.socialnetworks || 'Социальные сети'}
           </Link>
         </div>
@@ -293,7 +291,7 @@ export default function SocialsContent() {
         {/* Telegram Card */}
         <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center min-h-[220px]">
           <div className="bg-blue-600 rounded-2xl p-3 h-12 w-12 text-white flex items-center justify-center relative">
-            <img className="w-10 object-contain" src="/img/socials/tg.png" alt="Telegram logo" />
+            <AppImage width={40} height={40} className="w-10 object-contain" src="/img/socials/tg.png" alt="Telegram logo" />
           </div>
           <div className="flex flex-col w-full h-full items-center justify-center gap-2 mt-3 flex-grow">
             {/* Connected State */}
@@ -308,9 +306,7 @@ export default function SocialsContent() {
                 className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-zinc-100 rounded-full w-full shadow mt-1.5 font-medium"
               >
                 {isUnlinkingTg ? (
-                  <svg className="w-5 h-5 animate-spin fill-white" viewBox="0 0 48 48">
-                    <use href="#IC-loader"></use>
-                  </svg>
+                  <Icon name="IC-loader" className="w-5 h-5 animate-spin fill-white" />
                 ) : (
                   lang?.unlink || 'Отвязать'
                 )}
@@ -330,7 +326,7 @@ export default function SocialsContent() {
         {/* Yandex Card */}
         <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center min-h-[220px]">
           <div className="rounded-2xl h-12 w-12 flex items-center justify-center overflow-hidden">
-            <img src="/img/socials/yandexlogo.png" className="w-12 h-12 shadow rounded-2xl object-cover" alt="Yandex logo" />
+            <AppImage width={48} height={48} src="/img/socials/yandexlogo.png" className="w-12 h-12 shadow rounded-2xl object-cover" alt="Yandex logo" />
           </div>
           <div className="flex flex-col w-full items-center justify-center gap-2 mt-3 flex-grow">
             {/* Connected State */}
@@ -345,9 +341,7 @@ export default function SocialsContent() {
                 className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-1.5 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-zinc-100 rounded-full w-full shadow mt-1.5 font-medium"
               >
                 {isUnlinkingYandex ? (
-                  <svg className="w-5 h-5 animate-spin fill-white" viewBox="0 0 48 48">
-                    <use href="#IC-loader"></use>
-                  </svg>
+                  <Icon name="IC-loader" className="w-5 h-5 animate-spin fill-white" />
                 ) : (
                   lang?.unlink || 'Отвязать'
                 )}
@@ -375,9 +369,7 @@ export default function SocialsContent() {
                 {yandexContainer}
                 {yandexLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-zinc-800/90 rounded-full">
-                    <svg className="w-8 h-8 inline animate-spin fill-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                      <path d="M 24 4 A 1.50015 1.50015 0 1 0 24 7 C 30.255882 7 35.765936 10.406785 38.703125 15.455078 A 1.5005776 1.5005776 0 1 0 41.296875 13.945312 C 37.834064 7.9936061 31.344118 4 24 4 z"></path>
-                    </svg>
+                    <Icon name="IC-loader" className="w-8 h-8 inline animate-spin fill-purple-500" />
                   </div>
                 )}
               </div>

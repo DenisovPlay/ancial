@@ -1,14 +1,12 @@
 'use client';
 
-import type { ComponentType } from 'react';
-import Image from 'next/image';
+import AppImage from '../../components/app-image';
 
 import { cn } from './player-utils';
+import Icon from '../../components/svg-icon';
 
-type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 
 type PulsePlayerFullHeaderProps = {
-  Icon: PlayerIcon;
   albumLabel: string;
   canOpenAlbum: boolean;
   onClose: () => void;
@@ -18,7 +16,6 @@ type PulsePlayerFullHeaderProps = {
 
 /** Full-player header presentation. Navigation and player lifecycle remain provider-owned. */
 export function PulsePlayerFullHeader({
-  Icon,
   albumLabel,
   canOpenAlbum,
   onClose,
@@ -46,7 +43,7 @@ export function PulsePlayerFullHeader({
         >
           {albumLabel}
         </button>
-        <Image
+        <AppImage
           alt="Pulse Logo"
           className="w-20 shrink-0 backdrop-shadow-lg lg:w-24"
           height={96}

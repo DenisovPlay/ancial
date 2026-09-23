@@ -1,7 +1,7 @@
 'use client';
 import { coerceToFinite as toNumber } from '../../lib/convert';
 
-import Image from 'next/image';
+import AppImage from '../../components/app-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -37,14 +37,14 @@ import { applyBookmarkResult } from '../../lib/post-bookmark';
 import { applyVoteResult } from '../../lib/post-vote';
 import {
   cn,
-  SvgIcon,
-} from '../../feed/editor-shared';
+  } from '../../feed/editor-shared';
 import { uploadImage } from '../../lib/upload';
 import FeedPostSkeleton from '../../feed/feed-post-skeleton';
 import CommunityChannelShell from './components/community-channel-shell';
 import CommunityManageModal from './components/community-manage-modal';
 import { useCommunityStructure } from './hooks/use-community-structure';
 import { visibleManagementTabs } from './lib/community-types';
+import Icon from '../../components/svg-icon';
 
 type Id = string | number;
 
@@ -907,7 +907,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         <GroupSkeleton />
       ) : blocked ? (
         <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
-          <Image
+          <AppImage
             src="/img/load-placeholders/nothingfound.webp"
             alt="Blocked group"
             width={224}
@@ -924,7 +924,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         </div>
       ) : error ? (
         <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
-          <Image
+          <AppImage
             src="/img/load-placeholders/nothingfound.webp"
             alt="Group error"
             width={224}
@@ -958,9 +958,13 @@ export default function GroupProfileContent({ link }: { link: string }) {
                 className="h-32 w-full max-w-screen-2xl lg:h-48 blur-lg rounded-3xl rounded-b-none bg-cover bg-center"
                 style={{ backgroundImage: `url('${currentCover}')` }}
               />
-              <div
-                className="h-32 w-full max-w-screen-2xl lg:h-48 absolute rounded-3xl rounded-b-none bg-cover bg-center"
-                style={{ backgroundImage: `url('${currentCover}')` }}
+              <AppImage
+                width={1536}
+                height={192}
+                sizes="(max-width: 1536px) 100vw, 1536px"
+                src={currentCover}
+                alt=""
+                className="h-32 w-full max-w-screen-2xl lg:h-48 absolute rounded-3xl rounded-b-none object-cover"
               />
             </div>
 
@@ -974,9 +978,12 @@ export default function GroupProfileContent({ link }: { link: string }) {
                     />
                   ) : null}
 
-                  <div
-                    className="shadow duration-300 h-16 w-16 md:h-24 md:w-24 rounded-full bg-cover bg-center"
-                    style={{ backgroundImage: `url('${currentAvatar}')` }}
+                  <AppImage
+                    width={96}
+                    height={96}
+                    src={currentAvatar}
+                    alt=""
+                    className="block shadow duration-300 h-16 w-16 md:h-24 md:w-24 rounded-full object-cover"
                   />
                 </div>
 
@@ -984,7 +991,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                   <span className="text-xl font-bold text-zinc-100 flex items-center gap-1.5">
                     <span>{groupData.name}</span>
                     {flag(groupData.verify) ? (
-                      <SvgIcon className="w-5 h-5 inline fill-blue-500" id="IC-verify" viewBox="0 0 48 48" />
+                      <Icon name="IC-verify" className="w-5 h-5 inline fill-blue-500" />
                     ) : null}
                   </span>
                   {groupData.description?.trim() ? (
@@ -1003,7 +1010,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                       onClick={() => setIsCommunityManageOpen(true)}
                       className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
                     >
-                      <SvgIcon className="w-6 h-6 fill-white inline mr-2" id="IC-edit" />
+                      <Icon name="IC-edit" className="w-6 h-6 fill-white inline mr-2" />
                       <span>{strings.edit}</span>
                     </button>
                   ) : null}
@@ -1014,7 +1021,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                       onClick={() => void handleSubscription('sub')}
                       className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-emerald-500 hover:bg-emerald-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
                     >
-                      <SvgIcon className="w-6 h-6 inline fill-white mr-2" id="IC-plus" />
+                      <Icon name="IC-plus" className="w-6 h-6 inline fill-white mr-2" />
                       <span>{strings.follow}</span>
                     </button>
                   ) : null}
@@ -1025,7 +1032,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                       onClick={() => void handleSubscription('unsub')}
                       className="border border-zinc-600/30 cursor-pointer flex items-center justify-center px-3 py-1 bg-red-500 hover:bg-red-600 duration-300 active:scale-95 rounded-3xl w-full md:w-auto"
                     >
-                      <SvgIcon className="w-6 h-6 inline fill-white mr-2" id="IC-times" />
+                      <Icon name="IC-times" className="w-6 h-6 inline fill-white mr-2" />
                       <span>{strings.unfollow}</span>
                     </button>
                   ) : null}

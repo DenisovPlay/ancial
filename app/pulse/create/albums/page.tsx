@@ -7,7 +7,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useCopyToClipboard } from '../../../hooks/use-copy-to-clipboard';
 import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
-import { ActionIcon } from '../../pulse-components';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 interface PulseAlbumRow {
   id: number | string;
@@ -125,7 +126,7 @@ export default function PulseCreateAlbumsPage() {
           href="/pulse/create/upload?mode=album"
           className="px-4 py-2 rounded-full bg-white text-black font-semibold text-sm hover:bg-zinc-200 active:scale-95 duration-300 flex items-center justify-center gap-2 shadow shrink-0"
         >
-          <ActionIcon className="w-4 h-4 fill-black" name="IC-plus" />
+          <Icon name="IC-plus" className="inline w-4 h-4 fill-black" />
           <span>{lang?.creators_create_album || 'Создать альбом'}</span>
         </Link>
       </div>
@@ -148,11 +149,11 @@ export default function PulseCreateAlbumsPage() {
               className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95"
               aria-label={lang?.creators_clear_search || 'Очистить поиск'}
             >
-              <ActionIcon className="h-8 w-8 cursor-pointer" name="IC-times" />
+              <Icon name="IC-times" className="inline fill-current h-8 w-8 cursor-pointer" />
             </button>
           ) : (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-              <ActionIcon className="h-8 w-8 cursor-pointer" name="IC-search" />
+              <Icon name="IC-search" className="inline fill-current h-8 w-8 cursor-pointer" />
             </div>
           )}
         </div>
@@ -161,7 +162,7 @@ export default function PulseCreateAlbumsPage() {
       {/* 3. Albums List */}
       {loading ? (
         <div className="p-6 text-center text-zinc-500 flex justify-center items-center">
-          <ActionIcon className="h-8 w-8 animate-spin fill-zinc-500" name="IC-loader" />
+          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
         </div>
       ) : filteredAlbums.length > 0 ? (
         <div className="flex flex-col gap-3 w-full">
@@ -176,7 +177,10 @@ export default function PulseCreateAlbumsPage() {
                 className="w-full p-3 sm:pl-0 sm:py-0 border border-zinc-600/30 bg-zinc-800/40 hover:bg-zinc-800/70 rounded-3xl sm:rounded-full flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 duration-300"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <img
+                  <AppImage
+                    width={56}
+                    height={56}
+                    fallbackSrc="/img/pulse/artist.png"
                     className="rounded-full w-14 h-14 object-cover shrink-0"
                     src={album.img || '/img/pulse/artist.png'}
                     alt={album.name || 'Album cover'}
@@ -201,12 +205,12 @@ export default function PulseCreateAlbumsPage() {
                   </span>
 
                   <span className="flex items-center gap-1 text-xs text-zinc-400 shrink-0">
-                    <ActionIcon className="w-3.5 h-3.5 fill-zinc-400" name="IC-play" />
+                    <Icon name="IC-play" className="inline w-3.5 h-3.5 fill-zinc-400" />
                     {formatNumber(totalListens)}
                   </span>
 
                   <span className="flex items-center gap-1 text-xs text-rose-400 shrink-0">
-                    <ActionIcon className="w-3.5 h-3.5 fill-rose-400" name="IC-heart-filled" />
+                    <Icon name="IC-heart-filled" className="inline w-3.5 h-3.5 fill-rose-400" />
                     {formatNumber(likesCount)}
                   </span>
 
@@ -217,7 +221,7 @@ export default function PulseCreateAlbumsPage() {
                     title={lang?.creators_copy_link || 'Копировать ссылку'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
-                    <ActionIcon className="w-4 h-4 fill-current" name="IC-link" />
+                    <Icon name="IC-link" className="inline w-4 h-4 fill-current" />
                   </button>
 
                   <Link
@@ -226,7 +230,7 @@ export default function PulseCreateAlbumsPage() {
                     title={lang?.creators_open_in_pulse || 'Открыть в Pulse'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
-                    <ActionIcon className="w-4 h-4 fill-current" name="IC-eye" />
+                    <Icon name="IC-eye" className="inline w-4 h-4 fill-current" />
                   </Link>
 
                   <Link
@@ -235,7 +239,7 @@ export default function PulseCreateAlbumsPage() {
                     title={lang?.edittrack || 'Редактировать'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
-                    <ActionIcon className="w-4 h-4 fill-current" name="IC-edit" />
+                    <Icon name="IC-edit" className="inline w-4 h-4 fill-current" />
                   </Link>
 
                   <button
@@ -245,7 +249,7 @@ export default function PulseCreateAlbumsPage() {
                     title={lang?.delete || 'Удалить'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-red-400 hover:text-red-300 hover:bg-red-500/20 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
-                    <ActionIcon className="w-4 h-4 fill-current" name="IC-trash" />
+                    <Icon name="IC-trash" className="inline w-4 h-4 fill-current" />
                   </button>
                 </div>
               </div>

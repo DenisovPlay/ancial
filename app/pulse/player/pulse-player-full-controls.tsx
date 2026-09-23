@@ -1,15 +1,13 @@
 'use client';
 
-import type { ComponentType } from 'react';
 import { cn } from './player-utils';
 import { useIsListenFollower } from './listen-along';
+import Icon from '../../components/svg-icon';
 
-type PlayerIcon = ComponentType<{ className?: string; name: string }>;
 
 export type RepeatMode = 'none' | 'all' | 'one';
 
 type PulsePlayerFullControlsProps = {
-  Icon: PlayerIcon;
   isPlaying: boolean;
   repeatMode?: RepeatMode;
   onNext: () => void;
@@ -27,7 +25,6 @@ const DISABLED_CONTROL = 'disabled:cursor-not-allowed disabled:opacity-30 disabl
 const secondaryButton = `flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10 ${DISABLED_CONTROL}`;
 
 export function PulsePlayerFullControls({
-  Icon,
   isPlaying,
   repeatMode = 'none',
   onNext,

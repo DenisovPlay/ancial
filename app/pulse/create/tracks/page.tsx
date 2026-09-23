@@ -7,7 +7,9 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { useCopyToClipboard } from '../../../hooks/use-copy-to-clipboard';
 import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
-import { getPulseBackgroundColorByMood, ActionIcon } from '../../pulse-components';
+import { getPulseBackgroundColorByMood, } from '../../pulse-components';
+import AppImage from '../../../components/app-image';
+import Icon from '../../../components/svg-icon';
 
 interface PulseTrackRow {
   id: number | string;
@@ -169,7 +171,7 @@ export default function PulseCreateTracksPage() {
           href="/pulse/create/upload?mode=single"
           className="px-4 py-2 rounded-full bg-white text-black font-semibold text-sm hover:bg-zinc-200 active:scale-95 duration-300 flex items-center justify-center gap-2 shadow shrink-0"
         >
-          <ActionIcon className="w-4 h-4 fill-black" name="IC-plus" />
+          <Icon name="IC-plus" className="inline w-4 h-4 fill-black" />
           <span>{lang?.uploadtrack || 'Загрузить трек'}</span>
         </Link>
       </div>
@@ -192,11 +194,11 @@ export default function PulseCreateTracksPage() {
               className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 hover:bg-zinc-700 active:scale-95"
               aria-label={lang?.creators_clear_search || 'Очистить поиск'}
             >
-              <ActionIcon className="h-8 w-8 cursor-pointer" name="IC-times" />
+              <Icon name="IC-times" className="inline fill-current h-8 w-8 cursor-pointer" />
             </button>
           ) : (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-              <ActionIcon className="h-8 w-8 cursor-pointer" name="IC-search" />
+              <Icon name="IC-search" className="inline fill-current h-8 w-8 cursor-pointer" />
             </div>
           )}
         </div>
@@ -238,7 +240,7 @@ export default function PulseCreateTracksPage() {
       {/* 3. Tracks List */}
       {loading ? (
         <div className="p-6 text-center text-zinc-500 flex justify-center items-center">
-          <ActionIcon className="h-8 w-8 animate-spin fill-zinc-500" name="IC-loader" />
+          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
         </div>
       ) : filteredTracks.length > 0 ? (
         <div className="flex flex-col gap-3 w-full">
@@ -254,7 +256,10 @@ export default function PulseCreateTracksPage() {
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="relative w-14 h-14 shrink-0 group">
-                    <img
+                    <AppImage
+                      width={56}
+                      height={56}
+                      fallbackSrc="/img/pulse/artist.png"
                       className="rounded-full w-14 h-14 object-cover"
                       src={track.img || '/img/pulse/artist.png'}
                       alt={track.name || 'Cover'}
@@ -270,9 +275,9 @@ export default function PulseCreateTracksPage() {
                           }`}
                       >
                         {isPlaying ? (
-                          <ActionIcon className="w-5 h-5 fill-current" name="IC-pause" />
+                          <Icon name="IC-pause" className="inline w-5 h-5 fill-current" />
                         ) : (
-                          <ActionIcon className="w-5 h-5 fill-current ml-0.5" name="IC-play" />
+                          <Icon name="IC-play" className="inline w-5 h-5 fill-current ml-0.5" />
                         )}
                       </button>
                     )}
@@ -319,7 +324,7 @@ export default function PulseCreateTracksPage() {
                   )}
 
                   <span className="flex items-center gap-1 text-xs text-zinc-400 shrink-0">
-                    <ActionIcon className="w-3.5 h-3.5 fill-zinc-400" name="IC-play" />
+                    <Icon name="IC-play" className="inline w-3.5 h-3.5 fill-zinc-400" />
                     {formatNumber(track.listens)}
                   </span>
 
@@ -330,7 +335,7 @@ export default function PulseCreateTracksPage() {
                     title={lang?.creators_copy_link || 'Копировать ссылку'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
-                    <ActionIcon className="w-4 h-4 fill-current" name="IC-link" />
+                    <Icon name="IC-link" className="inline w-4 h-4 fill-current" />
                   </button>
 
                   <Link
@@ -339,7 +344,7 @@ export default function PulseCreateTracksPage() {
                     title={lang?.creators_open_in_pulse || 'Открыть в Pulse'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
-                    <ActionIcon className="w-4 h-4 fill-current" name="IC-eye" />
+                    <Icon name="IC-eye" className="inline w-4 h-4 fill-current" />
                   </Link>
 
                   <Link
@@ -348,7 +353,7 @@ export default function PulseCreateTracksPage() {
                     title={lang?.edittrack || 'Редактировать'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
-                    <ActionIcon className="w-4 h-4 fill-current" name="IC-edit" />
+                    <Icon name="IC-edit" className="inline w-4 h-4 fill-current" />
                   </Link>
 
                   <button
@@ -358,7 +363,7 @@ export default function PulseCreateTracksPage() {
                     title={lang?.delete || 'Удалить'}
                     className="w-9 h-9 rounded-full border border-zinc-600/30 bg-zinc-800 text-red-400 hover:text-red-300 hover:bg-red-500/20 active:scale-95 duration-300 cursor-pointer flex items-center justify-center shrink-0 aspect-square"
                   >
-                    <ActionIcon className="w-4 h-4 fill-current" name="IC-trash" />
+                    <Icon name="IC-trash" className="inline w-4 h-4 fill-current" />
                   </button>
                 </div>
               </div>

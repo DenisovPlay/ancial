@@ -16,30 +16,6 @@ export const MAX_IMAGES = 3;
 
 export { cn } from '../lib/cn';
 
-export function SvgIcon({
-  className,
-  id,
-  viewBox = '0 0 48 48',
-}: {
-  className?: string;
-  id: string;
-  viewBox?: string;
-}) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox={viewBox}>
-      <use href={`#${id}`}></use>
-    </svg>
-  );
-}
-
-export function PollIcon({ className }: { className?: string }) {
-  return <SvgIcon className={className} id="IC-poll" viewBox="0 0 48 48" />;
-}
-
-export function StickersIcon({ className }: { className?: string }) {
-  return <SvgIcon className={className} id="IC-humor" viewBox="0 0 48 48" />;
-}
-
 export function makeId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();

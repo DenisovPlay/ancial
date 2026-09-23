@@ -249,20 +249,6 @@ function readSavedVolume() {
   return clamp(savedVolume, 0, 1);
 }
 
-function PlayerIcon({
-  className,
-  name,
-}: {
-  className?: string;
-  name: string;
-}) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-      <use href={`#${name}`}></use>
-    </svg>
-  );
-}
-
 export function PulsePlayerProvider({
   children,
 }: {
@@ -1453,14 +1439,18 @@ export function PulsePlayerProvider({
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Имя трека — из рефов, а не из замыкания: в конце песни сюда приходит обработчик ended,
+    // привязанный при монтировании, и в его замыкании трека ещё нет («Загрузка...»).
+    const liveTitle = getTrackDisplayTitle(playlistRef.current[indexRef.current] ?? null, langRef.current);
+
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) {
       // Одиночный трек — запускаем радио на его основе
       const sid = currentSongIdRef.current;
       if (sid > 0) {
         isRadioModeRef.current = true;
         setIsRadioMode(true);
-        setRadioSeedName(playerTitle);
-        radioSeedNameRef.current = playerTitle;
+        setRadioSeedName(liveTitle);
+        radioSeedNameRef.current = liveTitle;
         radioSeedTrackIdRef.current = sid;
         radioPlayedIdsRef.current = new Set([sid]);
         // Переводим плеер в playlist-режим, чтобы очередь работала
@@ -1503,7 +1493,7 @@ export function PulsePlayerProvider({
       setIsRadioMode(true);
 
       const lastTrack = playlistRef.current[indexRef.current];
-      const seedName = lastTrack ? getTrackDisplayTitle(lastTrack, lang) : playerTitle;
+      const seedName = lastTrack ? getTrackDisplayTitle(lastTrack, langRef.current) : liveTitle;
       setRadioSeedName(seedName);
       radioSeedNameRef.current = seedName;
 
@@ -2626,7 +2616,6 @@ export function PulsePlayerProvider({
     const live = docked || !miniPlayerSlot;
     return (
       <PulsePlayerMini
-        Icon={PlayerIcon}
         activeSeekSlider={activeSeekSlider}
         currentTime={effectiveCurrentTime}
         desktopCurrentTimeLabelRef={live ? desktopCurrentTimeLabelRef : ghostMiniTimeLabelRef}
@@ -2758,7 +2747,6 @@ export function PulsePlayerProvider({
         >
           {isMounted ? (
             <PulsePlayerFull
-            Icon={PlayerIcon}
             audioRef={isRemoteDevice ? remotePlaybackClockRef : audioRef}
             mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}
             mobileSeekInputRef={mobileSeekInputRef}
@@ -2955,7 +2943,6 @@ export function PulsePlayerProvider({
       ) : null}
 
       <PulsePlayerModals
-        Icon={PlayerIcon}
         addToPlaylistSongId={addToPlaylistSongId}
         canUseEqualizer={canUseEqualizer}
         changeEqGain={changeEqGain}
