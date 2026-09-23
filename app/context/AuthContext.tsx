@@ -40,6 +40,8 @@ export interface User {
   email?: string;
   connected_yacc?: string;
   connected_telegram?: string;
+  /** false — аккаунт создан через Яндекс/Telegram и пароль ещё не задан. */
+  has_password?: boolean;
   searchshow?: string;
   msgopen?: string;
   group_add_privacy?: number | string;

@@ -197,16 +197,20 @@ export default function PasskeysContent() {
                 <button
                   type="button"
                   onClick={() => openRenameModal(passkey.id, passkey.nickname)}
-                  className="shrink-0 cursor-pointer rounded-full border border-transparent px-3 py-2 text-xs text-zinc-300 duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/80 hover:text-white active:scale-95"
+                  aria-label={lang?.passkey_rename || 'Переименовать'}
+                  title={lang?.passkey_rename || 'Переименовать'}
+                  className="shrink-0 w-10 h-10 flex items-center justify-center cursor-pointer rounded-full border border-transparent text-zinc-300 duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/80 hover:text-white active:scale-95"
                 >
-                  {lang?.passkey_rename || 'Переименовать'}
+                  <Icon name="IC-edit" className="w-5 h-5 fill-current" />
                 </button>
                 <button
                   type="button"
                   onClick={() => void revoke(passkey.id)}
-                  className="shrink-0 cursor-pointer rounded-full border border-transparent px-3 py-2 text-xs text-red-400 duration-300 hover:border-red-500/30 hover:bg-red-500/15 active:scale-95"
+                  aria-label={lang?.passkey_delete || 'Удалить'}
+                  title={lang?.passkey_delete || 'Удалить'}
+                  className="shrink-0 w-10 h-10 flex items-center justify-center cursor-pointer rounded-full border border-transparent text-red-400 duration-300 hover:border-red-500/30 hover:bg-red-500/15 active:scale-95"
                 >
-                  {lang?.passkey_delete || 'Удалить'}
+                  <Icon name="IC-trash" className="w-5 h-5 fill-current" />
                 </button>
               </div>
             ))}

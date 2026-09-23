@@ -38,10 +38,14 @@ export default function PasswordContent() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  const passwordButtonLabel = isSavingPassword ? '...' : lang?.save || 'Сохранить';
+  // Аккаунт через Яндекс/Telegram: пароля ещё нет — задаётся без старого. undefined (старый бэкенд) = пароль есть.
+  const needsOldPassword = user?.has_password !== false;
+  const passwordButtonLabel = isSavingPassword
+    ? '...'
+    : needsOldPassword ? (lang?.save || 'Сохранить') : (lang?.set_password || 'Установить пароль');
 
   const changePassword = async () => {
-    if (!oldPassword) {
+    if (needsOldPassword && !oldPassword) {
       showNote({
         content: lang?.enteroldpassword || 'Введите старый пароль',
         time: 5,
@@ -145,12 +149,18 @@ export default function PasswordContent() {
       </div>
 
       <div className="flex flex-col gap-0.5 w-full max-w-3xl px-3 lg:px-0">
-        <div className="grid lg:grid-cols-3 gap-3 w-full">
+        {!needsOldPassword ? (
+          <p className="text-sm text-zinc-400 px-1 pb-3">
+            {lang?.set_password_hint || 'У аккаунта ещё нет пароля — вы входите через Яндекс или Telegram. Задайте пароль, чтобы входить и по логину.'}
+          </p>
+        ) : null}
+        <div className={`grid gap-3 w-full ${needsOldPassword ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
+          {needsOldPassword ? (
           <div className="flex flex-col w-full">
             <span className="text-zinc-400 pl-4 z-20">{lang?.old_pass || 'Старый пароль'}</span>
             <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
               <input
-                autoComplete="off"
+                autoComplete="current-password"
                 className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                 id="oldpas"
                 onChange={(event) => setOldPassword(event.target.value)}
@@ -159,11 +169,12 @@ export default function PasswordContent() {
               />
             </div>
           </div>
-          <div className="flex flex-col w-full -mt-3 lg:mt-0">
+          ) : null}
+          <div className={`flex flex-col w-full ${needsOldPassword ? '-mt-3 lg:mt-0' : ''}`}>
             <span className="text-zinc-400 pl-4 z-20">{lang?.new_pass || 'Новый пароль'}</span>
             <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
               <input
-                autoComplete="off"
+                autoComplete="new-password"
                 className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                 id="newpas"
                 onChange={(event) => setNewPassword(event.target.value)}
@@ -178,7 +189,7 @@ export default function PasswordContent() {
             </span>
             <div className="flex bg-zinc-800/90 rounded-full w-full p-1 h-12 -mt-3 z-10 border border-zinc-600/30">
               <input
-                autoComplete="off"
+                autoComplete="new-password"
                 className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                 id="nrepas"
                 onChange={(event) => setRepeatPassword(event.target.value)}

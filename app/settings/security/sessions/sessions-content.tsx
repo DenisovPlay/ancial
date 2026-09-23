@@ -23,7 +23,7 @@ function methodLabel(session: AuthSession, lang: Record<string, string> | null):
     session.auth_method === 'passkey'
       ? lang?.method_passkey || 'Passkey'
       : session.auth_method === 'oauth'
-        ? lang?.method_oauth || 'Вход через сервис'
+        ? lang?.method_oauth || 'OAuth'
         : session.auth_method === 'legacy'
           ? lang?.method_legacy || 'Совместимость'
           : lang?.method_password || 'Пароль';
@@ -222,9 +222,15 @@ export default function SessionsContent() {
                     type="button"
                     onClick={() => void revokeOne(session.id)}
                     disabled={busyId === session.id}
-                    className="shrink-0 cursor-pointer rounded-full border border-transparent px-4 py-2 text-xs text-zinc-300 duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/80 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label={lang?.sessions_revoke || 'Завершить'}
+                    title={lang?.sessions_revoke || 'Завершить'}
+                    className="shrink-0 w-10 h-10 flex items-center justify-center cursor-pointer rounded-full border border-transparent text-red-400 duration-300 hover:border-red-500/30 hover:bg-red-500/15 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {busyId === session.id ? (lang?.loading || 'Загрузка...') : lang?.sessions_revoke || 'Завершить'}
+                    {busyId === session.id ? (
+                      <Icon name="IC-loader" className="w-5 h-5 animate-spin fill-current" />
+                    ) : (
+                      <Icon name="IC-exit" className="w-5 h-5 fill-current" />
+                    )}
                   </button>
                 ) : null}
               </div>
