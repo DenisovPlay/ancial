@@ -77,21 +77,30 @@ function Transport({
   currentTime,
   duration,
   lang,
+  muted,
   onRate,
   onSeek,
   onToggle,
+  onToggleMute,
+  onVolume,
   playing,
   rate,
+  volume,
 }: {
   currentTime: number;
   duration: number;
   lang: Lang;
+  muted: boolean;
   onRate: (rate: number) => void;
   onSeek: (time: number) => void;
   onToggle: () => void;
+  onToggleMute: () => void;
+  onVolume: (volume: number) => void;
   playing: boolean;
   rate: number;
+  volume: number;
 }) {
+  const silent = muted || volume === 0;
   return (
     <div className="flex w-full items-center gap-3">
       <button
@@ -113,7 +122,27 @@ function Transport({
         aria-label={lang?.creators_lyrics_seek_track || 'Перемотка'}
         className="h-1 min-w-0 flex-1 cursor-pointer accent-white"
       />
-      <span className="w-10 shrink-0 font-mono text-xs tabular-nums text-zinc-500">{formatClock(duration)}</span>
+      {/* На телефоне длительность прячем — место нужнее перемотке; громкость там обычно кнопками. */}
+      <span className="hidden w-10 shrink-0 font-mono text-xs tabular-nums text-zinc-500 sm:inline">{formatClock(duration)}</span>
+      <button
+        type="button"
+        onClick={onToggleMute}
+        aria-label={silent ? (lang?.creators_lyrics_unmute || 'Включить звук') : (lang?.creators_lyrics_mute || 'Выключить звук')}
+        title={silent ? (lang?.creators_lyrics_unmute || 'Включить звук') : (lang?.creators_lyrics_mute || 'Выключить звук')}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95 cursor-pointer"
+      >
+        <Icon name={silent ? 'IC-speaker-off' : 'IC-speaker'} className="h-5 w-5 fill-current" />
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={muted ? 0 : volume}
+        onChange={(event) => onVolume(Number(event.target.value))}
+        aria-label={lang?.creators_lyrics_volume || 'Громкость'}
+        className="hidden h-1 w-20 shrink-0 cursor-pointer accent-white sm:block"
+      />
       <select
         value={rate}
         onChange={(event) => onRate(Number(event.target.value))}
@@ -233,6 +262,8 @@ export default function LyricsContent() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [rate, setRate] = useState(1);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const selectedRowRef = useRef<HTMLDivElement | null>(null);
   const followCursorRef = useRef(false);
@@ -369,6 +400,25 @@ export default function LyricsContent() {
   const seekAndPlay = (time: number) => {
     seek(time);
     void audioRef.current?.play().catch(() => {});
+  };
+
+  const changeVolume = (value: number) => {
+    setVolume(value);
+    setMuted(false);
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = value;
+    audio.muted = false;
+  };
+
+  const toggleMute = () => {
+    // Громкость на нуле — «включить звук» возвращает её, иначе кнопка ничего бы не делала.
+    const next = !(muted || volume === 0);
+    if (!next && volume === 0) changeVolume(1);
+    else {
+      setMuted(next);
+      if (audioRef.current) audioRef.current.muted = next;
+    }
   };
 
   const changeRate = (value: number) => {
@@ -561,11 +611,15 @@ export default function LyricsContent() {
       currentTime={currentTime}
       duration={duration}
       lang={lang}
+      muted={muted}
       onRate={changeRate}
       onSeek={seek}
       onToggle={togglePlayback}
+      onToggleMute={toggleMute}
+      onVolume={changeVolume}
       playing={playing}
       rate={rate}
+      volume={volume}
     />
   ) : null;
 
@@ -743,6 +797,8 @@ export default function LyricsContent() {
           onLoadedMetadata={(event) => {
             setDuration(event.currentTarget.duration);
             event.currentTarget.playbackRate = rate;
+            event.currentTarget.volume = volume;
+            event.currentTarget.muted = muted;
           }}
           className="hidden"
         />

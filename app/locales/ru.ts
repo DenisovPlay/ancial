@@ -2012,4 +2012,7 @@ export const ru: Record<string, string> = {
     "creators_lyrics_confirm_draft": "Есть несохранённый черновик этого текста ({count} строк). Открыть его вместо сохранённого текста?",
     "creators_lyrics_restore_draft": "Восстановить",
     "creators_lyrics_discard_draft": "Удалить черновик",
+    "creators_lyrics_volume": "Громкость",
+    "creators_lyrics_mute": "Выключить звук",
+    "creators_lyrics_unmute": "Включить звук",
 };

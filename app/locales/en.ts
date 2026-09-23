@@ -2012,4 +2012,7 @@ export const en: Record<string, string> = {
   "creators_lyrics_confirm_draft": "There is an unsaved draft of these lyrics ({count} lines). Open it instead of the saved lyrics?",
   "creators_lyrics_restore_draft": "Restore",
   "creators_lyrics_discard_draft": "Discard draft",
+  "creators_lyrics_volume": "Volume",
+  "creators_lyrics_mute": "Mute",
+  "creators_lyrics_unmute": "Unmute",
 };

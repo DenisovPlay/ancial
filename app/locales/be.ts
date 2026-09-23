@@ -2012,4 +2012,7 @@ export const be: Record<string, string> = {
     "creators_lyrics_confirm_draft": "Ёсць незахаваны чарнавік гэтага тэксту ({count} радкоў). Адкрыць яго замест захаванага тэксту?",
     "creators_lyrics_restore_draft": "Аднавіць",
     "creators_lyrics_discard_draft": "Выдаліць чарнавік",
+    "creators_lyrics_volume": "Гучнасць",
+    "creators_lyrics_mute": "Выключыць гук",
+    "creators_lyrics_unmute": "Уключыць гук",
 };
