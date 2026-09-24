@@ -69,7 +69,7 @@ export default function NotFound() {
       <span ref={timerRef} className="hidden z-10 text-lg text-zinc-400">
         {lang?.pagenotfoundtimer3}
       </span>
-      <Link href="/" className="z-10 px-3 py-2.5 hover:bg-zinc-800 backdrop-blur-md backdrop-hue-200 backdrop-saturate-200 mt-3 border border-zinc-600/30 rounded-3xl duration-300 cursor-pointer active:scale-95">{lang?.gotohome}</Link>
+      <Link href="/" className="glass-panel [--glass-alpha:0] [--glass-sat:2] z-10 px-3 py-2.5 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] mt-3 border border-zinc-600/30 rounded-3xl duration-300 cursor-pointer active:scale-95">{lang?.gotohome}</Link>
     </div>
   );
 }

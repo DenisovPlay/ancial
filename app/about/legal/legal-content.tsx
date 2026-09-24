@@ -178,7 +178,7 @@ export default function LegalPage() {
               </div>
             </header>
             {/*  NAVIGATION  */}
-            <nav className="mb-12 bg-black/80 backdrop-blur-sm p-4 rounded-3xl border border-zinc-800">
+            <nav className="glass-nav [--glass-tint:var(--color-black)] [--glass-alpha:0.8] [--glass-blur:8px] [--glass-sat:1] mb-12 p-4 rounded-3xl border border-zinc-800">
               <h2 className="text-xl font-semibold text-purple-500 mb-3">
                 Содержание
               </h2>
@@ -752,7 +752,7 @@ export default function LegalPage() {
               </div>
             </header>
             {/*  NAVIGATION  */}
-            <nav className="mb-12 bg-black/80 backdrop-blur-sm p-4 rounded-3xl border border-zinc-800">
+            <nav className="glass-nav [--glass-tint:var(--color-black)] [--glass-alpha:0.8] [--glass-blur:8px] [--glass-sat:1] mb-12 p-4 rounded-3xl border border-zinc-800">
               <h2 className="text-xl font-semibold text-purple-500 mb-3">
                 Содержание
               </h2>
@@ -1565,7 +1565,7 @@ export default function LegalPage() {
               </div>
             </header>
             {/*  NAVIGATION  */}
-            <nav className="mb-12 bg-black/80 backdrop-blur-sm p-4 rounded-3xl border border-zinc-800">
+            <nav className="glass-nav [--glass-tint:var(--color-black)] [--glass-alpha:0.8] [--glass-blur:8px] [--glass-sat:1] mb-12 p-4 rounded-3xl border border-zinc-800">
               <h2 className="text-xl font-semibold text-purple-500 mb-3">
                 Table of Contents
               </h2>

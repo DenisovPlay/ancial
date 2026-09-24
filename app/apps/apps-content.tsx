@@ -220,7 +220,7 @@ function AppsContentInner() {
           <AppImage width={358} height={154} alt="Zynt" className="w-28 hover:opacity-80 duration-300 cursor-pointer" src="/img/logos/zynt.svg" />
         </Link>
         <form
-          className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12"
+          className="glass-input [--glass-sat:2] flex items-center justify-center border border-zinc-600/30 rounded-full w-full p-1 h-12"
           onSubmit={handleSearch}
           style={{ zIndex: 11 }}
         >
@@ -239,7 +239,7 @@ function AppsContentInner() {
           </button>
         </form>
         <Link
-          className="ml-3 cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full"
+          className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] ml-3 cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] active:scale-95 duration-300 rounded-full"
           href="/settings/account"
         >
           <Icon name="IC-user" className="inline w-8 h-8 fill-white" />
@@ -335,7 +335,7 @@ function AppsContentInner() {
               type="button"
             >
               <AppImage width={611} height={785} sizes="(max-width: 768px) 50vw, 256px" alt={app.name} className="rounded-3xl w-full" src={app.cover} />
-              <div className="bg-zinc-900/50 group-hover:backdrop-blur-md w-full h-full absolute top-0 left-0 opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100 duration-300 rounded-3xl flex flex-col">
+              <div className="glass-panel [--glass-blur:0px] group-hover:[--glass-blur:12px] w-full h-full absolute top-0 left-0 opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100 duration-300 rounded-3xl flex flex-col">
                 <span className="text-2xl text-white font-bold pt-3 pl-3 shrink-0 pr-8 break-words">
                   {app.name}
                 </span>

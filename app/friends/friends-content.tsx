@@ -181,7 +181,7 @@ function FriendsContent() {
       )}
 
       <div className="flex gap-3 items-center relative w-full max-w-3xl p-3 lg:px-0 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent z-[90]">
-        <form onSubmit={handleSearch} className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
+        <form onSubmit={handleSearch} className="glass-input [--glass-sat:2] flex items-center justify-center border border-zinc-600/30 rounded-full w-full p-1 h-12 z-[11]">
           <input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}

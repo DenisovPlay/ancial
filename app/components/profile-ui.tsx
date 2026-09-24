@@ -178,7 +178,7 @@ export function RelationGridModal({
     <Modal isOpen={isOpen} onClose={handleClose} title={title} width="lg">
       <div className="flex flex-col gap-3">
         {items.length > 0 ? (
-          <div className="relative flex h-12 w-full items-center rounded-full border border-zinc-600/30 bg-zinc-900/50 p-1 shadow backdrop-blur-sm backdrop-saturate-200">
+          <div className="glass-panel [--glass-blur:8px] [--glass-sat:2] relative flex h-12 w-full items-center rounded-full border border-zinc-600/30 p-1 shadow">
             <input
               type="text"
               value={query}
@@ -307,7 +307,7 @@ export function ProfileMediaButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'active:scale-95 border border-zinc-600/30 bg-zinc-800/80 hover:bg-zinc-700 backdrop-blur-lg flex items-center justify-center text-zinc-100 rounded-2xl hover:text-zinc-300 cursor-pointer duration-300',
+        'glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.8] [--glass-blur:16px] active:scale-95 border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] flex items-center justify-center text-zinc-100 rounded-2xl hover:text-zinc-300 cursor-pointer duration-300',
         className,
       )}
     >

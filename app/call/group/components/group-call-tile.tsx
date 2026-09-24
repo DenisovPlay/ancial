@@ -167,7 +167,7 @@ export default function GroupCallTile({
       ) : null}
 
       {advertisedVideo && hasPlayableVideo ? (
-        <span className="pointer-events-none absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-zinc-600/30 bg-black/55 text-white shadow backdrop-blur-md">
+        <span className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.55] pointer-events-none absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-zinc-600/30 text-white shadow">
           <Icon name={focused ? 'IC-focus-exit' : 'IC-expand'} className="h-5 w-5 fill-current" />
         </span>
       ) : null}
@@ -181,7 +181,7 @@ export default function GroupCallTile({
             event.stopPropagation();
             onDisconnect();
           }}
-          className="absolute left-3 top-3 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-red-400/30 bg-red-600/80 text-white shadow backdrop-blur-md duration-300 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-red-300 active:scale-95"
+          className="glass-panel [--glass-tint:var(--color-red-600)] [--glass-alpha:0.8] absolute left-3 top-3 z-30 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-red-400/30 text-white shadow duration-300 hover:[--glass-tint:var(--color-red-500)] hover:[--glass-alpha:1] focus-visible:outline-2 focus-visible:outline-red-300 active:scale-95"
         >
           <Icon name="IC-exit" className="h-5 w-5 fill-current" aria-hidden="true" />
         </button>

@@ -146,10 +146,10 @@ export default function PayContent() {
 
   const getFeeBadgeClass = (color: string) => {
     switch (color) {
-      case 'emerald': return 'border border-zinc-600/30 bg-emerald-500/25 text-emerald-500 shadow-emerald-500';
-      case 'amber': return 'border border-zinc-600/30 bg-amber-500/25 text-amber-500 shadow-amber-500';
-      case 'red': return 'border border-zinc-600/30 bg-red-500/25 text-red-500 shadow-red-500';
-      default: return 'border border-zinc-600/30 bg-zinc-500/25 text-zinc-300 shadow-zinc-500';
+      case 'emerald': return 'border border-zinc-600/30 [--glass-tint:var(--color-emerald-500)] [--glass-alpha:0.25] text-emerald-500 shadow-emerald-500';
+      case 'amber': return 'border border-zinc-600/30 [--glass-tint:var(--color-amber-500)] [--glass-alpha:0.25] text-amber-500 shadow-amber-500';
+      case 'red': return 'border border-zinc-600/30 [--glass-tint:var(--color-red-500)] [--glass-alpha:0.25] text-red-500 shadow-red-500';
+      default: return 'border border-zinc-600/30 [--glass-tint:var(--color-zinc-500)] [--glass-alpha:0.25] text-zinc-300 shadow-zinc-500';
     }
   };
 
@@ -337,7 +337,7 @@ export default function PayContent() {
                           <span className="text-sm text-zinc-300">{gateway.final_amount} ₽</span>
                         )}
                       </div>
-                      <div className="bg-zinc-800/90 backdrop-blur-sm rounded-3xl absolute inset-0 flex flex-col items-center justify-center">
+                      <div className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.9] [--glass-blur:8px] rounded-3xl absolute inset-0 flex flex-col items-center justify-center">
                         <span className="text-zinc-100 text-center px-1.5 text-xs font-semibold">{gateway.name}</span>
                         <span className="text-zinc-300 text-center px-1.5 text-xs">{gateway.disabled_reason || 'от 250 ₽'}</span>
                       </div>
@@ -352,7 +352,7 @@ export default function PayContent() {
                     className="border border-zinc-600/30 relative group shrink-0 p-1.5 flex items-center gap-1.5 justify-center bg-zinc-800/70 rounded-3xl shadow-lg hover:scale-105 active:scale-95 duration-300 cursor-pointer"
                   >
                     {merchant.fee_paid === 'user' && gateway.fee_text && (
-                      <span className={`backdrop-blur-lg shadow-2xl px-1.5 py-0.5 rounded-full text-xs absolute -top-1.5 -right-1.5 duration-300 ${getFeeBadgeClass(gateway.fee_color)}`}>
+                      <span className={`glass-panel [--glass-blur:16px] shadow-2xl px-1.5 py-0.5 rounded-full text-xs absolute -top-1.5 -right-1.5 duration-300 ${getFeeBadgeClass(gateway.fee_color)}`}>
                         {gateway.fee_text}
                       </span>
                     )}
@@ -500,7 +500,7 @@ export default function PayContent() {
 
         {/* Loading Overlay when redirecting to payment gateway */}
         {redirectingGatewayId && (
-          <div className="w-full h-full absolute inset-0 rounded-3xl flex flex-col gap-3 items-center justify-center bg-zinc-900/90 backdrop-blur-lg z-50">
+          <div className="glass-panel [--glass-alpha:0.9] [--glass-blur:16px] w-full h-full absolute inset-0 rounded-3xl flex flex-col gap-3 items-center justify-center z-50">
             <Icon name="IC-loader" className="w-10 h-10 inline animate-spin fill-purple-500" />
             <span className="text-zinc-100">
               {lang?.pay_redirecting || 'Перенаправляем на'} {redirectingGatewayName}...

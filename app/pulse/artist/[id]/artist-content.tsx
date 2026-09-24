@@ -314,7 +314,14 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                   <h1 className="flex max-w-[92vw] items-center gap-1.5 break-words text-2xl font-black leading-none md:text-4xl lg:max-w-4xl lg:text-7xl">
                     {artistName}
                     {verifyStatus === '0' || verifyStatus === '1' ? (
-                      <Icon name="IC-verify" className={cn('inline', cn('h-5 w-5 md:h-8 md:w-8 lg:h-12 lg:w-12', verifyStatus === '1' ? 'fill-blue-500' : 'fill-amber-500'))} />
+                      <span
+                        data-tip={verifyStatus === '1' ? (lang?.badge_verify_artist || 'Подтверждённый артист') : (lang?.badge_unverified_artist || 'Данные настоящие, владелец не подключён')}
+                        aria-label={verifyStatus === '1' ? (lang?.badge_verify_artist || 'Подтверждённый артист') : (lang?.badge_unverified_artist || 'Данные настоящие, владелец не подключён')}
+                        role="img"
+                        className="inline-flex shrink-0"
+                      >
+                        <Icon name="IC-verify" className={cn('inline', cn('h-5 w-5 md:h-8 md:w-8 lg:h-12 lg:w-12', verifyStatus === '1' ? 'fill-blue-500' : 'fill-amber-500'))} />
+                      </span>
                     ) : null}
                   </h1>
                   {artistDescription ? (

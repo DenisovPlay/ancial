@@ -178,7 +178,7 @@ export default function PulseCreateTracksPage() {
 
       {/* 2. Search & Filters Bar */}
       <div className="w-full flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        <div className="h-12 flex-1 flex items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200">
+        <div className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] h-12 flex-1 flex items-center justify-center rounded-full border border-zinc-600/30 p-1">
           <input
             type="text"
             value={searchQuery}
@@ -271,7 +271,7 @@ export default function PulseCreateTracksPage() {
                         aria-label={isPlaying ? 'Pause' : 'Play preview'}
                         className={`absolute inset-0 m-auto w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 active:scale-95 ${isPlaying
                           ? 'bg-white text-black opacity-100 shadow-lg'
-                          : 'bg-black/60 text-white opacity-0 group-hover:opacity-100 backdrop-blur-sm'
+                          : 'glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.6] [--glass-blur:8px] text-white opacity-0 group-hover:opacity-100'
                           }`}
                       >
                         {isPlaying ? (

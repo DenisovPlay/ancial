@@ -338,7 +338,7 @@ export function PulsePlaylistTile({
         <button
           type="button"
           onClick={onPlay}
-          className={cn('flex shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-purple-500/50 shadow backdrop-blur-md backdrop-saturate-200 duration-300 hover:bg-purple-600 active:scale-95', playButtonSize)}
+          className={cn('glass-panel [--glass-tint:var(--color-purple-500)] [--glass-sat:2] flex shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 shadow duration-300 hover:[--glass-tint:var(--color-purple-600)] hover:[--glass-alpha:1] active:scale-95', playButtonSize)}
           aria-label={isPlaying ? 'Pause playlist' : 'Play playlist'}
         >
           <Icon name={isPlaying ? 'IC-pause' : 'IC-play'} className={cn('inline fill-current', playIconSize)} />
@@ -618,12 +618,12 @@ export function PulseTrackRow({
         className="relative isolate h-16 w-16 shrink-0 cursor-pointer active:scale-95 duration-300"
       >
         {isOwnTrack ? (
-          <Icon name="IC-crown" className="inline fill-current absolute -left-1.5 -top-1.5 z-20 h-6 w-6 rounded-full border border-zinc-600/30 bg-pink-500/50 stroke-white p-1 backdrop-blur-sm backdrop-saturate-200" />
+          <Icon name="IC-crown" className="glass-panel [--glass-tint:var(--color-pink-500)] [--glass-blur:8px] [--glass-sat:2] inline fill-current absolute -left-1.5 -top-1.5 z-20 h-6 w-6 rounded-full border border-zinc-600/30 stroke-white p-1" />
         ) : null}
 
         {isCached ? (
           <div
-            className="absolute -right-1.5 -top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-emerald-500 text-white shadow-md backdrop-blur-sm"
+            className="glass-panel [--glass-tint:var(--color-emerald-500)] [--glass-alpha:1] [--glass-blur:8px] absolute -right-1.5 -top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 text-white shadow-md"
             title={lang?.pulse_already_saved_offline || 'Сохранено офлайн'}
           >
             <Icon name="IC-check-material" className="h-3.5 w-3.5 fill-white" />
@@ -639,13 +639,13 @@ export function PulseTrackRow({
 
         {/* Geo-block overlay */}
         {!isAvailable && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-black/60 backdrop-blur-[1px]">
+          <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.6] [--glass-blur:1px] absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl">
             <Icon name="IC-lock" className="h-5 w-5 fill-zinc-300" />
           </div>
         )}
 
         {isTrackExplicit(track) ? (
-          <div className="group absolute -bottom-1.5 -right-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-800/50 p-1 text-xs text-white duration-300 backdrop-blur-sm backdrop-saturate-200 hover:w-fit">
+          <div className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-blur:8px] [--glass-sat:2] group absolute -bottom-1.5 -right-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 p-1 text-xs text-white duration-300 hover:w-fit">
             <span className="group-hover:hidden">E</span>
             <span className="hidden group-hover:inline">18+</span>
           </div>

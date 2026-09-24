@@ -214,7 +214,7 @@ function EditAlbumContent() {
                 {img ? (
                   <>
                     <AppImage width={224} height={224} className="w-full h-full object-cover" src={img} alt="Cover" />
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300 backdrop-blur-xs">
+                    <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.6] [--glass-blur:4px] absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 duration-300">
                       <span className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-600/30">
                         {lang?.replacetrackcover || 'Заменить обложку'}
                       </span>

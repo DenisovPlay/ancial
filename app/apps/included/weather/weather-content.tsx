@@ -30,18 +30,18 @@ function WeatherSkeleton() {
     <div className="flex flex-col items-center w-full animate-pulse">
       {/* Big Temperature Skeleton - aligned to left matching real font size */}
       <div className="-mb-14 flex w-full items-start gap-1">
-        <div className="h-44 w-52 rounded-3xl bg-white/15 backdrop-blur-md" />
+        <div className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.15] h-44 w-52 rounded-3xl" />
         <div className="h-12 w-8 rounded-2xl bg-white/15 mt-6" />
       </div>
 
       {/* Mornight & Weather status text skeleton - left aligned */}
       <div className="mt-6 flex w-full flex-col items-start gap-2">
-        <div className="h-7 w-44 rounded-full bg-white/15 backdrop-blur-md" />
-        <div className="h-8 w-36 rounded-full bg-white/15 backdrop-blur-md" />
+        <div className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.15] h-7 w-44 rounded-full" />
+        <div className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.15] h-8 w-36 rounded-full" />
       </div>
 
       {/* Hourly forecast skeleton */}
-      <div className="mt-4 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 p-3 shadow backdrop-blur-md">
+      <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] mt-4 flex w-full flex-col rounded-3xl border border-zinc-600/30 p-3 shadow">
         <div className="h-5 w-36 rounded-full bg-white/15 mb-3" />
         <div className="flex w-full justify-between gap-6 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -55,7 +55,7 @@ function WeatherSkeleton() {
       </div>
 
       {/* Upcoming days skeleton */}
-      <div className="mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 p-3 shadow backdrop-blur-md">
+      <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 p-3 shadow">
         <div className="h-5 w-32 rounded-full bg-white/15 mb-3" />
         <div className="flex w-full justify-between gap-6 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -71,7 +71,7 @@ function WeatherSkeleton() {
       {/* Atmospheric details skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mt-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex flex-col justify-between h-20 rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md">
+          <div key={i} className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] flex flex-col justify-between h-20 rounded-3xl border border-zinc-600/30 p-3.5 shadow">
             <div className="h-3 w-16 rounded bg-white/15" />
             <div className="h-6 w-20 rounded bg-white/15 mt-2" />
           </div>
@@ -80,7 +80,7 @@ function WeatherSkeleton() {
 
       {/* Sun & Moon cards skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-3 mb-8">
-        <div className="h-32 rounded-3xl border border-zinc-600/30 bg-black/10 p-4 shadow backdrop-blur-md flex flex-col justify-between">
+        <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] h-32 rounded-3xl border border-zinc-600/30 p-4 shadow flex flex-col justify-between">
           <div className="flex justify-between items-center">
             <div className="h-5 w-20 rounded bg-white/15" />
             <div className="h-5 w-28 rounded-full bg-white/15" />
@@ -90,7 +90,7 @@ function WeatherSkeleton() {
             <div className="h-10 rounded-xl bg-white/15" />
           </div>
         </div>
-        <div className="h-32 rounded-3xl border border-zinc-600/30 bg-black/10 p-4 shadow backdrop-blur-md flex flex-col justify-between">
+        <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] h-32 rounded-3xl border border-zinc-600/30 p-4 shadow flex flex-col justify-between">
           <div className="flex justify-between items-center">
             <div className="h-5 w-24 rounded bg-white/15" />
             <div className="h-5 w-14 rounded-full bg-white/15" />
@@ -432,7 +432,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
 
         {!showLoadingOverlay && errorMessage && (
           <div className="absolute inset-0 z-[999] overflow-hidden">
-            <div className="flex h-full w-full flex-col items-center justify-center gap-3 overflow-hidden bg-zinc-900/80 p-3 text-center backdrop-blur-sm">
+            <div className="glass-panel [--glass-alpha:0.8] [--glass-blur:8px] flex h-full w-full flex-col items-center justify-center gap-3 overflow-hidden p-3 text-center">
               <Icon name="IC-weather-close" className="inline h-24 w-24 fill-white" />
               <span className="text-3xl text-zinc-300">{lang?.weather_error_happend || 'An error occurred'}</span>
               <span className="text-xl text-zinc-400">{lang?.weather_try_again || 'Try again later'}</span>
@@ -460,7 +460,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
               </span>
 
               <form
-                className="flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 bg-black/10 p-1 text-white shadow backdrop-blur-md backdrop-saturate-200"
+                className="glass-input [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] flex h-12 w-full items-center justify-center rounded-full border border-zinc-600/30 p-1 text-white shadow"
                 onSubmit={handleSubmit}
               >
                 <button
@@ -509,9 +509,9 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                           setSearchCity(cityItem.name);
                         });
                       }}
-                      className={`shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-medium transition-all active:scale-95 backdrop-blur-md cursor-pointer ${isSelected
-                        ? 'border-white/80 bg-white/25 text-white font-semibold shadow-md shadow-white/10'
-                        : 'border-zinc-600/30 bg-black/20 text-zinc-300 hover:bg-zinc-800/40'
+                      className={`shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-medium transition-all active:scale-95 glass-panel cursor-pointer ${isSelected
+                        ? 'border-white/80 [--glass-tint:var(--color-white)] [--glass-alpha:0.25] text-white font-semibold shadow-md shadow-white/10'
+                        : 'border-zinc-600/30 [--glass-tint:var(--color-black)] [--glass-alpha:0.2] text-zinc-300 hover:bg-zinc-800/40'
                         }`}
                     >
                       {chipLabel}
@@ -549,7 +549,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
 
                   {/* Hourly Forecast */}
                   {weatherData?.hourly && weatherData.hourly.length > 0 ? (
-                    <div className="mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 shadow backdrop-blur-md backdrop-saturate-200">
+                    <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 shadow">
                       <span className="pl-3 pt-3 text-xl text-white">{lang?.weather_hourly || 'Hourly forecast'}</span>
                       <div className="flex w-full gap-6 overflow-x-auto px-3 pb-3">
                         {weatherData.hourly.map((item, index) => (
@@ -564,7 +564,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                   ) : null}
 
                   {/* Upcoming Days */}
-                  <div className="mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 bg-black/10 shadow backdrop-blur-md backdrop-saturate-200">
+                  <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] mt-3 flex w-full flex-col rounded-3xl border border-zinc-600/30 shadow">
                     <span className="pl-3 pt-3 text-xl text-white">{lang?.weather_next_days || 'Upcoming days'}</span>
                     <div className="flex w-full gap-6 overflow-x-auto px-3 pb-3">
                       {forecastEntries.map((entry, index) => (
@@ -580,7 +580,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                   {/* Atmospheric Details */}
                   {weatherData?.details ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mt-3">
-                      <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
+                      <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] flex flex-col justify-between rounded-3xl border border-zinc-600/30 p-3.5 shadow">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-zinc-400 font-medium">{lang?.weather_humidity || 'Влажность'}</span>
                           <Icon name="IC-weather-humidity" className="w-4 h-4 fill-cyan-400/80 shrink-0" />
@@ -591,7 +591,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                         </div>
                       </div>
 
-                      <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
+                      <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] flex flex-col justify-between rounded-3xl border border-zinc-600/30 p-3.5 shadow">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-zinc-400 font-medium">{lang?.weather_wind || 'Ветер'}</span>
                           <Icon name="IC-weather-wind" className="w-4 h-4 stroke-teal-300 fill-none stroke-[2] shrink-0" strokeLinecap="round" strokeLinejoin="round" />
@@ -602,7 +602,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                         </div>
                       </div>
 
-                      <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
+                      <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] flex flex-col justify-between rounded-3xl border border-zinc-600/30 p-3.5 shadow">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-zinc-400 font-medium">{lang?.weather_pressure || 'Давление'}</span>
                           <Icon name="IC-weather-pressure" className="w-4 h-4 stroke-amber-300 fill-none stroke-[2] shrink-0" strokeLinecap="round" strokeLinejoin="round" />
@@ -613,7 +613,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                         </div>
                       </div>
 
-                      <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-3.5 shadow backdrop-blur-md backdrop-saturate-200">
+                      <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] flex flex-col justify-between rounded-3xl border border-zinc-600/30 p-3.5 shadow">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-zinc-400 font-medium">{lang?.weather_visibility || 'Видимость'}</span>
                           <Icon name="IC-weather-visibility" className="w-4 h-4 stroke-sky-300 fill-none stroke-[2] shrink-0" strokeLinecap="round" strokeLinejoin="round" />
@@ -629,7 +629,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                   {/* Sun & Moon Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-3">
                     {/* Sunrise / Sunset / UV Card */}
-                    <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-4 shadow backdrop-blur-md backdrop-saturate-200">
+                    <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] flex flex-col justify-between rounded-3xl border border-zinc-600/30 p-4 shadow">
                       <div className="flex items-center justify-between">
                         <span className="text-xl text-white font-medium">
                           {lang?.weather_sun || 'Sun'}
@@ -659,7 +659,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                     </div>
 
                     {/* Moon Phase Card */}
-                    <div className="flex flex-col justify-between rounded-3xl border border-zinc-600/30 bg-black/10 p-4 shadow backdrop-blur-md backdrop-saturate-200">
+                    <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.1] [--glass-sat:2] flex flex-col justify-between rounded-3xl border border-zinc-600/30 p-4 shadow">
                       <div className="flex items-center justify-between">
                         <span className="text-xl text-white font-medium">{lang?.weather_moon || 'Moon phase'}</span>
                         <span className="text-xs px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-medium">
@@ -682,7 +682,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                     <>
                       <div className="flex w-full items-center justify-center mt-3">
                         <a
-                          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-zinc-600/30 bg-blue-400/25 p-3 text-lg font-bold text-white transition-[background-color,transform] duration-300 hover:bg-blue-500/50 active:scale-95 backdrop-blur-md backdrop-saturate-200"
+                          className="glass-panel [--glass-tint:var(--color-blue-400)] [--glass-alpha:0.25] [--glass-sat:2] flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-zinc-600/30 p-3 text-lg font-bold text-white transition-[background-color,transform] duration-300 hover:[--glass-tint:var(--color-blue-500)] hover:[--glass-alpha:0.5] active:scale-95"
                           href={mapLinks.yandexWeatherUrl}
                           rel="noreferrer"
                           target="_blank"
@@ -730,7 +730,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
 
                       <div className="flex w-full items-center justify-center mb-8">
                         <Link
-                          className="relative mt-3 aspect-square w-full shrink-0 overflow-hidden rounded-3xl border border-zinc-600/30 shadow transition-transform duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200 cursor-pointer group"
+                          className="glass-panel [--glass-alpha:0] [--glass-sat:2] relative mt-3 aspect-square w-full shrink-0 overflow-hidden rounded-3xl border border-zinc-600/30 shadow transition-transform duration-300 active:scale-95 cursor-pointer group"
                           href={`/apps/overlay/weather/map?lat=${weatherData?.coordinates?.lat ?? 55.7558}&lon=${weatherData?.coordinates?.lon ?? 37.6173}&city=${encodeURIComponent(weatherData?.city ?? '')}&temp=${weatherData?.temp ?? 0}&mode=${mode}`}
                         >
                           <span
@@ -739,7 +739,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                           >
                             {lang?.weather_map || 'Precipitation map'}
                           </span>
-                          <span className="absolute bottom-3 right-3 z-[99] text-xs px-3 py-1.5 rounded-full bg-black/60 text-white border border-white/20 backdrop-blur-md flex items-center gap-1 group-hover:bg-blue-600/80 transition-colors">
+                          <span className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.6] absolute bottom-3 right-3 z-[99] text-xs px-3 py-1.5 rounded-full text-white border border-white/20 flex items-center gap-1 group-hover:[--glass-tint:var(--color-blue-600)] group-hover:[--glass-alpha:0.8] transition-colors">
                             <span>{langCode === 'en' ? 'Open interactive map' : 'Открыть интерактивную карту'}</span>
                             <Icon name="IC-arrow-right" className="w-3.5 h-3.5 fill-none stroke-current stroke-[2]" />
                           </span>

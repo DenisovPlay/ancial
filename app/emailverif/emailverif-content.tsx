@@ -92,7 +92,7 @@ function EmailVerifContentInner() {
 
   return (
     <main className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-3">
-      <div className="w-full max-w-md bg-zinc-900/80 border border-zinc-800 backdrop-blur-2xl rounded-3xl p-3 flex flex-col items-center text-center gap-3 shadow-2xl transition-all duration-300">
+      <div className="glass-panel [--glass-alpha:0.8] [--glass-blur:40px] w-full max-w-md border border-zinc-800 rounded-3xl p-3 flex flex-col items-center text-center gap-3 shadow-2xl transition-all duration-300">
         <h1 className="text-2xl font-bold text-white tracking-tight">
           {lang?.verifimyemail || 'Подтвердить почту'}
         </h1>

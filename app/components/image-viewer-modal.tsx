@@ -502,7 +502,7 @@ export default function ImageViewerModal({
       width="full"
       align="center"
       animation="fade"
-      overlayClassName="!bg-black/90 !backdrop-blur-sm"
+      overlayClassName="[--glass-tint:var(--color-black)] [--glass-alpha:0.9]"
       panelClassName="!w-full !max-w-none h-full !max-h-full !overflow-hidden !bg-transparent !border-0 !shadow-none"
       bodyClassName="h-full p-0 !overflow-hidden"
     >

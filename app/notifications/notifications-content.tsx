@@ -149,13 +149,13 @@ export default function NotificationsPage() {
       <div className="flex items-center gap-3 w-full max-w-3xl sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent p-3 lg:px-0 -my-3" style={{ zIndex: 90 }}>    
         <button 
           onClick={clearNotif}
-          className="bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 h-12 active:scale-95 px-4 py-2 duration-300 cursor-pointer shadow flex-grow rounded-full text-zinc-100" 
+          className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] h-12 active:scale-95 px-4 py-2 duration-300 cursor-pointer shadow flex-grow rounded-full text-zinc-100" 
         >
           {lang?.clear || 'Очистить'}
         </button>
         <Link 
           href="/settings/notifications"
-          className="cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full"
+          className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] active:scale-95 duration-300 rounded-full"
         >
           <Icon name="IC-settings" className="inline w-8 h-8 fill-white" />
         </Link>

@@ -416,7 +416,7 @@ export default function MessageBubble({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[40] bg-black/60 backdrop-blur-lg select-none touch-none overscroll-none"
+            className="glass-overlay [--glass-tint:var(--color-black)] [--glass-alpha:0.6] [--glass-blur:16px] fixed inset-0 z-[40] select-none touch-none overscroll-none"
             onClick={() => setMenuOpen(false)}
             onContextMenu={(event) => {
               event.preventDefault();
@@ -450,7 +450,7 @@ export default function MessageBubble({
       >
         <motion.div
           style={{ opacity: replyIconOpacity, scale: replyIconScale, x: replyIconX }}
-          className="absolute right-2 top-1/2 z-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-zinc-800/70 backdrop-blur backdrop-saturate-200 backdrop-hue-200 border border-zinc-600/30 text-zinc-200 pointer-events-none"
+          className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:8px] [--glass-sat:2] absolute right-2 top-1/2 z-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-600/30 text-zinc-200 pointer-events-none"
         >
           <Icon name="IC-reply" className="h-4 w-4 fill-current" />
         </motion.div>
@@ -495,7 +495,7 @@ export default function MessageBubble({
                 menuClassName="pointer-events-auto w-fit /overflow-hidden rounded-2xl bg-zinc-900/85"
               >
                 {readReceiptReaders.length > 0 ? (
-                  <div className="-mt-11.5 flex items-center gap-2 rounded-3xl border border-zinc-700/40 bg-zinc-900/70 px-2 py-1 text-[10px] text-zinc-200 shadow backdrop-blur-sm duration-300 w-full">
+                  <div className="glass-panel [--glass-alpha:0.7] [--glass-blur:8px] -mt-11.5 flex items-center gap-2 rounded-3xl border border-zinc-700/40 px-2 py-1 text-[10px] text-zinc-200 shadow duration-300 w-full">
                     <span className="flex items-center -space-x-2">
                       {readReceiptReaders.slice(0, 4).map((reader, index) => (
                         <AppImage

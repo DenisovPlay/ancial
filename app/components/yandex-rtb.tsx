@@ -81,7 +81,7 @@ export default function YandexRtb({
         rel="noopener noreferrer"
         className="relative block w-full h-full overflow-hidden group transition-opacity duration-300 bg-black"
       >
-        <div className="z-[1] duration-300 opacity-50 group-hover:opacity-100 backdrop-blur-lg absolute top-0 right-0 px-1.5 text-[10px] text-white bg-zinc-800 rounded-bl-3xl">Реф. программа</div>
+        <div className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:1] [--glass-blur:16px] z-[1] duration-300 opacity-50 group-hover:opacity-100 absolute top-0 right-0 px-1.5 text-[10px] text-white rounded-bl-3xl">Реф. программа</div>
         <AppImage
           width={728}
           height={90}

@@ -131,7 +131,7 @@ export default function PostWidgetMusicModal({ isOpen, onClose, onAdd }: PostWid
     <Modal isOpen={isOpen} onClose={onClose} title={lang?.attach_audio || "Прикрепить аудиозапись"} width="md">
       <div className="flex flex-col gap-3 relative">
         <div className="relative sticky top-0 z-[90]">
-          <div className="relative border border-zinc-600/30 flex bg-zinc-900/50 backdrop-blur-sm backdrop-saturate-200 rounded-full w-full p-1 h-12">
+          <div className="glass-panel [--glass-blur:8px] [--glass-sat:2] relative border border-zinc-600/30 flex rounded-full w-full p-1 h-12">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               {searching ? (
                 <div className="w-5 h-5 rounded-full border-2 border-zinc-500/30 border-t-purple-500 animate-spin" />

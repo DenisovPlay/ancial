@@ -991,7 +991,14 @@ export default function GroupProfileContent({ link }: { link: string }) {
                   <span className="text-xl font-bold text-zinc-100 flex items-center gap-1.5">
                     <span>{groupData.name}</span>
                     {flag(groupData.verify) ? (
-                      <Icon name="IC-verify" className="w-5 h-5 inline fill-blue-500" />
+                      <span
+                        data-tip={lang?.badge_verify_group || 'Подтверждённое сообщество'}
+                        aria-label={lang?.badge_verify_group || 'Подтверждённое сообщество'}
+                        role="img"
+                        className="inline-flex shrink-0"
+                      >
+                        <Icon name="IC-verify" className="w-5 h-5 inline fill-blue-500" />
+                      </span>
                     ) : null}
                   </span>
                   {groupData.description?.trim() ? (

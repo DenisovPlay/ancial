@@ -133,7 +133,7 @@ export default function PulseCreateAlbumsPage() {
 
       {/* 2. Search */}
       <div className="w-full flex items-center gap-3">
-        <div className="h-12 w-full flex items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200">
+        <div className="glass-input [--glass-sat:2] h-12 w-full flex items-center justify-center rounded-full border border-zinc-600/30 p-1">
           <input
             type="text"
             value={searchQuery}

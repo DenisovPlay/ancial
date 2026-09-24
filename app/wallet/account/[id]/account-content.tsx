@@ -318,16 +318,16 @@ export default function AccountContent({ accountId }: AccountContentProps) {
 
           <div className="sticky flex flex-col gap-3 w-full duration-300 shrink-0 lg:pt-0" style={{ zIndex: 98, top: '56px' }}>
             <div className="px-3 lg:px-0 flex flex-nowrap justify-start items-center gap-3 overflow-x-auto viewport w-full duration-300">
-              <button onClick={() => setIsTopupModalOpen(true)} className="hidden shrink-0 items-center gap-3 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-lg">
+              <button onClick={() => setIsTopupModalOpen(true)} className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:16px] hidden shrink-0 items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
                 <Icon name="IC-topup" className="fill-white w-5 h-5 inline" /> {strings.deposit}
               </button>
-              <button onClick={() => handleTopage(`/wallet/form?form=sendtouser&sender_id=${accountId}`)} className="hidden shrink-0 items-center gap-3 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-lg">
+              <button onClick={() => handleTopage(`/wallet/form?form=sendtouser&sender_id=${accountId}`)} className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:16px] hidden shrink-0 items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
                 <Icon name="IC-send" className="fill-white w-5 h-5 inline" /> {strings.send}
               </button>
-              <button onClick={() => setIsReceiveModalOpen(true)} className="hidden shrink-0 items-center gap-3 text-zinc-300 bg-zinc-800/70 hover:bg-zinc-800 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-lg">
+              <button onClick={() => setIsReceiveModalOpen(true)} className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:16px] hidden shrink-0 items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
                 <Icon name="IC-send" className="fill-white w-5 h-5 inline rotate-180" /> {strings.receive}
               </button>
-              <button onClick={() => setIsCloseConfirmModalOpen(true)} className="shrink-0 flex items-center gap-3 text-red-500 bg-red-500/25 hover:bg-red-700/40 shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-lg border border-zinc-600/30">
+              <button onClick={() => setIsCloseConfirmModalOpen(true)} className="glass-panel [--glass-tint:var(--color-red-500)] [--glass-alpha:0.25] [--glass-blur:16px] shrink-0 flex items-center gap-3 text-red-500 hover:[--glass-tint:var(--color-red-700)] hover:[--glass-alpha:0.4] shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 border border-zinc-600/30">
                 <Icon name="IC-times" className="fill-red-500 w-5 h-5" />
                 {strings.closeaccount}
               </button>

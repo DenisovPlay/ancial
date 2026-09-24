@@ -117,7 +117,7 @@ export default function PresenceActivity({
           <span
             title={text}
             className={cn(
-              'flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-800/80 backdrop-blur-lg',
+              'glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.8] [--glass-blur:16px] flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-zinc-600/30',
               isMusic && 'ring-2 ring-purple-500',
             )}
           >

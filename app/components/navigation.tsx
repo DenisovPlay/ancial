@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import AppImage from './app-image';
-import React, { useCallback, useState, useRef, useEffect, useSyncExternalStore } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
 import { normalizeAvatarUrl } from '../lib/avatar';
-import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../lib/android-glass';
+import { useAppearanceMotion } from '../lib/use-appearance';
 import { cn } from '../lib/cn';
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 import Icon from './svg-icon';
@@ -37,8 +37,8 @@ const NavItem = ({
       ),
     );
 
-  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = isEffectiveFullGlass(glassMode);
+  // Отзывчивые эффекты (магнит, блик, «желе») — настройка «Интерфейс → Анимации», не режим стекла.
+  const responsive = useAppearanceMotion().nav;
 
   const itemRef = useRef<HTMLDivElement | null>(null);
   const rawX = useMotionValue(0);
@@ -59,7 +59,7 @@ const NavItem = ({
   const itemSheen = useMotionTemplate`radial-gradient(45px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.20), transparent 70%)`;
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     const el = itemRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -82,7 +82,7 @@ const NavItem = ({
   };
 
   const handleMouseLeave = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     rawX.set(0);
     rawY.set(0);
     rawScaleX.set(1);
@@ -92,13 +92,13 @@ const NavItem = ({
   };
 
   const handlePressStart = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     pressScaleX.set(1.05);
     pressScaleY.set(0.90);
   };
 
   const handlePressEnd = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     pressScaleX.set(1);
     pressScaleY.set(1);
   };
@@ -106,14 +106,14 @@ const NavItem = ({
   const className = `relative overflow-hidden w-14 h-14 ${imgSrc ? `p-0` : `p-1`} cursor-pointer flex items-center justify-center rounded-full border duration-300 ${active
     ? "bg-zinc-700/90 border-zinc-600/30"
     : "hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30"
-    } ${!isFullGlass ? 'active:scale-95' : ''}`;
+    } ${!responsive ? 'active:scale-95' : ''}`;
 
   const avatarSrc = imgSrc ? normalizeAvatarUrl(imgSrc) : '';
 
   const innerContent = (
     <>
       {/* Specular sheen inside round NavItem in full glass mode */}
-      {isFullGlass && (
+      {responsive && (
         <motion.div
           className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
           style={{ background: itemSheen }}
@@ -145,16 +145,16 @@ const NavItem = ({
     return (
       <motion.div
         ref={itemRef}
-        onMouseMove={isFullGlass ? handleMouseMove : undefined}
-        onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
-        onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
-        onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-        onPointerDown={isFullGlass ? handlePressStart : undefined}
-        onPointerUp={isFullGlass ? handlePressEnd : undefined}
-        onPointerCancel={isFullGlass ? handlePressEnd : undefined}
-        onPointerLeave={isFullGlass ? handlePressEnd : undefined}
+        onMouseMove={responsive ? handleMouseMove : undefined}
+        onMouseLeave={responsive ? handleMouseLeave : undefined}
+        onTouchEnd={responsive ? handleMouseLeave : undefined}
+        onTouchCancel={responsive ? handleMouseLeave : undefined}
+        onPointerDown={responsive ? handlePressStart : undefined}
+        onPointerUp={responsive ? handlePressEnd : undefined}
+        onPointerCancel={responsive ? handlePressEnd : undefined}
+        onPointerLeave={responsive ? handlePressEnd : undefined}
         style={
-          isFullGlass
+          responsive
             ? {
               x: springX,
               y: springY,
@@ -174,16 +174,16 @@ const NavItem = ({
   return (
     <motion.div
       ref={itemRef}
-      onMouseMove={isFullGlass ? handleMouseMove : undefined}
-      onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
-      onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
-      onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-      onPointerDown={isFullGlass ? handlePressStart : undefined}
-      onPointerUp={isFullGlass ? handlePressEnd : undefined}
-      onPointerCancel={isFullGlass ? handlePressEnd : undefined}
-      onPointerLeave={isFullGlass ? handlePressEnd : undefined}
+      onMouseMove={responsive ? handleMouseMove : undefined}
+      onMouseLeave={responsive ? handleMouseLeave : undefined}
+      onTouchEnd={responsive ? handleMouseLeave : undefined}
+      onTouchCancel={responsive ? handleMouseLeave : undefined}
+      onPointerDown={responsive ? handlePressStart : undefined}
+      onPointerUp={responsive ? handlePressEnd : undefined}
+      onPointerCancel={responsive ? handlePressEnd : undefined}
+      onPointerLeave={responsive ? handlePressEnd : undefined}
       style={
-        isFullGlass
+        responsive
           ? {
             x: springX,
             y: springY,
@@ -257,9 +257,8 @@ export const Dropdown = ({
   const isOpen = isControlled ? open : internalOpen;
 
   // Эффект Apple Liquid Glass активен эксклюзивно для режима "Полное"
-  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = isEffectiveFullGlass(glassMode);
-  const isGlassOff = glassMode === 'off';
+  // Отзывчивые эффекты (магнит, блик, «желе») — настройка «Интерфейс → Анимации», не режим стекла.
+  const responsive = useAppearanceMotion().menu;
 
   // Liquid glass cursor tracking for menu container
   const mouseX = useMotionValue(-200);
@@ -274,7 +273,7 @@ export const Dropdown = ({
   const sheenBackground = useMotionTemplate`radial-gradient(140px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.01) 40%, transparent 80%)`;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFullGlass || !menuContainerRef.current) return;
+    if (!responsive || !menuContainerRef.current) return;
     const rect = menuContainerRef.current.getBoundingClientRect();
     const relX = e.clientX - rect.left;
     const relY = e.clientY - rect.top;
@@ -291,7 +290,7 @@ export const Dropdown = ({
   };
 
   const handleMouseLeave = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     mouseX.set(-200);
     mouseY.set(-200);
     rawMenuX.set(0);
@@ -405,20 +404,20 @@ export const Dropdown = ({
         {isOpen && (
           <motion.div
             ref={menuContainerRef}
-            onMouseMove={isFullGlass ? handleMouseMove : undefined}
-            onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
-            onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
-            onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-            initial={{ opacity: 0, scale: 0.94, filter: isFullGlass ? 'blur(4px)' : 'none' }}
+            onMouseMove={responsive ? handleMouseMove : undefined}
+            onMouseLeave={responsive ? handleMouseLeave : undefined}
+            onTouchEnd={responsive ? handleMouseLeave : undefined}
+            onTouchCancel={responsive ? handleMouseLeave : undefined}
+            initial={{ opacity: 0, scale: 0.94, filter: responsive ? 'blur(4px)' : 'none' }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 0.94, filter: isFullGlass ? 'blur(4px)' : 'none' }}
+            exit={{ opacity: 0, scale: 0.94, filter: responsive ? 'blur(4px)' : 'none' }}
             transition={
-              isFullGlass
+              responsive
                 ? { type: 'spring', stiffness: 420, damping: 28, mass: 0.8 }
                 : { duration: 0.18, ease: 'easeOut' }
             }
             style={
-              isFullGlass
+              responsive
                 ? {
                   x: menuSpringX,
                   y: menuSpringY,
@@ -434,14 +433,12 @@ export const Dropdown = ({
               'p-1',
               direction === 'col' ? 'flex-col rounded-3xl' : 'flex-row rounded-full',
               widthClasses,
-              isGlassOff
-                ? '!bg-zinc-900 !border !border-zinc-700/60 shadow-2xl shadow-black/80 flex gap-1 z-50'
-                : 'bg-zinc-900/60 backdrop-blur-xl backdrop-saturate-200 border border-zinc-600/30 shadow-2xl shadow-black/60 flex gap-1 z-50',
+              'glass-menu border border-zinc-600/30 shadow-2xl shadow-black/60 flex gap-1 z-50',
               menuClassName,
             )}
           >
             {/* Apple Liquid Glass Specular Sheen (только в режиме "Полное") */}
-            {isFullGlass && (
+            {responsive && (
               <motion.div
                 className="pointer-events-none absolute inset-0 z-0 rounded-3xl opacity-80"
                 style={{
@@ -519,8 +516,8 @@ export const DropdownItem = ({
   const itemRef = useRef<HTMLDivElement | null>(null);
 
   // Эффект Liquid Glass активен эксклюзивно для режима "Полное"
-  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = isEffectiveFullGlass(glassMode);
+  // Отзывчивые эффекты (магнит, блик, «желе») — настройка «Интерфейс → Анимации», не режим стекла.
+  const responsive = useAppearanceMotion().menu;
 
   // Magnetic Jelly Physics (сверхмягкая физика, не выходящая за пределы контейнера)
   const rawX = useMotionValue(0);
@@ -541,7 +538,7 @@ export const DropdownItem = ({
   const itemSheen = useMotionTemplate`radial-gradient(60px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.12), transparent 70%)`;
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     const el = itemRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -566,7 +563,7 @@ export const DropdownItem = ({
   };
 
   const handleMouseLeave = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     rawX.set(0);
     rawY.set(0);
     rawScaleX.set(1);
@@ -576,13 +573,13 @@ export const DropdownItem = ({
   };
 
   const handlePressStart = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     pressScaleX.set(1.01);
     pressScaleY.set(0.97);
   };
 
   const handlePressEnd = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     pressScaleX.set(1);
     pressScaleY.set(1);
   };
@@ -598,7 +595,7 @@ export const DropdownItem = ({
   const content = (
     <>
       {/* Specular sheen inside item (только в режиме "Полное") */}
-      {isFullGlass && (
+      {responsive && (
         <motion.div
           className="pointer-events-none absolute inset-0 z-0 rounded-3xl opacity-75"
           style={{ background: itemSheen }}
@@ -622,16 +619,16 @@ export const DropdownItem = ({
     return (
       <motion.div
         ref={itemRef}
-        onMouseMove={isFullGlass ? handleMouseMove : undefined}
-        onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
-        onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
-        onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-        onPointerDown={isFullGlass ? handlePressStart : undefined}
-        onPointerUp={isFullGlass ? handlePressEnd : undefined}
-        onPointerCancel={isFullGlass ? handlePressEnd : undefined}
-        onPointerLeave={isFullGlass ? handlePressEnd : undefined}
+        onMouseMove={responsive ? handleMouseMove : undefined}
+        onMouseLeave={responsive ? handleMouseLeave : undefined}
+        onTouchEnd={responsive ? handleMouseLeave : undefined}
+        onTouchCancel={responsive ? handleMouseLeave : undefined}
+        onPointerDown={responsive ? handlePressStart : undefined}
+        onPointerUp={responsive ? handlePressEnd : undefined}
+        onPointerCancel={responsive ? handlePressEnd : undefined}
+        onPointerLeave={responsive ? handlePressEnd : undefined}
         style={
-          isFullGlass
+          responsive
             ? {
               x: springX,
               y: springY,
@@ -652,16 +649,16 @@ export const DropdownItem = ({
   return (
     <motion.div
       ref={itemRef}
-      onMouseMove={isFullGlass ? handleMouseMove : undefined}
-      onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
-      onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
-      onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-      onPointerDown={isFullGlass ? handlePressStart : undefined}
-      onPointerUp={isFullGlass ? handlePressEnd : undefined}
-      onPointerCancel={isFullGlass ? handlePressEnd : undefined}
-      onPointerLeave={isFullGlass ? handlePressEnd : undefined}
+      onMouseMove={responsive ? handleMouseMove : undefined}
+      onMouseLeave={responsive ? handleMouseLeave : undefined}
+      onTouchEnd={responsive ? handleMouseLeave : undefined}
+      onTouchCancel={responsive ? handleMouseLeave : undefined}
+      onPointerDown={responsive ? handlePressStart : undefined}
+      onPointerUp={responsive ? handlePressEnd : undefined}
+      onPointerCancel={responsive ? handlePressEnd : undefined}
+      onPointerLeave={responsive ? handlePressEnd : undefined}
       style={
-        isFullGlass
+        responsive
           ? {
             x: springX,
             y: springY,
@@ -706,9 +703,8 @@ export default function Navigation() {
   const isCinemaContext = pathname === '/cinema' || pathname?.startsWith('/cinema/');
   const isCinemaWatchContext = pathname?.startsWith('/cinema/watch');
 
-  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = isEffectiveFullGlass(glassMode);
-  const isGlassOff = glassMode === 'off';
+  // Отзывчивые эффекты (магнит, блик, «желе») — настройка «Интерфейс → Анимации», не режим стекла.
+  const responsive = useAppearanceMotion().nav;
 
   // Desktop dock tracking
   const desktopDockRef = useRef<HTMLElement>(null);
@@ -717,14 +713,14 @@ export default function Navigation() {
   const desktopSheen = useMotionTemplate`radial-gradient(130px circle at ${desktopMouseX}px ${desktopMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
 
   const handleDesktopMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    if (!isFullGlass || !desktopDockRef.current) return;
+    if (!responsive || !desktopDockRef.current) return;
     const rect = desktopDockRef.current.getBoundingClientRect();
     desktopMouseX.set(e.clientX - rect.left);
     desktopMouseY.set(e.clientY - rect.top);
   };
 
   const handleDesktopMouseLeave = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     desktopMouseX.set(-200);
     desktopMouseY.set(-200);
   };
@@ -736,14 +732,14 @@ export default function Navigation() {
   const mobileSheen = useMotionTemplate`radial-gradient(120px circle at ${mobileMouseX}px ${mobileMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
 
   const handleMobileMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFullGlass || !mobilePillRef.current) return;
+    if (!responsive || !mobilePillRef.current) return;
     const rect = mobilePillRef.current.getBoundingClientRect();
     mobileMouseX.set(e.clientX - rect.left);
     mobileMouseY.set(e.clientY - rect.top);
   };
 
   const handleMobileMouseLeave = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     mobileMouseX.set(-200);
     mobileMouseY.set(-200);
   };
@@ -755,14 +751,14 @@ export default function Navigation() {
   const mobileRightSheen = useMotionTemplate`radial-gradient(120px circle at ${mobileRightMouseX}px ${mobileRightMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
 
   const handleMobileRightMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFullGlass || !mobileRightPillRef.current) return;
+    if (!responsive || !mobileRightPillRef.current) return;
     const rect = mobileRightPillRef.current.getBoundingClientRect();
     mobileRightMouseX.set(e.clientX - rect.left);
     mobileRightMouseY.set(e.clientY - rect.top);
   };
 
   const handleMobileRightMouseLeave = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     mobileRightMouseX.set(-200);
     mobileRightMouseY.set(-200);
   };
@@ -828,22 +824,21 @@ export default function Navigation() {
       {!isCinemaContext && (
         <motion.nav
           ref={desktopDockRef}
-          onMouseMove={isFullGlass ? handleDesktopMouseMove : undefined}
-          onMouseLeave={isFullGlass ? handleDesktopMouseLeave : undefined}
-          onTouchEnd={isFullGlass ? handleDesktopMouseLeave : undefined}
-          onTouchCancel={isFullGlass ? handleDesktopMouseLeave : undefined}
+          onMouseMove={responsive ? handleDesktopMouseMove : undefined}
+          onMouseLeave={responsive ? handleDesktopMouseLeave : undefined}
+          onTouchEnd={responsive ? handleDesktopMouseLeave : undefined}
+          onTouchCancel={responsive ? handleDesktopMouseLeave : undefined}
           layoutRoot
           layout
           data-app-nav="desktop"
           className={cn(
             'hidden lg:flex flex-col p-1 fixed gap-1 top-3 left-3 rounded-full border z-[50]',
-            isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+            'border-zinc-600/30'
           )}
         >
-          {!isGlassOff && (
-            <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
-          )}
-          {isFullGlass && (
+          {/* Стекло — слоем под содержимым: у пилюли overflow-visible и движущиеся дети. */}
+          <div className="glass-nav rounded-full absolute w-full h-full top-0 left-0 z-[-1]"></div>
+          {responsive && (
             <motion.div
               className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
               style={{ background: desktopSheen }}
@@ -928,22 +923,21 @@ export default function Navigation() {
         <nav data-app-nav="mobile" className="lg:hidden fixed bottom-0 left-0 w-full flex items-center p-1 z-[1600]">
           <motion.div
             ref={mobilePillRef}
-            onMouseMove={isFullGlass ? handleMobileMouseMove : undefined}
-            onMouseLeave={isFullGlass ? handleMobileMouseLeave : undefined}
-            onTouchEnd={isFullGlass ? handleMobileMouseLeave : undefined}
-            onTouchCancel={isFullGlass ? handleMobileMouseLeave : undefined}
+            onMouseMove={responsive ? handleMobileMouseMove : undefined}
+            onMouseLeave={responsive ? handleMobileMouseLeave : undefined}
+            onTouchEnd={responsive ? handleMobileMouseLeave : undefined}
+            onTouchCancel={responsive ? handleMobileMouseLeave : undefined}
             data-app-nav="mobile-pill"
             layoutRoot
             layout
             className={cn(
               'flex p-1 rounded-full border gap-1 relative overflow-visible',
-              isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+              'border-zinc-600/30'
             )}
           >
-            {!isGlassOff && (
-              <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
-            )}
-            {isFullGlass && (
+            {/* Стекло — слоем под содержимым: у пилюли overflow-visible и движущиеся дети. */}
+            <div className="glass-nav rounded-full absolute w-full h-full top-0 left-0 z-[-1]"></div>
+            {responsive && (
               <motion.div
                 className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
                 style={{ background: mobileSheen }}
@@ -1002,22 +996,21 @@ export default function Navigation() {
           <div className="flex-grow"></div>
           <motion.div
             ref={mobileRightPillRef}
-            onMouseMove={isFullGlass ? handleMobileRightMouseMove : undefined}
-            onMouseLeave={isFullGlass ? handleMobileRightMouseLeave : undefined}
-            onTouchEnd={isFullGlass ? handleMobileRightMouseLeave : undefined}
-            onTouchCancel={isFullGlass ? handleMobileRightMouseLeave : undefined}
+            onMouseMove={responsive ? handleMobileRightMouseMove : undefined}
+            onMouseLeave={responsive ? handleMobileRightMouseLeave : undefined}
+            onTouchEnd={responsive ? handleMobileRightMouseLeave : undefined}
+            onTouchCancel={responsive ? handleMobileRightMouseLeave : undefined}
             data-app-nav="mobile-pill"
             layoutRoot
             layout
             className={cn(
               'flex p-1 relative rounded-full border gap-1',
-              isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
+              'border-zinc-600/30'
             )}
           >
-            {!isGlassOff && (
-              <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
-            )}
-            {isFullGlass && (
+            {/* Стекло — слоем под содержимым: у пилюли overflow-visible и движущиеся дети. */}
+            <div className="glass-nav rounded-full absolute w-full h-full top-0 left-0 z-[-1]"></div>
+            {responsive && (
               <motion.div
                 className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
                 style={{ background: mobileRightSheen }}

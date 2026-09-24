@@ -383,7 +383,7 @@ export default function InfoContent({ id }: InfoContentProps) {
 
         <div className="absolute bottom-3 inset-x-3 z-20 space-y-3 max-w-4xl lg:px-3">
           <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
-            <span className="px-3 py-1 rounded-full bg-amber-800/90 backdrop-blur-md backdrop-saturate-200 backdrop-hue-200 border border-amber-500/40 text-amber-400 font-extrabold text-[11px]">
+            <span className="glass-panel [--glass-tint:var(--color-amber-800)] [--glass-alpha:0.9] [--glass-sat:2] px-3 py-1 rounded-full border border-amber-500/40 text-amber-400 font-extrabold text-[11px]">
               ★ {infoMovie.rating}
             </span>
             <span className="text-xs text-zinc-400 font-semibold">{infoMovie.year}</span>
@@ -452,7 +452,7 @@ export default function InfoContent({ id }: InfoContentProps) {
                   }));
                   handleWatch(1, 1, selectedTranslation);
                 }}
-                className="focusable-tv px-6 py-3 rounded-3xl bg-zinc-900/80 hover:bg-zinc-800 text-white font-bold text-sm border border-zinc-700/50 backdrop-blur-md transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
+                className="glass-panel [--glass-alpha:0.8] focusable-tv px-6 py-3 rounded-3xl hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white font-bold text-sm border border-zinc-700/50 transition-all duration-300 active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-white"
               >
                 {hasEpisodeSelection ? 'Сначала (С1 Е1)' : 'Сначала'}
               </button>
@@ -465,7 +465,7 @@ export default function InfoContent({ id }: InfoContentProps) {
       <main className="w-full px-3 lg:px-6 pt-3 space-y-8">
         {/* AVAILABLE PLAYERS SELECTOR ON INFO PAGE */}
         {isRevalidating && (!infoMovie.players || infoMovie.players.length === 0) ? (
-          <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl animate-pulse">
+          <div className="glass-panel [--glass-alpha:0.4] [--glass-blur:24px] space-y-3 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl animate-pulse">
             <div className="h-5 w-40 bg-zinc-800 rounded-lg"></div>
             <div className="flex items-center gap-3">
               <div className="h-10 w-32 bg-zinc-800 rounded-2xl"></div>
@@ -473,7 +473,7 @@ export default function InfoContent({ id }: InfoContentProps) {
             </div>
           </div>
         ) : infoMovie.players && infoMovie.players.length > 0 ? (
-          <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
+          <div className="glass-panel [--glass-alpha:0.4] [--glass-blur:24px] space-y-3 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <Icon name="IC-play-circle-stroke" className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" />
               <span>Источники и плееры</span>
@@ -514,7 +514,7 @@ export default function InfoContent({ id }: InfoContentProps) {
         {/* NATIVE SEASONS AND EPISODES SELECTOR */}
         {isSeriesOrAnime && (
           isRevalidating && (!infoMovie.episodesBySeason && (!infoMovie.counters || !infoMovie.counters.episodes)) ? (
-            <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl animate-pulse">
+            <div className="glass-panel [--glass-alpha:0.4] [--glass-blur:24px] space-y-4 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl animate-pulse">
               <div className="h-6 w-48 bg-zinc-800 rounded-lg"></div>
               <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
                 {Array.from({ length: 10 }).map((_, i) => (
@@ -523,7 +523,7 @@ export default function InfoContent({ id }: InfoContentProps) {
               </div>
             </div>
           ) : hasEpisodeSelection ? (
-            <div className="space-y-4 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
+            <div className="glass-panel [--glass-alpha:0.4] [--glass-blur:24px] space-y-4 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
                 <Icon name="IC-episodes" className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" />
                 <span>{hasMultipleSeasons ? 'Выбор сезона и серии' : 'Выбор серии'}</span>
@@ -599,7 +599,7 @@ export default function InfoContent({ id }: InfoContentProps) {
 
         {/* NATIVE TRANSLATIONS SELECTOR FOR ACTIVE PLAYER */}
         {activeTranslations && activeTranslations.length > 0 && (
-          <div className="space-y-3 bg-zinc-900/40 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl backdrop-blur-xl">
+          <div className="glass-panel [--glass-alpha:0.4] [--glass-blur:24px] space-y-3 border border-zinc-800/80 p-4 lg:p-6 rounded-3xl">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <Icon name="IC-voiceover" className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" />
               <span>Озвучка и перевод ({activePlayerObj?.name || 'Плеер'})</span>
@@ -631,14 +631,14 @@ export default function InfoContent({ id }: InfoContentProps) {
 
             <div className="flex flex-wrap gap-2">
               {infoMovie.genres.map((g) => (
-                <span key={g} className="px-3 py-1.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-xs text-zinc-200 shadow-sm">
+                <span key={g} className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.05] px-3 py-1.5 rounded-full border border-white/10 text-xs text-zinc-200 shadow-sm">
                   {g}
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="space-y-4 bg-white/5 backdrop-blur-xl p-5 rounded-3xl border border-white/10 text-sm shadow-xl h-fit">
+          <div className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.05] [--glass-blur:24px] space-y-4 p-5 rounded-3xl border border-white/10 text-sm shadow-xl h-fit">
             {infoMovie.director && (
               <div>
                 <span className="text-zinc-500 block mb-1 text-xs font-semibold">{lang?.frame_director || 'Режиссер'}</span>

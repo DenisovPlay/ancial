@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -8,7 +8,7 @@ import { AncialAPI } from '../../lib/api-v2';
 import { type DialogMeta, type DialogUser } from '../../messages/lib/messages-shared';
 import Modal from '../../components/modal';
 import { Dropdown, DropdownItem } from '../../components/navigation';
-import { subscribeGlassMode, readGlassMode, getServerGlassMode, isEffectiveFullGlass } from '../../lib/android-glass';
+import { useAppearanceMotion } from '../../lib/use-appearance';
 import { motion, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
@@ -79,8 +79,8 @@ function CallControlButton({
   title?: string;
   children: React.ReactNode;
 }) {
-  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = isEffectiveFullGlass(glassMode);
+  // Отзывчивые эффекты — настройка «Интерфейс → Анимации → Отзывчивое меню».
+  const responsive = useAppearanceMotion().nav;
 
   const itemRef = useRef<HTMLDivElement | null>(null);
   const rawX = useMotionValue(0);
@@ -101,7 +101,7 @@ function CallControlButton({
   const itemSheen = useMotionTemplate`radial-gradient(45px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.20), transparent 70%)`;
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isFullGlass || disabled) return;
+    if (!responsive || disabled) return;
     const el = itemRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -124,7 +124,7 @@ function CallControlButton({
   };
 
   const handleMouseLeave = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     rawX.set(0);
     rawY.set(0);
     rawScaleX.set(1);
@@ -134,13 +134,13 @@ function CallControlButton({
   };
 
   const handlePressStart = () => {
-    if (!isFullGlass || disabled) return;
+    if (!responsive || disabled) return;
     pressScaleX.set(1.05);
     pressScaleY.set(0.90);
   };
 
   const handlePressEnd = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     pressScaleX.set(1);
     pressScaleY.set(1);
   };
@@ -155,21 +155,21 @@ function CallControlButton({
         : off
           ? 'text-red-500 hover:bg-red-950/50 border-transparent hover:border-red-600/30'
           : 'text-zinc-200 hover:bg-zinc-700/95 border-transparent hover:border-zinc-600/30'
-  } ${!isFullGlass ? 'active:scale-95' : ''} ${className}`;
+  } ${!responsive ? 'active:scale-95' : ''} ${className}`;
 
   return (
     <motion.div
       ref={itemRef}
-      onMouseMove={isFullGlass ? handleMouseMove : undefined}
-      onMouseLeave={isFullGlass ? handleMouseLeave : undefined}
-      onTouchEnd={isFullGlass ? handleMouseLeave : undefined}
-      onTouchCancel={isFullGlass ? handleMouseLeave : undefined}
-      onPointerDown={isFullGlass ? handlePressStart : undefined}
-      onPointerUp={isFullGlass ? handlePressEnd : undefined}
-      onPointerCancel={isFullGlass ? handlePressEnd : undefined}
-      onPointerLeave={isFullGlass ? handlePressEnd : undefined}
+      onMouseMove={responsive ? handleMouseMove : undefined}
+      onMouseLeave={responsive ? handleMouseLeave : undefined}
+      onTouchEnd={responsive ? handleMouseLeave : undefined}
+      onTouchCancel={responsive ? handleMouseLeave : undefined}
+      onPointerDown={responsive ? handlePressStart : undefined}
+      onPointerUp={responsive ? handlePressEnd : undefined}
+      onPointerCancel={responsive ? handlePressEnd : undefined}
+      onPointerLeave={responsive ? handlePressEnd : undefined}
       style={
-        isFullGlass
+        responsive
           ? {
               x: springX,
               y: springY,
@@ -187,7 +187,7 @@ function CallControlButton({
         onClick={onClick}
         className={baseClassName}
       >
-        {isFullGlass && (
+        {responsive && (
           <motion.div
             className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
             style={{ background: itemSheen }}
@@ -227,9 +227,8 @@ export default function CallClient() {
   const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
 
-  const glassMode = useSyncExternalStore(subscribeGlassMode, readGlassMode, getServerGlassMode);
-  const isFullGlass = isEffectiveFullGlass(glassMode);
-  const isGlassOff = glassMode === 'off';
+  // Отзывчивые эффекты — настройка «Интерфейс → Анимации → Отзывчивое меню».
+  const responsive = useAppearanceMotion().nav;
 
   const pillRef = useRef<HTMLDivElement>(null);
   const pillMouseX = useMotionValue(-200);
@@ -237,14 +236,14 @@ export default function CallClient() {
   const pillSheen = useMotionTemplate`radial-gradient(130px circle at ${pillMouseX}px ${pillMouseY}px, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 50%, transparent 80%)`;
 
   const handlePillMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFullGlass || !pillRef.current) return;
+    if (!responsive || !pillRef.current) return;
     const rect = pillRef.current.getBoundingClientRect();
     pillMouseX.set(e.clientX - rect.left);
     pillMouseY.set(e.clientY - rect.top);
   };
 
   const handlePillMouseLeave = () => {
-    if (!isFullGlass) return;
+    if (!responsive) return;
     pillMouseX.set(-200);
     pillMouseY.set(-200);
   };
@@ -918,14 +917,14 @@ export default function CallClient() {
 
         {/* Индикатор: партнёр выключил микрофон */}
         {remoteMicEnabled === false && (
-          <div className="absolute top-6 right-6 bg-red-500/80 backdrop-blur-md p-2 rounded-full shadow-lg z-50">
+          <div className="glass-panel [--glass-tint:var(--color-red-500)] [--glass-alpha:0.8] absolute top-6 right-6 p-2 rounded-full shadow-lg z-50">
             <Icon name="IC-mic-off" className="w-6 h-6 fill-white" />
           </div>
         )}
 
         {/* Индикатор: партнёр демонстрирует экран */}
         {remoteScreenEnabled === true && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-purple-600/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg z-50 flex items-center gap-2">
+          <div className="glass-panel [--glass-tint:var(--color-purple-600)] [--glass-alpha:0.8] absolute top-6 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full shadow-lg z-50 flex items-center gap-2">
             <Icon name="IC-screen-sharing" className="w-4 h-4 fill-white shrink-0" />
             <span className="text-white text-xs font-medium">{lang?.screen_sharing || 'Демонстрация экрана...'}</span>
           </div>
@@ -1009,18 +1008,15 @@ export default function CallClient() {
             <motion.div
               ref={pillRef}
               data-app-nav="call-pill"
-              onMouseMove={isFullGlass ? handlePillMouseMove : undefined}
-              onMouseLeave={isFullGlass ? handlePillMouseLeave : undefined}
-              onTouchEnd={isFullGlass ? handlePillMouseLeave : undefined}
-              onTouchCancel={isFullGlass ? handlePillMouseLeave : undefined}
-              className={`flex items-center gap-1 p-1 rounded-full h-fit relative shadow-2xl overflow-visible border ${
-                isGlassOff ? '!bg-zinc-900 !border-zinc-700/60' : 'bg-zinc-900/50 border-zinc-600/30'
-              }`}
+              onMouseMove={responsive ? handlePillMouseMove : undefined}
+              onMouseLeave={responsive ? handlePillMouseLeave : undefined}
+              onTouchEnd={responsive ? handlePillMouseLeave : undefined}
+              onTouchCancel={responsive ? handlePillMouseLeave : undefined}
+              className={`flex items-center gap-1 p-1 rounded-full h-fit relative shadow-2xl overflow-visible border border-zinc-600/30`}
             >
-              {!isGlassOff && (
-                <div className="rounded-full absolute w-full h-full backdrop-blur-md backdrop-saturate-200 top-0 left-0 z-[-1]"></div>
-              )}
-              {isFullGlass && (
+              {/* Стекло — слоем под содержимым: у пилюли overflow-visible и движущиеся дети. */}
+              <div className="glass-nav rounded-full absolute w-full h-full top-0 left-0 z-[-1]"></div>
+              {responsive && (
                 <motion.div
                   className="pointer-events-none absolute inset-0 z-0 rounded-full opacity-80"
                   style={{ background: pillSheen }}

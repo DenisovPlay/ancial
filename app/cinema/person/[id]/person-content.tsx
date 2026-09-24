@@ -106,7 +106,7 @@ export default function PersonContent({ personId }: PersonContentProps) {
         ) : (
           <>
             {/* PERSON HEADER CARD */}
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 bg-zinc-900/60 border border-white/10 p-6 rounded-3xl backdrop-blur-md">
+            <div className="glass-panel [--glass-alpha:0.6] flex flex-col md:flex-row items-center md:items-start gap-6 border border-white/10 p-6 rounded-3xl">
               {/* PERSON PHOTO */}
               <div className="w-36 h-48 sm:w-44 sm:h-56 rounded-2xl overflow-hidden bg-zinc-950 border border-white/10 shrink-0 shadow-2xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

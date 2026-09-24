@@ -62,7 +62,7 @@ export function ProductsAccountsModal({
         onBack={productsView !== 'list' ? () => setProductsView('list') : undefined}
         backLabel={lang?.back || 'Назад'}
       >
-        <div className="backdrop-filter backdrop-blur-lg">
+        <div className="glass-panel [--glass-alpha:0] [--glass-blur:16px] backdrop-filter">
           {productsView === 'list' && (
             <div className="flex flex-col gap-3">
               {accounts.map((acc) => (
@@ -87,7 +87,7 @@ export function ProductsAccountsModal({
                 <button
                   type="button"
                   onClick={() => setProductsView('create')}
-                  className="shadow border border-zinc-600/30 active:scale-95 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 bg-zinc-900/20 hover:bg-zinc-700 backdrop-blur-md backdrop-saturate-200 duration-300 cursor-pointer justify-center"
+                  className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] shadow border border-zinc-600/30 active:scale-95 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] duration-300 cursor-pointer justify-center"
                 >
                   <div className="flex flex-col flex-grow text-left">
                     <span className="text-lg lg:text-2xl font-extrabold">{lang?.t_account || 'Товарный счёт'}</span>
@@ -100,7 +100,7 @@ export function ProductsAccountsModal({
                 <button
                   type="button"
                   onClick={() => { onClose(); handleTopage('/wallet/merchant'); }}
-                  className="shadow border border-zinc-600/30 active:scale-95 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 bg-zinc-900/20 hover:bg-zinc-700 backdrop-blur-md backdrop-saturate-200 duration-300 cursor-pointer justify-center"
+                  className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] shadow border border-zinc-600/30 active:scale-95 shadow relative flex rounded-3xl p-2 flex-grow text-zinc-100 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] duration-300 cursor-pointer justify-center"
                 >
                   <div className="flex flex-col flex-grow text-left">
                     <span className="text-lg lg:text-2xl font-extrabold">{lang?.merchant || 'Мерчант'}</span>

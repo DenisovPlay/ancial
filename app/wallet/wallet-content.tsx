@@ -800,13 +800,13 @@ export default function WalletContent() {
             <div className="flex flex-grow"></div>
             <div className="flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300 hidden lg:flex">
               {/* QUICK_ACTIONS Desktop */}
-              <button onClick={() => setIsSendMoneyModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
+              <button onClick={() => setIsSendMoneyModalOpen(true)} className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
                 <Icon name="IC-send" className="fill-white w-5 h-5 inline" /> {strings.send}
               </button>
-              <button onClick={() => setIsUserProfModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
+              <button onClick={() => setIsUserProfModalOpen(true)} className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
                 <Icon name="IC-send" className="fill-white w-5 h-5 inline rotate-180" /> {strings.receive}
               </button>
-              <button onClick={() => setIsCreateTopupModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
+              <button onClick={() => setIsCreateTopupModalOpen(true)} className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
                 <Icon name="IC-topup" className="fill-white w-5 h-5 inline" /> {strings.deposit}
               </button>
             </div>
@@ -817,10 +817,10 @@ export default function WalletContent() {
 
               {/* Mobile quick actions (hidden on lg) */}
               <div className="flex flex-col gap-3 h-24 lg:hidden sticky left-0 z-[5]">
-                <button onClick={() => handleTopage('/wallet/qr')} className="lg:hidden cursor-pointer border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 shrink-0 flex items-center justify-center text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white hover:shadow active:scale-95 duration-300 rounded-3xl" style={{ width: 42, height: 42 }}>
+                <button onClick={() => handleTopage('/wallet/qr')} className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] lg:hidden cursor-pointer border border-zinc-600/30 shrink-0 flex items-center justify-center text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white hover:shadow active:scale-95 duration-300 rounded-3xl" style={{ width: 42, height: 42 }}>
                   <Icon name="IC-qr-scanner" className="fill-white w-7 h-7 inline" />
                 </button>
-                <button onClick={() => { }} className="lg:hidden cursor-pointer border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 shrink-0 flex items-center justify-center text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white hover:shadow active:scale-95 duration-300 rounded-3xl" style={{ width: 42, height: 42 }} aria-label="Blockchain explorer">
+                <button onClick={() => { }} className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] lg:hidden cursor-pointer border border-zinc-600/30 shrink-0 flex items-center justify-center text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white hover:shadow active:scale-95 duration-300 rounded-3xl" style={{ width: 42, height: 42 }} aria-label="Blockchain explorer">
                   <Icon name="IC-poll" className="fill-white w-7 h-7 inline" />
                 </button>
               </div>
@@ -851,13 +851,13 @@ export default function WalletContent() {
 
           {/* QUICK_ACTIONS Mobile */}
           <div className="sticky pt-3 flex flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 w-full max-w-screen-2xl duration-300 lg:hidden shrink-0 z-[99]" style={{ top: '48px' }}>
-            <button onClick={() => setIsSendMoneyModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
+            <button onClick={() => setIsSendMoneyModalOpen(true)} className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
               <Icon name="IC-send" className="fill-white w-5 h-5 inline" /> {strings.send}
             </button>
-            <button onClick={() => setIsUserProfModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
+            <button onClick={() => setIsUserProfModalOpen(true)} className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
               <Icon name="IC-send" className="fill-white w-5 h-5 inline rotate-180" /> {strings.receive}
             </button>
-            <button onClick={() => setIsCreateTopupModalOpen(true)} className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200">
+            <button onClick={() => setIsCreateTopupModalOpen(true)} className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
               <Icon name="IC-topup" className="fill-white w-5 h-5 inline" /> {strings.deposit}
             </button>
           </div>
@@ -922,7 +922,7 @@ export default function WalletContent() {
                         </div>
                         <div className="flex flex-col justify-center min-w-0">
                           <span className="text-sm lg:text-base text-zinc-100 truncate">[#{order.id}] {lang?.topup_of_account || 'Пополнение счёта №'}{order.label}</span>
-                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancelTopup(order.order_hash); }} className="shrink-0 text-sm mt-1.5 w-fit flex items-center gap-1.5 text-red-500 bg-red-500/25 hover:bg-red-700/40 shadow rounded-3xl cursor-pointer py-0.5 px-1 duration-300 active:scale-95 backdrop-blur-lg border border-zinc-600/30">
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancelTopup(order.order_hash); }} className="glass-panel [--glass-tint:var(--color-red-500)] [--glass-alpha:0.25] [--glass-blur:16px] shrink-0 text-sm mt-1.5 w-fit flex items-center gap-1.5 text-red-500 hover:[--glass-tint:var(--color-red-700)] hover:[--glass-alpha:0.4] shadow rounded-3xl cursor-pointer py-0.5 px-1 duration-300 active:scale-95 border border-zinc-600/30">
                             <span>{strings.cancel}</span>
                           </button>
                         </div>

@@ -152,7 +152,7 @@ export default function SearchContent() {
         <div className="w-full space-y-6">
           {/* STICKY SEARCH INPUT BAR MATCHING /FRIENDS AND /GROUPS */}
           <div className="sticky top-14 lg:top-16 z-[90] bg-gradient-to-b from-transparent via-black/90 to-transparent -mx-3 px-3 lg:mx-0 lg:px-0">
-            <div className="flex items-center justify-between bg-zinc-900/40 border border-zinc-600/30 backdrop-blur-md rounded-full w-full px-4 h-12">
+            <div className="glass-panel [--glass-alpha:0.4] flex items-center justify-between border border-zinc-600/30 rounded-full w-full px-4 h-12">
               <input
                 type="text"
                 value={query}

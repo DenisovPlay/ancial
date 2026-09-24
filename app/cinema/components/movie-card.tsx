@@ -75,7 +75,7 @@ export default function MovieCard({
             #{rankNumber}
           </span>
         )}
-        <span className="px-3 py-1 rounded-full bg-amber-800/90 backdrop-blur-md backdrop-saturate-200 backdrop-hue-200 border border-amber-500/40 text-amber-400 font-extrabold text-[11px]">
+        <span className="glass-panel [--glass-tint:var(--color-amber-800)] [--glass-alpha:0.9] [--glass-sat:2] px-3 py-1 rounded-full border border-amber-500/40 text-amber-400 font-extrabold text-[11px]">
           ★ {movie.rating}
         </span>
       </div>
@@ -83,7 +83,7 @@ export default function MovieCard({
       {/* UPDATE BADGE (e.g. S2 E5) */}
       {updateBadgeText && (
         <div className="absolute top-3 right-3 z-10">
-          <span className="px-2.5 py-1 rounded-full bg-indigo-600/90 backdrop-blur-md border border-indigo-400/40 text-white font-black text-[10px] uppercase shadow-lg">
+          <span className="glass-panel [--glass-tint:var(--color-indigo-600)] [--glass-alpha:0.9] px-2.5 py-1 rounded-full border border-indigo-400/40 text-white font-black text-[10px] uppercase shadow-lg">
             {updateBadgeText}
           </span>
         </div>

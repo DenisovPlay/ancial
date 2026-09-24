@@ -141,10 +141,10 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
         ).join('');
 
         const leftArrow = count > 1
-            ? `<button type="button" data-carousel-scroll="-1" aria-label="Назад" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-left-bold"></use></svg></button>`
+            ? `glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] <button type="button" data-carousel-scroll="-1" aria-label="Назад" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-left-bold"></use></svg></button>`
             : '';
         const rightArrow = count > 1
-            ? `<button type="button" data-carousel-scroll="1" aria-label="Вперёд" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-right-bold"></use></svg></button>`
+            ? `glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] <button type="button" data-carousel-scroll="1" aria-label="Вперёд" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-right-bold"></use></svg></button>`
             : '';
 
         const overlay = isPreview

@@ -397,7 +397,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
           <button
             type="button"
             onClick={handleBack}
-            className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full border border-zinc-600/40 bg-zinc-900/80 text-white font-medium shadow-lg backdrop-blur-md transition-transform active:scale-95 hover:bg-zinc-800 cursor-pointer"
+            className="glass-panel [--glass-alpha:0.8] pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full border border-zinc-600/40 text-white font-medium shadow-lg transition-transform active:scale-95 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] cursor-pointer"
           >
             <Icon name="IC-arrow-left" className="w-5 h-5 fill-none stroke-current stroke-[2.5]" strokeLinecap="round" strokeLinejoin="round" />
             <span>{lang?.save ? (langCode === 'en' ? 'Back' : 'Назад') : 'Назад'}</span>
@@ -485,7 +485,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
             className="pointer-events-auto flex flex-col items-center cursor-pointer group"
           >
             <div className="flex flex-col items-center transition-transform duration-200 active:scale-95">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-400/60 bg-zinc-950/90 text-white shadow-xl backdrop-blur-md group-hover:border-blue-300 group-hover:bg-blue-950">
+              <div className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.9] flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-400/60 text-white shadow-xl group-hover:border-blue-300 group-hover:[--glass-tint:var(--color-blue-950)] group-hover:[--glass-alpha:1]">
                 <span className="text-sm font-bold whitespace-nowrap">{cityName}</span>
                 {cityTemp !== null && cityTemp !== undefined ? (
                   <span className="text-xs font-medium text-blue-300 ml-0.5">{cityTemp}°</span>
@@ -509,7 +509,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
             stopInertia();
             addZoomImpulse(0.75);
           }}
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-600/40 bg-zinc-900/80 text-white shadow-xl backdrop-blur-md transition-transform active:scale-95 hover:bg-zinc-800 cursor-pointer"
+          className="glass-panel [--glass-alpha:0.8] flex h-12 w-12 items-center justify-center rounded-full border border-zinc-600/40 text-white shadow-xl transition-transform active:scale-95 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] cursor-pointer"
           aria-label="Zoom in"
         >
           <Icon name="IC-zoom-in" className="w-6 h-6 fill-none stroke-current stroke-[2.5]" />
@@ -520,7 +520,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
             stopInertia();
             addZoomImpulse(-0.75);
           }}
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-600/40 bg-zinc-900/80 text-white shadow-xl backdrop-blur-md transition-transform active:scale-95 hover:bg-zinc-800 cursor-pointer"
+          className="glass-panel [--glass-alpha:0.8] flex h-12 w-12 items-center justify-center rounded-full border border-zinc-600/40 text-white shadow-xl transition-transform active:scale-95 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] cursor-pointer"
           aria-label="Zoom out"
         >
           <Icon name="IC-zoom-out" className="w-6 h-6 fill-none stroke-current stroke-[2.5]" />

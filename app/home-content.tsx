@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useSyncExternalStore, FormEvent, KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -26,7 +26,6 @@ import {
 } from './lib/home-info-cache';
 import { safeFetchJson } from './lib/safe-fetch-json';
 import WeatherMarkerOnboarding from './components/weather-marker-onboarding';
-import { GLASS_MODE_CHANGE_EVENT, GLASS_MODE_STORAGE_KEY, readGlassMode } from './lib/android-glass';
 import AppImage from './components/app-image';
 import Icon from './components/svg-icon';
 
@@ -64,23 +63,6 @@ export default function HomeContent() {
   const { lang, langCode } = useAuth();
   const { showNote } = useNotification();
 
-  const glassMode = useSyncExternalStore(
-    (cb) => {
-      const handle = (e: StorageEvent | Event) => {
-        if (e instanceof StorageEvent && e.key !== GLASS_MODE_STORAGE_KEY) return;
-        cb();
-      };
-      window.addEventListener('storage', handle);
-      window.addEventListener(GLASS_MODE_CHANGE_EVENT, handle);
-      return () => {
-        window.removeEventListener('storage', handle);
-        window.removeEventListener(GLASS_MODE_CHANGE_EVENT, handle);
-      };
-    },
-    readGlassMode,
-    () => 'auto' as const,
-  );
-  const glassOff = glassMode === 'off';
 
   const [searchVal, setSearchVal] = useState(queryParam);
   const [imageModal, setImageModal] = useState<{ src: string; title: string; url: string; pageUrl: string } | null>(null);
@@ -467,7 +449,7 @@ export default function HomeContent() {
 
   const searchBarContent = (
     <>
-      <form onSubmit={handleSearchSubmit} className="flex justify-center items-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 relative z-[11]">
+      <form onSubmit={handleSearchSubmit} className="glass-input [--glass-sat:2] flex justify-center items-center border border-zinc-600/30 rounded-full w-full p-1 h-12 relative z-[11]">
         <input
           value={searchVal}
           onChange={(e) => {
@@ -502,8 +484,8 @@ export default function HomeContent() {
                   e.preventDefault();
                   selectSuggestion(suggestion);
                 }}
-                className={`border border-zinc-600/30 overflow-hidden shadow backdrop-blur-lg backdrop-saturate-200 rounded-3xl w-full p-2 cursor-pointer active:scale-95 duration-300 ${isFocused ? 'bg-zinc-800' : 'bg-zinc-900/80'
-                  } hover:bg-zinc-800/90 text-white`}
+                className={`glass-menu [--glass-blur:16px] border border-zinc-600/30 overflow-hidden shadow rounded-3xl w-full p-2 cursor-pointer active:scale-95 duration-300 ${isFocused ? '[--glass-tint:var(--color-zinc-800)] [--glass-alpha:1]' : '[--glass-alpha:0.8]'
+                  } hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:0.9] text-white`}
               >
                 {suggestion}
               </span>
@@ -671,7 +653,7 @@ export default function HomeContent() {
               margin-top:0 !important;
           }
           .gsc-tabHeader{
-              background:rgba(24,24,27,0.58) !important;
+              background:rgb(24 24 27 / clamp(0, calc(1 - 0.42 * var(--glass-panel-clarity-k)), 1)) !important;
               border:1px solid rgba(82,82,91,0.3) !important;
               border-radius:1.5rem !important;
               padding:0.55rem 1.1rem !important;
@@ -680,7 +662,7 @@ export default function HomeContent() {
               font-size:0.875rem !important;
               line-height:1.5 !important;
               cursor:pointer !important;
-              ${glassOff ? '' : 'backdrop-filter:blur(8px) !important; -webkit-backdrop-filter:blur(8px) !important;'}
+              backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important;
               transition:all 0.3s !important;
               box-shadow:none !important;
           }
@@ -707,10 +689,10 @@ export default function HomeContent() {
 
           /* === Web result card === */
           .gsc-webResult.gsc-result{
-              background:rgba(24,24,27,0.58) !important;
+              background:rgb(24 24 27 / clamp(0, calc(1 - 0.42 * var(--glass-panel-clarity-k)), 1)) !important;
               border:1px solid rgba(82,82,91,0.3) !important;
               border-radius:1.5rem !important;
-              ${glassOff ? '' : 'backdrop-filter:blur(12px) !important; -webkit-backdrop-filter:blur(12px) !important;'}
+              backdrop-filter:blur(calc(12px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(12px * var(--glass-panel-blur-k))) !important;
               padding:0.875rem 1.125rem !important;
               transition:all 0.3s !important;
               overflow:hidden !important;
@@ -770,10 +752,10 @@ export default function HomeContent() {
 
           /* === Image result card (not selected) === */
           .gsc-imageResult.gsc-result{
-              background:rgba(24,24,27,0.58) !important;
+              background:rgb(24 24 27 / clamp(0, calc(1 - 0.42 * var(--glass-panel-clarity-k)), 1)) !important;
               border:1px solid rgba(82,82,91,0.3) !important;
               border-radius:1.5rem !important;
-              ${glassOff ? '' : 'backdrop-filter:blur(12px) !important; -webkit-backdrop-filter:blur(12px) !important;'}
+              backdrop-filter:blur(calc(12px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(12px * var(--glass-panel-blur-k))) !important;
               padding:0 !important;
               margin:0 !important;
               overflow:hidden !important;
@@ -867,7 +849,7 @@ export default function HomeContent() {
               border:1px solid rgba(234,179,8,0.3) !important;
               border-radius:1.5rem !important;
               padding:1rem 1.25rem !important;
-              ${glassOff ? '' : 'backdrop-filter:blur(8px) !important;'}
+              backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important;
           }
 
           /* === Misc text styles === */
@@ -887,7 +869,7 @@ export default function HomeContent() {
           }
           .gsc-cursor-page{
               padding:0.4rem 0.85rem !important;
-              background:rgba(24,24,27,0.58) !important;
+              background:rgb(24 24 27 / clamp(0, calc(1 - 0.42 * var(--glass-panel-clarity-k)), 1)) !important;
               border:1px solid rgba(82,82,91,0.3) !important;
               color:rgb(161,161,170) !important;
               border-radius:1.5rem !important;
@@ -912,7 +894,7 @@ export default function HomeContent() {
           }
           .gsc-inline-block{
               border-radius:999px !important;
-              ${glassOff ? '' : 'backdrop-filter:blur(8px) !important;'}
+              backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important;
               background:transparent !important;
           }
         ` }} />
@@ -950,11 +932,11 @@ export default function HomeContent() {
         {
           imageModal && (
             <div
-              className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-2xl"
+              className="glass-overlay [--glass-tint:var(--color-black)] [--glass-alpha:0.75] [--glass-blur:40px] fixed inset-0 z-[99999] flex items-center justify-center p-4"
               onClick={() => setImageModal(null)}
             >
               <div
-                className="relative flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-3xl border border-zinc-600/30 bg-zinc-950/90 p-5 shadow-2xl backdrop-blur-xl md:flex-row"
+                className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.9] [--glass-blur:24px] relative flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-3xl border border-zinc-600/30 p-5 shadow-2xl md:flex-row"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Close button */}

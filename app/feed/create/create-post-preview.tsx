@@ -86,7 +86,7 @@ function PreviewImageBlock({ images, strings }: { images: PreviewImage[]; string
     return (
         <div className="-mx-3">
             <div className="relative">
-                <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
+                <div className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 px-3 py-1 text-xs font-semibold text-white shadow">
                     <span className="flex items-center gap-1.5">
                         <Icon name="IC-photos" className="w-4 h-4 fill-white" />
                         <span>{images.length}</span>

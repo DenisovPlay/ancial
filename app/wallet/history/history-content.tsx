@@ -207,9 +207,9 @@ export default function HistoryContent() {
                   key={filter.id}
                   data-filter-active={isActive ? 'true' : 'false'}
                   onClick={() => setActiveFilter(filter.id)}
-                  className={`border border-zinc-600/30 shrink-0 flex items-center gap-3 shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200 ${isActive
-                      ? 'bg-zinc-800 text-white'
-                      : 'text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white'
+                  className={`border border-zinc-600/30 shrink-0 flex items-center gap-3 shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 glass-panel [--glass-sat:2] ${isActive
+                      ? '[--glass-tint:var(--color-zinc-800)] [--glass-alpha:1] text-white'
+                      : 'text-zinc-300 [--glass-alpha:0.2] hover:bg-zinc-700 hover:text-white'
                     }`}
                 >
                   {renderFilterIcon(filter.id)}

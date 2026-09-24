@@ -272,7 +272,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                 src={image}
               />
               {!available && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-black/60 backdrop-blur-[2px] gap-2 p-4 text-center">
+                <div className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.6] [--glass-blur:2px] absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl gap-2 p-4 text-center">
                   <Icon name="IC-lock" className="inline h-14 w-14 fill-zinc-300" />
                   <span className="text-base font-semibold text-rose-400">
                     {lang?.track_unavailable || 'Трек недоступен'}

@@ -116,7 +116,7 @@ export default function HeroSlider({ heroMovies = [], onPlayMovie }: HeroSliderP
             tabIndex={0}
             onFocus={handleHeroFocus}
             onClick={() => goToMovieInfo(router, currentHero.id, currentHero)}
-            className="focusable-tv p-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm flex items-center gap-3 backdrop-blur-xl transition-all duration-300 active:scale-95 border border-white/20 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-40"
+            className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.1] [--glass-blur:24px] focusable-tv p-3 rounded-full hover:[--glass-tint:var(--color-white)] hover:[--glass-alpha:0.2] text-white font-bold text-sm flex items-center gap-3 transition-all duration-300 active:scale-95 border border-white/20 cursor-pointer outline-none focus:outline-none focus:ring-4 focus:ring-white focus:scale-105 focus:z-40"
           >
             <Icon name="IC-info-outline" className="w-5 h-5 fill-white" />
           </button>

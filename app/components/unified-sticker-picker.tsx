@@ -195,7 +195,7 @@ export default function UnifiedStickerPicker({
           onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
           placeholder="Поиск стикеров"
           autoComplete="off"
-          className="backdrop-blur-lg backdrop-saturate-200 h-9 w-full rounded-3xl border border-zinc-600/30 bg-zinc-950/80 px-3 text-sm text-white placeholder-zinc-500 outline-none duration-300 focus:border-zinc-500/50"
+          className="glass-input [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] [--glass-blur:16px] [--glass-sat:2] h-9 w-full rounded-3xl border border-zinc-600/30 px-3 text-sm text-white placeholder-zinc-500 outline-none duration-300 focus:border-zinc-500/50"
         />
       </div>
     </div>

@@ -62,7 +62,7 @@ export default function AdblockBanner() {
   if (!hasAdblock || isDismissed) return null;
 
   return (
-    <div className="fixed bottom-4 sm:bottom-8 left-4 right-4 sm:left-auto sm:right-8 sm:w-96 bg-zinc-900/95 backdrop-blur-xl border border-red-500/50 shadow-2xl shadow-red-900/20 rounded-3xl p-5 z-[9999] flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-5 duration-500">
+    <div className="glass-panel [--glass-alpha:0.95] [--glass-blur:24px] fixed bottom-4 sm:bottom-8 left-4 right-4 sm:left-auto sm:right-8 sm:w-96 border border-red-500/50 shadow-2xl shadow-red-900/20 rounded-3xl p-5 z-[9999] flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-5 duration-500">
       <div className="flex items-start gap-3 text-red-200">
         <Icon name="IC-shield" className="w-8 h-8 shrink-0 text-red-500" fill="currentColor" />
         <div className="flex flex-col gap-1">

@@ -636,7 +636,7 @@ export default function LyricsContent() {
 
   // Закреплённая панель: на телефоне — внизу, над навигацией и мини-плеером; на ПК — сверху, под меню Creators.
   const dockClass = cn(
-    'sticky z-30 order-last flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/95 p-3 shadow backdrop-blur-md',
+    'glass-panel [--glass-alpha:0.95] sticky z-30 order-last flex flex-col gap-3 rounded-3xl border border-zinc-600/30 p-3 shadow',
     isPulseBarVisible ? 'bottom-32' : 'bottom-21',
     'lg:order-none lg:bottom-auto lg:top-16',
   );

@@ -153,7 +153,7 @@ export function PulsePlayerMini({
     <div
       id="NAVPmini"
       className={cn(
-        'pulse-player-mini-shell relative flex w-full cursor-pointer touch-none items-center lg:cursor-auto gap-1 overflow-hidden rounded-full border border-zinc-600/30 bg-zinc-900/20 lg:gap-3 lg:p-1 shadow backdrop-blur-md backdrop-saturate-200',
+        'glass-input [--glass-sat:2] pulse-player-mini-shell relative flex w-full cursor-pointer touch-none items-center lg:cursor-auto gap-1 overflow-hidden rounded-full border border-zinc-600/30 lg:gap-3 lg:p-1 shadow',
         // Прозрачность — на самой стеклянной пилюле: у предка она отключила бы backdrop-blur.
         docked ? cn(
           'transition-opacity duration-500 motion-reduce:transition-none starting:opacity-0',

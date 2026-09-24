@@ -285,7 +285,7 @@ export default function WatchContent({ id }: WatchContentProps) {
               onClick={handleGoBack}
               aria-label="Назад"
               tabIndex={0}
-              className="focusable-tv p-2.5 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-white/20 backdrop-blur-md text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
+              className="glass-panel [--glass-alpha:0.8] focusable-tv p-2.5 rounded-full hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] border border-white/20 text-white transition-all active:scale-95 cursor-pointer outline-none focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-xl"
             >
               <Icon name="IC-chevron-left-stroke" className="w-5 h-5 stroke-white fill-none stroke-[2.5]" />
             </button>
@@ -581,7 +581,7 @@ export default function WatchContent({ id }: WatchContentProps) {
 
       {/* OVERLAY EPISODES & SEASONS PICKER MODAL */}
       {showPicker && showModalPicker && (
-        <div data-modal-picker="true" className="absolute inset-0 z-50 bg-black/90 backdrop-blur-2xl flex flex-col p-4 lg:p-8 space-y-6 overflow-y-auto animate-in fade-in duration-200">
+        <div data-modal-picker="true" className="glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.9] [--glass-blur:40px] absolute inset-0 z-50 flex flex-col p-4 lg:p-8 space-y-6 overflow-y-auto animate-in fade-in duration-200">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <div>
               <h2 className="text-2xl font-black text-white">{movie.title}</h2>

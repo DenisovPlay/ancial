@@ -130,10 +130,10 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
   }, [updateHeight]);
 
   const toneClassName =
-    note.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-100' :
-    note.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-100' :
-    note.type === 'warning' ? 'bg-amber-500/20 border-amber-500/30 text-amber-100' :
-    'bg-zinc-800/80 border-zinc-600/50 text-zinc-100';
+    note.type === 'success' ? '[--glass-tint:var(--color-emerald-500)] [--glass-alpha:0.2] border-emerald-500/30 text-emerald-100' :
+    note.type === 'error' ? '[--glass-tint:var(--color-red-500)] [--glass-alpha:0.2] border-red-500/30 text-red-100' :
+    note.type === 'warning' ? '[--glass-tint:var(--color-amber-500)] [--glass-alpha:0.2] border-amber-500/30 text-amber-100' :
+    '[--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.8] border-zinc-600/50 text-zinc-100';
 
   const shellStyle: React.CSSProperties = {
     height: isVisible ? `${contentHeight + NOTE_STACK_GAP_PX}px` : '0px',
@@ -155,7 +155,7 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
     <div style={shellStyle}>
       <div
         ref={contentRef}
-        className={`pointer-events-auto flex items-center justify-between p-3 min-w-[250px] max-w-sm shadow-xl rounded-3xl backdrop-blur-md border will-change-transform ${toneClassName}`}
+        className={`pointer-events-auto flex items-center justify-between p-3 min-w-[250px] max-w-sm shadow-xl rounded-3xl glass-panel border will-change-transform ${toneClassName}`}
         role="status"
         style={cardStyle}
       >

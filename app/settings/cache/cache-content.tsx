@@ -9,6 +9,7 @@ import { cache, PERSISTENT_KEYS, resolveKeyInfo, DEFAULT_CACHE_TTL, SETTING_KEY_
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/modal';
 import Icon from '../../components/svg-icon';
+import SettingSelect from '../../components/setting-select';
 
 // Helper for formatting sizes
 const formatSize = (bytes: number) => {
@@ -112,44 +113,6 @@ const CacheSkeleton = () => (
   </div>
 );
 
-
-/** Строка настройки как в «Приватности»: название с подсказкой слева, select справа. */
-function SettingSelect<T extends string | number>({
-  label,
-  hint,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  return (
-    <label className="flex gap-3 text-zinc-300 items-center justify-between">
-      <span className="flex flex-grow flex-col">
-        <span>{label}</span>
-        <span className="text-xs text-zinc-500">{hint}</span>
-      </span>
-      <select
-        value={String(value)}
-        onChange={(event) => {
-          const picked = options.find((option) => String(option.value) === event.target.value);
-          if (picked) onChange(picked.value);
-        }}
-        className="h-10 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 text-white outline-none"
-      >
-        {options.map((option) => (
-          <option key={String(option.value)} value={String(option.value)}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
 
 export default function CacheSettingsPage() {
   const router = useRouter();

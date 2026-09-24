@@ -528,7 +528,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                   src={playlistCover}
                 />
                 {playlistType === 4 ? (
-                  <span className="absolute -bottom-1.5 -right-1.5 z-10 rounded-full border border-zinc-600/30 bg-pink-500/50 px-1 text-sm text-white backdrop-blur-sm backdrop-saturate-200">
+                  <span className="glass-panel [--glass-tint:var(--color-pink-500)] [--glass-blur:8px] [--glass-sat:2] absolute -bottom-1.5 -right-1.5 z-10 rounded-full border border-zinc-600/30 px-1 text-sm text-white">
                     ГенЛист
                   </span>
                 ) : null}

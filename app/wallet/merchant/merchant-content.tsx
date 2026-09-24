@@ -123,7 +123,7 @@ export default function MerchantContent() {
         <div className="flex-nowrap items-center gap-3 overflow-x-auto viewport px-3 lg:px-0 duration-300 hidden lg:flex">
           <button
             onClick={() => handleTopage('/wallet')}
-            className="border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 bg-zinc-900/20 hover:bg-zinc-700 hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 backdrop-blur-md backdrop-saturate-200"
+            className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 shrink-0 flex items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95"
           >
             {lang?.home || 'Главная'}
           </button>

@@ -94,7 +94,7 @@ export function CommentsModal({
             }}
             className="form-control flex-1 text-zinc-100 rounded-full shadow sticky top-0 z-[90]"
           >
-            <div className="relative border border-zinc-600/30 flex bg-zinc-900/50 backdrop-blur-sm backdrop-saturate-200 rounded-full w-full p-1 h-12">
+            <div className="glass-panel [--glass-blur:8px] [--glass-sat:2] relative border border-zinc-600/30 flex rounded-full w-full p-1 h-12">
               <input
                 placeholder={writeCommentPlaceholder}
                 type="text"

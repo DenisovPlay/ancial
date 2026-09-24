@@ -188,7 +188,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
       >
         {/* Кнопка закрытия для ПК / десктопа */}
         <button
-          className="hidden sm:flex absolute top-3 right-3 z-50 p-2 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-full cursor-pointer active:scale-95 border border-zinc-600/30 duration-300 shadow-md backdrop-blur-sm"
+          className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.8] [--glass-blur:8px] hidden sm:flex absolute top-3 right-3 z-50 p-2 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] text-zinc-300 hover:text-white rounded-full cursor-pointer active:scale-95 border border-zinc-600/30 duration-300 shadow-md"
           onClick={handleModalClose}
           type="button"
           aria-label={lang?.close ?? 'Закрыть'}
@@ -295,7 +295,7 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                           container.scrollBy({ left: -container.clientWidth * 0.7, behavior: 'smooth' });
                         }
                       }}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                      className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute left-3 top-1/2 -translate-y-1/2 z-20 hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                       aria-label="Previous screenshots"
                     >
                       <Icon name="IC-chevron-left-bold" className="w-6 h-6 fill-white" />
@@ -311,14 +311,14 @@ export default function AppInfoModal({ appId, isOpen, onClose }: AppInfoModalPro
                           container.scrollBy({ left: container.clientWidth * 0.7, behavior: 'smooth' });
                         }
                       }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                      className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute right-3 top-1/2 -translate-y-1/2 z-20 hidden sm:flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                       aria-label="Next screenshots"
                     >
                       <Icon name="IC-chevron-right-bold" className="w-6 h-6 fill-white" />
                     </button>
 
                     {/* Бедж количества скриншотов */}
-                    <div className="absolute top-2 right-5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md pointer-events-none">
+                    <div className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute top-2 right-5 z-20 rounded-full border border-zinc-600/30 px-3 py-1 text-xs font-semibold text-white shadow pointer-events-none">
                       <span className="flex items-center gap-1.5">
                         <Icon name="IC-photo" className="w-4 h-4 fill-white" />
                         <span>{screenshots.length}</span>

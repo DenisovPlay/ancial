@@ -57,18 +57,18 @@ function RedirectContentInner() {
 
   let riskTitle = lang?.redirect_safe_title || 'Риск низкий';
   let riskLead = lang?.redirect_safe_lead || 'Алгоритмы не нашли угроз, но сохраняйте бдительность.';
-  let badgeColor = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+  let badgeColor = '[--glass-tint:var(--color-emerald-500)] [--glass-alpha:0.1] border-emerald-500/30 text-emerald-400';
   let iconName = 'IC-check';
 
   if (level === 'danger') {
     riskTitle = lang?.redirect_danger_title || 'Высокий риск';
     riskLead = lang?.redirect_danger_lead || 'Сайт выглядит опасным. Переход заблокирован.';
-    badgeColor = 'bg-red-500/10 border-red-500/30 text-red-400';
+    badgeColor = '[--glass-tint:var(--color-red-500)] [--glass-alpha:0.1] border-red-500/30 text-red-400';
     iconName = 'IC-warning';
   } else if (level === 'warning') {
     riskTitle = lang?.redirect_warning_title || 'Подозрительный риск';
     riskLead = lang?.redirect_warning_lead || 'Есть риск-маркеры. Переход возможен, но крайне не рекомендуется.';
-    badgeColor = 'bg-amber-500/10 border-amber-500/30 text-amber-400';
+    badgeColor = '[--glass-tint:var(--color-amber-500)] [--glass-alpha:0.1] border-amber-500/30 text-amber-400';
     iconName = 'IC-warning';
   }
 
@@ -80,7 +80,7 @@ function RedirectContentInner() {
       `}</style>
       <div className="flex w-full max-w-xl flex-col gap-3">
         {/* Header box */}
-        <div className="pb-20 flex items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-xl">
+        <div className="glass-panel [--glass-alpha:0.9] [--glass-blur:24px] pb-20 flex items-center gap-3 rounded-3xl border border-zinc-800 p-3 shadow-2xl">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center">
             <AppImage width={56} height={56} alt="Zypo Logo" className="h-14 w-14" src="/img/zypo/logo-rounded.webp" />
           </div>
@@ -95,7 +95,7 @@ function RedirectContentInner() {
         </div>
 
         {/* Target link box */}
-        <div className="-mt-20 flex flex-col gap-1 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-xl">
+        <div className="glass-panel [--glass-alpha:0.9] [--glass-blur:24px] -mt-20 flex flex-col gap-1 rounded-3xl border border-zinc-800 p-3 shadow-2xl">
           <span className="text-xs text-zinc-400">{lang?.redirect_link_label || 'Ссылка'}</span>
           <div className="break-all text-sm font-medium text-white lg:text-base">
             {rawLink ? decodeURIComponent(rawLink) : (lang?.not_found || 'Не указана')}
@@ -104,7 +104,7 @@ function RedirectContentInner() {
 
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-xl">
+          <div className="glass-panel [--glass-alpha:0.9] [--glass-blur:24px] flex flex-col items-center justify-center gap-3 rounded-3xl border border-zinc-800 p-3 shadow-2xl">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
             <span className="text-sm text-zinc-400">{lang?.loading || 'Проверка безопасности...'}</span>
           </div>
@@ -120,7 +120,7 @@ function RedirectContentInner() {
 
         {/* Analysis Result Card */}
         {!loading && analysis && (
-          <div className={`flex flex-col gap-3 rounded-3xl border ${badgeColor} p-3 shadow-2xl backdrop-blur-xl`}>
+          <div className={`flex flex-col gap-3 rounded-3xl border ${badgeColor} p-3 shadow-2xl glass-panel [--glass-blur:24px]`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Icon name={iconName} className="h-6 w-6 fill-current" />

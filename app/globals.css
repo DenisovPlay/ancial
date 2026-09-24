@@ -25,6 +25,82 @@
   }
 }
 
+/* ── Стекло ─────────────────────────────────────────────────────────────────────────────
+   Один механизм для всего интерфейса (настройка «Интерфейс → Стекло», app/lib/appearance.ts).
+   Элемент получает роль: glass-nav | glass-menu | glass-tooltip | glass-input | glass-panel | glass-overlay.
+   Его собственный вид — база роли, при необходимости переопределяется на элементе:
+     [--glass-blur:24px]  [--glass-alpha:0.1]  [--glass-sat:2]  [--glass-tint:var(--color-black)]
+   Настройки меняют только множители роли на <html> (--glass-<роль>-blur-k / -sat-k / -clarity-k):
+   1 — вид как в дизайне, 0 — без размытия и с плотной подложкой. Переменные базы не наследуются,
+   поэтому вложенное стекло не подхватывает переопределения родителя. */
+@property --glass-blur { syntax: '*'; inherits: false; }
+@property --glass-alpha { syntax: '*'; inherits: false; }
+@property --glass-sat { syntax: '*'; inherits: false; }
+@property --glass-tint { syntax: '*'; inherits: false; }
+
+:root {
+  --glass-nav-blur-k: 1;
+  --glass-nav-sat-k: 1;
+  --glass-nav-clarity-k: 1;
+  --glass-menu-blur-k: 1;
+  --glass-menu-sat-k: 1;
+  --glass-menu-clarity-k: 1;
+  --glass-tooltip-blur-k: 1;
+  --glass-tooltip-sat-k: 1;
+  --glass-tooltip-clarity-k: 1;
+  --glass-input-blur-k: 1;
+  --glass-input-sat-k: 1;
+  --glass-input-clarity-k: 1;
+  --glass-panel-blur-k: 1;
+  --glass-panel-sat-k: 1;
+  --glass-panel-clarity-k: 1;
+  --glass-overlay-blur-k: 1;
+  --glass-overlay-sat-k: 1;
+  --glass-overlay-clarity-k: 1;
+}
+
+/* нав-пиллы, док, нижняя навигация, шапки */
+@utility glass-nav {
+  background-color: color-mix(in oklab, var(--glass-tint, var(--color-zinc-900)) calc(clamp(0, calc(1 - (1 - var(--glass-alpha, 0.5)) * var(--glass-nav-clarity-k)), 1) * 100%), transparent);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 12px) * var(--glass-nav-blur-k))) saturate(calc(1 + (var(--glass-sat, 2) - 1) * var(--glass-nav-sat-k)));
+  backdrop-filter: blur(calc(var(--glass-blur, 12px) * var(--glass-nav-blur-k))) saturate(calc(1 + (var(--glass-sat, 2) - 1) * var(--glass-nav-sat-k)));
+}
+
+/* дропдауны, поповеры, контекстные меню */
+@utility glass-menu {
+  background-color: color-mix(in oklab, var(--glass-tint, var(--color-zinc-900)) calc(clamp(0, calc(1 - (1 - var(--glass-alpha, 0.6)) * var(--glass-menu-clarity-k)), 1) * 100%), transparent);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 24px) * var(--glass-menu-blur-k))) saturate(calc(1 + (var(--glass-sat, 2) - 1) * var(--glass-menu-sat-k)));
+  backdrop-filter: blur(calc(var(--glass-blur, 24px) * var(--glass-menu-blur-k))) saturate(calc(1 + (var(--glass-sat, 2) - 1) * var(--glass-menu-sat-k)));
+}
+
+/* подсказки (components/tooltip-layer.tsx) */
+@utility glass-tooltip {
+  background-color: color-mix(in oklab, var(--glass-tint, var(--color-zinc-800)) calc(clamp(0, calc(1 - (1 - var(--glass-alpha, 0.95)) * var(--glass-tooltip-clarity-k)), 1) * 100%), transparent);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 16px) * var(--glass-tooltip-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-tooltip-sat-k)));
+  backdrop-filter: blur(calc(var(--glass-blur, 16px) * var(--glass-tooltip-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-tooltip-sat-k)));
+}
+
+/* поля ввода, поиск, композер */
+@utility glass-input {
+  background-color: color-mix(in oklab, var(--glass-tint, var(--color-zinc-900)) calc(clamp(0, calc(1 - (1 - var(--glass-alpha, 0.2)) * var(--glass-input-clarity-k)), 1) * 100%), transparent);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 12px) * var(--glass-input-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-input-sat-k)));
+  backdrop-filter: blur(calc(var(--glass-blur, 12px) * var(--glass-input-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-input-sat-k)));
+}
+
+/* модалки, шторки, плавающие карточки и чипы поверх медиа */
+@utility glass-panel {
+  background-color: color-mix(in oklab, var(--glass-tint, var(--color-zinc-900)) calc(clamp(0, calc(1 - (1 - var(--glass-alpha, 0.5)) * var(--glass-panel-clarity-k)), 1) * 100%), transparent);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 12px) * var(--glass-panel-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-panel-sat-k)));
+  backdrop-filter: blur(calc(var(--glass-blur, 12px) * var(--glass-panel-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-panel-sat-k)));
+}
+
+/* затемнение под модалками и полноэкранными слоями */
+@utility glass-overlay {
+  background-color: color-mix(in oklab, var(--glass-tint, var(--color-zinc-950)) calc(clamp(0, calc(1 - (1 - var(--glass-alpha, 0.8)) * var(--glass-overlay-clarity-k)), 1) * 100%), transparent);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 8px) * var(--glass-overlay-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-overlay-sat-k)));
+  backdrop-filter: blur(calc(var(--glass-blur, 8px) * var(--glass-overlay-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-overlay-sat-k)));
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -37,141 +113,6 @@ video {
   -webkit-user-drag: none;
   user-drag: none;
 }
-
-/* Android Chromium can spend most of a frame repainting large or nested
-   backdrop filters. Keep the glass design, but cap shader complexity without
-   changing desktop/iOS rendering or touching every Tailwind call site. */
-html.android-glass [class*="backdrop-blur"] {
-  --tw-backdrop-blur: blur(4px) !important;
-}
-
-html.android-glass [class*="backdrop-saturate"] {
-  --tw-backdrop-saturate: saturate(120%) !important;
-}
-
-html.android-glass [class*="backdrop-hue"] {
-  --tw-backdrop-hue-rotate: hue-rotate(0deg) !important;
-}
-
-html.android-glass-lite [class*="backdrop-blur"] {
-  --tw-backdrop-blur: blur(2px) !important;
-}
-
-html.android-glass-lite [class*="backdrop-saturate"] {
-  --tw-backdrop-saturate: saturate(105%) !important;
-}
-
-html.android-glass .pulse-player-full-shell {
-  -webkit-backdrop-filter: blur(8px) saturate(120%) !important;
-  backdrop-filter: blur(8px) saturate(120%) !important;
-}
-
-html.android-glass-lite .pulse-player-full-shell {
-  background-color: rgb(24 24 27 / 94%) !important;
-  -webkit-backdrop-filter: blur(3px) saturate(105%) !important;
-  backdrop-filter: blur(3px) saturate(105%) !important;
-}
-
-html.android-glass .notion-block-toolbar,
-html.android-glass .carousel-count-badge,
-html.android-glass .gsc-tabHeader,
-html.android-glass .gsc-webResult.gsc-result,
-html.android-glass .gsc-imageResult.gsc-result,
-html.android-glass .gs-no-results-result > .gs-snippet {
-  -webkit-backdrop-filter: blur(4px) !important;
-  backdrop-filter: blur(4px) !important;
-}
-
-html.android-glass-lite .notion-block-toolbar,
-html.android-glass-lite .carousel-count-badge,
-html.android-glass-lite .gsc-tabHeader,
-html.android-glass-lite .gsc-webResult.gsc-result,
-html.android-glass-lite .gsc-imageResult.gsc-result,
-html.android-glass-lite .gs-no-results-result > .gs-snippet {
-  -webkit-backdrop-filter: blur(2px) !important;
-  backdrop-filter: blur(2px) !important;
-}
-
-/* ── Режим «Стекло отключено» — отключение размытия и адаптация только стеклянных контейнеров ── */
-
-/* 1. Полное отключение шейдеров размытия для всех элементов */
-html.android-glass-off * {
-  --tw-backdrop-blur: blur(0px) !important;
-  --tw-backdrop-saturate: saturate(100%) !important;
-  --tw-backdrop-hue-rotate: hue-rotate(0deg) !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-
-/* 2. Навигационные панели, пиллы звонков и блок превью стекла (все пиллы) */
-html.android-glass-off [data-app-nav="desktop"],
-html.android-glass-off [data-app-nav="mobile-pill"],
-html.android-glass-off [data-app-nav="call-pill"],
-html.android-glass-off [data-app-nav="glass-preview"],
-html.android-glass-off [data-app-nav="mobile"] [data-app-nav="mobile-pill"],
-html.android-glass-off [data-app-nav="mobile"] > div:not(.flex-grow) {
-  background-color: rgba(24, 24, 27, 1) !important;
-}
-
-/* 3. Стеклянные выпадающие меню Dropdown и блоки превью */
-html.android-glass-off [data-dropdown-menu],
-html.android-glass-off .backdrop-blur-xl.bg-zinc-900\/60,
-html.android-glass-off .backdrop-blur-lg.bg-zinc-900\/50,
-html.android-glass-off .backdrop-blur-md.bg-zinc-900\/50,
-html.android-glass-off .bg-zinc-900\/60,
-html.android-glass-off .bg-zinc-900\/50.backdrop-blur-md {
-  background-color: rgba(24, 24, 27, 1) !important;
-}
-
-/* 4. Стеклянные поисковые строки и поле ввода в чате */
-html.android-glass-off form.bg-zinc-900\/20,
-html.android-glass-off .bg-zinc-900\/20.backdrop-blur-md {
-  background-color: rgba(24, 24, 27, 0.95) !important;
-}
-
-/* 5. Карточки погоды со стеклом */
-html.android-glass-off .bg-black\/10.backdrop-blur-md {
-  background-color: rgba(0, 0, 0, 0.75) !important;
-}
-
-/* 6. Кнопка Play в плейлистах Pulse */
-html.android-glass-off .bg-purple-500\/50.backdrop-blur-md {
-  background-color: rgba(147, 51, 234, 0.90) !important;
-}
-
-/* 7. Адаптивная левая панель чатов на десктопе */
-@media (min-width: 1024px) {
-  html.android-glass-off .lg\:bg-zinc-900\/50.lg\:backdrop-blur-lg {
-    background-color: rgba(24, 24, 27, 0.95) !important;
-  }
-}
-
-/* 8. Полноэкранные затемняющие оверлеи модальных окон */
-html.android-glass-off .fixed.inset-0[class*="bg-black/"] {
-  background-color: rgba(0, 0, 0, 0.85) !important;
-}
-
-/* 9. Специальные компоненты с кастомными CSS-классами */
-html.android-glass-off .pulse-player-full-shell {
-  background-color: rgba(9, 9, 11, 0.97) !important;
-}
-
-html.android-glass-off .notion-block-toolbar {
-  background-color: rgba(24, 24, 27, 0.98) !important;
-}
-
-html.android-glass-off .carousel-count-badge {
-  background-color: rgba(9, 9, 11, 0.95) !important;
-}
-
-html.android-glass-off .gsc-tabHeader,
-html.android-glass-off .gsc-webResult.gsc-result,
-html.android-glass-off .gsc-imageResult.gsc-result {
-  background-color: rgba(24, 24, 27, 0.96) !important;
-}
-
-
-
 
 @keyframes page-enter {
   from {
@@ -503,6 +444,11 @@ body:has([data-pulse-mini-slot]:not(:empty)) #dialog-list-container {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+}
+
+/* «Анимация текста: построчно» (Интерфейс → Анимации): активная строка подсвечивается целиком, без заливки по словам. */
+html[data-motion-lyrics='lines'] .pulse-lyric-line.is-active .pulse-lyric-word {
+  --fill: 100%;
 }
 
 /* Переходы между режимами текста на телефоне. Подложка с блюром живёт отдельно и только
@@ -1063,11 +1009,13 @@ body:has(.apps-overlay-route) #main-content {
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem;
-  background-color: rgba(24, 24, 27, 0.95);
+  /* Стекло роли «Меню»: настройки «Интерфейс → Стекло» действуют и здесь. */
+  background-color: rgb(24 24 27 / clamp(0, calc(1 - 0.05 * var(--glass-menu-clarity-k)), 1));
   border: 1px solid rgba(63, 63, 70, 0.6);
   border-radius: 1.5rem;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(calc(12px * var(--glass-menu-blur-k)));
+  backdrop-filter: blur(calc(12px * var(--glass-menu-blur-k)));
   /* transition ВСЕГДА на базовом элементе — не переключать между состояниями */
   transition: opacity 300ms ease;
   will-change: opacity;
@@ -1099,13 +1047,15 @@ body:has(.apps-overlay-route) #main-content {
   z-index: 20;
   border-radius: 9999px;
   border: 1px solid rgba(82, 82, 91, 0.3);
-  background-color: rgba(9, 9, 11, 0.8);
+  /* Стекло роли «Панели»: настройки «Интерфейс → Стекло» действуют и здесь. */
+  background-color: rgb(9 9 11 / clamp(0, calc(1 - 0.2 * var(--glass-panel-clarity-k)), 1));
   padding: 0.125rem 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: #ffffff;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(calc(8px * var(--glass-panel-blur-k)));
+  backdrop-filter: blur(calc(8px * var(--glass-panel-blur-k)));
   display: flex;
   align-items: center;
   gap: 0.25rem;

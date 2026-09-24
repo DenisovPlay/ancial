@@ -30,6 +30,7 @@ import { detectTextLanguage, htmlToPlainText, translateToLang } from '../lib/tra
 import AccountName from './account-name';
 import AppImage from './app-image';
 import Icon from './svg-icon';
+import { useAppearanceMotion } from '../lib/use-appearance';
 
 type Id = string | number;
 type VoteDirection = 'up' | 'down';
@@ -199,6 +200,8 @@ function ExpandablePostContent({
   const [isOverflowing, setIsOverflowing] = useState(initiallyOverflowing ?? false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [animate, setAnimate] = useState(false);
+  // «Интерфейс → Анимации → Плавное раскрытие».
+  const expandMotion = useAppearanceMotion().expand;
 
   useLayoutEffect(() => {
     if (noCollapse) return;
@@ -256,7 +259,7 @@ function ExpandablePostContent({
         }}
         className={cn(
           '-mx-3 px-3 -my-1 py-1 w-[calc(100%+1.5rem)] text-base lg:text-lg text-zinc-200 font-medium break-words overflow-hidden relative post-content-container',
-          animate && 'transition-[max-height] duration-500 ease-in-out',
+          animate && expandMotion && 'transition-[max-height] duration-500 ease-in-out',
         )}
         dangerouslySetInnerHTML={{ __html: parsedHtml }}
         onClick={onClick}
@@ -902,7 +905,7 @@ function PostCardInner({
                         container.scrollBy({ left: -container.clientWidth * 0.7, behavior: 'smooth' });
                       }
                     }}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                    className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                   >
                     <Icon name="IC-chevron-left" className="w-6 h-6 fill-white" />
                   </button>
@@ -917,12 +920,12 @@ function PostCardInner({
                         container.scrollBy({ left: container.clientWidth * 0.7, behavior: 'smooth' });
                       }
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 bg-zinc-950/80 hover:bg-zinc-800 text-white shadow backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                    className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                   >
                     <Icon name="IC-chevron-right" className="w-6 h-6 fill-white" />
                   </button>
 
-                  <div className="absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur-md">
+                  <div className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 px-3 py-1 text-xs font-semibold text-white shadow">
                     <span className="flex items-center gap-1.5">
                       <Icon name="IC-photos" className="w-4 h-4 fill-white" />
                       <span>{images.length}</span>

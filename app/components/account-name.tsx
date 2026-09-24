@@ -146,42 +146,42 @@ export default function AccountName({
       <span className={cn('truncate', nameClassName)}>{displayName}</span>
       {children}
       {showBadges && verifyStatus === 1 && (
-        <span title={lang?.badge_verify || 'Подтверждённый аккаунт'} className="inline-flex shrink-0">
+        <span data-tip={lang?.badge_verify || 'Подтверждённый аккаунт'} aria-label={lang?.badge_verify || 'Подтверждённый аккаунт'} role="img" className="inline-flex shrink-0">
           <Icon name="IC-verify" className={cn('w-5 h-5 inline fill-blue-500', badgeClassName)} />
         </span>
       )}
       {showBadges && badgesList.includes('ai') && (
-        <span title={lang?.badge_ai || 'Искусственный интеллект / Бот'} className="inline-flex items-center shrink-0">
+        <span data-tip={lang?.badge_ai || 'Искусственный интеллект / Бот'} aria-label={lang?.badge_ai || 'Искусственный интеллект / Бот'} role="img" className="inline-flex items-center shrink-0">
           <Icon name="IC-badge-ai" className={cn('w-4 h-4 text-purple-400 fill-current shrink-0 inline drop-shadow-[0_0_6px_rgba(168,85,247,0.5)]', badgeClassName)} />
         </span>
       )}
       {showBadges && badgesList.includes('developer') && (
-        <span title={lang?.badge_developer || 'Разработчик Zypo'} className="inline-flex items-center shrink-0">
+        <span data-tip={lang?.badge_developer || 'Разработчик Zypo'} aria-label={lang?.badge_developer || 'Разработчик Zypo'} role="img" className="inline-flex items-center shrink-0">
           <Icon name="IC-badge-developer" className={cn('w-4 h-4 text-cyan-400 shrink-0 inline drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]', badgeClassName)} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         </span>
       )}
       {showBadges && badgesList.includes('staff') && (
-        <span title={lang?.badge_staff || 'Команда Zypo'} className="inline-flex items-center shrink-0">
+        <span data-tip={lang?.badge_staff || 'Команда Zypo'} aria-label={lang?.badge_staff || 'Команда Zypo'} role="img" className="inline-flex items-center shrink-0">
           <Icon name="IC-badge-staff" className={cn('w-4 h-4 text-rose-500 shrink-0 inline drop-shadow-[0_0_6px_rgba(244,63,94,0.5)]', badgeClassName)} fill="currentColor" />
         </span>
       )}
       {showBadges && badgesList.includes('brand') && (
-        <span title={lang?.badge_brand || 'Бизнес-аккаунт'} className="inline-flex items-center shrink-0">
+        <span data-tip={lang?.badge_brand || 'Бизнес-аккаунт'} aria-label={lang?.badge_brand || 'Бизнес-аккаунт'} role="img" className="inline-flex items-center shrink-0">
           <Icon name="IC-badge-brand" className={cn('w-4 h-4 text-blue-400 shrink-0 inline drop-shadow-[0_0_6px_rgba(96,165,250,0.5)]', badgeClassName)} fill="currentColor" />
         </span>
       )}
       {showBadges && badgesList.includes('pioneer') && (
-        <span title={lang?.badge_pioneer || 'Первопроходец'} className="inline-flex items-center shrink-0">
+        <span data-tip={lang?.badge_pioneer || 'Первопроходец'} aria-label={lang?.badge_pioneer || 'Первопроходец'} role="img" className="inline-flex items-center shrink-0">
           <Icon name="IC-badge-pioneer" className={cn('w-4 h-4 text-orange-500 shrink-0 inline drop-shadow-[0_0_6px_rgba(249,115,22,0.5)]', badgeClassName)} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </span>
       )}
       {showBadges && badgesList.includes('beta_tester') && (
-        <span title={lang?.badge_beta_tester || 'Бета-тестер'} className="inline-flex items-center shrink-0">
+        <span data-tip={lang?.badge_beta_tester || 'Бета-тестер'} aria-label={lang?.badge_beta_tester || 'Бета-тестер'} role="img" className="inline-flex items-center shrink-0">
           <Icon name="IC-badge-beta-tester" className={cn('w-4 h-4 text-emerald-500 shrink-0 inline drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]', badgeClassName)} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </span>
       )}
       {showBadges && badgesList.includes('creator') && (
-        <span title={lang?.badge_creator || 'Известный автор'} className="inline-flex items-center shrink-0">
+        <span data-tip={lang?.badge_creator || 'Известный автор'} aria-label={lang?.badge_creator || 'Известный автор'} role="img" className="inline-flex items-center shrink-0">
           <Icon name="IC-badge-creator" className={cn('w-4 h-4 text-amber-500 shrink-0 inline drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]', badgeClassName)} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </span>
       )}

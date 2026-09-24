@@ -126,7 +126,7 @@ export default function PulseCreateArtistsPage() {
 
       {/* 2. Search */}
       <div className="w-full flex items-center gap-3">
-        <div className="h-12 w-full flex items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 p-1 backdrop-blur-md backdrop-saturate-200">
+        <div className="glass-input [--glass-sat:2] h-12 w-full flex items-center justify-center rounded-full border border-zinc-600/30 p-1">
           <input
             type="text"
             value={searchQuery}
@@ -187,10 +187,17 @@ export default function PulseCreateArtistsPage() {
                         {artist.name}
                       </span>
                       {hasVerification && (
-                        <Icon name="IC-verify" className={cn('inline', cn(
+                        <span
+                          data-tip={verifyStatus === '1' ? (lang?.badge_verify_artist || 'Подтверждённый артист') : (lang?.badge_unverified_artist || 'Данные настоящие, владелец не подключён')}
+                          aria-label={verifyStatus === '1' ? (lang?.badge_verify_artist || 'Подтверждённый артист') : (lang?.badge_unverified_artist || 'Данные настоящие, владелец не подключён')}
+                          role="img"
+                          className="inline-flex shrink-0"
+                        >
+                          <Icon name="IC-verify" className={cn('inline', cn(
                             'w-5 h-5 shrink-0',
                             verifyStatus === '1' ? 'fill-blue-500' : 'fill-amber-500'
                           ))} />
+                        </span>
                       )}
                     </div>
 

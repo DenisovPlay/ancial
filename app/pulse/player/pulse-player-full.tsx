@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useSyncExternalStore, type RefObject, type TouchEventHandler } from 'react';
-import { GLASS_MODE_CHANGE_EVENT, GLASS_MODE_STORAGE_KEY, readGlassMode } from '../../lib/android-glass';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import {
@@ -247,22 +246,6 @@ export function PulsePlayerFull({
   const linePresence = usePresence(!isLyricsExpanded && lyricsSynced);
   const sheetPresence = usePresence(showMobileSheet && !linePresence.mounted);
   const showMobileLine = linePresence.mounted && !sheetPresence.mounted;
-  const glassMode = useSyncExternalStore(
-    (cb) => {
-      const handle = (e: StorageEvent | Event) => {
-        if (e instanceof StorageEvent && e.key !== GLASS_MODE_STORAGE_KEY) return;
-        cb();
-      };
-      window.addEventListener('storage', handle);
-      window.addEventListener(GLASS_MODE_CHANGE_EVENT, handle);
-      return () => {
-        window.removeEventListener('storage', handle);
-        window.removeEventListener(GLASS_MODE_CHANGE_EVENT, handle);
-      };
-    },
-    readGlassMode,
-    () => 'auto' as const,
-  );
   return (
     <div
       className={cn(
@@ -276,12 +259,8 @@ export function PulsePlayerFull({
     >
       <div
         id="NAVPfull"
-        className="pulse-player-full-shell flex h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-none bg-zinc-900/80 shadow lg:h-full"
-        style={{
-          backdropFilter: glassMode === 'off' ? 'none' : 'blur(40px) saturate(180%)',
-          WebkitBackdropFilter: glassMode === 'off' ? 'none' : 'blur(40px) saturate(180%)',
-          overscrollBehavior: 'none',
-        }}
+        className="pulse-player-full-shell glass-panel [--glass-alpha:0.8] [--glass-blur:40px] [--glass-sat:1.8] flex h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-none shadow lg:h-full"
+        style={{ overscrollBehavior: 'none' }}
         onTouchStart={(event) => {
           // «Вниз — свернуть» только по самому плееру: не из листаемого текста и не из модалок
           // (события из порталов тоже всплывают сюда по дереву React).
@@ -351,7 +330,7 @@ export function PulsePlayerFull({
                       <div
                         data-swipe-close={sheetPresence.mounted ? 'off' : undefined}
                         className={cn(
-                          'absolute inset-0 overflow-hidden rounded-3xl bg-zinc-900/80 backdrop-blur-md backdrop-saturate-200',
+                          'glass-panel [--glass-alpha:0.8] [--glass-sat:2] absolute inset-0 overflow-hidden rounded-3xl',
                           mobileLyricsPresence.leaving ? 'pulse-lyrics-backdrop-out' : 'pulse-lyrics-backdrop-in',
                         )}
                       >

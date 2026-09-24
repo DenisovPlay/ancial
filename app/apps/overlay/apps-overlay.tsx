@@ -23,7 +23,7 @@ export default function AppsOverlay({ gameId }: AppsOverlayProps) {
       <div className="apps-overlay-route no-mobile-nav-padding no-pc-nav-padding min-h-screen w-full relative bg-black">
         <Link
           aria-label="Назад"
-          className="p-1.5 flex items-center group justify-center rounded-full fixed top-3 left-3 cursor-pointer active:scale-95 duration-300 bg-zinc-900/40 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 h-10 w-10 z-[9999]"
+          className="glass-panel [--glass-alpha:0.4] [--glass-sat:2] p-1.5 flex items-center group justify-center rounded-full fixed top-3 left-3 cursor-pointer active:scale-95 duration-300 border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] h-10 w-10 z-[9999]"
           href={game.backHref || '/'}
         >
           <Icon name="IC-chevron-left" className="w-6 h-6 fill-white inline shrink-0" />
@@ -38,7 +38,7 @@ export default function AppsOverlay({ gameId }: AppsOverlayProps) {
       <div className="flex flex-col gap-3 flex-grow items-center w-full md:max-w-screen-2xl">
         <Link
           aria-label="Назад"
-          className={`p-1.5 flex items-center group justify-center rounded-full absolute top-3 left-3 cursor-pointer active:scale-95 duration-300 bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 h-8 w-8 z-[9999] ${game.backHref !== '/' ? 'hover:w-24' : ''
+          className={`p-1.5 flex items-center group justify-center rounded-full absolute top-3 left-3 cursor-pointer active:scale-95 duration-300 glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 hover:bg-zinc-700 h-8 w-8 z-[9999] ${game.backHref !== '/' ? 'hover:w-24' : ''
             }`}
           href={game.backHref}
         >

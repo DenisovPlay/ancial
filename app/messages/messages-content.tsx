@@ -2280,7 +2280,7 @@ export default function MessagesContent() {
                 routeHash && 'hidden lg:flex',
               )}
             >
-              <div className="flex flex-col h-full w-full lg:bg-zinc-900/50 lg:backdrop-blur-lg lg:shadow lg:rounded-3xl lg:overflow-hidden lg:border lg:border-zinc-600/30 relative">
+              <div className="flex flex-col h-full w-full lg:glass-panel lg:[--glass-blur:16px] lg:shadow lg:rounded-3xl lg:overflow-hidden lg:border lg:border-zinc-600/30 relative">
 
                 <span className="w-full px-3 pb-0 pt-3 text-3xl font-extralight lg:hidden">
                   {lang?.chats || 'Чаты'}
@@ -2292,7 +2292,7 @@ export default function MessagesContent() {
                   className="flex min-h-0 flex-1 flex-col lg:overflow-y-auto"
                 >
                   <div className="z-[30] p-3 sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent">
-                    <div className="flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
+                    <div className="glass-input [--glass-sat:2] flex items-center justify-center border border-zinc-600/30 rounded-full w-full p-1 h-12 z-[11]">
                       <input
                         className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                         placeholder={lang?.search_chats_placeholder || 'Поиск диалогов...'}
@@ -2535,7 +2535,7 @@ export default function MessagesContent() {
                   className="relative flex h-full w-full flex-col overflow-hidden bg-cover bg-center"
                 >
                   {isDraggingOverChat && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md border-2 border-dashed border-purple-500 rounded-3xl pointer-events-none p-3">
+                    <div className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute inset-0 z-50 flex flex-col items-center justify-center border-2 border-dashed border-purple-500 rounded-3xl pointer-events-none p-3">
                       <Icon name="IC-image" className="w-16 h-16 fill-purple-400 mb-3" />
                       <span className="text-lg font-bold text-zinc-200">Перетащите изображения для прикрепления</span>
                     </div>
@@ -2562,7 +2562,7 @@ export default function MessagesContent() {
                             }
                           }}
                           className={cn(
-                            'w-full min-w-0 max-w-full lg:w-auto lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:rounded-3xl lg:px-3 lg:py-1.5 duration-300',
+                            'w-full min-w-0 max-w-full lg:w-auto lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:glass-panel lg:[--glass-alpha:0.8] lg:[--glass-blur:16px] lg:[--glass-sat:2] lg:rounded-3xl lg:px-3 lg:py-1.5 duration-300',
                             isGroupDialog && 'cursor-pointer active:scale-95 hover:text-purple-300'
                           )}
                         >
@@ -2581,7 +2581,7 @@ export default function MessagesContent() {
                             onClick={handleStartCall}
                             className={cn(
                               'lg:shadow flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95',
-                              hasActiveCall ? 'bg-lime-500 hover:bg-lime-400 animate-pulse' : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 lg:border lg:border-zinc-600/30 hover:bg-zinc-700'
+                              hasActiveCall ? 'bg-lime-500 hover:bg-lime-400 animate-pulse' : 'lg:glass-panel lg:[--glass-alpha:0.8] lg:[--glass-blur:16px] lg:[--glass-sat:2] lg:border lg:border-zinc-600/30 hover:bg-zinc-700'
                             )}
                           >
                             <Icon name="IC-call" className="h-7 w-7 fill-white" />
@@ -2604,7 +2604,7 @@ export default function MessagesContent() {
                               'relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:border lg:border-zinc-600/30 lg:shadow',
                               voiceRoomParticipantCount > 0
                                 ? 'bg-green-600 hover:bg-green-500'
-                                : 'lg:bg-zinc-900/80 lg:backdrop-blur-lg lg:backdrop-saturate-200 hover:bg-zinc-700',
+                                : 'lg:glass-panel lg:[--glass-alpha:0.8] lg:[--glass-blur:16px] lg:[--glass-sat:2] hover:bg-zinc-700',
                             )}
                           >
                             <Icon name="IC-call" className="h-7 w-7 fill-white" />
@@ -2723,7 +2723,7 @@ export default function MessagesContent() {
                           {timelineItems.map((item, index) =>
                             item.kind === 'separator' ? (
                               <div key={`sep:${item.dayKey}`} className="relative z-10 my-3 flex w-full justify-center">
-                                <span className="rounded-full border border-zinc-600/40 bg-zinc-900/90 backdrop-blur-md px-3.5 py-1 text-xs font-semibold text-zinc-200 shadow-lg">
+                                <span className="glass-panel [--glass-alpha:0.9] rounded-full border border-zinc-600/40 px-3.5 py-1 text-xs font-semibold text-zinc-200 shadow-lg">
                                   {item.label}
                                 </span>
                               </div>
@@ -2823,7 +2823,7 @@ export default function MessagesContent() {
 
                           {!dialogLoading && !messages.length ? (
                             <div className="flex min-h-[50vh] items-center justify-center">
-                              <span className="rounded-full border border-zinc-600/30 bg-zinc-900/70 px-4 py-2 text-sm text-zinc-300 shadow backdrop-blur-md backdrop-saturate-200">
+                              <span className="glass-panel [--glass-alpha:0.7] [--glass-sat:2] rounded-full border border-zinc-600/30 px-4 py-2 text-sm text-zinc-300 shadow">
                                 {lang?.write_message || 'Напишите первое сообщение'}
                               </span>
                             </div>
@@ -2838,7 +2838,7 @@ export default function MessagesContent() {
                     onClick={() => scrollToLatest('smooth')}
                     style={{ bottom: `${composerHeight + (replyingTo ? 54 : 12)}px` }}
                     className={cn(
-                      "cursor-pointer absolute right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-800/70 backdrop-blur-lg backdrop-saturate-200 backdrop-hue-200 text-white shadow-lg border border-zinc-600/30 hover:bg-zinc-700/70 active:scale-95 duration-300 transition-all",
+                      "glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:16px] [--glass-sat:2] cursor-pointer absolute right-3 z-10 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:0.7] active:scale-95 duration-300 transition-all",
                       !isAtBottom ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
                     )}
                   >
@@ -2853,7 +2853,7 @@ export default function MessagesContent() {
                   <div
                     style={{ bottom: `${composerHeight + 4}px` }}
                     className={cn(
-                      "absolute inset-x-3 z-10 flex items-center justify-between rounded-3xl border-x border-t border-zinc-600/30 bg-zinc-800/70 backdrop-blur backdrop-saturate-200 backdrop-hue-200 p-1 shadow-lg transition-all duration-300",
+                      "glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:8px] [--glass-sat:2] absolute inset-x-3 z-10 flex items-center justify-between rounded-3xl border-x border-t border-zinc-600/30 p-1 shadow-lg transition-all duration-300",
                       replyingTo ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
                     )}
                   >
@@ -2873,7 +2873,7 @@ export default function MessagesContent() {
                       id="blocked-pane"
                       className="absolute bottom-0 inset-x-0 z-20 flex items-center justify-center gap-1.5 p-3 pt-0"
                     >
-                      <div className="bg-amber-500/25 text-amber-500 p-3 rounded-3xl shadow border border-zinc-600/30 text-center backdrop-blur-lg backdrop-saturate-200 backdrop-hue-200">Собеседник заблокирован</div>
+                      <div className="glass-panel [--glass-tint:var(--color-amber-500)] [--glass-alpha:0.25] [--glass-blur:16px] [--glass-sat:2] text-amber-500 p-3 rounded-3xl shadow border border-zinc-600/30 text-center">Собеседник заблокирован</div>
                     </div>
                   ) : (
                     <div ref={composerPaneRef} className="absolute bottom-0 inset-x-0 z-20 flex flex-col items-center justify-center pb-3 pt-0">
@@ -2908,7 +2908,7 @@ export default function MessagesContent() {
                           onSubmit={handleMessageSend}
                           className="relative flex items-end min-h-[42px] w-full rounded-3xl border border-zinc-600/30 bg-zinc-900/20 p-1 transition-all duration-150"
                         >
-                          <div className="absolute inset-0 rounded-3xl backdrop-blur-md backdrop-saturate-200"></div>
+                          <div className="glass-panel [--glass-alpha:0] [--glass-sat:2] absolute inset-0 rounded-3xl"></div>
 
                           <textarea
                             ref={messageInputRef}

@@ -54,7 +54,7 @@ export default function VideoPlayerModal({ playingData, onClose }: VideoPlayerMo
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="p-3 rounded-full bg-white/10 backdrop-blur-xl hover:bg-white/20 text-white border border-white/20 transition-all active:scale-95 cursor-pointer shadow-lg"
+            className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.1] [--glass-blur:24px] p-3 rounded-full hover:[--glass-tint:var(--color-white)] hover:[--glass-alpha:0.2] text-white border border-white/20 transition-all active:scale-95 cursor-pointer shadow-lg"
           >
             ←
           </button>
@@ -74,7 +74,7 @@ export default function VideoPlayerModal({ playingData, onClose }: VideoPlayerMo
           <select
             value={selectedQuality}
             onChange={(e) => setSelectedQuality(e.target.value)}
-            className="bg-white/10 backdrop-blur-xl text-white px-3 py-1.5 rounded-full border border-white/20 outline-none cursor-pointer shadow-lg"
+            className="glass-input [--glass-tint:var(--color-white)] [--glass-alpha:0.1] [--glass-blur:24px] text-white px-3 py-1.5 rounded-full border border-white/20 outline-none cursor-pointer shadow-lg"
           >
             <option value="4K HDR" className="bg-zinc-900">4K HDR</option>
             <option value="1080p" className="bg-zinc-900">1080p FullHD</option>
@@ -105,7 +105,7 @@ export default function VideoPlayerModal({ playingData, onClose }: VideoPlayerMo
               className="w-full h-full object-cover filter brightness-50"
             />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+              <div className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.2] w-24 h-24 rounded-full flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
                 <Icon name="IC-play-solid" className="w-12 h-12 fill-white ml-1" />
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function VideoPlayerModal({ playingData, onClose }: VideoPlayerMo
                 document.documentElement.requestFullscreen();
               }
             }}
-            className="p-3 rounded-full bg-white/10 backdrop-blur-xl hover:bg-white/20 text-white border border-white/20 cursor-pointer shadow-lg transition-all active:scale-95"
+            className="glass-panel [--glass-tint:var(--color-white)] [--glass-alpha:0.1] [--glass-blur:24px] p-3 rounded-full hover:[--glass-tint:var(--color-white)] hover:[--glass-alpha:0.2] text-white border border-white/20 cursor-pointer shadow-lg transition-all active:scale-95"
           >
             ⛶
           </button>

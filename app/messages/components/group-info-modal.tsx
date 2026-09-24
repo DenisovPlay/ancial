@@ -952,7 +952,7 @@ export default function GroupInfoModal({
           <div className="flex flex-col gap-3">
 
             <div className="z-[30] -mx-3 px-3 bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
-              <div className="flex items-center justify-center bg-zinc-800/90 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 rounded-full w-full p-1 h-12 z-[11]">
+              <div className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.9] [--glass-sat:2] flex items-center justify-center border border-zinc-600/30 rounded-full w-full p-1 h-12 z-[11]">
                 <input
                   className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600 text-white"
                   type="text"

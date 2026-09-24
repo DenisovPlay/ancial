@@ -2,8 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css"; // force HMR css update
-import AndroidGlassProfile from './components/android-glass-profile';
+import AppearanceSync from './components/appearance-sync';
 import IconSprite from './components/icon-sprite';
+import TooltipLayer from './components/tooltip-layer';
 import MainContent from './components/main-content';
 import Navigation from './components/navigation';
 import RichPresenceReporter from './components/rich-presence-reporter';
@@ -12,6 +13,7 @@ import { AuthProvider } from './context/AuthContext';
 import { GlobalWSProvider } from './context/GlobalWSProvider';
 import { NotificationProvider } from './context/NotificationContext';
 import { PulsePlayerProvider } from './context/PulsePlayerContext';
+import { APPEARANCE_BOOT_SCRIPT } from './lib/appearance';
 import { DEFAULT_SEO, SITE_CONFIG } from './seo';
 
 const geistSans = Geist({
@@ -59,9 +61,15 @@ export default function RootLayout({
     <html
       lang="ru"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // Настройки стекла и анимаций пишет на <html> скрипт ниже — до гидратации, React их не рендерит.
+      suppressHydrationWarning
     >
+      <head>
+        {/* Своё, без внешних данных: применяет сохранённые на устройстве настройки внешнего вида до первой отрисовки. */}
+        <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col bg-black text-white">
-        <AndroidGlassProfile />
+        <AppearanceSync />
         {/*<Script
           id="google-adsense"
           async
@@ -93,6 +101,7 @@ export default function RootLayout({
           </div>
         </noscript>
         <IconSprite />
+        <TooltipLayer />
         <SWRegister />
         <NotificationProvider>
           <AuthProvider>

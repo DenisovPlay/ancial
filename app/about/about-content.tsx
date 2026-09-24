@@ -36,13 +36,13 @@ export default function Home() {
 
             <div ref={navScrollRef} className="drag-scroll overflow-x-auto viewport px-3 lg:px-0 w-full max-w-3xl sticky top-0 py-3 -my-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40 flex flex-nowrap gap-3">
 
-                <Link href="/about/legal/" className="text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full">
+                <Link href="/about/legal/" className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] active:scale-95 duration-300 rounded-full">
                     {lang?.documents}
                 </Link>
-                <Link href="/about/guides/" className="text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full">
+                <Link href="/about/guides/" className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] active:scale-95 duration-300 rounded-full">
                     {lang?.guides}
                 </Link>
-                <Link href="/about/contacts" className="text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center bg-zinc-900/20 border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 hover:bg-zinc-700 active:scale-95 duration-300 rounded-full">
+                <Link href="/about/contacts" className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] active:scale-95 duration-300 rounded-full">
                     {lang?.contacts}
                 </Link>
 

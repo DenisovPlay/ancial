@@ -202,7 +202,7 @@ export default function Modal({
   const modalContent = (
     <div 
       className={cn(
-        'fixed inset-0 z-[9999] flex justify-center bg-zinc-950/80 backdrop-blur-sm transition-opacity duration-300 ease-out',
+        'glass-overlay fixed inset-0 z-[9999] flex justify-center transition-opacity duration-300 ease-out',
         alignmentClasses,
         visible ? 'opacity-100' : 'opacity-0',
         overlayClassName,

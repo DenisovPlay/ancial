@@ -141,7 +141,7 @@ export default function PulseCreateLayout({ children }: { children: React.ReactN
                   href={tab.path}
                   data-topic-active={isActive ? 'true' : 'false'}
                   className={cn(
-                    'text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center border border-zinc-600/30 backdrop-blur-md backdrop-saturate-200 active:scale-95 duration-300 rounded-full',
+                    'glass-panel [--glass-alpha:0] [--glass-sat:2] text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center border border-zinc-600/30 active:scale-95 duration-300 rounded-full',
                     isActive
                       ? 'bg-zinc-700/80 text-white shadow'
                       : 'bg-zinc-900/20 text-zinc-300 hover:bg-zinc-700 hover:text-white'

@@ -668,9 +668,9 @@ export default function QRContent() {
               <button
                 onClick={handleToggleFlash}
                 disabled={!flashSupported}
-                className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-3xl backdrop-blur-lg active:scale-95 duration-300 ${flashEnabled
-                  ? 'bg-purple-700 hover:bg-purple-650 border-purple-650 text-white shadow'
-                  : 'bg-zinc-900/40 border-zinc-700/30 hover:bg-zinc-800 text-zinc-300'
+                className={`flex-1 flex items-center justify-center gap-2 p-3 border rounded-3xl glass-panel [--glass-blur:16px] active:scale-95 duration-300 ${flashEnabled
+                  ? '[--glass-tint:var(--color-purple-700)] [--glass-alpha:1] hover:bg-purple-650 border-purple-650 text-white shadow'
+                  : '[--glass-alpha:0.4] border-zinc-700/30 hover:bg-zinc-800 text-zinc-300'
                   } ${!flashSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Icon name="IC-flash" className="w-5 h-5 fill-none stroke-current" />
@@ -678,7 +678,7 @@ export default function QRContent() {
               </button>
               <button
                 onClick={handleSwitchCamera}
-                className="flex-grow flex items-center justify-center gap-2 p-3 bg-zinc-900/40 border border-zinc-700/30 hover:bg-zinc-800 text-zinc-350 hover:text-white rounded-3xl backdrop-blur-lg active:scale-95 duration-300"
+                className="glass-panel [--glass-alpha:0.4] [--glass-blur:16px] flex-grow flex items-center justify-center gap-2 p-3 border border-zinc-700/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-zinc-350 hover:text-white rounded-3xl active:scale-95 duration-300"
               >
                 <Icon name="IC-camera-switch" className="w-5 h-5 fill-none stroke-current" />
                 <span className="font-bold">{strings.camera}</span>
@@ -692,7 +692,7 @@ export default function QRContent() {
           <div className="flex flex-col gap-3 items-center w-full max-w-md">
 
             {/* QR Content Box */}
-            <div className="w-full p-4 bg-zinc-900/60 border border-zinc-800 backdrop-blur-lg rounded-3xl text-left">
+            <div className="glass-panel [--glass-alpha:0.6] [--glass-blur:16px] w-full p-4 border border-zinc-800 rounded-3xl text-left">
               <div className="flex items-center gap-2 mb-2 text-zinc-400">
                 <Icon name="IC-qr-data" className="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" />
                 <span className="text-xs font-bold uppercase tracking-wider">{lang?.qr_data || 'Данные QR-кода:'}</span>
@@ -723,7 +723,7 @@ export default function QRContent() {
             {/* Rescan Button */}
             <button
               onClick={resetScanner}
-              className="w-full p-3 bg-zinc-900/40 hover:bg-zinc-800 text-white font-bold rounded-3xl backdrop-blur-lg active:scale-95 duration-300 border border-zinc-700/30"
+              className="glass-panel [--glass-alpha:0.4] [--glass-blur:16px] w-full p-3 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white font-bold rounded-3xl active:scale-95 duration-300 border border-zinc-700/30"
             >
               {strings.scanagain}
             </button>

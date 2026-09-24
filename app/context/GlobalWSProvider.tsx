@@ -61,7 +61,7 @@ function NetStatusBanner() {
       aria-live="polite"
       aria-hidden={!isVisible}
     >
-      <span className="p-1 bg-zinc-800/90 backdrop-blur-lg text-xs rounded-full flex gap-1 items-center border border-zinc-600/30 text-zinc-100 shadow-lg">
+      <span className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.9] [--glass-blur:16px] p-1 text-xs rounded-full flex gap-1 items-center border border-zinc-600/30 text-zinc-100 shadow-lg">
         <Icon name="IC-loader" className="w-5 h-5 inline animate-spin fill-purple-500" aria-hidden="true" />
         <span>{lang?.reconnect || 'Переподключение...'}</span>
       </span>
