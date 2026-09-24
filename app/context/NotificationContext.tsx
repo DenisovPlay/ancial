@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { sanitizeUserHtml } from '../lib/sanitize-html';
+import { useSanitizedHtml } from '../lib/use-sanitized-html';
 import Icon from '../components/svg-icon';
 
 type NoteType = 'success' | 'error' | 'warning' | 'info';
@@ -40,6 +40,7 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
   const closeTimerRef = useRef<number | undefined>(undefined);
   const removeTimerRef = useRef<number | undefined>(undefined);
   const isClosingRef = useRef(false);
+  const noteHtmlProps = useSanitizedHtml(note.html && typeof note.content === 'string' ? note.content : '', true);
 
   const updateHeight = useCallback(() => {
     const nextHeight = contentRef.current?.getBoundingClientRect().height ?? 0;
@@ -162,7 +163,7 @@ const NotificationToast = ({ note, onRemove }: NotificationToastProps) => {
         {note.html && typeof note.content === 'string' ? (
           <span
             className="font-medium text-sm sm:text-base leading-tight break-words [&_a]:underline [&_a]:underline-offset-2"
-            dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(note.content, { preloadImages: true }) }}
+            dangerouslySetInnerHTML={noteHtmlProps}
           />
         ) : (
           <span className="font-medium text-sm sm:text-base leading-tight break-words">

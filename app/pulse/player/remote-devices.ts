@@ -3,12 +3,17 @@
 import { useSyncExternalStore } from 'react';
 
 import { globalWS } from '../../lib/global-ws';
+import { resolveReclaim } from './device-reclaim';
 import type { PulseCollectionKind, PulseTrack } from './pulse-player-types';
 
 /** Опорная точка от играющего устройства, даже если ничего не менялось. */
 export const DEVICE_STATE_INTERVAL_MS = 10_000;
 /** Идентификатор устройства переживает перезагрузку: вкладки одного браузера — одно устройство. */
 const DEVICE_ID_KEY = 'pulse_device_id';
+/** Сколько ждём список устройств после переподключения, прежде чем решать без него. */
+const RECLAIM_WAIT_MS = 4_000;
+/** Сколько после своего claim не верим спискам «звук не у нас»: они могли уйти до его обработки. */
+const CLAIM_SETTLE_MS = 3_000;
 
 export type RemoteDeviceKind = 'desktop' | 'mobile';
 
@@ -100,6 +105,33 @@ let queueHandler: ((queue: RemoteQueue) => void) | null = null;
 let stopHandler: (() => void) | null = null;
 let syncHandler: (() => void) | null = null;
 let unreachableHandler: (() => void) | null = null;
+/** Играет ли звук здесь прямо сейчас (аудиоэлемент не на паузе) — сообщает плеер. */
+let localPlaybackProbe: () => boolean = () => false;
+
+/**
+ * Мы были играющим устройством, а сокет оборвался. Забирать звук обратно вслепую нельзя:
+ * пока нас не было, его мог забрать телефон/ПК, и мы бы поставили его на паузу. Решаем
+ * по первому списку устройств после переподключения (см. resolveReclaim).
+ */
+let reclaimPending = false;
+let reclaimTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** До этого момента ждём подтверждения своего claim (0 — не ждём). */
+let claimPendingUntil = 0;
+
+function sendClaim() {
+  claimPendingUntil = Date.now() + CLAIM_SETTLE_MS;
+  globalWS.send({ type: 'device:claim' });
+}
+
+function clearReclaim() {
+  reclaimPending = false;
+  if (reclaimTimer !== null) {
+    clearTimeout(reclaimTimer);
+    reclaimTimer = null;
+  }
+}
+
 
 function setSnapshot(next: Partial<RemoteDevicesSnapshot>) {
   const merged = { ...snapshot, ...next };
@@ -216,15 +248,52 @@ function ensureBridge() {
   globalWS.addDialogListener('device:list', (payload) => {
     const data = readData(payload);
     const activeDeviceId = String(data.active_device_id ?? '');
+    const activeSelf = Boolean(data.active_self);
     const wasPlaying = Boolean(snapshot.state?.playing);
-    setSnapshot({
+    const next: Partial<RemoteDevicesSnapshot> = {
       activeDeviceId,
       connections: Math.max(0, Number(data.connections) || 0),
       devices: parseDevices(data.devices),
-      isActiveSelf: Boolean(data.active_self),
+      isActiveSelf: activeSelf,
       // Звук нигде не играет — прошлое состояние пульта показывать нечему.
       state: activeDeviceId === '' ? null : snapshot.state,
-    });
+    };
+
+    if (claimPendingUntil) {
+      if (activeSelf || Date.now() > claimPendingUntil) {
+        claimPendingUntil = 0;
+      } else {
+        // Список ушёл до того, как сервер принял наш claim: звук по-прежнему наш, пультом не становимся.
+        setSnapshot({ ...next, activeDeviceId: deviceId, isActiveSelf: true, state: null });
+        notifyClock(wasPlaying);
+        return;
+      }
+    }
+
+    if (reclaimPending) {
+      clearReclaim();
+      const decision = resolveReclaim({
+        activeDeviceId,
+        activeSelf,
+        ownDeviceId: deviceId,
+        playingHere: localPlaybackProbe(),
+      });
+      if (decision === 'claim') {
+        // Остаёмся играющим без промежуточного «мы пульт»: иначе плеер успел бы поставить себя на паузу.
+        setSnapshot({ ...next, activeDeviceId: deviceId, isActiveSelf: true, state: null });
+        notifyClock(wasPlaying);
+        sendClaim();
+        return;
+      }
+      if (decision === 'yield') {
+        setSnapshot(next);
+        notifyClock(wasPlaying);
+        stopHandler?.();
+        return;
+      }
+    }
+
+    setSnapshot(next);
     notifyClock(wasPlaying);
   });
 
@@ -271,6 +340,9 @@ function ensureBridge() {
   globalWS.addDialogListener('device:stop', (payload) => {
     const data = readData(payload);
     const activeId = String(data.device_id ?? '');
+    // Звук забрали явно — ждать подтверждения своего claim больше нечего.
+    claimPendingUntil = 0;
+    clearReclaim();
     // Помечаем себя пультом до остановки звука: пауза не должна уехать тем, кто слушает вместе.
     setSnapshot({ activeDeviceId: activeId || snapshot.activeDeviceId, isActiveSelf: false });
     stopHandler?.();
@@ -288,10 +360,20 @@ function ensureBridge() {
 
   // После обрыва связи заново представляемся, иначе нас не будет в списке устройств.
   globalWS.addDialogListener('auth_ok', () => {
+    clearReclaim();
+    // Телефон теряет сокет при каждом уходе в фон, а музыка играет дальше: звук возвращаем себе,
+    // но только если за время обрыва его не забрало другое устройство — это покажет список.
+    if (snapshot.isActiveSelf) {
+      reclaimPending = true;
+      reclaimTimer = setTimeout(() => {
+        // Список так и не пришёл: забираем звук, только если он реально играет здесь.
+        if (!reclaimPending) return;
+        clearReclaim();
+        if (localPlaybackProbe()) sendClaim();
+      }, RECLAIM_WAIT_MS);
+    }
     announced = false;
     announceDevice();
-    // Телефон теряет сокет при каждом уходе в фон, а музыка играет дальше: возвращаем себе звук.
-    if (snapshot.isActiveSelf) globalWS.send({ type: 'device:claim' });
   });
 }
 
@@ -335,15 +417,20 @@ export function announceDevice() {
 /** Здесь начали играть — звук на остальных устройствах аккаунта гасим. */
 export function claimActiveDevice() {
   ensureBridge();
-  if (snapshot.isActiveSelf) return;
+  // Нажали play, пока решалось, наш ли ещё звук после переподключения: теперь точно наш.
+  const wasReclaiming = reclaimPending;
+  clearReclaim();
+  if (snapshot.isActiveSelf && !wasReclaiming) return;
   announceDevice();
   // Ждать ответа сервера нельзя: контролы должны сразу работать как локальные.
   setSnapshot({ activeDeviceId: deviceId, isActiveSelf: true, state: null });
-  globalWS.send({ type: 'device:claim' });
+  sendClaim();
 }
 
 /** Плеер закрыли — звука на аккаунте больше нет, пультам показывать нечего. */
 export function releaseActiveDevice() {
+  clearReclaim();
+  claimPendingUntil = 0;
   if (!snapshot.isActiveSelf) return;
   setSnapshot({ activeDeviceId: '', isActiveSelf: false, state: null });
   globalWS.send({ type: 'device:release' });
@@ -417,6 +504,10 @@ export function setDeviceSyncHandler(handler: (() => void) | null) {
 
 export function setDeviceUnreachableHandler(handler: (() => void) | null) {
   unreachableHandler = handler;
+}
+
+export function setDeviceLocalPlaybackProbe(probe: (() => boolean) | null) {
+  localPlaybackProbe = probe ?? (() => false);
 }
 
 /**
