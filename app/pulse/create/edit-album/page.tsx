@@ -234,7 +234,7 @@ function EditAlbumContent() {
             {/* Fields Grid */}
             <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Title */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumtitle || 'Название альбома'} *</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -249,7 +249,7 @@ function EditAlbumContent() {
               </div>
 
               {/* Artist */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumartist || 'Исполнитель'} *</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -272,7 +272,7 @@ function EditAlbumContent() {
               />
 
               {/* Description */}
-              <div className="col-span-1 sm:col-span-2 flex w-full flex-col">
+              <div className="col-span-1 sm:col-span-2 flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumdesc || 'Описание'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -286,7 +286,7 @@ function EditAlbumContent() {
               </div>
 
               {/* Genre select */}
-              <div className="col-span-1 sm:col-span-2 flex w-full flex-col">
+              <div className="col-span-1 sm:col-span-2 flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.pulse_genre_label || 'Жанр'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -381,7 +381,7 @@ function EditAlbumContent() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full px-4 py-2.5 rounded-full bg-white text-black font-semibold text-base hover:bg-zinc-200 active:scale-95 duration-300 shadow cursor-pointer disabled:opacity-50 mt-3 flex items-center justify-center gap-2"
+            className="w-full px-4 py-2.5 rounded-full bg-white text-black font-semibold text-base hover:bg-zinc-200 active:scale-95 duration-300 shadow cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? (
               <>

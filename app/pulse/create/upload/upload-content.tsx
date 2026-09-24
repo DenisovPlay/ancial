@@ -543,7 +543,7 @@ export default function UploadContent() {
                           ? (lang?.creators_audio_uploading || 'Идёт загрузка аудио...')
                           : singleUploadedId
                             ? `✓ ${lang?.creators_audio_uploaded || 'Аудиофайл загружен'}`
-                            : lang?.creators_audio_drop_subtitle || 'До 25 MB, битрейт до 320 kbps'}
+                            : lang?.creators_audio_drop_subtitle || 'До 10 MB, битрейт до 320 kbps'}
                       </span>
                     </div>
                   </div>
@@ -556,14 +556,14 @@ export default function UploadContent() {
                 </label>
 
                 {singleAudioUrl && (
-                  <div className="mt-2 w-full">
+                  <div className="mt-3 w-full">
                     <audio controls src={singleAudioUrl} className="w-full h-10 rounded-full" />
                   </div>
                 )}
               </div>
 
               {/* Title */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.trackName || 'Название трека'} *</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -579,7 +579,7 @@ export default function UploadContent() {
               </div>
 
               {/* Исполнители вводятся вручную, привязка к профилям — отдельно и необязательна */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumartist || 'Исполнитель'} *</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -603,7 +603,7 @@ export default function UploadContent() {
               />
 
               {/* Genre (Canonical select) */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.pulse_genre_label || 'Жанр'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -624,7 +624,7 @@ export default function UploadContent() {
               </div>
 
               {/* Mood (Canonical 12 moods select) */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.pulse_mood_label || 'Настроение'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -645,7 +645,7 @@ export default function UploadContent() {
               </div>
 
               {/* Language */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.tracklang || 'Язык трека'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -666,7 +666,7 @@ export default function UploadContent() {
               </div>
 
               {/* Explicit & Status */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 -mt-3">
                 <div className="flex w-full flex-col">
                   <span className="z-20 pl-4 text-zinc-400">{lang?.trackexp || '18+'}</span>
                   <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
@@ -778,7 +778,7 @@ export default function UploadContent() {
             {/* Album Metadata Fields */}
             <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Album Title */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumtitle || 'Название альбома'} *</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -794,7 +794,7 @@ export default function UploadContent() {
               </div>
 
               {/* Исполнители вводятся вручную, привязка к профилям — отдельно и необязательна */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumartist || 'Исполнитель альбома'} *</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -818,7 +818,7 @@ export default function UploadContent() {
               />
 
               {/* Album Genre */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.pulse_genre_label || 'Жанр релиза'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -839,7 +839,7 @@ export default function UploadContent() {
               </div>
 
               {/* Album Language */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumlang || 'Язык альбома'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -860,7 +860,7 @@ export default function UploadContent() {
               </div>
 
               {/* Description */}
-              <div className="col-span-1 sm:col-span-2 flex w-full flex-col">
+              <div className="col-span-1 sm:col-span-2 flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumdesc || 'Описание альбома'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input

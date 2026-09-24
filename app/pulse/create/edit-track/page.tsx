@@ -178,7 +178,7 @@ function EditTrackContent() {
         <form onSubmit={saveTrack} className="flex flex-col gap-3 w-full">
           <div className="flex flex-col lg:flex-row items-start gap-3">
             {/* Cover Upload */}
-            <div className="flex flex-col items-center shrink-0 w-full lg:w-56">
+            <div className="flex flex-col items-center shrink-0 w-full lg:w-56 gap-3">
               <input type="file" id="trackcover" accept="image/*" onChange={handleImageUpload} className="hidden" />
               <label
                 htmlFor="trackcover"
@@ -204,14 +204,14 @@ function EditTrackContent() {
               </label>
 
               {src && (
-                <div className="w-full mt-3">
+                <div className="w-full">
                   <audio controls src={src} className="w-full h-10 rounded-full" />
                 </div>
               )}
 
               <Link
                 href={`/pulse/create/lyrics?id=${id}`}
-                className="w-full mt-3 px-4 py-2 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-200 text-sm font-medium hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 rounded-full border border-zinc-600/30 bg-zinc-800 text-zinc-200 text-sm font-medium hover:bg-zinc-700 active:scale-95 duration-300 cursor-pointer flex items-center justify-center gap-2"
               >
                 <Icon name="IC-quote" className="inline w-4 h-4 fill-current" />
                 {lang?.creators_lyrics || 'Текст песни'}
@@ -221,7 +221,7 @@ function EditTrackContent() {
             {/* Inputs Grid */}
             <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Name */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.trackName || 'Название трека'} *</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -236,7 +236,7 @@ function EditTrackContent() {
               </div>
 
               {/* Artist */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.albumartist || 'Исполнитель'} *</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <input
@@ -259,7 +259,7 @@ function EditTrackContent() {
               />
 
               {/* Genre (Canonical select) */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.pulse_genre_label || 'Жанр'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -280,7 +280,7 @@ function EditTrackContent() {
               </div>
 
               {/* Mood (Canonical 12 moods select) */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.pulse_mood_label || 'Настроение'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -301,7 +301,7 @@ function EditTrackContent() {
               </div>
 
               {/* Language */}
-              <div className="flex w-full flex-col">
+              <div className="flex w-full flex-col -mt-3">
                 <span className="z-20 pl-4 text-zinc-400">{lang?.tracklang || 'Язык трека'}</span>
                 <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                   <select
@@ -319,7 +319,7 @@ function EditTrackContent() {
               </div>
 
               {/* Explicit & Status */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 -mt-3">
                 <div className="flex w-full flex-col">
                   <span className="z-20 pl-4 text-zinc-400">{lang?.trackexp || '18+'}</span>
                   <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
@@ -354,7 +354,7 @@ function EditTrackContent() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full px-4 py-2.5 rounded-full bg-white text-black font-semibold text-base hover:bg-zinc-200 active:scale-95 duration-300 shadow cursor-pointer disabled:opacity-50 mt-3 flex items-center justify-center gap-2"
+            className="w-full px-4 py-2.5 rounded-full bg-white text-black font-semibold text-base hover:bg-zinc-200 active:scale-95 duration-300 shadow cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? (
               <>

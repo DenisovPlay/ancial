@@ -164,7 +164,7 @@ export default function EditArtistContent() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex w-full flex-col">
+            <div className="flex w-full flex-col -mt-3">
               <span className="z-20 pl-4 text-zinc-400">{lang?.creators_artist_name || 'Имя артиста'} *</span>
               <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                 <input
@@ -179,7 +179,7 @@ export default function EditArtistContent() {
               </div>
             </div>
 
-            <div className="flex w-full flex-col">
+            <div className="flex w-full flex-col -mt-3">
               <span className="z-20 pl-4 text-zinc-400">{lang?.creators_artist_socials || 'Соц. сети (через запятую)'}</span>
               <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
                 <input
@@ -193,7 +193,7 @@ export default function EditArtistContent() {
               </div>
             </div>
 
-            <div className="col-span-1 sm:col-span-2 flex w-full flex-col">
+            <div className="col-span-1 sm:col-span-2 flex w-full flex-col -mt-3">
               <span className="z-20 pl-4 text-zinc-400">{lang?.creators_artist_bio || 'Описание / биография'}</span>
               <div className="-mt-3 z-10 flex min-h-[100px] w-full rounded-3xl border border-zinc-600/30 bg-zinc-800/90 p-3 pt-4">
                 <textarea
@@ -210,7 +210,7 @@ export default function EditArtistContent() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full px-4 py-2.5 rounded-full bg-white text-black font-semibold text-base hover:bg-zinc-200 active:scale-95 duration-300 shadow cursor-pointer disabled:opacity-50 mt-3 flex items-center justify-center gap-2"
+            className="w-full px-4 py-2.5 rounded-full bg-white text-black font-semibold text-base hover:bg-zinc-200 active:scale-95 duration-300 shadow cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? (
               <>
