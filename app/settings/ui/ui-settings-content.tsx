@@ -121,7 +121,7 @@ function Collapse({ open, children }: { open: boolean; children: React.ReactNode
 /** Превью всех ролей стекла поверх картинки: меняется вместе с настройками. */
 function GlassPreview({ lang }: { lang: Lang }) {
   return (
-    <div className="relative h-64 w-full select-none overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-950">
+    <div className="relative flex w-full select-none flex-wrap items-stretch gap-3 overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-950 p-3">
       <AppImage
         src="/img/backgrounds/bg.webp"
         alt=""
@@ -132,39 +132,34 @@ function GlassPreview({ lang }: { lang: Lang }) {
         draggable={false}
       />
 
-      {/* Модалка поверх затемнения — справа */}
-      <div className="glass-overlay absolute inset-y-0 right-0 flex w-2/5 items-center justify-center p-3">
-        <div className="glass-panel flex w-full max-w-48 flex-col gap-1.5 rounded-3xl border border-zinc-600/30 p-3 text-xs text-zinc-200 shadow-xl">
-          <span className="font-semibold text-white">{lang?.appearance_preview_panel || 'Панель'}</span>
-          <span className="text-zinc-400">{lang?.appearance_preview_panel_text || 'Модалки, шторки, карточки'}</span>
-        </div>
-      </div>
-
       {/* Дропдаун */}
-      <div className="glass-menu absolute left-3 top-3 flex w-36 flex-col rounded-3xl border border-zinc-600/30 p-1.5 text-xs text-zinc-200 shadow-xl">
+      <div className="glass-menu relative flex w-32 flex-col self-start rounded-3xl border border-zinc-600/30 p-1.5 text-xs text-zinc-200 shadow-xl">
         {[lang?.appearance_preview_menu_1 || 'Профиль', lang?.appearance_preview_menu_2 || 'Настройки', lang?.appearance_preview_menu_3 || 'Выйти'].map((item) => (
           <span key={item} className="rounded-full px-3 py-1.5">{item}</span>
         ))}
       </div>
 
-      {/* Поле ввода */}
-      <div className="glass-input absolute left-3 top-[7.75rem] flex h-9 w-36 items-center gap-1.5 rounded-full border border-zinc-600/30 px-3 text-xs text-zinc-400">
-        <Icon name="IC-search" className="h-4 w-4 fill-current" />
-        {lang?.appearance_preview_input || 'Поиск'}
+      {/* Поиск и навигация */}
+      <div className="relative flex flex-col items-start gap-3">
+        <div className="glass-input flex h-9 w-36 items-center gap-1.5 rounded-full border border-zinc-600/30 px-3 text-xs text-zinc-400">
+          <Icon name="IC-search" className="h-4 w-4 fill-current" />
+          {lang?.appearance_preview_input || 'Поиск'}
+        </div>
+        <div className="glass-nav flex items-center gap-1.5 rounded-full border border-zinc-600/30 p-1.5 shadow-xl">
+          {(['IC-home', 'IC-feed', 'IC-settings'] as const).map((icon, index) => (
+            <span key={icon} className={cn('flex h-9 w-9 items-center justify-center rounded-full', index === 0 && 'bg-white/10')}>
+              <Icon name={icon} className="h-5 w-5 fill-white" />
+            </span>
+          ))}
+        </div>
       </div>
 
-      {/* Подсказка над нав-пиллом */}
-      <span className="glass-tooltip absolute bottom-[3.75rem] left-[3.5rem] rounded-full border border-zinc-600/30 px-2 py-0.5 text-[11px] leading-4 text-zinc-100">
-        {lang?.appearance_preview_tooltip || 'Подсказка'}
-      </span>
-
-      {/* Нав-пилл */}
-      <div className="glass-nav absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full border border-zinc-600/30 p-1.5 shadow-xl">
-        {(['IC-home', 'IC-feed', 'IC-music', 'IC-settings'] as const).map((icon, index) => (
-          <span key={icon} className={cn('flex h-9 w-9 items-center justify-center rounded-full', index === 0 && 'bg-white/10')}>
-            <Icon name={icon} className="h-5 w-5 fill-white" />
-          </span>
-        ))}
+      {/* Модалка поверх затемнения: занимает остаток строки, на телефоне — отдельной строкой */}
+      <div className="glass-overlay relative flex min-w-44 flex-1 items-center justify-center rounded-3xl p-3">
+        <div className="glass-panel flex w-full max-w-48 flex-col gap-1.5 rounded-3xl border border-zinc-600/30 p-3 text-xs text-zinc-200 shadow-xl">
+          <span className="font-semibold text-white">{lang?.appearance_preview_panel || 'Панель'}</span>
+          <span className="text-zinc-400">{lang?.appearance_preview_panel_text || 'Модалки, шторки, карточки'}</span>
+        </div>
       </div>
     </div>
   );
