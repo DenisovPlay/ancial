@@ -66,6 +66,13 @@ export type PulsePlaylistCardData = {
   type?: number | string | null;
 };
 
+/** Полка главной: плейлисты с одинаковым music_playlists.shelf (жанры, вайб, сезон…). */
+export type PulseShelf = {
+  items: PulsePlaylistCardData[];
+  key: string;
+  total: number;
+};
+
 export type PulseArtistCardData = {
   desk?: string | null;
   id?: number | string | null;
@@ -202,6 +209,35 @@ export function PulseSectionTitle({
     <span className={cn('relative z-20 w-full max-w-screen-2xl px-3 text-2xl font-black cutetext lg:px-0 lg:text-3xl xl:text-4xl', className)}>
       {children}
     </span>
+  );
+}
+
+/** Заголовок секции с кнопкой «Все» — провалиться в полный список (поиск, полки главной). */
+export function PulseSectionHeader({
+  allLabel,
+  className,
+  onAll,
+  title,
+}: {
+  allLabel: string;
+  className?: string;
+  onAll: () => void;
+  title: React.ReactNode;
+}) {
+  return (
+    <div className={cn('relative z-20 flex w-full items-center justify-between gap-3 px-3 lg:px-0', className)}>
+      <span className="cutetext text-2xl font-black lg:text-3xl xl:text-4xl">
+        {title}
+      </span>
+      <button
+        type="button"
+        onClick={onAll}
+        className="flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/20 px-3 py-1.5 text-zinc-300 shadow duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
+      >
+        <Icon name="IC-chevron-right" className="inline fill-current h-5 w-5" />
+        <span>{allLabel}</span>
+      </button>
+    </div>
   );
 }
 

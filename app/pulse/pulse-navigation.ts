@@ -21,6 +21,7 @@ export function getPulseNavigationTarget(path: string): PulseNavigationTarget {
     /^\/pulse\/playlist\/[^/?#]+(?:[?#].*)?$/.test(normalizedPath) ||
     /^\/pulse\/artist\/[^/?#]+(?:[?#].*)?$/.test(normalizedPath) ||
     /^\/pulse\/track\/[^/?#]+(?:[?#].*)?$/.test(normalizedPath) ||
+    /^\/pulse\/shelf\/[^/?#]+(?:[?#].*)?$/.test(normalizedPath) ||
     /^\/pulse\/search(?:[?#].*)?$/.test(normalizedPath) ||
     normalizedPath === '/pulse/my' ||
     normalizedPath === '/pulse/library'

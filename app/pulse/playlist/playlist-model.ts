@@ -148,6 +148,11 @@ export function getPulseBuiltinPlaylistCover(value: string | number | null | und
   return BUILTIN_PLAYLIST_META[normalizePulsePlaylistId(value)]?.img ?? '';
 }
 
+/** Название полки главной: из переводов (pulse_shelf_<ключ>), иначе сам ключ. */
+export function getPulseShelfTitle(key: string, lang?: Record<string, string> | null): string {
+  return lang?.[`pulse_shelf_${key}`] || key;
+}
+
 export function resolvePulsePlaylistTitle(
   card: {
     id?: number | string | null;

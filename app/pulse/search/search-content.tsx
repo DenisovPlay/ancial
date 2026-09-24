@@ -27,6 +27,7 @@ import {
   PulseArtistTile,
   PulsePlaylistTile,
   PulseScrollSection,
+  PulseSectionHeader,
   PulseTrackRow,
   normalizeText,
   toNumber,
@@ -37,7 +38,6 @@ import {
   type PulseTrack,
 } from '../pulse-components';
 import AppImage from '../../components/app-image';
-import Icon from '../../components/svg-icon';
 
 type PulseSearchResponse = {
   artists?: PulseArtistCardData[] | null;
@@ -301,21 +301,9 @@ export default function PulseSearchContent() {
     router.push(`/pulse/search?q=${encodeURIComponent(searchValue)}`);
   }, [router, searchValue]);
 
-  const sectionHeader = useCallback((text: string, href: string) => (
-    <div className="relative z-20 flex w-full items-center justify-between gap-3 px-3 lg:px-0">
-      <span className="cutetext text-2xl font-black lg:text-3xl xl:text-4xl">
-        {text}
-      </span>
-      <button
-        type="button"
-        onClick={() => router.push(href)}
-        className="flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/20 px-3 py-1.5 text-zinc-300 shadow duration-300 hover:bg-zinc-700 hover:text-white active:scale-95"
-      >
-        <Icon name="IC-chevron-right" className="inline fill-current h-5 w-5" />
-        <span>{lang?.all || 'Все'}</span>
-      </button>
-    </div>
-  ), [lang, router]);
+  const sectionHeader = (text: string, href: string) => (
+    <PulseSectionHeader allLabel={lang?.all || 'Все'} onAll={() => router.push(href)} title={text} />
+  );
 
   return (
     <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black", getPulseBackgroundColorByMood(currentTrackObj?.mood))}>

@@ -2015,4 +2015,10 @@ export const be: Record<string, string> = {
     "creators_lyrics_volume": "Гучнасць",
     "creators_lyrics_mute": "Выключыць гук",
     "creators_lyrics_unmute": "Уключыць гук",
+    "pulse_shelf_genres": "Жанры",
+    "pulse_shelf_vibe": "Вайбы",
+    "pulse_shelf_season": "Сезоны",
+    "pulse_shelf_editorial": "Выбар рэдакцыі",
+    "pulse_shelf_empty": "Падборак пакуль няма",
+    "pulse_shelf_empty_desc": "Тут пакуль нічога няма — зазірніце пазней",
 };

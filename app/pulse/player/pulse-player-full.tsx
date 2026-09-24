@@ -282,7 +282,13 @@ export function PulsePlayerFull({
           WebkitBackdropFilter: glassMode === 'off' ? 'none' : 'blur(40px) saturate(180%)',
           overscrollBehavior: 'none',
         }}
-        onTouchStart={onTouchStartFull}
+        onTouchStart={(event) => {
+          // «Вниз — свернуть» только по самому плееру: не из листаемого текста и не из модалок
+          // (события из порталов тоже всплывают сюда по дереву React).
+          const target = event.target;
+          if (!(target instanceof Element) || !event.currentTarget.contains(target) || target.closest('[data-swipe-close="off"]')) return;
+          onTouchStartFull(event);
+        }}
         onTouchEnd={onTouchEndFull}
       >
         <PulsePlayerFullHeader
@@ -343,6 +349,7 @@ export function PulsePlayerFull({
 
                     {!isDesktopLayout && mobileLyricsPresence.mounted ? (
                       <div
+                        data-swipe-close={sheetPresence.mounted ? 'off' : undefined}
                         className={cn(
                           'absolute inset-0 overflow-hidden rounded-3xl bg-zinc-900/80 backdrop-blur-md backdrop-saturate-200',
                           mobileLyricsPresence.leaving ? 'pulse-lyrics-backdrop-out' : 'pulse-lyrics-backdrop-in',

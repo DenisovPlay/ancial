@@ -1053,6 +1053,12 @@ export class AncialAPI {
     return (response && typeof response === 'object' && type in response) ? response[type] as T : response as T;
   }
 
+  /** Одна полка главной целиком (страница «Все»). */
+  static async pulseGetShelf<T = unknown>(key: string): Promise<T> {
+    const response = await this.request<{ shelf?: T }>(`/pulse/GetHomePage.php?type=shelf&key=${encodeURIComponent(key)}`);
+    return response?.shelf as T;
+  }
+
   static async pulseGetArtist<T = unknown>(id: string | number): Promise<T> {
     return this.request<T>(`/pulse/GetArtist.php?id=${id}`);
   }

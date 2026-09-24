@@ -2015,4 +2015,10 @@ export const ru: Record<string, string> = {
     "creators_lyrics_volume": "Громкость",
     "creators_lyrics_mute": "Выключить звук",
     "creators_lyrics_unmute": "Включить звук",
+    "pulse_shelf_genres": "Жанры",
+    "pulse_shelf_vibe": "Вайбы",
+    "pulse_shelf_season": "Сезоны",
+    "pulse_shelf_editorial": "Выбор редакции",
+    "pulse_shelf_empty": "Подборок пока нет",
+    "pulse_shelf_empty_desc": "Здесь пока ничего нет — загляните позже",
 };

@@ -27,15 +27,18 @@ import {
   PulsePlaylistTile,
   PulsePlaylistTileSkeleton,
   PulseScrollSection,
+  PulseSectionHeader,
   PulseSectionTitle,
   PulseTrackRow,
   normalizeText,
   toNumber,
   TrackCollectionPanel,
   type PulseShareAttachment,
+  type PulseShelf,
 } from './pulse-components';
 import {
   canManagePulseTrack,
+  getPulseShelfTitle,
   getPulseTrackDropdownZIndex,
   resolvePulsePlaylistTitle,
 } from './playlist/playlist-model';
@@ -186,6 +189,7 @@ const HOME_CACHE_KEYS = {
   fromPulse: 'pulse_home_frompulse',
   listened: 'pulse_home_listened',
   nowListen: 'pulse_home_nowlisten',
+  shelves: 'pulse_home_shelves',
   weLike: 'pulse_home_welike',
 } as const;
 
@@ -409,6 +413,7 @@ export default function PulseContent() {
   const [artists, setArtists] = useState<PulseHomeArtist[] | null>(() => readJsonCache<PulseHomeArtist[]>(HOME_CACHE_KEYS.artists));
   const [weLike, setWeLike] = useState<PulseHomePlaylistCard[] | null>(() => readJsonCache<PulseHomePlaylistCard[]>(HOME_CACHE_KEYS.weLike));
   const [nowListen, setNowListen] = useState<PulseHomePlaylistCard[] | null>(() => readJsonCache<PulseHomePlaylistCard[]>(HOME_CACHE_KEYS.nowListen));
+  const [shelves, setShelves] = useState<PulseShelf[] | null>(() => readJsonCache<PulseShelf[]>(HOME_CACHE_KEYS.shelves));
   const [topTracks, setTopTracks] = useState<PulseTrack[] | null>(() => readJsonCache<PulseTrack[]>(TRACK_CACHE_KEYS.Top));
   const [newTracks, setNewTracks] = useState<PulseTrack[] | null>(() => readJsonCache<PulseTrack[]>(TRACK_CACHE_KEYS.New));
   const [yourTracks, setYourTracks] = useState<PulseTrack[] | null>(() => readJsonCache<PulseTrack[]>(TRACK_CACHE_KEYS.Your));
@@ -624,10 +629,17 @@ export default function PulseContent() {
       AncialAPI.pulseGetHomePage<PulseHomeArtist[]>('artists'),
       AncialAPI.pulseGetHomePage<PulseHomePlaylistCard[]>('welike'),
       AncialAPI.pulseGetHomePage<PulseHomePlaylistCard[]>('nowlisten'),
+      AncialAPI.pulseGetHomePage<PulseShelf[]>('shelves'),
     ] as const;
 
-    void Promise.allSettled(requests).then(([fromPulseResult, artistsResult, weLikeResult, nowListenResult]) => {
+    void Promise.allSettled(requests).then(([fromPulseResult, artistsResult, weLikeResult, nowListenResult, shelvesResult]) => {
       if (cancelled) return;
+
+      // Полки без кэша и без ответа просто не рисуются — пустой заголовок хуже, чем ничего.
+      if (shelvesResult.status === 'fulfilled' && Array.isArray(shelvesResult.value)) {
+        writeJsonCache(HOME_CACHE_KEYS.shelves, shelvesResult.value);
+        setShelves(shelvesResult.value);
+      }
 
       if (fromPulseResult.status === 'fulfilled' && Array.isArray(fromPulseResult.value)) {
         writeJsonCache(HOME_CACHE_KEYS.fromPulse, fromPulseResult.value);
@@ -1045,6 +1057,31 @@ export default function PulseContent() {
           </div>
         ) : null}
       </div>
+
+      {Array.isArray(shelves) ? shelves.filter((shelf) => shelf.items.length > 0).map((shelf) => (
+        <React.Fragment key={`shelf-${shelf.key}`}>
+          <PulseSectionHeader
+            allLabel={lang?.all || 'Все'}
+            className="max-w-screen-2xl"
+            onAll={() => openPulseSubpage(`/pulse/shelf/${encodeURIComponent(shelf.key)}`)}
+            title={getPulseShelfTitle(shelf.key, lang)}
+          />
+          <PulseScrollSection>
+            {shelf.items.map((card) => {
+              const cardPlayId = getPlayableCardId(card);
+              return (
+                <PulsePlaylistTile
+                  key={`shelf-${shelf.key}-${card.id ?? card.genlist ?? card.name}`}
+                  card={card}
+                  isPlaying={Boolean(cardPlayId && currentCollectionId === cardPlayId && isPlaying)}
+                  onOpen={() => openPlaylistCard(card)}
+                  onPlay={() => playPlaylistCard(card)}
+                />
+              );
+            })}
+          </PulseScrollSection>
+        </React.Fragment>
+      )) : null}
 
       <PulseLegalFooter />
 

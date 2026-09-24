@@ -2015,4 +2015,10 @@ export const en: Record<string, string> = {
   "creators_lyrics_volume": "Volume",
   "creators_lyrics_mute": "Mute",
   "creators_lyrics_unmute": "Unmute",
+  "pulse_shelf_genres": "Genres",
+  "pulse_shelf_vibe": "Vibes",
+  "pulse_shelf_season": "Seasons",
+  "pulse_shelf_editorial": "Editor's picks",
+  "pulse_shelf_empty": "No collections yet",
+  "pulse_shelf_empty_desc": "Nothing here yet — check back later",
 };
