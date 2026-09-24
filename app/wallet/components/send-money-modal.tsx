@@ -270,7 +270,7 @@ export function SendMoneyModal({
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
                 ) : (
-                  lang?.send || 'Перевести'
+                  lang?.wallet_transfer || 'Перевести'
                 )}
               </button>
             </form>
@@ -377,7 +377,7 @@ export function SendMoneyModal({
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
                 ) : (
-                  lang?.send || 'Перевести'
+                  lang?.wallet_transfer || 'Перевести'
                 )}
               </button>
             </form>
@@ -540,7 +540,7 @@ export function SendMoneyModal({
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
                 ) : (
-                  lang?.send || 'Перевести'
+                  lang?.wallet_transfer || 'Перевести'
                 )}
               </button>
             </form>
