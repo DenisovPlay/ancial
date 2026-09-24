@@ -16,8 +16,10 @@ export const IMAGE_HOSTS: ImageHost[] = [
   { hostname: 'ancial.ru', insecure: true },
   { hostname: '*.ancial.ru', insecure: true },
   { hostname: SITE_DOMAIN, insecure: true },
-  { hostname: `*.${SITE_DOMAIN}`, insecure: true },
-  { hostname: 'cdn.betterttv.net' },
+  // Эмодзи и стикеры сторонних CDN (BetterTTV, 7TV) — анимированные GIF/WebP:
+  // sharp в next/image тратит лишний CPU сервера и ломает кадры. Клиент грузит напрямую.
+  { hostname: 'cdn.betterttv.net', optimize: false },
+  { hostname: 'cdn.7tv.app', optimize: false },
   { hostname: '*.userapi.com' },
   { hostname: '*.vk.com' },
   { hostname: '*.vkusercontent.com' },

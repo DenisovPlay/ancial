@@ -21,8 +21,11 @@ export function matchImageHost(src: string, hosts: readonly ImageHost[]): boolea
   } catch {
     return false;
   }
-  // SVG оптимизатору нечего делать: он отдаёт его как есть, только лишний прыжок через сервер.
-  if (url.pathname.toLowerCase().endsWith('.svg')) return false;
+  const path = url.pathname.toLowerCase();
+  // SVG и GIF оптимизатору не нужны: вектор отдаётся как есть, GIF в sharp ресурсоёмок и ломает кадры анимации.
+  if (path.endsWith('.svg') || path.endsWith('.gif')) return false;
+  // Нативные стикеры — уже готовые легковесные ассеты (анимированный AVIF/WebP), sharp не поддерживает animated AVIF.
+  if (path.startsWith('/img/stickers/')) return false;
   if (url.hostname === 'local.invalid') return value.startsWith('/') && !value.startsWith('//');
 
   return hosts.some(({ hostname, insecure, optimize }) => {

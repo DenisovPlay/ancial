@@ -247,7 +247,7 @@ export function renderStickerHtml(code: string, imageUrl: string, isStandalone: 
   );
   const safeUrl = imageUrl.replace(/"/g, '&quot;');
   const imgClass = isStandalone
-    ? 'h-24 w-24 object-contain inline-block my-1 rounded-2xl select-none'
+    ? 'h-24 w-auto object-contain inline-block my-1 rounded-2xl select-none'
     : 'h-10 w-10 inline-block align-middle object-contain mx-0.5 select-none';
 
   return `<span class="inline-sticker-wrapper relative group inline-block cursor-pointer active:scale-95 duration-300" data-sticker="${safeCode}" contenteditable="false"><img class="${imgClass} copy" data-clipboard-text=":${safeCode}:" src="${safeUrl}" alt=":${safeCode}:" loading="lazy" /><span class="hidden group-hover:flex -top-7 left-0 text-xs h-6 items-center justify-center w-fit bg-zinc-800/90 border border-zinc-600/30 text-zinc-200 px-1.5 absolute rounded-full backdrop-blur-lg shadow pointer-events-none select-none z-10">:${safeCode}:</span></span>`;

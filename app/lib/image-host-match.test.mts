@@ -8,10 +8,13 @@ const HOSTS = [
   { hostname: 'avatars.yandex.net' },
 ];
 
-test('локальные пути оптимизируются, svg/data/blob — нет', () => {
+test('локальные пути оптимизируются, svg/gif/стикеры/data/blob — нет', () => {
   assert.equal(matchImageHost('/image.php?file=avatars%2Fa.webp', HOSTS), true);
   assert.equal(matchImageHost('/img/placeholders/user.png', HOSTS), true);
   assert.equal(matchImageHost('/img/branding/pulse.svg', HOSTS), false);
+  assert.equal(matchImageHost('/img/status/sponge.gif', HOSTS), false);
+  assert.equal(matchImageHost('/img/stickers/privet.avif', HOSTS), false);
+  assert.equal(matchImageHost('/img/stickers/webp/privet.webp', HOSTS), false);
   assert.equal(matchImageHost('data:image/gif;base64,R0lGOD', HOSTS), false);
   assert.equal(matchImageHost('blob:http://localhost/abc', HOSTS), false);
   assert.equal(matchImageHost('', HOSTS), false);

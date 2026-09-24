@@ -91,12 +91,18 @@ function useImageLoader({
     // Сначала — тот же файл напрямую (оптимизатор ходит без куки пользователя и через сеть сервера),
     // потом фолбэк, потом заглушка ошибки.
     const viaOptimizer = event.currentTarget.currentSrc.includes('/_next/image');
+    const willRetryDirect = viaOptimizer && !direct;
+    const willRetryFallback = !willRetryDirect && !fallback && Boolean(fallbackSrc) && fallbackSrc !== primary;
+
     setState((prev) => {
       if (viaOptimizer && !prev.direct) return { ...prev, direct: true, status: 'loading' };
       if (!prev.fallback && fallbackSrc && fallbackSrc !== prev.primary) return { ...prev, fallback: true, status: 'loading' };
       return { ...prev, status: 'error' };
     });
-    onError?.(event);
+
+    if (!willRetryDirect && !willRetryFallback) {
+      onError?.(event);
+    }
   };
 
   // Класс проявления снимаем после анимации: иначе он перебивал бы собственные animate-* картинки.

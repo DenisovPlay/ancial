@@ -24,7 +24,9 @@ function StickerImg({ sticker }: { sticker: StickerItem }) {
     <AppImage
       width={32}
       height={32}
-      src={sticker.image_url_avif ?? sticker.image_url}
+      src={sticker.image_url_avif || sticker.image_url}
+      fallbackSrc={sticker.image_url_avif && sticker.image_url ? sticker.image_url : undefined}
+      unoptimized
       alt={sticker.shortcode}
       title={sticker.shortcode}
       loading="lazy"
@@ -100,7 +102,7 @@ export default function UnifiedStickerPicker({
             title={pack.title}
             className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-3xl border border-zinc-600/30 bg-zinc-900/60 hover:bg-zinc-800 duration-300 cursor-pointer active:scale-95"
           >
-            <AppImage width={16} height={16} src={pack.icon_url} alt={pack.title} loading="lazy" draggable={false} className="w-4 h-4 object-contain rounded-full" />
+            <AppImage width={16} height={16} src={pack.icon_url} alt={pack.title} unoptimized loading="lazy" draggable={false} className="w-4 h-4 object-contain rounded-full" />
           </button>
         ))}
       </div>

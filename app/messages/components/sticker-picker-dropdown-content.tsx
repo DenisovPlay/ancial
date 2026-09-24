@@ -33,7 +33,9 @@ function StickerBtn({ sticker, onClick, disabled }: { sticker: StickerItem; onCl
         <AppImage
           width={56}
           height={56}
-          src={sticker.image_url_avif ?? sticker.image_url}
+          src={sticker.image_url_avif || sticker.image_url}
+          fallbackSrc={sticker.image_url_avif && sticker.image_url ? sticker.image_url : undefined}
+          unoptimized
           alt={sticker.shortcode}
           loading="lazy"
           draggable={false}
@@ -161,7 +163,7 @@ export default function StickerPickerDropdownContent({
             title={pack.title}
             className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-3xl border border-zinc-600/30 bg-zinc-900/60 hover:bg-zinc-800 duration-300 cursor-pointer active:scale-95"
           >
-            <AppImage width={20} height={20} src={pack.icon_url} alt={pack.title} loading="lazy" draggable={false} className="w-5 h-5 object-contain rounded-full" />
+            <AppImage width={20} height={20} src={pack.icon_url} alt={pack.title} unoptimized loading="lazy" draggable={false} className="w-5 h-5 object-contain rounded-full" />
           </button>
         ))}
 

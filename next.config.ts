@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
     ],
     dangerouslyAllowSVG: true,
     dangerouslyAllowLocalIP: true,
-    contentDispositionType: 'attachment',
+    contentDispositionType: 'inline',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: IMAGE_HOSTS.filter(({ optimize }) => optimize !== false).flatMap(({ hostname, insecure }) =>
       (insecure ? (['https', 'http'] as const) : (['https'] as const)).map((protocol) => ({
