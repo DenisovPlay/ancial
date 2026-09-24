@@ -57,7 +57,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
   const strings = useMemo(() => {
     return {
       withdraw: lang?.withdraw || 'Вывести',
-      send: lang?.send || 'Перевести',
+      send: lang?.wallet_transfer || 'Перевести',
       receive: lang?.receive || 'Запросить',
       deposit: lang?.deposit || 'Пополнить',
       active: lang?.active || 'Активен',

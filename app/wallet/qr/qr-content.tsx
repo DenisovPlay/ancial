@@ -534,7 +534,7 @@ export default function QRContent() {
           className="flex items-center justify-center gap-3 p-3 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-3xl duration-300 active:scale-95 border border-zinc-700/30"
         >
           <Icon name="IC-send" className="w-6 h-6 fill-white" />
-          <span>{lang?.send || 'Перевести'} {resolvedWallet.owner_name}</span>
+          <span>{lang?.wallet_transfer || 'Перевести'} {resolvedWallet.owner_name}</span>
         </button>
       );
     }

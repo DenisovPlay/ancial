@@ -401,6 +401,7 @@ export const en: Record<string, string> = {
   "to_user": "to user",
   "withdraw": "Withdraw",
   "send": "Send",
+  "wallet_transfer": "Send",
   "receive": "Request",
   "deposit": "Top up",
   "active": "Active",

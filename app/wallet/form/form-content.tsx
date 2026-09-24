@@ -62,7 +62,7 @@ function FormContentInner() {
 
   const strings = useMemo(() => {
     return {
-      send: lang?.send || 'Перевести',
+      send: lang?.wallet_transfer || 'Перевести',
       deposit: lang?.deposit || 'Пополнить',
       cancel: lang?.cancel || 'Отменить',
       active: lang?.active || 'Активен',
