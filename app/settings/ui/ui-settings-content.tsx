@@ -273,6 +273,30 @@ export default function UiSettingsContent() {
       </div>
 
       <div className="flex flex-col gap-3 w-full max-w-3xl px-3 lg:px-0">
+        {/* Language Section */}
+        <div className="rounded-3xl flex flex-col border border-zinc-600/30 bg-zinc-900 overflow-hidden">
+          <SettingsItem
+            title={lang?.language || 'Язык'}
+            iconBgClass="bg-red-500/10"
+            icon={
+              <Icon name="IC-globe" className="w-6 h-6 fill-red-500" />
+            }
+            rightContent={
+              <select
+                onChange={selectLanguage}
+                value={langCode}
+                className="h-10 cursor-pointer rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 text-white outline-none"
+              >
+                {availableLocales.map((loc) => (
+                  <option key={loc.code} value={loc.code}>
+                    {loc.title}
+                  </option>
+                ))}
+              </select>
+            }
+          />
+        </div>
+
         {/* Стекло */}
         <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 shadow-lg">
           <div className="flex items-center gap-3">
@@ -438,30 +462,6 @@ export default function UiSettingsContent() {
             ]}
             value={settings.motion.lyrics}
             onChange={(value) => update((draft) => { draft.motion.lyrics = value; })}
-          />
-        </div>
-
-        {/* Language Section */}
-        <div className="rounded-3xl flex flex-col border border-zinc-600/30 bg-zinc-900 overflow-hidden">
-          <SettingsItem
-            title={lang?.language || 'Язык'}
-            iconBgClass="bg-red-500/10"
-            icon={
-              <Icon name="IC-globe" className="w-6 h-6 fill-red-500" />
-            }
-            rightContent={
-              <select
-                onChange={selectLanguage}
-                value={langCode}
-                className="focus:outline-0 focus:ring-0 bg-zinc-700/70 hover:bg-zinc-700/60 duration-300 p-1 rounded-2xl mr-2 shadow cursor-pointer text-white border-0 focus:ring-0"
-              >
-                {availableLocales.map((loc) => (
-                  <option key={loc.code} value={loc.code}>
-                    {loc.title}
-                  </option>
-                ))}
-              </select>
-            }
           />
         </div>
       </div>
