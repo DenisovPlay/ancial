@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCopyToClipboard } from '../hooks/use-copy-to-clipboard';
 import { cn } from '../lib/cn';
 import { useMentionNavigation } from '../hooks/use-mention-navigation';
-import { sanitizeUserHtml } from '../lib/sanitize-html';
+import { useSanitizedHtml } from '../lib/use-sanitized-html';
 import { ensureCarouselScrollDelegation } from './carousel-delegation';
 
 import ImageViewerModal, { type ImageViewerSlide } from './image-viewer-modal';
@@ -233,7 +233,8 @@ function ExpandablePostContent({
     ensureCarouselScrollDelegation();
   }, []);
 
-  const parsedHtml = sanitizeUserHtml(parsePostContentToHtml(content), { preloadImages: true });
+  const postHtml = useMemo(() => parsePostContentToHtml(content), [content]);
+  const parsedHtmlProps = useSanitizedHtml(postHtml, true);
 
   if (noCollapse) {
     return (
@@ -242,7 +243,7 @@ function ExpandablePostContent({
         id={`textblock${postId}`}
         style={{ userSelect: 'text' }}
         className="-mx-3 px-3 w-[calc(100%+1.5rem)] text-base lg:text-lg text-zinc-200 font-medium break-words relative post-content-container my-1"
-        dangerouslySetInnerHTML={{ __html: parsedHtml }}
+        dangerouslySetInnerHTML={parsedHtmlProps}
         onClick={onClick}
       />
     );
@@ -261,7 +262,7 @@ function ExpandablePostContent({
           '-mx-3 px-3 -my-1 py-1 w-[calc(100%+1.5rem)] text-base lg:text-lg text-zinc-200 font-medium break-words overflow-hidden relative post-content-container',
           animate && expandMotion && 'transition-[max-height] duration-500 ease-in-out',
         )}
-        dangerouslySetInnerHTML={{ __html: parsedHtml }}
+        dangerouslySetInnerHTML={parsedHtmlProps}
         onClick={onClick}
       />
 

@@ -1,10 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import AppImage from '../../components/app-image';
+import { getDropdownMotionProps } from '../../components/navigation';
 import Icon from '../../components/svg-icon';
 import { useAuth } from '../../context/AuthContext';
 import { AncialAPI } from '../../lib/api-v2';
+import { useAppearanceMotion } from '../../lib/use-appearance';
 
 export type PulseLinkableArtist = {
   id?: number | string;
@@ -40,6 +43,8 @@ export function PulseArtistLinkPicker({
   selectedIds,
 }: PulseArtistLinkPickerProps) {
   const { lang } = useAuth();
+  // Та же анимация, что у Dropdown, и та же зависимость от «Интерфейс → Анимации → меню».
+  const menuMotion = useAppearanceMotion().menu;
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<PulseLinkableArtist[]>([]);
@@ -281,42 +286,48 @@ export function PulseArtistLinkPicker({
         </div>
       </div>
 
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={handleClose} />
-          <div className="absolute left-0 right-0 top-full mt-2 bg-zinc-900 border border-zinc-600/30 rounded-3xl shadow-2xl z-50 p-3 flex flex-col gap-3">
-            {/* Поле поиска артистов */}
-            <div className="relative w-full">
-              <Icon
-                name="IC-search"
-                className="w-4 h-4 fill-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-              />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder={lang?.creators_search_artists || 'Поиск по артистам...'}
-                className="w-full h-10 pl-9 pr-9 rounded-full bg-zinc-800/80 border border-zinc-600/30 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-zinc-400 duration-300"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                {isSearching ? (
-                  <Icon name="IC-loader" className="w-4 h-4 fill-zinc-400 animate-spin" />
-                ) : searchQuery.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => handleSearchChange('')}
-                    className="text-zinc-400 hover:text-white transition-colors duration-300 p-0.5 rounded-full cursor-pointer active:scale-95"
-                    aria-label="Очистить поиск"
-                  >
-                    <Icon name="IC-times" className="w-4 h-4 fill-current" />
-                  </button>
-                ) : null}
+      {isOpen && <div className="fixed inset-0 z-40" onClick={handleClose} />}
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            {...getDropdownMotionProps(menuMotion)}
+            className="absolute left-0 right-0 top-full z-50 mt-3 flex origin-top flex-col overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-900 shadow-2xl"
+          >
+            {/* Поле поиска артистов: список уходит под него с плавным затуханием */}
+            <div className="relative z-10 w-full bg-gradient-to-b from-zinc-900 from-70% to-transparent p-3">
+              <div className="relative w-full">
+                <Icon
+                  name="IC-search"
+                  className="w-4 h-4 fill-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  placeholder={lang?.creators_search_artists || 'Поиск по артистам...'}
+                  className="w-full h-10 pl-9 pr-9 rounded-full bg-zinc-800/80 border border-zinc-600/30 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-zinc-400 duration-300"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                  {isSearching ? (
+                    <Icon name="IC-loader" className="w-4 h-4 fill-zinc-400 animate-spin" />
+                  ) : searchQuery.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSearchChange('')}
+                      className="text-zinc-400 hover:text-white transition-colors duration-300 p-0.5 rounded-full cursor-pointer active:scale-95"
+                      aria-label="Очистить поиск"
+                    >
+                      <Icon name="IC-times" className="w-4 h-4 fill-current" />
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            {/* Список артистов */}
-            <div role="listbox" className="max-h-60 overflow-y-auto flex flex-col gap-1 pr-1">
+            {/* Список артистов: строки во всю ширину, фон обрезается скруглением блока */}
+            <div role="listbox" className="-mt-3 flex max-h-60 flex-col overflow-y-auto pb-3 pt-3">
               {displayedArtists.length === 0 ? (
                 <div className="py-6 px-3 text-center text-sm text-zinc-500">
                   {isSearching
@@ -340,7 +351,7 @@ export function PulseArtistLinkPicker({
                           toggleArtist(aId);
                         }
                       }}
-                      className={`flex items-center justify-between gap-3 px-3 py-2 rounded-full cursor-pointer duration-300 active:scale-95 transition-all ${
+                      className={`flex shrink-0 items-center justify-between gap-3 px-3 py-2 cursor-pointer duration-300 transition-colors focus:outline-none focus-visible:bg-zinc-800/60 ${
                         isSelected ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800/60 text-zinc-200'
                       }`}
                     >
@@ -372,9 +383,9 @@ export function PulseArtistLinkPicker({
                 })
               )}
             </div>
-          </div>
-        </>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

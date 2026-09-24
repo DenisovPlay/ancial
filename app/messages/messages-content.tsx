@@ -366,11 +366,25 @@ export default function MessagesContent() {
         ? `${lang?.community_chat_slow_mode || 'Следующее сообщение через'} ${slowModeRemaining}с`
         : (lang?.write_message || 'Напишите сообщение');
 
+  // Секундный тик — только пока идёт отсчёт: вне кулдауна он впустую перерисовывал бы весь чат.
   useEffect(() => {
-    if (slowModeSeconds <= 0 || communityChatAccess.canDeleteAnyMessage) return;
-    const timer = window.setInterval(() => setSlowModeNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [communityChatAccess.canDeleteAnyMessage, slowModeSeconds]);
+    if (slowModeSeconds <= 0 || communityChatAccess.canDeleteAnyMessage || !latestOwnMessageAtMs) return;
+    const cooldownEndsAt = latestOwnMessageAtMs + slowModeSeconds * 1000;
+    if (Date.now() >= cooldownEndsAt) return;
+    let timer = 0;
+    const tick = () => {
+      const now = Date.now();
+      setSlowModeNow(now);
+      if (now >= cooldownEndsAt) window.clearInterval(timer);
+    };
+    // Первый тик сразу: «сейчас» могло застыть с прошлого отсчёта, пока таймер стоял.
+    const kick = window.setTimeout(tick, 0);
+    timer = window.setInterval(tick, 1000);
+    return () => {
+      window.clearTimeout(kick);
+      window.clearInterval(timer);
+    };
+  }, [communityChatAccess.canDeleteAnyMessage, latestOwnMessageAtMs, slowModeSeconds]);
   const handleVoiceRoomSignal = useCallback((raw?: unknown) => {
     const envelope = (raw || {}) as {
       data?: { kind?: string; participants?: unknown[] };
@@ -415,10 +429,13 @@ export default function MessagesContent() {
     return `${count} ${lang?.group_members_5 || 'участников'}`;
   };
 
-  // Периодически вычищаем просроченных typing-юзеров (TTL истёк)
+  // Вычищаем просроченных typing-юзеров (TTL истёк): один таймер до ближайшего истечения
+  // вместо опроса каждые 500мс. Новое событие «печатает» меняет typingUsers — таймер переставится.
   useEffect(() => {
-    if (Object.keys(typingUsers).length === 0) return;
-    const timer = setInterval(() => {
+    const entries = Object.values(typingUsers);
+    if (entries.length === 0) return;
+    const nearestUntil = Math.min(...entries.map((entry) => entry.until));
+    const timer = window.setTimeout(() => {
       const now = Date.now();
       setTypingUsers((prev) => {
         const expired = Object.keys(prev).filter((id) => prev[Number(id)].until <= now);
@@ -427,11 +444,11 @@ export default function MessagesContent() {
         expired.forEach((id) => delete next[Number(id)]);
         return next;
       });
-    }, 500);
-    return () => clearInterval(timer);
+    }, Math.max(50, nearestUntil - Date.now() + 20));
+    return () => window.clearTimeout(timer);
   }, [typingUsers]);
 
-  // Date.now() в рендере запрещён линтером: typing-юзеры вычищаются таймером выше (500мс),
+  // Date.now() в рендере запрещён линтером: typing-юзеры вычищаются таймером выше,
   // а «текущее время» для фильтра берём из тика dayLabelTick (обновляется таймерами).
   const activeTypingUserIds = Object.keys(typingUsers).filter(
     (idStr) => typingUsers[Number(idStr)]?.until > dayLabelTick
@@ -1656,6 +1673,32 @@ export default function MessagesContent() {
     setEditMessageModalOpen(true);
   };
 
+  // Колбэки пузырей — стабильные ссылки поверх свежих обработчиков: иначе memo(MessageBubble)
+  // не срабатывал бы, и каждая буква в поле ввода перерисовывала бы всю ленту.
+  const bubbleHandlersRef = useRef({ handleMessageDelete, handleMessageEditOpen, seekToMessage, sendReaction });
+  useEffect(() => {
+    bubbleHandlersRef.current = { handleMessageDelete, handleMessageEditOpen, seekToMessage, sendReaction };
+  });
+  const handleBubbleAddReaction = useCallback((messageId: number, reaction: string) => {
+    void bubbleHandlersRef.current.sendReaction(messageId, reaction, 'add');
+  }, []);
+  const handleBubbleDeleteReaction = useCallback((messageId: number, reaction: string) => {
+    void bubbleHandlersRef.current.sendReaction(messageId, reaction, 'delete');
+  }, []);
+  const handleBubbleReply = useCallback((message: DialogMessage) => {
+    setReplyingTo(message);
+    messageInputRef.current?.focus();
+  }, [setReplyingTo]);
+  const handleBubbleDelete = useCallback((message: DialogMessage) => {
+    void bubbleHandlersRef.current.handleMessageDelete(message);
+  }, []);
+  const handleBubbleEdit = useCallback((message: DialogMessage) => {
+    bubbleHandlersRef.current.handleMessageEditOpen(message);
+  }, []);
+  const handleBubbleReplyClick = useCallback((replyToId: string | number) => {
+    void bubbleHandlersRef.current.seekToMessage(replyToId);
+  }, []);
+
   const handleMessageEditSave = async () => {
     const messageId = getMessageId(editingMessage ?? {});
     const nextValue = editingValue.trim();
@@ -2805,22 +2848,13 @@ export default function MessagesContent() {
                                     hideAvatar={hideAvatar}
                                     hideName={hideName}
                                     members={selectedDialog?.members}
-                                    onAddReaction={(messageId, reaction) => {
-                                      void sendReaction(messageId, reaction, 'add');
-                                    }}
-                                    onReply={(message) => {
-                                      setReplyingTo(message);
-                                      messageInputRef.current?.focus();
-                                    }}
-                                    onDeleteMessage={(message) => {
-                                      void handleMessageDelete(message);
-                                    }}
-                                    onDeleteReaction={(messageId, reaction) => {
-                                      void sendReaction(messageId, reaction, 'delete');
-                                    }}
-                                    onEditMessage={handleMessageEditOpen}
+                                    onAddReaction={handleBubbleAddReaction}
+                                    onReply={handleBubbleReply}
+                                    onDeleteMessage={handleBubbleDelete}
+                                    onDeleteReaction={handleBubbleDeleteReaction}
+                                    onEditMessage={handleBubbleEdit}
                                     onOpenImage={setActiveDialogImageKey}
-                                    onReplyClick={seekToMessage}
+                                    onReplyClick={handleBubbleReplyClick}
                                   />
                                 );
                               })()

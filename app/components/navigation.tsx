@@ -200,6 +200,105 @@ const NavItem = ({
   );
 };
 
+/**
+ * Анимация появления меню — общая для Dropdown и кастомных выпадашек (селекты, пикеры):
+ * пружина с blur при включённых «Интерфейс → Анимации → меню», иначе короткий easeOut.
+ */
+export function getDropdownMotionProps(responsive: boolean) {
+  return {
+    initial: { opacity: 0, scale: 0.94, filter: responsive ? 'blur(4px)' : 'none' },
+    animate: { opacity: 1, scale: 1, filter: 'blur(0px)' },
+    exit: { opacity: 0, scale: 0.94, filter: responsive ? 'blur(4px)' : 'none' },
+    transition: responsive
+      ? { type: 'spring' as const, stiffness: 420, damping: 28, mass: 0.8 }
+      : { duration: 0.18, ease: 'easeOut' as const },
+  };
+}
+
+/**
+ * Открытое меню. Motion-значения, пружины и блик живут здесь, а не в Dropdown: закрытых меню
+ * на странице сотни (по одному на каждое сообщение чата), и подписки им не нужны.
+ */
+function DropdownMenuPanel({
+  children,
+  className,
+  responsive,
+}: {
+  children: React.ReactNode;
+  className: string;
+  responsive: boolean;
+}) {
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+  // Liquid glass cursor tracking for menu container
+  const mouseX = useMotionValue(-200);
+  const mouseY = useMotionValue(-200);
+
+  // Micro magnetic elastic pull on the menu container (max +/- 1.5px)
+  const rawMenuX = useMotionValue(0);
+  const rawMenuY = useMotionValue(0);
+  const menuSpringX = useSpring(rawMenuX, { stiffness: 350, damping: 25 });
+  const menuSpringY = useSpring(rawMenuY, { stiffness: 350, damping: 25 });
+
+  const sheenBackground = useMotionTemplate`radial-gradient(140px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.01) 40%, transparent 80%)`;
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!responsive || !menuContainerRef.current) return;
+    const rect = menuContainerRef.current.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const relY = e.clientY - rect.top;
+    mouseX.set(relX);
+    mouseY.set(relY);
+
+    // Мягкое микро-смещение меню к курсору (не более 1.5px)
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const dx = relX - centerX;
+    const dy = relY - centerY;
+    rawMenuX.set(Math.max(-1.5, Math.min(1.5, dx * 0.015)));
+    rawMenuY.set(Math.max(-1.5, Math.min(1.5, dy * 0.015)));
+  };
+
+  const handleMouseLeave = () => {
+    if (!responsive) return;
+    mouseX.set(-200);
+    mouseY.set(-200);
+    rawMenuX.set(0);
+    rawMenuY.set(0);
+  };
+
+  return (
+    <motion.div
+      ref={menuContainerRef}
+      onMouseMove={responsive ? handleMouseMove : undefined}
+      onMouseLeave={responsive ? handleMouseLeave : undefined}
+      onTouchEnd={responsive ? handleMouseLeave : undefined}
+      onTouchCancel={responsive ? handleMouseLeave : undefined}
+      {...getDropdownMotionProps(responsive)}
+      style={
+        responsive
+          ? {
+            x: menuSpringX,
+            y: menuSpringY,
+          }
+          : undefined
+      }
+      data-dropdown-menu="true"
+      className={className}
+    >
+      {/* Apple Liquid Glass Specular Sheen (только в режиме "Полное") */}
+      {responsive && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-0 rounded-3xl opacity-80"
+          style={{
+            background: sheenBackground,
+          }}
+        />
+      )}
+      {children}
+    </motion.div>
+  );
+}
+
 type DropdownProps = {
   activePaths?: string[];
   align?: 'start' | 'end' | 'center';
@@ -252,50 +351,12 @@ export const Dropdown = ({
   const pathname = usePathname();
   const [internalOpen, setInternalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuContainerRef = useRef<HTMLDivElement>(null);
   const isControlled = typeof open === 'boolean';
   const isOpen = isControlled ? open : internalOpen;
 
   // Эффект Apple Liquid Glass активен эксклюзивно для режима "Полное"
   // Отзывчивые эффекты (магнит, блик, «желе») — настройка «Интерфейс → Анимации», не режим стекла.
   const responsive = useAppearanceMotion().menu;
-
-  // Liquid glass cursor tracking for menu container
-  const mouseX = useMotionValue(-200);
-  const mouseY = useMotionValue(-200);
-
-  // Micro magnetic elastic pull on the menu container (max +/- 1.5px)
-  const rawMenuX = useMotionValue(0);
-  const rawMenuY = useMotionValue(0);
-  const menuSpringX = useSpring(rawMenuX, { stiffness: 350, damping: 25 });
-  const menuSpringY = useSpring(rawMenuY, { stiffness: 350, damping: 25 });
-
-  const sheenBackground = useMotionTemplate`radial-gradient(140px circle at ${mouseX}px ${mouseY}px, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.01) 40%, transparent 80%)`;
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!responsive || !menuContainerRef.current) return;
-    const rect = menuContainerRef.current.getBoundingClientRect();
-    const relX = e.clientX - rect.left;
-    const relY = e.clientY - rect.top;
-    mouseX.set(relX);
-    mouseY.set(relY);
-
-    // Мягкое микро-смещение меню к курсору (не более 1.5px)
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const dx = relX - centerX;
-    const dy = relY - centerY;
-    rawMenuX.set(Math.max(-1.5, Math.min(1.5, dx * 0.015)));
-    rawMenuY.set(Math.max(-1.5, Math.min(1.5, dy * 0.015)));
-  };
-
-  const handleMouseLeave = () => {
-    if (!responsive) return;
-    mouseX.set(-200);
-    mouseY.set(-200);
-    rawMenuX.set(0);
-    rawMenuY.set(0);
-  };
 
   const setOpen = useCallback((nextOpen: boolean) => {
     if (!isControlled) {
@@ -357,6 +418,21 @@ export const Dropdown = ({
         ? 'w-auto min-w-max items-start'
         : 'w-48';
 
+  // Клик по пункту меню закрывает его (если не отключено) — оборачиваем onClick детей.
+  const wrappedChildren = isOpen ? React.Children.map(children, (child) => {
+    if (React.isValidElement<{ onClick?: () => void }>(child)) {
+      return React.cloneElement(child, {
+        onClick: () => {
+          if (child.props.onClick) child.props.onClick();
+          if (closeOnChildClick) {
+            setOpen(false);
+          }
+        }
+      });
+    }
+    return child;
+  }) : null;
+
   const handleTriggerClick = () => {
     if (triggerDisabled) {
       return;
@@ -402,29 +478,7 @@ export const Dropdown = ({
       ) : null}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            ref={menuContainerRef}
-            onMouseMove={responsive ? handleMouseMove : undefined}
-            onMouseLeave={responsive ? handleMouseLeave : undefined}
-            onTouchEnd={responsive ? handleMouseLeave : undefined}
-            onTouchCancel={responsive ? handleMouseLeave : undefined}
-            initial={{ opacity: 0, scale: 0.94, filter: responsive ? 'blur(4px)' : 'none' }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 0.94, filter: responsive ? 'blur(4px)' : 'none' }}
-            transition={
-              responsive
-                ? { type: 'spring', stiffness: 420, damping: 28, mass: 0.8 }
-                : { duration: 0.18, ease: 'easeOut' }
-            }
-            style={
-              responsive
-                ? {
-                  x: menuSpringX,
-                  y: menuSpringY,
-                }
-                : undefined
-            }
-            data-dropdown-menu="true"
+          <DropdownMenuPanel
             className={cn(
               'absolute',
               direction === 'col' ? 'overflow-hidden' : 'overflow-visible',
@@ -436,51 +490,16 @@ export const Dropdown = ({
               'glass-menu border border-zinc-600/30 shadow-2xl shadow-black/60 flex gap-1 z-50',
               menuClassName,
             )}
+            responsive={responsive}
           >
-            {/* Apple Liquid Glass Specular Sheen (только в режиме "Полное") */}
-            {responsive && (
-              <motion.div
-                className="pointer-events-none absolute inset-0 z-0 rounded-3xl opacity-80"
-                style={{
-                  background: sheenBackground,
-                }}
-              />
-            )}
-
             {direction === 'col' ? (
               <div className="relative z-10 flex flex-col gap-1 w-full">
-                {React.Children.map(children, (child) => {
-                  if (React.isValidElement<{ onClick?: () => void }>(child)) {
-                    return React.cloneElement(child, {
-                      onClick: () => {
-                        if (child.props.onClick) child.props.onClick();
-                        if (closeOnChildClick) {
-                          setOpen(false);
-                        }
-                      }
-                    });
-                  }
-                  return child;
-                })}
+                {wrappedChildren}
               </div>
             ) : (
-              <>
-                {React.Children.map(children, (child) => {
-                  if (React.isValidElement<{ onClick?: () => void }>(child)) {
-                    return React.cloneElement(child, {
-                      onClick: () => {
-                        if (child.props.onClick) child.props.onClick();
-                        if (closeOnChildClick) {
-                          setOpen(false);
-                        }
-                      }
-                    });
-                  }
-                  return child;
-                })}
-              </>
+              <>{wrappedChildren}</>
             )}
-          </motion.div>
+          </DropdownMenuPanel>
         )}
       </AnimatePresence>
     </div>

@@ -4,7 +4,7 @@ import { coerceToFinite as toNumber } from '../../../lib/convert';
 import { goBackOr } from '../../../lib/go-back';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { sanitizeUserHtml } from '../../../lib/sanitize-html';
+import { useSanitizedHtml } from '../../../lib/use-sanitized-html';
 
 import { CommentsEmptyState } from '../../../components/comments-modal';
 import { cn } from '../../../lib/cn';
@@ -108,6 +108,8 @@ function FeedCommentCard({
   const router = useRouter();
   const { lang } = useAuth();
   const contentRef = useRef<HTMLDivElement>(null);
+  const commentHtml = useMemo(() => parsePostContentToHtml(comment.content), [comment.content]);
+  const commentHtmlProps = useSanitizedHtml(commentHtml, true);
 
   useEffect(() => {
     const el = contentRef.current;
@@ -186,7 +188,7 @@ function FeedCommentCard({
       <div
         ref={contentRef}
         className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words"
-        dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(comment.content), { preloadImages: true }) }}
+        dangerouslySetInnerHTML={commentHtmlProps}
       />
     </div>
   );

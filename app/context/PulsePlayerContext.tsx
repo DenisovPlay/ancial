@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -14,6 +15,7 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
+import { useStableCallbacks } from '../lib/use-stable-callbacks';
 import { shouldDisableWebAudioForDevice, useEqualizer } from '../pulse/player/use-equalizer';
 import { usePulseFavorites } from '../pulse/player/use-pulse-favorites';
 import { useAddToPlaylist } from '../pulse/player/use-add-to-playlist';
@@ -65,6 +67,7 @@ import {
   sendDeviceState,
   setDeviceCommandHandler,
   setDeviceQueueHandler,
+  setDeviceLocalPlaybackProbe,
   setDeviceStopHandler,
   setDeviceSyncHandler,
   setDeviceUnreachableHandler,
@@ -2178,14 +2181,10 @@ export function PulsePlayerProvider({
     void playLoadedTrackRef.current(targetTrack);
   }, []);
 
-  const contextValue: PulsePlayerContextValue = {
+  // Функции — постоянные ссылки на свежие версии, а само значение меняется только вместе с данными.
+  // Без этого каждый тик прогресса перерисовывал бы всех потребителей (чат, списки треков, превью).
+  const playerActions = useStableCallbacks({
     closePlayer,
-    currentCollectionId: playlistId,
-    currentSongId,
-    currentTrackObj: currentTrack || null,
-    isOpen: isVisible,
-    isPlaying: effectiveIsPlaying,
-    mode,
     openAddToPlaylist,
     openBlockedTrackModal,
     playArtistPlaylist,
@@ -2196,19 +2195,43 @@ export function PulsePlayerProvider({
     playTrack,
     setMode,
     togglePlay,
-    repeatMode,
     toggleRepeatMode,
-    playlist,
-    currentIndex: index,
     playQueueTrack,
     removeQueueTrack,
     moveQueueTrack,
     joinListenAlong: handleJoinListenAlong,
     transferPlaybackHere,
-    listenAlongHostId: followingHostId,
-    listenAlongListeners: listenAlong.listeners,
     leaveListenAlong,
-  };
+  });
+
+  const listenAlongListeners = listenAlong.listeners;
+  const contextValue = useMemo<PulsePlayerContextValue>(() => ({
+    ...playerActions,
+    currentCollectionId: playlistId,
+    currentSongId,
+    currentTrackObj: currentTrack || null,
+    isOpen: isVisible,
+    isPlaying: effectiveIsPlaying,
+    mode,
+    repeatMode,
+    playlist,
+    currentIndex: index,
+    listenAlongHostId: followingHostId,
+    listenAlongListeners,
+  }), [
+    currentSongId,
+    currentTrack,
+    effectiveIsPlaying,
+    followingHostId,
+    index,
+    isVisible,
+    listenAlongListeners,
+    mode,
+    playerActions,
+    playlist,
+    playlistId,
+    repeatMode,
+  ]);
 
   // --- Совместное прослушивание ---------------------------------------------------------------
 
@@ -2589,12 +2612,15 @@ export function PulsePlayerProvider({
     setDeviceStopHandler(() => deviceHandlersRef.current.stop());
     setDeviceSyncHandler(() => deviceHandlersRef.current.sync());
     setDeviceUnreachableHandler(() => deviceHandlersRef.current.unreachable());
+    // После обрыва сокета звук возвращаем себе, только если он реально играет здесь (см. remote-devices).
+    setDeviceLocalPlaybackProbe(() => Boolean(audioRef.current && !audioRef.current.paused && !audioRef.current.ended));
     return () => {
       setDeviceCommandHandler(null);
       setDeviceQueueHandler(null);
       setDeviceStopHandler(null);
       setDeviceSyncHandler(null);
       setDeviceUnreachableHandler(null);
+      setDeviceLocalPlaybackProbe(null);
     };
   }, []);
 

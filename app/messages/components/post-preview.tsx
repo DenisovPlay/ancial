@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AppImage from '../../components/app-image';
 import Link from 'next/link';
-import { sanitizeUserHtml } from '../../lib/sanitize-html';
+import { useSanitizedHtml } from '../../lib/use-sanitized-html';
 
 import { useAuth } from '../../context/AuthContext';
 import { formatRelativeTime } from '../../lib/time';
@@ -22,6 +22,9 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
   const [post, setPost] = useState<PostData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const postContent = post?.content;
+  const postHtml = useMemo(() => (postContent ? parsePostContentToHtml(postContent) : ''), [postContent]);
+  const postHtmlProps = useSanitizedHtml(postHtml, true);
 
   useEffect(() => {
     let isMounted = true;
@@ -116,7 +119,7 @@ export default function PostPreview({ postId, onLoadSuccess }: PostPreviewProps)
         )}
 
         {post.content && (!post.images || post.images.length === 0) && (
-          <p className="text-xs text-zinc-300 line-clamp-3" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(parsePostContentToHtml(post.content), { preloadImages: true }) }} />
+          <p className="text-xs text-zinc-300 line-clamp-3" dangerouslySetInnerHTML={postHtmlProps} />
         )}
       </div>
     </Link>

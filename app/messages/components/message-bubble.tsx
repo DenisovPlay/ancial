@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { sanitizeUserHtml } from '../../lib/sanitize-html';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSanitizedHtml } from '../../lib/use-sanitized-html';
 import { SITE_DOMAIN } from '../../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCopyToClipboard } from '../../hooks/use-copy-to-clipboard';
@@ -122,20 +122,22 @@ function SevenTvStickerMessage({
 
 /** Рендерит HTML сообщения через dangerouslySetInnerHTML и перехватывает
  *  клики по mention-ссылкам (@user / $group) для SPA-навигации без перезагрузки. */
-function MentionSafeHtml({ html }: { html: string }) {
+const MentionSafeHtml = memo(function MentionSafeHtml({ html }: { html: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   useMentionNavigation(ref);
+  // Стабильный объект: иначе каждый рендер пузыря перезаписывал бы innerHTML (перезапуск GIF/стикеров).
+  const htmlProps = useSanitizedHtml(html, true);
   return (
     <span
       ref={ref}
       className="whitespace-pre-wrap break-words"
-      dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(html, { preloadImages: true }) }}
+      dangerouslySetInnerHTML={htmlProps}
     />
   );
-}
+});
 
 
-export default function MessageBubble({
+function MessageBubble({
   authUserImage,
   currentUserId,
   foreignUser,
@@ -212,11 +214,13 @@ export default function MessageBubble({
   const isOwn = toNumber(message.sender_id) === currentUserId;
   const isTextMessage = String(message.type ?? '0') === '0';
   const hasAttachments = message.attachments && message.attachments.length > 0;
-  const messageImages = extractMessageImages(message.message);
+  const messageImages = useMemo(() => extractMessageImages(message.message), [message.message]);
   const hasAnyImages = hasAttachments || messageImages.length > 0;
-  const messageBodyRaw = messageImages.length
-    ? getMessageBodyHtmlWithoutImages(message.message)
-    : String(message.message ?? '');
+  const messageBodyRaw = useMemo(() => (
+    messageImages.length
+      ? getMessageBodyHtmlWithoutImages(message.message)
+      : String(message.message ?? '')
+  ), [message.message, messageImages.length]);
 
   const domain = SITE_DOMAIN;
 
@@ -239,33 +243,52 @@ export default function MessageBubble({
   const [loadedPosts, setLoadedPosts] = useState<string[]>([]);
   const [loadedTracks, setLoadedTracks] = useState<string[]>([]);
 
-  let messageBodyHtml = parseMessageLinks(messageBodyRaw)
-    .replaceAll('/includes/img/anlite/stickers/webp/', '/img/stickers/webp/')
-    .replaceAll('?id=NEW', '');
+  // Разбор ссылок, стикеров и вырезание превью — только при смене текста или догрузке превью.
+  const messageBodyHtml = useMemo(() => {
+    let html = parseMessageLinks(messageBodyRaw)
+      .replaceAll('/includes/img/anlite/stickers/webp/', '/img/stickers/webp/')
+      .replaceAll('?id=NEW', '');
 
-  // Клиентский рендер нативных стикеров (:code: → <img>)
-  messageBodyHtml = renderNativeStickersInHtml(messageBodyHtml, stickerMap);
+    // Клиентский рендер нативных стикеров (:code: → <img>)
+    html = renderNativeStickersInHtml(html, stickerMap);
 
-  loadedPosts.forEach((id) => {
-    const pattern = new RegExp(`<a href="[^"]*".*?>https?://${domain.replace(/\./g, '\\.')}/(?:feed/)?post/${id}</a>\\s*`, 'gi');
-    messageBodyHtml = messageBodyHtml.replace(pattern, '');
-  });
-  loadedTracks.forEach((id) => {
-    const trackRegex1 = new RegExp(`<a href="[^"]*".*?>https?://${domain.replace(/\./g, '\\.')}/pulse/playlist/\\d+\\?track=${id}</a>\\s*`, 'gi');
-    const trackRegex2 = new RegExp(`<a href="[^"]*".*?>https?://${domain.replace(/\./g, '\\.')}/pulse/track/${id}</a>\\s*`, 'gi');
-    messageBodyHtml = messageBodyHtml.replace(trackRegex1, '');
-    messageBodyHtml = messageBodyHtml.replace(trackRegex2, '');
-  });
+    const escapedDomain = domain.replace(/\./g, '\\.');
+    loadedPosts.forEach((id) => {
+      const pattern = new RegExp(`<a href="[^"]*".*?>https?://${escapedDomain}/(?:feed/)?post/${id}</a>\\s*`, 'gi');
+      html = html.replace(pattern, '');
+    });
+    loadedTracks.forEach((id) => {
+      const trackRegex1 = new RegExp(`<a href="[^"]*".*?>https?://${escapedDomain}/pulse/playlist/\\d+\\?track=${id}</a>\\s*`, 'gi');
+      const trackRegex2 = new RegExp(`<a href="[^"]*".*?>https?://${escapedDomain}/pulse/track/${id}</a>\\s*`, 'gi');
+      html = html.replace(trackRegex1, '');
+      html = html.replace(trackRegex2, '');
+    });
+    return html;
+  }, [domain, loadedPosts, loadedTracks, messageBodyRaw, stickerMap]);
 
-  const sevenTvStickerTokenData = hasAnyImages ? null : getSevenTvStickerTokenData(messageBodyRaw);
+  const sevenTvStickerTokenData = useMemo(
+    () => (hasAnyImages ? null : getSevenTvStickerTokenData(messageBodyRaw)),
+    [hasAnyImages, messageBodyRaw],
+  );
   const sevenTvStickerName = sevenTvStickerTokenData?.name ?? '';
   const sevenTvStickerId = sevenTvStickerTokenData?.id ?? '';
-  const isNativeSingleSticker = !hasAnyImages && !sevenTvStickerName && isSingleSticker(messageBodyRaw);
+  const isNativeSingleSticker = useMemo(
+    () => !hasAnyImages && !sevenTvStickerName && isSingleSticker(messageBodyRaw),
+    [hasAnyImages, messageBodyRaw, sevenTvStickerName],
+  );
   const isStickerOnlyMessage = Boolean(sevenTvStickerName) || isNativeSingleSticker;
   const hasMessageText = !sevenTvStickerName && Boolean(messageBodyHtml.trim());
   const canTranslateMessage = !isOwn && isTextMessage && !isStickerOnlyMessage;
   const canEditMessage = isOwn && isTextMessage && !isStickerOnlyMessage;
-  const reactions = parseReactions(message.reactions);
+  const reactions = useMemo(() => parseReactions(message.reactions), [message.reactions]);
+  // Аватарки участников — одной картой, а не поиском по списку на каждую реакцию.
+  const memberImageById = useMemo(() => {
+    const map = new Map<string, string>();
+    members?.forEach((member) => {
+      if (member.img) map.set(String(member.id), member.img);
+    });
+    return map;
+  }, [members]);
   const timeLabel = formatMessageTime(message);
   const readReceiptReaders = useMemo(() => {
     if (!isOwn || !isGroupChat) return [];
@@ -816,9 +839,9 @@ export default function MessageBubble({
                               if (ownReaction) {
                                 reactionUserImg = authUserImage || '';
                               } else {
-                                const foundMember = members?.find((m) => String(m.id) === reactionUserId);
-                                if (foundMember?.img) {
-                                  reactionUserImg = foundMember.img;
+                                const memberImg = memberImageById.get(reactionUserId);
+                                if (memberImg) {
+                                  reactionUserImg = memberImg;
                                 } else {
                                   const cachedUser = getCachedUserInfo(reactionUserId);
                                   if (cachedUser?.img) {
@@ -898,3 +921,9 @@ export default function MessageBubble({
     </>
   );
 }
+
+/**
+ * Пузыри не перерисовываются от чужих событий чата (набор текста, «печатает…», реакция на соседнее
+ * сообщение): рендерится только то сообщение, чьи пропсы реально поменялись.
+ */
+export default memo(MessageBubble);
