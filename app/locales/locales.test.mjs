@@ -1,40 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { locales, availableLocales, isSupportedLang, resolveLocaleDict } from './index.ts';
+import { availableLocales, defaultLocaleDict, isSupportedLang, loadLocaleDict } from './index.ts';
 
-test('locales contains ru and en', () => {
-  assert.ok(locales.ru, 'ru dictionary should be defined');
-  assert.ok(locales.en, 'en dictionary should be defined');
-  assert.equal(locales.ru.langname, 'ru');
-  assert.equal(locales.en.langname, 'en');
+test('словарь по умолчанию — русский, доступен сразу', () => {
+  assert.equal(defaultLocaleDict.langname, 'ru');
 });
 
-test('availableLocales dynamically extracts code and title', () => {
-  assert.ok(Array.isArray(availableLocales));
-  assert.ok(availableLocales.length >= 2);
-
-  const ruLocale = availableLocales.find((l) => l.code === 'ru');
-  assert.ok(ruLocale);
-  assert.equal(ruLocale.code, 'ru');
-  assert.equal(ruLocale.title, locales.ru.langtitle);
-
-  const enLocale = availableLocales.find((l) => l.code === 'en');
-  assert.ok(enLocale);
-  assert.equal(enLocale.code, 'en');
-  assert.equal(enLocale.title, locales.en.langtitle);
+test('названия языков в селекте совпадают с langtitle самих словарей', async () => {
+  assert.ok(availableLocales.length >= 3);
+  for (const locale of availableLocales) {
+    const dict = await loadLocaleDict(locale.code);
+    assert.equal(dict.langname, locale.code, `langname у ${locale.code}`);
+    assert.equal(dict.langtitle, locale.title, `langtitle у ${locale.code}`);
+  }
 });
 
 test('isSupportedLang validates language codes', () => {
   assert.equal(isSupportedLang('ru'), true);
   assert.equal(isSupportedLang('en'), true);
+  assert.equal(isSupportedLang('be'), true);
   assert.equal(isSupportedLang('invalid_code_123'), false);
   assert.equal(isSupportedLang(null), false);
   assert.equal(isSupportedLang(undefined), false);
 });
 
-test('resolveLocaleDict returns corresponding dictionary or fallback ru', () => {
-  assert.equal(resolveLocaleDict('en'), locales.en);
-  assert.equal(resolveLocaleDict('ru'), locales.ru);
-  assert.equal(resolveLocaleDict('unknown'), locales.ru);
-  assert.equal(resolveLocaleDict(undefined), locales.ru);
+test('loadLocaleDict: неизвестный код — русский', async () => {
+  assert.equal((await loadLocaleDict('en')).langname, 'en');
+  assert.equal(await loadLocaleDict('unknown'), defaultLocaleDict);
+  assert.equal(await loadLocaleDict(undefined), defaultLocaleDict);
 });

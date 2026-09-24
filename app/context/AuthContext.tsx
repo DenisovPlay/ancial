@@ -3,13 +3,11 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  getLangFromCache,
-  saveLangToCache,
-  locales,
+  defaultLocaleDict,
   getStoredLangCode,
   saveStoredLangCode,
   isSupportedLang,
-  resolveLocaleDict,
+  loadLocaleDict,
   type SupportedLang,
 } from '../lib/lang';
 import { restoreLegacyAuthSession } from '../lib/auth-fetch';
@@ -100,7 +98,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [langCode, setLangCode] = useState<SupportedLang>('ru');
-  const [lang, setLang] = useState<Record<string, string>>(locales['ru']);
+  const [lang, setLang] = useState<Record<string, string>>(defaultLocaleDict);
+  /** Номер последнего выбора языка: словарь, догрузившийся после более нового выбора, не применяем. */
+  const langRequestRef = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
   const authStateRef = useRef<{ isAuthenticated: boolean; user: User | null }>({
     isAuthenticated: getInitialAuth(),
@@ -130,11 +130,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const setLanguage = useCallback((code: SupportedLang) => {
     const validCode = isSupportedLang(code) ? code : 'ru';
     saveStoredLangCode(validCode);
-    const dict = resolveLocaleDict(validCode);
-    setLangCode(validCode);
-    setLang(dict);
-    publishLangState(dict);
-    saveLangToCache(dict);
+    const request = ++langRequestRef.current;
+    // Не русский словарь — отдельный чанк: применяем, когда догрузится (и только если выбор не сменился).
+    void loadLocaleDict(validCode)
+      .then((dict) => {
+        if (request !== langRequestRef.current) return;
+        setLangCode(validCode);
+        setLang(dict);
+        publishLangState(dict);
+      })
+      .catch((err: unknown) => console.error('Failed to load locale', err));
   }, [publishLangState]);
 
   const updateLang = useCallback(async (targetCode?: SupportedLang) => {
@@ -318,6 +323,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // альтернативы без каскада нет (проверка должна стартовать сразу при монтировании).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     checkAuth();
+    // Раньше весь словарь (~140 КБ) лежал копией в localStorage — больше не нужен.
+    cache.remove('lang_cache', { category: 'profile' });
     const initialCode = getStoredLangCode();
     // Инициализация языка из localStorage на клиенте — сеттлер здесь источник правды (SSR не знает язык).
     setLanguage(initialCode);

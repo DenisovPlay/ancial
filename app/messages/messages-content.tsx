@@ -1411,12 +1411,42 @@ export default function MessagesContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadDialogs();
 
+    // Новые сообщения в любых чатах приходят по WebSocket (global-ws → ancial:unread_update) —
+    // по ним и обновляем список; пачку событий сводим в один запрос.
+    let refreshTimer = 0;
+    const refreshSoon = () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => void loadDialogs({ force: true }), 400);
+    };
+    const handleUnread = (event: Event) => {
+      if ((event as CustomEvent<{ type?: string }>).detail?.type === 'messages') refreshSoon();
+    };
+    // Вернулись на вкладку или переподключились — могли что-то пропустить.
+    const handleVisible = () => {
+      if (!document.hidden) refreshSoon();
+    };
+    let wasConnected = globalWS.isConnected();
+    const unsubscribeNet = globalWS.subscribeNetStatus(() => {
+      const connected = globalWS.isConnected();
+      if (connected && !wasConnected) refreshSoon();
+      wasConnected = connected;
+    });
+
+    // Опрос — только страховка: соединения нет, а вкладка на экране.
     const timer = window.setInterval(() => {
+      if (document.hidden || globalWS.isConnected()) return;
       void loadDialogs();
     }, DIALOGS_REFRESH_INTERVAL_MS);
 
+    window.addEventListener('ancial:unread_update', handleUnread);
+    document.addEventListener('visibilitychange', handleVisible);
+
     return () => {
       window.clearInterval(timer);
+      window.clearTimeout(refreshTimer);
+      unsubscribeNet();
+      window.removeEventListener('ancial:unread_update', handleUnread);
+      document.removeEventListener('visibilitychange', handleVisible);
     };
     // Polling should restart only when auth state changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps

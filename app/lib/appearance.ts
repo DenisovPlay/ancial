@@ -15,6 +15,7 @@ export type GlassRole = 'nav' | 'menu' | 'tooltip' | 'input' | 'panel' | 'overla
 export type MotionToggle = 'auto' | 'on' | 'off';
 export type TooltipMotion = 'auto' | 'smooth' | 'instant';
 export type LyricsMotion = 'words' | 'lines';
+export type LyricsSetting = 'auto' | LyricsMotion;
 
 export type GlassRoleSetting = {
   on: boolean;
@@ -35,7 +36,7 @@ export type AppearanceSettings = {
     nav: MotionToggle;
     menu: MotionToggle;
     tooltips: TooltipMotion;
-    lyrics: LyricsMotion;
+    lyrics: LyricsSetting;
     /** Плавное раскрытие длинных постов и разделов настроек. */
     expand: MotionToggle;
   };
@@ -70,7 +71,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
       overlay: { on: true, level: 1 },
     },
   },
-  motion: { nav: 'auto', menu: 'auto', tooltips: 'auto', lyrics: 'words', expand: 'auto' },
+  motion: { nav: 'auto', menu: 'auto', tooltips: 'auto', lyrics: 'auto', expand: 'auto' },
 };
 
 type DeviceHints = {
@@ -164,8 +165,10 @@ export function applyAppearance(input?: unknown, apply = true, hints?: DeviceHin
     return mode === 'auto' ? !android && !reducedMotion : mode === 'on';
   };
   const tooltips = pick(motionRaw.tooltips, ['auto', 'smooth', 'instant'], 'auto');
-  // Раскрытие — дешёвая анимация высоты, на Android не мешает; выключаем только по «уменьшить движение».
+  // Раскрытие и заливка текста по словам — работа на каждый кадр: на слабых Android по умолчанию выключены.
+  const weakAndroid = android && weak;
   const expandMode = pick(motionRaw.expand, ['auto', 'on', 'off'], 'auto');
+  const lyricsMode = pick(motionRaw.lyrics, ['auto', 'words', 'lines'], 'auto');
 
   const resolved: ResolvedAppearance = {
     preset: preset as ResolvedAppearance['preset'],
@@ -175,8 +178,8 @@ export function applyAppearance(input?: unknown, apply = true, hints?: DeviceHin
       nav: toggle(motionRaw.nav),
       menu: toggle(motionRaw.menu),
       tooltips: tooltips === 'auto' ? (reducedMotion ? 'instant' : 'smooth') : tooltips,
-      lyrics: pick(motionRaw.lyrics, ['words', 'lines'], 'words'),
-      expand: expandMode === 'auto' ? !reducedMotion : expandMode === 'on',
+      lyrics: lyricsMode === 'auto' ? (weakAndroid || reducedMotion ? 'lines' : 'words') : lyricsMode,
+      expand: expandMode === 'auto' ? !reducedMotion && !weakAndroid : expandMode === 'on',
     },
     device: { android: android, weak: weak, reducedMotion: Boolean(reducedMotion) },
   };

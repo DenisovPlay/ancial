@@ -20,9 +20,14 @@ test('«Авто» на Android — облегчённое стекло без �
   assert.equal(r.global.blur, 0.33);
   assert.equal(r.motion.nav, false);
   assert.equal(r.motion.menu, false);
-  // Раскрытие на Android остаётся: это дешёвая анимация высоты.
+  // На обычном Android раскрытие и текст по словам остаются; на слабом — по умолчанию выключены.
   assert.equal(r.motion.expand, true);
-  assert.equal(applyAppearance(DEFAULT_APPEARANCE, false, WEAK_ANDROID).global.blur, 0.17);
+  assert.equal(r.motion.lyrics, 'words');
+  const weak = applyAppearance(DEFAULT_APPEARANCE, false, WEAK_ANDROID);
+  assert.equal(weak.global.blur, 0.17);
+  assert.equal(weak.motion.expand, false);
+  assert.equal(weak.motion.lyrics, 'lines');
+  assert.equal(applyAppearance({ motion: { expand: 'on', lyrics: 'words' } }, false, WEAK_ANDROID).motion.expand, true);
   // Явное «включено» пересиливает Android.
   assert.equal(applyAppearance({ motion: { nav: 'on' } }, false, ANDROID).motion.nav, true);
 });

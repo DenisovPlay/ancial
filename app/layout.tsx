@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import Script from "next/script";
 import "./globals.css"; // force HMR css update
 import AppearanceSync from './components/appearance-sync';
@@ -21,10 +21,6 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   ...DEFAULT_SEO,
@@ -60,7 +56,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} h-full antialiased`}
       // Настройки стекла и анимаций пишет на <html> скрипт ниже — до гидратации, React их не рендерит.
       suppressHydrationWarning
     >

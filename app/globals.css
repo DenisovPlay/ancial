@@ -15,7 +15,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -99,6 +98,19 @@
   background-color: color-mix(in oklab, var(--glass-tint, var(--color-zinc-950)) calc(clamp(0, calc(1 - (1 - var(--glass-alpha, 0.8)) * var(--glass-overlay-clarity-k)), 1) * 100%), transparent);
   -webkit-backdrop-filter: blur(calc(var(--glass-blur, 8px) * var(--glass-overlay-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-overlay-sat-k)));
   backdrop-filter: blur(calc(var(--glass-blur, 8px) * var(--glass-overlay-blur-k))) saturate(calc(1 + (var(--glass-sat, 1) - 1) * var(--glass-overlay-sat-k)));
+}
+
+/* Длинные ленты и чаты: браузер не раскладывает и не рисует то, что далеко за экраном.
+   --cv-size — примерная высота до первой отрисовки (дальше браузер запоминает реальную).
+   content-visibility включает paint-containment и обрезал бы всё, что вылезает за карточку, —
+   поэтому, пока внутри открыто меню, диалог или fixed-слой, отключаем. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--cv-size, 320px);
+}
+
+.cv-auto:has([data-dropdown-menu], [role='dialog'], [role='menu'], .fixed) {
+  content-visibility: visible;
 }
 
 body {

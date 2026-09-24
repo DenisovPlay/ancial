@@ -752,7 +752,7 @@ function PostCardInner({
     <>
       <div
         id={`postdiv${post.id}`}
-        className="p-3 duration-300 rounded-3xl border border-zinc-600/30 bg-zinc-900 flex flex-col gap-3 w-full shadow text-zinc-100"
+        className="cv-auto p-3 duration-300 rounded-3xl border border-zinc-600/30 bg-zinc-900 flex flex-col gap-3 w-full shadow text-zinc-100"
       >
         <div className="text-sm lg:text-base text-zinc-400 font-medium flex items-center gap-1.5 min-w-0">
           <Link

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sanitizeUserHtml } from '../../lib/sanitize-html';
 import { SITE_DOMAIN } from '../../config';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCopyToClipboard } from '../../hooks/use-copy-to-clipboard';
 import { useMentionNavigation } from '../../hooks/use-mention-navigation';
 import { useNotification } from '../../context/NotificationContext';
@@ -185,10 +185,12 @@ export default function MessageBubble({
   const [transformY, setTransformY] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const longPressTimerRef = useRef<number | null>(null);
-  const dragX = useMotionValue(0);
-  const replyIconOpacity = useTransform(dragX, [0, -50], [0, 1]);
-  const replyIconScale = useTransform(dragX, [0, -50], [0.5, 1]);
-  const replyIconX = useTransform(dragX, [0, -50], [20, 0]);
+  // Свайп влево — ответить. Нативные pointer-события вместо framer drag: пока сообщение не трогают,
+  // на нём нет ни подписок, ни обработчиков жестов (в длинном чате их были бы сотни).
+  const swipeRowRef = useRef<HTMLDivElement>(null);
+  const replyIconRef = useRef<HTMLDivElement>(null);
+  const swipeRef = useRef<{ id: number; x: number; y: number; axis: 'x' | 'y' | null; dx: number } | null>(null);
+  const swipedRef = useRef(false);
   const { showNote } = useNotification();
   const copyToClipboard = useCopyToClipboard();
 
@@ -407,6 +409,66 @@ export default function MessageBubble({
     };
   }, [menuOpen]);
 
+  /** Смещение сообщения и вид иконки ответа — прямо в DOM, без перерисовок React. */
+  const paintSwipe = (offset: number, animate: boolean) => {
+    const row = swipeRowRef.current;
+    const icon = replyIconRef.current;
+    const progress = Math.min(1, Math.max(0, -offset / 50));
+    const transition = animate ? 'transform 300ms cubic-bezier(0.2, 0, 0, 1), opacity 300ms ease-out' : 'none';
+    if (row) {
+      row.style.transition = transition;
+      row.style.transform = offset ? `translateX(${offset}px)` : '';
+    }
+    if (icon) {
+      icon.style.transition = transition;
+      icon.style.opacity = String(progress);
+      icon.style.transform = `translateX(${20 - 20 * progress}px) scale(${0.5 + 0.5 * progress})`;
+    }
+  };
+
+  const handleSwipeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    swipeRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, axis: null, dx: 0 };
+  };
+
+  const handleSwipeMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const swipe = swipeRef.current;
+    if (!swipe || swipe.id !== event.pointerId) return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    if (!swipe.axis) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      // Направление фиксируем по первому заметному движению: вертикаль — это прокрутка чата.
+      swipe.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (swipe.axis === 'x') {
+        stopLongPress();
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+    }
+    if (swipe.axis !== 'x') return;
+    swipe.dx = dx;
+    // Вправо не двигается, влево — с сопротивлением (как было: elastic 0.3).
+    paintSwipe(Math.min(0, dx) * 0.3, false);
+  };
+
+  const handleSwipeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const swipe = swipeRef.current;
+    swipeRef.current = null;
+    if (!swipe || swipe.id !== event.pointerId || swipe.axis !== 'x') return;
+    // Клик, если он есть, приходит сразу после pointerup — дальше флаг не нужен.
+    swipedRef.current = true;
+    window.setTimeout(() => {
+      swipedRef.current = false;
+    }, 0);
+    if (event.type === 'pointerup' && swipe.dx < -50) {
+      onReply(message);
+      if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(50);
+      }
+    }
+    paintSwipe(0, true);
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -427,7 +489,8 @@ export default function MessageBubble({
       </AnimatePresence>
       <div
         ref={containerRef}
-        className={cn('relative mb-2 transition-transform duration-300 ease-out', menuOpen && 'z-[50]')}
+        // Пока открыто контекстное меню — без content-visibility, иначе оно обрежется по границе сообщения.
+        className={cn('relative mb-2 transition-transform duration-300 ease-out', menuOpen ? 'z-[50]' : 'cv-auto [--cv-size:64px]')}
         style={{ transform: `translateY(${transformY}px)` }}
         onContextMenu={(event) => {
           if (isMessageMenuIgnoredTarget(event.target)) return;
@@ -448,28 +511,28 @@ export default function MessageBubble({
           startLongPress();
         }}
       >
-        <motion.div
-          style={{ opacity: replyIconOpacity, scale: replyIconScale, x: replyIconX }}
+        <div
+          ref={replyIconRef}
+          style={{ opacity: 0, transform: 'translateX(20px) scale(0.5)' }}
           className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:8px] [--glass-sat:2] absolute right-2 top-1/2 z-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-600/30 text-zinc-200 pointer-events-none"
         >
           <Icon name="IC-reply" className="h-4 w-4 fill-current" />
-        </motion.div>
+        </div>
 
-        <motion.div
-          style={{ x: dragX, userSelect: 'none', WebkitUserSelect: 'none' }}
+        <div
+          ref={swipeRowRef}
+          style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'pan-y' }}
           className={cn('flex w-full relative z-10', isOwn ? 'justify-end' : 'justify-start')}
-          drag="x"
-          dragDirectionLock
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={{ left: 0.3, right: 0 }}
-          onDragStart={stopLongPress}
-          onDragEnd={(event, info) => {
-            if (info.offset.x < -50) {
-              onReply(message);
-              if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
-                window.navigator.vibrate(50);
-              }
-            }
+          onPointerDown={handleSwipeStart}
+          onPointerMove={handleSwipeMove}
+          onPointerUp={handleSwipeEnd}
+          onPointerCancel={handleSwipeEnd}
+          onClickCapture={(event) => {
+            // Клик, которым закончился свайп, не должен открывать картинку или ссылку.
+            if (!swipedRef.current) return;
+            swipedRef.current = false;
+            event.preventDefault();
+            event.stopPropagation();
           }}
         >
           <div className={cn("relative flex w-full gap-2 items-end", isOwn ? "justify-end" : "justify-start")}>
@@ -830,7 +893,7 @@ export default function MessageBubble({
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </>
   );

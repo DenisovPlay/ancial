@@ -1,44 +1,45 @@
 import { ru } from './ru.ts';
-import { en } from './en.ts';
-import { be } from './be.ts';
 
 /**
- * Master registry of supported application locales.
- * To add a new language to the entire application:
- * 1. Create a new `.ts` file in `app/locales/` (e.g. `be.ts`) with `langname` and `langtitle`.
- * 2. Import it here and add it to `locales`.
- * It will automatically appear in all UI dropdowns and settings.
+ * Реестр языков приложения.
+ *
+ * В бандле только русский — язык по умолчанию и язык SSR. Остальные словари (~100–140 КБ каждый)
+ * подгружаются отдельным чанком только при выборе: раньше все три ехали на каждую страницу.
+ *
+ * Добавить язык:
+ * 1. Файл `app/locales/<код>.ts` с `langname` и `langtitle`.
+ * 2. Строка в LOCALE_LOADERS и в availableLocales ниже.
  */
-export const locales = {
-  ru,
-  en,
-  be,
+const LOCALE_LOADERS = {
+  ru: () => Promise.resolve(ru),
+  en: () => import('./en.ts').then((module) => module.en),
+  be: () => import('./be.ts').then((module) => module.be),
 } as const;
 
-export type SupportedLang = keyof typeof locales;
+export type SupportedLang = keyof typeof LOCALE_LOADERS;
 
 export interface LocaleMeta {
   code: string;
   title: string;
 }
 
-/**
- * Automatically builds the list of available languages from registered locale dictionaries.
- */
-export const availableLocales: LocaleMeta[] = Object.entries(locales).map(([key, dict]) => ({
-  code: dict.langname || key,
-  title: dict.langtitle || dict.langname || key,
-}));
+/** Названия языков для селекта — без загрузки самих словарей. */
+export const availableLocales: LocaleMeta[] = [
+  { code: 'ru', title: 'Русский (Россия)' },
+  { code: 'en', title: 'English (US)' },
+  { code: 'be', title: 'Беларуская (Беларусь)' },
+];
+
+/** Словарь по умолчанию: доступен сразу, без загрузки. */
+export const defaultLocaleDict: Record<string, string> = ru;
 
 export function isSupportedLang(code: unknown): code is SupportedLang {
-  return typeof code === 'string' && Object.prototype.hasOwnProperty.call(locales, code);
+  return typeof code === 'string' && Object.prototype.hasOwnProperty.call(LOCALE_LOADERS, code);
 }
 
-export function resolveLocaleDict(code?: unknown): Record<string, string> {
-  if (typeof code === 'string' && isSupportedLang(code)) {
-    return locales[code];
-  }
-  return locales.ru;
+/** Словарь языка; неизвестный код — русский. */
+export function loadLocaleDict(code?: unknown): Promise<Record<string, string>> {
+  return isSupportedLang(code) ? LOCALE_LOADERS[code]() : Promise.resolve(ru);
 }
 
 export function getStoredLangCode(): SupportedLang {

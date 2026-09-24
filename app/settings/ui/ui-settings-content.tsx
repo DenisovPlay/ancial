@@ -21,7 +21,7 @@ import {
   type AppearanceSettings,
   type GlassPreset,
   type GlassRole,
-  type LyricsMotion,
+  type LyricsSetting,
   type MotionToggle,
   type TooltipMotion,
 } from '../../lib/appearance';
@@ -452,11 +452,12 @@ export default function UiSettingsContent() {
             value={settings.motion.expand}
             onChange={(value) => update((draft) => { draft.motion.expand = value; })}
           />
-          <SettingSelect<LyricsMotion>
+          <SettingSelect<LyricsSetting>
             selectClassName="w-40 shrink-0"
             label={lang?.motion_lyrics || 'Анимация текста'}
             hint={lang?.motion_lyrics_hint || 'Текст песен в Pulse'}
             options={[
+              { value: 'auto', label: lang?.motion_auto || 'Авто' },
               { value: 'words', label: lang?.motion_lyrics_words || 'По словам' },
               { value: 'lines', label: lang?.motion_lyrics_lines || 'Построчно' },
             ]}
