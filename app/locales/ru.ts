@@ -2067,4 +2067,5 @@ export const ru: Record<string, string> = {
     "glass_by_element_hint": "Множитель поверх общих настроек: 100% — как задано выше, 0% — без размытия у этого элемента.",
     "motion_expand": "Плавное раскрытие",
     "motion_expand_hint": "Длинные посты и разделы настроек",
+    "pulse_artists": "Исполнители",
 };

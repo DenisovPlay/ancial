@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import ReportModal from '../components/report-modal';
-import ShareModal from '../components/share-modal';
 import { useAuth } from '../context/AuthContext';
 import { DOWNLOADS_COLLECTION_ID, usePulsePlayer } from '../context/PulsePlayerContext';
 import { useDragScroll } from '../hooks/useDragScroll';
@@ -22,7 +21,6 @@ import {
   getArtistIds,
   getImageUrl,
   getPulseBackgroundColorByMood,
-  getTrackArtwork,
   PulseLegalFooter,
   PulseLogo,
   PulsePlaylistTile,
@@ -34,9 +32,9 @@ import {
   normalizeText,
   toNumber,
   TrackCollectionPanel,
-  type PulseShareAttachment,
   type PulseShelf,
 } from './pulse-components';
+import { usePulseTrackShare } from '../hooks/use-pulse-track-share';
 import {
   canManagePulseTrack,
   getPulseShelfTitle,
@@ -46,7 +44,7 @@ import {
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { usePulseFavoriteIds } from './player/use-pulse-favorite-ids';
 import { getDownloadedAudioCount } from './player/offline-audio';
-import { getPulseExternalUrl, getPulseNavigationTarget } from './pulse-navigation';
+import { getPulseNavigationTarget } from './pulse-navigation';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-track-modal';
 import { PulseHeader } from './pulse-header';
 import { useUserCountry } from '../lib/user-geo';
@@ -241,9 +239,6 @@ function getArtistPath(artistId: number | string) {
   return `/pulse/artist/${encodeURIComponent(normalizeText(String(artistId)) || '0')}`;
 }
 
-function getTrackPath(trackId: number | string) {
-  return `/pulse/track/${encodeURIComponent(normalizeText(String(trackId)) || '0')}`;
-}
 
 function ArtistCardSkeleton() {
   return (
@@ -400,10 +395,7 @@ export default function PulseContent() {
   const weLikeScrollRef = useDragScroll({ speed: 2 });
   const nowListenScrollRef = useDragScroll({ speed: 2 });
 
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [shareUrl, setShareUrl] = useState('');
-  const [shareAttachment, setShareAttachment] = useState<PulseShareAttachment | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
@@ -481,33 +473,7 @@ export default function PulseContent() {
     return 0;
   }, []);
 
-  const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
-    const rawId = String(trackId ?? '').trim();
-    if (!rawId) return;
-
-    let resolvedTrackId = toNumber(rawId);
-    if (!resolvedTrackId && rawId.startsWith('ext_')) {
-      resolvedTrackId = await getResolvedId(rawId);
-    }
-    const finalId = resolvedTrackId || rawId;
-
-    setShareUrl(getPulseExternalUrl(getTrackPath(finalId)));
-
-    if (track) {
-      setShareAttachment({
-        widgets: [{ type: 'music', track_id: finalId.toString() }],
-        preview: {
-          authorName: decodeHtmlEntities(track.artist) || lang?.artist || 'Исполнитель',
-          authorImg: getImageUrl(getTrackArtwork(track), '/img/noimg.png'),
-          contentSnippet: decodeHtmlEntities(track.title) || lang?.untitled || 'Без названия',
-        }
-      });
-    } else {
-      setShareAttachment(null);
-    }
-
-    setIsShareModalOpen(true);
-  }, [getResolvedId, lang]);
+  const { copyTrackLink, shareModal } = usePulseTrackShare(showPulseNote, getResolvedId);
 
   const pulseTrackAddedText = lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!';
   const pulseTrackRemovedText = lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!';
@@ -1086,17 +1052,7 @@ export default function PulseContent() {
 
       <PulseLegalFooter />
 
-      <ShareModal
-        copyLabel={lang?.copylink || 'Скопировать ссылку'}
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success', 3)}
-        onCopyFailed={() => showPulseNote(shareUrl, 'info', 5)}
-        shareUrl={shareUrl}
-        title={lang?.share || 'Поделиться'}
-        attachmentWidgets={shareAttachment?.widgets}
-        attachmentPreview={shareAttachment?.preview}
-      />
+      {shareModal}
       <ReportModal
         isOpen={isReportModalOpen}
         onClose={closeReportModal}

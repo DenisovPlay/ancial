@@ -21,6 +21,18 @@ import { PulseDevicesButton } from './pulse-devices-button';
 import { Dropdown, DropdownItem } from '../../components/navigation';
 import type { PulseTrack } from '../../context/PulsePlayerContext';
 import Icon from '../../components/svg-icon';
+import ReportModal from '../../components/report-modal';
+import { usePulseNote } from '../../hooks/use-pulse-note';
+import { usePulseTrackReport } from '../../hooks/use-pulse-track-report';
+import { usePulseTrackShare } from '../../hooks/use-pulse-track-share';
+import { buildPulseTrackReportReasons } from '../../lib/report-reasons';
+import {
+  getArtistIds,
+  PulseArtistsModal,
+  PulseTrackFooterActions,
+  type PulseTrackFooterAction,
+  type PulseTrack as PulseTrackCard,
+} from '../pulse-components';
 
 
 const DESKTOP_LAYOUT_QUERY = '(min-width: 1024px)';
@@ -124,6 +136,10 @@ export type PulsePlayerFullProps = {
   onSeekStart: () => void;
   onSeekSubmit: () => void;
 
+  /** Текущий трек: для «Поделиться», жалобы и перехода к артистам. */
+  currentTrack: PulseTrack | null;
+  onOpenArtist: (artistId: string) => void;
+
   // Callbacks – controls
   onAddToPlaylist: () => void;
   onDownload: () => void;
@@ -209,6 +225,8 @@ export function PulsePlayerFull({
   onSeekSubmit,
 
   onAddToPlaylist,
+  currentTrack,
+  onOpenArtist,
   onDownload,
   onLike,
   onNext,
@@ -225,6 +243,28 @@ export function PulsePlayerFull({
   onLyricsSeek,
 }: PulsePlayerFullProps) {
   const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const [isArtistsOpen, setIsArtistsOpen] = useState(false);
+  const trackCard = currentTrack as PulseTrackCard | null;
+  const artistIds = trackCard ? getArtistIds(trackCard) : [];
+  const showPulseNote = usePulseNote();
+  const { shareTrack, shareModal } = usePulseTrackShare(showPulseNote);
+  const { closeReportModal, handleTrackReport, isReportModalOpen, reportTrack } = usePulseTrackReport<PulseTrackCard>(showPulseNote);
+  const footerActions: PulseTrackFooterAction[] = [];
+  if (artistIds.length > 0) {
+    footerActions.push({
+      icon: 'IC-user',
+      key: 'artist',
+      // Несколько артистов — выбор в окне, один — сразу в профиль.
+      label: artistIds.length > 1 ? (lang?.pulse_artists || 'Исполнители') : (lang?.artist || 'Исполнитель'),
+      onClick: () => (artistIds.length > 1 ? setIsArtistsOpen(true) : onOpenArtist(artistIds[0])),
+    });
+  }
+  if (trackCard) {
+    footerActions.push(
+      { icon: 'IC-share', key: 'share', label: lang?.share || 'Поделиться', onClick: () => shareTrack(trackCard) },
+      { icon: 'IC-report', key: 'report', label: lang?.report || 'Пожаловаться', onClick: () => void reportTrack(trackCard) },
+    );
+  }
   const [isLyricsExpanded, setIsLyricsExpanded] = useState(false);
   // Рендерим только видимую раскладку текста: спрятанная CSS-ом всё равно считала бы кадры.
   const isDesktopLayout = useSyncExternalStore(subscribeDesktopLayout, readDesktopLayout, () => false);
@@ -418,6 +458,9 @@ export function PulsePlayerFull({
               </div>
 
               <div className="flex shrink-0 items-center gap-1">
+                {/* Слева от лайка: появляется, только когда есть другие устройства, и не сдвигает остальные кнопки. */}
+                <PulseDevicesButton lang={lang} />
+
                 {isAuthenticated ? (
                   <button
                     id="player_likebutton_title"
@@ -435,59 +478,53 @@ export function PulsePlayerFull({
                   </button>
                 ) : null}
 
-                <PulseDevicesButton lang={lang} />
-
-                {!isMobileDevice ? (
-                  <Dropdown
-                    position="top"
-                    align="end"
-                    triggerSize="sm"
-                    triggerNode={<Icon name="IC-more" className="h-6 w-6 fill-white duration-300" />}
-                    triggerClassName="flex !h-10 !w-10 items-center justify-center rounded-full !bg-transparent !p-0 hover:!bg-white/10 cursor-pointer duration-300 active:scale-95"
+                <Dropdown
+                  position="top"
+                  align="end"
+                  triggerSize="sm"
+                  triggerNode={<Icon name="IC-more" className="h-6 w-6 fill-white duration-300" />}
+                  triggerClassName="flex !h-10 !w-10 items-center justify-center rounded-full !bg-transparent !p-0 hover:!bg-white/10 cursor-pointer duration-300 active:scale-95"
+                >
+                  <DropdownItem
+                    icon="IC-quote"
+                    onClick={() => {
+                      if (lyricsEnabled) setIsLyricsExpanded(false);
+                      onToggleLyrics();
+                    }}
                   >
-                    <DropdownItem icon="IC-quote" onClick={onToggleLyrics}>
-                      {lyricsEnabled
-                        ? (lang?.pulse_lyrics_hide || 'Скрыть текст')
-                        : (lang?.pulse_lyrics_show || 'Показать текст')}
+                    {lyricsEnabled
+                      ? (lang?.pulse_lyrics_hide || 'Скрыть текст')
+                      : (lang?.pulse_lyrics_show || 'Показать текст')}
+                  </DropdownItem>
+                  {isAuthenticated ? (
+                    <DropdownItem onClick={onAddToPlaylist} icon="IC-plus">
+                      {lang?.add_to_playlist || 'В плейлист'}
                     </DropdownItem>
-                    {isAuthenticated ? (
-                      <DropdownItem onClick={onAddToPlaylist} icon="IC-plus">
-                        {lang?.add_to_playlist || 'В плейлист'}
-                      </DropdownItem>
-                    ) : null}
-                    {isAuthenticated ? (
-                      <DropdownItem icon="IC-download" onClick={onDownload}>
-                        {lang?.pulse_download_mp3 || 'Скачать MP3'}
-                      </DropdownItem>
-                    ) : null}
-                    {isAuthenticated ? (
-                      <DropdownItem
-                        icon={offlineSaveStatus === 'already' ? 'IC-bookmark-filled' : 'IC-bookmark'}
-                        onClick={() => { void onSaveOffline(); }}
-                      >
-                        {offlineSaveStatus === 'saving'
-                          ? (lang?.pulse_saving_offline || 'Сохраняется...')
-                          : offlineSaveStatus === 'already'
-                            ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
-                            : (lang?.pulse_save_offline || 'Сохранить офлайн')}
-                      </DropdownItem>
-                    ) : null}
-                    {canUseEqualizer ? (
-                      <DropdownItem onClick={onOpenEqualizer} icon="IC-equalizer">
-                        {lang?.pulse_equalizer || 'Эквалайзер'}
-                      </DropdownItem>
-                    ) : null}
-                  </Dropdown>
-                ) : isAuthenticated ? (
-                  <button
-                    title={lang?.add_to_playlist || 'В плейлист'}
-                    type="button"
-                    onClick={onAddToPlaylist}
-                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 active:scale-95 hover:border-zinc-600/30 hover:bg-white/10"
-                  >
-                    <Icon name="IC-plus" className="h-6 w-6 fill-white duration-300" />
-                  </button>
-                ) : null}
+                  ) : null}
+                  <DropdownItem icon="IC-download" onClick={onDownload}>
+                    {lang?.pulse_download_mp3 || 'Скачать MP3'}
+                  </DropdownItem>
+                  {isAuthenticated ? (
+                    <DropdownItem
+                      icon={offlineSaveStatus === 'already' ? 'IC-bookmark-filled' : 'IC-bookmark'}
+                      onClick={() => { void onSaveOffline(); }}
+                    >
+                      {offlineSaveStatus === 'saving'
+                        ? (lang?.pulse_saving_offline || 'Сохраняется...')
+                        : offlineSaveStatus === 'already'
+                          ? (lang?.pulse_already_saved_offline || 'Уже сохранено')
+                          : (lang?.pulse_save_offline || 'Сохранить офлайн')}
+                    </DropdownItem>
+                  ) : null}
+                  {/* На телефоне эквалайзера в меню нет. */}
+                  {canUseEqualizer && !isMobileDevice ? (
+                    <DropdownItem onClick={onOpenEqualizer} icon="IC-equalizer">
+                      {lang?.pulse_equalizer || 'Эквалайзер'}
+                    </DropdownItem>
+                  ) : null}
+                  {/* Как в меню трека: исполнитель / поделиться / пожаловаться — строкой иконок внизу. */}
+                  <PulseTrackFooterActions actions={footerActions} />
+                </Dropdown>
               </div>
             </div>
 
@@ -548,27 +585,6 @@ export function PulsePlayerFull({
           ) : null}
         </div>
 
-        {isMobileDevice ? (
-          <button
-            type="button"
-            onClick={() => {
-              if (lyricsEnabled) setIsLyricsExpanded(false);
-              onToggleLyrics();
-            }}
-            className={cn(
-              'absolute left-1/2 z-[20] flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-sm text-white duration-300 active:scale-95 border',
-              lyricsEnabled ? 'bg-white/10 border-zinc-600/30' : 'opacity-70 hover:border-zinc-600/30 hover:bg-white/10 hover:opacity-100 border-transparent',
-            )}
-            style={{ bottom: 'max(12px, env(safe-area-inset-bottom))' }}
-          >
-            <Icon name="IC-quote" className="h-4 w-4 fill-white" />
-            <span>
-              {lyricsEnabled
-                ? (lang?.pulse_lyrics_hide || 'Скрыть текст')
-                : (lang?.pulse_lyrics_show || 'Показать текст')}
-            </span>
-          </button>
-        ) : null}
       </div>
 
       <PulseQueueModal
@@ -589,6 +605,23 @@ export function PulsePlayerFull({
           onMoveQueueTrack?.(fromIdx, toIdx);
         }}
       />
+
+      {shareModal}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={closeReportModal}
+        onReport={handleTrackReport}
+        reasons={buildPulseTrackReportReasons(lang)}
+        title={lang?.report || 'Пожаловаться'}
+      />
+      {isArtistsOpen ? (
+        <PulseArtistsModal
+          artistIds={artistIds}
+          isOpen
+          onClose={() => setIsArtistsOpen(false)}
+          onOpenArtist={onOpenArtist}
+        />
+      ) : null}
     </div>
   );
 }

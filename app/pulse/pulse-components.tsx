@@ -20,6 +20,9 @@ import {
 } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import AppImage from '../components/app-image';
+import Modal from '../components/modal';
+import { AncialAPI } from '../lib/api-v2';
+import { readPulseJsonCache } from './pulse-cache';
 import Icon from '../components/svg-icon';
 
 export type PulseTrackArtwork = {
@@ -406,6 +409,117 @@ export function PulseArtistTile({
   );
 }
 
+type PulseArtistSummary = { id: string; img?: string | null; name?: string | null; verify?: number | string | null };
+
+/**
+ * Выбор артиста, когда к треку привязано несколько: список с переходом на профиль.
+ * Имена и фото — из кэша страницы артиста, иначе догружаем (GetArtist.php).
+ */
+export function PulseArtistsModal({
+  artistIds,
+  isOpen,
+  onClose,
+  onOpenArtist,
+}: {
+  artistIds: string[];
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenArtist: (artistId: string) => void;
+}) {
+  const { lang } = useAuth();
+  const idsKey = artistIds.join(',');
+  const [loaded, setLoaded] = useState<Record<string, PulseArtistSummary | null>>({});
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    let cancelled = false;
+    const ids = idsKey.split(',').filter(Boolean);
+    void Promise.all(ids.map(async (id): Promise<[string, PulseArtistSummary | null]> => {
+      const cached = readPulseJsonCache<{ artist?: PulseArtistSummary | null }>(`artist_${id}`)?.artist;
+      if (cached) return [id, cached];
+      try {
+        const result = await AncialAPI.pulseGetArtist<{ artist?: PulseArtistSummary | null }>(id);
+        return [id, result?.artist ?? null];
+      } catch {
+        return [id, null];
+      }
+    })).then((entries) => {
+      if (!cancelled) setLoaded(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [idsKey, isOpen]);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={lang?.pulse_artists || 'Исполнители'} width="sm">
+      <div className="flex flex-col gap-1.5">
+        {artistIds.map((id) => {
+          const artist = loaded[id];
+          const isLoading = !(id in loaded);
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenArtist(id);
+              }}
+              className="flex cursor-pointer items-center gap-3 rounded-full p-1.5 pr-3 text-left duration-300 hover:bg-zinc-800 active:scale-95"
+            >
+              <AppImage
+                width={40}
+                height={40}
+                src={getImageUrl(artist?.img, DEFAULT_ARTIST_IMAGE)}
+                fallbackSrc={DEFAULT_ARTIST_IMAGE}
+                alt=""
+                className="h-10 w-10 shrink-0 rounded-full object-cover"
+              />
+              {isLoading ? (
+                <span className="h-4 w-32 animate-pulse rounded-full bg-zinc-800" />
+              ) : (
+                <span className="flex min-w-0 items-center gap-1.5 text-white">
+                  <span className="truncate">{decodeHtmlEntities(artist?.name) || lang?.artist || 'Исполнитель'}</span>
+                  {String(artist?.verify ?? '') === '1' ? <Icon name="IC-verify" className="h-4 w-4 shrink-0 fill-blue-500" /> : null}
+                </span>
+              )}
+              <Icon name="IC-chevron-right" className="ml-auto h-5 w-5 shrink-0 fill-zinc-500" />
+            </button>
+          );
+        })}
+      </div>
+    </Modal>
+  );
+}
+
+export type PulseTrackFooterAction = {
+  icon: string;
+  key: string;
+  label: string;
+  onClick: () => void;
+};
+
+/** Нижняя строка иконок в меню трека (исполнитель / поделиться / пожаловаться) — одна на списки треков и плеер. */
+export function PulseTrackFooterActions({ actions }: { actions: PulseTrackFooterAction[] }) {
+  if (actions.length === 0) return null;
+  return (
+    <div className={cn('grid w-full gap-1.5', actions.length >= 3 ? 'grid-cols-3' : actions.length === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+      {actions.map((action) => (
+        <button
+          key={action.key}
+          type="button"
+          aria-label={action.label}
+          data-tip={action.label}
+          onClick={action.onClick}
+          className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
+        >
+          <Icon name={action.icon} className="inline fill-current h-6 w-6" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function TracksPanelSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div className="flex flex-col gap-3 animate-pulse">
@@ -494,7 +608,8 @@ export function PulseTrackRow({
   );
 
   const isAvailable = isTrackAvailable(track, userCountry);
-  const firstArtistId = getArtistIds(track)[0] ?? '';
+  const artistIds = getArtistIds(track);
+  const [isArtistsOpen, setIsArtistsOpen] = useState(false);
   const coverUrl = getTrackArtwork(track);
   const title = decodeHtmlEntities(track.title) || lang?.untitled || 'Без названия';
   const artist = decodeHtmlEntities(track.artist) || lang?.unknown_artist || 'Неизвестный исполнитель';
@@ -575,12 +690,13 @@ export function PulseTrackRow({
     onClick: () => void;
   }>;
   const footerActions = [
-    firstArtistId
+    artistIds.length > 0
       ? {
         icon: 'IC-user',
         key: 'artist',
-        label: lang?.artist || 'Исполнитель',
-        onClick: () => onOpenArtist(firstArtistId),
+        // Несколько артистов — выбор в окне, один — сразу в профиль.
+        label: artistIds.length > 1 ? (lang?.pulse_artists || 'Исполнители') : (lang?.artist || 'Исполнитель'),
+        onClick: () => (artistIds.length > 1 ? setIsArtistsOpen(true) : onOpenArtist(artistIds[0])),
       }
       : null,
     {
@@ -752,20 +868,17 @@ export function PulseTrackRow({
                   : (lang?.pulse_save_offline || 'Сохранить офлайн')}
           </DropdownItem>
         ) : null}
-        <div className={cn('grid w-full gap-1.5', footerActions.length >= 3 ? 'grid-cols-3' : 'grid-cols-2')}>
-          {footerActions.map((action) => (
-            <button
-              key={action.key}
-              type="button"
-              aria-label={action.label}
-              onClick={action.onClick}
-              className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
-            >
-              <Icon name={action.icon} className="inline fill-current h-6 w-6" />
-            </button>
-          ))}
-        </div>
+        <PulseTrackFooterActions actions={footerActions} />
       </Dropdown>
+      {/* Монтируем только открытым: окно на каждую строку длинного списка — лишняя работа. */}
+      {isArtistsOpen ? (
+        <PulseArtistsModal
+          artistIds={artistIds}
+          isOpen
+          onClose={() => setIsArtistsOpen(false)}
+          onOpenArtist={onOpenArtist}
+        />
+      ) : null}
     </div>
   );
 }

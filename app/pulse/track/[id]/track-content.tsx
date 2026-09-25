@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Dropdown, DropdownItem } from '../../../components/navigation';
-import ShareModal from '../../../components/share-modal';
 import { useAuth } from '../../../context/AuthContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
+import ReportModal from '../../../components/report-modal';
 import { usePulseNote } from '../../../hooks/use-pulse-note';
+import { usePulseTrackReport } from '../../../hooks/use-pulse-track-report';
+import { buildPulseTrackReportReasons } from '../../../lib/report-reasons';
 import { useRequireAuth } from '../../../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache';
@@ -17,26 +19,29 @@ import {
   DEFAULT_TRACK_IMAGE,
   PulseEmptyState,
   PulseLegalFooter,
+  PulseArtistsModal,
   PulsePageHeader,
   PulseTrack,
+  PulseTrackFooterActions,
+  type PulseTrackFooterAction,
   PulseTrackRow,
   TrackCollectionPanel,
   cn,
   decodeHtmlEntities,
+  getArtistIds,
   getImageUrl,
-  getTrackArtwork,
   isTrackAvailable,
   normalizeText,
   toNumber,
-  type PulseShareAttachment,
 } from '../../pulse-components';
-import { getPulseExternalUrl } from '../../pulse-navigation';
+import { usePulseTrackShare } from '../../../hooks/use-pulse-track-share';
 import { PulseHeader } from '../../pulse-header';
 import { useUserCountry } from '../../../lib/user-geo';
 import Icon from '../../../components/svg-icon';
 
 type PulseTrackPageTrack = {
   artist?: string | null;
+  artists_ids?: string[] | string | null;
   blockedin?: string[] | string | null;
   id?: number | string | null;
   img?: string | null;
@@ -76,9 +81,6 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   const [isSimilarLoading, setIsSimilarLoading] = useState(!similarTracks);
 
   const { favoriteIds, getFavoriteIdsSnapshot, updateFavoriteIds } = usePulseFavoriteIds();
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
-  const [shareAttachment, setShareAttachment] = useState<PulseShareAttachment | null>(null);
 
   // Страна пользователя: мгновенно из кэша, затем обновляем из GetCountry.php
   const userCountry = useUserCountry();
@@ -91,7 +93,36 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
   const active = trackNumericId > 0 && currentSongId === trackNumericId && isPlaying;
 
   const showPulseNote = usePulseNote();
+  const { copyTrackLink, shareModal } = usePulseTrackShare(showPulseNote);
   const requireAuth = useRequireAuth(showPulseNote);
+  const { closeReportModal, handleTrackReport, isReportModalOpen, reportTrack } = usePulseTrackReport<PulseTrack>(showPulseNote);
+  const [isArtistsOpen, setIsArtistsOpen] = useState(false);
+
+  // Трек страницы в формате карточки — для «поделиться» и жалобы.
+  const trackCard: PulseTrack | null = track ? {
+    sid: trackNumericId,
+    title: track.name,
+    artist: track.artist,
+    artists_ids: track.artists_ids,
+    artwork: track.img ? [{ src: track.img }] : null,
+  } : null;
+  const artistIds = trackCard ? getArtistIds(trackCard) : [];
+  const openArtist = (artistId: string) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`);
+  const footerActions: PulseTrackFooterAction[] = [];
+  if (artistIds.length > 0) {
+    footerActions.push({
+      icon: 'IC-user',
+      key: 'artist',
+      label: artistIds.length > 1 ? (lang?.pulse_artists || 'Исполнители') : (lang?.artist || 'Исполнитель'),
+      onClick: () => (artistIds.length > 1 ? setIsArtistsOpen(true) : openArtist(artistIds[0])),
+    });
+  }
+  if (trackCard) {
+    footerActions.push(
+      { icon: 'IC-share', key: 'share', label: lang?.share || 'Поделиться', onClick: () => void copyTrackLink(trackNumericId, trackCard) },
+      { icon: 'IC-report', key: 'report', label: lang?.report || 'Пожаловаться', onClick: () => void reportTrack(trackCard) },
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -187,28 +218,6 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
       openAddToPlaylist(trackNumericId);
     }
   }, [lang, openAddToPlaylist, requireAuth, trackNumericId]);
-
-  const copyTrackLink = useCallback(async (tid: number | string, t?: PulseTrack) => {
-    const resolvedTrackId = toNumber(tid);
-    if (!resolvedTrackId) return;
-
-    setShareUrl(getPulseExternalUrl(`/pulse/track/${resolvedTrackId}`));
-
-    if (t) {
-      setShareAttachment({
-        widgets: [{ type: 'music', track_id: resolvedTrackId.toString() }],
-        preview: {
-          authorName: decodeHtmlEntities(t.artist) || lang?.artist || 'Исполнитель',
-          authorImg: getImageUrl(getTrackArtwork(t), '/img/noimg.png'),
-          contentSnippet: decodeHtmlEntities(t.title) || lang?.untitled || 'Без названия',
-        }
-      });
-    } else {
-      setShareAttachment(null);
-    }
-
-    setIsShareModalOpen(true);
-  }, [lang]);
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 pb-0 duration-300 lg:pb-64">
@@ -319,6 +328,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                         {lang?.download || 'Скачать'}
                       </DropdownItem>
                     ) : null}
+                    <PulseTrackFooterActions actions={footerActions} />
                   </Dropdown>
                   <span className="text-sm text-content-500">{lang?.save || 'Сохранить'}</span>
                 </div>
@@ -393,6 +403,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                       if (clickedTrack.sid) void playTrack(toNumber(clickedTrack.sid));
                     }}
                     onQueueTrackNext={async () => { }}
+                    onReportTrack={reportTrack}
                     track={t}
                     trackIndex={index}
                     user={user}
@@ -405,17 +416,17 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
         </>
       ) : null}
 
-      <ShareModal
-        copyLabel={lang?.copylink || 'Скопировать ссылку'}
-        title={lang?.share || 'Поделиться'}
-        onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success', 3)}
-        onCopyFailed={() => showPulseNote(shareUrl, 'info', 5)}
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        shareUrl={shareUrl}
-        attachmentWidgets={shareAttachment?.widgets}
-        attachmentPreview={shareAttachment?.preview}
+      {shareModal}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={closeReportModal}
+        onReport={handleTrackReport}
+        reasons={buildPulseTrackReportReasons(lang)}
+        title={lang?.report || 'Пожаловаться'}
       />
+      {isArtistsOpen ? (
+        <PulseArtistsModal artistIds={artistIds} isOpen onClose={() => setIsArtistsOpen(false)} onOpenArtist={openArtist} />
+      ) : null}
 
       <PulseLegalFooter className="mt-3" />
     </div>

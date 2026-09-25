@@ -2067,4 +2067,5 @@ export const en: Record<string, string> = {
   "glass_by_element_hint": "Multiplier on top of the general settings: 100% — as set above, 0% — no blur for this element.",
   "motion_expand": "Smooth expand",
   "motion_expand_hint": "Long posts and settings sections",
+  "pulse_artists": "Artists",
 };
