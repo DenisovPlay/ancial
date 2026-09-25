@@ -645,9 +645,11 @@ export function PulseTrackRow({
         )}
 
         {isTrackExplicit(track) ? (
-          <div className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-blur:8px] [--glass-sat:2] group absolute -bottom-1.5 -right-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 p-1 text-xs text-white duration-300 hover:w-fit">
-            <span className="group-hover:hidden">E</span>
-            <span className="hidden group-hover:inline">18+</span>
+          <div className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-blur:8px] [--glass-sat:2] group absolute -bottom-1.5 -right-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 p-1 text-xs text-white duration-300 group-hover:duration-300 group-hover:w-7">
+            <div className="relative flex items-center justify-center">
+              <span className="group-hover:opacity-0 duration-300">E</span>
+              <span className="absolute opacity-0 group-hover:opacity-100 duration-300">18+</span>
+            </div>
           </div>
         ) : null}
       </button>
