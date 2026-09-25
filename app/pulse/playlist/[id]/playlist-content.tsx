@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import ReportModal from '../../../components/report-modal';
-import ShareModal from '../../../components/share-modal';
 import { useAuth } from '../../../context/AuthContext';
 import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { usePulseNote } from '../../../hooks/use-pulse-note';
@@ -14,7 +13,6 @@ import { useRequireAuth } from '../../../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { buildPulseTrackReportReasons } from '../../../lib/report-reasons';
 import { useUserCountry } from '../../../lib/user-geo';
-import { SITE_CONFIG } from '../../../seo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
 import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
@@ -31,9 +29,9 @@ import {
   getTrackArtwork,
   normalizeText,
   toNumber,
-  type PulseShareAttachment,
   type PulseTrack,
 } from '../../pulse-components';
+import { usePulseTrackShare } from '../../../hooks/use-pulse-track-share';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import {
   canUploadToPulseFavoritesPlaylist,
@@ -78,9 +76,6 @@ function getPlaylistTitle(playlistId: string, playlist: PulsePlaylistMeta | null
     || (lang?.unknown_playlist || FALLBACK_PLAYLIST_NAME);
 }
 
-function getExternalPulseUrl(path: string) {
-  return `${SITE_CONFIG.url}${path}`;
-}
 
 export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { playlistId: string }) {
   const router = useRouter();
@@ -113,10 +108,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [tracksLoading, setTracksLoading] = useState(!cachedTracks.length);
   const [error, setError] = useState('');
   const [isPlaylistEditorOpen, setIsPlaylistEditorOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isUploadTrackModalOpen, setIsUploadTrackModalOpen] = useState(false);
-  const [shareUrl, setShareUrl] = useState('');
-  const [shareAttachment, setShareAttachment] = useState<PulseShareAttachment | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
@@ -135,6 +127,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const listensTotal = useMemo(() => getPulsePlaylistListenTotal(tracks), [tracks]);
 
   const showPulseNote = usePulseNote();
+  const { copyTrackLink, shareModal } = usePulseTrackShare(showPulseNote);
   const requireAuth = useRequireAuth(showPulseNote);
 
   useEffect(() => {
@@ -410,26 +403,6 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
       showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
   }, [lang, playlistId, playlistLiked, requireAuth, showPulseNote]);
-
-  const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
-    const resolvedTrackId = toNumber(trackId);
-    if (!resolvedTrackId) return;
-
-    setShareUrl(getExternalPulseUrl(`/pulse/track/${resolvedTrackId}`));
-    if (track) {
-      setShareAttachment({
-        widgets: [{ type: 'music', track_id: resolvedTrackId.toString() }],
-        preview: {
-          authorName: decodeHtmlEntities(track.artist) || lang?.artist || 'Исполнитель',
-          authorImg: getImageUrl(getTrackArtwork(track), '/img/noimg.png'),
-          contentSnippet: decodeHtmlEntities(track.title) || lang?.untitled || 'Без названия',
-        }
-      });
-    } else {
-      setShareAttachment(null);
-    }
-    setIsShareModalOpen(true);
-  }, [lang]);
 
   const openArtistPage = useCallback((artistId: string) => {
     router.push(`/pulse/artist/${encodeURIComponent(artistId)}`);
@@ -722,17 +695,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
         <PulseLegalFooter className="hidden lg:flex" />
 
-        <ShareModal
-          copyLabel={lang?.copylink || 'Скопировать ссылку'}
-          isOpen={isShareModalOpen}
-          onClose={() => setIsShareModalOpen(false)}
-          onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success', 3)}
-          onCopyFailed={() => showPulseNote(shareUrl, 'info', 5)}
-          shareUrl={shareUrl}
-          title={lang?.share || 'Поделиться'}
-          attachmentWidgets={shareAttachment?.widgets}
-          attachmentPreview={shareAttachment?.preview}
-        />
+        {shareModal}
         <ReportModal
           isOpen={isReportModalOpen}
           onClose={closeReportModal}

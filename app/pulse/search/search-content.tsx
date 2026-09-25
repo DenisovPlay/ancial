@@ -4,7 +4,6 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import ReportModal from '../../components/report-modal';
-import ShareModal from '../../components/share-modal';
 import { useAuth } from '../../context/AuthContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { useDragScroll } from '../../hooks/useDragScroll';
@@ -14,16 +13,12 @@ import { useRequireAuth } from '../../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { buildPulseTrackReportReasons } from '../../lib/report-reasons';
 import { useUserCountry } from '../../lib/user-geo';
-import { SITE_CONFIG } from '../../seo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../pulse-upload-track-modal';
 import { PulseHeader } from '../pulse-header';
 import { readPulseJsonCache, writePulseJsonCache } from '../pulse-cache';
 import { usePulseFavoriteIds } from '../player/use-pulse-favorite-ids';
 import {
   getPulseBackgroundColorByMood,
-  getTrackArtwork,
-  getImageUrl,
-  decodeHtmlEntities,
   PulseArtistTile,
   PulsePlaylistTile,
   PulseScrollSection,
@@ -34,9 +29,9 @@ import {
   cn,
   type PulseArtistCardData,
   type PulsePlaylistCardData,
-  type PulseShareAttachment,
   type PulseTrack,
 } from '../pulse-components';
+import { usePulseTrackShare } from '../../hooks/use-pulse-track-share';
 import AppImage from '../../components/app-image';
 
 type PulseSearchResponse = {
@@ -60,9 +55,6 @@ function getCardPlayableId(card: PulsePlaylistCardData) {
     : normalizeText(String(card.id ?? ''));
 }
 
-function getExternalPulseUrl(path: string) {
-  return `${SITE_CONFIG.url}${path}`;
-}
 
 export default function PulseSearchContent() {
   const router = useRouter();
@@ -85,13 +77,10 @@ export default function PulseSearchContent() {
   const artistsScrollRef = useDragScroll({ speed: 2 });
   const playlistsScrollRef = useDragScroll({ speed: 2 });
   const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState<PulsePlaylistCardData[]>([]);
   const [searchReloadToken, setSearchReloadToken] = useState(0);
   const [searchValue, setSearchValue] = useState(query);
-  const [shareUrl, setShareUrl] = useState('');
-  const [shareAttachment, setShareAttachment] = useState<PulseShareAttachment | null>(null);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracks, setTracks] = useState<PulseTrack[]>([]);
@@ -195,6 +184,8 @@ export default function PulseSearchContent() {
     return 0;
   }, []);
 
+  const { copyTrackLink, shareModal } = usePulseTrackShare(showPulseNote, getResolvedId);
+
   const likeTrack = useCallback(async (track: PulseTrack) => {
     if (!requireAuth(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное')) return;
 
@@ -232,32 +223,6 @@ export default function PulseSearchContent() {
       showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
     }
   }, [getResolvedId, lang, requireAuth, showPulseNote, updateFavoriteIds]);
-
-  const copyTrackLink = useCallback(async (trackId: number | string, track?: PulseTrack) => {
-    const rawId = String(trackId ?? '').trim();
-    if (!rawId) return;
-
-    let resolvedTrackId = toNumber(rawId);
-    if (!resolvedTrackId && rawId.startsWith('ext_')) {
-      resolvedTrackId = await getResolvedId(rawId);
-    }
-    const finalId = resolvedTrackId || rawId;
-
-    setShareUrl(getExternalPulseUrl(`/pulse/track/${finalId}`));
-    if (track) {
-      setShareAttachment({
-        widgets: [{ type: 'music', track_id: finalId.toString() }],
-        preview: {
-          authorName: decodeHtmlEntities(track.artist) || lang?.artist || 'Исполнитель',
-          authorImg: getImageUrl(getTrackArtwork(track), '/img/noimg.png'),
-          contentSnippet: decodeHtmlEntities(track.title) || lang?.untitled || 'Без названия',
-        }
-      });
-    } else {
-      setShareAttachment(null);
-    }
-    setIsShareModalOpen(true);
-  }, [getResolvedId, lang]);
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
     if (!requireAuth(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты')) return;
@@ -409,17 +374,7 @@ export default function PulseSearchContent() {
         ) : null}
       </div>
 
-      <ShareModal
-        copyLabel={lang?.copylink || 'Скопировать ссылку'}
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        onCopied={() => showPulseNote(lang?.linkcopied || 'Ссылка скопирована', 'success', 3)}
-        onCopyFailed={() => showPulseNote(shareUrl, 'info', 5)}
-        shareUrl={shareUrl}
-        title={lang?.share || 'Поделиться'}
-        attachmentWidgets={shareAttachment?.widgets}
-        attachmentPreview={shareAttachment?.preview}
-      />
+      {shareModal}
       <ReportModal
         isOpen={isReportModalOpen}
         onClose={closeReportModal}

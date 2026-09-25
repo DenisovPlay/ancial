@@ -2838,6 +2838,11 @@ export function PulsePlayerProvider({
 
             onClose={closePlayer}
             onMinimize={() => setMode('mini')}
+            currentTrack={currentTrack}
+            onOpenArtist={(artistId) => {
+              router.push(`/pulse/artist/${encodeURIComponent(artistId)}`);
+              setMode('mini');
+            }}
             onOpenAlbum={() => {
               const albumId = normalizeText(String(currentTrack?.albumid ?? ''));
               if (!albumId) return;

@@ -2067,4 +2067,5 @@ export const be: Record<string, string> = {
     "glass_by_element_hint": "Множнік па-над агульнымі наладамі: 100% — як зададзена вышэй, 0% — без размыцця ў гэтага элемента.",
     "motion_expand": "Плаўнае раскрыццё",
     "motion_expand_hint": "Доўгія пасты і раздзелы налад",
+    "pulse_artists": "Выканаўцы",
 };
