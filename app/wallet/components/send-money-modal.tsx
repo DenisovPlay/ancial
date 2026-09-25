@@ -265,7 +265,7 @@ export function SendMoneyModal({
               <button
                 type="submit"
                 disabled={sendLoading || !sendSenderId || !sdaToAccountId || sendSenderId === sdaToAccountId || !sdaAmount || parseFloat(sdaAmount) <= 0}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
+                className="w-full flex items-center justify-center gap-3 px-4 py-2.5 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-full shadow cursor-pointer font-bold"
               >
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
@@ -372,7 +372,7 @@ export function SendMoneyModal({
               <button
                 type="submit"
                 disabled={sendLoading || !sendSenderId || !stfFriendUsername || !stfAmount || parseFloat(stfAmount) <= 0}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
+                className="w-full flex items-center justify-center gap-3 px-4 py-2.5 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-full shadow cursor-pointer font-bold"
               >
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
@@ -535,7 +535,7 @@ export function SendMoneyModal({
               <button
                 type="submit"
                 disabled={sendLoading || !sendSenderId || !sdbAmount || parseFloat(sdbAmount) <= 0 || (sdbDetailType === 'email' && !sdbEmail) || (sdbDetailType === 'phone' && !sdbPhone) || (sdbDetailType === 'login' && !sdbLogin)}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
+                className="w-full flex items-center justify-center gap-3 px-4 py-2.5 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-100 rounded-full shadow cursor-pointer font-bold"
               >
                 {sendLoading ? (
                   <div className="w-6 h-6 rounded-full animate-spin border-2 border-solid border-white border-t-transparent" />
@@ -548,7 +548,7 @@ export function SendMoneyModal({
 
           {/* STEP: success */}
           {sendStep === 'success' && successDetails && (
-            <div className="flex flex-col items-center justify-center gap-3 text-center pb-2">
+            <div className="flex flex-col items-center justify-center gap-3 text-center">
               <div className="relative">
                 <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{ width: '120px', height: '120px' }}>
                   <circle className="checkmark-circle" cx="26" cy="26" r="25" fill="none" stroke="#84CC16" strokeWidth="2" />
@@ -556,29 +556,29 @@ export function SendMoneyModal({
                 </svg>
               </div>
 
-              <div className="flex flex-col items-center gap-1.5 w-full">
+              <div className="flex flex-col items-center w-full">
                 <span className="text-zinc-300 text-base">{lang?.transfercomplete || 'Перевод выполнен получателю:'}</span>
                 <span className="text-xl font-bold text-white">{successDetails.receiver}</span>
               </div>
 
-              <div className="bg-zinc-800/60 rounded-3xl p-4 w-full text-sm space-y-2.5 text-left border border-zinc-600/30 mt-1">
-                <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
+              <div className="bg-zinc-800/60 rounded-3xl px-3 w-full text-sm text-left border border-zinc-600/30 divide-y divide-zinc-600/30">
+                <div className="flex justify-between items-center gap-3 py-3">
                   <span className="text-zinc-400">{lang?.amount || 'Сумма перевода:'}</span>
                   <span className="text-lg font-bold text-zinc-100">{successDetails.amount} <Icon name="IC-anci" className="w-4 h-4 inline fill-purple-500 -mt-1.5" /></span>
                 </div>
-                <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
+                <div className="flex justify-between items-center gap-3 py-3">
                   <span className="text-zinc-400">{lang?.commission || 'Комиссия'} ({successDetails.feePercent}%):</span>
                   <span className="text-zinc-300 font-semibold">{successDetails.fees} <Icon name="IC-anci" className="w-4 h-4 inline fill-purple-500 -mt-1.5" /></span>
                 </div>
-                <div className="flex justify-between items-center border-b border-zinc-700 pb-2">
+                <div className="flex justify-between items-center gap-3 py-3">
                   <span className="text-zinc-400">{lang?.receiverwillget || 'Зачислено получателю:'}</span>
                   <span className="text-lg font-bold text-green-500">{successDetails.total} <Icon name="IC-anci" className="w-4 h-4 inline fill-purple-500 -mt-1.5" /></span>
                 </div>
-                <div className="flex flex-col gap-1 border-b border-zinc-700 pb-2">
+                <div className="flex flex-col py-3">
                   <span className="text-zinc-400 text-xs">{lang?.comment || 'Комментарий:'}</span>
                   <span className="text-zinc-100">{successDetails.comment}</span>
                 </div>
-                <div className="flex justify-between items-center pt-0.5">
+                <div className="flex justify-between items-center gap-3 py-3">
                   <span className="text-zinc-400">{lang?.fromaccount || 'Счёт списания:'}</span>
                   <span className="text-zinc-400 text-xs">№{successDetails.sender}</span>
                 </div>
@@ -586,7 +586,7 @@ export function SendMoneyModal({
 
               <button
                 onClick={() => onClose()}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-3"
+                className="w-full flex items-center justify-center gap-3 px-4 py-2.5 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full shadow cursor-pointer font-bold"
               >
                 {lang?.close || 'Закрыть'}
               </button>
@@ -595,7 +595,7 @@ export function SendMoneyModal({
 
           {/* STEP: error */}
           {sendStep === 'error' && (
-            <div className="flex flex-col items-center justify-center gap-3 text-center pb-2">
+            <div className="flex flex-col items-center justify-center gap-3 text-center">
               <div className="relative">
                 <svg className="crossmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" style={{ width: '120px', height: '120px' }}>
                   <circle className="crossmark-circle" cx="26" cy="26" r="25" fill="none" stroke="#EF4444" strokeWidth="2" />
@@ -603,21 +603,21 @@ export function SendMoneyModal({
                 </svg>
               </div>
 
-              <div className="flex flex-col items-center gap-1.5 w-full">
+              <div className="flex flex-col items-center w-full">
                 <span className="text-zinc-300 text-base">{lang?.transfererror || 'Ошибка перевода'}</span>
               </div>
 
-              <div className="bg-zinc-800/80 rounded-3xl p-4 w-full text-left border border-zinc-600/30 mt-1 flex gap-3">
+              <div className="bg-zinc-800/80 rounded-3xl p-3 w-full text-left border border-zinc-600/30 flex gap-3">
                 <Icon name="IC-warning-triangle" className="w-6 h-6 text-red-500 shrink-0 mt-0.5" fill="currentColor" />
                 <div className="flex-1 flex flex-col">
                   <span className="text-zinc-400 text-xs">{lang?.reason || 'Причина ошибки:'}</span>
-                  <span className="text-zinc-100 font-semibold text-base mt-0.5">{sendError || (lang?.unknown_error || 'Неизвестная ошибка')}</span>
+                  <span className="text-zinc-100 font-semibold text-base">{sendError || (lang?.unknown_error || 'Неизвестная ошибка')}</span>
                 </div>
               </div>
 
               <button
                 onClick={() => setSendStep('select')}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold mt-3"
+                className="w-full flex items-center justify-center gap-3 px-4 py-2.5 text-lg duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-full shadow cursor-pointer font-bold"
               >
                 {lang?.tryagain || 'Попробовать снова'}
               </button>
