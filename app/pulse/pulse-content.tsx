@@ -17,6 +17,7 @@ import { buildPulseTrackReportReasons } from '../lib/report-reasons';
 import {
   cn,
   decodeHtmlEntities,
+  DEFAULT_ARTIST_IMAGE,
   DEFAULT_TRACK_IMAGE,
   getArtistIds,
   getImageUrl,
@@ -266,7 +267,7 @@ function PulseArtistCard({
   onOpen: () => void;
 }) {
   const { lang } = useAuth();
-  const imageUrl = getImageUrl(artist.img, DEFAULT_TRACK_IMAGE);
+  const imageUrl = getImageUrl(artist.img, DEFAULT_ARTIST_IMAGE);
 
   return (
     <button
@@ -279,7 +280,7 @@ function PulseArtistCard({
       </div>
 
       <div className="absolute top-0 z-[4] h-32 w-32 overflow-hidden rounded-full border border-zinc-600/30 shadow lg:h-48 lg:w-48">
-        <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_TRACK_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
+        <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_ARTIST_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
       </div>
 
       <span className="z-[1] flex max-w-32 items-center gap-1 truncate text-sm font-medium text-zinc-100 duration-300 lg:-translate-y-24 lg:group-hover:translate-y-0 lg:max-w-48">
