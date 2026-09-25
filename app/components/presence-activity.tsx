@@ -139,7 +139,7 @@ export default function PresenceActivity({
             )}
           </span>
         }
-        menuClassName="!mt-1.5 !min-w-0 !w-[18rem] !max-w-[calc(100vw-1.5rem)]"
+        menuClassName="!mt-1.5 !min-w-[min(14rem,calc(100vw-1.5rem))] !w-max !max-w-[min(18rem,calc(100vw-1.5rem))]"
       >
         {menuTitle ? (
           <div className="flex flex-col px-3 py-1.5 text-sm break-words">

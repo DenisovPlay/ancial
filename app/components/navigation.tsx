@@ -242,12 +242,14 @@ function DropdownMenuPanel({
       el.style.minWidth = '0px';
       el.style.maxWidth = `${maxWidth}px`;
     }
-    const left = el.getBoundingClientRect().left + (el.getBoundingClientRect().width - el.offsetWidth) / 2;
+    // Позиция без scale-анимации появления: от родителя-обёртки (он не масштабируется).
+    const parent = el.offsetParent instanceof HTMLElement ? el.offsetParent : null;
+    const left = (parent ? parent.getBoundingClientRect().left : 0) + el.offsetLeft;
     const right = left + el.offsetWidth;
-    const maxRight = window.innerWidth - gutter;
+    // Двигаем, только если меню реально вылезает за экран: стоящее у края штатно не трогаем.
     let shift = 0;
-    if (right > maxRight) shift = maxRight - right;
-    if (left + shift < gutter) shift = gutter - left;
+    if (right > window.innerWidth) shift = window.innerWidth - gutter - right;
+    if (left + shift < 0) shift = gutter - left;
     if (shift) el.style.translate = `${shift}px 0`;
   }, []);
 
