@@ -1015,9 +1015,19 @@ export function readMessageCache(cacheKey: string) {
   };
 }
 
+/** Запись по hash — ссылка на кэш по id диалога (история хранится один раз). */
+type MessageHashCacheRef = { ref: string };
+
+function isMessageHashCacheRef(value: unknown): value is MessageHashCacheRef {
+  return Boolean(value) && typeof value === 'object' && typeof (value as { ref?: unknown }).ref === 'string';
+}
+
 export function readMessageCacheByHash(userId: number, dialogHash: string) {
   if (typeof window === 'undefined' || !dialogHash || !userId) return null;
   const hashKey = getMessageHashCacheKey(userId, dialogHash);
+  const entry = cache.get<unknown>(hashKey, { category: 'chats', subcategory: 'messages_hash' });
+  if (isMessageHashCacheRef(entry)) return readMessageCache(entry.ref);
+  // Старый формат: полная копия истории под hash-ключом.
   return readMessageCache(hashKey);
 }
 
@@ -1159,7 +1169,9 @@ export function writeMessageCache({
 
   if (userId && dialogHash) {
     const hashKey = getMessageHashCacheKey(userId, dialogHash);
-    cache.set(hashKey, payload, { category: 'chats', subcategory: 'messages_hash' });
+    // Та же история уже лежит под cacheKey — по hash храним только ссылку на неё, а не вторую копию.
+    const hashEntry: MessageHashCacheRef | typeof payload = cacheKey ? { ref: cacheKey } : payload;
+    cache.set(hashKey, hashEntry, { category: 'chats', subcategory: 'messages_hash' });
   }
 }
 
