@@ -105,6 +105,7 @@ let queueHandler: ((queue: RemoteQueue) => void) | null = null;
 let stopHandler: (() => void) | null = null;
 let syncHandler: (() => void) | null = null;
 let unreachableHandler: (() => void) | null = null;
+let releasedHandler: (() => void) | null = null;
 /** Играет ли звук здесь прямо сейчас (аудиоэлемент не на паузе) — сообщает плеер. */
 let localPlaybackProbe: () => boolean = () => false;
 
@@ -293,8 +294,12 @@ function ensureBridge() {
       }
     }
 
+    const wasRemote = snapshot.isRemote;
     setSnapshot(next);
     notifyClock(wasPlaying);
+    // Мы были пультом, а звука на аккаунте больше нет (играющее устройство закрыло плеер) —
+    // закрываем плеер и здесь: показывать и переключать больше нечего.
+    if (wasRemote && activeDeviceId === '') releasedHandler?.();
   });
 
   globalWS.addDialogListener('device:state', (payload) => {
@@ -504,6 +509,10 @@ export function setDeviceSyncHandler(handler: (() => void) | null) {
 
 export function setDeviceUnreachableHandler(handler: (() => void) | null) {
   unreachableHandler = handler;
+}
+
+export function setDeviceReleasedHandler(handler: (() => void) | null) {
+  releasedHandler = handler;
 }
 
 export function setDeviceLocalPlaybackProbe(probe: (() => boolean) | null) {

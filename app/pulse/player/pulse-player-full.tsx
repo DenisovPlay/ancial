@@ -242,6 +242,20 @@ export function PulsePlayerFull({
 
   onLyricsSeek,
 }: PulsePlayerFullProps) {
+  // Плеер монтируется при раскрытии: первый кадр — за экраном, со следующего едет вверх,
+  // иначе CSS-переходу не от чего стартовать и плеер появлялся бы без анимации.
+  const [hasEntered, setHasEntered] = useState(false);
+  useEffect(() => {
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => setHasEntered(true));
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, []);
+  const isShown = isVisible && hasEntered;
   const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [isArtistsOpen, setIsArtistsOpen] = useState(false);
   const trackCard = currentTrack as PulseTrackCard | null;
@@ -291,7 +305,7 @@ export function PulsePlayerFull({
       className={cn(
         'fixed inset-0 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] z-[65]',
 
-        isVisible
+        isShown
           ? 'pointer-events-auto translate-y-0'
           : 'pointer-events-none translate-y-full',
       )}

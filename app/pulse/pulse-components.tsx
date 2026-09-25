@@ -722,7 +722,11 @@ export function PulseTrackRow({
   }>;
 
   return (
-    <div className={cn('rounded-2xl flex items-center gap-3 duration-300 group cursor-pointer hover:bg-zinc-800 hover:pr-3', isCurrentSong && 'bg-lime-500/10 pr-3')}>
+    // Обёртка для content-visibility: длинный плейлист не раскладывает и не рисует строки за экраном.
+    // p-1.5/-m-1.5 — граница обрезки на 6px шире строки (значки на обложке вылезают за край),
+    // раскладка прежняя; pointer-events-none — поля обёртки не перехватывают наведение соседей.
+    <div className="cv-auto [--cv-size:76px] pointer-events-none -m-1.5 p-1.5">
+    <div className={cn('pointer-events-auto rounded-2xl flex items-center gap-3 duration-300 group cursor-pointer hover:bg-zinc-800 hover:pr-3', isCurrentSong && 'bg-lime-500/10 pr-3')}>
       <button
         type="button"
         onClick={() => {
@@ -879,6 +883,7 @@ export function PulseTrackRow({
           onOpenArtist={onOpenArtist}
         />
       ) : null}
+    </div>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { setItemWithEviction } from './storage-eviction.ts';
+
 export type CacheCategory =
   | 'home'
   | 'feed'
@@ -198,17 +200,6 @@ export function resolveKeyInfo(
   return { storageKey: key };
 }
 
-function isQuotaExceededError(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
-  const e = err as Record<string, unknown>;
-  return (
-    e.code === 22 ||
-    e.code === 1014 ||
-    e.name === 'QuotaExceededError' ||
-    e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-  );
-}
-
 /**
  * Remove all expired enveloped items from localStorage.
  */
@@ -246,82 +237,11 @@ function removeExpiredInternal() {
 }
 
 /**
- * Evict oldest non-persistent cache items to free up space.
- */
-function evictSpace(keyToSave: string): boolean {
-  if (typeof window === 'undefined') return false;
-
-  // 1. Remove expired items first
-  removeExpiredInternal();
-
-  // 2. Gather all non-persistent items
-  const itemsToEvict: Array<{ key: string; createdAt: number }> = [];
-
-  for (let i = 0; i < window.localStorage.length; i++) {
-    const k = window.localStorage.key(i);
-    if (!k || PERSISTENT_KEYS.has(k) || k === keyToSave) continue;
-
-    const raw = window.localStorage.getItem(k);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object' && parsed.__cacheEnvelope === true) {
-          if (parsed.isPersistent) continue;
-          itemsToEvict.push({ key: k, createdAt: parsed.createdAt || 0 });
-        } else {
-          // Legacy keys are treated as non-persistent, oldest
-          itemsToEvict.push({ key: k, createdAt: 0 });
-        }
-      } catch {
-        // Raw strings (legacy non-JSON) are treated as non-persistent, oldest
-        itemsToEvict.push({ key: k, createdAt: 0 });
-      }
-    }
-  }
-
-  if (itemsToEvict.length === 0) return false;
-
-  // Sort by createdAt ascending (oldest first)
-  itemsToEvict.sort((a, b) => a.createdAt - b.createdAt);
-
-  // Evict the oldest item
-  const oldest = itemsToEvict[0];
-  try {
-    window.localStorage.removeItem(oldest.key);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Attempts to set a value in localStorage, evicting items if a quota exceeded error is encountered.
+ * Запись с вытеснением старых не-персистентных записей при переполнении (один проход, см. storage-eviction).
  */
 function trySetItemWithEviction(key: string, valueStr: string): boolean {
   if (typeof window === 'undefined') return false;
-
-  try {
-    window.localStorage.setItem(key, valueStr);
-    return true;
-  } catch (error) {
-    if (!isQuotaExceededError(error)) {
-      return false;
-    }
-  }
-
-  // Quota exceeded: loop and evict oldest non-persistent items one by one
-  while (evictSpace(key)) {
-    try {
-      window.localStorage.setItem(key, valueStr);
-      return true;
-    } catch (error) {
-      if (!isQuotaExceededError(error)) {
-        return false;
-      }
-    }
-  }
-
-  return false;
+  return setItemWithEviction(window.localStorage, key, valueStr, PERSISTENT_KEYS);
 }
 
 const DB_NAME = 'ancial-offline-audio';
