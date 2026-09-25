@@ -513,7 +513,7 @@ function MessageBubble({
       <div
         ref={containerRef}
         // Пока открыто контекстное меню — без content-visibility, иначе оно обрежется по границе сообщения.
-        className={cn('relative mb-2 transition-transform duration-300 ease-out', menuOpen ? 'z-[50]' : 'cv-auto [--cv-size:64px]')}
+        className={cn('relative mb-2 transition-transform duration-300 ease-out', menuOpen ? 'z-[50]' : 'cv-auto [--cv-size:var(--chat-row-size,64px)]')}
         style={{ transform: `translateY(${transformY}px)` }}
         onContextMenu={(event) => {
           if (isMessageMenuIgnoredTarget(event.target)) return;

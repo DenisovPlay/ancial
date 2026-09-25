@@ -264,12 +264,12 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
           <div className="relative flex h-64 w-64 shrink-0 rounded-full border border-zinc-600/30 shadow lg:h-72 lg:w-72">
             {loadingArtist ? (
               <>
-                <div className="h-full w-full animate-pulse rounded-full bg-zinc-800 blur-xl" />
+                <div className="cover-glow h-full w-full animate-pulse rounded-full bg-zinc-800 blur-xl" />
                 <div className="absolute inset-x-0 h-full w-full animate-pulse rounded-full bg-zinc-800" />
               </>
             ) : (
               <>
-                <AppImage width={288} height={288} skeleton={false} className="h-full w-full rounded-full object-cover blur-xl" src={artistImage} fallbackSrc={DEFAULT_ARTIST_IMAGE} alt="" />
+                <AppImage width={288} height={288} skeleton={false} className="cover-glow h-full w-full rounded-full object-cover blur-xl" src={artistImage} fallbackSrc={DEFAULT_ARTIST_IMAGE} alt="" />
                 <AppImage width={288} height={288} className="absolute inset-x-0 z-[9] h-full w-full rounded-full object-cover" src={artistImage} fallbackSrc={DEFAULT_ARTIST_IMAGE} alt={artistName} />
               </>
             )}

@@ -483,14 +483,14 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
           <div className="relative flex h-72 w-72 shrink-0 rounded-3xl shadow lg:h-96 lg:w-96">
             {isLoading ? (
               <>
-                <div className="h-full w-full animate-pulse rounded-2xl bg-zinc-800 blur-xl" />
+                <div className="cover-glow h-full w-full animate-pulse rounded-2xl bg-zinc-800 blur-xl" />
                 <div className="absolute inset-x-0 h-full w-full animate-pulse rounded-2xl bg-zinc-800" />
               </>
             ) : (
               <>
                 <PulseCoverImage
                   alt=""
-                  className="rounded-2xl opacity-80 blur-xl"
+                  className="cover-glow rounded-2xl opacity-80 blur-xl"
                   sizes={PULSE_COVER_IMAGE_SIZES.hero}
                   src={playlistCover}
                 />
