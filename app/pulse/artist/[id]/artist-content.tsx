@@ -21,6 +21,7 @@ import { getPulsePlaylistTracksCacheKey } from '../../playlist/playlist-model';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import {
+  DEFAULT_ARTIST_IMAGE,
   DEFAULT_TRACK_IMAGE,
   getPulseBackgroundColorByMood,
   getTrackArtwork,
@@ -121,7 +122,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
 
   const artistName = decodeHtmlEntities(artist?.name) || (lang?.artist || 'Артист');
   const artistDescription = decodeHtmlEntities(artist?.desk);
-  const artistImage = getImageUrl(artist?.img, DEFAULT_TRACK_IMAGE);
+  const artistImage = getImageUrl(artist?.img, DEFAULT_ARTIST_IMAGE);
   const listensTotal = useMemo(() => tracks.reduce((sum, track) => sum + toNumber(track.listens), 0), [tracks]);
   const verifyStatus = String(artist?.verify ?? '');
   const owner = artist?.owner ?? null;
@@ -296,8 +297,8 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
               </>
             ) : (
               <>
-                <AppImage width={288} height={288} skeleton={false} className="h-full w-full rounded-full object-cover blur-xl" src={artistImage} alt="" />
-                <AppImage width={288} height={288} className="absolute inset-x-0 z-[9] h-full w-full rounded-full object-cover" src={artistImage} alt={artistName} />
+                <AppImage width={288} height={288} skeleton={false} className="h-full w-full rounded-full object-cover blur-xl" src={artistImage} fallbackSrc={DEFAULT_ARTIST_IMAGE} alt="" />
+                <AppImage width={288} height={288} className="absolute inset-x-0 z-[9] h-full w-full rounded-full object-cover" src={artistImage} fallbackSrc={DEFAULT_ARTIST_IMAGE} alt={artistName} />
               </>
             )}
           </div>

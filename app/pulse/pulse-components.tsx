@@ -101,6 +101,8 @@ export type PulseTrackRowProps = {
 };
 
 export const DEFAULT_TRACK_IMAGE = '/img/pulse/track.png';
+/** Заглушка артиста: нет картинки или она не загрузилась. */
+export const DEFAULT_ARTIST_IMAGE = '/img/pulse/artist.png';
 
 export function toNumber(value: number | string | null | undefined) {
   const nextValue = Number.parseInt(String(value ?? ''), 10);
@@ -363,7 +365,7 @@ export function PulseArtistTile({
   variant?: 'big' | 'compact';
 }) {
   const { lang } = useAuth();
-  const imageUrl = getImageUrl(artist.img, DEFAULT_TRACK_IMAGE);
+  const imageUrl = getImageUrl(artist.img, DEFAULT_ARTIST_IMAGE);
   const name = decodeHtmlEntities(artist.name) || lang?.artist || 'Артист';
 
   // big — ячейка сетки: круг тянется на ширину колонки, подпись под ним. Эффект compact с прячущейся
@@ -376,7 +378,7 @@ export function PulseArtistTile({
         className="group flex w-full min-w-0 cursor-pointer flex-col items-center gap-3 duration-300 active:scale-95"
       >
         <div className="aspect-square w-full overflow-hidden rounded-full border border-zinc-600/30 shadow">
-          <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_TRACK_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
+          <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_ARTIST_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
         </div>
         <span className="w-full truncate text-center text-sm font-medium text-zinc-100 lg:text-base">{name}</span>
       </button>
@@ -394,7 +396,7 @@ export function PulseArtistTile({
       </div>
 
       <div className="absolute top-0 z-[4] h-32 w-32 overflow-hidden rounded-full border border-zinc-600/30 shadow lg:h-48 lg:w-48">
-        <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_TRACK_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
+        <AppImage width={192} height={192} src={imageUrl} fallbackSrc={DEFAULT_ARTIST_IMAGE} alt="" className="block h-full w-full object-cover duration-300 group-hover:scale-110" />
       </div>
 
       <span className="z-[1] flex max-w-32 items-center gap-1 truncate text-sm font-medium text-zinc-100 duration-300 lg:-translate-y-24 lg:max-w-48 lg:group-hover:translate-y-0">
