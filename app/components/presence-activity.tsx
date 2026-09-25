@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import { cn } from '../lib/cn';
-import { getPresenceText, isPresenceOnline, type UserPresence } from '../lib/presence';
+import { getPresenceMusicLabel, getPresenceText, isPresenceOnline, type UserPresence } from '../lib/presence';
 import { getPulseExternalUrl } from '../pulse/pulse-navigation';
 import { Dropdown, DropdownItem } from './navigation';
 import ShareModal from './share-modal';
@@ -81,6 +81,17 @@ export default function PresenceActivity({
   const activityUrl = presence.activity_url || '';
   const canJoinCall = presence.activity_type === 'call' && presence.can_join && activityUrl;
   const text = getPresenceText(presence, lang);
+  // В меню — заголовок жирным, а трек/звонок отдельной строкой под ним.
+  const menuTitle = isMusic
+    ? (lang?.presence_listening || 'Слушает')
+    : presence.activity_type === 'call' && presence.activity_label
+      ? (lang?.presence_calling || 'Участвует в звонке')
+      : '';
+  const menuDetail = isMusic
+    ? getPresenceMusicLabel(presence)
+    : menuTitle
+      ? presence.activity_label
+      : '';
   const shareUrl = isMusic && activityUrl ? getPulseExternalUrl(activityUrl) : '';
 
   const musicActions: MenuAction[] = [];
@@ -128,9 +139,16 @@ export default function PresenceActivity({
             )}
           </span>
         }
-        menuClassName="!mt-1.5 min-w-[14rem] max-w-[18rem]"
+        menuClassName="!mt-1.5 !min-w-0 !w-[18rem] !max-w-[calc(100vw-1.5rem)]"
       >
-        <div className="px-3 py-1.5 text-sm text-zinc-200">{text}</div>
+        {menuTitle ? (
+          <div className="flex flex-col px-3 py-1.5 text-sm break-words">
+            <span className="font-bold text-white">{menuTitle}</span>
+            <span className="text-zinc-300">{menuDetail}</span>
+          </div>
+        ) : (
+          <div className="px-3 py-1.5 text-sm text-zinc-200 break-words">{text}</div>
+        )}
         {musicActions.length > 0 ? (
           <div className={cn('grid w-full gap-1.5', GRID_COLUMNS[Math.min(musicActions.length, GRID_COLUMNS.length - 1)])}>
             {musicActions.map((action) => (

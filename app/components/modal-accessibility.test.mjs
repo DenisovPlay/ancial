@@ -7,6 +7,7 @@ assert.match(source, /role="dialog"/);
 assert.match(source, /aria-modal="true"/);
 assert.match(source, /previouslyFocusedElementRef/);
 assert.match(source, /focusableElements/);
-assert.match(source, /overflowBeforeOpenRef/);
+assert.match(source, /lockBodyScroll\(\)/);
+assert.match(source, /unlockBodyScroll\(\)/);
 
 console.log('modal accessibility: ok');
