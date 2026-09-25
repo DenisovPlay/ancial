@@ -33,6 +33,25 @@ const MODAL_WIDTH_CLASSES = {
   full: 'w-full',
 } as const;
 
+// Общий счётчик блокировок: окна открываются стопкой, и прокрутка возвращается,
+// только когда закрылось последнее. Раньше каждое окно запоминало overflow в момент
+// открытия, и вложенное окно «возвращало» hidden — страница оставалась без скролла.
+let bodyScrollLocks = 0;
+let overflowBeforeLock = '';
+
+function lockBodyScroll() {
+  if (bodyScrollLocks === 0) {
+    overflowBeforeLock = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+  bodyScrollLocks += 1;
+}
+
+function unlockBodyScroll() {
+  bodyScrollLocks = Math.max(0, bodyScrollLocks - 1);
+  if (bodyScrollLocks === 0) document.body.style.overflow = overflowBeforeLock;
+}
+
 export default function Modal({
   align = 'responsive',
   animation = 'sheet',
@@ -57,7 +76,7 @@ export default function Modal({
   const startY = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
-  const overflowBeforeOpenRef = useRef('');
+  const scrollLockedRef = useRef(false);
   const titleId = useId();
 
   // Блокировка прокрутки фона при открытом окне и управление анимацией
@@ -68,8 +87,10 @@ export default function Modal({
       previouslyFocusedElementRef.current = document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-      overflowBeforeOpenRef.current = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
+      if (!scrollLockedRef.current) {
+        scrollLockedRef.current = true;
+        lockBodyScroll();
+      }
 
       let visibleFrame = 0;
       const renderFrame = requestAnimationFrame(() => {
@@ -85,7 +106,10 @@ export default function Modal({
       };
     }
 
-    document.body.style.overflow = overflowBeforeOpenRef.current;
+    if (scrollLockedRef.current) {
+      scrollLockedRef.current = false;
+      unlockBodyScroll();
+    }
     previouslyFocusedElementRef.current?.focus();
 
     const frame = requestAnimationFrame(() => {
@@ -108,7 +132,10 @@ export default function Modal({
     if (typeof document === 'undefined') return;
 
     return () => {
-      document.body.style.overflow = overflowBeforeOpenRef.current;
+      if (scrollLockedRef.current) {
+        scrollLockedRef.current = false;
+        unlockBodyScroll();
+      }
       previouslyFocusedElementRef.current?.focus();
     };
   }, []);

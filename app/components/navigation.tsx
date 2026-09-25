@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import AppImage from './app-image';
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
@@ -229,6 +229,28 @@ function DropdownMenuPanel({
   responsive: boolean;
 }) {
   const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  // Меню не должно уезжать за край экрана: после открытия сдвигаем его по горизонтали
+  // внутрь окна с отступом 12px. offsetLeft/offsetWidth не зависят от scale-анимации появления.
+  useLayoutEffect(() => {
+    const el = menuContainerRef.current;
+    if (!el) return;
+    const gutter = 12;
+    // Шире экрана (min-w-max у width="auto" с длинным текстом) — сужаем, текст переносится.
+    const maxWidth = window.innerWidth - gutter * 2;
+    if (el.offsetWidth > maxWidth) {
+      el.style.minWidth = '0px';
+      el.style.maxWidth = `${maxWidth}px`;
+    }
+    const left = el.getBoundingClientRect().left + (el.getBoundingClientRect().width - el.offsetWidth) / 2;
+    const right = left + el.offsetWidth;
+    const maxRight = window.innerWidth - gutter;
+    let shift = 0;
+    if (right > maxRight) shift = maxRight - right;
+    if (left + shift < gutter) shift = gutter - left;
+    if (shift) el.style.translate = `${shift}px 0`;
+  }, []);
+
   // Liquid glass cursor tracking for menu container
   const mouseX = useMotionValue(-200);
   const mouseY = useMotionValue(-200);
