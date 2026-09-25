@@ -10,6 +10,7 @@ import React, {
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { TypingBubble } from './components/typing-bubble';
+import { useChatWindow } from './lib/use-chat-window';
 
 import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
@@ -128,6 +129,11 @@ const setActiveDialogGlobals = (dialogId: number, dialogHash: string) => {
   window.__activeDialogId = dialogId;
   window.__activeDialogHash = dialogHash;
 };
+
+/** Оценка высоты пузыря для content-visibility: замер из окна рендера, иначе прежние 64px. */
+function chatRowSizeStyle(height: number | undefined): React.CSSProperties | undefined {
+  return height === undefined ? undefined : ({ '--chat-row-size': `${height}px` } as React.CSSProperties);
+}
 
 export default function MessagesContent() {
   const router = useRouter();
@@ -320,6 +326,12 @@ export default function MessagesContent() {
   const cancelledMessageIdsRef = useRef<Set<number>>(new Set());
 
   const timelineItems = useMemo(() => buildTimelineItems(messages, lang), [messages, lang]);
+  const timelineRowIds = useMemo(
+    () => timelineItems.map((item) => (item.kind === 'separator' ? `sep:${item.dayKey}` : `msg:${getMessageId(item.message)}`)),
+    [timelineItems],
+  );
+  // Длинная история: в DOM — ~150 строк вокруг видимой области, дальние — пустышки той же высоты.
+  const chatWindow = useChatWindow(timelineRowIds, routeHash);
   const dialogImageSlides = useMemo(() => buildDialogImageSlides(messages), [messages]);
   const activeDialogImageIndex = useMemo(() => {
     return activeDialogImageKey
@@ -970,16 +982,34 @@ export default function MessagesContent() {
     }
   };
 
-  const seekToMessage = async (replyToId: string | number) => {
+  /**
+   * Прокрутка к сообщению с подсветкой. Если оно в ленте, но вне окна рендера (пустышка) —
+   * сначала переносим окно к нему и ждём отрисовки. false — сообщения в ленте нет.
+   */
+  const scrollToLoadedMessage = (replyToId: string | number) => {
     const targetId = `msg-${replyToId}`;
-    const el = document.getElementById(targetId);
-
-    if (el) {
+    const highlight = (el: HTMLElement) => {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add('bg-purple-500/30', 'transition-colors', 'duration-500');
       setTimeout(() => el.classList.remove('bg-purple-500/30'), 1500);
-      return;
+    };
+    const el = document.getElementById(targetId);
+    if (el) {
+      highlight(el);
+      return true;
     }
+    if (!chatWindow.reveal(`msg:${replyToId}`)) return false;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const revealed = document.getElementById(targetId);
+        if (revealed) highlight(revealed);
+      });
+    });
+    return true;
+  };
+
+  const seekToMessage = async (replyToId: string | number) => {
+    if (scrollToLoadedMessage(replyToId)) return;
 
     if (!currentDialogIdRef.current || loadingOlder) return;
 
@@ -1046,12 +1076,7 @@ export default function MessagesContent() {
 
     if (found) {
       setTimeout(() => {
-        const newEl = document.getElementById(targetId);
-        if (newEl) {
-          newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          newEl.classList.add('bg-purple-500/30', 'transition-colors', 'duration-500');
-          setTimeout(() => newEl.classList.remove('bg-purple-500/30'), 1500);
-        }
+        scrollToLoadedMessage(replyToId);
       }, 100);
     }
   };
@@ -2832,9 +2857,27 @@ export default function MessagesContent() {
                                 const isPrevFromSameSender = prevItem && prevItem.kind !== 'separator' && Number(prevItem.message.sender_id) === senderId;
                                 const hideName = isGroupDialog && isPrevFromSameSender;
 
-                                return (
+                                const rowId = timelineRowIds[index];
+                                const placeholderHeight = chatWindow.getPlaceholderHeight(index, rowId);
+                                // Обёртка без отступов: mb-2 пузыря схлопывается сквозь неё, раскладка прежняя.
+                                // Вне окна рендера — пустышка той же высоты с тем же отступом.
+                                return placeholderHeight !== undefined ? (
+                                  <div
+                                    key={`${rowId}:placeholder`}
+                                    ref={chatWindow.observeRow}
+                                    data-chat-row={rowId}
+                                    data-chat-placeholder="true"
+                                    className="mb-2"
+                                    style={{ height: placeholderHeight }}
+                                  />
+                                ) : (
+                                  <div
+                                    key={rowId}
+                                    ref={chatWindow.observeRow}
+                                    data-chat-row={rowId}
+                                    style={chatRowSizeStyle(chatWindow.getKnownHeight(rowId))}
+                                  >
                                   <MessageBubble
-                                    key={`msg:${getMessageId(item.message)}`}
                                     authUserImage={authUserImage}
                                     currentUserId={currentUserId}
                                     foreignUser={foreignUser}
@@ -2856,6 +2899,7 @@ export default function MessagesContent() {
                                     onOpenImage={setActiveDialogImageKey}
                                     onReplyClick={handleBubbleReplyClick}
                                   />
+                                  </div>
                                 );
                               })()
                             ),

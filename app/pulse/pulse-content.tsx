@@ -383,10 +383,23 @@ export default function PulseContent() {
       .catch(() => { });
 
     void loadFriendsListening();
-    const timer = window.setInterval(() => void loadFriendsListening(), FRIENDS_LISTENING_REFRESH_MS);
+    // Скрытая вкладка ничего не показывает — не опрашиваем; вернулись на экран — сразу освежаем.
+    let lastLoadedAt = Date.now();
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      lastLoadedAt = Date.now();
+      void loadFriendsListening();
+    }, FRIENDS_LISTENING_REFRESH_MS);
+    const handleVisibility = () => {
+      if (document.hidden || Date.now() - lastLoadedAt < FRIENDS_LISTENING_REFRESH_MS) return;
+      lastLoadedAt = Date.now();
+      void loadFriendsListening();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       active = false;
       window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [isAuthenticated]);
 

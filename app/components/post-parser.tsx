@@ -1,4 +1,17 @@
 import { parseStickersToHtml } from '../lib/stickers-service';
+import { canOptimizeImage } from '../lib/image-hosts';
+import { buildOptimizedImageSrc, decodeHtmlAttribute } from '../lib/optimized-image-src';
+
+/**
+ * src картинки карусели/коллажа в отображаемом посте: через оптимизатор next/image с шириной под
+ * раскладку, а не многомегапиксельный оригинал в памяти. В редакторе (isPreview) и для хостов, которые
+ * оптимизатор не берёт (ibb.co, GIF, приватные медиа), — оригинал как есть.
+ */
+function postImageSrc(url: string, width: number, isPreview: boolean): string {
+    if (isPreview) return url;
+    const original = decodeHtmlAttribute(url);
+    return canOptimizeImage(original) ? buildOptimizedImageSrc(original, width) : url;
+}
 
 /**
  * Считает только видимые символы — без BBCode-тегов.
@@ -137,7 +150,7 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             ? `<div class="${countBadgeClass}"><svg class="w-3.5 h-3.5 fill-current inline-block align-middle"><use href="#IC-photo-material"></use></svg> ${count}</div>`
             : '';
         const slides = items.map((url: string, i: number) =>
-            `<div class="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] cursor-pointer duration-300 select-none"><img src="${url}" alt="Слайд ${i + 1}" class="h-64 md:h-96 w-full rounded-3xl object-contain bg-zinc-950/80 shadow border border-zinc-800/40 pointer-events-auto" loading="lazy" draggable="false" /></div>`
+            `<div class="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] cursor-pointer duration-300 select-none"><img src="${postImageSrc(url, 1080, isPreview)}" alt="Слайд ${i + 1}" class="h-64 md:h-96 w-full rounded-3xl object-contain bg-zinc-950/80 shadow border border-zinc-800/40 pointer-events-auto" loading="lazy" draggable="false" /></div>`
         ).join('');
 
         const leftArrow = count > 1
@@ -161,7 +174,8 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
         const cols = items.length === 2 ? 'grid-cols-2' : items.length >= 4 ? 'grid-cols-2' : 'grid-cols-3';
         const imgs = items.map((url: string, i: number) => {
             const spanClass = (items.length === 4 && i === 0) ? 'col-span-2' : '';
-            return `<img src="${url}" alt="Коллаж ${i + 1}" class="${spanClass} w-full h-40 object-cover rounded-2xl shadow cursor-pointer active:scale-95 duration-300" loading="lazy" draggable="false" />`;
+            // Широкая первая ячейка коллажа из четырёх — на всю ширину поста.
+            return `<img src="${postImageSrc(url, spanClass ? 1200 : 828, isPreview)}" alt="Коллаж ${i + 1}" class="${spanClass} w-full h-40 object-cover rounded-2xl shadow cursor-pointer active:scale-95 duration-300" loading="lazy" draggable="false" />`;
         }).join('');
 
         const overlay = isPreview
