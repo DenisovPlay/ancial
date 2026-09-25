@@ -7,6 +7,7 @@ import { useCopyToClipboard } from '../hooks/use-copy-to-clipboard';
 import { cn } from '../lib/cn';
 import { useMentionNavigation } from '../hooks/use-mention-navigation';
 import { useSanitizedHtml } from '../lib/use-sanitized-html';
+import { getOriginalImageSrc } from '../lib/optimized-image-src';
 import { ensureCarouselScrollDelegation } from './carousel-delegation';
 
 import ImageViewerModal, { type ImageViewerSlide } from './image-viewer-modal';
@@ -741,7 +742,8 @@ function PostCardInner({
         const allImgs = Array.from(container.getElementsByTagName('img')).filter(isPostImage);
         const clickedIndex = allImgs.indexOf(imgEl);
         if (clickedIndex !== -1) {
-          const inlineSlides = allImgs.map(img => ({ url: img.src }));
+          // В ленте картинки идут через оптимизатор — в просмотрщик отдаём оригиналы.
+          const inlineSlides = allImgs.map(img => ({ url: getOriginalImageSrc(img.src) }));
           setCustomImages(inlineSlides);
           setSelectedImageIndex(clickedIndex);
         }

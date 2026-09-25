@@ -238,7 +238,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
       {loading ? (
         <div className="flex w-full max-w-screen-2xl flex-col items-center justify-center gap-6 lg:flex-row lg:justify-start">
           <div className="relative flex h-72 w-72 shrink-0 rounded-3xl shadow lg:h-96 lg:w-96">
-            <div className="h-full w-full animate-pulse rounded-2xl bg-zinc-800 blur-xl" />
+            <div className="cover-glow h-full w-full animate-pulse rounded-2xl bg-zinc-800 blur-xl" />
             <div className="absolute inset-x-0 h-full w-full animate-pulse rounded-2xl bg-zinc-800" />
           </div>
           <div className="flex flex-col gap-3">
@@ -270,7 +270,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
             >
               <PulseCoverImage
                 alt=""
-                className={cn('rounded-2xl blur-xl', !available && 'opacity-30')}
+                className={cn('cover-glow rounded-2xl blur-xl', !available && 'opacity-30')}
                 sizes={PULSE_COVER_IMAGE_SIZES.hero}
                 src={image}
               />

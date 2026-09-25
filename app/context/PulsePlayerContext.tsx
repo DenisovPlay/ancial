@@ -9,6 +9,7 @@ import React, {
   useRef,
   useState,
   useSyncExternalStore,
+  type ComponentType,
 } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
@@ -27,9 +28,9 @@ import {
   subscribeLyricsEnabled,
 } from '../pulse/player/lyrics-preference';
 import { useOfflineAudioSave } from '../pulse/player/use-offline-audio-save';
-import { useVisualAudioProgress } from '../pulse/player/use-visual-audio-progress';
-import { PulsePlayerFull } from '../pulse/player/pulse-player-full';
+import { useVisualAudioProgress, VISUAL_PROGRESS_STEP_MS } from '../pulse/player/use-visual-audio-progress';
 import type { RepeatMode } from '../pulse/player/pulse-player-full-controls';
+import type { PulsePlayerFullProps } from '../pulse/player/pulse-player-full';
 import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
 import { useMiniPlayerSlot } from '../pulse/player/mini-player-slot';
@@ -68,6 +69,7 @@ import {
   setDeviceCommandHandler,
   setDeviceQueueHandler,
   setDeviceLocalPlaybackProbe,
+  setDeviceReleasedHandler,
   setDeviceStopHandler,
   setDeviceSyncHandler,
   setDeviceUnreachableHandler,
@@ -230,7 +232,28 @@ const PulsePlayerContext = createContext<PulsePlayerContextValue | undefined>(un
 
 const PRELOAD_PROGRESS_THRESHOLD = 0.5;
 const PLAYER_LISTEN_COUNT_AT_SECONDS = 30;
-const PLAYER_PROGRESS_LOOP_INTERVAL_MS = 250;
+const PLAYER_PROGRESS_LOOP_INTERVAL_MS = VISUAL_PROGRESS_STEP_MS;
+/** Свёрнутый полный плеер держим в памяти ещё столько — хватает доиграть анимацию ухода (500 мс). */
+const FULL_PLAYER_UNMOUNT_DELAY_MS = 1000;
+
+/**
+ * Полный плеер (обложки, текст песни, очередь) — отдельный чанк: до первого раскрытия он не нужен
+ * ни на одной странице. Грузим его заранее, когда появляется мини-плеер. Без next/dynamic:
+ * тот рендерит через Suspense, а React придерживает показ после Suspense до 300 мс — раскрытие
+ * заметно запаздывало бы даже с уже загруженным кодом.
+ */
+type PulsePlayerFullComponent = ComponentType<PulsePlayerFullProps>;
+let pulsePlayerFullPromise: Promise<PulsePlayerFullComponent> | null = null;
+const loadPulsePlayerFull = () => {
+  pulsePlayerFullPromise ??= import('../pulse/player/pulse-player-full')
+    .then((module) => module.PulsePlayerFull)
+    .catch((error: unknown) => {
+      // Не загрузился (сеть) — следующая попытка начнёт заново.
+      pulsePlayerFullPromise = null;
+      throw error;
+    });
+  return pulsePlayerFullPromise;
+};
 const PLAYER_MEDIA_POSITION_UPDATE_INTERVAL_MS = 1000;
 /** Сервис текстов иногда просто не отвечает: без повтора трек доигрывал бы без текста до перезагрузки. */
 const PULSE_COLLECTION_KINDS: PulseCollectionKind[] = ['artist', 'downloads', 'genlist', 'playlist', 'track'];
@@ -294,8 +317,6 @@ export function PulsePlayerProvider({
     desktopSeekInputRef,
     mobileCurrentTimeLabelRef,
     mobileSeekInputRef,
-    startVisualProgressLoop,
-    stopVisualProgressLoop,
     syncVisualProgress,
   } = useVisualAudioProgress(audioRef, seekingSliderRef);
 
@@ -900,7 +921,6 @@ export function PulsePlayerProvider({
     }
 
     stopProgressLoop();
-    stopVisualProgressLoop();
     setMode('mini');
     setIsPlaying(false);
     setIsVisible(false);
@@ -1768,11 +1788,10 @@ export function PulsePlayerProvider({
     preloadAudioRef.current.preload = 'auto';
 
     return () => {
-      stopVisualProgressLoop();
       stopProgressLoop();
       preloadAudioRef.current = null;
     };
-  }, [stopVisualProgressLoop]);
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -1811,7 +1830,6 @@ export function PulsePlayerProvider({
         } catch { }
       }
       startProgressLoop();
-      startVisualProgressLoop();
       syncTrackProgress({ forceProgressUpdate: true });
       emitPlaybackState();
 
@@ -1829,7 +1847,6 @@ export function PulsePlayerProvider({
         } catch { }
       }
       stopProgressLoop();
-      stopVisualProgressLoop();
       syncTrackProgress({ forceProgressUpdate: true });
       emitPlaybackState();
 
@@ -1841,7 +1858,6 @@ export function PulsePlayerProvider({
 
     const handleEnded = () => {
       stopProgressLoop();
-      stopVisualProgressLoop();
 
       if (repeatModeRef.current === 'one') {
         if (audioRef.current) {
@@ -1877,6 +1893,10 @@ export function PulsePlayerProvider({
     };
 
     const handleTimeUpdate = () => {
+      // Во время воспроизведения на экране прогресс ведёт таймер (4 раза в секунду) — timeupdate его
+      // только дублировал бы. В фоне таймеры браузер душит, а события аудио нет: там (и на паузе,
+      // при перемотке) предзагрузку следующего трека и позицию для медиасессии ведёт timeupdate.
+      if (progressLoopRef.current !== null && !document.hidden) return;
       syncTrackProgress();
     };
 
@@ -1884,7 +1904,6 @@ export function PulsePlayerProvider({
       setIsPlaying(false);
       setStatusAudio('Ready');
       stopProgressLoop();
-      stopVisualProgressLoop();
 
       const audio = audioRef.current;
       const track = playlistRef.current[indexRef.current] ?? null;
@@ -2595,6 +2614,7 @@ export function PulsePlayerProvider({
     stop: handleDeviceStop,
     sync: handleDeviceSync,
     unreachable: handleDeviceUnreachable,
+    released: closePlayer,
   });
   useEffect(() => {
     deviceHandlersRef.current = {
@@ -2603,6 +2623,7 @@ export function PulsePlayerProvider({
       stop: handleDeviceStop,
       sync: handleDeviceSync,
       unreachable: handleDeviceUnreachable,
+      released: closePlayer,
     };
   });
 
@@ -2614,6 +2635,8 @@ export function PulsePlayerProvider({
     setDeviceUnreachableHandler(() => deviceHandlersRef.current.unreachable());
     // После обрыва сокета звук возвращаем себе, только если он реально играет здесь (см. remote-devices).
     setDeviceLocalPlaybackProbe(() => Boolean(audioRef.current && !audioRef.current.paused && !audioRef.current.ended));
+    // Играющее устройство закрыло плеер — пульт закрывает свой (команд никуда не шлёт: он уже не пульт).
+    setDeviceReleasedHandler(() => deviceHandlersRef.current.released());
     return () => {
       setDeviceCommandHandler(null);
       setDeviceQueueHandler(null);
@@ -2621,10 +2644,59 @@ export function PulsePlayerProvider({
       setDeviceSyncHandler(null);
       setDeviceUnreachableHandler(null);
       setDeviceLocalPlaybackProbe(null);
+      setDeviceReleasedHandler(null);
     };
   }, []);
 
   const isFullMode = mode === 'full';
+  const isFullPlayerShown = isFullMode && isPlayerAnimatingIn;
+
+  // Полный плеер живёт в DOM, только пока раскрыт (и секунду после — на анимацию ухода):
+  // свёрнутый он держал разметку, большие обложки, размытый фон и текст песни.
+  const [isFullPlayerMounted, setIsFullPlayerMounted] = useState(false);
+  if (isFullPlayerShown && !isFullPlayerMounted) setIsFullPlayerMounted(true);
+
+  useEffect(() => {
+    if (isFullPlayerShown || !isFullPlayerMounted) return undefined;
+    const timer = window.setTimeout(() => setIsFullPlayerMounted(false), FULL_PLAYER_UNMOUNT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [isFullPlayerMounted, isFullPlayerShown]);
+
+  // Мини-плеер появился — в простое подгружаем код полного, чтобы раскрытие не ждало сеть.
+  const [PulsePlayerFull, setPulsePlayerFull] = useState<PulsePlayerFullComponent | null>(null);
+  const needsFullPlayerCode = !PulsePlayerFull && (effectivePlayerVisible || isFullPlayerMounted);
+  useEffect(() => {
+    if (!needsFullPlayerCode) return undefined;
+    let cancelled = false;
+    const prefetch = () => {
+      loadPulsePlayerFull()
+        .then((component) => {
+          if (!cancelled) setPulsePlayerFull(() => component);
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to load full player', error);
+        });
+    };
+    // Уже раскрывают — грузим сразу, не дожидаясь простоя.
+    if (isFullPlayerMounted) {
+      prefetch();
+      return () => {
+        cancelled = true;
+      };
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(prefetch, { timeout: 1000 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
+    }
+    const timer = window.setTimeout(prefetch, 1000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isFullPlayerMounted, needsFullPlayerCode]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -2784,7 +2856,7 @@ export function PulsePlayerProvider({
           id="NAVP"
           className="pointer-events-none fixed inset-0 z-[1500]"
         >
-          {isMounted ? (
+          {isMounted && isFullPlayerMounted && PulsePlayerFull ? (
             <PulsePlayerFull
             audioRef={isRemoteDevice ? remotePlaybackClockRef : audioRef}
             mobileCurrentTimeLabelRef={mobileCurrentTimeLabelRef}
@@ -2817,7 +2889,7 @@ export function PulsePlayerProvider({
             duration={effectiveDuration}
 
             isPlaying={effectiveIsPlaying}
-            isVisible={isFullMode && isPlayerAnimatingIn}
+            isVisible={isFullPlayerShown}
 
             activeLike={activeLike}
             isAuthenticated={isAuthenticated}

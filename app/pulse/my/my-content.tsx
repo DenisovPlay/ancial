@@ -263,12 +263,12 @@ export default function PulseMyContent() {
           <div className="relative flex h-48 w-48 shrink-0 rounded-full border border-zinc-600/30 shadow lg:h-64 lg:w-64">
             {user?.img ? (
               <>
-                <AppImage width={256} height={256} skeleton={false} className="h-48 w-48 rounded-full object-cover blur-xl lg:h-64 lg:w-64" src={user.img} alt="" />
+                <AppImage width={256} height={256} skeleton={false} className="cover-glow h-48 w-48 rounded-full object-cover blur-xl lg:h-64 lg:w-64" src={user.img} alt="" />
                 <AppImage width={256} height={256} className="absolute inset-x-0 z-[9] h-48 w-48 rounded-full object-cover lg:h-64 lg:w-64" src={user.img} alt={decodeHtmlEntities(`${user?.fname ?? ''} ${user?.lname ?? ''}`)} />
               </>
             ) : (
               <>
-                <div className="h-48 w-48 animate-pulse rounded-full bg-zinc-800 blur-xl lg:h-64 lg:w-64" />
+                <div className="cover-glow h-48 w-48 animate-pulse rounded-full bg-zinc-800 blur-xl lg:h-64 lg:w-64" />
                 <div className="absolute inset-x-0 z-[9] h-48 w-48 animate-pulse rounded-full bg-zinc-800 lg:h-64 lg:w-64" />
               </>
             )}

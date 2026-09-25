@@ -452,15 +452,17 @@ export default function FeedContent() {
         const nextLastId = response.last_id ?? lastId;
 
         const nextHasMorePages = Boolean(response.has_more);
-        setPosts((currentPosts) => {
-          const resolvedPosts = append ? [...currentPosts, ...nextPosts] : nextPosts;
+        // В кэш — только первая страница: при возврате лента всё равно заново грузит первую
+        // страницу, а переписывать в localStorage всё накопленное на каждой подгрузке — это
+        // синхронная запись сотен КБ, от которой подтормаживает прокрутка.
+        if (!append) {
           writeFeedCache(cacheKey, {
             currentLastId: nextLastId,
             hasMorePages: nextHasMorePages,
-            posts: resolvedPosts,
+            posts: nextPosts,
           });
-          return resolvedPosts;
-        });
+        }
+        setPosts((currentPosts) => (append ? [...currentPosts, ...nextPosts] : nextPosts));
         setCurrentLastId(nextLastId);
         currentLastIdRef.current = nextLastId;
         setHasMorePages(nextHasMorePages);

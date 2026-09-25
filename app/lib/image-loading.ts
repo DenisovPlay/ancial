@@ -3,6 +3,8 @@
  * (посты, комментарии, стикеры в сообщениях). Стили — .img-* в globals.css.
  */
 
+import { getOriginalImageSrc } from './optimized-image-src';
+
 /** Прозрачный пиксель: подменяет битую картинку, чтобы не было «сломанной» иконки браузера. */
 export const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
@@ -40,6 +42,14 @@ export function wasSlowNetworkLoad(url: string): boolean {
 
 function settleHtmlImage(img: HTMLImageElement, ok: boolean): void {
   if (img.src === TRANSPARENT_PIXEL) return; // уже показана ошибка
+  // Оптимизатор не ответил (хост недоступен серверу и т.п.) — пробуем оригинал, скелетон остаётся.
+  if (!ok) {
+    const original = getOriginalImageSrc(img.src);
+    if (original !== img.src) {
+      img.src = original;
+      return;
+    }
+  }
   img.classList.remove('img-skeleton', 'img-loading');
   if (!ok) {
     img.classList.add('img-error');
