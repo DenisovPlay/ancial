@@ -28,6 +28,7 @@ import {
   subscribeLyricsEnabled,
 } from '../pulse/player/lyrics-preference';
 import { useOfflineAudioSave } from '../pulse/player/use-offline-audio-save';
+import { IS_NATIVE_APP, NATIVE_MEDIA_SESSION_READY_EVENT } from '../lib/platform';
 import { useVisualAudioProgress, VISUAL_PROGRESS_STEP_MS } from '../pulse/player/use-visual-audio-progress';
 import type { RepeatMode } from '../pulse/player/pulse-player-full-controls';
 import type { PulsePlayerFullProps } from '../pulse/player/pulse-player-full';
@@ -1966,6 +1967,23 @@ export function PulsePlayerProvider({
     // otherwise adding every helper here would re-bind audio listeners on frequent progress updates.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Приложение: мост к нативной медиасессии ставится после запуска плеера — если трек уже выбран,
+  // отдаём его метаданные заново (иначе уведомление остаётся без названия и обложки до смены трека).
+  useEffect(() => {
+    if (!IS_NATIVE_APP || !currentTrack) return undefined;
+    const applyMetadata = () => {
+      if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined') return;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        album: normalizeText(currentTrack.album) || 'Zypo',
+        artist: playerArtist,
+        artwork: buildMediaArtwork(currentTrack),
+        title: playerTitle,
+      });
+    };
+    window.addEventListener(NATIVE_MEDIA_SESSION_READY_EVENT, applyMetadata);
+    return () => window.removeEventListener(NATIVE_MEDIA_SESSION_READY_EVENT, applyMetadata);
+  }, [currentTrack, playerArtist, playerTitle]);
 
   useEffect(() => {
     if (!currentSongId || !currentTrack) {

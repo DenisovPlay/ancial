@@ -542,6 +542,17 @@ export class AncialAPI {
     });
   }
 
+  /** Приложение: привязка Яндекса/Telegram к текущему аккаунту по app_verifier (см. lib/native-oauth.ts). */
+  static oauthConnectResponse(
+    provider: 'yandex' | 'telegram',
+    payload: Record<string, string>,
+  ): Promise<AncialV2Response<{ message?: string }>> {
+    return this.requestRaw<{ message?: string }>(`/oauth/${provider === 'yandex' ? 'Yandex' : 'Telegram'}.php`, {
+      method: 'POST',
+      body: new URLSearchParams({ ...payload, action: 'app_connect' }),
+    });
+  }
+
   static twoFactorSendLoginCode(challenge: string): Promise<{ email?: boolean; push?: boolean; email_masked: string | null; cooldown: number; resent: boolean; limited?: boolean }> {
     return this.request<{ email?: boolean; push?: boolean; email_masked: string | null; cooldown: number; resent: boolean; limited?: boolean }>('/auth/TwoFactor.php', {
       method: 'POST',

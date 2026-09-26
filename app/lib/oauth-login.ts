@@ -1,5 +1,5 @@
-import { SITE_URL, TELEGRAM_BOT_ID, YANDEX_CLIENT_ID } from '../config';
-import { loadScript } from './load-script';
+import { SITE_URL, TELEGRAM_BOT_ID, YANDEX_CLIENT_ID } from '../config.ts';
+import { loadScript } from './load-script.ts';
 
 /** Подписанные данные Telegram Login — отправляются на бэкенд как есть, он проверяет подпись. */
 export type TelegramAuthData = Record<string, string | number>;

@@ -1,6 +1,6 @@
 {
   "name": "ancial",
-  "version": "3.8.2b",
+  "version": "3.8.3",
   "private": true,
   "engines": {
     "node": ">=22"
@@ -23,6 +23,7 @@
     "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.2",
     "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/push-notifications": "^8.1.2",
     "@capacitor/splash-screen": "^8.0.2",
     "@capgo/capacitor-media-session": "^8.0.32",
     "dompurify": "^3.4.14",

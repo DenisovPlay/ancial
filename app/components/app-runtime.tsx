@@ -4,6 +4,10 @@ import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 import AppDocumentViewer from './app-document-viewer';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
+import { AncialAPI } from '../lib/api-v2';
+import { dispatchNativeOAuthReturn } from '../lib/native-oauth';
 import AppVersionGate from './app-version-gate';
 import { SITE_DOMAIN, SITE_URL } from '../config';
 import { openExternalUrl } from '../lib/native-browser';
@@ -45,6 +49,13 @@ export default function AppRuntime() {
   const router = useRouter();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
+  const { user, isAuthenticated, lang } = useAuth();
+  const { showNote } = useNotification();
+  const showNoteRef = useRef(showNote);
+
+  useEffect(() => {
+    showNoteRef.current = showNote;
+  }, [showNote]);
 
   useEffect(() => {
     pathnameRef.current = pathname;
@@ -96,6 +107,11 @@ export default function AppRuntime() {
   // Ссылки https://zypo.cc/… (App Links) и cc.zypo.app://… — открываются нужным экраном.
   useEffect(() => {
     const open = (rawUrl: string) => {
+      // Возврат из входа через Яндекс/Telegram (cc.zypo.app://oauth?…) — не экран, а сигнал ожидающему входу.
+      if (dispatchNativeOAuthReturn(rawUrl)) {
+        void import('@capacitor/browser').then(({ Browser }) => Browser.close()).catch(() => {});
+        return;
+      }
       const path = toInAppPath(rawUrl);
       if (!path) return;
       if (isPayPath(path)) {
@@ -118,6 +134,55 @@ export default function AppRuntime() {
       void remove?.();
     };
   }, [router]);
+
+  // Push-уведомления: нажатие открывает нужный экран, пришедшее при открытом приложении — тост
+  // (Android в этот момент сам его не показывает).
+  useEffect(() => {
+    let removed = false;
+    const handles: Array<{ remove: () => Promise<void> }> = [];
+    void import('@capacitor/push-notifications').then(async ({ PushNotifications }) => {
+      const added = await Promise.all([
+        PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
+          const link = String(notification.data?.click_action ?? '');
+          const path = link ? toInAppPath(link) : null;
+          router.push(path && !isPayPath(path) ? path : '/notifications');
+        }),
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          const title = notification.title || String(notification.data?.title ?? '');
+          const body = notification.body || String(notification.data?.body ?? '');
+          if (!title && !body) return;
+          showNoteRef.current({ content: title && body ? `${title}: ${body}` : title || body, type: 'info', time: 5 });
+        }),
+      ]);
+      if (removed) added.forEach((handle) => void handle.remove());
+      else handles.push(...added);
+    }).catch((error: unknown) => console.error('Failed to init push listeners', error));
+    return () => {
+      removed = true;
+      handles.forEach((handle) => void handle.remove());
+    };
+  }, [router]);
+
+  // FCM может сменить токен устройства (переустановка сервисов, восстановление). Если подписка аккаунта —
+  // это устройство (pushsid совпадает с последним отданным отсюда токеном), тихо обновляем pushsid.
+  const pushsid = user?.pushsid ?? '';
+  const pushChannelName = lang?.push_channel_name || 'Уведомления Zypo';
+  useEffect(() => {
+    if (!isAuthenticated || !pushsid || pushsid === '0') return undefined;
+    let cancelled = false;
+    void (async () => {
+      const push = await import('../lib/native-push');
+      const stored = push.getStoredNativePushToken();
+      if (!stored || stored !== pushsid || !(await push.hasNativePushPermission())) return;
+      const token = await push.registerNativePush(pushChannelName);
+      if (!cancelled && token && token !== pushsid) {
+        await AncialAPI.updateProfile({ pushsid: token });
+      }
+    })().catch((error: unknown) => console.error('Failed to refresh push token', error));
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, pushsid, pushChannelName]);
 
   // Внешние ссылки и window.open — в системном браузере: WebView новых окон не открывает.
   useEffect(() => {

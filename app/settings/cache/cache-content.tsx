@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/modal';
 import Icon from '../../components/svg-icon';
 import SettingSelect from '../../components/setting-select';
-import { IS_NATIVE_APP } from '../../lib/platform';
 
 // Helper for formatting sizes
 const formatSize = (bytes: number) => {
@@ -327,8 +326,8 @@ export default function CacheSettingsPage() {
     try {
       let pwaSize = 0;
       let imagesSize = 0;
-      // Приложение: service worker не регистрируется — пунктов SW-кэшей там нет.
-      if (!IS_NATIVE_APP && typeof window !== 'undefined' && 'caches' in window) {
+      // В приложении SW кэширует только картинки — пункт PWA там пустой и не показывается.
+      if (typeof window !== 'undefined' && 'caches' in window) {
         const cacheKeys = await window.caches.keys();
         await Promise.all(
           cacheKeys.map(async (cacheKey) => {

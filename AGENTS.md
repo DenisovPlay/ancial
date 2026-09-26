@@ -127,6 +127,11 @@ HTML отдаётся с `Cache-Control: no-store` (правило `headers()` �
 - **Новый динамический маршрут:** строка в `APP_DYNAMIC_ROUTES` (`app/lib/app-routes.ts`) + `generateStaticParams = appShellStaticParams(…)` + `AppRouteShell` (серверный `page.tsx` с пропом id) или `useAppParams()` под `AppRouteGate` (клиентские страницы).
 - **Серверное** (`searchParams`, `redirect()`, `headers()`, `force-dynamic`) в экспорте недоступно: в ветке `IS_NATIVE_APP` читать на клиенте. Вместо `export const dynamic = 'force-dynamic'` — `if (!IS_NATIVE_APP) await connection();` (литерал `dynamic` нельзя сделать условным).
 - **`window.open`/внешние ссылки** в приложении открывает системный браузер (`openExternalUrl`, `app/lib/native-browser.ts`).
+- **Код приложения не должен попадать в веб-бандл:** нативные модули (`@capacitor/*`, `native-*.ts`) — только динамическим `import()` внутри ветки `IS_NATIVE_APP`; обвязка монтируется через `AppRuntimeSlot` (ленивый `AppRuntime`). Статический импорт клиентского компонента в серверный `layout` тянет его в общий чанк сайта, даже если он не рендерится.
+- **SW в приложении** регистрируется с `?app=1`: только офлайн-кэш картинок, без web-push и логики обновлений сайта (файлы APK на `https://localhost` он обходит).
+- **Пуши:** нативный FCM (`app/lib/native-push.ts`), токен — в тот же `pushsid`; бэкенд шлёт в одном сообщении `webpush` (сайт) и `android.notification` (канал `zypo_default`, иконка `ic_stat_zypo`). Нужен `android/app/google-services.json` (проект `ancial-notification`).
+- **Вход Яндекс/Telegram и привязка:** системный браузер + возврат `cc.zypo.app://oauth`, схема PKCE (`app/lib/native-oauth.ts` ↔ `modules/auth/app_oauth.php`): в ссылке возврата нет секретов, данные забираются по `app_verifier`.
+- **Passkeys:** WebView с `WEB_AUTHENTICATION_SUPPORT_FOR_APP` (`ZypoWebViewPlugin`), доступность — флаг `window.__ZYPO_WEBAUTHN__`; бэкенд принимает origin `https://localhost`, право на RP ID `zypo.cc` — `get_login_creds` в `assetlinks.json`.
 
 ## 7. Качество кода (ОБЯЗАТЕЛЬНО к соблюдению)
 

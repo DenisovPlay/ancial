@@ -35,7 +35,8 @@ export default function OAuthButtons({ action, disabled, onToken, onChallenge, o
   const [busy, setBusy] = useState<Provider | null>(null);
 
   useEffect(() => {
-    if (showTelegram) void preloadTelegramLogin().catch(() => {});
+    // Приложение входит через системный браузер — виджет Telegram там не нужен.
+    if (showTelegram && !IS_NATIVE_APP) void preloadTelegramLogin().catch(() => {});
   }, [showTelegram]);
 
   const run = async (provider: Provider, getPayload: () => Promise<Record<string, string>>) => {
@@ -61,13 +62,29 @@ export default function OAuthButtons({ action, disabled, onToken, onChallenge, o
     }
   };
 
+  // Приложение: провайдер в системном браузере, возврат по cc.zypo.app://oauth (см. lib/native-oauth.ts).
+  const runNative = (provider: Provider) => {
+    void run(provider, async () => {
+      const { startNativeOAuth } = await import('../lib/native-oauth');
+      return startNativeOAuth(provider);
+    });
+  };
+
   // Окна провайдеров открываются синхронно внутри клика — иначе их блокирует браузер.
   const handleYandex = () => {
+    if (IS_NATIVE_APP) {
+      runNative('yandex');
+      return;
+    }
     const tokenPromise = yandexLogin();
     void run('yandex', async () => ({ access_token: await tokenPromise }));
   };
 
   const handleTelegram = () => {
+    if (IS_NATIVE_APP) {
+      runNative('telegram');
+      return;
+    }
     const authPromise = telegramLogin();
     void run('telegram', async () => {
       const data = await authPromise;
@@ -76,9 +93,6 @@ export default function OAuthButtons({ action, disabled, onToken, onChallenge, o
   };
 
   const isDisabled = disabled || busy !== null;
-
-  // Приложение: вход через Яндекс/Telegram работает попапом с возвратом на сайт — в WebView в v1 скрыт.
-  if (IS_NATIVE_APP) return null;
 
   return (
     <div className="flex w-full gap-3">

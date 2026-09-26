@@ -12,7 +12,7 @@ import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
 import { loadScript } from '../../lib/load-script';
 import { IS_NATIVE_APP } from '../../lib/platform';
-import { openExternalUrl } from '../../lib/native-browser';
+import { OAUTH_CANCELLED } from '../../lib/oauth-login';
 
 
 /** Результат инициализации Яндекс ID (YaAuthSuggest). */
@@ -40,6 +40,7 @@ export default function SocialsContent() {
   const [isUnlinkingYandex, setIsUnlinkingYandex] = useState(false);
   const [yandexLoading, setYandexLoading] = useState(true);
   const [yandexErrorText, setYandexErrorText] = useState<string | null>(null);
+  const [nativeLinking, setNativeLinking] = useState<'yandex' | 'telegram' | null>(null);
 
   const tgInitializedRef = useRef(false);
   const yandexInitializedRef = useRef(false);
@@ -85,7 +86,8 @@ export default function SocialsContent() {
 
   // Load Telegram Widget Script
   useEffect(() => {
-    if (isMounted && !authLoading && isAuthenticated && user && !user.connected_telegram) {
+    // Приложение: виджеты провайдеров работают только на домене сайта — там своя кнопка (linkInApp).
+    if (!IS_NATIVE_APP && isMounted && !authLoading && isAuthenticated && user && !user.connected_telegram) {
       if (tgInitializedRef.current) return;
       const container = document.getElementById('telegram-widget-container');
       if (container) {
@@ -114,7 +116,7 @@ export default function SocialsContent() {
   // Load Yandex Suggest Script
   useEffect(() => {
     let active = true;
-    if (isMounted && !authLoading && isAuthenticated && user && !user.connected_yacc) {
+    if (!IS_NATIVE_APP && isMounted && !authLoading && isAuthenticated && user && !user.connected_yacc) {
       if (yandexInitializedRef.current) return;
       yandexInitializedRef.current = true;
       setYandexLoading(true);
@@ -241,6 +243,41 @@ export default function SocialsContent() {
   };
 
   // Memoize static containers to prevent React from unmounting/updating them
+  // Приложение: провайдер в системном браузере, возврат по cc.zypo.app://oauth, привязка — app_connect.
+  const linkInApp = async (provider: 'yandex' | 'telegram') => {
+    if (nativeLinking) return;
+    setNativeLinking(provider);
+    try {
+      const { startNativeOAuth } = await import('../../lib/native-oauth');
+      const payload = await startNativeOAuth(provider);
+      const result = await AncialAPI.oauthConnectResponse(provider, payload);
+      if (result.success) {
+        showNote({ content: getApiMessage(result.data?.message, lang, lang?.yandexconnected || 'Аккаунты связаны!'), type: 'success', time: 5 });
+        await checkAuth();
+      } else {
+        showNote({ content: getApiMessage(result.error, lang, lang?.errorhappend || 'Произошла ошибка'), type: 'error', time: 5 });
+      }
+    } catch (err) {
+      const code = err instanceof Error ? err.message : '';
+      if (code !== OAUTH_CANCELLED) {
+        showNote({ content: getApiMessage(code, lang, lang?.server_connection_error || 'Ошибка соединения с сервером'), type: 'error', time: 5 });
+      }
+    } finally {
+      setNativeLinking(null);
+    }
+  };
+
+  const renderLinkButton = (provider: 'yandex' | 'telegram') => (
+    <button
+      type="button"
+      onClick={() => void linkInApp(provider)}
+      disabled={nativeLinking !== null}
+      className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-zinc-100 rounded-full w-full shadow font-medium"
+    >
+      {nativeLinking === provider ? <Icon name="IC-loader" className="w-5 h-5 animate-spin fill-white" /> : (lang?.app_link_account || 'Привязать')}
+    </button>
+  );
+
   const telegramContainer = useMemo(() => {
     return <div id="telegram-widget-container" className="flex justify-center items-center min-h-[40px] w-full" />;
   }, []);
@@ -253,41 +290,6 @@ export default function SocialsContent() {
     return (
       <div className="w-full flex items-center justify-center min-h-[50vh]">
         <Icon name="IC-loader" className="w-8 h-8 animate-spin fill-purple-500" />
-      </div>
-    );
-  }
-
-  // Приложение: привязка идёт через попапы и виджеты провайдеров, в WebView они не работают.
-  if (IS_NATIVE_APP) {
-    return (
-      <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-lime-400/25 md:from-transparent via-transparent to-transparent">
-        <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40">
-          <div className="w-full max-w-3xl flex items-center gap-3">
-            <Link
-              href="/settings"
-              className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-3 cursor-pointer"
-            >
-              <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
-              {lang?.socialnetworks || 'Социальные сети'}
-            </Link>
-          </div>
-        </div>
-        <div className="w-full max-w-3xl px-3 lg:px-0">
-          <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center gap-3">
-            <span className="text-zinc-300 text-center">
-              {lang?.app_socials_on_site || 'Привязка Telegram и Яндекса пока доступна только на сайте zypo.cc.'}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                openExternalUrl(`${SITE_URL}/settings/socials`).catch((error: unknown) => console.error('Failed to open site', error));
-              }}
-              className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow"
-            >
-              {lang?.app_open_site || 'Открыть сайт'}
-            </button>
-          </div>
-        </div>
       </div>
     );
   }
@@ -338,7 +340,7 @@ export default function SocialsContent() {
               <span className="text-zinc-300 text-center my-auto text-sm md:text-base">
                 {lang?.connecttelegram || 'Подключите аккаунт Telegram, чтобы ускорить вход.'}
               </span>
-              {telegramContainer}
+              {IS_NATIVE_APP ? renderLinkButton('telegram') : telegramContainer}
             </div>
           </div>
         </div>
@@ -386,8 +388,8 @@ export default function SocialsContent() {
               )}
 
               <div className="w-full relative mt-2">
-                {yandexContainer}
-                {yandexLoading && (
+                {IS_NATIVE_APP ? renderLinkButton('yandex') : yandexContainer}
+                {!IS_NATIVE_APP && yandexLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-zinc-800/90 rounded-full">
                     <Icon name="IC-loader" className="w-8 h-8 inline animate-spin fill-purple-500" />
                   </div>

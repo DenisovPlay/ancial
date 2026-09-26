@@ -1,52 +1,59 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
 // v31: HTML-навигация переведена с Network-First на Stale-While-Revalidate —
 // офлайн (и просто быстрее) показываем кэш мгновенно, сеть обновляет кэш в фоне
-const SW_VERSION = '45';
+const SW_VERSION = '47';
 
-importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
+// Нативное приложение (Capacitor) регистрирует SW с ?app=1: там он только кэширует картинки для офлайна.
+// Пуши приложения нативные (FCM через @capacitor/push-notifications), web-push и его скрипты не нужны.
+// Файлы самого приложения лежат в APK (https://localhost) — их обходит правило localhost ниже.
+const IS_NATIVE_APP_SW = new URL(self.location.href).searchParams.get('app') === '1';
 
-firebase.initializeApp({
-  apiKey: "AIzaSyASzxKce3_K8UU0tq-Z6FP_9XIP4v491Rw",
-  authDomain: "ancial-notification.firebaseapp.com",
-  projectId: "ancial-notification",
-  messagingSenderId: "952168193669",
-  appId: "1:952168193669:web:6b238d3552d90280cfd3ec"
-});
+if (!IS_NATIVE_APP_SW) {
+  importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
+  importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
 
-const messaging = firebase.messaging();
+  firebase.initializeApp({
+    apiKey: "AIzaSyASzxKce3_K8UU0tq-Z6FP_9XIP4v491Rw",
+    authDomain: "ancial-notification.firebaseapp.com",
+    projectId: "ancial-notification",
+    messagingSenderId: "952168193669",
+    appId: "1:952168193669:web:6b238d3552d90280cfd3ec"
+  });
 
-messaging.onBackgroundMessage((payload) => {
-  const title = payload.data?.title || 'Zypo';
-  const options = {
-    body: payload.data?.body || 'Новое уведомление',
-    icon: payload.data?.icon || '/img/zypo/logo-rounded.webp',
-    badge: '/img/zypo/logo-rounded.webp',
-    tag: 'ancial-notification',
-    data: {
-      url: payload.data?.click_action || self.location.origin + '/'
-    }
-  };
-  self.registration.showNotification(title, options);
-});
+  const messaging = firebase.messaging();
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  const urlToOpen = event.notification.data?.url || self.location.origin + '/';
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
-        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
-          return client.focus().then(() => client.navigate(urlToOpen));
+  messaging.onBackgroundMessage((payload) => {
+    const title = payload.data?.title || 'Zypo';
+    const options = {
+      body: payload.data?.body || 'Новое уведомление',
+      icon: payload.data?.icon || '/img/zypo/logo-rounded.webp',
+      badge: '/img/zypo/logo-rounded.webp',
+      tag: 'ancial-notification',
+      data: {
+        url: payload.data?.click_action || self.location.origin + '/'
+      }
+    };
+    self.registration.showNotification(title, options);
+  });
+
+  self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const urlToOpen = event.notification.data?.url || self.location.origin + '/';
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (let i = 0; i < clientList.length; i++) {
+          const client = clientList[i];
+          if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+            return client.focus().then(() => client.navigate(urlToOpen));
+          }
         }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
-  );
-});
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+    );
+  });
+}
 
 // ─── OFFLINE CACHING ────────────────────────────────────────────────────────
 

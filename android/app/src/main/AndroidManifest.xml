@@ -32,7 +32,26 @@
                 <data android:host="www.zypo.cc" />
             </intent-filter>
 
+            <!-- cc.zypo.app://… — возврат из входа через Яндекс/Telegram (системный браузер → приложение). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="cc.zypo.app" />
+            </intent-filter>
+
         </activity>
+
+        <!-- Push (FCM): иконка, цвет и канал по умолчанию — те же, что шлёт бэкенд (modules/notifications.php). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_zypo" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/zypo_accent" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="zypo_default" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -53,4 +72,21 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Разрешения для браузерных API сайта: системный запрос показывает Capacitor (BridgeWebChromeClient),
+         но только для объявленных здесь. Без них WebView сразу получает отказ. -->
+    <!-- Погода: navigator.geolocation. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Звонки (getUserMedia) и QR-сканер кошелька: камера и микрофон; настройки звука для WebRTC. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- navigator.vibrate (чат, QR). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Камера и GPS не обязательны: без них приложение ставится, просто без звонков с видео/точной геолокации. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>
