@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Акцент уведомлений (purple-500), совпадает с color в modules/notifications.php. -->
+    <color name="zypo_accent">#A855F7</color>
+</resources>

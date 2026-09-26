@@ -4,8 +4,23 @@
     {
       "name": "ancial-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "app-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "3060",
+        "--directory",
+        "out"
+      ],
+      "port": 3060
     }
   ]
 }

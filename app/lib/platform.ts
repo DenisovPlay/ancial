@@ -6,6 +6,9 @@
  */
 export const IS_NATIVE_APP = process.env.NEXT_PUBLIC_BUILD_TARGET === 'app';
 
+/** Приложение: мост медиасессии к нативному плагину установлен — плееру пора заново отдать метаданные трека. */
+export const NATIVE_MEDIA_SESSION_READY_EVENT = 'zypo:native-media-session-ready';
+
 /**
  * Платформа приложения (для X-App-Platform и AppConfig.php). На сайте — 'web'.
  * По user-agent, без импорта Capacitor: модуль используется и в node-тестах.

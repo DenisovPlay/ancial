@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "cc.zypo.app",
+      "sha256_cert_fingerprints": [
+        "89:79:B8:A3:13:48:07:F0:D4:6C:6A:AB:84:97:31:CF:E9:7C:24:55:C8:72:56:1E:1B:0F:E5:4B:36:2F:24:F5",
+        "B7:80:D0:2F:F6:39:D9:1F:22:D7:AD:9C:2A:E2:20:E2:DA:BF:85:04:47:D6:DD:AB:DF:A6:35:1F:11:1A:C5:8B"
+      ]
+    }
+  }
+]

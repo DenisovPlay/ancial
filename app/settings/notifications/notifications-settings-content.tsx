@@ -10,6 +10,7 @@ import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { useFirebaseMessaging, FIREBASE_CONFIG } from '../../lib/useFirebaseMessaging';
 import Icon from '../../components/svg-icon';
 import { IS_NATIVE_APP } from '../../lib/platform';
+import { APP_VERSION } from '../../lib/app-version';
 
 interface PushDevice {
   brand?: string;
@@ -125,6 +126,29 @@ export default function NotificationsSettingsContent() {
 
   const setupNotifications = useCallback(async () => {
     try {
+      // Приложение: нативный FCM-токен вместо web-push (SW и Firebase JS там не нужны).
+      if (IS_NATIVE_APP) {
+        setIsDetecting(true);
+        const { registerNativePush } = await import('../../lib/native-push');
+        const token = await registerNativePush(lang?.push_channel_name || 'Уведомления Zypo');
+        const device = detectDevice();
+        const result = await AncialAPI.updateProfile({
+          pushsid: token,
+          'device[brand]': device.brand,
+          'device[model]': device.model,
+          'device[os]': device.os,
+          'device[osver]': device.osver,
+          'device[client]': `Zypo ${APP_VERSION}`,
+        }) as { success?: boolean; message?: string; name?: string } | null | undefined;
+        if (result?.success || result?.message || result?.name) {
+          showNote({ content: lang?.connected || 'Подключено!', type: 'success', time: 3 });
+          await checkAuth();
+        } else {
+          showNote({ content: lang?.connection_error || 'Ошибка при подключении', type: 'error', time: 5 });
+        }
+        return;
+      }
+
       if (!messaging) {
         showNote({
           content: lang?.firebase_not_initialized || 'Firebase ещё не инициализирован. Попробуйте перезагрузить страницу.',
@@ -201,6 +225,10 @@ export default function NotificationsSettingsContent() {
 
       // Firebase Admin SDK возвращает { name: 'projects/...' } при успехе
       if (result?.success || result?.message || result?.name) {
+        if (IS_NATIVE_APP) {
+          const { unregisterNativePush } = await import('../../lib/native-push');
+          await unregisterNativePush();
+        }
         showNote({
           content: lang?.disconnected || 'Отключено',
           type: 'success',
@@ -271,17 +299,8 @@ export default function NotificationsSettingsContent() {
         </div>
       </div>
 
-      {/* Приложение: web-push в WebView не работает — только пояснение, без кнопок подключения. */}
-      {IS_NATIVE_APP ? (
-        <div className="flex items-center px-3 lg:px-0 w-full justify-center">
-          <span className="w-full text-zinc-300 text-sm lg:text-base max-w-3xl">
-            {lang?.app_push_unavailable || 'Push-уведомления в приложении появятся в следующем обновлении.'}
-          </span>
-        </div>
-      ) : null}
-
       {/* Device Info or Info Text */}
-      {IS_NATIVE_APP ? null : hasPush && pushDevice ? (
+      {hasPush && pushDevice ? (
         <>
           <div className="flex items-center px-3 lg:px-0 w-full justify-center">
             <div className="rounded-full bg-zinc-800/90 flex items-center gap-1.5 p-1 max-w-3xl w-full border border-zinc-600/30">
@@ -313,7 +332,7 @@ export default function NotificationsSettingsContent() {
       )}
 
       {/* Action Buttons */}
-      <div className={IS_NATIVE_APP ? 'hidden' : 'flex items-center px-3 lg:px-0 w-full justify-center'}>
+      <div className="flex items-center px-3 lg:px-0 w-full justify-center">
         <div className="grid grid-cols-2 gap-3 w-full max-w-3xl">
           {!hasPush ? (
             <button

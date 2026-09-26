@@ -20,9 +20,16 @@ export function bufToB64url(buffer: ArrayBuffer): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+declare global {
+  interface Window {
+    /** Ставит нативная часть приложения (ZypoWebViewPlugin), когда WebView пускает WebAuthn через Credential Manager. */
+    __ZYPO_WEBAUTHN__?: boolean;
+  }
+}
+
 export function isPasskeySupported(): boolean {
-  // Приложение: WebAuthn в Android WebView без отдельного плагина не работает — в v1 скрыто.
-  if (IS_NATIVE_APP) return false;
+  // Приложение: PublicKeyCredential в WebView есть всегда, но работает только при включённой поддержке.
+  if (IS_NATIVE_APP && (typeof window === 'undefined' || window.__ZYPO_WEBAUTHN__ !== true)) return false;
   return typeof window !== 'undefined' && typeof window.PublicKeyCredential !== 'undefined' && Boolean(navigator.credentials);
 }
 

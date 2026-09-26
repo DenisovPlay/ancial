@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 
 import { SITE_URL } from '../../config';
 import { isBackendPath, toBackendUrl } from '../../lib/api-url';
-import { IS_NATIVE_APP } from '../../lib/platform';
+import { IS_NATIVE_APP, NATIVE_MEDIA_SESSION_READY_EVENT } from '../../lib/platform';
 
 type NativeMediaSessionPlugin = typeof import('@capgo/capacitor-media-session')['MediaSession'];
 type NativeAction = Parameters<NativeMediaSessionPlugin['setActionHandler']>[0]['action'];
@@ -50,6 +50,26 @@ export function installNativeMediaSession() {
   // подмена в браузере замкнулась бы сама на себя.
   if (!Capacitor.isNativePlatform()) return;
   installed = true;
+
+  // В Android WebView нет Media Session API: ни navigator.mediaSession (его подставляет мост ниже),
+  // ни конструктора MediaMetadata. Плеер пишет метаданные только при наличии MediaMetadata — без
+  // него уведомление оставалось с кнопками, но без названия, исполнителя и обложки.
+  if (typeof window.MediaMetadata === 'undefined') {
+    class NativeMediaMetadata {
+      title: string;
+      artist: string;
+      album: string;
+      artwork: readonly MediaImage[];
+
+      constructor(init: MediaMetadataInit = {}) {
+        this.title = init.title ?? '';
+        this.artist = init.artist ?? '';
+        this.album = init.album ?? '';
+        this.artwork = init.artwork ?? [];
+      }
+    }
+    Object.defineProperty(window, 'MediaMetadata', { configurable: true, writable: true, value: NativeMediaMetadata });
+  }
 
   // Промис держит модуль, а не сам плагин: прокси Capacitor на любое свойство (в т.ч. then) отвечает
   // вызовом натива, и промис с плагином внутри «разрешался» бы вызовом несуществующего метода.
@@ -105,9 +125,20 @@ export function installNativeMediaSession() {
     setMicrophoneActive() {},
   };
 
+  // Мост ставится не мгновенно (AppRuntime грузится лениво), а плеер при запуске восстанавливает
+  // последний трек и сразу пишет метаданные в настоящую медиасессию WebView. Без переноса плагин
+  // получал бы только play/pause — уведомление с кнопками, но без названия, исполнителя и обложки.
+  const previous = navigator.mediaSession;
+
   try {
     Object.defineProperty(navigator, 'mediaSession', { configurable: true, get: () => shim });
   } catch (error) {
     console.error('[MediaSession] failed to install native bridge', error);
+    return;
   }
+
+  if (previous?.metadata) shim.metadata = previous.metadata;
+  if (previous && previous.playbackState !== 'none') shim.playbackState = previous.playbackState;
+  // Плеер мог восстановить трек раньше, чем появились мост и MediaMetadata, и пропустить метаданные.
+  window.dispatchEvent(new Event(NATIVE_MEDIA_SESSION_READY_EVENT));
 }

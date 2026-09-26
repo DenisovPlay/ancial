@@ -3,7 +3,7 @@ import { Geist } from "next/font/google";
 import Script from "next/script";
 import "./globals.css"; // force HMR css update
 import AppearanceSync from './components/appearance-sync';
-import AppRuntime from './components/app-runtime';
+import AppRuntimeSlot from './components/app-runtime-slot';
 import IconSprite from './components/icon-sprite';
 import TooltipLayer from './components/tooltip-layer';
 import MainContent from './components/main-content';
@@ -112,7 +112,7 @@ export default function RootLayout({
               <PulsePlayerProvider>
                 <RichPresenceReporter />
                 {/* Приложение: кнопка «назад», ссылки сайта, системный браузер, фоновая музыка, проверка версии. */}
-                {IS_NATIVE_APP ? <AppRuntime /> : null}
+                <AppRuntimeSlot />
                 <Navigation />
                 <MainContent>
                   {children}

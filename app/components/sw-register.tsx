@@ -49,9 +49,17 @@ function isChunkLoadError(reason: unknown): boolean {
 export default function SWRegister() {
   // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- Регистрация ServiceWorker управляется глобальным жизненным циклом PWA
   useEffect(() => {
-    // Приложение: всё уже внутри APK — SW-кэш не нужен, а перезагрузка по ChunkLoadError
-    // (локальные чанки) только зациклилась бы.
-    if (IS_NATIVE_APP) return () => {};
+    // Приложение: код и страницы уже в APK — SW там только офлайн-кэш картинок (?app=1 выключает в нём
+    // web-push). Логика обновлений сайта ниже не нужна: перезагрузка по ChunkLoadError на локальных чанках
+    // только зациклилась бы.
+    if (IS_NATIVE_APP) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .register('/firebase-messaging-sw.js?app=1', { updateViaCache: 'none' })
+          .catch((error: unknown) => console.error('[SW] Registration failed:', error));
+      }
+      return () => {};
+    }
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
       return () => {};
     }

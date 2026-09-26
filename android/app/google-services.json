@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "952168193669",
+    "project_id": "ancial-notification",
+    "storage_bucket": "ancial-notification.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:952168193669:android:e605b119b3b23671cfd3ec",
+        "android_client_info": {
+          "package_name": "cc.zypo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJWdOtP5i-szkvopTio5tL0iSoCJEkNR8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
