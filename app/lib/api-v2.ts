@@ -1,6 +1,8 @@
 'use client';
 
 import { authFetch } from './auth-fetch';
+import { apiUrl } from './api-url';
+import { IS_NATIVE_APP } from './platform';
 export { getApiMessage } from './format-api-message';
 import type {
   CommunityAuditEntry,
@@ -448,7 +450,17 @@ export class AncialAPI {
     });
   }
 
-  static async logout<T = unknown>(): Promise<T> {
+  /**
+   * Выход. Сайт — как был (сессия по куке). Приложение: POST с Bearer отзывает сессию на сервере;
+   * токен передаётся явно, потому что локально его удаляют раньше этого запроса.
+   */
+  static async logout<T = unknown>(token?: string): Promise<T> {
+    if (IS_NATIVE_APP) {
+      return this.request<T>('/auth/LogOut.php', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+    }
     return this.request<T>('/auth/LogOut.php');
   }
 
@@ -859,7 +871,7 @@ export class AncialAPI {
    * пользователя не должны влиять на гостевой сценарий.
    */
   static async getVoiceInviteInfo(code: string): Promise<VoiceInviteInfo> {
-    const response = await fetch(`/api/V2/calls/GetVoiceInviteInfo.php?code=${encodeURIComponent(code)}`, {
+    const response = await fetch(apiUrl(`/api/V2/calls/GetVoiceInviteInfo.php?code=${encodeURIComponent(code)}`), {
       credentials: 'omit',
       cache: 'no-store',
     });
@@ -872,7 +884,7 @@ export class AncialAPI {
 
   /** Публичный TURN для гостя (без авторизации, Same-Origin через прокси). */
   static async getGuestTurnConfig(): Promise<VoiceInviteTurn> {
-    const response = await fetch('/api/V2/calls/TurnGuest.php', {
+    const response = await fetch(apiUrl('/api/V2/calls/TurnGuest.php'), {
       credentials: 'omit',
       cache: 'no-store',
     });

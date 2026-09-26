@@ -1,5 +1,8 @@
 import type { MetadataRoute } from 'next';
 
+// Статический файл: на сайте он и так генерируется при сборке, а экспорт приложения без этого падает.
+export const dynamic = 'force-static';
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: 'cc.zypo',

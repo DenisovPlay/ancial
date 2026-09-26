@@ -4,6 +4,8 @@ import { Suspense } from 'react';
 import FeedContent from './feed-content';
 import FeedPostSkeleton from './feed-post-skeleton';
 import { createPageMetadata } from '../seo';
+import { connection } from 'next/server';
+import { IS_NATIVE_APP } from '../lib/platform';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Лента',
@@ -15,7 +17,6 @@ export const metadata: Metadata = createPageMetadata({
 // FeedContent's render depends entirely on useSearchParams (topic); static generation
 // bakes in the Suspense fallback as the only markup, causing a hydration mismatch
 // (dead topic buttons) in prod whenever the URL carries real query params.
-export const dynamic = 'force-dynamic';
 
 function FeedFallback() {
   return (
@@ -45,7 +46,10 @@ function FeedFallback() {
   );
 }
 
-export default function FeedPage() {
+export default async function FeedPage() {
+  // Сайт рендерит страницу на каждый запрос (раньше — dynamic = 'force-dynamic', литерал не даёт
+  // собрать статический экспорт приложения). В приложении сервера нет — страница статическая.
+  if (!IS_NATIVE_APP) await connection();
   return (
     <Suspense fallback={<FeedFallback />}>
       <FeedContent />

@@ -14,6 +14,7 @@ import {
 import { cn } from '../lib/cn';
 import { canOptimizeImage } from '../lib/image-hosts';
 import { isSvgSrc, TRANSPARENT_PIXEL, wasSlowNetworkLoad } from '../lib/image-loading';
+import { useNativeImageSrc } from '../lib/use-native-image-src';
 
 type LoadStatus = 'loading' | 'loaded' | 'revealed' | 'error';
 
@@ -182,7 +183,9 @@ export default function AppImage({
   ref,
   ...rest
 }: AppImageProps) {
-  const loader = useImageLoader({ src, fallbackSrc, className, style, pendingStyle, skeleton, onLoad, onError, onAnimationEnd });
+  // Приложение: пути бэкенда — абсолютные, приватные медиа — через Bearer (на сайте src как есть).
+  const nativeSrc = useNativeImageSrc(src);
+  const loader = useImageLoader({ src: nativeSrc, fallbackSrc, className, style, pendingStyle, skeleton, onLoad, onError, onAnimationEnd });
   const loaderRef = loader.props.ref;
   const mergedRef = useCallback((img: HTMLImageElement | null) => {
     loaderRef(img);

@@ -4,6 +4,8 @@
  */
 
 import { getStoredAuthToken } from './auth-fetch';
+import { apiUrl } from './api-url';
+import { IS_NATIVE_APP } from './platform';
 
 export const UPLOAD_IMAGE_ENDPOINT = '/api/V2/upload/Image.php';
 
@@ -81,15 +83,18 @@ export async function uploadImageDetailed(
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    formData.append('token', token);
-    const separator = targetUrl.includes('?') ? '&' : '?';
-    targetUrl = `${targetUrl}${separator}token=${encodeURIComponent(token)}`;
+    // Приложение: только заголовок — токен в URL и теле не дублируем.
+    if (!IS_NATIVE_APP) {
+      formData.append('token', token);
+      const separator = targetUrl.includes('?') ? '&' : '?';
+      targetUrl = `${targetUrl}${separator}token=${encodeURIComponent(token)}`;
+    }
   }
 
-  const response = await fetch(targetUrl, {
+  const response = await fetch(apiUrl(targetUrl), {
     method: 'POST',
     body: formData,
-    credentials: 'include',
+    credentials: IS_NATIVE_APP ? 'omit' : 'include',
     headers,
   });
 
@@ -149,14 +154,15 @@ export async function deleteUploadedImage(options: DeleteImageOptions): Promise<
   }
 
   try {
-    const response = await fetch(DELETE_IMAGE_ENDPOINT, {
+    const response = await fetch(apiUrl(DELETE_IMAGE_ENDPOINT), {
       method: 'POST',
       headers,
-      credentials: 'include',
+      credentials: IS_NATIVE_APP ? 'omit' : 'include',
       body: JSON.stringify({
         media_id: options.media_id || undefined,
         url: options.url || undefined,
-        token: token || undefined,
+        // Приложение: токен только в заголовке.
+        token: IS_NATIVE_APP ? undefined : token || undefined,
       }),
     });
 

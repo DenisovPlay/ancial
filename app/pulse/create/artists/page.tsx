@@ -10,6 +10,7 @@ import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import { cn } from '../../pulse-components';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
+import { publicUrl } from '../../../lib/api-url';
 
 interface PulseArtistRow {
   id: number | string;
@@ -77,7 +78,7 @@ export default function PulseCreateArtistsPage() {
   };
 
   const handleCopyLink = async (artistId: number | string) => {
-    const url = `${window.location.origin}/pulse/artist/${artistId}`;
+    const url = publicUrl(`/pulse/artist/${artistId}`);
     const ok = await copyToClipboard(url);
     if (ok) {
       showNote({

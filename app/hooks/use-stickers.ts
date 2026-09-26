@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { backendFetch } from '../lib/auth-fetch';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -68,7 +69,7 @@ async function fetchPacks(scope: StickerScope): Promise<StickerPack[]> {
   if (!inflightMap[scope]) {
     inflightMap[scope] = (async () => {
       try {
-        const res = await fetch(`/api/V2/stickers/GetPacks.php?scope=${scope}`, {
+        const res = await backendFetch(`/api/V2/stickers/GetPacks.php?scope=${scope}`, {
           credentials: 'include',
           cache: 'default',
         });

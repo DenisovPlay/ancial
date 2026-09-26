@@ -18,6 +18,7 @@ import {
   type WeatherForecastIconKey,
 } from './weather-model';
 import Icon from '../../../components/svg-icon';
+import { apiUrl } from '../../../lib/api-url';
 
 type WeatherApiResponse = {
   success: boolean;
@@ -409,7 +410,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
         style={
           media.backgroundImageUrl
             ? {
-              backgroundImage: `url(${media.backgroundImageUrl})`,
+              backgroundImage: `url(${apiUrl(media.backgroundImageUrl)})`,
             }
             : undefined
         }

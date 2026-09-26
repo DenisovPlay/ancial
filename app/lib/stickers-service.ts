@@ -1,5 +1,7 @@
 'use client';
 
+import { backendFetch } from './auth-fetch';
+
 export interface Sticker {
   id: number | string;
   code: string;
@@ -195,7 +197,7 @@ export async function fetchStickerPacks(scope: 'all' | 'posts' | 'messages' = 'a
 
   fetchPromise = (async () => {
     try {
-      const response = await fetch(`/api/V2/stickers/GetPacks.php?scope=${encodeURIComponent(scope)}`, {
+      const response = await backendFetch(`/api/V2/stickers/GetPacks.php?scope=${encodeURIComponent(scope)}`, {
         cache: 'default',
       });
       if (response.ok) {

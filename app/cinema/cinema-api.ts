@@ -3,8 +3,11 @@
 import { Movie, Person, PlayerOption, RawMovieRecord, RawPersonality } from './types';
 import { CacheManager } from '../lib/cache';
 import { CINEMA_IMAGE_PROXY_BASE } from '../config';
+import { apiUrl } from '../lib/api-url';
+import { backendFetch } from '../lib/auth-fetch';
 
-const API_BASE = '/api/V2/cinema';
+// Сайт — через прокси Next, приложение — напрямую на бэкенд (apiUrl).
+const API_BASE = apiUrl('/api/V2/cinema');
 const CINEMA_CACHE_TTL = 3600; // 1 hour TTL
 
 /** Число из number | string | undefined (null/пустое → null). */
@@ -266,7 +269,7 @@ export async function fetchCinemaPlayers(
     if (season) url.searchParams.set('season', String(season));
     if (episode) url.searchParams.set('episode', String(episode));
 
-    const res = await fetch(url.toString());
+    const res = await backendFetch(url.toString());
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data?.players) && data.players.length > 0) {
@@ -386,7 +389,7 @@ export async function fetchCinemaSearch(
     url.searchParams.set('offset', String((page - 1) * limit));
     url.searchParams.set('limit', String(limit));
 
-    const res = await fetch(url.toString());
+    const res = await backendFetch(url.toString());
     if (!res.ok) return [];
     const data = await res.json();
     const items = data?.result || data?.items || [];
@@ -432,7 +435,7 @@ export async function fetchCinemaGetVideo(filters: {
     url.searchParams.set('limit', String(limit));
     url.searchParams.set('page', String(page));
 
-    const res = await fetch(url.toString());
+    const res = await backendFetch(url.toString());
     if (!res.ok) return [];
     const data = await res.json();
     const items = data?.data?.items || data?.result || data?.data || [];
@@ -470,7 +473,7 @@ export async function fetchCinemaVideos(params: {
 
   try {
     const url = new URL(`${API_BASE}/videos.php?${queryStr}`, window.location.origin);
-    const res = await fetch(url.toString());
+    const res = await backendFetch(url.toString());
     if (!res.ok) return [];
     const data = await res.json();
     const items = data?.data || data?.result || data?.items || [];
@@ -495,7 +498,7 @@ export async function fetchCinemaUpdates(options?: { skipCache?: boolean }): Pro
 
   try {
     const url = new URL(`${API_BASE}/updates.php`, window.location.origin);
-    const res = await fetch(url.toString());
+    const res = await backendFetch(url.toString());
     if (!res.ok) return { movies: [], serials: [] };
     const data = await res.json() as { result?: { movies?: RawMovieRecord[]; serials?: RawMovieRecord[] } } | null;
 
@@ -668,7 +671,7 @@ export async function fetchCinemaPersonById(
         url.searchParams.set('limit', '100');
         if (role) url.searchParams.set('role', role);
 
-        const res = await fetch(url.toString());
+        const res = await backendFetch(url.toString());
         if (res.ok) {
           const data = await res.json() as { result?: RawPersonality[]; data?: RawPersonality[] } | null;
           const items = data?.result || data?.data || [];
@@ -717,7 +720,7 @@ export async function fetchCinemaPersonById(
         const cdnUrl = new URL(`${API_BASE}/cdnmovies.php`, window.location.origin);
         cdnUrl.searchParams.set('action', 'search');
         cdnUrl.searchParams.set('query', searchQuery);
-        const cdnRes = await fetch(cdnUrl.toString());
+        const cdnRes = await backendFetch(cdnUrl.toString());
         if (cdnRes.ok) {
           const cdnData = await cdnRes.json() as { data?: RawMovieRecord[]; items?: RawMovieRecord[] } | null;
           const cdnItems = cdnData?.data || cdnData?.items || [];
@@ -793,7 +796,7 @@ export async function fetchCinemaTranslations(): Promise<{ id: number; title: st
 
   try {
     const url = new URL(`${API_BASE}/translations.php`, window.location.origin);
-    const res = await fetch(url.toString());
+    const res = await backendFetch(url.toString());
     if (!res.ok) return [];
     const data = await res.json();
     const items = data?.result || data?.data || [];
@@ -815,7 +818,7 @@ export async function fetchCinemaGenres(): Promise<{ id: number; name: string }[
 
   try {
     const url = new URL(`${API_BASE}/genres.php`, window.location.origin);
-    const res = await fetch(url.toString());
+    const res = await backendFetch(url.toString());
     if (!res.ok) return [];
     const data = await res.json();
     const items = data?.result || data?.data || [];
@@ -845,7 +848,7 @@ export async function fetchCinemaVideoById(id: string, options?: { skipCache?: b
     // STEP 1: Search strictly by kinopoisk_id
     const searchUrl = new URL(`${API_BASE}/search.php`, window.location.origin);
     searchUrl.searchParams.set('kinopoisk_id', id);
-    const searchRes = await fetch(searchUrl.toString());
+    const searchRes = await backendFetch(searchUrl.toString());
     if (searchRes.ok) {
       const searchData = await searchRes.json() as { result?: RawMovieRecord[]; items?: RawMovieRecord[] } | null;
       const items = searchData?.result || searchData?.items || [];
@@ -859,7 +862,7 @@ export async function fetchCinemaVideoById(id: string, options?: { skipCache?: b
     // STEP 2: Fetch v2 video details from video_v2.php (provides counters, files, translations)
     const genUrl = new URL(`${API_BASE}/video_v2.php`, window.location.origin);
     genUrl.searchParams.set('id', internalId);
-    const genRes = await fetch(genUrl.toString());
+    const genRes = await backendFetch(genUrl.toString());
     if (genRes.ok) {
       const genData = await genRes.json();
       const v2Data = genData?.data || genData;

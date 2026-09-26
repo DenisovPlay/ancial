@@ -4,7 +4,13 @@ import { API_BASE, CINEMA_API_BASE } from './app/config';
 import { IMAGE_HOSTS } from './app/lib/image-hosts';
 
 
-const nextConfig: NextConfig = {
+/**
+ * Сборка приложения (Capacitor): `NEXT_PUBLIC_BUILD_TARGET=app` → статический экспорт в `out/`.
+ * Веб-конфиг ниже не зависит от флага и остаётся прежним.
+ */
+const IS_APP_BUILD = process.env.NEXT_PUBLIC_BUILD_TARGET === 'app';
+
+const webConfig: NextConfig = {
   output: 'standalone',
   // Дев-сервер по умолчанию отдаёт свои ресурсы (HMR и прочее) только своему хосту.
   // Разрешаем локальную сеть, чтобы открывать сборку с телефона и второго компьютера.
@@ -126,4 +132,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Приложение: HTML/JS/CSS внутри APK, данные — напрямую с бэкенда (API_BASE, CORS + Bearer).
+ * Экспорт не поддерживает rewrites/redirects/headers/proxy — они в приложении и не нужны:
+ * пути к бэкенду собирает apiUrl(), красивые адреса /@login и /$link разбирает клиентский роутинг.
+ * Картинки — свой загрузчик (оптимизатора Next в APK нет).
+ */
+const appConfig: NextConfig = {
+  output: 'export',
+  trailingSlash: true,
+  transpilePackages: webConfig.transpilePackages,
+  images: {
+    loader: 'custom',
+    loaderFile: './app/lib/app-image-loader.ts',
+  },
+};
+
+export default IS_APP_BUILD ? appConfig : webConfig;

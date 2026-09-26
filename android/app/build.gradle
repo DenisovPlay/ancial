@@ -1,0 +1,82 @@
+apply plugin: 'com.android.application'
+
+import groovy.json.JsonSlurper
+
+// Версия приложения — единый источник package.json ("version", как APP_VERSION на сайте).
+// versionName = как есть (3.8.2b), versionCode растёт монотонно: 3.8.2b → 3*100000 + 8*1000 + 2*10 + 2 = 308022.
+def appPackageVersion = new JsonSlurper().parse(file('../../package.json')).version as String
+def appVersionCode = { String version ->
+    def m = version =~ /^(\d+)\.(\d+)\.(\d+)([a-z]?)/
+    if (!m.find()) throw new GradleException("Не разобрать версию package.json: ${version}")
+    def letter = m.group(4) ? (m.group(4).charAt(0) as int) - ('a' as char as int) + 1 : 0
+    return (m.group(1) as int) * 100000 + (m.group(2) as int) * 1000 + (m.group(3) as int) * 10 + letter
+}
+
+android {
+    namespace = "cc.zypo.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "cc.zypo.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode appVersionCode(appPackageVersion)
+        versionName appPackageVersion
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    // Подпись release: keystore у владельца, в репозиторий не кладём. Параметры — в android/keystore.properties
+    // (в .gitignore): storeFile, storePassword, keyAlias, keyPassword. Без файла собирается неподписанный release.
+    def keystorePropsFile = rootProject.file('keystore.properties')
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                def keystoreProps = new Properties()
+                keystorePropsFile.withInputStream { keystoreProps.load(it) }
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (keystorePropsFile.exists()) signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
