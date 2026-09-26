@@ -1,7 +1,7 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
 // v31: HTML-навигация переведена с Network-First на Stale-While-Revalidate —
 // офлайн (и просто быстрее) показываем кэш мгновенно, сеть обновляет кэш в фоне
-const SW_VERSION = '47';
+const SW_VERSION = '48';
 
 // Нативное приложение (Capacitor) регистрирует SW с ?app=1: там он только кэширует картинки для офлайна.
 // Пуши приложения нативные (FCM через @capacitor/push-notifications), web-push и его скрипты не нужны.

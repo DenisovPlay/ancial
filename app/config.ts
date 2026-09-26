@@ -30,3 +30,6 @@ export const YANDEX_CLIENT_ID = 'b9cad7a054c14c518c94de0183c3f000';
  * Вход работает только на домене, привязанном к боту в BotFather (/setdomain).
  */
 export const TELEGRAM_BOT_ID = 7063264466;
+
+/** Android-приложение: последний релиз (APK) на GitHub — ссылка для установки на странице /app/mobile. */
+export const MOBILE_APP_DOWNLOAD_URL = 'https://github.com/DenisovPlay/ancial/releases/latest';

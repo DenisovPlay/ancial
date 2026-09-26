@@ -2,7 +2,7 @@ import { getAuthToken } from './cache-helpers';
 import { apiUrl, isBackendPath } from './api-url';
 import { APP_VERSION } from './app-version';
 import { API_BASE } from '../config';
-import { getAppPlatform, IS_NATIVE_APP } from './platform';
+import { getAppPlatform, isInstalledApp, IS_NATIVE_APP } from './platform';
 
 const FALLBACK_ORIGIN = 'https://ancial.local';
 export const AUTH_SESSION_RESTORED_EVENT = 'ancial-auth-session-restored';
@@ -208,11 +208,18 @@ export function backendFetch(input: string, init?: RequestInit) {
 }
 
 async function fetchWithLegacySessionRestore(input: string, init?: RequestInit) {
-  const fetchInit = {
+  const fetchInit: RequestInit = {
     cache: 'no-store',
     credentials: 'include',
     ...init,
-  } satisfies RequestInit;
+  };
+  // Сайт, установленный как PWA: бэкенд подписывает сессию «Zypo», а не браузером (Активные сессии).
+  if (isInstalledApp() && isBackendRequest(input)) {
+    const headers = new Headers(init?.headers);
+    headers.set('X-App-Platform', 'pwa');
+    headers.set('X-App-Version', APP_VERSION);
+    fetchInit.headers = headers;
+  }
   const response = await fetch(withAuthToken(input), fetchInit);
 
   if (!shouldTryLegacySessionRestore(input)) {

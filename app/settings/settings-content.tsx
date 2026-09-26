@@ -1,15 +1,24 @@
 'use client';
 
+import Link from 'next/link';
+import { useSyncExternalStore } from 'react';
+
 import AppImage from '../components/app-image';
 import { useAuth } from '../context/AuthContext';
 import { SettingsItem } from '../components/settings-item';
 import AccountName from '../components/account-name';
 import { normalizeAvatarUrl } from '../lib/avatar';
 import Icon from '../components/svg-icon';
+import { isInstalledApp } from '../lib/platform';
+
+const subscribeNothing = () => () => {};
 
 export default function SettingsPage() {
   const { user, isAuthenticated, lang } = useAuth();
   const userAvatarSrc = normalizeAvatarUrl(user?.img);
+  // Баннер приложения — только в браузере: в PWA и нашем приложении он ни к чему. На сервере режим
+  // запуска неизвестен, поэтому показываем после монтирования (без мигания в установленном приложении).
+  const showAppBanner = useSyncExternalStore(subscribeNothing, () => !isInstalledApp(), () => false);
 
   return (
     <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-blue-400/25 md:from-transparent via-transparent to-transparent">
@@ -34,6 +43,20 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+        {showAppBanner && (
+          <Link
+            href="/app/mobile"
+            className="rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3 flex items-center gap-3 hover:bg-zinc-800/60 active:scale-95 duration-300 cursor-pointer group"
+          >
+            <AppImage src="/img/zypo/logo-rounded.webp" alt="Zypo" width={48} height={48} className="w-12 h-12 rounded-full shadow shrink-0" />
+            <div className="flex flex-col flex-grow min-w-0">
+              <span className="text-lg font-semibold text-white">{lang?.settings_app_banner_title || 'Zypo в телефоне'}</span>
+              <span className="text-sm text-zinc-400">{lang?.settings_app_banner_text || 'Приложение для Android и iPhone'}</span>
+            </div>
+            <Icon name="IC-chevron-right" className="w-6 h-6 fill-zinc-500 group-hover:fill-zinc-600 duration-300 shrink-0" />
+          </Link>
+        )}
+
         <div className="rounded-3xl flex flex-col border border-zinc-600/30 bg-zinc-900 overflow-hidden">
           {isAuthenticated && (
             <>
