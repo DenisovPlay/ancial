@@ -21,6 +21,7 @@ const FALLBACK_TRACK_IMAGE = '/img/pulse/track.png';
 export { cn } from '../../lib/cn';
 
 import { normalizeText, parseToInt as toNumber } from '../../lib/convert';
+import { IS_NATIVE_APP } from '../../lib/platform';
 
 export { normalizeText, toNumber };
 
@@ -107,7 +108,8 @@ export function isAndroidBrowser() {
 }
 
 export function buildMediaArtwork(track: PlayerTrack | null) {
-  if (isAndroidBrowser()) return [];
+  // Обход бага Chrome на Android; в приложении обложку показывает нативная медиасессия — там бага нет.
+  if (isAndroidBrowser() && !IS_NATIVE_APP) return [];
   const trackImage = getPlayerTrackArtwork(track);
   const artwork = Array.isArray(track?.artwork) ? track.artwork : [];
   const validArtwork = artwork.filter((item) => normalizeText(item?.src));

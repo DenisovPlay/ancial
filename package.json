@@ -8,6 +8,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:app": "node scripts/build-app.mjs",
+    "cap:sync": "cap sync",
+    "android:debug": "npm run build:app && cap sync android && cd android && ./gradlew assembleDebug",
     "start": "next start",
     "lint": "eslint",
     "test": "node --experimental-strip-types --test \"app/**/*.test.mjs\" \"app/**/*.test.ts\" \"app/**/*.test.mts\"",
@@ -15,6 +18,13 @@
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capgo/capacitor-media-session": "^8.0.32",
     "dompurify": "^3.4.14",
     "framer-motion": "^12.40.0",
     "gradualblur": "^2.3.6",
@@ -26,6 +36,7 @@
     "sharp": "^0.33.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@tailwindcss/postcss": "^4",
     "@types/dompurify": "^3.0.5",
     "@types/jsdom": "^30.0.0",

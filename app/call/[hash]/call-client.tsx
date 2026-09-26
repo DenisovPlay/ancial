@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useAppParams } from '../../components/app-route-shell';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
@@ -203,7 +204,7 @@ function CallControlButton({
 
 export default function CallClient() {
   const router = useRouter();
-  const params = useParams<{ hash?: string }>();
+  const params = useAppParams<{ hash?: string }>();
   const hash = params?.hash || '';
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
   const { showNote } = useNotification();

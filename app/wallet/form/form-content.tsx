@@ -9,6 +9,7 @@ import { AncialAPI, getApiMessage, type WalletAccount, type WalletOverview, type
 import { cache } from '../../lib/cache.ts';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
+import { openBackendDocument } from '../../lib/open-backend-document';
 
 function FormContentInner() {
   const router = useRouter();
@@ -723,7 +724,10 @@ function FormContentInner() {
           <div className="flex gap-3 w-full">
             {successInfo && (
               <button
-                onClick={() => window.open(`/api/V2/wallet/Transaction.php?action=receipt&id=${successInfo.transactionId}`, '_blank')}
+                onClick={() => {
+                  openBackendDocument(`/api/V2/wallet/Transaction.php?action=receipt&id=${successInfo.transactionId}`, lang?.receipt || 'Чек')
+                    .catch((error: unknown) => console.error('Failed to open receipt', error));
+                }}
                 className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
                 {lang?.receipt || 'Чек'}

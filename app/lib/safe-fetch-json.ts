@@ -1,5 +1,8 @@
+import { backendFetch } from './auth-fetch';
+
 export async function safeFetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T | null> {
-  const response = await fetch(input, init);
+  // Строки — пути бэкенда: на сайте backendFetch это обычный fetch, в приложении — прямой запрос с Bearer.
+  const response = typeof input === 'string' ? await backendFetch(input, init) : await fetch(input, init);
 
   if (!response.ok) {
     return null;

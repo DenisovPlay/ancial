@@ -9,6 +9,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { useFirebaseMessaging, FIREBASE_CONFIG } from '../../lib/useFirebaseMessaging';
 import Icon from '../../components/svg-icon';
+import { IS_NATIVE_APP } from '../../lib/platform';
 
 interface PushDevice {
   brand?: string;
@@ -270,8 +271,17 @@ export default function NotificationsSettingsContent() {
         </div>
       </div>
 
+      {/* Приложение: web-push в WebView не работает — только пояснение, без кнопок подключения. */}
+      {IS_NATIVE_APP ? (
+        <div className="flex items-center px-3 lg:px-0 w-full justify-center">
+          <span className="w-full text-zinc-300 text-sm lg:text-base max-w-3xl">
+            {lang?.app_push_unavailable || 'Push-уведомления в приложении появятся в следующем обновлении.'}
+          </span>
+        </div>
+      ) : null}
+
       {/* Device Info or Info Text */}
-      {hasPush && pushDevice ? (
+      {IS_NATIVE_APP ? null : hasPush && pushDevice ? (
         <>
           <div className="flex items-center px-3 lg:px-0 w-full justify-center">
             <div className="rounded-full bg-zinc-800/90 flex items-center gap-1.5 p-1 max-w-3xl w-full border border-zinc-600/30">
@@ -303,7 +313,7 @@ export default function NotificationsSettingsContent() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center px-3 lg:px-0 w-full justify-center">
+      <div className={IS_NATIVE_APP ? 'hidden' : 'flex items-center px-3 lg:px-0 w-full justify-center'}>
         <div className="grid grid-cols-2 gap-3 w-full max-w-3xl">
           {!hasPush ? (
             <button

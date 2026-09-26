@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { setAuthToken } from '../lib/cache-helpers';
+import { IS_NATIVE_APP } from '../lib/platform';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
 import OAuthButtons from '../components/oauth-buttons';
 import { stashPendingChallenge } from '../lib/oauth-login';
+import { SITE_DOMAIN } from '../config';
 
 export default function SignupContent() {
   const [login, setLogin] = useState('');
@@ -28,8 +30,9 @@ export default function SignupContent() {
 
   useEffect(() => {
     // hostname доступен только на клиенте — сеттлер здесь источник правды (SSR не знает хост).
+    // Приложение: предупреждение о домене — про сайт, а не про внутренний https://localhost.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHostname(window.location.host);
+    setHostname(IS_NATIVE_APP ? SITE_DOMAIN : window.location.host);
     if (isAuthenticated) {
       router.push('/');
     }
@@ -60,6 +63,13 @@ export default function SignupContent() {
       if (!result.success) {
         setError(getApiMessage(result.error, lang, lang?.signup_error || 'Ошибка регистрации'));
         setIsLoading(false);
+        return;
+      }
+
+      // Приложение: SignUp сразу отдаёт токен сессии (куки для входа там нет) — второй вход не нужен.
+      const signupToken = (result.data as { token?: string } | undefined)?.token;
+      if (IS_NATIVE_APP && signupToken) {
+        await completeSignup(signupToken);
         return;
       }
 

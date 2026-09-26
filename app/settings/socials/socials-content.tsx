@@ -11,6 +11,8 @@ import { SITE_URL } from '../../config';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
 import { loadScript } from '../../lib/load-script';
+import { IS_NATIVE_APP } from '../../lib/platform';
+import { openExternalUrl } from '../../lib/native-browser';
 
 
 /** Результат инициализации Яндекс ID (YaAuthSuggest). */
@@ -251,6 +253,41 @@ export default function SocialsContent() {
     return (
       <div className="w-full flex items-center justify-center min-h-[50vh]">
         <Icon name="IC-loader" className="w-8 h-8 animate-spin fill-purple-500" />
+      </div>
+    );
+  }
+
+  // Приложение: привязка идёт через попапы и виджеты провайдеров, в WebView они не работают.
+  if (IS_NATIVE_APP) {
+    return (
+      <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full bg-gradient-to-b from-lime-400/25 md:from-transparent via-transparent to-transparent">
+        <div className="w-full flex items-center justify-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-40">
+          <div className="w-full max-w-3xl flex items-center gap-3">
+            <Link
+              href="/settings"
+              className="w-fit text-3xl font-extralight hover:text-zinc-300 duration-300 active:scale-95 flex items-center gap-3 cursor-pointer"
+            >
+              <Icon name="IC-chevron-left" className="w-8 h-8 fill-white inline" />
+              {lang?.socialnetworks || 'Социальные сети'}
+            </Link>
+          </div>
+        </div>
+        <div className="w-full max-w-3xl px-3 lg:px-0">
+          <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center gap-3">
+            <span className="text-zinc-300 text-center">
+              {lang?.app_socials_on_site || 'Привязка Telegram и Яндекса пока доступна только на сайте zypo.cc.'}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                openExternalUrl(`${SITE_URL}/settings/socials`).catch((error: unknown) => console.error('Failed to open site', error));
+              }}
+              className="border border-zinc-600/30 cursor-pointer flex items-center justify-center gap-3 px-4 py-2 duration-300 active:scale-95 bg-purple-700 hover:bg-purple-800 text-zinc-100 rounded-full w-full shadow"
+            >
+              {lang?.app_open_site || 'Открыть сайт'}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

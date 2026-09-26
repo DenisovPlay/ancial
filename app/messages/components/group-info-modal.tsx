@@ -20,6 +20,7 @@ import {
 } from '../lib/community-role';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
+import { publicUrl, apiUrl } from '../../lib/api-url';
 
 interface GroupMember {
   id: number;
@@ -305,7 +306,7 @@ export default function GroupInfoModal({
   };
 
   const inviteUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/messages/invite/${inviteCode || initialInviteCode}`
+    ? publicUrl(`/messages/invite/${inviteCode || initialInviteCode}`)
     : `${SITE_URL}/messages/invite/${inviteCode || initialInviteCode}`;
 
   const copyInviteLink = async () => {
@@ -789,7 +790,7 @@ export default function GroupInfoModal({
                     disabled={uploadingBackground}
                     onClick={() => backgroundInputRef.current?.click()}
                     className={`flex h-32 w-20 shrink-0 cursor-pointer flex-col items-center rounded-2xl bg-gradient-to-br from-purple-700 to-blue-700 bg-cover bg-center p-3 shadow duration-300 disabled:opacity-50 active:scale-95 ${background ? 'ring-2 ring-purple-500' : ''}`}
-                    style={background ? { backgroundImage: `url(${background})` } : undefined}
+                    style={background ? { backgroundImage: `url(${apiUrl(background)})` } : undefined}
                   >
                     <span className="mb-1.5 w-full rounded-2xl rounded-bl-none bg-zinc-800/80 px-1.5 text-left text-sm text-zinc-200">Hello</span>
                     <span className="w-full rounded-2xl rounded-br-none bg-purple-700/80 px-1.5 text-left text-sm text-white">Hi!</span>

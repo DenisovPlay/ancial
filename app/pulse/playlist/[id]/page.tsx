@@ -9,6 +9,12 @@ import {
 import PulsePlaylistContent from './playlist-content';
 import { httpsGetJson } from '../../../lib/https-get';
 import { API_BASE } from '../../../config';
+import { AppRouteShell } from '../../../components/app-route-shell';
+import { appShellStaticParams } from '../../../lib/app-shell-params';
+import { IS_NATIVE_APP } from '../../../lib/platform';
+
+// Приложение: одна страница-заготовка, реальный id берётся из адреса (app-routes.ts).
+export const generateStaticParams = appShellStaticParams({ id: 'param' });
 
 type PulsePlaylistPageProps = {
   params: Promise<{
@@ -20,6 +26,8 @@ const FALLBACK_TITLE = 'Плейлисты в Pulse';
 const FALLBACK_DESCRIPTION = 'Слушайте подборки и плейлисты в Zypo Pulse! Бесплатно. Без рекламы.';
 
 export async function generateMetadata({ params }: PulsePlaylistPageProps): Promise<Metadata> {
+  // Приложение: SEO не нужен, а сборка не должна ходить в сеть.
+  if (IS_NATIVE_APP) return {};
   const { id } = await params;
 
   // Genlist-идентификаторы системных плейлистов (URL вида /pulse/playlist/Your)
@@ -91,5 +99,9 @@ export async function generateMetadata({ params }: PulsePlaylistPageProps): Prom
 export default async function PulsePlaylistPage({ params }: PulsePlaylistPageProps) {
   const { id } = await params;
 
-  return <PulsePlaylistContent playlistId={id} />;
+  return IS_NATIVE_APP ? (
+    <AppRouteShell param="id" prop="playlistId">
+      <PulsePlaylistContent playlistId={id} />
+    </AppRouteShell>
+  ) : <PulsePlaylistContent playlistId={id} />;
 }

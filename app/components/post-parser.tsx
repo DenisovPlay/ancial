@@ -1,6 +1,8 @@
 import { parseStickersToHtml } from '../lib/stickers-service';
 import { canOptimizeImage } from '../lib/image-hosts';
 import { buildOptimizedImageSrc, decodeHtmlAttribute } from '../lib/optimized-image-src';
+import { IS_NATIVE_APP } from '../lib/platform';
+import { SITE_URL } from '../config';
 
 /**
  * src картинки карусели/коллажа в отображаемом посте: через оптимизатор next/image с шириной под
@@ -10,7 +12,9 @@ import { buildOptimizedImageSrc, decodeHtmlAttribute } from '../lib/optimized-im
 function postImageSrc(url: string, width: number, isPreview: boolean): string {
     if (isPreview) return url;
     const original = decodeHtmlAttribute(url);
-    return canOptimizeImage(original) ? buildOptimizedImageSrc(original, width) : url;
+    if (!canOptimizeImage(original)) return url;
+    // Приложение: своего оптимизатора в APK нет — берём оптимизатор сайта.
+    return IS_NATIVE_APP ? `${SITE_URL}${buildOptimizedImageSrc(original, width)}` : buildOptimizedImageSrc(original, width);
 }
 
 /**

@@ -366,6 +366,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     authStateRef.current = { isAuthenticated: false, user: null };
     publishAuthState(false, null, false);
 
+    // Приложению нужен токен для запроса выхода (Bearer) — запоминаем до удаления.
+    const tokenForLogout = cache.get<string>('token') || '';
     // Удаляем токен и профиль ДО остальных операций
     // cache.remove('token') удаляет сырой ключ 'token' (persistent, без namespace)
     cache.remove('token');
@@ -392,7 +394,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // ОБЯЗАТЕЛЬНО убиваем сессию на сервере (PHP cookie),
       // иначе CheckStatus.php будет продолжать возвращать auth: true
-      await AncialAPI.logout();
+      await AncialAPI.logout(tokenForLogout);
     } catch (e) {
       console.error('Ошибка при логауте на сервере', e);
     }

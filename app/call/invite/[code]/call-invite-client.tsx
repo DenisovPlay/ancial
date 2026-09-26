@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useAppParams } from '../../../components/app-route-shell';
 
 import { useAuth } from '../../../context/AuthContext';
 import { AncialAPI, type VoiceInviteInfo } from '../../../lib/api-v2';
@@ -18,7 +19,7 @@ function readInviteCodeFromLocation(): string {
 }
 
 export default function CallInviteClient() {
-  const params = useParams<{ code?: string }>();
+  const params = useAppParams<{ code?: string }>();
   const router = useRouter();
   const { isAuthenticated, lang, user } = useAuth();
 

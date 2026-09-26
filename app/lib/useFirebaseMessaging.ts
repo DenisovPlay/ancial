@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { IS_NATIVE_APP } from './platform';
+
 /** Минимальный тип firebase.messaging (compat SDK, грузится как внешний скрипт). */
 interface FirebaseCompatMessaging {
   requestPermission?: () => Promise<void>;
@@ -44,6 +46,9 @@ export function useFirebaseMessaging(): FirebaseMessaging {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Приложение: web-push не работает в WebView — внешний Firebase-скрипт не грузим
+    // (нативные пуши FCM — отдельная задача).
+    if (IS_NATIVE_APP) return undefined;
     let mounted = true;
 
     const initFirebase = () => {
