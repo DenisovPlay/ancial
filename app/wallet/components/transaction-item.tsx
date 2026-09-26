@@ -4,6 +4,7 @@ import Modal from '../../components/modal';
 import { type WalletTransaction } from '../../lib/api-v2';
 import { useAuth } from '../../context/AuthContext';
 import Icon from '../../components/svg-icon';
+import { openBackendDocument } from '../../lib/open-backend-document';
 
 // ─── Icon paths ─────────────────────────────────────────────────────────────
 
@@ -196,7 +197,10 @@ export function TransactionDetailsModal({ transaction, isOpen, onClose, ownedIds
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => window.open(`/api/V2/wallet/Transaction.php?action=receipt&id=${transaction.id}`, '_blank')}
+                onClick={() => {
+                  openBackendDocument(`/api/V2/wallet/Transaction.php?action=receipt&id=${transaction.id}`, lang?.receipt || 'Чек')
+                    .catch((error: unknown) => console.error('Failed to open receipt', error));
+                }}
                 className="flex-1 flex items-center justify-center gap-3 px-4 py-3 text-base duration-300 active:scale-95 bg-purple-700 hover:bg-purple-600 text-zinc-100 rounded-3xl shadow cursor-pointer font-bold"
               >
                 {lang?.receipt || 'Чек'}

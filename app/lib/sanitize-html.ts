@@ -1,5 +1,8 @@
 import DOMPurify from 'dompurify';
 
+import { isBackendPath, toBackendUrl } from './api-url.ts';
+import { IS_NATIVE_APP } from './platform.ts';
+
 /**
  * Центральная санитизация пользовательского HTML (посты, комментарии, сообщения).
  *
@@ -79,6 +82,13 @@ function installUriGuard(): void {
     // Картинки в отображаемом HTML получают прелоадер (см. image-loading.ts). Атрибут ставится
     // уже после фильтрации атрибутов, поэтому ALLOW_DATA_ATTR: false его не срезает.
     DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+        // Приложение: относительные пути бэкенда (/image.php, /includes/…) — на API_BASE напрямую,
+        // на сайте их проксирует Next. Ветка вырезается из веб-бандла.
+        if (IS_NATIVE_APP && node.nodeName === 'IMG') {
+            const element = node as Element;
+            const rawSrc = (element.getAttribute('src') || '').trim();
+            if (isBackendPath(rawSrc)) element.setAttribute('src', toBackendUrl(rawSrc));
+        }
         if (!markImages || node.nodeName !== 'IMG') return;
         const element = node as Element;
         // SVG рисуется сразу — прелоадер не нужен (= isSvgSrc из image-loading.ts, литерал из-за node-тестов).

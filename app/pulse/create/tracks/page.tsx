@@ -10,6 +10,7 @@ import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import { getPulseBackgroundColorByMood, } from '../../pulse-components';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
+import { publicUrl } from '../../../lib/api-url';
 
 interface PulseTrackRow {
   id: number | string;
@@ -91,7 +92,7 @@ export default function PulseCreateTracksPage() {
   };
 
   const handleCopyLink = async (trackId: number | string) => {
-    const url = `${window.location.origin}/pulse/track/${trackId}`;
+    const url = publicUrl(`/pulse/track/${trackId}`);
     const ok = await copyToClipboard(url);
     if (ok) {
       showNote({

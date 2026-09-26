@@ -97,6 +97,7 @@ import {
   type WsPayloadData,
 } from './lib/messages-shared';
 import AppImage from '../components/app-image';
+import { apiUrl } from '../lib/api-url';
 
 /** Обёртка ответа API: сервер может вернуть объект напрямую или в поле data. */
 type ApiEnvelope<T> = T & { data?: T | null };
@@ -2352,7 +2353,7 @@ export default function MessagesContent() {
         style={
           dialogBackgroundUrl
             ? {
-              backgroundImage: `url(${dialogBackgroundUrl})`,
+              backgroundImage: `url(${apiUrl(dialogBackgroundUrl)})`,
             }
             : undefined
         }
@@ -3178,7 +3179,7 @@ export default function MessagesContent() {
               style={
                 dialogBackgroundUrl
                   ? {
-                    backgroundImage: `url(${dialogBackgroundUrl})`,
+                    backgroundImage: `url(${apiUrl(dialogBackgroundUrl)})`,
                   }
                   : undefined
               }

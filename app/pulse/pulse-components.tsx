@@ -24,6 +24,7 @@ import Modal from '../components/modal';
 import { AncialAPI } from '../lib/api-v2';
 import { readPulseJsonCache } from './pulse-cache';
 import Icon from '../components/svg-icon';
+import { apiUrl } from '../lib/api-url';
 
 export type PulseTrackArtwork = {
   src?: string | null;
@@ -395,7 +396,7 @@ export function PulseArtistTile({
       className="group relative flex shrink-0 cursor-pointer flex-col items-center justify-center duration-300 active:scale-95"
     >
       <div className="relative z-[2] h-32 w-32 overflow-hidden rounded-full opacity-0 blur-sm duration-300 group-hover:opacity-100 lg:h-48 lg:w-48">
-        <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${imageUrl})` }} />
+        <div className="h-full w-full bg-cover bg-center duration-300 group-hover:scale-110" style={{ backgroundImage: `url(${apiUrl(imageUrl)})` }} />
       </div>
 
       <div className="absolute top-0 z-[4] h-32 w-32 overflow-hidden rounded-full border border-zinc-600/30 shadow lg:h-48 lg:w-48">

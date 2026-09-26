@@ -1,4 +1,8 @@
 import { getAuthToken } from './cache-helpers';
+import { apiUrl, isBackendPath } from './api-url';
+import { APP_VERSION } from './app-version';
+import { API_BASE } from '../config';
+import { getAppPlatform, IS_NATIVE_APP } from './platform';
 
 const FALLBACK_ORIGIN = 'https://ancial.local';
 export const AUTH_SESSION_RESTORED_EVENT = 'ancial-auth-session-restored';
@@ -66,6 +70,8 @@ export function getStoredAuthToken() {
 }
 
 export async function restoreLegacyAuthSession(token = getStoredAuthToken()) {
+  // Приложение живёт без PHP-сессии по куке: авторизует заголовок Bearer.
+  if (IS_NATIVE_APP) return false;
   const nextToken = String(token ?? '').trim();
   if (!nextToken) return false;
 
@@ -112,6 +118,8 @@ export async function restoreLegacyAuthSession(token = getStoredAuthToken()) {
 }
 
 export function withAuthToken(input: string, token = getStoredAuthToken()) {
+  // Приложение: только заголовок Authorization, токен в URL не пишем.
+  if (IS_NATIVE_APP) return apiUrl(input);
   const nextToken = String(token ?? '').trim();
   if (!nextToken) return input;
 
@@ -142,7 +150,61 @@ export function withAuthToken(input: string, token = getStoredAuthToken()) {
 }
 
 export function authFetch(input: string, init?: RequestInit) {
+  if (IS_NATIVE_APP) return nativeAuthFetch(input, init);
   return fetchWithLegacySessionRestore(input, init);
+}
+
+const API_ORIGIN = API_BASE.replace(/\/+$/, '');
+
+/** Запрос уходит на бэкенд: относительный путь бэкенда или абсолютный адрес API_BASE. */
+function isBackendRequest(input: string) {
+  return isBackendPath(input) || input.startsWith(`${API_ORIGIN}/`);
+}
+
+function isBackendAuthPath(url: string) {
+  return url.includes('/api/V2/auth/') || url.includes('/api/auth/');
+}
+
+let nativeSessionFailureNotified = false;
+
+/**
+ * Приложение: прямой запрос к бэкенду. Абсолютный URL, `Authorization: Bearer <token>`,
+ * `credentials: 'omit'` (куки приложению не нужны, а с 'include' CORS-ответ заблокируется),
+ * без ?token= и без восстановления PHP-сессии. Ответ «не залогинен» при сохранённом токене —
+ * токен отозван: AuthContext перепроверит статус и разлогинит.
+ */
+async function nativeAuthFetch(input: string, init?: RequestInit) {
+  const url = apiUrl(input);
+  const token = getStoredAuthToken();
+  const headers = new Headers(init?.headers);
+  if (isBackendRequest(input)) {
+    if (token && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
+    headers.set('X-App-Version', APP_VERSION);
+    headers.set('X-App-Platform', getAppPlatform());
+  }
+  const response = await fetch(url, { cache: 'no-store', ...init, credentials: 'omit', headers });
+
+  if (token && isBackendRequest(input) && !isBackendAuthPath(url) && typeof window !== 'undefined') {
+    const notLoggedIn = response.status === 401
+      || isLegacyNotLoggedInResponseText(await response.clone().text().catch(() => ''));
+    if (notLoggedIn && !nativeSessionFailureNotified) {
+      nativeSessionFailureNotified = true;
+      window.setTimeout(() => {
+        nativeSessionFailureNotified = false;
+      }, 5000);
+      window.dispatchEvent(new Event(AUTH_SESSION_FAILED_EVENT));
+    }
+  }
+  return response;
+}
+
+/**
+ * Прямой запрос к бэкенду мимо AncialAPI (fetch('/api/V2/…')). Сайт: обычный fetch, как был.
+ * Приложение: абсолютный URL + Bearer (как authFetch).
+ */
+export function backendFetch(input: string, init?: RequestInit) {
+  if (IS_NATIVE_APP) return nativeAuthFetch(input, init);
+  return fetch(input, init);
 }
 
 async function fetchWithLegacySessionRestore(input: string, init?: RequestInit) {

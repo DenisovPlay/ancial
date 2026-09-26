@@ -45,6 +45,7 @@ import FeedPostSkeleton from '../../feed/feed-post-skeleton';
 import { usePresence, usePresences, type UserPresence } from '../../lib/presence';
 import PresenceActivity, { PresenceCoverBadge } from '../../components/presence-activity';
 import Icon from '../../components/svg-icon';
+import { apiUrl } from '../../lib/api-url';
 
 type Id = string | number;
 
@@ -939,7 +940,7 @@ export default function UserProfileContent({ login }: { login: string }) {
 
               <div
                 className="h-32 w-full max-w-screen-2xl object-cover lg:h-48 blur-lg rounded-3xl rounded-b-none bg-cover bg-center"
-                style={{ backgroundImage: `url('${currentCover}')` }}
+                style={{ backgroundImage: `url('${apiUrl(currentCover)}')` }}
               />
               <AppImage
                 width={1536}

@@ -119,6 +119,15 @@ HTML отдаётся с `Cache-Control: no-store` (правило `headers()` �
 ### Менеджер кэша (`/settings/cache`)
 Виртуальные ключи для IndexedDB/SW кэшей: `__indexeddb_offline_audio__`, `__sw_pwa_cache__`, `__sw_images_cache__`. Очистка через настройки сбрасывает соответствующие хранилища.
 
+## 6.1. Приложение (Capacitor, Android)
+
+Подробно — `docs/capacitor-app.md`. Сайт и приложение собираются из одного кода; всё про приложение — за `IS_NATIVE_APP` (`app/lib/platform.ts`), на сайте эти ветки вырезаются.
+- **Сборки:** `npm run build` — сайт (как раньше), `npm run build:app` — статический экспорт в `out/` для APK. Проверять обе.
+- **Запросы к бэкенду:** только через `AncialAPI`/`authFetch` или `backendFetch` (`app/lib/auth-fetch.ts`); голый `fetch('/api/…')` в приложении уйдёт на `https://localhost`. Адреса бэкенда для `<img>`/`url()` — через `apiUrl()`, публичные ссылки «поделиться» — через `publicUrl()` (`app/lib/api-url.ts`).
+- **Новый динамический маршрут:** строка в `APP_DYNAMIC_ROUTES` (`app/lib/app-routes.ts`) + `generateStaticParams = appShellStaticParams(…)` + `AppRouteShell` (серверный `page.tsx` с пропом id) или `useAppParams()` под `AppRouteGate` (клиентские страницы).
+- **Серверное** (`searchParams`, `redirect()`, `headers()`, `force-dynamic`) в экспорте недоступно: в ветке `IS_NATIVE_APP` читать на клиенте. Вместо `export const dynamic = 'force-dynamic'` — `if (!IS_NATIVE_APP) await connection();` (литерал `dynamic` нельзя сделать условным).
+- **`window.open`/внешние ссылки** в приложении открывает системный браузер (`openExternalUrl`, `app/lib/native-browser.ts`).
+
 ## 7. Качество кода (ОБЯЗАТЕЛЬНО к соблюдению)
 
 ### Верификация перед завершением любой задачи

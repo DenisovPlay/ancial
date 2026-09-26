@@ -9,6 +9,7 @@ import { useCopyToClipboard } from '../../../hooks/use-copy-to-clipboard';
 import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
+import { publicUrl } from '../../../lib/api-url';
 
 interface PulseAlbumRow {
   id: number | string;
@@ -73,7 +74,7 @@ export default function PulseCreateAlbumsPage() {
   };
 
   const handleCopyLink = async (albumId: number | string) => {
-    const url = `${window.location.origin}/pulse/playlist/${albumId}`;
+    const url = publicUrl(`/pulse/playlist/${albumId}`);
     const ok = await copyToClipboard(url);
     if (ok) {
       showNote({
