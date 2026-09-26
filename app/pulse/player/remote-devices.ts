@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { globalWS } from '../../lib/global-ws';
+import { isInstalledApp } from '../../lib/platform';
 import { resolveReclaim } from './device-reclaim';
 import type { PulseCollectionKind, PulseTrack } from './pulse-player-types';
 
@@ -210,14 +211,8 @@ function detectDevice() {
             ? 'Safari'
             : '';
 
-  let standalone = false;
-  try {
-    standalone = window.matchMedia('(display-mode: standalone)').matches;
-  } catch {
-    // старый браузер — считаем обычной вкладкой
-  }
-
-  deviceName = standalone
+  // Установленное приложение (наша сборка или PWA) — это Zypo, а не браузер, на котором оно работает.
+  deviceName = isInstalledApp()
     ? [platform, 'Zypo'].filter(Boolean).join(' · ')
     : [platform, browser].filter(Boolean).join(' · ');
   if (!deviceName) deviceName = isTouch ? 'Смартфон' : 'Компьютер';

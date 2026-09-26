@@ -1,6 +1,6 @@
 {
   "name": "ancial",
-  "version": "3.8.3",
+  "version": "3.8.4",
   "private": true,
   "engines": {
     "node": ">=22"
@@ -11,6 +11,7 @@
     "build:app": "node scripts/build-app.mjs",
     "cap:sync": "cap sync",
     "android:debug": "npm run build:app && cap sync android && cd android && ./gradlew assembleDebug",
+    "android:release": "npm run build:app && CAP_ANDROID_RELEASE=1 cap sync android && cd android && ./gradlew assembleRelease bundleRelease",
     "start": "next start",
     "lint": "eslint",
     "test": "node --experimental-strip-types --test \"app/**/*.test.mjs\" \"app/**/*.test.ts\" \"app/**/*.test.mts\"",
