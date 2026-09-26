@@ -8,6 +8,7 @@ import { OAUTH_CANCELLED, OAUTH_POPUP_BLOCKED, preloadTelegramLogin, telegramLog
 import { useUserCountry } from '../lib/user-geo';
 import AppImage from './app-image';
 import Icon from './svg-icon';
+import { IS_NATIVE_APP } from '../lib/platform';
 
 type Provider = 'yandex' | 'telegram';
 
@@ -75,6 +76,9 @@ export default function OAuthButtons({ action, disabled, onToken, onChallenge, o
   };
 
   const isDisabled = disabled || busy !== null;
+
+  // Приложение: вход через Яндекс/Telegram работает попапом с возвратом на сайт — в WebView в v1 скрыт.
+  if (IS_NATIVE_APP) return null;
 
   return (
     <div className="flex w-full gap-3">

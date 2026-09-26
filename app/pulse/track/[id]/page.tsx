@@ -4,6 +4,12 @@ import { createPageMetadata, decodeHtmlEntities } from '../../../seo';
 import PulseTrackContent from './track-content';
 import { httpsGetJson } from '../../../lib/https-get';
 import { API_BASE } from '../../../config';
+import { AppRouteShell } from '../../../components/app-route-shell';
+import { appShellStaticParams } from '../../../lib/app-shell-params';
+import { IS_NATIVE_APP } from '../../../lib/platform';
+
+// Приложение: одна страница-заготовка, реальный id берётся из адреса (app-routes.ts).
+export const generateStaticParams = appShellStaticParams({ id: 'param' });
 
 type PulseTrackPageProps = {
   params: Promise<{
@@ -13,6 +19,8 @@ type PulseTrackPageProps = {
 
 
 export async function generateMetadata({ params }: PulseTrackPageProps): Promise<Metadata> {
+  // Приложение: SEO не нужен, а сборка не должна ходить в сеть.
+  if (IS_NATIVE_APP) return {};
   const { id } = await params;
 
   let title = 'Музыка в Pulse';
@@ -68,5 +76,9 @@ export async function generateMetadata({ params }: PulseTrackPageProps): Promise
 export default async function PulseTrackPage({ params }: PulseTrackPageProps) {
   const { id } = await params;
 
-  return <PulseTrackContent trackId={id} />;
+  return IS_NATIVE_APP ? (
+    <AppRouteShell param="id" prop="trackId">
+      <PulseTrackContent trackId={id} />
+    </AppRouteShell>
+  ) : <PulseTrackContent trackId={id} />;
 }

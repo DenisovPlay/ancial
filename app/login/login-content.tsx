@@ -13,6 +13,8 @@ import { takePendingChallenge } from '../lib/oauth-login';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import { SITE_DOMAIN } from '../config';
+import { IS_NATIVE_APP } from '../lib/platform';
 
 const greetings = [
   { text: 'Ну, удачной дороги тебе, сталкер!', author: 'Сидорович', source: 'S.T.A.L.K.E.R.' },
@@ -71,7 +73,8 @@ export default function LoginPage() {
     // Случайное приветствие и hostname доступны только на клиенте — сеттлеры здесь источник правды.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(greetings[Math.floor(Math.random() * greetings.length)]);
-    setHostname(window.location.host);
+    // Приложение: предупреждение о домене — про сайт, а не про внутренний https://localhost.
+    setHostname(IS_NATIVE_APP ? SITE_DOMAIN : window.location.host);
     setPasskeySupported(isPasskeySupported());
     // Пришли с регистрации через Яндекс/Telegram в аккаунт с 2FA — сразу шаг ввода кода.
     const pendingChallenge = takePendingChallenge();

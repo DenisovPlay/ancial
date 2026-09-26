@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAppParams } from '../../../components/app-route-shell';
 
 import Modal from '../../../components/modal';
 import { Dropdown, DropdownItem } from '../../../components/navigation';
@@ -21,6 +22,7 @@ import {
 } from '../lib/group-call-state';
 import { useGroupCall } from './use-group-call';
 import Icon from '../../../components/svg-icon';
+import { publicUrl } from '../../../lib/api-url';
 
 type CommunityVoicePermissions = {
   connect_voice?: boolean;
@@ -375,7 +377,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
         const res = await AncialAPI.createVoiceInvite(Number(config.dialog.id));
         code = res.code;
       }
-      const url = `${window.location.origin}/call/invite/${encodeURIComponent(code)}`;
+      const url = publicUrl(`/call/invite/${encodeURIComponent(code)}`);
       const ok = await copyToClipboard(url);
       if (ok) {
         showNote({
@@ -615,7 +617,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
 }
 
 export default function GroupCallClient() {
-  const params = useParams<{ hash?: string }>();
+  const params = useAppParams<{ hash?: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();

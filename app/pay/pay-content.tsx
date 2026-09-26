@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams, useParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAppParams } from '../components/app-route-shell';
 import { useEffect, useState, useCallback } from 'react';
 import { Inter, Montserrat } from 'next/font/google';
 import localFont from 'next/font/local';
@@ -32,7 +33,7 @@ const nauryzFont = localFont({
 export default function PayContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const params = useParams();
+  const params = useAppParams<{ order?: string | string[] }>();
 
   const { lang } = useAuth();
   const { showNote } = useNotification();

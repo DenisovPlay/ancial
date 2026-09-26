@@ -1,5 +1,7 @@
 'use client';
 
+import { IS_NATIVE_APP } from './platform';
+
 /** Утилиты WebAuthn на клиенте: конвертация base64url ↔ ArrayBuffer и обёртки над navigator.credentials. */
 
 export function b64urlToBuf(value: string): ArrayBuffer {
@@ -19,6 +21,8 @@ export function bufToB64url(buffer: ArrayBuffer): string {
 }
 
 export function isPasskeySupported(): boolean {
+  // Приложение: WebAuthn в Android WebView без отдельного плагина не работает — в v1 скрыто.
+  if (IS_NATIVE_APP) return false;
   return typeof window !== 'undefined' && typeof window.PublicKeyCredential !== 'undefined' && Boolean(navigator.credentials);
 }
 

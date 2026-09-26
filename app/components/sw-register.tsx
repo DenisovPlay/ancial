@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 
+import { IS_NATIVE_APP } from '../lib/platform';
+
 const RELOAD_GUARD_KEY = 'ancial:sw-auto-reload-at';
 const RELOAD_GUARD_MS = 15_000;
 
@@ -47,6 +49,9 @@ function isChunkLoadError(reason: unknown): boolean {
 export default function SWRegister() {
   // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- Регистрация ServiceWorker управляется глобальным жизненным циклом PWA
   useEffect(() => {
+    // Приложение: всё уже внутри APK — SW-кэш не нужен, а перезагрузка по ChunkLoadError
+    // (локальные чанки) только зациклилась бы.
+    if (IS_NATIVE_APP) return () => {};
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
       return () => {};
     }

@@ -45,6 +45,7 @@ import CommunityManageModal from './components/community-manage-modal';
 import { useCommunityStructure } from './hooks/use-community-structure';
 import { visibleManagementTabs } from './lib/community-types';
 import Icon from '../../components/svg-icon';
+import { apiUrl } from '../../lib/api-url';
 
 type Id = string | number;
 
@@ -956,7 +957,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
 
               <div
                 className="h-32 w-full max-w-screen-2xl lg:h-48 blur-lg rounded-3xl rounded-b-none bg-cover bg-center"
-                style={{ backgroundImage: `url('${currentCover}')` }}
+                style={{ backgroundImage: `url('${apiUrl(currentCover)}')` }}
               />
               <AppImage
                 width={1536}
