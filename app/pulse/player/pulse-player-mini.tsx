@@ -344,7 +344,7 @@ export function PulsePlayerMini({
         <div
           aria-hidden={!isVisible}
           className={cn(
-            'relative flex origin-top transition-transform duration-500 motion-reduce:transition-none starting:-translate-y-6 starting:scale-95',
+            'pulse-player-mini-host relative flex origin-top transition-transform duration-500 motion-reduce:transition-none starting:-translate-y-6 starting:scale-95',
             MINI_EASE,
             isVisible ? 'pointer-events-auto translate-y-0 scale-100' : 'pointer-events-none -translate-y-6 scale-95',
           )}
@@ -355,6 +355,9 @@ export function PulsePlayerMini({
     );
   }
 
+  // pulse-player-mini-host — адрес обёртки для CSS (прячется на оверлеях и в звонке). Раньше её искали через
+  // `div:has(> .pulse-player-mini-shell)` под `body:has(…)`: такое правило заставляло браузер пересчитывать
+  // стили всех div страницы при каждом изменении DOM (тик таймкода — раз в секунду).
   return (
     <div
       className={cn(
@@ -363,7 +366,7 @@ export function PulsePlayerMini({
         // starting: — выезд снизу и при монтировании уже видимым (выход из чата, где плеер был в шапке).
         // Скрытое положение — своя высота + bottom-16 + запас на тень: пилюля уходит за нижний край целиком
         // (200% от высоты обёртки не перекрывали отступ над навигацией). Уход быстрее появления.
-        'fixed inset-x-0 bottom-16 z-[60] flex justify-center px-1.5 pb-2.5 transition-transform motion-reduce:transition-none starting:translate-y-[calc(100%_+_5rem)] lg:bottom-1.5 lg:justify-end lg:pb-1.5',
+        'pulse-player-mini-host fixed inset-x-0 bottom-16 z-[60] flex justify-center px-1.5 pb-2.5 transition-transform motion-reduce:transition-none starting:translate-y-[calc(100%_+_5rem)] lg:bottom-1.5 lg:justify-end lg:pb-1.5',
         MINI_EASE,
         isVisible
           ? 'pointer-events-auto translate-y-0 duration-500'

@@ -45,23 +45,26 @@ export function PulseRangeTrack({ className, inputRef, onChange, progressPercent
       style={progressPercent === undefined ? undefined : ({ '--pulse-progress': `${progressPercent}%` } as CSSProperties)}
     >
       <div className="pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/20 transition-[height] duration-300 lg:group-hover/track:h-1.5">
-        {/* Сглаживание только между тиками воспроизведения (--pulse-progress-ease), перемотка — мгновенно. */}
+        {/*
+          Сглаживание только между тиками воспроизведения (--pulse-progress-ease), перемотка — мгновенно.
+          Двигаем transform, а не width/left: сдвиг идёт на композиторе, без раскладки и перерисовки
+          страницы под стеклом плеера на каждом кадре. Заливка во всю ширину уезжает влево, её край
+          обрезает скруглённая дорожка (overflow-hidden) — вид прежний.
+        */}
         <div
-          className="h-full rounded-full bg-white"
-          style={{ width: 'var(--pulse-progress, 0%)', transition: 'width var(--pulse-progress-ease, 0ms) linear' }}
+          className="h-full w-full rounded-full bg-white"
+          style={{ transform: 'translateX(calc(var(--pulse-progress, 0%) - 100%))', transition: 'transform var(--pulse-progress-ease, 0ms) linear' }}
         />
       </div>
 
-      {/* На тач-устройствах ховера нет — ползунок виден всегда, на десктопе появляется при наведении. */}
+      {/* Ползунок едет вместе с заливкой: обёртка во всю ширину дорожки, сдвиг в % её ширины = прежний left. */}
       <div
-        className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 rounded-full bg-white shadow lg:opacity-0 lg:group-hover/track:opacity-100"
-        style={{
-          left: 'var(--pulse-progress, 0%)',
-          transitionProperty: 'opacity, left',
-          transitionDuration: '300ms, var(--pulse-progress-ease, 0ms)',
-          transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1), linear',
-        }}
-      />
+        className="pointer-events-none absolute inset-x-0 flex items-center"
+        style={{ transform: 'translateX(var(--pulse-progress, 0%))', transition: 'transform var(--pulse-progress-ease, 0ms) linear' }}
+      >
+        {/* На тач-устройствах ховера нет — ползунок виден всегда, на десктопе появляется при наведении. */}
+        <div className="h-3 w-3 shrink-0 -translate-x-1/2 rounded-full bg-white shadow transition-opacity duration-300 lg:opacity-0 lg:group-hover/track:opacity-100" />
+      </div>
 
       <input
         {...inputProps}
