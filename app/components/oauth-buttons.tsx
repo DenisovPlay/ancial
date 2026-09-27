@@ -16,6 +16,8 @@ type OAuthButtonsProps = {
   /** login — только вход в привязанный аккаунт; signup — создать аккаунт (или войти, если уже привязан). */
   action: 'login' | 'signup';
   disabled?: boolean;
+  /** Доп. поля запроса регистрации (согласие на обработку ПД) — только для action="signup". */
+  signupFields?: Record<string, string>;
   onToken: (token: string) => void;
   onChallenge: (challenge: string) => void;
   onError: (message: string) => void;
@@ -26,7 +28,7 @@ const subscribeNothing = () => () => {};
 const BUTTON_CLASS = 'flex-1 min-w-0 rounded-3xl border border-zinc-600/30 shadow flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 active:scale-95 disabled:opacity-50 duration-300 px-3 py-2 font-medium cursor-pointer text-zinc-200';
 
 /** Вход и регистрация через Яндекс ID и Telegram. Telegram — только вне России. */
-export default function OAuthButtons({ action, disabled, onToken, onChallenge, onError }: OAuthButtonsProps) {
+export default function OAuthButtons({ action, disabled, signupFields, onToken, onChallenge, onError }: OAuthButtonsProps) {
   const { lang } = useAuth();
   const country = useUserCountry();
   // Страна читается из кэша только в браузере — до гидратации кнопку Telegram не показываем.
@@ -43,7 +45,7 @@ export default function OAuthButtons({ action, disabled, onToken, onChallenge, o
     setBusy(provider);
     try {
       const payload = await getPayload();
-      const result = await AncialAPI.oauthLoginResponse(provider, action, payload);
+      const result = await AncialAPI.oauthLoginResponse(provider, action, action === 'signup' ? { ...payload, ...signupFields } : payload);
       if (!result.success) {
         onError(getApiMessage(result.error, lang, lang?.login_error || 'Ошибка авторизации'));
       } else if (result.data?.requires_second_factor && result.data.challenge) {

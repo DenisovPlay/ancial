@@ -12,6 +12,18 @@ import Icon from '../components/svg-icon';
 import OAuthButtons from '../components/oauth-buttons';
 import { stashPendingChallenge } from '../lib/oauth-login';
 import { SITE_DOMAIN } from '../config';
+import { LEGAL_CONSENT_VERSION } from '../about/legal/documents/catalog';
+
+const LEGAL_LINK_CLASS = 'text-blue-400 hover:text-blue-300 duration-300';
+
+/**
+ * Ссылка на документ из формы регистрации. Сайт — в новой вкладке, чтобы не потерять заполненную форму;
+ * приложение — обычный переход (WebView новых вкладок не открывает).
+ */
+function LegalLink({ href, children }: { href: string; children: React.ReactNode }) {
+  if (IS_NATIVE_APP) return <Link href={href} className={LEGAL_LINK_CLASS}>{children}</Link>;
+  return <a href={href} target="_blank" rel="noopener noreferrer" className={LEGAL_LINK_CLASS}>{children}</a>;
+}
 
 export default function SignupContent() {
   const [login, setLogin] = useState('');
@@ -23,6 +35,8 @@ export default function SignupContent() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+  // Согласие с Правилами, Политикой и на обработку ПД: без него регистрация (и через Яндекс/Telegram) недоступна.
+  const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hostname, setHostname] = useState('ancial.vercel.app');
   const router = useRouter();
@@ -46,6 +60,7 @@ export default function SignupContent() {
 
   const handleRegister = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!agreed) return;
 
     setError(null);
     setIsLoading(true);
@@ -58,6 +73,8 @@ export default function SignupContent() {
         lname,
         password,
         password_2,
+        consent: '1',
+        consent_version: LEGAL_CONSENT_VERSION,
       });
 
       if (!result.success) {
@@ -237,6 +254,32 @@ export default function SignupContent() {
                 </div>
               </div>
 
+              <label className="flex items-start gap-1.5 cursor-pointer text-sm text-zinc-300 select-none">
+                {/* Нативный флажок скрыт (клавиатура, скринридер, required), виден круглый в стиле полей формы. */}
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  disabled={isLoading}
+                  className="peer sr-only"
+                  required
+                />
+                <span
+                  aria-hidden="true"
+                  className="-mt-0.5 w-6 h-6 shrink-0 rounded-full border border-zinc-600/30 bg-zinc-900 flex items-center justify-center duration-300 peer-checked:bg-purple-500 peer-checked:border-purple-500 peer-focus-visible:ring-2 peer-focus-visible:ring-purple-500/60 [&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100"
+                >
+                  <Icon name="IC-check-bold" className="w-4 h-4 fill-white duration-300" />
+                </span>
+                <span className="text-xs">
+                  {lang?.signup_consent_1 || 'Согласен с'}{' '}
+                  <LegalLink href={lang?.signup_consent_rules_href || '/about/legal/rules'}>{lang?.signup_consent_rules || 'Правилами'}</LegalLink>{' '}
+                  {lang?.signup_consent_2 || 'и'}{' '}
+                  <LegalLink href={lang?.signup_consent_privacy_href || '/about/legal/privacy'}>{lang?.signup_consent_privacy || 'Политикой обработки персональных данных'}</LegalLink>
+                  {lang?.signup_consent_3 || ', даю'}{' '}
+                  <LegalLink href="/about/legal/consent">{lang?.signup_consent_consent || 'согласие на обработку персональных данных'}</LegalLink>
+                </span>
+              </label>
+
               {error && (
                 <div className="px-3 py-2 bg-red-500/25 text-red-500 shadow rounded-3xl w-full border border-zinc-600/30 mt-1">
                   <div className="flex items-center w-full gap-3">
@@ -248,7 +291,7 @@ export default function SignupContent() {
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !agreed}
                 className="w-full rounded-3xl border border-zinc-600/30 shadow flex items-center justify-center bg-purple-500 hover:bg-purple-600 active:scale-95 disabled:opacity-50 duration-300 px-3 py-2 font-bold uppercase cursor-pointer text-white mt-1"
               >
                 {isLoading ? (
@@ -260,7 +303,8 @@ export default function SignupContent() {
 
               <OAuthButtons
                 action="signup"
-                disabled={isLoading}
+                disabled={isLoading || !agreed}
+                signupFields={{ consent: '1', consent_version: LEGAL_CONSENT_VERSION }}
                 onToken={(token) => void completeSignup(token)}
                 onChallenge={(challenge) => { stashPendingChallenge(challenge); router.push('/login'); }}
                 onError={setError}

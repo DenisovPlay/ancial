@@ -905,18 +905,17 @@ export function PulseLegalFooter({ className }: { className?: string }) {
           Уведомления о нарушениях авторских прав, пропаганде наркотиков или иной противоправной информации направляйте на{' '}
           <a
             className="cursor-pointer text-sm text-zinc-200 duration-300 hover:text-zinc-300 active:scale-95"
-            href="mailto:contact@zypo.cc?subject=[Копирайт]"
+            href="mailto:contact@zypo.cc?subject=[Авторские права]"
           >
             contact@zypo.cc
           </a>{' '}
-          с темой &quot;[Копирайт]&quot; или &quot;[Противоправная информация]&quot; - блокируем в течение 24 часов с момента получения обоснованного требования, если нам не требуются пояснения. Более подробная информация расположена на{' '}
+          с темой &quot;[Авторские права]&quot; или &quot;[Противоправный контент]&quot; - блокируем в течение 24 часов с момента получения обоснованного требования, если нам не требуются пояснения. Подробнее — в{' '}
           <Link
-            href="/about/legal"
+            href="/about/legal/pulse-rules"
             className="cursor-pointer text-sm text-zinc-200 duration-300 hover:text-zinc-300 active:scale-95"
           >
-            zypo.cc/legal/
-          </Link>{' '}
-          в разделе &quot;Правила&quot;.
+            Правилах публикации в Pulse
+          </Link>.
           <br />
           <span className="uppercase text-amber-400">
             Публичная информация о наркотических средствах и/или их использовании опасна и незаконна: пропаганда и/или употребление наркотических средств причиняет вред здоровью, незаконный оборот наркотических средств запрещён и влечёт установленную законодательством Российской Федерации ответственность.
