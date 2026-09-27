@@ -537,7 +537,7 @@ export default function PayContent() {
           {lang?.pay_support || 'Поддержка'}
         </Link>
         <Link
-          href="/about/legal"
+          href="/about/legal/wallet"
           className="shrink-0 text-zinc-500 hover:text-zinc-300 active:scale-95 cursor-pointer duration-300"
         >
           {lang?.pay_terms || 'Условия использования'}

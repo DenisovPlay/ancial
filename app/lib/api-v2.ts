@@ -443,6 +443,9 @@ export class AncialAPI {
     lname: string;
     password: string;
     password_2: string;
+    /** Согласие на обработку ПД ('1') и версия его текста — бэкенд без них не регистрирует. */
+    consent: string;
+    consent_version: string;
   }): Promise<AncialV2Response<T>> {
     return this.requestRaw<T>('/auth/SignUp.php', {
       method: 'POST',
