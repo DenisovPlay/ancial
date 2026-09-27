@@ -404,7 +404,7 @@ function GroupCallRoom({ config, hash, returnPath }: { config: GroupCallConfig; 
   return (
     <div className="group-call-route fixed inset-0 z-[3000] min-h-dvh bg-black text-white">
       <style>{`
-        #NAVP, #NAVPmini, #NAVPfull, [data-app-nav="mobile"], [data-app-nav="desktop"], div:has(> .pulse-player-mini-shell) { display: none !important; }
+        #NAVP, #NAVPmini, #NAVPfull, [data-app-nav="mobile"], [data-app-nav="desktop"], .pulse-player-mini-host { display: none !important; }
         #main-content { padding: 0 !important; }
       `}</style>
 

@@ -657,6 +657,11 @@ html[data-motion-lyrics='lines'] .pulse-lyric-line.is-active .pulse-lyric-word {
   animation: img-skeleton-delay 120ms, img-shimmer 1.4s ease-in-out 120ms infinite;
 }
 
+/* За экраном перелив не нужен и только жжёт CPU (image-loading.ts, watchImageSkeleton). */
+.img-skeleton[data-img-offscreen] {
+  animation-play-state: paused;
+}
+
 /* Пока грузится — уводим уже пришедшие пиксели (прогрессивный JPEG) за край: видна только подложка. */
 .img-loading {
   object-position: -99999px -99999px;
@@ -747,7 +752,7 @@ body:has(.apps-overlay-route) {
 }
 
 body:has(.apps-overlay-route) [data-app-nav],
-body:has(.apps-overlay-route) div:has(> .pulse-player-mini-shell) {
+body:has(.apps-overlay-route) .pulse-player-mini-host {
   display: none !important;
 }
 

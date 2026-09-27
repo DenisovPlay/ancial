@@ -726,7 +726,10 @@ export function PulseTrackRow({
     // Обёртка для content-visibility: длинный плейлист не раскладывает и не рисует строки за экраном.
     // p-1.5/-m-1.5 — граница обрезки на 6px шире строки (значки на обложке вылезают за край),
     // раскладка прежняя; pointer-events-none — поля обёртки не перехватывают наведение соседей.
-    <div className="cv-auto [--cv-size:76px] pointer-events-none -m-1.5 p-1.5">
+    // --cv-size — высота содержимого (строка h-16) без полей: поля добавляются к ней, как и у отрисованной строки,
+    // иначе неотрисованные строки выходили на 12px выше и страница «худела» по мере прокрутки.
+    // data-list-row — строка для окна рендера длинных списков (use-list-window.ts).
+    <div data-list-row="" className="cv-auto [--cv-size:64px] pointer-events-none -m-1.5 p-1.5">
     <div className={cn('pointer-events-auto rounded-2xl flex items-center gap-3 duration-300 group cursor-pointer hover:bg-zinc-800 hover:pr-3', isCurrentSong && 'bg-lime-500/10 pr-3')}>
       <button
         type="button"

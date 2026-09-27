@@ -12,6 +12,7 @@ import { usePulseTrackReport } from '../../../hooks/use-pulse-track-report';
 import { useRequireAuth } from '../../../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { buildPulseTrackReportReasons } from '../../../lib/report-reasons';
+import { useListWindow } from '../../../lib/use-list-window';
 import { useUserCountry } from '../../../lib/user-geo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
@@ -460,6 +461,19 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     setTrackToDelete(track);
   }, []);
 
+  // Длинный плейлист (Избранное на сотни треков) рендерим окном: дальние строки не держат разметку и обложки.
+  const {
+    end: tracksWindowEnd,
+    setListElement: setTrackListElement,
+    spacerAfter: tracksSpacerAfter,
+    spacerBefore: tracksSpacerBefore,
+    start: tracksWindowStart,
+  } = useListWindow(tracks.length, playlistId);
+  const visibleTracks = useMemo(
+    () => tracks.slice(tracksWindowStart, tracksWindowEnd),
+    [tracks, tracksWindowEnd, tracksWindowStart],
+  );
+
   const isMetaLoading = isBuiltinPlaylist ? false : metaLoading;
   const isMissing = !isMetaLoading && !playlist && !isBuiltinPlaylist;
   const isLoading = isMetaLoading || tracksLoading || authLoading;
@@ -656,28 +670,33 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
             ) : null}
 
             {!isLoading && !error && !isMissing && tracks.length > 0 ? (
-              <div className="flex flex-col gap-3">
-                {tracks.map((track, index) => (
-                  <PulseTrackRow
-                    currentSongId={currentSongId}
-                    favoriteIds={favoriteIds}
-                    isAuthenticated={isAuthenticated}
-                    key={`${playlistId}-${track.sid ?? index}`}
-                    onAddToPlaylist={openAddTrackToPlaylist}
-                    onCopyTrackLink={copyTrackLink}
-                    onDeleteTrack={openDeleteTrack}
-                    onEditTrack={openEditTrack}
-                    onLikeTrack={likeTrack}
-                    onOpenArtist={openArtistPage}
-                    onPlayTrack={playTrackAtIndex}
-                    onQueueTrackNext={queueTrackNext}
-                    onReportTrack={reportTrack}
-                    track={track}
-                    trackIndex={index}
-                    user={user}
-                    userCountry={userCountry}
-                  />
-                ))}
+              <div ref={setTrackListElement} className="flex flex-col gap-3">
+                {tracksSpacerBefore > 0 ? <div aria-hidden style={{ height: tracksSpacerBefore }} /> : null}
+                {visibleTracks.map((track, visibleIndex) => {
+                  const index = tracksWindowStart + visibleIndex;
+                  return (
+                    <PulseTrackRow
+                      currentSongId={currentSongId}
+                      favoriteIds={favoriteIds}
+                      isAuthenticated={isAuthenticated}
+                      key={`${playlistId}-${track.sid ?? index}`}
+                      onAddToPlaylist={openAddTrackToPlaylist}
+                      onCopyTrackLink={copyTrackLink}
+                      onDeleteTrack={openDeleteTrack}
+                      onEditTrack={openEditTrack}
+                      onLikeTrack={likeTrack}
+                      onOpenArtist={openArtistPage}
+                      onPlayTrack={playTrackAtIndex}
+                      onQueueTrackNext={queueTrackNext}
+                      onReportTrack={reportTrack}
+                      track={track}
+                      trackIndex={index}
+                      user={user}
+                      userCountry={userCountry}
+                    />
+                  );
+                })}
+                {tracksSpacerAfter > 0 ? <div aria-hidden style={{ height: tracksSpacerAfter }} /> : null}
               </div>
             ) : null}
 

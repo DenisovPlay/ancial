@@ -63,8 +63,10 @@ export default function CinemaIdleScreensaver({
     setActiveMovies(shuffled);
   }, [movies]);
 
-  // 2. Real-time Clock update
+  // 2. Real-time Clock update — только пока заставка на экране: скрытая (opacity-0) живёт на страницах
+  // кино постоянно, и ежесекундный рендер часов шёл впустую.
   useEffect(() => {
+    if (!isIdle) return undefined;
     const locale = langCode === 'en' ? 'en-US' : 'ru-RU';
     const formatter = new Intl.DateTimeFormat(locale, {
       weekday: 'long',
@@ -87,7 +89,7 @@ export default function CinemaIdleScreensaver({
     updateClock();
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
-  }, [langCode]);
+  }, [isIdle, langCode]);
 
   // 3. Slideshow Rotation when Idle
   useEffect(() => {
@@ -211,7 +213,7 @@ export default function CinemaIdleScreensaver({
           <div className="flex flex-col items-end space-y-1">
             <div className="flex items-baseline text-6xl sm:text-8xl lg:text-9xl font-black text-white tracking-tight drop-shadow-2xl font-mono">
               <span>{timeHours}</span>
-              <span className="animate-pulse text-indigo-400/90 font-sans mx-1">:</span>
+              <span className={`${isIdle ? 'animate-pulse ' : ''}text-indigo-400/90 font-sans mx-1`}>:</span>
               <span>{timeMinutes}</span>
               <span className="text-2xl sm:text-4xl font-bold text-indigo-400 font-mono ml-2">
                 :{timeSeconds}
