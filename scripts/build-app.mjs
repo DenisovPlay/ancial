@@ -15,6 +15,17 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const proxyFile = join(root, 'proxy.ts');
 const proxyBackup = join(root, 'proxy.ts.app-build');
 
+/**
+ * Файлы public/, которые экспорт кладёт в out/, а приложению не нужны — только раздувают APK.
+ * Пути относительно out/.
+ */
+const APP_EXCLUDED_PATHS = [
+  // Ассеты лендинга /app/mobile: в приложении лендинг не показывается.
+  'img/apps/zypo', // скриншоты (~20 МБ)
+  'img/backgrounds/mobile-app.mp4', // видео-фон (~2,5 МБ)
+  'img/backgrounds/mobile-app.png', // постер видео (~1,3 МБ)
+];
+
 // Прошлая сборка упала жёстко (kill -9) и не вернула файл — возвращаем перед стартом.
 if (!existsSync(proxyFile) && existsSync(proxyBackup)) renameSync(proxyBackup, proxyFile);
 
@@ -50,6 +61,11 @@ async function run() {
     });
     child.on('close', (exitCode) => resolve(exitCode ?? 1));
   });
+  if (code === 0) {
+    for (const path of APP_EXCLUDED_PATHS) {
+      rmSync(join(root, 'out', path), { force: true, recursive: true });
+    }
+  }
   return code;
 }
 

@@ -527,7 +527,7 @@ export default function HomeContent() {
           initial={false}
           animate={{ opacity: queryParam ? 0 : 1, y: queryParam ? -20 : 0 }}
           transition={{ duration: 0.3 }}
-          className="-mt-32 /hidden w-full max-w-screen-md flex items-center gap-3 shadow relative z-10 select-none"
+          className="-mt-32 /hidden w-full max-w-screen-md flex items-center gap-3 relative z-10 select-none"
         >
           {/* Высота фиксирована: логотип уезжает в шапку выдачи (layoutId), а карточка не схлопывается. */}
           <div className="flex h-8 flex-col items-center justify-center text-center w-full lg:h-10">
@@ -602,18 +602,18 @@ export default function HomeContent() {
       < div className={`w-full h-screen overflow-y-auto flex flex-col items-center lg:items-start p-3 pt-0 gap-3 absolute inset-0 duration-300 transition-opacity ${queryParam ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`
       }>
         {cseRequested ? (
-        <>
-        <Script
-          id="google-cse"
-          async
-          src="https://cse.google.com/cse.js?cx=eb137b61a6e228fd9"
-          strategy="afterInteractive"
-          onReady={() => {
-            cseControllerRef.current?.notifyScriptReady();
-          }}
-        />
-        <style dangerouslySetInnerHTML={{
-          __html: `
+          <>
+            <Script
+              id="google-cse"
+              async
+              src="https://cse.google.com/cse.js?cx=eb137b61a6e228fd9"
+              strategy="afterInteractive"
+              onReady={() => {
+                cseControllerRef.current?.notifyScriptReady();
+              }}
+            />
+            <style dangerouslySetInnerHTML={{
+              __html: `
           /* === Base containers === */
           .gcse-searchresults-only{ min-height:max-content; }
           #___gcse_0, .gsc-control-cse, .gsc-control-wrapper-cse,
@@ -898,7 +898,7 @@ export default function HomeContent() {
               background:transparent !important;
           }
         ` }} />
-        </>
+          </>
         ) : null}
 
         {/* Search Header Bar */}
