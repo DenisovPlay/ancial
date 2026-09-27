@@ -13,7 +13,7 @@ import {
 
 import { cn } from '../lib/cn';
 import { canOptimizeImage } from '../lib/image-hosts';
-import { isSvgSrc, TRANSPARENT_PIXEL, wasSlowNetworkLoad } from '../lib/image-loading';
+import { isSvgSrc, TRANSPARENT_PIXEL, unwatchImageSkeleton, wasSlowNetworkLoad, watchImageSkeleton } from '../lib/image-loading';
 import { useNativeImageSrc } from '../lib/use-native-image-src';
 
 type LoadStatus = 'loading' | 'loaded' | 'revealed' | 'error';
@@ -80,6 +80,14 @@ function useImageLoader({
     }
   }, []);
 
+  // Скелетон за экраном — на паузе (перелив невидимых ленивых картинок постоянно грузил CPU).
+  const watchSkeleton = status === 'loading' && withSkeleton;
+  const skeletonRef = useCallback((img: HTMLImageElement) => {
+    if (!watchSkeleton) return undefined;
+    watchImageSkeleton(img);
+    return () => unwatchImageSkeleton(img);
+  }, [watchSkeleton]);
+
   const handleLoad = (event: SyntheticEvent<HTMLImageElement>) => {
     if (event.currentTarget.src === TRANSPARENT_PIXEL) return;
     const slow = withSkeleton && wasSlowNetworkLoad(event.currentTarget.currentSrc);
@@ -119,6 +127,7 @@ function useImageLoader({
   return {
     key: `${direct ? 'direct:' : ''}${currentSrc}`,
     direct,
+    skeletonRef,
     props: {
       ref,
       src: currentSrc,
@@ -187,10 +196,16 @@ export default function AppImage({
   const nativeSrc = useNativeImageSrc(src);
   const loader = useImageLoader({ src: nativeSrc, fallbackSrc, className, style, pendingStyle, skeleton, onLoad, onError, onAnimationEnd });
   const loaderRef = loader.props.ref;
-  const mergedRef = useCallback((img: HTMLImageElement | null) => {
+  const { skeletonRef } = loader;
+  const mergedRef = useCallback((img: HTMLImageElement) => {
     loaderRef(img);
     assignRef(ref, img);
-  }, [loaderRef, ref]);
+    const stopSkeleton = skeletonRef(img);
+    return () => {
+      stopSkeleton?.();
+      assignRef(ref, null);
+    };
+  }, [loaderRef, ref, skeletonRef]);
 
   return (
     <NextImage

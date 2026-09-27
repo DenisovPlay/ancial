@@ -49,6 +49,11 @@ function NetStatusBanner() {
     setMounted(true);
   }, []);
 
+  // Спиннер крутится, пока плашка видна или уезжает. Скрытая (visibility: hidden) плашка живёт на каждой
+  // странице, а анимация у скрытого элемента не останавливается — без этого флага она жгла CPU постоянно.
+  const [spinnerStopped, setSpinnerStopped] = useState(true);
+  if (isVisible && spinnerStopped) setSpinnerStopped(false);
+
   if (!mounted) return null;
 
   return (
@@ -60,9 +65,12 @@ function NetStatusBanner() {
       }`}
       aria-live="polite"
       aria-hidden={!isVisible}
+      onTransitionEnd={(event) => {
+        if (!isVisible && event.target === event.currentTarget) setSpinnerStopped(true);
+      }}
     >
       <span className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.9] [--glass-blur:16px] p-1 text-xs rounded-full flex gap-1 items-center border border-zinc-600/30 text-zinc-100 shadow-lg">
-        <Icon name="IC-loader" className="w-5 h-5 inline animate-spin fill-purple-500" aria-hidden="true" />
+        <Icon name="IC-loader" className={`w-5 h-5 inline fill-purple-500${spinnerStopped ? '' : ' animate-spin'}`} aria-hidden="true" />
         <span>{lang?.reconnect || 'Переподключение...'}</span>
       </span>
     </div>
