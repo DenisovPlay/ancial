@@ -662,6 +662,18 @@ html[data-motion-lyrics='lines'] .pulse-lyric-line.is-active .pulse-lyric-word {
   animation-play-state: paused;
 }
 
+/*
+ * duration-* в Tailwind v4 задаёт только длительность, а transition-property по умолчанию — all. У картинок
+ * с hover-анимацией (duration-300 group-hover:scale-105) анимировался и возврат object-position из .img-loading —
+ * при каждом монтировании (даже из кэша) обложка «прилетала» из-за края и будто меняла размер. Картинкам
+ * оставляем только то, что анимируют намеренно; явный transition-* в разметке это перекрывает (слой base).
+ */
+@layer base {
+  img {
+    transition-property: transform, translate, scale, rotate, opacity, filter, box-shadow;
+  }
+}
+
 /* Пока грузится — уводим уже пришедшие пиксели (прогрессивный JPEG) за край: видна только подложка. */
 .img-loading {
   object-position: -99999px -99999px;
