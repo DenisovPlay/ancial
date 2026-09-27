@@ -40,6 +40,34 @@ export function wasSlowNetworkLoad(url: string): boolean {
   return entry.duration > SLOW_LOAD_MS;
 }
 
+/**
+ * Перелив скелетона — анимация фона на главном потоке, и браузер крутит её даже у картинок за экраном
+ * (ленивые картинки длинного списка вне экрана не грузятся и «переливаются» бесконечно: сотни анимаций
+ * = постоянная нагрузка на CPU). Один общий IntersectionObserver ставит невидимым скелетонам
+ * data-img-offscreen → animation-play-state: paused (globals.css). На экране — перелив как был.
+ */
+const OFFSCREEN_ATTR = 'data-img-offscreen';
+let skeletonObserver: IntersectionObserver | null = null;
+
+function getSkeletonObserver(): IntersectionObserver | null {
+  if (skeletonObserver || typeof IntersectionObserver === 'undefined') return skeletonObserver;
+  skeletonObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) entry.target.toggleAttribute(OFFSCREEN_ATTR, !entry.isIntersecting);
+  });
+  return skeletonObserver;
+}
+
+/** Начать следить за скелетоном картинки (пока она грузится). */
+export function watchImageSkeleton(img: Element): void {
+  getSkeletonObserver()?.observe(img);
+}
+
+/** Перестать следить: картинка загрузилась или ушла из DOM (иначе наблюдатель держит узел в памяти). */
+export function unwatchImageSkeleton(img: Element): void {
+  skeletonObserver?.unobserve(img);
+  img.removeAttribute(OFFSCREEN_ATTR);
+}
+
 function settleHtmlImage(img: HTMLImageElement, ok: boolean): void {
   if (img.src === TRANSPARENT_PIXEL) return; // уже показана ошибка
   // Оптимизатор не ответил (хост недоступен серверу и т.п.) — пробуем оригинал, скелетон остаётся.
@@ -51,6 +79,7 @@ function settleHtmlImage(img: HTMLImageElement, ok: boolean): void {
     }
   }
   img.classList.remove('img-skeleton', 'img-loading');
+  unwatchImageSkeleton(img);
   if (!ok) {
     img.classList.add('img-error');
     img.src = TRANSPARENT_PIXEL;
@@ -76,6 +105,23 @@ export function ensureHtmlImageLoading(): void {
   };
   document.addEventListener('load', onEvent, true);
   document.addEventListener('error', onEvent, true);
+
+  // Картинки HTML-строк появляются через innerHTML — подхватываем их скелетоны по мутациям DOM.
+  const htmlSkeletonSelector = `img[${HTML_IMAGE_ATTR}].img-skeleton`;
+  const eachHtmlSkeleton = (node: Node, callback: (img: Element) => void) => {
+    if (!(node instanceof Element)) return;
+    if (node.matches(htmlSkeletonSelector)) callback(node);
+    else if (node.firstElementChild) node.querySelectorAll(htmlSkeletonSelector).forEach(callback);
+  };
+  if (typeof MutationObserver !== 'undefined' && typeof IntersectionObserver !== 'undefined') {
+    new MutationObserver((records) => {
+      for (const record of records) {
+        record.removedNodes.forEach((node) => eachHtmlSkeleton(node, unwatchImageSkeleton));
+        record.addedNodes.forEach((node) => eachHtmlSkeleton(node, watchImageSkeleton));
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+    document.querySelectorAll(htmlSkeletonSelector).forEach(watchImageSkeleton);
+  }
 
   // Картинки, успевшие загрузиться до установки слушателя (кэш, SSR-разметка).
   document.querySelectorAll<HTMLImageElement>(`img[${HTML_IMAGE_ATTR}]`).forEach((img) => {
