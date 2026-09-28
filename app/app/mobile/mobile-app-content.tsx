@@ -170,7 +170,7 @@ function InstallModal({
                 href={MOBILE_APP_DOWNLOAD_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cn(BUTTON, 'bg-white text-black hover:bg-zinc-200 self-start')}
+                className={cn(BUTTON, 'bg-white text-black hover:bg-zinc-200 self-start w-full')}
               >
                 <Icon name="IC-download" className="w-5 h-5 fill-black shrink-0" />
                 {lang?.mobile_app_download_apk || 'Скачать APK'}
@@ -262,8 +262,8 @@ export default function MobileAppContent() {
           className="relative w-full max-w-lg h-[26rem] sm:h-[36rem] lg:h-[44rem] mt-6 flex items-end justify-center"
         >
           <Shot
-            shot={SHOTS.lyrics}
-            alt="Zypo Lyrics"
+            shot={SHOTS.pulse}
+            alt="Zypo Pulse"
             priority
             sizes="(max-width: 640px) 90vw, 560px"
             className="h-full drop-shadow-[0_30px_70px_rgba(0,0,0,0.9)]"
@@ -283,7 +283,7 @@ export default function MobileAppContent() {
             className="flex justify-center"
           >
             <Shot
-              shot={SHOTS.pulse}
+              shot={SHOTS.lyrics}
               alt={lang?.mobile_app_point_music || 'Музыка в фоне'}
               sizes="(max-width: 1024px) 85vw, 480px"
               className="h-[24rem] sm:h-[34rem] lg:h-[38rem] drop-shadow-[0_25px_50px_rgba(0,0,0,0.85)]"
