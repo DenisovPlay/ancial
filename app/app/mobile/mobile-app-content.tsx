@@ -62,7 +62,7 @@ function StoreButtons({
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto', className)}>
+    <div className={cn('flex flex-row items-center gap-3 w-full sm:w-auto', className)}>
       <button
         type="button"
         onClick={() => onPick('android')}
@@ -249,6 +249,7 @@ export default function MobileAppContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-center gap-3 w-full"
         >
           <StoreButtons lang={lang} onPick={setPlatform} className="justify-center mt-3" />
         </motion.div>
