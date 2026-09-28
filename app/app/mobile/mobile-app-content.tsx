@@ -154,18 +154,36 @@ function InstallModal({
             </ol>
           ) : (
             <div className="flex flex-col gap-3">
-              <ol className="flex flex-col gap-3">
-                <Step index={1}>
-                  {lang?.mobile_app_android_step_1 || 'Скачайте'}{' '}
-                  <a href={MOBILE_APP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" className={LINK}>APK</a>
-                </Step>
-                <Step index={2}>
-                  {lang?.mobile_app_android_step_2 || 'Откройте загруженный файл'}
-                </Step>
-                <Step index={3}>
-                  {lang?.mobile_app_android_step_3 || 'Разрешите установку, если система спросит'}
-                </Step>
-              </ol>
+              <div className="w-full flex items-center">
+                <ol className="flex flex-col gap-3 flex-grow">
+                  <Step index={1}>
+                    {lang?.mobile_app_android_step_1 || 'Скачайте'}{' '}
+                    <a href={MOBILE_APP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" className={LINK}>APK</a>
+                  </Step>
+                  <Step index={2}>
+                    {lang?.mobile_app_android_step_2 || 'Откройте загруженный файл'}
+                  </Step>
+                  <Step index={3}>
+                    {lang?.mobile_app_android_step_3 || 'Разрешите установку, если система спросит'}
+                  </Step>
+                </ol>
+                {qrTarget ? (
+                  <div className="shrink-0 hidden sm:flex items-center justify-center p-3 bg-white rounded-3xl shrink-0 shadow">
+                    {qrUrl ? (
+                      <AppImage
+                        width={100}
+                        height={100}
+                        src={qrUrl}
+                        alt="QR Code"
+                        skeleton={false}
+                        className="w-24 h-24"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-zinc-400 border-t-transparent" />
+                    )}
+                  </div>
+                ) : null}
+              </div>
               <a
                 href={MOBILE_APP_DOWNLOAD_URL}
                 target="_blank"
@@ -178,23 +196,6 @@ function InstallModal({
             </div>
           )}
         </div>
-
-        {qrTarget ? (
-          <div className="hidden sm:flex items-center justify-center p-3 bg-white rounded-3xl shrink-0 shadow">
-            {qrUrl ? (
-              <AppImage
-                width={100}
-                height={100}
-                src={qrUrl}
-                alt="QR Code"
-                skeleton={false}
-                className="w-24 h-24"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-zinc-400 border-t-transparent" />
-            )}
-          </div>
-        ) : null}
       </div>
     </Modal>
   );
