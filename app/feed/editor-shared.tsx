@@ -158,7 +158,9 @@ export async function uploadPostImageFiles({
     try {
       const uploadedUrl = await uploadImage(file, { type: 'post', targetType: 'post' });
 
-      safeRevokeObjectUrl(previewUrl);
+      // Blob-адрес превью здесь не отзываем: миниатюра и предпросмотр поста продолжают показывать его,
+      // и после отзыва любая перерисовка давала «битую картинку». Отзывается при удалении картинки
+      // и при закрытии редактора (create-content / edit-content).
 
       imagesRef.current = imagesRef.current.map((currentImage) =>
         currentImage.id === draftId
