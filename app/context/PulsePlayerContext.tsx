@@ -12,7 +12,7 @@ import React, {
   type ComponentType,
 } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
@@ -54,7 +54,7 @@ import {
   type ListenAlongListener,
 } from '../pulse/player/listen-along';
 import {
-  announceDevice,
+  activateDevice,
   claimActiveDevice,
   DEVICE_STATE_INTERVAL_MS,
   getRemoteDevicesSnapshot,
@@ -63,6 +63,7 @@ import {
   hasOtherDevices as hasOtherDevicesNow,
   isRemotePlayback,
   releaseActiveDevice,
+  retireDevice,
   remotePlaybackClockRef,
   sendDeviceCommand,
   sendDeviceQueue,
@@ -282,7 +283,6 @@ export function PulsePlayerProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { isAuthenticated, lang } = useAuth();
   const { showNote } = useNotification();
 
@@ -415,7 +415,6 @@ export function PulsePlayerProvider({
   const playerArtwork = getPlayerTrackArtwork(currentTrack);
   const prevArtwork = getPlayerTrackArtwork(prevTrackObj);
   const nextArtwork = getPlayerTrackArtwork(nextTrackObj);
-  const isCinema = Boolean(pathname?.startsWith('/cinema'));
   // Открытый чат забирает мини-плеер к себе в шапку. Нижний при этом ещё полсекунды остаётся
   // смонтированным и уезжает вниз, пока плеер в шапке выезжает сверху.
   const miniPlayerSlot = useMiniPlayerSlot();
@@ -443,16 +442,8 @@ export function PulsePlayerProvider({
     const timer = window.setTimeout(() => setBottomMiniLeaving(false), MINI_PLAYER_HANDOFF_MS);
     return () => window.clearTimeout(timer);
   }, [bottomMiniLeaving]);
-  const effectivePlayerVisible = isMounted && !isCinema;
-
-  useEffect(() => {
-    if (isCinema) {
-      if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      }
-    }
-  }, [isCinema]);
+  // На страницах без плеера (кино) провайдер не монтируется — см. PulsePlayerBoundary.
+  const effectivePlayerVisible = isMounted;
 
   const isPlayerAnimatingIn = isVisible && isMounted;
   const isFullPlayerActive = shouldRunPulseFullPlayerWork(mode, isVisible, isMounted);
@@ -888,6 +879,37 @@ export function PulsePlayerProvider({
       });
     });
   };
+
+  // Провайдер выгружают на страницах без плеера (кино): звук, Media Session и комната совместного
+  // прослушивания остаться не должны. Устройство из списка аккаунта убирает retireDevice выше.
+  const clearMediaSessionRef = useRef<() => void>(() => undefined);
+  useEffect(() => {
+    clearMediaSessionRef.current = clearMediaSession;
+  });
+  useEffect(() => {
+    const audio = audioRef.current;
+    return () => {
+      if (followingHostIdRef.current > 0) {
+        leaveListenAlong();
+      } else if (hasListenersRef.current) {
+        closeListenAlongRoom();
+      }
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
+      }
+      if (activeBlobUrlRef.current) {
+        try {
+          URL.revokeObjectURL(activeBlobUrlRef.current);
+        } catch (error) {
+          console.error('Failed to revoke object URL on player unmount', error);
+        }
+        activeBlobUrlRef.current = null;
+      }
+      clearMediaSessionRef.current();
+    };
+  }, []);
 
   const closePlayer = () => {
     // Крестик на пульте закрывает воспроизведение, а не только своё окно: музыка на аккаунте одна,
@@ -2428,7 +2450,9 @@ export function PulsePlayerProvider({
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    announceDevice();
+    activateDevice();
+    // Провайдер выгружают на страницах без плеера (кино): устройство из списка аккаунта убираем.
+    return () => retireDevice();
   }, [isAuthenticated]);
 
   // Стали пультом (в т.ч. после переподключения, когда device:stop не дошёл) — глушим локальный звук.
@@ -3099,6 +3123,11 @@ export function PulsePlayerProvider({
       />
     </PulsePlayerContext.Provider>
   );
+}
+
+/** Плеер, если он смонтирован: на страницах без него (кино) вернёт null. */
+export function usePulsePlayerOptional() {
+  return useContext(PulsePlayerContext);
 }
 
 export function usePulsePlayer() {

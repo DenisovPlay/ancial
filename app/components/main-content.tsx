@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { createRouteScrollController, scrollAppToTop } from '../lib/route-scroll';
 import { cn } from '../lib/cn';
 import { ensureHtmlImageLoading } from '../lib/image-loading';
+import { isRestoreNavigation } from '../lib/entry-nav';
+import { installScrollRestore } from '../lib/scroll-restore';
 
 export default function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,8 +29,11 @@ export default function MainContent({ children }: { children: React.ReactNode })
   );
 
   useEffect(() => {
-    routeScrollController.syncRoute(routeKey);
+    routeScrollController.syncRoute(routeKey, isRestoreNavigation());
   }, [routeKey, routeScrollController]);
+
+  // Возврат на то же место при «Назад/Вперёд» (позиция хранится по записи истории).
+  useEffect(() => installScrollRestore(), []);
 
   // Прелоадер картинок внутри HTML-строк (посты, комментарии, стикеры) — один раз на приложение.
   useEffect(() => {

@@ -133,6 +133,16 @@ HTML отдаётся с `Cache-Control: no-store` (правило `headers()` �
 - **Вход Яндекс/Telegram и привязка:** системный браузер + возврат `cc.zypo.app://oauth`, схема PKCE (`app/lib/native-oauth.ts` ↔ `modules/auth/app_oauth.php`): в ссылке возврата нет секретов, данные забираются по `app_verifier`.
 - **Passkeys:** WebView с `WEB_AUTHENTICATION_SUPPORT_FOR_APP` (`ZypoWebViewPlugin`), доступность — флаг `window.__ZYPO_WEBAUTHN__`; бэкенд принимает origin `https://localhost`, право на RP ID `zypo.cc` — `get_login_creds` в `assetlinks.json`.
 
+## 6.2. «Назад/Вперёд» возвращает на то же место, черновики, плеер вне кино
+
+Подробный план и решения — `docs/plan-navigation-restore-and-cinema.md`.
+- **Состояние по записи истории** (`app/lib/entry-nav.ts` + `entry-store.ts`): ключ — `navigation.currentEntry.key` (без Navigation API — URL), значения в `sessionStorage`, не больше ~40 записей. «Назад/Вперёд» отличаем от обычного перехода (`isRestoreNavigation()`): только при нём состояние возвращается, при `push` страница открывается сверху.
+- **Прокрутка** — `app/lib/scroll-restore.ts`, подключён в `MainContent`: позиция страницы (с якорем на пост `postdiv…`) и панелей списка чатов; восстановление с повторами до ~3 с, пока страница дорастёт, прерывается действиями пользователя. Панель сообщений (`#msg-scroll`) намеренно не восстанавливается: чат открывается на последних сообщениях. Свой `scrollTo(0)` на странице ставить только вне `isRestoreNavigation()`.
+- **Лента** — снимок в памяти (`app/feed/feed-snapshot.ts`, до 3 шт., не в localStorage): на «Назад» из поста поднимается со всеми подгруженными постами без запроса. Публикация, правка и удаление постов вызывают `clearFeedSnapshots()`.
+- **Плашка «Новые посты»** — `use-new-posts.ts`: `Feed.php?peek=1` (id верхних постов), раз в минуту при видимой вкладке и при возврате на неё.
+- **Черновики**: (1) по записи истории — форма создания/правки поста (`post-draft.ts`, `readEntryState`/`writeEntryState`), после публикации `router.replace('/feed')` и `client_token` (идемпотентность `CreatePost.php`, миграция 003); (2) серверные, между устройствами — `app/lib/drafts.ts` (`saveDraft`/`loadDraft`/`subscribeDraft`, LWW по `ts`, WS `draft:update`/`draft:clear`, API `drafts/Get|Set|Clear.php`, миграция 004): текст сообщения в чатах (`useDialogDraft`, «Черновик:» в списке диалогов) и пост (`ref` = id автора). Очистка кэша в `/settings/cache` стирает черновики везде (`clearAllDrafts`).
+- **Плеер не монтируется на `/cinema*`** (`PulsePlayerBoundary`, `isPlayerDisabledPath`): нет аудио, Media Session и устройства в списке аккаунта; при размонтировании провайдер шлёт `device:bye` (`retireDevice`). Потребителям плеера вне страниц с ним — `usePulsePlayerOptional()`.
+
 ## 7. Качество кода (ОБЯЗАТЕЛЬНО к соблюдению)
 
 ### Верификация перед завершением любой задачи

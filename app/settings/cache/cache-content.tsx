@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { cache, PERSISTENT_KEYS, resolveKeyInfo, DEFAULT_CACHE_TTL, SETTING_KEY_CACHE_TTL, type AudioAutoSaveMode } from '../../lib/cache';
+import { clearAllDrafts } from '../../lib/drafts';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/modal';
 import Icon from '../../components/svg-icon';
@@ -154,6 +155,7 @@ export default function CacheSettingsPage() {
       profile: { label: lang?.category_profile || 'Профиль', color: '#06b6d4' }, // cyan
       pulse: { label: lang?.category_pulse || 'Pulse', color: '#ef4444' }, // red
       notifications: { label: lang?.category_notifications || 'Уведомления', color: '#eab308' }, // yellow
+      drafts: { label: lang?.category_drafts || 'Черновики', color: '#a855f7' }, // violet
       home: { label: lang?.category_home || 'Главная', color: '#71717a' }, // zinc
       apps: { label: lang?.category_apps || 'Игры (Zynt)', color: '#22c55e' }, // green
       users: { label: lang?.category_users || 'Пользователи', color: '#14b8a6' }, // teal
@@ -200,6 +202,8 @@ export default function CacheSettingsPage() {
       passkeys: lang?.subcategory_passkeys || 'Passkeys',
       info: lang?.subcategory_user_info || 'Карточки пользователей',
       geo: lang?.subcategory_geo || 'Местоположение',
+      dialog: lang?.subcategory_draft_dialog || 'Черновики сообщений',
+      post: lang?.subcategory_draft_post || 'Черновики постов',
       // Apps (Zynt)
       home: lang?.subcategory_apps_home || 'Главная страница',
       category: lang?.subcategory_apps_category || 'Игры по категориям',
@@ -258,7 +262,7 @@ export default function CacheSettingsPage() {
     const cats: typeof cacheData.categories = {};
 
     // Initialize default categories
-    const defaultCategories: string[] = ['feed', 'chats', 'wallet', 'friends', 'groups', 'profile', 'pulse', 'notifications', 'apps', 'other'];
+    const defaultCategories: string[] = ['feed', 'chats', 'wallet', 'friends', 'groups', 'profile', 'pulse', 'notifications', 'apps', 'drafts', 'other'];
     defaultCategories.forEach((c) => {
       cats[c] = { size: 0, keys: [], subcategories: {} };
     });
@@ -523,6 +527,11 @@ export default function CacheSettingsPage() {
     });
 
     if (keysToDelete.length === 0 && !shouldClearAudio && !shouldClearPwa && !shouldClearImages) return;
+
+    // Черновики стираем целиком: на устройстве, в записях истории и на сервере, иначе синхронизация вернёт их обратно.
+    if ([...selectedSubs].some((id) => id.startsWith('drafts:'))) {
+      await clearAllDrafts();
+    }
 
     keysToDelete.forEach((k) => {
       try {

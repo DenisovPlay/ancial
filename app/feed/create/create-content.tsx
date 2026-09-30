@@ -11,6 +11,22 @@ import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/po
 import PostBlockMediaModal from '../../components/post-block-media-modal';
 import PostBlockTableModal from '../../components/post-block-table-modal';
 import { FeedEditorUI } from '../editor-ui';
+import { clearFeedSnapshots } from '../feed-snapshot';
+import {
+  POST_DRAFT_NS,
+  type PostDraft,
+  draftImagesFromState,
+  draftImagesToState,
+  isPostDraftEmpty,
+  newSubmitToken,
+  parsePostDraft,
+  parsePostDraftPayload,
+  serializePostDraftPayload,
+} from '../post-draft';
+import { loadDraft, saveDraft, subscribeDraft } from '../../lib/drafts';
+import { clearEntryState, readEntryState, writeEntryState } from '../../lib/entry-nav';
+import { goBackOr } from '../../lib/go-back';
+import { useIsClient } from '../../lib/use-is-client';
 import { serializePostWidgets } from '../post-widgets';
 import { getVisibleLength, VISIBLE_CHAR_LIMIT } from '../../components/rich-text-editor';
 import { parsePostContentToHtml } from '../../components/post-parser';
@@ -61,24 +77,45 @@ type MusicWidget = {
 type PostWidget = PollWidget | MusicWidget;
 
 
+/**
+ * Обёртка: черновик читается из состояния записи истории только на клиенте, поэтому форму
+ * монтируем после гидратации — начальные значения полей берутся из него без эффектов.
+ */
 export default function CreatePostContent() {
+  const isClient = useIsClient();
+  if (!isClient) {
+    return (
+      <div className="flex justify-center items-center w-full h-screen">
+        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+      </div>
+    );
+  }
+  return <CreatePostForm />;
+}
+
+function CreatePostForm() {
   const router = useRouter();
   const { isAuthenticated, isLoading, lang, user } = useAuth();
   const { showNote } = useNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imagesRef = useRef<DraftImage[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'preview' | 'write'>('write');
+  // Черновик этой записи истории: «Назад/Вперёд» и перезагрузка возвращают форму как была.
+  const [initialDraft] = useState(() => parsePostDraft(readEntryState<unknown>(POST_DRAFT_NS)));
+  const [submitToken] = useState(() => initialDraft?.token ?? newSubmitToken());
+  const submittedRef = useRef(false);
+
+  const [activeTab, setActiveTab] = useState<'preview' | 'write'>(initialDraft?.activeTab ?? 'write');
   const [authors, setAuthors] = useState<AvailableAuthor[]>([]);
-  const [content, setContent] = useState('');
-  const [images, setImages] = useState<DraftImage[]>([]);
+  const [content, setContent] = useState(initialDraft?.content ?? '');
+  const [images, setImages] = useState<DraftImage[]>(() => draftImagesToState(initialDraft?.images ?? []));
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedAuthorId, setSelectedAuthorId] = useState('0');
-  const [selectedTopic, setSelectedTopic] = useState('');
-  const [title, setTitle] = useState('');
+  const [selectedAuthorId, setSelectedAuthorId] = useState(initialDraft?.authorId ?? '0');
+  const [selectedTopic, setSelectedTopic] = useState(initialDraft?.topic ?? '');
+  const [title, setTitle] = useState(initialDraft?.title ?? '');
 
   // Виджеты
-  const [widgets, setWidgets] = useState<PostWidget[]>([]);
+  const [widgets, setWidgets] = useState<PostWidget[]>((initialDraft?.widgets ?? []) as PostWidget[]);
   const [isPollModalOpen, setIsPollModalOpen] = useState(false);
   const [isMusicModalOpen, setIsMusicModalOpen] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
@@ -214,6 +251,88 @@ export default function CreatePostContent() {
   useEffect(() => {
     imagesRef.current = images;
   }, [images]);
+
+  // Запись в буфер состояния истории дешёвая (на диск он уходит при переходе/скрытии вкладки).
+  useEffect(() => {
+    if (submittedRef.current) return;
+    const draft: PostDraft = {
+      activeTab,
+      authorId: selectedAuthorId,
+      content,
+      images: draftImagesFromState(images),
+      title,
+      token: submitToken,
+      topic: selectedTopic,
+      widgets,
+    };
+    if (isPostDraftEmpty(draft)) clearEntryState(POST_DRAFT_NS);
+    else writeEntryState(POST_DRAFT_NS, draft);
+  }, [activeTab, content, images, selectedAuthorId, selectedTopic, submitToken, title, widgets]);
+
+  // Серверный черновик (другие устройства и «свежее» открытие): правки уходят с задержкой,
+  // чужие — применяются, пока в форме нет наших несинхронизированных правок.
+  const draftPayload = serializePostDraftPayload({
+    content,
+    images: draftImagesFromState(images),
+    title,
+    topic: selectedTopic,
+    widgets,
+  });
+  const syncedRef = useRef({ author: selectedAuthorId, payload: initialDraft ? '' : draftPayload });
+  const payloadRef = useRef(draftPayload);
+  useEffect(() => {
+    payloadRef.current = draftPayload;
+  });
+
+  const applyRemoteDraft = useCallback((authorId: string, payload: string) => {
+    const remote = parsePostDraftPayload(payload);
+    syncedRef.current = { author: authorId, payload };
+    setTitle(remote?.title ?? '');
+    setContent(remote?.content ?? '');
+    setSelectedTopic(remote?.topic ?? '');
+    setImages(draftImagesToState(remote?.images ?? []));
+    setWidgets((remote?.widgets ?? []) as PostWidget[]);
+  }, []);
+
+  // Форма пуста (нет ни записи истории, ни набранного) — подставляем черновик этого автора с сервера.
+  useEffect(() => {
+    if (!isAuthenticated || payloadRef.current !== '') return;
+    let cancelled = false;
+    loadDraft('post', selectedAuthorId)
+      .then((remote) => {
+        // Пока грузили, пользователь мог начать печатать — его текст важнее.
+        if (cancelled || !remote || payloadRef.current !== '') return;
+        applyRemoteDraft(selectedAuthorId, remote.payload);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [applyRemoteDraft, isAuthenticated, selectedAuthorId]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return subscribeDraft('post', selectedAuthorId, (remote) => {
+      if (submittedRef.current) return;
+      // Есть несинхронизированные правки здесь — они новее по замыслу и уйдут на сервер сами.
+      if (syncedRef.current.author !== selectedAuthorId || payloadRef.current !== syncedRef.current.payload) return;
+      applyRemoteDraft(selectedAuthorId, remote?.payload ?? '');
+    });
+  }, [applyRemoteDraft, isAuthenticated, selectedAuthorId]);
+
+  useEffect(() => {
+    if (!isAuthenticated || submittedRef.current) return;
+    const synced = syncedRef.current;
+    const authorChanged = synced.author !== selectedAuthorId;
+    if (!authorChanged && synced.payload === draftPayload) return;
+    const timer = window.setTimeout(() => {
+      if (authorChanged && synced.payload !== '') saveDraft('post', synced.author, '');
+      // Пустую форму под другого автора не сохраняем: это стёрло бы его серверный черновик.
+      if (draftPayload !== '' || (!authorChanged && synced.payload !== '')) saveDraft('post', selectedAuthorId, draftPayload);
+      syncedRef.current = { author: selectedAuthorId, payload: draftPayload };
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [draftPayload, isAuthenticated, selectedAuthorId]);
 
   useEffect(() => {
     return () => {
@@ -356,10 +475,18 @@ export default function CreatePostContent() {
         new_post_title: title,
         photosurls: uploadedImages,
         widgets: serializedWidgets,
+        client_token: submitToken,
       });
 
+      // Опубликовано: черновик и снимки ленты больше не нужны, а запись формы заменяем лентой —
+      // «Назад» не вернёт на заполненную форму, из которой можно опубликовать пост повторно.
+      submittedRef.current = true;
+      clearEntryState(POST_DRAFT_NS);
+      saveDraft('post', selectedAuthorId, '');
+      clearFeedSnapshots();
+
       if (!response || !response.message) {
-        router.push('/feed');
+        router.replace('/feed');
         return;
       }
 
@@ -369,7 +496,7 @@ export default function CreatePostContent() {
         type: 'success',
         time: 5,
       });
-      router.push('/feed');
+      router.replace('/feed');
     } catch (error) {
       console.error('Create post failed', error);
       showNote({
@@ -437,7 +564,7 @@ export default function CreatePostContent() {
       handleStickerSelect={handleStickerSelect}
       previewAuthorName={previewAuthorName}
       previewAuthorImage={previewAuthorImage}
-      onBack={() => router.push('/feed')}
+      onBack={() => goBackOr(router, '/feed')}
     >
       <input
         ref={fileInputRef}

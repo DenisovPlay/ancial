@@ -14,7 +14,8 @@ export function createRouteScrollController(options: RouteScrollControllerOption
   let previousRouteKey: null | string = null;
 
   return {
-    syncRoute(routeKey: string) {
+    /** keepPosition — «Назад/Вперёд»: позицию вернёт восстановление, вверх не прокручиваем. */
+    syncRoute(routeKey: string, keepPosition = false) {
       if (!hasSyncedInitialRoute) {
         hasSyncedInitialRoute = true;
         previousRouteKey = routeKey;
@@ -26,6 +27,10 @@ export function createRouteScrollController(options: RouteScrollControllerOption
       }
 
       previousRouteKey = routeKey;
+
+      if (keepPosition) {
+        return;
+      }
 
       if (options.schedule) {
         options.schedule(options.scrollToTop);

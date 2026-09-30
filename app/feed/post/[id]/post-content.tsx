@@ -2,6 +2,7 @@
 import { coerceToFinite as toNumber } from '../../../lib/convert';
 
 import { goBackOr } from '../../../lib/go-back';
+import { clearFeedSnapshots } from '../../feed-snapshot';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSanitizedHtml } from '../../../lib/use-sanitized-html';
@@ -506,6 +507,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
         time: 5,
       });
 
+      clearFeedSnapshots();
       router.push('/feed');
     } catch (nextError) {
       console.error('Delete post failed', nextError);

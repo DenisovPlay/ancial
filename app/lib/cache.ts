@@ -14,7 +14,8 @@ export type CacheCategory =
   | 'notifications'
   | 'apps'
   | 'users'
-  | 'cinema';
+  | 'cinema'
+  | 'drafts';
 
 export type CacheSubcategory<C extends CacheCategory> =
   C extends 'home'
@@ -39,6 +40,8 @@ export type CacheSubcategory<C extends CacheCategory> =
     ? 'home' | 'category' | 'search'
     : C extends 'users'
     ? 'info'
+    : C extends 'drafts'
+    ? 'dialog' | 'post'
     : C extends 'cinema'
     ? 'updates' | 'search' | 'video' | 'person' | 'translations' | 'genres' | 'history' | 'progress' | 'home_bundle' | 'info' | 'similar' | 'catalog_movies' | 'catalog_series' | 'catalog_cartoons'
     : never;

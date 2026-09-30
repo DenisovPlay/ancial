@@ -11,6 +11,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { TypingBubble } from './components/typing-bubble';
 import { useChatWindow } from './lib/use-chat-window';
+import { useDialogDraft } from './lib/use-dialog-draft';
+import { useDialogDraftPreviews } from './lib/use-dialog-draft-previews';
 
 import Modal from '../components/modal';
 import { Dropdown, DropdownItem } from '../components/navigation';
@@ -430,6 +432,9 @@ export default function MessagesContent() {
 
   const dialogBackgroundUrl = normalizeAssetUrl(rawBg, '');
   const selectedDialogId = toNumber(selectedDialog?.id);
+  // Черновик сообщения: восстанавливается при возврате в диалог и синхронизируется между устройствами.
+  useDialogDraft(selectedDialogId, composerText, setComposerText, isAuthenticated);
+  const dialogDraftPreviews = useDialogDraftPreviews(isAuthenticated);
   // Статус собеседника с учётом его настроек приватности: «Слушает…», «В сети», «Был(а) в сети N назад».
   const foreignUserPresence = usePresence(isGroupDialog ? 0 : effectiveForeignUser?.id);
 
@@ -2545,7 +2550,14 @@ export default function MessagesContent() {
                                         className="truncate flex"
                                       />
                                       <span className="truncate text-sm text-zinc-300 lg:text-base">
-                                        {preview || (lang?.write_message || 'Напишите сообщение')}
+                                        {dialogDraftPreviews[String(dialog.id)] ? (
+                                          <>
+                                            <span className="text-purple-400">{lang?.draft_label || 'Черновик:'}</span>{' '}
+                                            {dialogDraftPreviews[String(dialog.id)]}
+                                          </>
+                                        ) : (
+                                          preview || (lang?.write_message || 'Напишите сообщение')
+                                        )}
                                       </span>
                                     </div>
 
