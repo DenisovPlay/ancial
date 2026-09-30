@@ -12,10 +12,11 @@ import React, {
   type ComponentType,
 } from 'react';
 import { createPortal, flushSync } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { AncialAPI } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
+import { isPlayerSuspendedPath } from '../lib/player-routes';
 import { useStableCallbacks } from '../lib/use-stable-callbacks';
 import { shouldDisableWebAudioForDevice, useEqualizer } from '../pulse/player/use-equalizer';
 import { usePulseFavorites } from '../pulse/player/use-pulse-favorites';
@@ -283,6 +284,8 @@ export function PulsePlayerProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  // Во время звонка плеер не виден и молчит, но остаётся смонтированным (см. isPlayerSuspendedPath).
+  const isSuspended = isPlayerSuspendedPath(usePathname());
   const { isAuthenticated, lang } = useAuth();
   const { showNote } = useNotification();
 
@@ -443,7 +446,7 @@ export function PulsePlayerProvider({
     return () => window.clearTimeout(timer);
   }, [bottomMiniLeaving]);
   // На страницах без плеера (кино) провайдер не монтируется — см. PulsePlayerBoundary.
-  const effectivePlayerVisible = isMounted;
+  const effectivePlayerVisible = isMounted && !isSuspended;
 
   const isPlayerAnimatingIn = isVisible && isMounted;
   const isFullPlayerActive = shouldRunPulseFullPlayerWork(mode, isVisible, isMounted);
@@ -910,6 +913,38 @@ export function PulsePlayerProvider({
       clearMediaSessionRef.current();
     };
   }, []);
+
+  // Звонок: ставим на паузу и снимаем Media Session, чтобы плеер не перехватывал медиаклавиши и шторку.
+  // После звонка плеер возвращается на паузе с тем же треком (автоматически не играет).
+  const mediaSessionControlRef = useRef({ clear: () => {}, restore: () => {} });
+  useEffect(() => {
+    mediaSessionControlRef.current = {
+      clear: clearMediaSession,
+      restore: () => {
+        // Провайдер выгружают — восстанавливать нечего (ref аудио к этому моменту уже пуст).
+        if (!audioRef.current || !currentTrack) return;
+        bindMediaSession();
+        if ('mediaSession' in navigator && typeof MediaMetadata !== 'undefined') {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            album: normalizeText(currentTrack.album) || 'Zypo',
+            artist: playerArtist,
+            artwork: buildMediaArtwork(currentTrack),
+            title: playerTitle,
+          });
+        }
+      },
+    };
+  });
+  useEffect(() => {
+    if (!isSuspended) return;
+    const audio = audioRef.current;
+    if (audio && !audio.paused) {
+      audio.pause();
+      setIsPlaying(false);
+    }
+    mediaSessionControlRef.current.clear();
+    return () => mediaSessionControlRef.current.restore();
+  }, [isSuspended]);
 
   const closePlayer = () => {
     // Крестик на пульте закрывает воспроизведение, а не только своё окно: музыка на аккаунте одна,
@@ -2449,11 +2484,12 @@ export function PulsePlayerProvider({
   // --- Устройства аккаунта ---------------------------------------------------------------------
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || isSuspended) return;
     activateDevice();
-    // Провайдер выгружают на страницах без плеера (кино): устройство из списка аккаунта убираем.
+    // Провайдер выгружают на страницах без плеера (кино), а во время звонка приостанавливают:
+    // устройство из списка аккаунта убираем.
     return () => retireDevice();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isSuspended]);
 
   // Стали пультом (в т.ч. после переподключения, когда device:stop не дошёл) — глушим локальный звук.
   useEffect(() => {

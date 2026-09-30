@@ -1,7 +1,7 @@
 'use client';
 import { coerceToFinite as toNumber } from '../lib/convert';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCopyToClipboard } from '../hooks/use-copy-to-clipboard';
 import { cn } from '../lib/cn';
@@ -125,6 +125,10 @@ const DEFAULT_LANG: PostCardLang = {
   tobookmarks: 'В закладки',
   translate: 'Перевести',
 };
+
+/** Элементы карточки, у которых свой клик: по ним пост не открываем. */
+const CARD_CLICK_IGNORED_SELECTOR =
+  'a,button,input,textarea,select,summary,label,img,video,audio,iframe,table,[role="button"],[data-carousel-scroll],.overflow-x-auto,.ancial-spoiler,.inline-sticker-wrapper,[data-sticker]';
 
 function flag(value: boolean | number | string | null | undefined) {
   return value === true || value === 1 || value === '1' || value === 'true';
@@ -342,6 +346,7 @@ function PostCardInner({
   noCollapse = false,
 }: PostCardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { lang: authLang } = useAuth();
   const { showNote } = useNotification();
   const copyToClipboard = useCopyToClipboard();
@@ -586,6 +591,21 @@ function PostCardInner({
     router.push(href);
   };
 
+  // Страница самого поста: ссылка на неё с карточки не нужна.
+  const postHref = `/feed/post/${encodeURIComponent(String(post.id))}`;
+  const isPostPage = pathname === postHref || pathname === `${postHref}/`;
+
+  // Клик по «пустому» месту карточки открывает пост; интерактивные элементы, медиа и выделение текста не трогаем.
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isPostPage || e.defaultPrevented || e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    // Клики из порталов (меню, модалки) всплывают по дереву React, но лежат вне карточки.
+    if (!e.currentTarget.contains(target)) return;
+    if (target.closest(CARD_CLICK_IGNORED_SELECTOR)) return;
+    if (window.getSelection()?.toString()) return;
+    navigateTo(postHref);
+  };
+
   const handleVote = (direction: VoteDirection) => {
     if (onVote) {
       onVote(post, direction);
@@ -755,6 +775,7 @@ function PostCardInner({
     <>
       <div
         id={`postdiv${post.id}`}
+        onClick={handleCardClick}
         className="cv-auto p-3 duration-300 rounded-3xl border border-zinc-600/30 bg-zinc-900 flex flex-col gap-3 w-full shadow text-zinc-100"
       >
         <div className="text-sm lg:text-base text-zinc-400 font-medium flex items-center gap-1.5 min-w-0">
@@ -863,13 +884,20 @@ function PostCardInner({
           </Dropdown>
         </div>
 
-        {displayTitle && (
+        {displayTitle && (isPostPage ? (
           <div
             id={`titleblock${post.id}`}
             className="text-lg lg:text-xl text-zinc-100 font-bold"
             dangerouslySetInnerHTML={{ __html: displayTitle ?? '' }}
           />
-        )}
+        ) : (
+          <Link
+            id={`titleblock${post.id}`}
+            href={postHref}
+            className="block text-lg lg:text-xl text-zinc-100 font-bold hover:text-zinc-300 duration-300 cursor-pointer"
+            dangerouslySetInnerHTML={{ __html: displayTitle ?? '' }}
+          />
+        ))}
 
         {displayContent && (
           <ExpandablePostContent

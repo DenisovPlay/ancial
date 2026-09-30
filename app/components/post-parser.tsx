@@ -3,6 +3,7 @@ import { canOptimizeImage } from '../lib/image-hosts';
 import { buildOptimizedImageSrc, decodeHtmlAttribute } from '../lib/optimized-image-src';
 import { IS_NATIVE_APP } from '../lib/platform';
 import { SITE_URL } from '../config';
+import { toInternalPath } from '../lib/internal-link';
 
 /**
  * src картинки карусели/коллажа в отображаемом посте: через оптимизатор next/image с шириной под
@@ -21,6 +22,15 @@ function postImageSrc(url: string, width: number, isPreview: boolean): string {
  * Считает только видимые символы — без BBCode-тегов.
  * Используется для счётчика лимита 3000 символов.
  */
+/** Ссылка в посте: чужой сайт — через страницу проверки в новой вкладке, наш собственный — прямо, в этой же. */
+function buildPostLink(url: string, text: string): string {
+    const internalPath = toInternalPath(url);
+    if (internalPath) {
+        return `<a href="${internalPath.replace(/"/g, '&quot;')}" data-internal="1" class="text-purple-500 hover:text-purple-400 duration-300">${text}</a>`;
+    }
+    return `<a href="/redirect?link=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${text}</a>`;
+}
+
 export function getVisibleLength(bbcode: string): number {
     return bbcode.replace(/\[[^\]]+\]/g, '').length;
 }
@@ -208,7 +218,7 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             if (!/^https?:\/\//i.test(url)) {
                 url = 'https://' + url;
             }
-            return `<a href="/redirect?link=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${customText.trim()}</a>`;
+            return buildPostLink(url, customText.trim());
         } else if (rawUrl) {
             const url = rawUrl.trim();
 
@@ -220,7 +230,7 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             if (!/^https?:\/\//i.test(finalUrl)) {
                 finalUrl = 'https://' + finalUrl;
             }
-            return `<a href="/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${url}</a>`;
+            return buildPostLink(finalUrl, url);
         }
 
         return match;
