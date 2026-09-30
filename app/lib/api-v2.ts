@@ -671,6 +671,36 @@ export class AncialAPI {
     return this.request<T>(`/posts/Feed.php?${query.toString()}`, options);
   }
 
+  /** Id верхних постов ленты (до 20) — проверка, появились ли новые; тема `bookmarked` не поддерживается. */
+  static async getFeedPeek(topic?: string, options?: RequestInit): Promise<{ ids?: number[] }> {
+    const query = new URLSearchParams({ peek: '1' });
+    if (topic) query.set('topic', topic);
+    return this.request<{ ids?: number[] }>(`/posts/Feed.php?${query.toString()}`, options);
+  }
+
+  /** Черновик сообщения/поста с сервера (синхронизация между устройствами). */
+  static async getDraft(kind: 'dialog' | 'post', ref: string, options?: RequestInit) {
+    const query = new URLSearchParams({ kind, ref });
+    return this.request<{ draft: { payload: string; ts: number } | null }>(`/drafts/Get.php?${query.toString()}`, options);
+  }
+
+  /** Превью всех черновиков вида (для списка чатов). */
+  static async listDrafts(kind: 'dialog' | 'post', options?: RequestInit) {
+    const query = new URLSearchParams({ kind });
+    return this.request<{ drafts: Array<{ ref: string; text: string; ts: number }> }>(`/drafts/Get.php?${query.toString()}`, options);
+  }
+
+  /** Пустой payload — черновик удалён. Более старая правка (ts) уже записанное не затирает. */
+  static async setDraft(params: { kind: 'dialog' | 'post'; origin: string; payload: string; ref: string; ts: number }) {
+    const body = new URLSearchParams({ kind: params.kind, origin: params.origin, payload: params.payload, ref: params.ref, ts: String(params.ts) });
+    return this.request<{ applied: boolean; ts: number }>('/drafts/Set.php', { method: 'POST', body });
+  }
+
+  static async clearDrafts(origin: string) {
+    const body = new URLSearchParams({ origin, ts: String(Date.now()) });
+    return this.request<{ cleared: boolean }>('/drafts/Clear.php', { method: 'POST', body });
+  }
+
   static async getPost<T = unknown>(postId: string | number, options?: RequestInit): Promise<T> {
     return this.request<T>(`/posts/GetPost.php?id=${postId}`, options);
   }

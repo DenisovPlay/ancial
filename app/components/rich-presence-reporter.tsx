@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from '../context/AuthContext';
-import { usePulsePlayer } from '../context/PulsePlayerContext';
+import { usePulsePlayerOptional } from '../context/PulsePlayerContext';
 import { AncialAPI } from '../lib/api-v2';
 import { globalWS } from '../lib/global-ws';
 import { getPresenceSection } from '../lib/presence';
@@ -39,7 +39,10 @@ const NO_ACTIVITY: PresenceActivity = {
 export default function RichPresenceReporter() {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
-  const { currentTrackObj, isPlaying } = usePulsePlayer();
+  // В кино плеера нет — трек не сообщаем.
+  const player = usePulsePlayerOptional();
+  const currentTrackObj = player?.currentTrackObj ?? null;
+  const isPlaying = player?.isPlaying ?? false;
   const [activityOverride, setActivityOverride] = useState<PresenceActivity | null>(null);
   // Совместное прослушивание попадает в активность: так блок «Друзья слушают» не зацикливается.
   const listenAlong = useSyncExternalStore(subscribeListenAlong, getListenAlongSnapshot, getServerListenAlongSnapshot);

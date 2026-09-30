@@ -99,6 +99,8 @@ let deviceName = '';
 let deviceKind: RemoteDeviceKind = 'desktop';
 let bridgeReady = false;
 let announced = false;
+/** Плеер во вкладке выгружен (например, открыто кино): устройством не представляемся, даже после переподключения. */
+let retired = false;
 const storeListeners = new Set<StoreListener>();
 
 let commandHandler: ((command: RemoteCommand) => void) | null = null;
@@ -409,9 +411,30 @@ export function hasOtherDevices() {
 
 export function announceDevice() {
   ensureBridge();
-  if (announced || !deviceId) return;
+  if (retired || announced || !deviceId) return;
   announced = true;
   globalWS.send({ type: 'device:hello', device_id: deviceId, kind: deviceKind, name: deviceName });
+}
+
+/** Плеер смонтирован: снова представляемся устройством аккаунта. */
+export function activateDevice() {
+  retired = false;
+  announceDevice();
+}
+
+/**
+ * Плеер выгружен, а вкладка осталась (кино): говорим серверу, что устройства здесь больше нет,
+ * и забываем чужое состояние. Сокет не трогаем — он нужен чатам и уведомлениям.
+ */
+export function retireDevice() {
+  retired = true;
+  clearReclaim();
+  claimPendingUntil = 0;
+  if (announced) {
+    globalWS.send({ type: 'device:bye' });
+    announced = false;
+  }
+  setSnapshot({ ...EMPTY_SNAPSHOT });
 }
 
 /** Здесь начали играть — звук на остальных устройствах аккаунта гасим. */

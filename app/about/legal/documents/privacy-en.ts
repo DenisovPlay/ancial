@@ -21,7 +21,7 @@ export const PRIVACY_EN: LegalDoc = {
             'Account: username, first and last name (as entered), email, phone number, password (hashed only), profile picture and cover, bio, country.',
             'Sign-in and security: session data (IP address, browser, device and OS, country by IP, sign-in time), security event log, two-factor settings, passkey public keys. Passkeys and authenticator codes stay on your device.',
             'Third-party sign-in: Telegram ID and name; Yandex ID email, phone and ID — to the extent you allowed.',
-            'Content and communication: posts, comments, reactions, chat messages and attachments, uploaded images, audio and lyrics, communities, subscriptions, friends.',
+            'Content and communication: posts, comments, reactions, chat messages and attachments, uploaded images, audio and lyrics, communities, subscriptions, friends; unsent drafts of messages and posts (kept on the device and on our servers so they can be shown on the User\'s other devices, and deleted when sent or published, when the cache is cleared in settings, or when the account is deleted).',
             'Usage: Pulse listening history and likes, playlists, bookmarks, presence status (visibility is configurable), Cinema viewing data.',
             'Wallet: accounts, balances and transaction history of anci tokens, top-up and withdrawal orders (payout details as required by the chosen method).',
             'Calls: technical connection data (time, participants, IP addresses used to connect). Call content is not recorded.',

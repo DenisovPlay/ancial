@@ -12,6 +12,9 @@ import PostWidgetMusicModal, { type MusicWidgetDraft } from '../../components/po
 import PostBlockMediaModal from '../../components/post-block-media-modal';
 import PostBlockTableModal from '../../components/post-block-table-modal';
 import { FeedEditorUI } from '../editor-ui';
+import { clearFeedSnapshots } from '../feed-snapshot';
+import { type PostDraftImage, draftImagesFromState, draftImagesToState } from '../post-draft';
+import { clearEntryState, readEntryState, writeEntryState } from '../../lib/entry-nav';
 import { serializePostWidgets } from '../post-widgets';
 import { getVisibleLength, VISIBLE_CHAR_LIMIT } from '../../components/rich-text-editor';
 import { parsePostContentToHtml } from '../../components/post-parser';
@@ -68,6 +71,24 @@ function normalizePost(post: EditablePostData): EditablePostData {
   };
 }
 
+/** Черновик правки поста в состоянии записи истории: «Назад/Вперёд» и перезагрузка не теряют набранное. */
+const EDIT_DRAFT_NS = 'post-edit-draft';
+
+interface EditDraft {
+  activeTab: 'preview' | 'write';
+  content: string;
+  images: PostDraftImage[];
+  postId: string;
+  title: string;
+  topic: string;
+  widgets: PostWidget[];
+}
+
+/** Подпись редактируемых полей: совпала с загруженной с сервера — черновик не нужен. */
+function editSignature(fields: { content: string; images: readonly DraftImage[]; title: string; topic: string; widgets: readonly PostWidget[] }) {
+  return JSON.stringify([fields.title, fields.content, fields.topic, draftImagesFromState(fields.images).map((image) => image.url), fields.widgets]);
+}
+
 function toDraftImages(images: PostImage[] | null | undefined): DraftImage[] {
   return (images ?? []).map((image, index) => ({
     id: `existing-${index}-${image.url}`,
@@ -83,6 +104,8 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
   const { showNote } = useNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imagesRef = useRef<DraftImage[]>([]);
+  const baselineRef = useRef<string | null>(null);
+  const submittedRef = useRef(false);
 
   const [activeTab, setActiveTab] = useState<'preview' | 'write'>('write');
   const [content, setContent] = useState('');
@@ -242,6 +265,25 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
   }, []);
 
   useEffect(() => {
+    if (!postId || isPostLoading || !post || error || submittedRef.current || baselineRef.current === null) return;
+    const fields = { content, images, title, topic: selectedTopic, widgets };
+    if (editSignature(fields) === baselineRef.current) {
+      clearEntryState(EDIT_DRAFT_NS);
+      return;
+    }
+    const draft: EditDraft = {
+      activeTab,
+      content,
+      images: draftImagesFromState(images),
+      postId,
+      title,
+      topic: selectedTopic,
+      widgets,
+    };
+    writeEntryState(EDIT_DRAFT_NS, draft);
+  }, [activeTab, content, error, images, isPostLoading, post, postId, selectedTopic, title, widgets]);
+
+  useEffect(() => {
     if (isLoading || isAuthenticated) return;
     const backUrl = postId ? `/feed/edit?id=${postId}` : '/feed/edit';
     router.replace(`/login?backurl=${backUrl}`);
@@ -293,6 +335,7 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
         setImages(toDraftImages(normalizedPost.images));
 
         // Enrich widgets
+        let loadedWidgets: PostWidget[] = [];
         if (normalizedPost.widgets && Array.isArray(normalizedPost.widgets)) {
           /** Music-виджет с уже обогащёнными метаданными трека. */
           interface EnrichedMusicWidget {
@@ -328,7 +371,30 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
               return widget;
             })
           );
+          loadedWidgets = enrichedWidgets;
           setWidgets(enrichedWidgets);
+        }
+
+        // Есть несохранённая правка этой записи истории — показываем её вместо серверного текста.
+        const serverTitle = normalizedPost.title ?? '';
+        const serverContent = decodeHtmlToTextareaValue(normalizedPost.original_content ?? normalizedPost.content ?? '');
+        const serverTopic = normalizedPost.tags === 'null' ? '' : (normalizedPost.tags ?? '');
+        const serverImages = toDraftImages(normalizedPost.images);
+        baselineRef.current = editSignature({
+          content: serverContent,
+          images: serverImages,
+          title: serverTitle,
+          topic: serverTopic,
+          widgets: loadedWidgets,
+        });
+        const saved = readEntryState<EditDraft>(EDIT_DRAFT_NS);
+        if (saved && saved.postId === postId) {
+          setTitle(saved.title);
+          setContent(saved.content);
+          setSelectedTopic(saved.topic);
+          setImages(draftImagesToState(saved.images));
+          setWidgets(Array.isArray(saved.widgets) ? saved.widgets : []);
+          setActiveTab(saved.activeTab === 'preview' ? 'preview' : 'write');
         }
 
       } catch (nextError) {
@@ -441,6 +507,10 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
         widgets: serializedWidgets,
       });
 
+
+      submittedRef.current = true;
+      clearEntryState(EDIT_DRAFT_NS);
+      clearFeedSnapshots();
 
       showNote({
         content: getApiMessage(response?.message, lang, strings.saved),

@@ -13,7 +13,7 @@ import SWRegister from './components/sw-register';
 import { AuthProvider } from './context/AuthContext';
 import { GlobalWSProvider } from './context/GlobalWSProvider';
 import { NotificationProvider } from './context/NotificationContext';
-import { PulsePlayerProvider } from './context/PulsePlayerContext';
+import PulsePlayerBoundary from './context/PulsePlayerBoundary';
 import { APPEARANCE_BOOT_SCRIPT } from './lib/appearance';
 import { APP_ROUTE_BOOT_SCRIPT } from './lib/app-route-boot';
 import { IS_NATIVE_APP } from './lib/platform';
@@ -109,7 +109,7 @@ export default function RootLayout({
         <NotificationProvider>
           <AuthProvider>
             <GlobalWSProvider>
-              <PulsePlayerProvider>
+              <PulsePlayerBoundary>
                 <RichPresenceReporter />
                 {/* Приложение: кнопка «назад», ссылки сайта, системный браузер, фоновая музыка, проверка версии. */}
                 <AppRuntimeSlot />
@@ -117,7 +117,7 @@ export default function RootLayout({
                 <MainContent>
                   {children}
                 </MainContent>
-              </PulsePlayerProvider>
+              </PulsePlayerBoundary>
             </GlobalWSProvider>
           </AuthProvider>
         </NotificationProvider>

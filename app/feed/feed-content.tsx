@@ -22,6 +22,10 @@ import { useDragScroll } from '../hooks/useDragScroll';
 import { useLoadMoreObserver } from '../hooks/use-load-more-observer';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { cache } from '../lib/cache.ts';
+import { getEntryKey, isRestoreNavigation } from '../lib/entry-nav';
+import { getFeedSnapshot, saveFeedSnapshot } from './feed-snapshot';
+import { formatNewPostsCount } from './new-posts';
+import { useNewPostsPeek } from './use-new-posts';
 import { applyBookmarkResult } from '../lib/post-bookmark';
 import { applyVoteResult } from '../lib/post-vote';
 import { cn, } from './editor-shared';
@@ -504,6 +508,25 @@ export default function FeedContent() {
     loadPostsRef.current = loadPosts;
   });
 
+  // Плашка «Новые посты»: появились, пока мы сидим на месте. Считаем от самого свежего показанного поста.
+  const newestPostId = useMemo(() => posts.reduce((max, post) => Math.max(max, toNumber(post.id)), 0), [posts]);
+  const newPostsCount = useNewPostsPeek(topic, newestPostId, !authLoading && !isInitialLoading && !errorMessage);
+  const showNewPosts = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    void loadPostsRef.current(0, false, { preserveExisting: true });
+  };
+
+  // Снимок ленты под текущую запись истории — для «Назад» из поста (см. feed-snapshot).
+  useEffect(() => {
+    if (posts.length === 0) return;
+    saveFeedSnapshot(getEntryKey(), {
+      cacheKey: getFeedCacheKey(topic, user?.id, isAuthenticated),
+      currentLastId,
+      hasMorePages,
+      posts,
+    });
+  }, [posts, currentLastId, hasMorePages, topic, user?.id, isAuthenticated]);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -515,9 +538,27 @@ export default function FeedContent() {
       return () => window.clearTimeout(timer);
     }
 
-    window.scrollTo({ top: 0, behavior: 'auto' });
-
     const cacheKey = getFeedCacheKey(topic, user?.id, isAuthenticated);
+
+    // «Назад/Вперёд»: лента поднимается из снимка со всеми подгруженными постами, без запроса
+    // и без прокрутки вверх — позицию возвращает scroll-restore.
+    if (isRestoreNavigation()) {
+      const snapshot = getFeedSnapshot<PostData>(getEntryKey(), cacheKey);
+      if (snapshot) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- снимок в памяти, сеттлеры здесь источник правды
+        setErrorMessage('');
+        setPosts(snapshot.posts);
+        setCurrentLastId(snapshot.currentLastId);
+        setHasMorePages(snapshot.hasMorePages);
+        currentLastIdRef.current = snapshot.currentLastId;
+        hasMorePagesRef.current = snapshot.hasMorePages;
+        setIsInitialLoading(false);
+        return;
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
     const cached = readFeedCache(cacheKey);
 
     if (cached) {
@@ -878,6 +919,17 @@ export default function FeedContent() {
           ref={rightGradRef}
           className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-l from-black to-transparent opacity-0 transition-opacity duration-300 lg:block"
         />
+        {newPostsCount > 0 ? (
+          <button
+            type="button"
+            onClick={showNewPosts}
+            aria-live="polite"
+            className="absolute left-1/2 top-full z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900/95 px-4 py-2 text-sm font-semibold text-white shadow duration-300 hover:bg-zinc-800 active:scale-95 cursor-pointer"
+          >
+            <Icon name="IC-arrow-left" className="h-5 w-5 rotate-90 fill-white" />
+            {lang?.feed_new_posts || 'Новые посты'} · {formatNewPostsCount(newPostsCount)}
+          </button>
+        ) : null}
         <div
           id="topic-buttons"
           ref={topicButtonsRef}
