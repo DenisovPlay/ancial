@@ -2,6 +2,7 @@ import type { ImageViewerSlide } from '../../components/image-viewer-modal';
 import type { CommunityPermissionMap } from '../../group/[link]/lib/community-types';
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import { toInternalPath } from '../../lib/internal-link';
 import { getStickerByCode, isSingleSticker, parseStickersToHtml } from '../../lib/stickers-service';
 import type { CommunityDisplayRole } from './community-role';
 
@@ -754,6 +755,11 @@ export function parseMessageLinks(text: string) {
         finalUrl = `https://${url}`;
       }
 
+      // Свой домен — прямая ссылка в этой же вкладке, чужой — через страницу проверки.
+      const internalPath = toInternalPath(finalUrl);
+      if (internalPath) {
+        return `${prefix || ''}<a href="${internalPath.replace(/"/g, '&quot;')}" data-internal="1" class="text-purple-300 hover:text-purple-200 underline duration-300">${linkText}</a>`;
+      }
       return `${prefix || ''}<a href="/redirect?link=${encodeURIComponent(finalUrl)}" target="_blank" class="text-purple-300 hover:text-purple-200 underline duration-300">${linkText}</a>`;
     },
   );

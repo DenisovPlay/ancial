@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { toInternalPath } from '../lib/internal-link';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI, getApiMessage, type LinkGuardAnalysis } from '../lib/api-v2';
 import AppImage from '../components/app-image';
@@ -12,12 +13,18 @@ function RedirectContentInner() {
   const searchParams = useSearchParams();
   const rawLink = searchParams.get('link') || searchParams.get('url') || '';
   const { lang } = useAuth();
+  // Ссылка на наш же сайт: проверять нечего — сразу переходим, без этой страницы в истории.
+  const internalPath = toInternalPath(rawLink);
 
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<LinkGuardAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (internalPath) {
+      router.replace(internalPath);
+      return;
+    }
     let isMounted = true;
     if (!rawLink) {
       // Нет ссылки — терминальное состояние, снимаем лоадер сразу.
@@ -47,7 +54,7 @@ function RedirectContentInner() {
     return () => {
       isMounted = false;
     };
-  }, [rawLink]);
+  }, [internalPath, rawLink, router]);
 
   const canRedirect = analysis ? !analysis.wrongDomain && !analysis.blockRecommended : false;
   const targetUrl = analysis?.finalUrl || analysis?.normalizedUrl || rawLink;
@@ -72,6 +79,14 @@ function RedirectContentInner() {
     iconName = 'IC-warning';
   }
 
+  if (internalPath) {
+    return (
+      <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center p-3">
       <style>{`
@@ -81,8 +96,8 @@ function RedirectContentInner() {
       <div className="flex w-full max-w-xl flex-col gap-3">
         {/* Header box */}
         <div className="glass-panel [--glass-alpha:0.9] [--glass-blur:24px] pb-20 flex items-center gap-3 rounded-3xl border border-zinc-800 p-3 shadow-2xl">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center">
-            <AppImage width={56} height={56} alt="Zypo Logo" className="h-14 w-14" src="/img/zypo/logo-rounded.webp" />
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-3xl">
+            <AppImage width={56} height={56} alt="Zypo Logo" className="h-14 w-14 rounded-3xl" src="/img/zypo/logo-rounded.webp" />
           </div>
           <div className="flex flex-col min-w-0">
             <h1 className="text-xl font-bold text-white lg:text-2xl">

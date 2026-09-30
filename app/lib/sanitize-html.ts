@@ -49,7 +49,7 @@ const ALLOWED_ATTR = [
     // изображения
     'src', 'alt', 'width', 'height', 'loading', 'draggable',
     // служебные data-атрибуты рендера и редактора
-    'data-user', 'data-group', 'data-author',
+    'data-user', 'data-group', 'data-author', 'data-internal',
     'data-bbcode', 'data-action', 'data-type',
     // стикеры и стрелки карусели
     'data-sticker', 'data-clipboard-text',
