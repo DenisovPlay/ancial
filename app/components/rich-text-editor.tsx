@@ -1,5 +1,8 @@
 'use client';
 
+import { resolveLinkTarget } from '../lib/link-target';
+import { SITE_URL } from '../config';
+import { autoLinkAtCaret, autoLinkBlock, markAutoAnchors } from './editor-auto-link';
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn, } from '../feed/editor-shared';
 import { parsePostContentToHtml, getVisibleLength } from './post-parser';
@@ -206,6 +209,9 @@ function htmlToBBCode(html: string): string {
         try {
           href = decodeURIComponent(href.split('redirect?link=')[1]);
         } catch { /* ignore */ }
+      } else if (el.hasAttribute('data-internal') && href.startsWith('/')) {
+        // Ссылка на наш сайт хранится с полным адресом, в разметке — относительный путь.
+        href = `${SITE_URL}${href}`;
       }
       return `[${href}|${inner}]`;
     }
@@ -434,6 +440,8 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       const parsedHtml = sanitizeUserHtml(parsePostContentToHtml(value, true));
       if (div.innerHTML !== parsedHtml) {
         div.innerHTML = parsedHtml;
+        // Ссылки-адреса из загруженного поста правятся в тексте так же, как только что набранные.
+        markAutoAnchors(div);
         setIsEmpty(checkEditorEmpty(div, value));
       }
     }
@@ -514,6 +522,20 @@ export default function RichTextEditor({ value, onChange, placeholder, className
       isUpdatingRef.current = false;
     }, 0);
   }, [onChange, updateActiveFormats, checkEditorEmpty]);
+
+  // Ввод текста: слово под курсором становится ссылкой сразу, как только оно стало адресом, и
+  // пересчитывается при правке. Отмену/повтор (undo/redo) не трогаем — не ломаем историю браузера.
+  const handleEditorInput = useCallback((event: React.FormEvent<HTMLDivElement>) => {
+    const root = editorRef.current;
+    const native = event.nativeEvent as InputEvent;
+    const inputType = native.inputType || '';
+    if (root && /^(insert(Text|CompositionText|FromPaste|FromDrop|ReplacementText)|delete(Content|Word|ByCut|ByDrag|SoftLine|HardLine))/.test(inputType)) {
+      // Вставка/ввод нескольких символов (в т.ч. вставка текста с адресами) — ссылки во всём блоке.
+      if (inputType === 'insertFromPaste' || inputType === 'insertFromDrop' || (native.data?.length ?? 0) > 1) autoLinkBlock(root);
+      autoLinkAtCaret(root);
+    }
+    handleInput();
+  }, [handleInput]);
 
   // Обёртка для execCommand с обновлением состояния
   const execCmd = useCallback((command: string, arg?: string) => {
@@ -693,10 +715,12 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           let href = parentA.getAttribute('href') || '';
           if (href.includes('redirect?link=')) {
             try {
-              const urlObj = new URL(href);
+              const urlObj = new URL(href, SITE_URL);
               const linkParam = urlObj.searchParams.get('link');
               if (linkParam) href = linkParam;
             } catch { /* ignore */ }
+          } else if (parentA.hasAttribute('data-internal') && href.startsWith('/')) {
+            href = `${SITE_URL}${href}`;
           }
           initialUrl = href;
           targetRange = document.createRange();
@@ -733,9 +757,8 @@ export default function RichTextEditor({ value, onChange, placeholder, className
     }
 
     const a = document.createElement('a');
-    let finalUrl = url;
-    if (!/^https?:\/\//i.test(finalUrl)) finalUrl = 'https://' + finalUrl;
-    a.href = finalUrl;
+    const target = resolveLinkTarget(url);
+    a.href = target.type === 'mail' ? `mailto:${target.email}` : target.url;
     a.textContent = text;
 
     document.execCommand('insertHTML', false, a.outerHTML);
@@ -992,59 +1015,6 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         }
       }
     }
-
-    // Auto-link при пробеле/Enter
-    if (e.key === ' ' || e.key === 'Enter') {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || !selection.isCollapsed) return;
-
-      const node = selection.focusNode;
-      if (!node || node.nodeType !== Node.TEXT_NODE) return;
-      if (node.parentElement?.closest('a')) return;
-
-      const offset = selection.focusOffset;
-      const textBeforeCaret = node.textContent?.slice(0, offset) || '';
-
-      const AUTO_LINK_REGEX = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(?:https?:\/\/)?(?:[a-zA-Z0-9\-а-яА-ЯёЁ]+\.)+[a-zA-Zа-яА-ЯёЁ]{2,20}(?:\/[^\s<]*[^<.,:;"')\]\s]|\/)?)$/u;
-
-      const match = textBeforeCaret.match(AUTO_LINK_REGEX);
-      if (match && match[0]) {
-        e.preventDefault();
-        const url = match[0];
-        const urlStartOffset = textBeforeCaret.lastIndexOf(url);
-
-        const range = document.createRange();
-        range.setStart(node, urlStartOffset);
-        range.setEnd(node, urlStartOffset + url.length);
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        let finalUrl = url;
-        if (!/^https?:\/\//i.test(finalUrl) && !finalUrl.includes('@')) {
-          finalUrl = 'https://' + finalUrl;
-        } else if (finalUrl.includes('@') && !finalUrl.startsWith('mailto:')) {
-          finalUrl = 'mailto:' + finalUrl;
-        }
-
-        document.execCommand('createLink', false, finalUrl);
-        selection.collapseToEnd();
-
-        const aNode = selection.focusNode?.parentElement?.closest('a');
-        if (aNode) {
-          const temp = document.createTextNode('\u200B');
-          aNode.parentNode?.insertBefore(temp, aNode.nextSibling);
-          selection.collapse(temp, 1);
-        }
-
-        if (e.key === 'Enter') {
-          document.execCommand('insertLineBreak');
-        } else {
-          document.execCommand('insertText', false, ' ');
-        }
-
-        handleInput();
-      }
-    }
   };
 
   const handleEditorPaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -1204,7 +1174,7 @@ export default function RichTextEditor({ value, onChange, placeholder, className
           contentEditable
           suppressContentEditableWarning
           onClick={handleEditorClick}
-          onInput={handleInput}
+          onInput={handleEditorInput}
           onBlur={handleInput}
           onKeyDown={handleKeyDown}
           onMouseUp={updateActiveFormats}

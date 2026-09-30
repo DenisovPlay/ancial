@@ -4,6 +4,7 @@ import { buildOptimizedImageSrc, decodeHtmlAttribute } from '../lib/optimized-im
 import { IS_NATIVE_APP } from '../lib/platform';
 import { SITE_URL } from '../config';
 import { toInternalPath } from '../lib/internal-link';
+import { resolveLinkTarget } from '../lib/link-target';
 
 /**
  * src картинки карусели/коллажа в отображаемом посте: через оптимизатор next/image с шириной под
@@ -22,13 +23,17 @@ function postImageSrc(url: string, width: number, isPreview: boolean): string {
  * Считает только видимые символы — без BBCode-тегов.
  * Используется для счётчика лимита 3000 символов.
  */
-/** Ссылка в посте: чужой сайт — через страницу проверки в новой вкладке, наш собственный — прямо, в этой же. */
-function buildPostLink(url: string, text: string): string {
-    const internalPath = toInternalPath(url);
+/** Ссылка в посте: почта — mailto, чужой сайт — через страницу проверки в новой вкладке, наш собственный — прямо, в этой же. */
+function buildPostLink(rawUrl: string, text: string): string {
+    const target = resolveLinkTarget(rawUrl);
+    if (target.type === 'mail') {
+        return `<a href="mailto:${target.email.replace(/"/g, '&quot;')}" class="text-purple-500 hover:text-purple-400 duration-300">${text}</a>`;
+    }
+    const internalPath = toInternalPath(target.url);
     if (internalPath) {
         return `<a href="${internalPath.replace(/"/g, '&quot;')}" data-internal="1" class="text-purple-500 hover:text-purple-400 duration-300">${text}</a>`;
     }
-    return `<a href="/redirect?link=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${text}</a>`;
+    return `<a href="/redirect?link=${encodeURIComponent(target.url)}" target="_blank" rel="noopener noreferrer" class="text-purple-500 hover:text-purple-400 duration-300">${text}</a>`;
 }
 
 export function getVisibleLength(bbcode: string): number {
@@ -214,11 +219,8 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
         }
 
         if (customUrl && customText) {
-            let url = customUrl.trim();
-            if (!/^https?:\/\//i.test(url)) {
-                url = 'https://' + url;
-            }
-            return buildPostLink(url, customText.trim());
+            // Схему и mailto: добавляет/разбирает buildPostLink.
+            return buildPostLink(customUrl.trim(), customText.trim());
         } else if (rawUrl) {
             const url = rawUrl.trim();
 
