@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { globalWS } from '../lib/global-ws';
 import { getKindMeta, notificationHref, notificationSegments, TONE_CLASSES } from '../lib/notifications/kinds';
+import { cleanNotificationPreview } from '../lib/notifications/clean-preview';
 import type { RichNotification } from '../lib/notifications/types';
 import AppImage from './app-image';
 import Icon from './svg-icon';
@@ -28,6 +29,7 @@ function isRichNotification(value: Record<string, unknown>): value is Record<str
 /** Всплывашка нового уведомления: аватар, текст с именем, клик — переход по ссылке уведомления. */
 function ToastBody({ notification, lang, langCode, onOpen }: { notification: RichNotification; lang: Record<string, string> | null | undefined; langCode?: string; onOpen: (href: string | null) => void }) {
   const meta = getKindMeta(notification);
+  const preview = notification.kind !== 'chat_message' ? cleanNotificationPreview(notification.object?.preview) : null;
   const actor = notification.actors[0];
   const segments = notificationSegments(notification, lang, langCode);
   const href = notificationHref(notification);
@@ -50,8 +52,8 @@ function ToastBody({ notification, lang, langCode, onOpen }: { notification: Ric
       </span>
       <span className="min-w-0 flex-1 text-sm leading-snug">
         {segments.map((segment, index) => (segment.bold ? <b key={index} className="font-semibold">{segment.text}</b> : <span key={index}>{segment.text}</span>))}
-        {notification.object?.preview && notification.kind !== 'chat_message' ? (
-          <span className="mt-0.5 block truncate text-xs opacity-70">{notification.object.preview}</span>
+        {preview ? (
+          <span className="mt-0.5 block truncate text-xs opacity-70">{preview}</span>
         ) : null}
       </span>
     </button>
