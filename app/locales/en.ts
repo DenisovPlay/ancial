@@ -528,8 +528,6 @@ export const en: Record<string, string> = {
   "notif_earlier": "Earlier",
   "notif_delete": "Delete",
   "notif_show_code": "Show code",
-  "notif_code_copy": "Copy",
-  "notif_code_copied": "Copied",
   "notif_code_expired": "Code expired",
   "notif_code_confirmed": "Sign-in confirmed",
   "notif_code_error": "Couldn’t show the code",

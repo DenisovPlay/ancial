@@ -56,6 +56,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
       - Круглые кнопки с иконками (Icon buttons): `p-2` / `p-1.5` или фиксированный размер `w-10 h-10` / `w-12 h-12` (`rounded-full flex items-center justify-center`).
       - Инпуты: `h-12 px-3` или `h-10 px-3` (`rounded-full`).
   - **Границы:** ТОЛЬКО `border border-zinc-600/30`.
+  - **Стекло — ТОЛЬКО наше:** любой полупрозрачный/размытый элемент (кнопка, плашка, панель, меню, шапка) — через роль `glass-nav | glass-menu | glass-tooltip | glass-input | glass-panel | glass-overlay` (`app/globals.css`) + переопределения `[--glass-tint:…] [--glass-alpha:…] [--glass-blur:…] [--glass-sat:…]`, ховер — `hover:[--glass-tint:…] hover:[--glass-alpha:…]`. Тогда элемент слушается настройки «Интерфейс → Стекло». **ЗАПРЕЩЕНО:** `backdrop-blur*`, свой `backdrop-filter` и «стекло» из `bg-black/40`/`bg-zinc-900/90` + blur. Собственный CSS с `backdrop-filter` — только с множителями `--glass-<роль>-blur-k`/`-clarity-k`. Классы стекла пишутся внутрь `class`/`className`, в HTML-строках (парсер постов) — внутри атрибута `class="…"`, не текстом перед тегом.
   - **Интерактивность:** `cursor-pointer`, `active:scale-95`.
   - **Анимации/переходы:** `duration-300`.
   - **Концепция дизайна:** Простой, лаконичный, рабочий, строгий и красивый дизайн.
