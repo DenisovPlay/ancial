@@ -53,7 +53,7 @@ const ALLOWED_ATTR = [
     'data-bbcode', 'data-action', 'data-type',
     // стикеры и стрелки карусели
     'data-sticker', 'data-clipboard-text',
-    'data-carousel-scroll', 'data-scroll-dir',
+    'data-carousel-scroll', 'data-scroll-dir', 'data-start', 'data-end',
     // тулбар редактора и карусели
     'contenteditable', 'title', 'type', 'viewbox', 'd',
 ];

@@ -8,7 +8,7 @@ import { cn } from '../lib/cn';
 import { useMentionNavigation } from '../hooks/use-mention-navigation';
 import { useSanitizedHtml } from '../lib/use-sanitized-html';
 import { getOriginalImageSrc } from '../lib/optimized-image-src';
-import { ensureCarouselScrollDelegation } from './carousel-delegation';
+import { ensureCarouselScrollDelegation, scrollCarousel } from './carousel-delegation';
 
 import ImageViewerModal, { type ImageViewerSlide } from './image-viewer-modal';
 import { Dropdown, DropdownItem } from './navigation';
@@ -24,7 +24,7 @@ import ShareModal from './share-modal';
 import { parsePostContentToHtml } from './post-parser';
 import { SITE_URL } from '../config';
 import { formatRelativeTime } from '../lib/time';
-import { detectTextLanguage, htmlToPlainText, translateToLang } from '../lib/translate';
+import { detectTextLanguage, htmlToPlainText, translatePostText, translateToLang } from '../lib/translate';
 
 
 
@@ -405,7 +405,7 @@ function PostCardInner({
     try {
       const [nextTitle, nextContent] = await Promise.all([
         post.title ? translateToLang(htmlToPlainText(post.title), interfaceLang) : Promise.resolve(null),
-        post.content ? translateToLang(htmlToPlainText(post.content), interfaceLang) : Promise.resolve(null),
+        post.content ? translatePostText(htmlToPlainText(post.content), interfaceLang) : Promise.resolve(null),
       ]);
       setTranslatedTitle(nextTitle);
       setTranslatedContent(nextContent);
@@ -428,6 +428,9 @@ function PostCardInner({
 
   const strings = { ...DEFAULT_LANG, ...lang };
   const images = post.images ?? [];
+  useEffect(() => {
+    if (images.length >= 2) ensureCarouselScrollDelegation();
+  }, [images.length]);
   const activeImages = customImages.length > 0 ? customImages : images;
   const hasBlurredImages = images.some((image) => flag(image.blur));
   const showAd = renderIndex !== undefined && renderIndex >= 0 && (renderIndex + 1) % 5 === 0;
@@ -911,18 +914,18 @@ function PostCardInner({
 
             {images.length >= 2 && (
               <div className="-mx-3">
-                <div className="relative group/carousel">
+                <div className="relative group/carousel" data-start="">
                   {/* Left Arrow */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const container = e.currentTarget.parentElement?.querySelector('.overflow-x-auto');
+                      const container = e.currentTarget.parentElement?.querySelector<HTMLElement>('.overflow-x-auto');
                       if (container) {
-                        container.scrollBy({ left: -container.clientWidth * 0.7, behavior: 'smooth' });
+                        scrollCarousel(container, -1);
                       }
                     }}
-                    className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                    className="group-data-[start]/carousel:hidden glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                   >
                     <Icon name="IC-chevron-left" className="w-6 h-6 fill-white" />
                   </button>
@@ -932,12 +935,12 @@ function PostCardInner({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const container = e.currentTarget.parentElement?.querySelector('.overflow-x-auto');
+                      const container = e.currentTarget.parentElement?.querySelector<HTMLElement>('.overflow-x-auto');
                       if (container) {
-                        container.scrollBy({ left: container.clientWidth * 0.7, behavior: 'smooth' });
+                        scrollCarousel(container, 1);
                       }
                     }}
-                    className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                    className="group-data-[end]/carousel:hidden glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
                   >
                     <Icon name="IC-chevron-right" className="w-6 h-6 fill-white" />
                   </button>

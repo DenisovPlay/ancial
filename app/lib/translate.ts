@@ -8,8 +8,15 @@
  * Различает ru/be/en, чего достаточно под три локали приложения. Короткие/смешанные
  * тексты (меньше 12 буквенных символов) намеренно не определяются — вернётся null.
  */
+/** Медиа-блоки поста: в них адреса картинок, а не текст — ни определять по ним язык, ни переводить нельзя. */
+const MEDIA_BLOCK = /\[(?:carousel|collage)\][\s\S]*?\[\/(?:carousel|collage)\]/gi;
+
 export function detectTextLanguage(text: string): string | null {
-  const stripped = text.replace(/<[^>]+>/g, ' ');
+  const stripped = text
+    .replace(MEDIA_BLOCK, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/https?:\/\/\S+|\S*image\.php\?\S*/gi, ' ');
   const cyrillicCount = (stripped.match(/[а-яёіў]/gi) || []).length;
   const latinCount = (stripped.match(/[a-z]/gi) || []).length;
 
@@ -46,4 +53,13 @@ export async function translateToLang(sourceText: string, targetLang: string): P
     return translated || sourceText;
   }
   return sourceText;
+}
+
+/** Перевод текста поста: карусели/коллажи остаются как есть, переводятся только куски между ними. */
+export async function translatePostText(sourceText: string, targetLang: string): Promise<string> {
+  const parts = sourceText.split(new RegExp(`(${MEDIA_BLOCK.source})`, 'i'));
+  const translated = await Promise.all(
+    parts.map((part, index) => (index % 2 === 1 || !part.trim() ? part : translateToLang(part, targetLang))),
+  );
+  return translated.join('');
 }
