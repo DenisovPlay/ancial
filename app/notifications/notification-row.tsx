@@ -27,6 +27,13 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char);
 }
 
+/** В превью поста/комментария приходит сырая разметка (<br />, теги) — показываем чистый текст. */
+function plainPreview(value?: string | null) {
+  if (!value) return null;
+  const text = value.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+  return text || null;
+}
+
 /** Аватар актёра; у группы — стопка до трёх, у системных (безопасность, кошелёк без людей) — значок типа. */
 function ActorAvatars({ notification }: { notification: RichNotification }) {
   const meta = getKindMeta(notification);
@@ -114,15 +121,14 @@ interface NotificationRowProps {
   langCode?: string;
   notification: RichNotification;
   onAction: (notification: RichNotification, actionId: string) => void;
-  onDelete: (notification: RichNotification) => void;
 }
 
-function NotificationRowComponent({ highlighted, lang, langCode, notification, onAction, onDelete }: NotificationRowProps) {
+function NotificationRowComponent({ highlighted, lang, langCode, notification, onAction }: NotificationRowProps) {
   const href = notificationHref(notification);
   const segments = notificationSegments(notification, lang, langCode);
   const plainText = segments.map((segment) => segment.text).join('');
   const isChat = notification.kind === 'chat_message';
-  const preview = !isChat ? notification.object?.preview : null;
+  const preview = !isChat ? plainPreview(notification.object?.preview) : null;
   const thumbnail = !isChat ? notification.object?.image : null;
   const time = notification.ts ? formatRelativeTime(new Date(notification.ts), lang, '') : '';
   const actionIds = new Set(notification.actions.map((action) => action.id));
@@ -130,7 +136,7 @@ function NotificationRowComponent({ highlighted, lang, langCode, notification, o
   return (
     <li
       className={cn(
-        'group relative flex w-full gap-3 rounded-3xl border p-3 shadow duration-300',
+        'relative flex w-full gap-3 rounded-3xl border p-3 shadow duration-300',
         highlighted ? 'border-purple-500/40 bg-purple-500/10' : 'border-zinc-600/30 bg-zinc-900/70',
         href && 'hover:bg-zinc-800/70 active:scale-[0.99]',
       )}
@@ -189,14 +195,6 @@ function NotificationRowComponent({ highlighted, lang, langCode, notification, o
           {thumbnail ? (
             <AppImage width={56} height={56} src={thumbnail} alt="" className="h-14 w-14 rounded-3xl border border-zinc-600/30 object-cover" />
           ) : null}
-          <button
-            type="button"
-            aria-label={lang?.notif_delete || 'Удалить'}
-            onClick={() => onDelete(notification)}
-            className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full opacity-0 duration-300 hover:bg-zinc-700 focus-visible:opacity-100 active:scale-95 group-hover:opacity-100 [@media(hover:none)]:opacity-60"
-          >
-            <Icon name="IC-times" className="h-4 w-4 fill-zinc-300" />
-          </button>
         </div>
       </div>
     </li>

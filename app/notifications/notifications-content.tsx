@@ -8,6 +8,7 @@ import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { useDragScroll } from '../hooks/useDragScroll';
 import { useLoadMoreObserver } from '../hooks/use-load-more-observer';
 import { AncialAPI } from '../lib/api-v2';
 import { cn } from '../lib/cn';
@@ -36,6 +37,31 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<NotificationFilter>('all');
   const feed = useNotificationFeed(filter, isAuthenticated);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const filtersRef = useDragScroll({ speed: 2 });
+  const leftGradRef = useRef<HTMLDivElement | null>(null);
+  const rightGradRef = useRef<HTMLDivElement | null>(null);
+
+  // Градиенты по краям показываем только когда есть куда прокручивать; активную пилюлю держим в видимой зоне.
+  useEffect(() => {
+    const el = filtersRef.current;
+    if (!el) return undefined;
+    const update = () => {
+      if (leftGradRef.current) leftGradRef.current.style.opacity = el.scrollLeft > 4 ? '1' : '0';
+      if (rightGradRef.current) rightGradRef.current.style.opacity = el.scrollLeft + el.clientWidth < el.scrollWidth - 4 ? '1' : '0';
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [filtersRef, authLoading, isAuthenticated]);
+
+  useEffect(() => {
+    const active = filtersRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+    active?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }, [filter, filtersRef]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -46,8 +72,6 @@ export default function NotificationsPage() {
   useLoadMoreObserver(sentinelRef, () => void feed.loadMore(), [feed.loadMore, feed.hasMore, feed.items.length]);
 
   const sections = useMemo(() => groupNotificationsByDay(feed.items), [feed.items]);
-
-  const handleDelete = useCallback((notification: RichNotification) => feed.remove(notification.id), [feed]);
 
   const handleAction = useCallback(
     async (notification: RichNotification, actionId: string) => {
@@ -81,14 +105,30 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="flex flex-col justify-center items-center gap-3 py-3 w-full">
-      <span className="w-full max-w-3xl text-3xl font-extralight px-3 lg:px-0">
-        <span>{lang?.notif || 'Уведомления'}</span>
-      </span>
+    <div className="flex flex-col justify-center items-center gap-3 pb-3 w-full">
+      <div className="w-full max-w-3xl h-14 flex items-center gap-3 px-3 lg:px-0 sticky top-0 pt-3 bg-black z-[99]">
+        <span className="flex-grow text-3xl font-extralight">{lang?.notif || 'Уведомления'}</span>
+        <button
+          type="button"
+          onClick={() => void feed.clearAll().catch((error: unknown) => console.error('Error clearing notifications:', error))}
+          className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] shrink-0 h-10 px-4 py-2 flex items-center active:scale-95 duration-300 cursor-pointer shadow rounded-full text-zinc-100"
+        >
+          {lang?.clear || 'Очистить'}
+        </button>
+        <Link
+          href="/settings/notifications"
+          aria-label={lang?.settings || 'Настройки'}
+          className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] cursor-pointer shrink-0 h-10 w-10 flex items-center justify-center border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] active:scale-95 duration-300 rounded-full"
+        >
+          <Icon name="IC-settings" className="w-6 h-6 fill-white" />
+        </Link>
+      </div>
 
-      <div className="flex flex-col gap-3 w-full max-w-3xl sticky top-0 bg-gradient-to-b from-black via-black/90 to-transparent p-3 lg:px-0 -my-3" style={{ zIndex: 90 }}>
-        <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-grow gap-3 overflow-x-auto pb-0.5" role="tablist" aria-label={lang?.notif || 'Уведомления'}>
+      <div className="relative max-w-3xl w-full flex items-center justify-center sticky top-14 -my-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[25]">
+        <div ref={leftGradRef} className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-r from-black to-transparent opacity-0 transition-opacity duration-300 lg:block" />
+        <div ref={rightGradRef} className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 hidden w-16 bg-gradient-to-l from-black to-transparent opacity-0 transition-opacity duration-300 lg:block" />
+        <div ref={filtersRef} role="tablist" aria-label={lang?.notif || 'Уведомления'} className="drag-scroll overflow-x-auto p-3 md:px-0 flex flex-nowrap viewport duration-300 w-full">
+          <div className="flex flex-row flex-nowrap gap-3 flex-shrink-0">
             {FILTERS.map((item) => (
               <button
                 key={item.id}
@@ -97,27 +137,14 @@ export default function NotificationsPage() {
                 aria-selected={filter === item.id}
                 onClick={() => setFilter(item.id)}
                 className={cn(
-                  'shrink-0 cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold duration-300 active:scale-95',
-                  filter === item.id ? 'border-white bg-white text-black' : 'border-zinc-600/30 bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800',
+                  'w-max flex-none rounded-full px-4 py-2 text-lg font-bold shadow border border-zinc-600/30 duration-300 cursor-pointer active:scale-95',
+                  filter === item.id ? 'bg-zinc-200 text-zinc-800' : 'bg-zinc-900 text-zinc-200 hover:bg-zinc-200 hover:text-zinc-800',
                 )}
               >
                 {lang?.[item.key] || item.fallback}
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => void feed.clearAll().catch((error: unknown) => console.error('Error clearing notifications:', error))}
-            className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] h-12 shrink-0 active:scale-95 px-4 py-2 duration-300 cursor-pointer shadow rounded-full text-zinc-100"
-          >
-            {lang?.clear || 'Очистить'}
-          </button>
-          <Link
-            href="/settings/notifications"
-            className="glass-panel [--glass-alpha:0.2] [--glass-sat:2] cursor-pointer shrink-0 h-12 w-12 flex items-center justify-center border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] active:scale-95 duration-300 rounded-full"
-          >
-            <Icon name="IC-settings" className="inline w-8 h-8 fill-white" />
-          </Link>
         </div>
       </div>
 
@@ -135,7 +162,7 @@ export default function NotificationsPage() {
         ) : feed.items.length > 0 ? (
           sections.map((section) => (
             <section key={section.bucket} className="flex flex-col gap-3">
-              <h2 className="px-3 pt-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 lg:px-0">
+              <h2 className="px-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 lg:px-0">
                 {lang?.[BUCKET_LABELS[section.bucket].key] || BUCKET_LABELS[section.bucket].fallback}
               </h2>
               <ul className="flex flex-col gap-3">
@@ -147,7 +174,6 @@ export default function NotificationsPage() {
                     langCode={langCode}
                     notification={notification}
                     onAction={handleAction}
-                    onDelete={handleDelete}
                   />
                 ))}
               </ul>
@@ -173,7 +199,7 @@ export default function NotificationsPage() {
         ) : null}
       </div>
 
-      <div className="lg:hidden"><br/><br/><br/><br/></div>
+      <div className="h-24 lg:hidden" />
     </div>
   );
 }
