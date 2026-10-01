@@ -43,7 +43,7 @@ function ToastBody({ notification, lang, langCode, onOpen }: { notification: Ric
           </span>
         )}
         {actor ? (
-          <span className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-zinc-900 ${TONE_CLASSES[meta.tone]}`}>
+          <span className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-zinc-600/30 ${TONE_CLASSES[meta.tone]}`}>
             <Icon name={meta.icon} className="h-3 w-3 fill-white" />
           </span>
         ) : null}
