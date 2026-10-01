@@ -1,6 +1,7 @@
 'use client';
 
 import { authFetch } from './auth-fetch';
+import type { NotificationsPage } from './notifications/types';
 import { apiUrl } from './api-url';
 import { IS_NATIVE_APP } from './platform';
 export { getApiMessage } from './format-api-message';
@@ -760,15 +761,15 @@ export class AncialAPI {
     return this.request<T>(`${endpoint}?${query.toString()}`);
   }
 
-  static async getComments<T = unknown>(postId: string | number): Promise<T> {
-    return this.request<T>(`/posts/Comments.php?id=${postId}`);
+  static async getComments<T = unknown>(postId: string | number, limit?: number): Promise<T> {
+    return this.request<T>(`/posts/Comments.php?id=${postId}${limit ? `&limit=${limit}` : ''}`);
   }
 
-  static async createComment<T = unknown>(postId: string | number, message: string): Promise<T> {
-    return this.request<T>(`/posts/CreateComment.php?pid=${postId}`, {
-      method: 'POST',
-      body: new URLSearchParams({ content: message })
-    });
+  /** parentId — ответ на комментарий (родитель должен быть комментарием этого же поста). */
+  static async createComment<T = unknown>(postId: string | number, message: string, parentId?: string | number | null): Promise<T> {
+    const body = new URLSearchParams({ content: message });
+    if (parentId) body.set('parent_id', String(parentId));
+    return this.request<T>(`/posts/CreateComment.php?pid=${postId}`, { method: 'POST', body });
   }
 
   static async deleteComment<T = unknown>(commentId: string | number): Promise<T> {
@@ -1078,6 +1079,51 @@ export class AncialAPI {
 
   static async getNotifications<T = unknown>(): Promise<T> {
     return this.request<T>('/user/Notifications.php');
+  }
+
+  /** Rich-лента уведомлений (v2): страница, фильтр, пагинация по before_id. */
+  static async getNotificationsPage(
+    params: { beforeId?: number; filter?: string; limit?: number } = {},
+    options?: RequestInit,
+  ): Promise<NotificationsPage> {
+    const query = new URLSearchParams({ v: '2' });
+    if (params.beforeId) query.set('before_id', String(params.beforeId));
+    if (params.filter && params.filter !== 'all') query.set('filter', params.filter);
+    if (params.limit) query.set('limit', String(params.limit));
+    return this.request<NotificationsPage>(`/user/Notifications.php?${query.toString()}`, options);
+  }
+
+  static async markNotificationRead(id: number) {
+    return this.request<unknown>('/user/Notifications.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'mark_read', id: String(id) }),
+    });
+  }
+
+  static async deleteNotification(id: number) {
+    return this.request<unknown>('/user/Notifications.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'delete', id: String(id) }),
+    });
+  }
+
+  /** Показать секрет уведомления (код входа): отдельный запрос, в списке кода нет. */
+  static async revealNotificationSecret(id: number) {
+    return this.request<{ code: string; expires_at: string | null }>('/user/Notifications.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'reveal', id: String(id) }),
+    });
+  }
+
+  static async getNotificationPrefs() {
+    return this.request<{ prefs: Record<string, { inapp: boolean; push: boolean }> }>('/user/Notifications.php?prefs=1');
+  }
+
+  static async setNotificationPref(category: string, push: boolean, inapp: boolean) {
+    return this.request<unknown>('/user/Notifications.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'set_prefs', category, inapp: inapp ? '1' : '0', push: push ? '1' : '0' }),
+    });
   }
 
   static async markNotificationsRead<T = unknown>(): Promise<T> {

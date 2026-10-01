@@ -52,10 +52,15 @@ export default function AppRuntime() {
   const { user, isAuthenticated, lang } = useAuth();
   const { showNote } = useNotification();
   const showNoteRef = useRef(showNote);
+  const langRef = useRef(lang);
 
   useEffect(() => {
     showNoteRef.current = showNote;
   }, [showNote]);
+
+  useEffect(() => {
+    langRef.current = lang;
+  }, [lang]);
 
   useEffect(() => {
     pathnameRef.current = pathname;
@@ -174,7 +179,7 @@ export default function AppRuntime() {
       const push = await import('../lib/native-push');
       const stored = push.getStoredNativePushToken();
       if (!stored || stored !== pushsid || !(await push.hasNativePushPermission())) return;
-      const token = await push.registerNativePush(pushChannelName);
+      const token = await push.registerNativePush(pushChannelName, langRef.current ?? {});
       if (!cancelled && token && token !== pushsid) {
         await AncialAPI.updateProfile({ pushsid: token });
       }

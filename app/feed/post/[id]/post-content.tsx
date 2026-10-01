@@ -45,11 +45,20 @@ interface FeedCommentUser {
   username: string;
 }
 
+interface FeedCommentReplyTo {
+  id: number;
+  name: string;
+  preview: string;
+  username: string;
+}
+
 interface FeedComment {
   content: string;
   date: string;
   id: Id;
   is_own_comment?: boolean | number | string | null;
+  parent_id?: number | null;
+  reply_to?: FeedCommentReplyTo | null;
   user: FeedCommentUser;
 }
 
@@ -96,14 +105,18 @@ function FeedCommentCard({
   deleteLabel,
   onDelete,
   onNavigateToUser,
+  onReply,
   onReport,
+  replyLabel,
   reportLabel,
 }: {
   comment: FeedComment;
   deleteLabel: string;
   onDelete: (comment: FeedComment) => void;
   onNavigateToUser: (username: string) => void;
+  onReply?: (comment: FeedComment) => void;
   onReport: (comment: FeedComment) => void;
+  replyLabel: string;
   reportLabel: string;
 }) {
   const router = useRouter();
@@ -186,11 +199,32 @@ function FeedCommentCard({
         </Dropdown>
       </div>
 
+      {comment.reply_to ? (
+        <button
+          type="button"
+          onClick={() => document.getElementById(`comment${comment.reply_to?.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          className="mt-3 flex w-full min-w-0 cursor-pointer flex-col rounded-2xl border-l-2 border-purple-500 bg-zinc-900/60 px-3 py-1.5 text-left duration-300 hover:bg-zinc-900 active:scale-[0.99]"
+        >
+          <span className="truncate text-xs font-semibold text-purple-300">{comment.reply_to.name}</span>
+          {comment.reply_to.preview ? <span className="truncate text-sm text-zinc-400">{comment.reply_to.preview}</span> : null}
+        </button>
+      ) : null}
+
       <div
         ref={contentRef}
         className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words"
         dangerouslySetInnerHTML={commentHtmlProps}
       />
+
+      {onReply ? (
+        <button
+          type="button"
+          onClick={() => onReply(comment)}
+          className="mt-3 w-fit cursor-pointer rounded-full px-3 py-1.5 text-sm font-semibold text-zinc-400 duration-300 hover:bg-zinc-800 hover:text-zinc-100 active:scale-95"
+        >
+          {replyLabel}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -209,6 +243,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
   const [comments, setComments] = useState<FeedComment[]>([]);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
   const [commentInput, setCommentInput] = useState('');
+  const [replyTo, setReplyTo] = useState<FeedComment | null>(null);
   const [shareUrl, setShareUrl] = useState('');
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PostData | null>(null);
@@ -415,13 +450,44 @@ export default function SinglePostContent({ postId }: { postId: string }) {
     }
   };
 
+  // Переход из уведомления (/feed/post/ID?comment=ID): прокручиваем к комментарию и подсвечиваем его.
+  const focusedCommentRef = useRef<string | null>(null);
+  const extraCommentsLoadedRef = useRef(false);
+  useEffect(() => {
+    if (isCommentsLoading || comments.length === 0) return;
+    const target = new URLSearchParams(window.location.search).get('comment');
+    if (!target || focusedCommentRef.current === target) return;
+    const element = document.getElementById(`comment${target}`);
+    if (!element) {
+      // Комментарий дальше первой страницы — один раз подгружаем побольше.
+      if (!extraCommentsLoadedRef.current && post) {
+        extraCommentsLoadedRef.current = true;
+        void AncialAPI.getComments<FeedComment[]>(post.id, 200)
+          .then((list) => setComments(Array.isArray(list) ? list : []))
+          .catch(() => null);
+      }
+      return;
+    }
+    focusedCommentRef.current = target;
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element.classList.add('ring-2', 'ring-purple-500');
+    window.setTimeout(() => element.classList.remove('ring-2', 'ring-purple-500'), 3500);
+  }, [comments, isCommentsLoading, post]);
+
+  const handleReply = (comment: FeedComment) => {
+    setReplyTo(comment);
+    commentInputRef.current?.focus();
+    commentInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   const handleCreateComment = async () => {
     if (!post || !commentInput.trim()) return;
 
     try {
-      await AncialAPI.createComment(post.id, commentInput.trim());
+      await AncialAPI.createComment(post.id, commentInput.trim(), replyTo?.id ?? null);
 
       setCommentInput('');
+      setReplyTo(null);
       updatePost((currentPost) => ({
         ...currentPost,
         comments_count: toNumber(currentPost.comments_count) + 1,
@@ -599,6 +665,21 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                     }}
                     className="form-control flex-1 text-zinc-100 mb-3 rounded-full shadow"
                   >
+                    {replyTo ? (
+                      <div className="mb-3 flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 py-1.5">
+                        <span className="min-w-0 flex-1 truncate text-sm text-zinc-300">
+                          <span className="text-purple-300">{lang?.comment_replying_to || 'Ответ для'}</span> {replyTo.user.name}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={lang?.comment_reply_cancel || 'Отменить ответ'}
+                          onClick={() => setReplyTo(null)}
+                          className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-zinc-700 active:scale-95 duration-300"
+                        >
+                          <Icon name="IC-times" className="h-4 w-4 fill-zinc-300" />
+                        </button>
+                      </div>
+                    ) : null}
                     <div className="relative flex bg-zinc-800 rounded-full w-full p-1 h-12">
                       <input
                         ref={commentInputRef}
@@ -643,6 +724,8 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                         reportLabel={strings.report}
                         onDelete={(targetComment) => void handleDeleteComment(targetComment)}
                         onNavigateToUser={(username) => router.push(`/@${username}`)}
+                        onReply={isAuthenticated ? handleReply : undefined}
+                        replyLabel={lang?.comment_reply_btn || 'Ответить'}
                         onReport={(targetComment) => {
                           setReportTarget({ id: targetComment.id, type: 4 });
                           setIsReportModalOpen(true);

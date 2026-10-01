@@ -25,7 +25,7 @@ export const PRIVACY_EN: LegalDoc = {
             'Usage: Pulse listening history and likes, playlists, bookmarks, presence status (visibility is configurable), Cinema viewing data.',
             'Wallet: accounts, balances and transaction history of anci tokens, top-up and withdrawal orders (payout details as required by the chosen method).',
             'Calls: technical connection data (time, participants, IP addresses used to connect). Call content is not recorded.',
-            'Device and notifications: push token, device model and OS, app settings.',
+            'Device and notifications: push token, device model and OS, app settings; notification history in the account (who did what, a link, a short preview; read items are deleted after 90 days); one-time sign-in codes are stored encrypted for no longer than their validity (5 minutes).',
             'Location — only if you allow it, to show the weather. Coordinates are used for the forecast request and not stored in your profile.',
             'Anonymous visit statistics: cookies and Yandex Metrica — see the [[/about/legal/cookies-en|Cookie Policy]].',
             'Support requests: email correspondence.',

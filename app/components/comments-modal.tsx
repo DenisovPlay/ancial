@@ -16,6 +16,8 @@ export interface FeedComment {
   date: string;
   id: string | number;
   is_own_comment?: boolean | number | string | null;
+  parent_id?: number | null;
+  reply_to?: { id: number; name: string; preview: string; username: string } | null;
   user: {
     img: string;
     is_verified?: boolean | number | string | null;
@@ -224,6 +226,13 @@ function CommentCard({
           </DropdownItem>
         </Dropdown>
       </div>
+
+      {comment.reply_to ? (
+        <div className="mt-3 flex w-full min-w-0 flex-col rounded-2xl border-l-2 border-purple-500 bg-zinc-900/60 px-3 py-1.5">
+          <span className="truncate text-xs font-semibold text-purple-300">{comment.reply_to.name}</span>
+          {comment.reply_to.preview ? <span className="truncate text-sm text-zinc-400">{comment.reply_to.preview}</span> : null}
+        </div>
+      ) : null}
 
       <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={commentHtmlProps} />
     </div>

@@ -1,7 +1,7 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
 // v31: HTML-навигация была Stale-While-Revalidate. v58: снова Network-First с таймаутом — SWR при каждом
 // заходе сначала показывал страницу прошлого визита (после деплоя мелькала старая версия сайта)
-const SW_VERSION = '58';
+const SW_VERSION = '59';
 
 // Нативное приложение (Capacitor) регистрирует SW с ?app=1: там он только кэширует картинки для офлайна.
 // Пуши приложения нативные (FCM через @capacitor/push-notifications), web-push и его скрипты не нужны.
@@ -22,23 +22,41 @@ if (!IS_NATIVE_APP_SW) {
 
   const messaging = firebase.messaging();
 
+  // Rich-пуш: заголовок — имя актёра, иконка — его аватар, картинка — превью, tag — группа уведомления
+  // (новые события группы обновляют одно окно, а не затирают чужие). Поля приходят из notify_dispatch().
   messaging.onBackgroundMessage((payload) => {
-    const title = payload.data?.title || 'Zypo';
+    const data = payload.data || {};
+    const title = data.title || 'Zypo';
     const options = {
-      body: payload.data?.body || 'Новое уведомление',
-      icon: payload.data?.icon || '/img/zypo/logo-rounded.webp',
+      body: data.body || 'Новое уведомление',
+      icon: data.icon || '/img/zypo/logo-rounded.webp',
       badge: '/img/zypo/logo-rounded.webp',
-      tag: 'ancial-notification',
+      tag: data.tag || ('n' + (data.notification_id || Date.now())),
+      renotify: Boolean(data.tag),
       data: {
-        url: payload.data?.click_action || self.location.origin + '/'
+        url: data.click_action || self.location.origin + '/',
+        notificationId: data.notification_id || ''
       }
     };
+    if (data.image) options.image = data.image;
     self.registration.showNotification(title, options);
   });
 
   self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const urlToOpen = event.notification.data?.url || self.location.origin + '/';
+    const notificationData = event.notification.data || {};
+    const urlToOpen = notificationData.url || self.location.origin + '/';
+    // Нажали — значит прочитано: помечаем на сервере (best-effort, куки сайта уходят вместе с запросом).
+    if (notificationData.notificationId) {
+      event.waitUntil(
+        fetch('/api/V2/user/Notifications.php', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'action=mark_read&id=' + encodeURIComponent(notificationData.notificationId)
+        }).catch(() => null)
+      );
+    }
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
         for (let i = 0; i < clientList.length; i++) {

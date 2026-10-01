@@ -9,6 +9,7 @@ import { isRestoreNavigation } from '../lib/entry-nav';
 import { toInternalPath } from '../lib/internal-link';
 import { openLinkGuard, parseRedirectHref } from '../lib/link-guard-store';
 import LinkGuardHost from './link-guard-host';
+import NotificationToaster from './notification-toaster';
 import { installScrollRestore } from '../lib/scroll-restore';
 
 export default function MainContent({ children }: { children: React.ReactNode }) {
@@ -85,6 +86,7 @@ export default function MainContent({ children }: { children: React.ReactNode })
     >
       {children}
       <LinkGuardHost />
+      <NotificationToaster />
     </div>
   );
 }

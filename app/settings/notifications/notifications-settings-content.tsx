@@ -9,6 +9,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { useFirebaseMessaging, FIREBASE_CONFIG } from '../../lib/useFirebaseMessaging';
 import Icon from '../../components/svg-icon';
+import NotificationPrefs from './notification-prefs';
 import { IS_NATIVE_APP } from '../../lib/platform';
 import { APP_VERSION } from '../../lib/app-version';
 
@@ -130,7 +131,7 @@ export default function NotificationsSettingsContent() {
       if (IS_NATIVE_APP) {
         setIsDetecting(true);
         const { registerNativePush } = await import('../../lib/native-push');
-        const token = await registerNativePush(lang?.push_channel_name || 'Уведомления Zypo');
+        const token = await registerNativePush(lang?.push_channel_name || 'Уведомления Zypo', lang ?? {});
         const device = detectDevice();
         const result = await AncialAPI.updateProfile({
           pushsid: token,
@@ -367,6 +368,10 @@ export default function NotificationsSettingsContent() {
             </>
           )}
         </div>
+      </div>
+
+      <div className="flex items-center px-3 lg:px-0 w-full justify-center">
+        <NotificationPrefs lang={lang} />
       </div>
 
       <div className="lg:hidden"><br /><br /><br /><br /></div>
