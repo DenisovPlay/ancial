@@ -186,6 +186,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
   const [hasMorePages, setHasMorePages] = useState(true);
   const [comments, setComments] = useState<FeedComment[]>([]);
   const [commentInput, setCommentInput] = useState('');
+  const [replyTo, setReplyTo] = useState<FeedComment | null>(null);
   const [activeCommentsPost, setActiveCommentsPost] = useState<PostData | null>(null);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
@@ -658,6 +659,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
     setActiveCommentsPost(post);
     setComments([]);
     setCommentInput('');
+    setReplyTo(null);
     setIsCommentsModalOpen(true);
     void loadComments(post.id);
   };
@@ -674,9 +676,10 @@ export default function GroupProfileContent({ link }: { link: string }) {
     if (!commentInput.trim()) return;
 
     try {
-      await AncialAPI.createComment(activeCommentsPost.id, commentInput.trim());
+      await AncialAPI.createComment(activeCommentsPost.id, commentInput.trim(), replyTo?.id ?? null);
 
       setCommentInput('');
+      setReplyTo(null);
       incrementCommentsCount(activeCommentsPost.id, 1);
       await loadComments(activeCommentsPost.id);
     } catch (nextError) {
@@ -1242,6 +1245,9 @@ export default function GroupProfileContent({ link }: { link: string }) {
         isAuthenticated={isAuthenticated}
         commentInput={commentInput}
         onCommentInputChange={setCommentInput}
+        replyTo={replyTo}
+        onReply={setReplyTo}
+        onCancelReply={() => setReplyTo(null)}
         onSubmit={() => void handleCreateComment()}
         onDelete={(targetComment) => void handleDeleteComment(targetComment)}
         onReport={(targetComment) => {

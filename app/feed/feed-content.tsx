@@ -195,6 +195,7 @@ export default function FeedContent() {
   const [comments, setComments] = useState<FeedComment[]>([]);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
   const [commentInput, setCommentInput] = useState('');
+  const [replyTo, setReplyTo] = useState<FeedComment | null>(null);
   const [activeCommentsPost, setActiveCommentsPost] = useState<PostData | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PostData | null>(null);
 
@@ -754,6 +755,7 @@ export default function FeedContent() {
     setActiveCommentsPost(post);
     setComments([]);
     setCommentInput('');
+    setReplyTo(null);
     setIsCommentsModalOpen(true);
     void loadComments(post.id);
   };
@@ -763,9 +765,10 @@ export default function FeedContent() {
     if (!commentInput.trim()) return;
 
     try {
-      await AncialAPI.createComment(activeCommentsPost.id, commentInput.trim());
+      await AncialAPI.createComment(activeCommentsPost.id, commentInput.trim(), replyTo?.id ?? null);
 
       setCommentInput('');
+      setReplyTo(null);
       incrementCommentsCount(activeCommentsPost.id, 1);
       await loadComments(activeCommentsPost.id);
     } catch (error) {
@@ -1161,6 +1164,9 @@ export default function FeedContent() {
         isAuthenticated={isAuthenticated}
         commentInput={commentInput}
         onCommentInputChange={setCommentInput}
+        replyTo={replyTo}
+        onReply={setReplyTo}
+        onCancelReply={() => setReplyTo(null)}
         onSubmit={() => void handleCreateComment()}
         onDelete={(targetComment) => void handleDeleteComment(targetComment)}
         onReport={(targetComment) => openReportModal(targetComment.id, 4)}
