@@ -184,7 +184,7 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             ? `<div class="notion-block-toolbar" contenteditable="false"><button type="button" data-action="edit" data-type="media" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-white transition-colors cursor-pointer" title="Редактировать карусель"><svg class="w-4 h-4 fill-current"><use href="#IC-edit"></use></svg></button><button type="button" data-action="delete" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-red-400 transition-colors cursor-pointer" title="Удалить"><svg class="w-4 h-4 fill-current"><use href="#IC-trash"></use></svg></button></div>`
             : '';
         const dataAttr = isPreview ? ` data-bbcode="${encodeURIComponent(match)}" contenteditable="false"` : '';
-        return `<div class="relative group my-2 group/carousel" data-start${dataAttr}>${overlay}${leftArrow}${rightArrow}${countBadge}<div class="flex items-start gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-pl-3 touch-pan-y overscroll-x-contain -mx-3 px-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">${slides}</div></div>`;
+        return `<div class="relative group my-2 group/carousel" data-start${dataAttr}>${overlay}${leftArrow}${rightArrow}${countBadge}<div class="flex items-start gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-pl-3 touch-pan-x touch-pan-y overscroll-x-contain -mx-3 px-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">${slides}</div></div>`;
     });
 
     // Коллаж (CSS Grid)
