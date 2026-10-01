@@ -1,7 +1,7 @@
 // Версия SW: при её повышении ротируются кэши static/pages (см. CACHE_* ниже)
-// v31: HTML-навигация переведена с Network-First на Stale-While-Revalidate —
-// офлайн (и просто быстрее) показываем кэш мгновенно, сеть обновляет кэш в фоне
-const SW_VERSION = '56';
+// v31: HTML-навигация была Stale-While-Revalidate. v58: снова Network-First с таймаутом — SWR при каждом
+// заходе сначала показывал страницу прошлого визита (после деплоя мелькала старая версия сайта)
+const SW_VERSION = '58';
 
 // Нативное приложение (Capacitor) регистрирует SW с ?app=1: там он только кэширует картинки для офлайна.
 // Пуши приложения нативные (FCM через @capacitor/push-notifications), web-push и его скрипты не нужны.
@@ -249,40 +249,40 @@ async function trimImageCache(cache) {
   }
 }
 
+/** Сколько ждём сеть при HTML-навигации, прежде чем показать кэш (медленная связь). */
+const NAVIGATION_TIMEOUT_MS = 3000;
+
 /**
- * Stale-While-Revalidate для HTML-навигации: есть кэш — отдаём мгновенно
- * (быстро и офлайн-first), сеть в фоне обновляет кэш для следующего захода.
- * Нет кэша — ждём сеть; если и сеть недоступна — offlineFallback.
- * Старые чанки в закэшированном HTML не страшны: sw-register.tsx ловит
- * ChunkLoadError на клиенте и делает hard-reload за свежим билдом.
+ * Network-First для HTML-навигации: онлайн всегда свежий HTML (после деплоя не мелькает прошлая версия
+ * страницы и нет ссылок на удалённые чанки). Кэш — только когда сети нет или она отвечает дольше
+ * NAVIGATION_TIMEOUT_MS; тогда сеть дозагружает свежий HTML в кэш для следующего захода.
+ * Нет ни сети, ни кэша — offlineFallback.
  */
-function staleWhileRevalidateNavigation(event, cacheName, offlineFallback) {
-  event.respondWith(
-    caches.open(cacheName).then((cache) =>
-      cache.match(event.request).then((cached) => {
-        const networkFetch = fetch(event.request)
-          .then((res) => {
-            if (isCacheableResponse(res)) {
-              cache.put(event.request, res.clone());
-            }
-            return res;
-          })
-          .catch(() => null);
-
-        if (cached) {
-          event.waitUntil(networkFetch);
-          return cached;
-        }
-
-        return networkFetch.then((res) => {
-          if (res) return res;
-          return offlineFallback
-            ? offlineFallback()
-            : new Response('', { status: 503, statusText: 'Offline' });
-        });
-      })
-    )
-  );
+function networkFirstNavigation(event, cacheName, offlineFallback) {
+  event.respondWith((async () => {
+    const cache = await caches.open(cacheName);
+    const network = fetch(event.request).then((res) => {
+      if (isCacheableResponse(res)) cache.put(event.request, res.clone());
+      return res;
+    });
+    try {
+      return await Promise.race([
+        network,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('navigation timeout')), NAVIGATION_TIMEOUT_MS)),
+      ]);
+    } catch {
+      const cached = await cache.match(event.request);
+      if (cached) {
+        event.waitUntil(network.catch(() => null));
+        return cached;
+      }
+      try {
+        return await network;
+      } catch {
+        return offlineFallback ? offlineFallback() : new Response('', { status: 503, statusText: 'Offline' });
+      }
+    }
+  })());
 }
 
 /** Stale-While-Revalidate: мгновенно из кэша + фоновое обновление */
@@ -497,6 +497,6 @@ self.addEventListener('fetch', (event) => {
   const isNavigate = req.mode === 'navigate' || (req.headers.get('Accept') || '').includes('text/html');
 
   if (isNavigate) {
-    staleWhileRevalidateNavigation(event, CACHE_PAGES, () => navigationOfflineFallback());
+    networkFirstNavigation(event, CACHE_PAGES, () => navigationOfflineFallback());
   }
 });

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" fill="none">
+  <defs>
+    <filter id="tube" filterUnits="userSpaceOnUse" x="-400" y="-400" width="2400" height="1800" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="78" result="soft"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="7" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.4 -0.2" result="grain"/>
+      <feComposite in="soft" in2="grain" operator="arithmetic" k1="0" k2="1" k3="0.11" k4="0" result="height"/>
+      <feDiffuseLighting in="height" surfaceScale="46" diffuseConstant="1.05" lighting-color="#e4d4ff" result="lit">
+        <feDistantLight azimuth="235" elevation="46"/>
+      </feDiffuseLighting>
+      <feComposite in="lit" in2="SourceAlpha" operator="in" result="body"/>
+      <feColorMatrix in="body" type="matrix" values="0.62 0 0 0 0  0 0.30 0 0 0  0 0 1.0 0 0.03  0 0 0 1 0"/>
+    </filter>
+    <radialGradient id="glow" cx="50%" cy="55%" r="55%">
+      <stop offset="0" stop-color="#5b21b6" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="#050309"/>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  <g filter="url(#tube)">
+    <path d="M-120 330 C 220 -40, 520 120, 640 360 S 520 760, 760 800 S 1180 620, 1020 420 S 1180 60, 1440 120 S 1760 520, 1560 860"
+          stroke="#7c3aed" stroke-width="250" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
