@@ -143,6 +143,15 @@ HTML отдаётся с `Cache-Control: no-store` (правило `headers()` �
 - **Черновики**: (1) по записи истории — форма создания/правки поста (`post-draft.ts`, `readEntryState`/`writeEntryState`), после публикации `router.replace('/feed')` и `client_token` (идемпотентность `CreatePost.php`, миграция 003); (2) серверные, между устройствами — `app/lib/drafts.ts` (`saveDraft`/`loadDraft`/`subscribeDraft`, LWW по `ts`, WS `draft:update`/`draft:clear`, API `drafts/Get|Set|Clear.php`, миграция 004): текст сообщения в чатах (`useDialogDraft`, «Черновик:» в списке диалогов) и пост (`ref` = id автора). Очистка кэша в `/settings/cache` стирает черновики везде (`clearAllDrafts`).
 - **Плеер не монтируется на `/cinema*`** (`PulsePlayerBoundary`, `isPlayerDisabledPath`): нет аудио, Media Session и устройства в списке аккаунта; при размонтировании провайдер шлёт `device:bye` (`retireDevice`). Потребителям плеера вне страниц с ним — `usePulsePlayerOptional()`.
 
+## 6.3. Уведомления (rich)
+
+План и решения — `docs/plan-rich-notifications.md`.
+- **Единая точка на бэкенде:** `php-v2-api/.../modules/notify.php` → `notify_dispatch()` — запись в `notify` + WS `notification:new` (полный rich-объект) + push из той же записи; группировка по `group_key` в окне 24 ч («Иван и ещё 12 оценили пост»), предпочтения по категориям (`notify_prefs`, безопасность не отключается). Новые события создаём только через неё, не прямыми `R::dispense('notify')`/`sendFCM`. Миграции: 005 (колонки `notify`), 006 (`ucomments.parent_id`); без них dispatcher откатывается на старую структуру.
+- **Формат строки** (`notify_row_to_api`, API `/user/Notifications.php?v=2`, `app/lib/notifications/types.ts`): `kind`, `actors[]`, `object{preview,image}`, `url`, `params`, `actions`, `secret` (код входа: в списке только метаданные, значение — `action=reveal`, шифруется AES-GCM, живёт срок challenge, показ пишется в аудит).
+- **Фронтенд:** реестр видов и тексты — `app/lib/notifications/kinds.ts` (+ ключи `notif_<kind>[_many]` в локалях; новый `kind` = запись в реестре + шаблоны ru/en/be на сервере и клиенте, тест `notify.test.php` проверяет шаблоны), лента — `use-notification-feed.ts` (WS-обновление, «открыли — прочитали», подсветка бывшего непрочитанным), строка — `app/notifications/notification-row.tsx` (стикеры/треки/фото в превью сообщений, кнопки действий, `SecretSpoiler`), тосты — `notification-toaster.tsx`.
+- **Push:** заголовок — актёр, `icon` — аватар, `image` — превью, `tag` — группа; web (`firebase-messaging-sw.js`) и Android-каналы по категориям (`zypo_social|people|chat|wallet|security`, создаются в `native-push.ts`).
+- Ответы на комментарии: `ucomments.parent_id`, `reply_to` в `Comments.php`, UI — страница поста; deeplink `/feed/post/ID?comment=CID` прокручивает и подсвечивает.
+
 ## 7. Качество кода (ОБЯЗАТЕЛЬНО к соблюдению)
 
 ### Верификация перед завершением любой задачи

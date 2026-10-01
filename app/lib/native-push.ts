@@ -12,6 +12,15 @@ import type { PluginListenerHandle } from '@capacitor/core';
 
 export const NATIVE_PUSH_CHANNEL_ID = 'zypo_default';
 
+/** Каналы по категориям уведомлений (id совпадают с notify_channel_for() в modules/notify.php): их можно глушить по отдельности в системных настройках. */
+export const NATIVE_PUSH_CATEGORY_CHANNELS = [
+  { id: 'zypo_social', nameKey: 'notif_cat_social', fallback: 'Комментарии и оценки', importance: 4 },
+  { id: 'zypo_people', nameKey: 'notif_cat_people', fallback: 'Друзья и звонки', importance: 4 },
+  { id: 'zypo_chat', nameKey: 'notif_cat_chat', fallback: 'Сообщения в чатах', importance: 4 },
+  { id: 'zypo_wallet', nameKey: 'notif_cat_wallet', fallback: 'Кошелёк', importance: 4 },
+  { id: 'zypo_security', nameKey: 'notif_cat_security', fallback: 'Безопасность', importance: 5 },
+] as const;
+
 /** Токен, который это устройство последним отдало в pushsid, — чтобы обновлять только свою подписку. */
 const STORED_TOKEN_KEY = 'native_push_token';
 const REGISTER_TIMEOUT_MS = 15_000;
@@ -46,7 +55,7 @@ export async function hasNativePushPermission(): Promise<boolean> {
  * Запрашивает разрешение (если нужно), создаёт канал и регистрирует устройство в FCM.
  * Возвращает FCM-токен. Отказ в разрешении — ошибка NATIVE_PUSH_PERMISSION_DENIED.
  */
-export async function registerNativePush(channelName: string): Promise<string> {
+export async function registerNativePush(channelName: string, categoryNames: Record<string, string> = {}): Promise<string> {
   const { PushNotifications } = await import('@capacitor/push-notifications');
 
   let status = await PushNotifications.checkPermissions();
@@ -66,6 +75,16 @@ export async function registerNativePush(channelName: string): Promise<string> {
     lights: true,
     vibration: true,
   }).catch((error: unknown) => console.error('Failed to create push channel', error));
+  for (const channel of NATIVE_PUSH_CATEGORY_CHANNELS) {
+    await PushNotifications.createChannel({
+      id: channel.id,
+      name: categoryNames[channel.nameKey] || channel.fallback,
+      importance: channel.importance,
+      visibility: 1,
+      lights: true,
+      vibration: true,
+    }).catch((error: unknown) => console.error(`Failed to create push channel ${channel.id}`, error));
+  }
 
   const handles: PluginListenerHandle[] = [];
   const token = await new Promise<string>((resolve, reject) => {

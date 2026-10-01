@@ -295,7 +295,8 @@ export function parseStickersToHtml(content: string | null | undefined, allowSta
   // 1. Заменяем стандартные шорткоды :code: и 7TV стикеры :7tv-name-id:
   html = html.replace(/:([a-zA-Z0-9_\-]+):/gi, (match, rawCode: string) => {
     // Проверяем формат 7TV стикера :7tv-name-id:
-    const sevenTvMatch = rawCode.match(/^7tv-([a-zA-Z0-9_\-]+)(?:-([a-zA-Z0-9]+))?$/i);
+    // Имя — ленивое: иначе оно «съедает» и id (…-01F6…), и ссылка на 7TV не собирается.
+    const sevenTvMatch = rawCode.match(/^7tv-([a-zA-Z0-9_\-]+?)(?:-([a-zA-Z0-9]+))?$/i);
     if (sevenTvMatch) {
       const stickerName = sevenTvMatch[1];
       const stickerId = sevenTvMatch[2];
