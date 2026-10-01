@@ -1,14 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AppImage from './app-image';
 import { cn, } from '../feed/editor-shared';
-import { useSanitizedHtml } from '../lib/use-sanitized-html';
 import Modal from './modal';
-import { Dropdown, DropdownItem } from './navigation';
-import AccountName from './account-name';
-import { parsePostContentToHtml } from './post-parser';
+import { useAuth } from '../context/AuthContext';
+import CommentCard, { ReplyBar } from './comment-card';
 import Icon from './svg-icon';
 
 export interface FeedComment {
@@ -39,6 +37,10 @@ export interface CommentsModalProps {
   onDelete: (comment: FeedComment) => void;
   onReport: (comment: FeedComment) => void;
   onNavigateToUser: (username: string) => void;
+  /** Ответ на комментарий: выбранный комментарий, выбор и сброс. Без onReply кнопки «Ответить» нет. */
+  replyTo?: FeedComment | null;
+  onReply?: (comment: FeedComment) => void;
+  onCancelReply?: () => void;
   deleteLabel: string;
   reportLabel: string;
   emptyTitle: string;
@@ -59,31 +61,25 @@ export function CommentsModal({
   onDelete,
   onReport,
   onNavigateToUser,
+  replyTo,
+  onReply,
+  onCancelReply,
   deleteLabel,
   reportLabel,
   emptyTitle,
   emptyDescription,
   writeCommentPlaceholder,
 }: CommentsModalProps) {
-  const commentsContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { lang } = useAuth();
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const el = commentsContainerRef.current;
-    if (!el) return;
-    const handler = (e: Event) => {
-      const anchor = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-user], a[data-group]');
-      if (!anchor) return;
-      const href = anchor.getAttribute('href');
-      if (!href) return;
-      e.preventDefault();
-      e.stopPropagation();
-      onClose();
-      router.push(href);
-    };
-    el.addEventListener('click', handler);
-    return () => el.removeEventListener('click', handler);
-  }, [router, onClose]);
+  const handleReply = onReply && isAuthenticated
+    ? (comment: FeedComment) => {
+        onReply(comment);
+        inputRef.current?.focus();
+      }
+    : undefined;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} width="lg">
@@ -94,10 +90,12 @@ export function CommentsModal({
               event.preventDefault();
               onSubmit();
             }}
-            className="form-control flex-1 text-zinc-100 rounded-full shadow sticky top-0 z-[90]"
+            className="form-control flex-1 text-zinc-100 sticky top-0 z-40"
           >
+            {replyTo ? <ReplyBar name={replyTo.user.name} onCancel={() => onCancelReply?.()} /> : null}
             <div className="glass-panel [--glass-blur:8px] [--glass-sat:2] relative border border-zinc-600/30 flex rounded-full w-full p-1 h-12">
               <input
+                ref={inputRef}
                 placeholder={writeCommentPlaceholder}
                 type="text"
                 autoComplete="off"
@@ -125,7 +123,7 @@ export function CommentsModal({
           </form>
         ) : null}
 
-        <div ref={commentsContainerRef} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {isLoading ? (
             <div className="w-full flex items-center justify-center py-6">
               <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
@@ -137,8 +135,14 @@ export function CommentsModal({
                 comment={comment}
                 deleteLabel={deleteLabel}
                 reportLabel={reportLabel}
+                replyLabel={lang?.comment_reply_btn || 'Ответить'}
                 onDelete={onDelete}
                 onReport={onReport}
+                onReply={handleReply}
+                onLinkNavigate={(href) => {
+                  onClose();
+                  router.push(href);
+                }}
                 onNavigateToUser={onNavigateToUser}
               />
             ))
@@ -148,94 +152,6 @@ export function CommentsModal({
         </div>
       </div>
     </Modal>
-  );
-}
-
-function CommentCard({
-  comment,
-  deleteLabel,
-  reportLabel,
-  onDelete,
-  onReport,
-  onNavigateToUser,
-}: {
-  comment: FeedComment;
-  deleteLabel: string;
-  reportLabel: string;
-  onDelete: (comment: FeedComment) => void;
-  onReport: (comment: FeedComment) => void;
-  onNavigateToUser: (username: string) => void;
-}) {
-  const commentHtml = useMemo(() => parsePostContentToHtml(comment.content), [comment.content]);
-  const commentHtmlProps = useSanitizedHtml(commentHtml, true);
-
-  return (
-    <div
-      id={`comment${comment.id}`}
-      className="p-3 border border-zinc-600/30 duration-300 rounded-3xl bg-zinc-800/50 flex flex-col w-full shadow"
-    >
-      <div className="text-sm lg:text-base text-zinc-200 font-medium flex items-center gap-1.5 min-w-0">
-        <button
-          type="button"
-          onClick={() => onNavigateToUser(comment.user.username)}
-          className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow shrink-0 overflow-hidden"
-        >
-          <AppImage width={40} height={40} src={comment.user.img} fallbackSrc="/img/placeholders/user.png" alt="" className="block h-full w-full object-cover" />
-        </button>
-
-        <div className="flex flex-col flex-grow min-w-0">
-          <button
-            type="button"
-            onClick={() => onNavigateToUser(comment.user.username)}
-            className="cursor-pointer hover:text-zinc-100 duration-300 font-medium text-left flex items-center gap-1.5 min-w-0"
-          >
-            <AccountName user={comment.user} nameClassName="font-medium" />
-          </button>
-          <span className="text-zinc-300 text-xs">{comment.date}</span>
-        </div>
-
-        <Dropdown
-          triggerSize="sm"
-          triggerIcon="IC-more"
-          triggerAriaLabel="Comment actions"
-          position="left"
-          align="start"
-          triggerClassName="hover:bg-zinc-800/50"
-          menuClassName="-mt-8 min-w-44 rounded-2xl"
-        >
-          {comment.is_own_comment === true ||
-          comment.is_own_comment === 1 ||
-          comment.is_own_comment === '1' ||
-          comment.is_own_comment === 'true' ? (
-            <DropdownItem
-              onClick={() => onDelete(comment)}
-              icon="IC-times"
-              className="p-1 text-sm"
-              iconClassName="w-5 h-5"
-            >
-              {deleteLabel}
-            </DropdownItem>
-          ) : null}
-          <DropdownItem
-            onClick={() => onReport(comment)}
-            icon="IC-report"
-            className="p-1 text-sm"
-            iconClassName="w-5 h-5"
-          >
-            {reportLabel}
-          </DropdownItem>
-        </Dropdown>
-      </div>
-
-      {comment.reply_to ? (
-        <div className="mt-3 flex w-full min-w-0 flex-col rounded-2xl border-l-2 border-purple-500 bg-zinc-900/60 px-3 py-1.5">
-          <span className="truncate text-xs font-semibold text-purple-300">{comment.reply_to.name}</span>
-          {comment.reply_to.preview ? <span className="truncate text-sm text-zinc-400">{comment.reply_to.preview}</span> : null}
-        </div>
-      ) : null}
-
-      <div className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words" dangerouslySetInnerHTML={commentHtmlProps} />
-    </div>
   );
 }
 

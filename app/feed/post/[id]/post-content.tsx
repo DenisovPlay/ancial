@@ -5,8 +5,8 @@ import { goBackOr } from '../../../lib/go-back';
 import { clearFeedSnapshots } from '../../feed-snapshot';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSanitizedHtml } from '../../../lib/use-sanitized-html';
 
+import CommentCard, { ReplyBar } from '../../../components/comment-card';
 import { CommentsEmptyState } from '../../../components/comments-modal';
 import { cn } from '../../../lib/cn';
 import DeletePostModal from '../../../components/delete-post-modal';
@@ -14,7 +14,6 @@ import { EmptyIllustration } from '../../../components/profile-ui';
 import ReportModal from '../../../components/report-modal';
 import { buildPostReportReasons } from '../../../lib/report-reasons';
 import ShareModal from '../../../components/share-modal';
-import { Dropdown, DropdownItem } from '../../../components/navigation';
 import { PostCard, type PostCardLang, type PostData } from '../../../components/posts-renderer';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -23,11 +22,7 @@ import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { applyBookmarkResult } from '../../../lib/post-bookmark';
 import { applyVoteResult } from '../../../lib/post-vote';
-import AccountName from '../../../components/account-name';
 import FeedPostSkeleton from '../../feed-post-skeleton';
-import { parsePostContentToHtml } from '../../../components/post-parser';
-import { formatRelativeTime } from '../../../lib/time';
-import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
 
 type Id = string | number;
@@ -67,10 +62,6 @@ interface ReportTarget {
   type: number;
 }
 
-function flag(value: boolean | number | string | null | undefined) {
-  return value === true || value === 1 || value === '1' || value === 'true';
-}
-
 function htmlToPlainText(value: string | null | undefined) {
   return (value ?? '')
     .replace(/<br\s*\/?>/gi, ' ')
@@ -99,135 +90,6 @@ function getPostDocumentTitle(post: PostData | null, lang: Record<string, string
 
 // Removed local api helpers
 
-
-function FeedCommentCard({
-  comment,
-  deleteLabel,
-  onDelete,
-  onNavigateToUser,
-  onReply,
-  onReport,
-  replyLabel,
-  reportLabel,
-}: {
-  comment: FeedComment;
-  deleteLabel: string;
-  onDelete: (comment: FeedComment) => void;
-  onNavigateToUser: (username: string) => void;
-  onReply?: (comment: FeedComment) => void;
-  onReport: (comment: FeedComment) => void;
-  replyLabel: string;
-  reportLabel: string;
-}) {
-  const router = useRouter();
-  const { lang } = useAuth();
-  const contentRef = useRef<HTMLDivElement>(null);
-  const commentHtml = useMemo(() => parsePostContentToHtml(comment.content), [comment.content]);
-  const commentHtmlProps = useSanitizedHtml(commentHtml, true);
-
-  useEffect(() => {
-    const el = contentRef.current;
-    if (!el) return;
-    const handler = (e: Event) => {
-      const anchor = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[data-user], a[data-group]');
-      if (!anchor) return;
-      const href = anchor.getAttribute('href');
-      if (!href) return;
-      e.preventDefault();
-      e.stopPropagation();
-      router.push(href);
-    };
-    el.addEventListener('click', handler);
-    return () => el.removeEventListener('click', handler);
-  }, [router]);
-
-  return (
-    <div
-      id={`comment${comment.id}`}
-      className="p-3 border border-zinc-600/30 duration-300 rounded-3xl bg-zinc-800/50 flex flex-col w-full shadow"
-    >
-      <div className="text-sm lg:text-base text-zinc-200 font-medium flex items-center gap-1.5 min-w-0">
-        <button
-          type="button"
-          onClick={() => onNavigateToUser(comment.user.username)}
-          className="active:scale-95 duration-300 w-10 h-10 rounded-3xl shadow shrink-0 overflow-hidden"
-          aria-label={comment.user.name}
-        >
-          <AppImage width={40} height={40} src={comment.user.img} fallbackSrc="/img/placeholders/user.png" alt="" className="block h-full w-full object-cover" />
-        </button>
-
-        <div className="flex flex-col flex-grow min-w-0">
-          <button
-            type="button"
-            onClick={() => onNavigateToUser(comment.user.username)}
-            className="cursor-pointer hover:text-zinc-100 duration-300 font-medium text-left flex items-center gap-1.5 min-w-0"
-          >
-            <AccountName user={comment.user} nameClassName="font-medium" />
-          </button>
-          <span className="text-zinc-300 text-xs">
-            {formatRelativeTime(comment.date, lang, comment.date)}
-          </span>
-        </div>
-
-        <Dropdown
-          triggerSize="sm"
-          triggerIcon="IC-more"
-          triggerAriaLabel="Comment actions"
-          position="left"
-          align="start"
-          triggerClassName="hover:bg-zinc-800/50"
-          menuClassName="-mt-8 min-w-44 rounded-2xl"
-        >
-          {flag(comment.is_own_comment) && (
-            <DropdownItem
-              onClick={() => onDelete(comment)}
-              icon="IC-times"
-              className="p-1 text-sm"
-              iconClassName="w-5 h-5"
-            >
-              {deleteLabel}
-            </DropdownItem>
-          )}
-          <DropdownItem
-            onClick={() => onReport(comment)}
-            icon="IC-report"
-            className="p-1 text-sm"
-            iconClassName="w-5 h-5"
-          >
-            {reportLabel}
-          </DropdownItem>
-        </Dropdown>
-      </div>
-
-      {comment.reply_to ? (
-        <button
-          type="button"
-          onClick={() => document.getElementById(`comment${comment.reply_to?.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-          className="mt-3 flex w-full min-w-0 cursor-pointer flex-col rounded-2xl border-l-2 border-purple-500 bg-zinc-900/60 px-3 py-1.5 text-left duration-300 hover:bg-zinc-900 active:scale-[0.99]"
-        >
-          <span className="truncate text-xs font-semibold text-purple-300">{comment.reply_to.name}</span>
-          {comment.reply_to.preview ? <span className="truncate text-sm text-zinc-400">{comment.reply_to.preview}</span> : null}
-        </button>
-      ) : null}
-
-      <div
-        ref={contentRef}
-        className="text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words"
-        dangerouslySetInnerHTML={commentHtmlProps}
-      />
-
-      {onReply ? (
-        <button
-          type="button"
-          onClick={() => onReply(comment)}
-          className="mt-3 w-fit cursor-pointer rounded-full px-3 py-1.5 text-sm font-semibold text-zinc-400 duration-300 hover:bg-zinc-800 hover:text-zinc-100 active:scale-95"
-        >
-          {replyLabel}
-        </button>
-      ) : null}
-    </div>
-  );
-}
 
 export default function SinglePostContent({ postId }: { postId: string }) {
   const router = useRouter();
@@ -665,21 +527,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                     }}
                     className="form-control flex-1 text-zinc-100 mb-3 rounded-full shadow"
                   >
-                    {replyTo ? (
-                      <div className="mb-3 flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800 px-3 py-1.5">
-                        <span className="min-w-0 flex-1 truncate text-sm text-zinc-300">
-                          <span className="text-purple-300">{lang?.comment_replying_to || 'Ответ для'}</span> {replyTo.user.name}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label={lang?.comment_reply_cancel || 'Отменить ответ'}
-                          onClick={() => setReplyTo(null)}
-                          className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-zinc-700 active:scale-95 duration-300"
-                        >
-                          <Icon name="IC-times" className="h-4 w-4 fill-zinc-300" />
-                        </button>
-                      </div>
-                    ) : null}
+                    {replyTo ? <ReplyBar name={replyTo.user.name} onCancel={() => setReplyTo(null)} /> : null}
                     <div className="relative flex bg-zinc-800 rounded-full w-full p-1 h-12">
                       <input
                         ref={commentInputRef}
@@ -717,7 +565,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                     </div>
                   ) : comments.length > 0 ? (
                     comments.map((comment) => (
-                      <FeedCommentCard
+                      <CommentCard
                         key={comment.id}
                         comment={comment}
                         deleteLabel={strings.delete}
