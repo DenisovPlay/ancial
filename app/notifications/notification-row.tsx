@@ -15,6 +15,7 @@ import {
   TONE_CLASSES,
   type Lang,
 } from '../lib/notifications/kinds';
+import { cleanNotificationPreview } from '../lib/notifications/clean-preview';
 import type { NotificationActor, RichNotification } from '../lib/notifications/types';
 import { parseStickersToHtml } from '../lib/stickers-service';
 import TrackPreview from '../messages/components/track-preview';
@@ -25,13 +26,6 @@ const TRACK_URL = /(?:https?:\/\/[^\s/]+)?\/pulse\/track\/(\d+)\S*/i;
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char);
-}
-
-/** В превью поста/комментария приходит сырая разметка (<br />, теги) — показываем чистый текст. */
-function plainPreview(value?: string | null) {
-  if (!value) return null;
-  const text = value.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
-  return text || null;
 }
 
 /** Аватар актёра; у группы — стопка до трёх, у системных (безопасность, кошелёк без людей) — значок типа. */
@@ -128,7 +122,7 @@ function NotificationRowComponent({ highlighted, lang, langCode, notification, o
   const segments = notificationSegments(notification, lang, langCode);
   const plainText = segments.map((segment) => segment.text).join('');
   const isChat = notification.kind === 'chat_message';
-  const preview = !isChat ? plainPreview(notification.object?.preview) : null;
+  const preview = !isChat ? cleanNotificationPreview(notification.object?.preview) : null;
   const thumbnail = !isChat ? notification.object?.image : null;
   const time = notification.ts ? formatRelativeTime(new Date(notification.ts), lang, '') : '';
   const actionIds = new Set(notification.actions.map((action) => action.id));
