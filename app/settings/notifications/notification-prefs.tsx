@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import Icon from '../../components/svg-icon';
+import SettingSelect from '../../components/setting-select';
 import { useNotification } from '../../context/NotificationContext';
 import { AncialAPI } from '../../lib/api-v2';
-import { cn } from '../../lib/cn';
 
 type Lang = Record<string, string> | null | undefined;
 type Pref = { inapp: boolean; push: boolean };
@@ -17,23 +16,10 @@ const CATEGORIES = [
   { id: 'wallet', key: 'notif_cat_wallet', fallback: 'Кошелёк' },
 ] as const;
 
-function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange: (next: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className={cn(
-        'relative h-7 w-12 shrink-0 cursor-pointer rounded-full border border-zinc-600/30 duration-300 active:scale-95',
-        checked ? 'bg-purple-600' : 'bg-zinc-800',
-      )}
-    >
-      <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white duration-300', checked ? 'left-6' : 'left-1')} />
-    </button>
-  );
-}
+type Mode = 'all' | 'push' | 'inapp' | 'none';
+
+const toMode = (pref: Pref): Mode => (pref.inapp && pref.push ? 'all' : pref.push ? 'push' : pref.inapp ? 'inapp' : 'none');
+const fromMode = (mode: Mode): Pref => ({ inapp: mode === 'all' || mode === 'inapp', push: mode === 'all' || mode === 'push' });
 
 /** Какие уведомления получать: по категориям — в ленте и push. Безопасность не отключается. */
 export default function NotificationPrefs({ lang }: { lang: Lang }) {
@@ -70,29 +56,33 @@ export default function NotificationPrefs({ lang }: { lang: Lang }) {
 
   return (
     <div className="flex w-full max-w-3xl flex-col gap-3 px-3 lg:px-0">
-      <span className="text-xl font-semibold text-zinc-100">{lang?.notif_prefs_title || 'Какие уведомления получать'}</span>
-      <div className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/70 p-3">
-        <div className="flex items-center gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          <span className="flex-grow" />
-          <span className="w-12 text-center">{lang?.notif_pref_inapp || 'В ленте'}</span>
-          <span className="w-12 text-center">{lang?.notif_pref_push || 'Push'}</span>
-        </div>
-        {CATEGORIES.map((category) => {
-          const pref = prefs[category.id] ?? { inapp: true, push: true };
-          const label = lang?.[category.key] || category.fallback;
-          return (
-            <div key={category.id} className="flex items-center gap-3 rounded-full bg-zinc-800/60 px-3 py-2">
-              <span className="flex-grow text-zinc-100">{label}</span>
-              <Switch checked={pref.inapp} label={`${label}: ${lang?.notif_pref_inapp || 'В ленте'}`} onChange={(next) => update(category.id, { inapp: next })} />
-              <Switch checked={pref.push} label={`${label}: ${lang?.notif_pref_push || 'Push'}`} onChange={(next) => update(category.id, { push: next })} />
-            </div>
-          );
-        })}
-        <div className="flex items-center gap-3 rounded-full bg-zinc-800/60 px-3 py-2 text-zinc-300">
-          <Icon name="IC-lock" className="h-5 w-5 shrink-0 fill-zinc-400" />
-          <span className="flex-grow">{lang?.notif_cat_security || 'Безопасность (всегда включено)'}</span>
-        </div>
-      </div>
+      <span className="text-xl">{lang?.notif_prefs_title || 'Какие уведомления получать'}</span>
+      {CATEGORIES.map((category) => (
+        <SettingSelect<Mode>
+          key={category.id}
+          label={lang?.[category.key] || category.fallback}
+          value={toMode(prefs[category.id] ?? { inapp: true, push: true })}
+          onChange={(mode) => update(category.id, fromMode(mode))}
+          options={[
+            { value: 'all', label: lang?.notif_mode_all || 'Везде' },
+            { value: 'push', label: lang?.notif_mode_push || 'Только Push' },
+            { value: 'inapp', label: lang?.notif_mode_inapp || 'Только лента уведомлений' },
+            { value: 'none', label: lang?.notif_mode_none || 'Нигде' },
+          ]}
+        />
+      ))}
+      <SettingSelect<Mode>
+        label={lang?.notif_cat_security || 'Безопасность'}
+        value="all"
+        onChange={() => {}}
+        disabled
+        options={[
+          { value: 'all', label: lang?.notif_mode_all || 'Везде' },
+          { value: 'push', label: lang?.notif_mode_push || 'Только Push' },
+          { value: 'inapp', label: lang?.notif_mode_inapp || 'Только лента уведомлений' },
+          { value: 'none', label: lang?.notif_mode_none || 'Нигде' },
+        ]}
+      />
     </div>
   );
 }
