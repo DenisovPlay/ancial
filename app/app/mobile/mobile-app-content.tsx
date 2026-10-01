@@ -1,14 +1,28 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { Fira_Sans_Extra_Condensed } from 'next/font/google';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-import Modal from '../../components/modal';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
-import { MOBILE_APP_DOWNLOAD_URL, SITE_URL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../lib/cn';
+import { InstallModal, useQrDataUrl, type Lang, type Platform } from './install-modal';
+import {
+  BoltSticker,
+  BubbleSticker,
+  CoinSticker,
+  DiscSticker,
+  Floating,
+  HeartSticker,
+  Marquee,
+  PlaneSticker,
+} from './landing-assets';
+import { MOBILE_APP_DOWNLOAD_URL } from '../../config';
+
+/** Плотный узкий гротеск с кириллицей и курсивом — для огромных заголовков. */
+const display = Fira_Sans_Extra_Condensed({ display: 'swap', style: ['normal', 'italic'], subsets: ['latin', 'cyrillic'], weight: ['800', '900'] });
 
 /** Мокапы — прозрачные PNG в 3D-изометрии */
 const SHOTS = {
@@ -18,11 +32,10 @@ const SHOTS = {
   lyrics: { src: '/img/apps/zypo/pulse-lyrics.png', width: 2922, height: 3614 },
 } as const;
 
-const BUTTON = 'flex items-center justify-center gap-3 px-4 py-2.5 rounded-full text-base font-semibold whitespace-nowrap cursor-pointer active:scale-95 duration-300';
-const LINK = 'inline-block text-blue-400 hover:text-blue-300 duration-300 active:scale-95 cursor-pointer';
-
-type Lang = Record<string, string> | null | undefined;
-type Platform = 'android' | 'ios';
+const HEAD = 'font-black uppercase leading-[0.84] tracking-[-0.005em]';
+const BIG_BUTTON =
+  'flex items-center justify-center gap-3 px-6 py-4 rounded-full text-lg font-extrabold uppercase tracking-wide whitespace-nowrap cursor-pointer active:scale-95 duration-300';
+const FRAME = 'relative overflow-hidden rounded-3xl border border-zinc-600/30';
 
 function Shot({
   shot,
@@ -47,189 +60,113 @@ function Shot({
       priority={priority}
       skeleton={false}
       draggable={false}
-      className={cn('w-auto select-none pointer-events-none', className)}
+      className={cn('w-auto max-w-none select-none pointer-events-none', className)}
     />
   );
 }
 
-function StoreButtons({
-  lang,
-  onPick,
-  className,
-}: {
-  lang: Lang;
-  onPick: (platform: Platform) => void;
-  className?: string;
-}) {
+/** Подсказка-карточка поверх телефона: кусочек интерфейса приложения. */
+function UiChip({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
   return (
-    <div className={cn('flex flex-row items-center gap-3 w-full sm:w-auto', className)}>
-      <button
-        type="button"
-        onClick={() => onPick('android')}
-        className={cn(BUTTON, 'bg-white text-black hover:bg-zinc-200 shadow-xl shadow-white/5 w-full sm:w-auto')}
-      >
-        <Icon name="IC-android" className="w-6 h-6 fill-black shrink-0" />
+    <div
+      className={cn(
+        'lp-float absolute z-20 hidden w-max items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur lg:flex',
+        className,
+      )}
+      style={{ animationDelay: `${delay}s` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Плашка-вставка внутри огромного заголовка. Высота — по высоте заглавных (0.7em), низ стоит на базовой линии:
+ * у inline-block с overflow:hidden базовая линия — нижняя кромка, поэтому плашка встаёт ровно вровень с буквами.
+ */
+function InlineChip({ children, tone = 'purple', edge = 'end' }: { children: ReactNode; tone?: 'purple' | 'white' | 'zinc'; edge?: 'start' | 'end' }) {
+  const tones = {
+    purple: 'bg-purple-600 text-white',
+    white: 'bg-white text-black',
+    zinc: 'bg-zinc-900 text-white border border-zinc-600/30',
+  } as const;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn('inline-block h-[0.7em] w-[1.5em] overflow-hidden rounded-full align-baseline', edge === 'end' ? 'ml-[0.14em]' : 'mr-[0.14em]', tones[tone])}
+    >
+      <span className="flex h-full w-full items-center justify-center">{children}</span>
+    </span>
+  );
+}
+
+function Reveal({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 48 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.9, delay, ease: [0.16, 1, 0.3, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function StoreButtons({ lang, onPick, className }: { lang: Lang; onPick: (platform: Platform) => void; className?: string }) {
+  return (
+    <div className={cn('flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center', className)}>
+      <button type="button" onClick={() => onPick('android')} className={cn(BIG_BUTTON, 'bg-white text-black hover:bg-zinc-200')}>
+        <Icon name="IC-android" className="h-7 w-7 shrink-0 fill-black" />
         {lang?.mobile_app_for_android || 'Для Android'}
       </button>
       <button
         type="button"
         onClick={() => onPick('ios')}
-        className={cn(BUTTON, 'border border-zinc-600/30 bg-zinc-900/80 backdrop-blur text-white hover:bg-zinc-800 w-full sm:w-auto')}
+        className={cn(BIG_BUTTON, 'border border-white/30 bg-black/40 text-white backdrop-blur hover:bg-white hover:text-black')}
       >
-        <Icon name="IC-apple" className="w-6 h-6 fill-white shrink-0" />
+        <Icon name="IC-apple" className="h-7 w-7 shrink-0 fill-current" />
         {lang?.mobile_app_for_iphone || 'Для iPhone'}
       </button>
     </div>
   );
 }
 
-function Step({ index, children }: { index: number; children: ReactNode }) {
-  return (
-    <li className="flex items-center gap-3">
-      <span className="w-8 h-8 shrink-0 rounded-full border border-zinc-600/30 bg-zinc-800 flex items-center justify-center text-sm font-semibold text-white">
-        {index}
-      </span>
-      <span className="text-zinc-300 text-sm sm:text-base">{children}</span>
-    </li>
-  );
-}
-
-/** Генератор QR-кода на клиенте */
-function useQrDataUrl(value: string | null) {
-  const [qr, setQr] = useState<{ value: string; url: string } | null>(null);
-  useEffect(() => {
-    if (!value) return undefined;
-    let cancelled = false;
-    void import('qrcode-generator')
-      .then(({ default: qrcode }) => {
-        const code = qrcode(0, 'M');
-        code.addData(value);
-        code.make();
-        if (!cancelled) setQr({ value, url: code.createDataURL(6, 2) });
-      })
-      .catch((error: unknown) => console.error('Failed to build QR', error));
-    return () => {
-      cancelled = true;
-    };
-  }, [value]);
-  return qr && qr.value === value ? qr.url : '';
-}
-
-/** Инструкция установки в модальном окне */
-function InstallModal({
-  lang,
-  platform,
-  onClose,
-}: {
-  lang: Lang;
-  platform: Platform | null;
-  onClose: () => void;
-}) {
-  const qrTarget = platform === 'ios' ? SITE_URL : platform === 'android' ? MOBILE_APP_DOWNLOAD_URL : null;
-  const qrUrl = useQrDataUrl(qrTarget);
+function Hero({ lang, onPick }: { lang: Lang; onPick: (platform: Platform) => void }) {
+  const ref = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+  const leftY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -120]);
+  const rightY = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : -60]);
 
   return (
-    <Modal
-      isOpen={platform !== null}
-      onClose={onClose}
-      width="md"
-      title={platform === 'ios' ? (lang?.mobile_app_for_iphone || 'Для iPhone') : (lang?.mobile_app_for_android || 'Для Android')}
+    <section
+      id="top"
+      ref={ref}
+      className="relative isolate flex min-h-[54rem] flex-col overflow-hidden bg-black lg:min-h-[64rem]"
     >
-      <div className="flex flex-col sm:flex-row items-center gap-3 p-0">
-        <div className="flex flex-col gap-6 flex-grow min-w-0 w-full">
-          {platform === 'ios' ? (
-            <ol className="flex flex-col gap-3">
-              <Step index={1}>
-                {lang?.mobile_app_ios_step_1 || 'Откройте'}{' '}
-                <a href={SITE_URL} target="_blank" rel="noopener noreferrer" className={LINK}>zypo.cc</a>{' '}
-                {lang?.mobile_app_ios_step_1_end || 'в Safari'}
-              </Step>
-              <Step index={2}>
-                {lang?.mobile_app_ios_step_2 || 'Нажмите кнопку «Поделиться»'}{' '}
-                <Icon name="IC-share" className="inline w-4 h-4 -mt-1 fill-white" />
-              </Step>
-              <Step index={3}>
-                {lang?.mobile_app_ios_step_3 || 'Выберите «На экран „Домой“»'}
-              </Step>
-            </ol>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <div className="w-full flex items-center">
-                <ol className="flex flex-col gap-3 flex-grow">
-                  <Step index={1}>
-                    {lang?.mobile_app_android_step_1 || 'Скачайте'}{' '}
-                    <a href={MOBILE_APP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" className={LINK}>APK</a>
-                  </Step>
-                  <Step index={2}>
-                    {lang?.mobile_app_android_step_2 || 'Откройте загруженный файл'}
-                  </Step>
-                  <Step index={3}>
-                    {lang?.mobile_app_android_step_3 || 'Разрешите установку, если система спросит'}
-                  </Step>
-                </ol>
-                {qrTarget ? (
-                  <div className="shrink-0 hidden sm:flex items-center justify-center p-3 bg-white rounded-3xl shrink-0 shadow">
-                    {qrUrl ? (
-                      <AppImage
-                        width={100}
-                        height={100}
-                        src={qrUrl}
-                        alt="QR Code"
-                        skeleton={false}
-                        className="w-24 h-24"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-zinc-400 border-t-transparent" />
-                    )}
-                  </div>
-                ) : null}
-              </div>
-              <a
-                href={MOBILE_APP_DOWNLOAD_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(BUTTON, 'bg-white text-black hover:bg-zinc-200 self-start w-full')}
-              >
-                <Icon name="IC-download" className="w-5 h-5 fill-black shrink-0" />
-                {lang?.mobile_app_download_apk || 'Скачать APK'}
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-    </Modal>
-  );
-}
+      <AppImage
+        fill
+        priority
+        skeleton={false}
+        sizes="100vw"
+        src="/img/app-landing/tube.svg"
+        alt=""
+        className="-z-10 h-[62%]! select-none object-cover lg:h-full!"
+      />
+      <div aria-hidden="true" className="absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-black to-transparent" />
 
-export default function MobileAppContent() {
-  const { lang } = useAuth();
-  const [platform, setPlatform] = useState<Platform | null>(null);
-
-  return (
-    <div className="relative w-full flex flex-col items-center overflow-x-clip pb-24">
-      {/* 1. ЖИВОЙ КОСМИЧЕСКИЙ ФОН С ВИДЕО */}
-      <div aria-hidden="true" className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          poster="/img/backgrounds/mobile-app.png"
-          className="w-full h-full object-cover opacity-35 duration-700 pointer-events-none select-none"
-          src="/img/backgrounds/mobile-app.mp4"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black pointer-events-none" />
-      </div>
-
-      {/* 2. ГЛАВНЫЙ ЭКРАН (HERO): ОДИН СМАРТФОН В ЦЕНТРЕ */}
-      <section className="relative z-10 w-full max-w-5xl px-3 lg:px-6 pt-12 lg:pt-24 flex flex-col items-center text-center gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col items-center gap-3"
-        >
-          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-none text-white">
+      {/* Логотип и слоган */}
+      <div className="relative z-20 flex flex-col items-center px-3 pt-16 text-center lg:pl-24 lg:pt-20">
+        <div className="relative w-full max-w-[1120px]">
+          <motion.h1
+            initial={{ opacity: 0, scale: 0.94, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            className="m-0"
+          >
             <AppImage
               src="/img/zypo/letter.svg"
               alt="Zypo"
@@ -237,187 +174,348 @@ export default function MobileAppContent() {
               height={122}
               priority
               skeleton={false}
-              className="inline-block h-[0.88em] w-auto align-[-0.24em]"
-            />{' '}
-            {lang?.mobile_app_title || 'в телефоне'}
-          </h1>
-          <p className="text-lg sm:text-xl text-zinc-300 max-w-xl mt-3 font-normal">
-            {lang?.mobile_app_subtitle || 'Лента, чаты, звонки и музыка — всегда с собой.'}
-          </p>
-        </motion.div>
+              className="mx-auto h-auto w-[92%] select-none drop-shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+            />
+          </motion.h1>
+          <Floating className="-left-1 top-[-6%] w-[13%] min-w-14" rotate={-12}><CoinSticker className="h-auto w-full" /></Floating>
+          <Floating className="right-[2%] top-[-10%] w-[12%] min-w-12" rotate={10} delay={0.8}><BubbleSticker className="h-auto w-full" /></Floating>
+          <Floating className="-left-[3%] bottom-[-6%] w-[9%] min-w-10" rotate={8} delay={1.4}><DiscSticker className="lp-spin h-auto w-full" /></Floating>
+          <Floating className="-right-[3%] bottom-[-8%] w-[8%] min-w-9" rotate={-8} delay={2}><HeartSticker className="h-auto w-full" /></Floating>
+          <Floating className="left-[44%] top-[-18%] hidden w-[5%] sm:block" rotate={14} delay={0.4}><BoltSticker className="h-auto w-full" /></Floating>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+        <motion.p
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col items-center gap-3 w-full"
+          transition={{ duration: 0.9, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className={cn(HEAD, 'mt-10 max-w-4xl text-balance text-[clamp(2.1rem,5.4vw,4.6rem)] text-white')}
         >
-          <StoreButtons lang={lang} onPick={setPlatform} className="justify-center mt-3" />
-        </motion.div>
-
-        {/* Единственный центральный смартфон в Hero */}
+          {lang?.mobile_landing_tagline || 'Всё, что вы любите. Теперь в кармане.'}
+        </motion.p>
         <motion.div
-          initial={{ opacity: 0, y: 40, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-lg h-[26rem] sm:h-[36rem] lg:h-[44rem] mt-6 flex items-end justify-center"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-6 w-full sm:w-auto"
         >
-          <Shot
-            shot={SHOTS.pulse}
-            alt="Zypo Pulse"
-            priority
-            sizes="(max-width: 640px) 90vw, 560px"
-            className="h-full drop-shadow-[0_30px_70px_rgba(0,0,0,0.9)]"
-          />
+          <StoreButtons lang={lang} onPick={onPick} />
         </motion.div>
-      </section>
+      </div>
 
-      {/* 3. СКРОЛЛ-СТОРИТЕЛЛИНГ: ПО ОДНОМУ ТЕЛЕФОНУ С ПЛАВНОЙ АНИМАЦИЕЙ */}
-      <div className="relative z-10 w-full max-w-5xl px-3 lg:px-6 py-24 flex flex-col gap-24 lg:gap-36">
-        {/* Секция 1: Музыка в фоне (Pulse) — телефон слева, текст справа */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-12">
-          <motion.div
-            initial={{ opacity: 0, x: -40, scale: 0.95 }}
-            whileInView={{ opacity: 1, x: 0, scale: 1 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="flex justify-center"
-          >
-            <Shot
-              shot={SHOTS.lyrics}
-              alt={lang?.mobile_app_point_music || 'Музыка в фоне'}
-              sizes="(max-width: 1024px) 85vw, 480px"
-              className="h-[24rem] sm:h-[34rem] lg:h-[38rem] drop-shadow-[0_25px_50px_rgba(0,0,0,0.85)]"
-            />
-          </motion.div>
+      {/* Телефоны, выезжающие из нижней кромки */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[24rem] sm:h-[30rem] lg:left-24 lg:h-[36rem]">
+        <motion.div style={{ y: leftY }} className="absolute bottom-[-18%] left-[2%] h-full sm:left-[10%] lg:left-[16%]">
+          <Shot shot={SHOTS.pulse} alt="Zypo Pulse" priority sizes="(max-width: 640px) 45vw, 360px" className="h-full -rotate-3 drop-shadow-[0_30px_60px_rgba(0,0,0,0.85)]" />
+        </motion.div>
+        <motion.div style={{ y: rightY }} className="absolute bottom-[-26%] right-[-18%] h-[105%] sm:right-[2%] lg:right-[10%]">
+          <Shot shot={SHOTS.feed} alt="Zypo" priority sizes="(max-width: 640px) 70vw, 560px" className="h-full rotate-2 drop-shadow-[0_30px_60px_rgba(0,0,0,0.85)]" />
+        </motion.div>
+        <UiChip className="bottom-[34%] left-[8%]" delay={0.6}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white">
+            <AppImage src="/img/zypo/logo-rounded.webp" alt="" width={44} height={44} skeleton={false} className="h-full w-full object-cover" />
+          </span>
+          <span className="flex flex-col text-left">
+            <span className="text-xs font-semibold text-zinc-400">{lang?.mobile_landing_chip_chat_title || 'Новое сообщение'}</span>
+            <span className="text-base font-bold text-white">{lang?.mobile_landing_chip_chat_text || 'Го в звонок?'}</span>
+          </span>
+        </UiChip>
+        <UiChip className="bottom-[44%] right-[6%]" delay={1.4}>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-3xl bg-purple-600">
+            <Icon name="IC-music" className="h-6 w-6 fill-white" />
+          </span>
+          <span className="flex flex-col text-left">
+            <span className="text-xs font-semibold text-zinc-400">{lang?.mobile_landing_chip_play_title || 'Сейчас играет'}</span>
+            <span className="text-base font-bold text-white">{lang?.mobile_landing_chip_play_track || 'Ночной рейс'}</span>
+          </span>
+        </UiChip>
+      </div>
+    </section>
+  );
+}
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col gap-6 text-center lg:text-left items-center lg:items-start"
-          >
-            <div className="w-12 h-12 rounded-full border border-zinc-600/30 bg-zinc-900/80 backdrop-blur flex items-center justify-center">
-              <Icon name="IC-music" className="w-6 h-6 fill-white" />
-            </div>
-            <div className="flex flex-col gap-3 max-w-md">
-              <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white">
-                {lang?.mobile_app_point_music || 'Музыка в фоне'}
-              </h2>
-              <p className="text-base sm:text-lg text-zinc-300 leading-relaxed font-normal">
-                {lang?.mobile_app_section_music_desc ||
-                  'Играет при заблокированном экране и сохраняет треки прямо в телефон для прослушивания офлайн.'}
-              </p>
-            </div>
-          </motion.div>
+/**
+ * Строка заголовка, подогнанная по ширине контейнера: текст доходит до правого края и не обрезается.
+ * Ширину замеряем по скрытой копии при кегле 100px — после загрузки шрифта и при каждом ресайзе.
+ */
+function FitLine({ children, className }: { children: ReactNode; className?: string }) {
+  const outer = useRef<HTMLSpanElement>(null);
+  const probe = useRef<HTMLSpanElement>(null);
+  const [size, setSize] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fit = () => {
+      const box = outer.current;
+      const copy = probe.current;
+      if (!box || !copy) return;
+      const natural = copy.getBoundingClientRect().width;
+      if (natural > 0 && box.clientWidth > 0) setSize(Math.min((box.clientWidth / natural) * 100 * 0.995, 280));
+    };
+    let cancelled = false;
+    void document.fonts.ready.then(() => {
+      if (!cancelled) fit();
+    });
+    // Шрифт может догрузиться уже после fonts.ready — тогда меняется ширина скрытой копии: следим и за ней.
+    const observer = new ResizeObserver(fit);
+    if (outer.current) observer.observe(outer.current);
+    if (probe.current) observer.observe(probe.current);
+    document.fonts.addEventListener('loadingdone', fit);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      document.fonts.removeEventListener('loadingdone', fit);
+    };
+  }, []);
+
+  return (
+    <span ref={outer} className="relative block w-full">
+      <span ref={probe} aria-hidden="true" className={cn('invisible absolute left-0 top-0 whitespace-nowrap', className)} style={{ fontSize: 100 }}>
+        {children}
+      </span>
+      <span className={cn('block whitespace-nowrap', className)} style={size ? { fontSize: `${size}px` } : undefined}>
+        {children}
+      </span>
+    </span>
+  );
+}
+
+/** Огромное утверждение на три строки со вставками-плашками. */
+function Statement({ lang }: { lang: Lang }) {
+  // До загрузки шрифта и замера строки держатся на этом запасном размере.
+  const fallback = 'text-[clamp(2.4rem,9vw,10rem)]';
+  return (
+    <section className="relative flex w-full flex-col gap-3 overflow-x-clip px-3 py-24 lg:px-0 lg:py-40">
+      <h2 className={cn(HEAD, 'flex flex-col gap-[0.06em] text-white')}>
+        <Reveal>
+          <FitLine className={fallback}>
+            {lang?.mobile_landing_line_1 || 'Лента без шума'}
+            <InlineChip tone="purple"><Icon name="IC-feed" className="h-[0.42em] w-[0.42em] fill-white" /></InlineChip>
+          </FitLine>
+        </Reveal>
+        <Reveal delay={0.08}>
+          <div className="lg:pl-[6%]">
+            <FitLine className={cn(fallback, 'text-purple-400 italic')}>
+              <InlineChip tone="white" edge="start"><Icon name="IC-call" className="h-[0.42em] w-[0.42em] fill-black" /></InlineChip>
+              {lang?.mobile_landing_line_2 || 'Чаты без задержек'}
+            </FitLine>
+          </div>
+        </Reveal>
+        <Reveal delay={0.16}>
+          <div className="lg:pl-[14%]">
+            <FitLine className={fallback}>
+              {lang?.mobile_landing_line_3 || 'Музыка без границ'}
+              <InlineChip tone="zinc"><Icon name="IC-music" className="h-[0.42em] w-[0.42em] fill-white" /></InlineChip>
+            </FitLine>
+          </div>
+        </Reveal>
+      </h2>
+      <Floating className="right-[3%] top-[6%] hidden w-[7%] lg:block" rotate={10}><PlaneSticker className="h-auto w-full" /></Floating>
+      <Floating className="bottom-[8%] left-[2%] hidden w-[6%] lg:block" rotate={-10} delay={1}><HeartSticker className="h-auto w-full" /></Floating>
+    </section>
+  );
+}
+
+interface FeatureProps {
+  id: string;
+  index: number;
+  title: string;
+  text: string;
+  tags: string[];
+  tone: 'dark' | 'purple' | 'lilac';
+  shot: { src: string; width: number; height: number };
+  shotClassName: string;
+  extraShot?: { shot: { src: string; width: number; height: number }; className: string };
+  chip?: ReactNode;
+  stickers?: ReactNode;
+}
+
+const TONES = {
+  dark: { panel: 'bg-zinc-950 text-white', tag: 'border-white/25 text-white', num: 'text-purple-400', text: 'text-zinc-300' },
+  purple: { panel: 'bg-purple-600 text-black', tag: 'border-black/40 text-black', num: 'text-white', text: 'text-black/80' },
+  lilac: { panel: 'bg-purple-200 text-black', tag: 'border-black/40 text-black', num: 'text-purple-700', text: 'text-black/75' },
+} as const;
+
+/** Липкая карточка: следующая наезжает на предыдущую при прокрутке. */
+function FeatureCard({ id, index, title, text, tags, tone, shot, shotClassName, extraShot, chip, stickers }: FeatureProps) {
+  const style = TONES[tone];
+  return (
+    <article
+      id={id}
+      className={cn(FRAME, 'min-h-[40rem] lg:sticky lg:top-[var(--stack-top)] lg:min-h-[44rem]', style.panel)}
+      style={{ ['--stack-top' as string]: `calc(0.75rem + ${index * 1}rem)` }}
+    >
+      {tone === 'dark' ? (
+        <AppImage
+          fill
+          skeleton={false}
+          sizes="(max-width: 1024px) 100vw, 60vw"
+          src="/img/app-landing/tube.svg"
+          alt=""
+          className="select-none object-cover opacity-45"
+        />
+      ) : null}
+      <div className="relative z-10 flex h-full min-h-[40rem] flex-col justify-start gap-6 p-6 lg:min-h-[44rem] lg:max-w-[52%] lg:justify-between lg:p-12">
+        <div className="flex flex-col gap-3">
+          <span className={cn(HEAD, 'text-[clamp(1.2rem,2vw,1.8rem)] italic', style.num)}>0{index + 1} /</span>
+          <h3 className={cn(HEAD, 'text-[clamp(4rem,11vw,10.5rem)]')}>{title}</h3>
         </div>
-
-        {/* Секция 2: Чаты и звонки — текст слева, телефон справа */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-12">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col gap-6 text-center lg:text-left items-center lg:items-start order-2 lg:order-1"
-          >
-            <div className="w-12 h-12 rounded-full border border-zinc-600/30 bg-zinc-900/80 backdrop-blur flex items-center justify-center">
-              <Icon name="IC-chats" className="w-6 h-6 fill-white" />
-            </div>
-            <div className="flex flex-col gap-3 max-w-md">
-              <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white">
-                {lang?.mobile_app_point_chats || 'Чаты и звонки'}
-              </h2>
-              <p className="text-base sm:text-lg text-zinc-300 leading-relaxed font-normal">
-                {lang?.mobile_app_section_chats_desc ||
-                  'Уведомления приходят моментально, а голосовые вызовы звучат чисто даже на слабом соединении.'}
-              </p>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 40, scale: 0.95 }}
-            whileInView={{ opacity: 1, x: 0, scale: 1 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="flex justify-center order-1 lg:order-2"
-          >
-            <Shot
-              shot={SHOTS.messages}
-              alt={lang?.mobile_app_point_chats || 'Чаты и звонки'}
-              sizes="(max-width: 1024px) 85vw, 480px"
-              className="h-[24rem] sm:h-[34rem] lg:h-[38rem] drop-shadow-[0_25px_50px_rgba(0,0,0,0.85)]"
-            />
-          </motion.div>
+        <div className="flex flex-col gap-6">
+          <p className={cn('max-w-md text-lg font-medium leading-snug lg:text-xl', style.text)}>{text}</p>
+          <ul className="flex flex-wrap gap-3">
+            {tags.map((tag) => (
+              <li key={tag} className={cn('rounded-full border px-4 py-2 text-sm font-extrabold uppercase tracking-wide', style.tag)}>{tag}</li>
+            ))}
+          </ul>
         </div>
+      </div>
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <Shot shot={shot} alt="" sizes="(max-width: 1024px) 90vw, 640px" className={cn('absolute drop-shadow-[0_30px_60px_rgba(0,0,0,0.55)]', shotClassName)} />
+        {extraShot ? <Shot shot={extraShot.shot} alt="" sizes="(max-width: 1024px) 60vw, 480px" className={cn('absolute drop-shadow-[0_30px_60px_rgba(0,0,0,0.55)]', extraShot.className)} /> : null}
+        {stickers}
+      </div>
+      {chip}
+    </article>
+  );
+}
 
-        {/* Секция 3: Лента — телефон слева, текст справа */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-12">
-          <motion.div
-            initial={{ opacity: 0, x: -40, scale: 0.95 }}
-            whileInView={{ opacity: 1, x: 0, scale: 1 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="flex justify-center"
-          >
-            <Shot
-              shot={SHOTS.feed}
-              alt={lang?.mobile_app_point_feed || 'Лента'}
-              sizes="(max-width: 1024px) 85vw, 480px"
-              className="h-[24rem] sm:h-[34rem] lg:h-[38rem] drop-shadow-[0_25px_50px_rgba(0,0,0,0.85)]"
-            />
-          </motion.div>
+function Tile({ icon, title, text, sticker }: { icon: string; title: string; text: string; sticker: ReactNode }) {
+  return (
+    <div className={cn(FRAME, 'group flex min-h-[22rem] flex-col justify-between gap-6 bg-zinc-950 p-6 duration-300 hover:bg-purple-600 lg:min-h-[26rem] lg:p-8')}>
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-600 duration-300 group-hover:bg-black">
+          <Icon name={icon} className="h-7 w-7 fill-white" />
+        </span>
+        <div className="w-24 duration-300 group-hover:-rotate-6 group-hover:scale-110">{sticker}</div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <h3 className={cn(HEAD, 'text-[clamp(2.6rem,5vw,4.6rem)] text-white duration-300 group-hover:text-black')}>{title}</h3>
+        <p className="max-w-sm text-base font-medium leading-snug text-zinc-400 duration-300 group-hover:text-black/80 lg:text-lg">{text}</p>
+      </div>
+    </div>
+  );
+}
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col gap-6 text-center lg:text-left items-center lg:items-start"
-          >
-            <div className="w-12 h-12 rounded-full border border-zinc-600/30 bg-zinc-900/80 backdrop-blur flex items-center justify-center">
-              <Icon name="IC-feed" className="w-6 h-6 fill-white" />
-            </div>
-            <div className="flex flex-col gap-3 max-w-md">
-              <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white">
-                {lang?.mobile_app_point_feed || 'Лента'}
-              </h2>
-              <p className="text-base sm:text-lg text-zinc-300 leading-relaxed font-normal">
-                {lang?.mobile_app_section_feed_desc ||
-                  'Хронологический поток от друзей и каналов. Без навязанных рекомендаций и рекламы.'}
-              </p>
-            </div>
-          </motion.div>
+function FinalCta({ lang, onPick }: { lang: Lang; onPick: (platform: Platform) => void }) {
+  const qrUrl = useQrDataUrl(MOBILE_APP_DOWNLOAD_URL);
+  return (
+    <section className={cn(FRAME, 'mt-3 flex min-h-[40rem] flex-col justify-between gap-12 bg-purple-600 p-6 text-black lg:min-h-[46rem] lg:p-12')}>
+      <div className="relative z-10 flex flex-col gap-6">
+        <Reveal>
+          <h2 className={cn(HEAD, 'text-[clamp(4.4rem,14vw,13rem)]')}>{lang?.mobile_landing_final_title || 'Скачай Zypo'}</h2>
+        </Reveal>
+        <p className="max-w-xl text-lg font-semibold leading-snug text-black/80 lg:text-xl">
+          {lang?.mobile_landing_final_text || 'Android — APK за пару нажатий. iPhone — добавьте Zypo на экран «Домой» через Safari.'}
+        </p>
+        <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <button type="button" onClick={() => onPick('android')} className={cn(BIG_BUTTON, 'bg-black text-white hover:bg-zinc-800')}>
+            <Icon name="IC-android" className="h-7 w-7 shrink-0 fill-white" />
+            {lang?.mobile_app_for_android || 'Для Android'}
+          </button>
+          <button type="button" onClick={() => onPick('ios')} className={cn(BIG_BUTTON, 'border border-black/50 text-black hover:bg-black hover:text-white')}>
+            <Icon name="IC-apple" className="h-7 w-7 shrink-0 fill-current" />
+            {lang?.mobile_app_for_iphone || 'Для iPhone'}
+          </button>
         </div>
       </div>
 
-      {/* 4. ФИНАЛЬНЫЙ БЛОК УСТАНОВКИ */}
-      <section className="relative z-10 w-full max-w-2xl px-3 py-12 flex flex-col items-center">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full flex flex-col items-center text-center gap-3"
-        >
-          <div className="flex flex-col items-center gap-3 max-w-lg">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-              {lang?.mobile_app_final_title || 'Всегда под рукой'}
-            </h2>
-            <p className="text-zinc-300 text-sm sm:text-base font-normal">
-              {lang?.mobile_app_final_desc ||
-                'Скачайте APK для Android или добавьте на экран iPhone через Safari.'}
-            </p>
-          </div>
+      <div aria-hidden="true" className="pointer-events-none absolute right-6 top-6 hidden rounded-3xl bg-white p-3 shadow-2xl lg:block lg:right-12 lg:top-12">
+        {qrUrl ? (
+          <AppImage src={qrUrl} alt="" width={160} height={160} skeleton={false} className="h-40 w-40" />
+        ) : (
+          <div className="h-40 w-40" />
+        )}
+      </div>
+      <Floating className="right-[22%] top-[34%] hidden w-[8%] lg:block" rotate={12}><CoinSticker className="h-auto w-full" /></Floating>
+      <Floating className="right-[8%] bottom-[22%] hidden w-[7%] lg:block" rotate={-10} delay={1.2}><BoltSticker className="h-auto w-full" /></Floating>
 
-          <StoreButtons lang={lang} onPick={setPlatform} />
-        </motion.div>
+      <AppImage
+        src="/img/zypo/letter.svg"
+        alt=""
+        width={404}
+        height={122}
+        skeleton={false}
+        className="pointer-events-none -mb-[3%] w-full select-none opacity-90 mix-blend-overlay"
+      />
+    </section>
+  );
+}
+
+export default function MobileAppContent() {
+  const { lang } = useAuth();
+  const [platform, setPlatform] = useState<Platform | null>(null);
+
+  const banner = lang?.mobile_landing_banner || 'Zypo для Android уже доступен';
+  const marquee = [banner, 'Pulse', lang?.mobile_app_point_chats || 'Чаты и звонки', lang?.mobile_app_point_feed || 'Лента'];
+
+  return (
+    <div className={cn(display.className, 'relative flex w-full flex-col overflow-x-clip bg-black pb-24 text-white')}>
+      {/* Лендинг на всю ширину: фон заходит под навигацию, отступ под неё держат сами секции */}
+      <style>{`#main-content { padding: 0 !important; }`}</style>
+
+      <Hero lang={lang} onPick={setPlatform} />
+
+      {/* Бегущая строка */}
+      <div className="bg-purple-400 py-2 text-black">
+        <Marquee items={marquee} className="text-sm font-black uppercase tracking-wide" itemClassName="" />
+      </div>
+
+      <div className="flex flex-col lg:pl-[6.375rem] lg:pr-6">
+      <Statement lang={lang} />
+
+      {/* Липкие карточки возможностей */}
+      <div className="flex flex-col gap-3 pb-12">
+        <FeatureCard
+          id="feed"
+          index={0}
+          tone="dark"
+          title={lang?.mobile_app_point_feed || 'Лента'}
+          text={lang?.mobile_app_section_feed_desc || 'Хронологический поток от друзей и сообществ. Без навязанных рекомендаций и рекламы.'}
+          tags={[lang?.mobile_landing_tag_chrono || 'Хронология', lang?.mobile_landing_tag_topics || 'Темы', lang?.mobile_landing_tag_bookmarks || 'Закладки']}
+          shot={SHOTS.feed}
+          shotClassName="-bottom-[4%] -right-[14%] h-[52%] sm:-right-[6%] sm:h-[56%] lg:-bottom-[12%] lg:right-[2%] lg:h-[100%]"
+          stickers={<Floating className="right-[4%] top-[8%] w-[10%] min-w-12" rotate={10}><HeartSticker className="h-auto w-full" /></Floating>}
+        />
+        <FeatureCard
+          id="chats"
+          index={1}
+          tone="purple"
+          title={lang?.mobile_app_point_chats || 'Чаты и звонки'}
+          text={lang?.mobile_app_section_chats_desc || 'Сообщения приходят мгновенно, а голосовые вызовы звучат чисто даже на слабом соединении.'}
+          tags={[lang?.mobile_landing_tag_calls || 'Звонки', lang?.mobile_landing_tag_groups || 'Группы', lang?.mobile_landing_tag_stickers || 'Стикеры']}
+          shot={SHOTS.messages}
+          shotClassName="-bottom-[6%] right-[2%] h-[54%] sm:right-[6%] sm:h-[58%] lg:-bottom-[10%] lg:right-[8%] lg:h-[104%]"
+          stickers={<Floating className="right-[36%] top-[10%] hidden w-[9%] lg:block" rotate={-8}><BubbleSticker className="h-auto w-full" /></Floating>}
+        />
+        <FeatureCard
+          id="pulse"
+          index={2}
+          tone="lilac"
+          title="Pulse"
+          text={lang?.mobile_app_section_music_desc || 'Играет при заблокированном экране и сохраняет треки в телефон для прослушивания офлайн.'}
+          tags={[lang?.mobile_landing_tag_lyrics || 'Тексты песен', lang?.mobile_landing_tag_eq || 'Эквалайзер', lang?.mobile_landing_tag_offline || 'Офлайн']}
+          shot={SHOTS.pulse}
+          shotClassName="-bottom-[8%] right-[8%] h-[54%] sm:right-[20%] sm:h-[58%] lg:-bottom-[14%] lg:right-[30%] lg:h-[104%]"
+          extraShot={{ shot: SHOTS.lyrics, className: 'hidden -bottom-[22%] -right-[8%] h-[84%] lg:block' }}
+          stickers={<Floating className="right-[4%] top-[6%] w-[9%] min-w-12" rotate={14}><DiscSticker className="lp-spin h-auto w-full" /></Floating>}
+        />
+      </div>
+
+      {/* Под капотом */}
+      <section id="more" className="flex w-full flex-col gap-3">
+        <Reveal>
+          <h2 className={cn(HEAD, 'mb-3 px-3 text-[clamp(3.4rem,10vw,9rem)] text-white lg:px-0')}>{lang?.mobile_landing_more_title || 'Под капотом'}</h2>
+        </Reveal>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <Reveal><Tile icon="IC-music" title={lang?.mobile_landing_tile_music || 'Музыка в фоне'} text={lang?.mobile_landing_tile_music_text || 'Играет при погасшем экране, управление — из шторки и с экрана блокировки.'} sticker={<DiscSticker className="lp-spin h-auto w-full" />} /></Reveal>
+          <Reveal delay={0.08}><Tile icon="IC-notification" title={lang?.mobile_landing_tile_push || 'Мгновенные уведомления'} text={lang?.mobile_landing_tile_push_text || 'Сообщения и звонки приходят сразу, даже когда приложение закрыто.'} sticker={<BoltSticker className="h-auto w-full" />} /></Reveal>
+          <Reveal><Tile icon="IC-lock" title={lang?.mobile_landing_tile_passkeys || 'Вход по Passkeys'} text={lang?.mobile_landing_tile_passkeys_text || 'Отпечаток или Face ID вместо пароля — быстро и надёжно.'} sticker={<CoinSticker className="h-auto w-full" />} /></Reveal>
+          <Reveal delay={0.08}><Tile icon="IC-download" title={lang?.mobile_landing_tile_offline || 'Офлайн-треки'} text={lang?.mobile_landing_tile_offline_text || 'Сохраняйте любимое в телефон и слушайте без интернета.'} sticker={<HeartSticker className="h-auto w-full" />} /></Reveal>
+        </div>
       </section>
 
-      {/* Модальное окно установки */}
-      <InstallModal lang={lang} platform={platform} onClose={() => setPlatform(null)} />
+      <FinalCta lang={lang} onPick={setPlatform} />
+      </div>
 
+      <InstallModal lang={lang} platform={platform} onClose={() => setPlatform(null)} />
       <div className="lg:hidden"><br /><br /><br /><br /></div>
     </div>
   );

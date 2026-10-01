@@ -22,6 +22,7 @@ const proxyBackup = join(root, 'proxy.ts.app-build');
 const APP_EXCLUDED_PATHS = [
   // Ассеты лендинга /app/mobile: в приложении лендинг не показывается.
   'img/apps/zypo', // скриншоты (~20 МБ)
+  'img/app-landing', // нарисованный фон лендинга
   'img/backgrounds/mobile-app.mp4', // видео-фон (~2,5 МБ)
   'img/backgrounds/mobile-app.png', // постер видео (~1,3 МБ)
 ];

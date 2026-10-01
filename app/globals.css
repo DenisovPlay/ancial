@@ -1311,3 +1311,22 @@ select:-webkit-autofill {
   border-radius: inherit;
   transition: background-color 9999s ease-in-out 0s;
 }
+
+/* Лендинг мобильного приложения (/app/mobile): бегущая строка и плавающие стикеры */
+@keyframes lp-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes lp-float {
+  0%, 100% { transform: translateY(0) rotate(var(--lp-rot, 0deg)); }
+  50% { transform: translateY(-14px) rotate(calc(var(--lp-rot, 0deg) + 3deg)); }
+}
+@keyframes lp-spin {
+  to { transform: rotate(360deg); }
+}
+.lp-marquee { animation: lp-marquee 38s linear infinite; }
+.lp-float { animation: lp-float 6s ease-in-out infinite; }
+.lp-spin { animation: lp-spin 14s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-marquee, .lp-float, .lp-spin { animation: none; }
+}
