@@ -70,7 +70,7 @@ function UiChip({ children, className, delay = 0 }: { children: ReactNode; class
   return (
     <div
       className={cn(
-        'lp-float absolute z-20 hidden w-max items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur lg:flex',
+        'glass-panel [--glass-tint:var(--color-zinc-900)] [--glass-alpha:0.9] lp-float absolute z-20 hidden w-max items-center gap-3 rounded-3xl border border-zinc-600/30 p-3 shadow-2xl lg:flex',
         className,
       )}
       style={{ animationDelay: `${delay}s` }}
@@ -125,7 +125,7 @@ function StoreButtons({ lang, onPick, className }: { lang: Lang; onPick: (platfo
       <button
         type="button"
         onClick={() => onPick('ios')}
-        className={cn(BIG_BUTTON, 'border border-white/30 bg-black/40 text-white backdrop-blur hover:bg-white hover:text-black')}
+        className={cn(BIG_BUTTON, 'glass-panel [--glass-tint:var(--color-black)] [--glass-alpha:0.4] border border-white/30 text-white hover:[--glass-tint:var(--color-white)] hover:[--glass-alpha:1] hover:text-black')}
       >
         <Icon name="IC-apple" className="h-7 w-7 shrink-0 fill-current" />
         {lang?.mobile_app_for_iphone || 'Для iPhone'}
@@ -399,9 +399,19 @@ function FinalCta({ lang, onPick }: { lang: Lang; onPick: (platform: Platform) =
   return (
     <section className={cn(FRAME, 'mt-3 flex min-h-[40rem] flex-col justify-between gap-12 bg-purple-600 p-6 text-black lg:min-h-[46rem] lg:p-12')}>
       <div className="relative z-10 flex flex-col gap-6">
-        <Reveal>
-          <h2 className={cn(HEAD, 'text-[clamp(4.4rem,14vw,13rem)]')}>{lang?.mobile_landing_final_title || 'Скачай Zypo'}</h2>
-        </Reveal>
+        <div className="flex items-start justify-between gap-6">
+          <Reveal className="min-w-0">
+            <h2 className={cn(HEAD, 'text-[clamp(4.4rem,14vw,13rem)]')}>{lang?.mobile_landing_final_title || 'Скачай Zypo'}</h2>
+          </Reveal>
+          {/* QR в потоке рядом с заголовком: абсолютный перекрывался длинным заголовком на части экранов */}
+          <div aria-hidden="true" className="pointer-events-none hidden shrink-0 rounded-3xl bg-white p-3 shadow-2xl lg:block">
+            {qrUrl ? (
+              <AppImage src={qrUrl} alt="" width={160} height={160} skeleton={false} className="h-40 w-40" />
+            ) : (
+              <div className="h-40 w-40" />
+            )}
+          </div>
+        </div>
         <p className="max-w-xl text-lg font-semibold leading-snug text-black/80 lg:text-xl">
           {lang?.mobile_landing_final_text || 'Android — APK за пару нажатий. iPhone — добавьте Zypo на экран «Домой» через Safari.'}
         </p>
@@ -417,13 +427,6 @@ function FinalCta({ lang, onPick }: { lang: Lang; onPick: (platform: Platform) =
         </div>
       </div>
 
-      <div aria-hidden="true" className="pointer-events-none absolute right-6 top-6 hidden rounded-3xl bg-white p-3 shadow-2xl lg:block lg:right-12 lg:top-12">
-        {qrUrl ? (
-          <AppImage src={qrUrl} alt="" width={160} height={160} skeleton={false} className="h-40 w-40" />
-        ) : (
-          <div className="h-40 w-40" />
-        )}
-      </div>
       <Floating className="right-[22%] top-[34%] hidden w-[8%] lg:block" rotate={12}><CoinSticker className="h-auto w-full" /></Floating>
       <Floating className="right-[8%] bottom-[22%] hidden w-[7%] lg:block" rotate={-10} delay={1.2}><BoltSticker className="h-auto w-full" /></Floating>
 

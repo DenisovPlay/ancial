@@ -216,7 +216,9 @@ function ExpandablePostContent({
     const measure = () => {
       const fullHeight = el.scrollHeight;
       const MAX_HEIGHT = 260;
-      setIsOverflowing(fullHeight > MAX_HEIGHT + 24);
+      // Сворачиваем только по-настоящему длинные посты: карусель с подписью (~450px) прятать за
+      // «Больше» бессмысленно — скрытая часть должна быть хотя бы ещё одним свёрнутым блоком.
+      setIsOverflowing(fullHeight > MAX_HEIGHT * 2);
     };
 
     measure();

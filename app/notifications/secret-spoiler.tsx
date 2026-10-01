@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import Icon from '../components/svg-icon';
-import { useCopyToClipboard } from '../hooks/use-copy-to-clipboard';
 import { AncialAPI, AncialAPIError } from '../lib/api-v2';
 import { formatCountdown, secondsLeft, type Lang } from '../lib/notifications/kinds';
 import type { RichNotification } from '../lib/notifications/types';
@@ -21,8 +20,6 @@ export default function SecretSpoiler({ notification, lang }: { notification: Ri
   const [left, setLeft] = useState(() => secondsLeft(secret?.expires_at ?? null));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<RevealError | null>(null);
-  const [copied, setCopied] = useState(false);
-  const copy = useCopyToClipboard();
 
   // Обратный отсчёт: по истечении срока код пропадает с экрана.
   useEffect(() => {
@@ -55,14 +52,6 @@ export default function SecretSpoiler({ notification, lang }: { notification: Ri
     }
   }, [busy, notification.id]);
 
-  const onCopy = useCallback(async () => {
-    if (!code) return;
-    if (await copy(code)) {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    }
-  }, [code, copy]);
-
   if (!secret) return null;
 
   const stateDone = secret.state === 'confirmed' || error === 'used';
@@ -89,14 +78,7 @@ export default function SecretSpoiler({ notification, lang }: { notification: Ri
     <div className="pointer-events-auto flex flex-wrap items-center gap-3">
       {code ? (
         <>
-          <span className="rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2 font-mono text-xl font-bold tracking-[0.3em] text-white">{code}</span>
-          <button
-            type="button"
-            onClick={() => void onCopy()}
-            className="cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95"
-          >
-            {copied ? (lang?.notif_code_copied || 'Скопировано') : (lang?.notif_code_copy || 'Скопировать')}
-          </button>
+          <span className="rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2 select-all font-mono text-xl font-bold tracking-[0.3em] text-white">{code}</span>
           <span className="text-xs tabular-nums text-zinc-500">{formatCountdown(left)}</span>
         </>
       ) : (

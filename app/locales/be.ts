@@ -557,8 +557,6 @@ export const be: Record<string, string> = {
     "notif_earlier": "Раней",
     "notif_delete": "Выдаліць",
     "notif_show_code": "Паказаць код",
-    "notif_code_copy": "Скапіраваць",
-    "notif_code_copied": "Скапіравана",
     "notif_code_expired": "Код пратэрмінаваны",
     "notif_code_confirmed": "Уваход пацверджаны",
     "notif_code_error": "Не атрымалася паказаць код",

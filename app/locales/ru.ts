@@ -557,8 +557,6 @@ export const ru: Record<string, string> = {
     "notif_earlier": "Ранее",
     "notif_delete": "Удалить",
     "notif_show_code": "Показать код",
-    "notif_code_copy": "Скопировать",
-    "notif_code_copied": "Скопировано",
     "notif_code_expired": "Код истёк",
     "notif_code_confirmed": "Вход подтверждён",
     "notif_code_error": "Не удалось показать код",
