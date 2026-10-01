@@ -25,7 +25,7 @@ export function PresenceCoverBadge({ className, presence }: { className?: string
   const cover = presence.activity_meta?.cover;
   return (
     <span
-      title={getPresenceText(presence, lang)}
+      data-tip={getPresenceText(presence, lang)}
       className={cn('flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border-2 border-zinc-900 bg-purple-500 shadow', className)}
     >
       {cover ? (
@@ -126,7 +126,7 @@ export default function PresenceActivity({
         triggerClassName="overflow-hidden p-0 shadow"
         triggerNode={
           <span
-            title={text}
+            data-tip={text}
             className={cn(
               'glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.8] [--glass-blur:16px] flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-zinc-600/30',
               isMusic && 'ring-2 ring-purple-500',
@@ -156,7 +156,7 @@ export default function PresenceActivity({
                 key={action.key}
                 type="button"
                 aria-label={action.label}
-                title={action.label}
+                data-tip={action.label}
                 onClick={action.onClick}
                 className={MENU_ICON_BUTTON}
               >
