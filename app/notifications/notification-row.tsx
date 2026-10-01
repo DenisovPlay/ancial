@@ -39,7 +39,7 @@ function ActorAvatars({ notification }: { notification: RichNotification }) {
   const meta = getKindMeta(notification);
   const actors = notification.actors.slice(0, 3);
   const badge = (
-    <span className={cn('absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-zinc-900', TONE_CLASSES[meta.tone])}>
+    <span className={cn('absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30', TONE_CLASSES[meta.tone])}>
       <Icon name={meta.icon} className="h-3.5 w-3.5 fill-white" />
     </span>
   );
@@ -60,7 +60,7 @@ function ActorAvatars({ notification }: { notification: RichNotification }) {
       src={actor.img || FALLBACK_AVATAR}
       fallbackSrc={FALLBACK_AVATAR}
       alt=""
-      className={cn('rounded-full border-2 border-zinc-900 object-cover', className)}
+      className={cn('rounded-full border border-zinc-600/30 object-cover', className)}
     />
   );
 
