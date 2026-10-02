@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import WalletContent from './wallet-content';
 import { createPageMetadata } from '../seo';
+import BrandLoader from '../components/brand-loader';
 
 export async function generateMetadata(): Promise<Metadata> {
   return createPageMetadata({
@@ -13,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function WalletPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<BrandLoader page />}>
       <WalletContent />
     </Suspense>
   );

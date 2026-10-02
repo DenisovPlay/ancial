@@ -42,7 +42,7 @@ import {
   uploadImage,
   uploadPostImageFiles,
 } from '../editor-shared';
-import Icon from '../../components/svg-icon';
+import BrandLoader from '../../components/brand-loader';
 
 type AvailableAuthor = {
   id: string;
@@ -86,7 +86,7 @@ export default function CreatePostContent() {
   if (!isClient) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+        <BrandLoader size="lg" />
       </div>
     );
   }
@@ -518,7 +518,7 @@ function CreatePostForm() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+        <BrandLoader size="lg" />
       </div>
     );
   }
@@ -526,7 +526,7 @@ function CreatePostForm() {
   if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+        <BrandLoader size="lg" />
       </div>
     );
   }

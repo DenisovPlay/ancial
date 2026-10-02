@@ -9,6 +9,8 @@ import { AncialAPI, getApiMessage, type WalletMerchantDetails, type WalletMercha
 import { cache } from '../../../lib/cache.ts';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
+import ErrorState from '../../../components/error-state';
 
 function AboutContentInner() {
   const router = useRouter();
@@ -241,12 +243,7 @@ function AboutContentInner() {
 
   if (error || !merchant) {
     return (
-      <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-zinc-350 gap-3 px-4">
-        <span className="text-xl font-bold text-red-500">{error || (lang?.error_loading_merchant || 'Ошибка загрузки мерчанта')}</span>
-        <Link href="/wallet/merchant" className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition duration-300">
-          {lang?.back_to_merchants || 'Назад к мерчантам'}
-        </Link>
-      </div>
+      <ErrorState variant="page" title={error || (lang?.error_loading_merchant || 'Ошибка загрузки мерчанта')} actionHref="/wallet/merchant" actionLabel={lang?.back_to_merchants || 'Назад к мерчантам'} />
     );
   }
 
@@ -508,9 +505,7 @@ function AboutContentInner() {
 export default function AboutContent() {
   return (
     <Suspense fallback={
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-purple-500 border-t-transparent" />
-      </div>
+      <div className="bg-black"><BrandLoader screen /></div>
     }>
       <AboutContentInner />
     </Suspense>

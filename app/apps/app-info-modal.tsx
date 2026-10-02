@@ -19,6 +19,7 @@ import {
 } from './apps-model';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import ErrorState from '../components/error-state';
 
 type AppInfoModalProps = {
   appId: number | string | null;
@@ -458,11 +459,12 @@ function AppInfoEmpty({ lang }: { lang: ReturnType<typeof useAuth>['lang'] }) {
 function AppInfoError({ error }: { error: string }) {
   const { lang } = useAuth();
   return (
-    <div className="min-h-[70vh] flex flex-col justify-center items-center w-full h-full">
-      <AppImage skeleton={false} width={224} height={224} unoptimized className="h-auto w-auto" alt="" src="/img/status/sponge.gif" />
-      <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
-      <span className="text-content-600">{lang?.try_refresh_page || 'Попробуйте обновить страницу'}</span>
-      <span className="text-xs text-zinc-400">{error}</span>
+    <div className="min-h-[70vh] flex items-center justify-center w-full h-full">
+      <ErrorState
+        image="/img/status/sponge.gif"
+        title={lang?.connection_lost || 'Связь потеряна!'}
+        description={`${lang?.try_refresh_page || 'Попробуйте обновить страницу'} · ${error}`}
+      />
     </div>
   );
 }

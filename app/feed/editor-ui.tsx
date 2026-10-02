@@ -21,6 +21,7 @@ import {
 } from './editor-shared';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import BrandLoader from '../components/brand-loader';
 type AvailableAuthor = {
     id: string;
     name: string;
@@ -300,7 +301,7 @@ export function FeedEditorUI({
                                                 <AppImage fill sizes="128px" src={image.previewUrl} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover" />
                                                 {image.status === 'uploading' ? (
                                                     <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full text-5xl font-bold duration-300">
-                                                        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+                                                        <BrandLoader size="lg" />
                                                     </div>
                                                 ) : (
                                                     <div className="bg-zinc-800 text-white rounded-2xl flex items-center justify-center w-full h-full opacity-0 hover:opacity-90 text-5xl font-bold duration-300">

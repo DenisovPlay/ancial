@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getPulseBackgroundColorByMood, } from '../pulse-components';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
+import BrandLoader from '../../components/brand-loader';
 
 type StatsData = {
   total_listens: number;
@@ -67,9 +68,7 @@ export default function PulseCreateOverviewPage() {
       </div>
 
       {loading ? (
-        <div className="flex w-full items-center justify-center p-6">
-          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
-        </div>
+        <BrandLoader page />
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">

@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
 
 function flag(value: boolean | number | string | null | undefined) {
   return value === true || value === 1 || value === '1' || value === 'true';
@@ -129,9 +130,7 @@ export default function PrivacySecurityContent() {
 
   if (isLoading && !user) {
     return (
-      <div className="flex justify-center items-center w-full h-[60vh]">
-        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
-      </div>
+      <BrandLoader page />
     );
   }
 

@@ -11,6 +11,7 @@ import { cache } from '../../../lib/cache';
 import { OtpInput } from '../../../components/otp-input';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
 
 type View = 'idle' | 'enable_password' | 'enable_confirm' | 'recovery' | 'disable';
 
@@ -154,9 +155,7 @@ export default function TwoFactorContent() {
 
   if (isLoading && !user) {
     return (
-      <div className="flex justify-center items-center w-full h-[60vh]">
-        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
-      </div>
+      <BrandLoader page />
     );
   }
   if (!isAuthenticated || !user) return null;

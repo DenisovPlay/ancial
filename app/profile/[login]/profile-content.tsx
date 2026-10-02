@@ -5,7 +5,6 @@ import AppImage from '../../components/app-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { sanitizeUserHtml } from '../../lib/sanitize-html';
 
 import Modal from '../../components/modal';
 import DeletePostModal from '../../components/delete-post-modal';
@@ -46,6 +45,8 @@ import { usePresence, usePresences, type UserPresence } from '../../lib/presence
 import PresenceActivity, { PresenceCoverBadge } from '../../components/presence-activity';
 import Icon from '../../components/svg-icon';
 import { apiUrl } from '../../lib/api-url';
+import ErrorState from '../../components/error-state';
+import { htmlToPlainText } from '../../lib/translate';
 
 type Id = string | number;
 
@@ -903,22 +904,7 @@ export default function UserProfileContent({ login }: { login: string }) {
       {loading ? (
         <ProfileSkeleton />
       ) : error ? (
-        <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
-          <AppImage
-            src="/img/load-placeholders/nothingfound.webp"
-            alt="Profile error"
-            width={224}
-            height={224}
-            className="h-56 w-auto"
-          />
-          <div className="text-center text-zinc-200" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(error) }} />
-          <Link
-            href="/"
-            className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase inline-block text-white"
-          >
-            {strings.home}
-          </Link>
-        </div>
+        <ErrorState variant="page" title={htmlToPlainText(error)} actionHref="/" actionLabel={strings.home} />
       ) : userData ? (
         <div className="flex flex-col gap-3 items-center flex-grow w-full max-w-screen-2xl">
           <span className="text-3xl font-extralight w-full pt-3 pl-3 md:pl-0 truncate z-[30]">

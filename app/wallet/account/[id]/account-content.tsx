@@ -10,6 +10,7 @@ import { cache } from '../../../lib/cache.ts';
 import Modal from '../../../components/modal';
 import { TransactionItem, TransactionDetailsModal } from '../../components/transaction-item';
 import Icon from '../../../components/svg-icon';
+import ErrorState from '../../../components/error-state';
 
 /** Плоское сравнение WalletAccount по полям: cache.get()/API отдают новый объект каждый раз. */
 function isSameAccount(a: WalletAccount | null, b: WalletAccount): boolean {
@@ -276,12 +277,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
 
   if (error || !currentAccount) {
     return (
-      <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-zinc-300 gap-3">
-        <span className="text-xl font-bold text-red-500">{error || (lang?.error_loading_account || 'Ошибка загрузки счёта')}</span>
-        <Link href="/wallet" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full transition duration-300">
-          {lang?.back_to_wallet || 'Назад в кошелёк'}
-        </Link>
-      </div>
+      <ErrorState variant="page" title={error || (lang?.error_loading_account || 'Ошибка загрузки счёта')} actionHref="/wallet" actionLabel={lang?.back_to_wallet || 'Назад в кошелёк'} />
     );
   }
 

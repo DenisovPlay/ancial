@@ -23,6 +23,7 @@ import Modal from '../../../components/modal';
 import Icon from '../../../components/svg-icon';
 import { lyricsCacheKey } from '../../player/lyrics-service';
 import { PulseLyricsDesktop, PulseLyricsPlain } from '../../player/pulse-lyrics';
+import BrandLoader from '../../../components/brand-loader';
 
 type Mode = 'text' | 'sync' | 'preview';
 type Confirm = 'draft' | 'replace' | 'plain' | 'reset' | null;
@@ -822,9 +823,7 @@ export default function LyricsContent() {
       </div>
 
       {loading ? (
-        <div className="flex w-full items-center justify-center p-6">
-          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
-        </div>
+        <BrandLoader page />
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-3">

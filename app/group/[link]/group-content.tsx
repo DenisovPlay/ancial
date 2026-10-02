@@ -46,6 +46,7 @@ import { useCommunityStructure } from './hooks/use-community-structure';
 import { visibleManagementTabs } from './lib/community-types';
 import Icon from '../../components/svg-icon';
 import { apiUrl } from '../../lib/api-url';
+import ErrorState from '../../components/error-state';
 
 type Id = string | number;
 
@@ -927,22 +928,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
           </Link>
         </div>
       ) : error ? (
-        <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
-          <AppImage
-            src="/img/load-placeholders/nothingfound.webp"
-            alt="Group error"
-            width={224}
-            height={224}
-            className="h-56 w-auto"
-          />
-          <div className="text-center text-zinc-200">{error}</div>
-          <Link
-            href="/"
-            className="cursor-pointer px-4 py-2 rounded-3xl shadow bg-purple-500 hover:bg-purple-600 duration-300 active:scale-95 uppercase inline-block text-white"
-          >
-            {strings.home}
-          </Link>
-        </div>
+        <ErrorState variant="page" title={error} actionHref="/" actionLabel={strings.home} />
       ) : groupData ? (
         <div className="flex flex-col gap-3 items-center flex-grow w-screen md:max-w-screen-2xl">
           <span className="text-3xl font-extralight w-full pt-3 pl-3 md:pt-0 md:pl-0 truncate">

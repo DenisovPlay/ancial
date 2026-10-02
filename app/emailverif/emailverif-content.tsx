@@ -8,6 +8,7 @@ import { useNotification } from '../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
 import { sanitizeUserHtml } from '../lib/sanitize-html';
 import Icon from '../components/svg-icon';
+import BrandLoader from '../components/brand-loader';
 
 function EmailVerifContentInner() {
   const { lang, checkAuth } = useAuth();
@@ -100,7 +101,7 @@ function EmailVerifContentInner() {
         {/* LOADING STATE */}
         {status === 'loading' && (
           <div className="flex flex-col items-center gap-3 py-6">
-            <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+            <BrandLoader size="md" />
             <p className="text-zinc-400 text-sm animate-pulse">
               Проверка кода подтверждения...
             </p>
@@ -179,7 +180,7 @@ export default function EmailVerifContent() {
     <Suspense
       fallback={
         <main className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-3">
-          <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+          <BrandLoader size="md" />
         </main>
       }
     >

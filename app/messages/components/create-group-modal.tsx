@@ -10,6 +10,7 @@ import { AncialAPI, getApiMessage } from '../../lib/api-v2';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../lib/messages-shared';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
+import BrandLoader from '../../components/brand-loader';
 
 
 interface FriendItem {
@@ -218,7 +219,7 @@ export default function CreateGroupModal({
         {/* Список друзей */}
         <div className="flex flex-col max-h-72 overflow-y-auto -mb-10 pb-8 -mt-8 pt-8 -mx-3">
           {loadingFriends ? (
-            <span className="text-xs text-zinc-400 p-3 text-center">{lang?.loading_friends || 'Загрузка друзей...'}</span>
+            <div className="flex justify-center p-3"><BrandLoader size="sm" /></div>
           ) : filteredFriends.length === 0 ? (
             <span className="text-xs text-zinc-400 p-3 text-center">{lang?.friends_not_found || 'Друзья не найдены'}</span>
           ) : (

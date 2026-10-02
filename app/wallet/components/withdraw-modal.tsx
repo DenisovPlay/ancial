@@ -4,7 +4,7 @@ import Modal from '../../components/modal';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import type { WalletAccount, WalletGateway, WalletGatewayForm } from '../../lib/api-v2';
 import AppImage from '../../components/app-image';
-import Icon from '../../components/svg-icon';
+import BrandLoader from '../../components/brand-loader';
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -75,7 +75,7 @@ export function WithdrawModal({
 
           {gatewayFormLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Icon name="IC-loader" className="w-10 h-10 inline animate-spin fill-purple-500" />
+              <BrandLoader size="md" />
             </div>
           ) : gatewayFormError ? (
             <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-3xl text-center">

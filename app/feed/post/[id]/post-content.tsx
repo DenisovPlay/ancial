@@ -10,7 +10,6 @@ import CommentCard, { ReplyBar } from '../../../components/comment-card';
 import { CommentsEmptyState } from '../../../components/comments-modal';
 import { cn } from '../../../lib/cn';
 import DeletePostModal from '../../../components/delete-post-modal';
-import { EmptyIllustration } from '../../../components/profile-ui';
 import ReportModal from '../../../components/report-modal';
 import { buildPostReportReasons } from '../../../lib/report-reasons';
 import ShareModal from '../../../components/share-modal';
@@ -24,6 +23,8 @@ import { applyBookmarkResult } from '../../../lib/post-bookmark';
 import { applyVoteResult } from '../../../lib/post-vote';
 import FeedPostSkeleton from '../../feed-post-skeleton';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
+import ErrorState from '../../../components/error-state';
 
 type Id = string | number;
 
@@ -483,7 +484,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
         <div className="max-w-3xl w-full flex flex-col gap-3">
           {loading && <FeedPostSkeleton />}
 
-          {!loading && error && <EmptyIllustration title={error} />}
+          {!loading && error && <ErrorState title={error} actionHref="/feed" actionLabel={lang?.back || 'Назад'} />}
 
           {!loading && !error && post && (
             <>
@@ -561,7 +562,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                 <div id="comments-container" className="flex flex-col gap-3">
                   {isCommentsLoading ? (
                     <div className="w-full flex items-center justify-center py-6">
-                      <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+                      <BrandLoader size="lg" />
                     </div>
                   ) : comments.length > 0 ? (
                     comments.map((comment) => (

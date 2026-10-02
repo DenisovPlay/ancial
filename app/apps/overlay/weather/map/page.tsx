@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import WeatherMapContent from '../../../included/weather/map/weather-map-content';
 import Icon from '../../../../components/svg-icon';
+import BrandLoader from '../../../../components/brand-loader';
 
 export default function WeatherMapOverlayPage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function WeatherMapOverlayPage() {
       </button>
 
       {/* Map Content View with Overlay Support wrapped in Suspense */}
-      <Suspense fallback={<div className="h-screen w-full bg-zinc-950" />}>
+      <Suspense fallback={<div className="bg-zinc-950"><BrandLoader screen /></div>}>
         <WeatherMapContent hideHeaderBackButton />
       </Suspense>
     </div>

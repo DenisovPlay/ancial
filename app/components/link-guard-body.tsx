@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI, getApiMessage, type LinkGuardAnalysis } from '../lib/api-v2';
 import Icon from './svg-icon';
+import BrandLoader from '../components/brand-loader';
 
 function safeDecode(value: string) {
   try {
@@ -101,7 +102,7 @@ export default function LinkGuardBody({ rawLink, onCancel, onProceed, proceedInN
       {/* Loading State */}
       {loading && (
         <div className="glass-panel [--glass-alpha:0.9] [--glass-blur:24px] flex flex-col items-center justify-center gap-3 rounded-3xl border border-zinc-800 p-3 shadow-2xl">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+          <BrandLoader size="sm" />
           <span className="text-sm text-zinc-400">{lang?.loading || 'Проверка безопасности...'}</span>
         </div>
       )}

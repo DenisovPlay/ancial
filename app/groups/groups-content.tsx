@@ -21,6 +21,8 @@ interface Group {
 import AccountName from '../components/account-name';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import BrandLoader from '../components/brand-loader';
+import ErrorState from '../components/error-state';
 
 function GroupsContent() {
   const router = useRouter();
@@ -114,7 +116,8 @@ function GroupsContent() {
   };
 
   if (authLoading || (!isAuthenticated && !authLoading)) {
-    return <div className="p-3 text-center text-zinc-400">{lang?.['loading...'] || 'Загрузка...'}</div>;
+    // Загрузка авторизации: индикатор по центру страницы.
+    return <BrandLoader page />;
   }
 
   return (
@@ -172,7 +175,7 @@ function GroupsContent() {
             ))}
           </div>
         ) : errorMsg ? (
-          <div className="p-3 text-center text-zinc-400">{errorMsg}</div>
+          <ErrorState variant="inline" title={errorMsg} onRetry={() => void loadGroups(query)} />
         ) : groups.length === 0 ? (
           <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
             <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="Not found" />

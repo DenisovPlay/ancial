@@ -100,6 +100,8 @@ import {
 } from './lib/messages-shared';
 import AppImage from '../components/app-image';
 import { apiUrl } from '../lib/api-url';
+import BrandLoader from '../components/brand-loader';
+import ErrorState from '../components/error-state';
 
 /** Обёртка ответа API: сервер может вернуть объект напрямую или в поле data. */
 type ApiEnvelope<T> = T & { data?: T | null };
@@ -2344,7 +2346,7 @@ export default function MessagesContent() {
   if (authLoading || !isAuthenticated) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Icon name="IC-loader" className="h-16 w-16 animate-spin fill-purple-500" />
+        <BrandLoader size="lg" />
       </div>
     );
   }
@@ -2813,11 +2815,11 @@ export default function MessagesContent() {
                   >
                     {dialogLoading && !selectedDialog ? (
                       <div className="flex h-full min-h-[50vh] items-center justify-center">
-                        <Icon name="IC-loader" className="h-16 w-16 animate-spin fill-purple-500" />
+                        <BrandLoader size="lg" />
                       </div>
                     ) : dialogError && !messages.length ? (
-                      <div className="flex h-full min-h-[50vh] flex-col items-center justify-center text-center text-zinc-300">
-                        <span>{dialogError}</span>
+                      <div className="flex h-full min-h-[50vh] items-center justify-center">
+                        <ErrorState variant="inline" title={dialogError} />
                       </div>
                     ) : (
                       <div id="msgbox" className="flex min-h-full shrink-0 flex-col">
@@ -2827,7 +2829,7 @@ export default function MessagesContent() {
                         >
                           {loadingOlder ? (
                             <div className="mb-3 flex items-center justify-center">
-                              <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-purple-500" />
+                              <BrandLoader size="sm" />
                             </div>
                           ) : null}
 

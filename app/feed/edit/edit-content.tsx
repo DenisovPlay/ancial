@@ -32,6 +32,7 @@ import {
   uploadPostImageFiles,
 } from '../editor-shared';
 import Icon from '../../components/svg-icon';
+import BrandLoader from '../../components/brand-loader';
 
 
 type EditErrorState = 'error' | 'not_found' | 'permission_denied' | null;
@@ -546,7 +547,7 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
   if (isLoading) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+        <BrandLoader size="lg" />
       </div>
     );
   }
@@ -554,7 +555,7 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
   if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center w-full h-screen">
-        <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+        <BrandLoader size="lg" />
       </div>
     );
   }

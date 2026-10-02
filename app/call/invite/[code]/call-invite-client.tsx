@@ -10,6 +10,7 @@ import { AncialAPI, type VoiceInviteInfo } from '../../../lib/api-v2';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../../../messages/lib/messages-shared';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
 
 function readInviteCodeFromLocation(): string {
   if (typeof window === 'undefined') return '';
@@ -77,7 +78,7 @@ export default function CallInviteClient() {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-black p-3 text-white">
         <div className="flex flex-col items-center gap-3">
-          <Icon name="IC-spinner-ring" className="h-10 w-10 animate-spin fill-purple-500" aria-label={lang?.loading || 'Загрузка'} />
+          <BrandLoader size="md" />
         </div>
       </div>
     );

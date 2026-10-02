@@ -8,6 +8,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
 
 export default function EditArtistContent() {
   const { lang, isAuthenticated } = useAuth();
@@ -132,9 +133,7 @@ export default function EditArtistContent() {
       </h1>
 
       {loading ? (
-        <div className="flex w-full items-center justify-center p-6">
-          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
-        </div>
+        <BrandLoader page />
       ) : (
         <form onSubmit={saveArtist} className="flex flex-col gap-3 w-full">
           <div className="flex flex-col items-center justify-center py-3">

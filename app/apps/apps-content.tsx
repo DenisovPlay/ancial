@@ -19,6 +19,8 @@ import { cache } from '../lib/cache.ts';
 import AppInfoModal from './app-info-modal';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import BrandLoader from '../components/brand-loader';
+import ErrorState from '../components/error-state';
 
 
 type CategoryItem = {
@@ -305,11 +307,13 @@ function AppsContentInner() {
       )}
 
       {!loading && error && (
-        <div className="text-center w-full max-w-screen-2xl flex flex-col gap-0.5 justify-center items-center py-20 px-3">
-          <AppImage skeleton={false} width={224} height={224} alt="" className="h-56 w-auto" src="/img/status/sponge.gif" />
-          <span className="text-lg text-center text-zinc-200">{lang?.connection_lost || 'Связь потеряна!'}</span>
-          <span className="text-content-600">{lang?.try_refresh || 'Попробуйте обновить страницу'}</span>
-          <span className="text-xs text-zinc-400">{error}</span>
+        <div className="w-full max-w-screen-2xl px-3 py-12">
+          <ErrorState
+            image="/img/status/sponge.gif"
+            title={lang?.connection_lost || 'Связь потеряна!'}
+            description={`${lang?.try_refresh || 'Попробуйте обновить страницу'} · ${error}`}
+            onRetry={() => window.location.reload()}
+          />
         </div>
       )}
 
@@ -371,7 +375,7 @@ export default function AppsContent() {
   return (
     <Suspense fallback={
       <div className="flex h-screen items-center justify-center">
-        <Icon name="IC-loader" className="w-12 h-12 fill-white animate-spin" />
+        <BrandLoader size="md" />
       </div>
     }>
       <AppsContentInner />

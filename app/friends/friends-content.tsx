@@ -36,6 +36,7 @@ import AccountName from '../components/account-name';
 import { PresenceCoverBadge } from '../components/presence-activity';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import BrandLoader from '../components/brand-loader';
 
 // Отдельный компонент для контента, чтобы использовать useSearchParams безопасно
 function FriendsContent() {
@@ -155,7 +156,8 @@ function FriendsContent() {
   };
 
   if (authLoading || (!isAuthenticated && !authLoading)) {
-    return <div className="p-3 text-center text-zinc-400">{lang?.['loading...'] || 'Загрузка...'}</div>;
+    // Загрузка авторизации: индикатор по центру страницы.
+    return <BrandLoader page />;
   }
 
   return (

@@ -13,6 +13,7 @@ import Icon from '../../components/svg-icon';
 import { loadScript } from '../../lib/load-script';
 import { IS_NATIVE_APP } from '../../lib/platform';
 import { OAUTH_CANCELLED } from '../../lib/oauth-login';
+import BrandLoader from '../../components/brand-loader';
 
 
 /** Результат инициализации Яндекс ID (YaAuthSuggest). */
@@ -288,9 +289,7 @@ export default function SocialsContent() {
 
   if (!isMounted || authLoading || !isAuthenticated || !user) {
     return (
-      <div className="w-full flex items-center justify-center min-h-[50vh]">
-        <Icon name="IC-loader" className="w-8 h-8 animate-spin fill-purple-500" />
-      </div>
+      <BrandLoader page />
     );
   }
 

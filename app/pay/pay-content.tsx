@@ -12,6 +12,7 @@ import { AncialAPI, getApiMessage, type PayOrderDetails, type PayGateway } from 
 import { formatMerchantBadge } from './format-merchant-badge';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import BrandLoader from '../components/brand-loader';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -360,7 +361,7 @@ export default function PayContent() {
 
                     <div className={`shadow-2xl h-14 w-14 lg:h-16 lg:w-16 p-1.5 rounded-3xl shrink-0 duration-300 flex items-center justify-center ${themeBg}`}>
                       {isRedirecting ? (
-                        <Icon name="IC-loader" className="w-10 h-10 inline animate-spin fill-purple-500" />
+                        <BrandLoader size="md" />
                       ) : (
                         <AppImage width={64} height={64} alt={gateway.name} src={gateway.image} className="h-full w-full rounded-full object-contain" />
                       )}
@@ -502,7 +503,7 @@ export default function PayContent() {
         {/* Loading Overlay when redirecting to payment gateway */}
         {redirectingGatewayId && (
           <div className="glass-panel [--glass-alpha:0.9] [--glass-blur:16px] w-full h-full absolute inset-0 rounded-3xl flex flex-col gap-3 items-center justify-center z-50">
-            <Icon name="IC-loader" className="w-10 h-10 inline animate-spin fill-purple-500" />
+            <BrandLoader size="md" />
             <span className="text-zinc-100">
               {lang?.pay_redirecting || 'Перенаправляем на'} {redirectingGatewayName}...
             </span>

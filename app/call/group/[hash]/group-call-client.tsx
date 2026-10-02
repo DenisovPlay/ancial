@@ -23,6 +23,7 @@ import {
 import { useGroupCall } from './use-group-call';
 import Icon from '../../../components/svg-icon';
 import { publicUrl } from '../../../lib/api-url';
+import BrandLoader from '../../../components/brand-loader';
 
 type CommunityVoicePermissions = {
   connect_voice?: boolean;
@@ -722,7 +723,7 @@ export default function GroupCallClient() {
   if (!config) {
     return (
       <div className="fixed inset-0 z-[3000] flex min-h-dvh items-center justify-center bg-black">
-        <Icon name="IC-loader" className="h-12 w-12 animate-spin fill-purple-500" aria-label={lang?.loading || 'Загрузка'} />
+        <BrandLoader size="md" />
       </div>
     );
   }

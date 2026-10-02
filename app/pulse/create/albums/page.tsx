@@ -10,6 +10,7 @@ import ConfirmDeleteModal from '../../../components/confirm-delete-modal';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
 import { publicUrl } from '../../../lib/api-url';
+import BrandLoader from '../../../components/brand-loader';
 
 interface PulseAlbumRow {
   id: number | string;
@@ -162,9 +163,7 @@ export default function PulseCreateAlbumsPage() {
 
       {/* 3. Albums List */}
       {loading ? (
-        <div className="p-6 text-center text-zinc-500 flex justify-center items-center">
-          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
-        </div>
+        <BrandLoader page />
       ) : filteredAlbums.length > 0 ? (
         <div className="flex flex-col gap-3 w-full">
           {filteredAlbums.map((album) => {

@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import CallInviteClient from './call-invite-client';
 import { AppRouteGate } from '../../../components/app-route-shell';
 import { appShellStaticParams } from '../../../lib/app-shell-params';
+import BrandLoader from '../../../components/brand-loader';
 
 // Приложение: одна страница-заготовка, параметр берётся из адреса (app-routes.ts).
 export const generateStaticParams = appShellStaticParams({ code: 'param' });
@@ -13,7 +14,7 @@ export const metadata = {
 
 export default function CallInvitePage() {
   return (
-    <Suspense fallback={<div className="flex min-h-dvh w-full items-center justify-center bg-black text-white">…</div>}>
+    <Suspense fallback={<div className="flex min-h-dvh w-full items-center justify-center bg-black"><BrandLoader /></div>}>
       <AppRouteGate>
         <CallInviteClient />
       </AppRouteGate>

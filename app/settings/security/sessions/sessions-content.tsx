@@ -9,6 +9,8 @@ import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, type AuthSession } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
+import ErrorState from '../../../components/error-state';
 
 function formatDateTime(value: string, langName?: string): string {
   const ts = value?.includes('T') ? value : value?.replace(' ', 'T');
@@ -143,9 +145,7 @@ export default function SessionsContent() {
 
   if (isLoading && !user) {
     return (
-      <div className="flex justify-center items-center w-full h-[60vh]">
-        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
-      </div>
+      <BrandLoader page />
     );
   }
 
@@ -175,9 +175,7 @@ export default function SessionsContent() {
         {loading && sessions.length === 0 ? (
           <SessionsSkeleton />
         ) : failed && sessions.length === 0 ? (
-          <div className="rounded-3xl border border-zinc-600/30 bg-zinc-900 p-6 text-center text-sm text-zinc-400">
-            {lang?.sessions_load_error || 'Не удалось загрузить список сессий.'}
-          </div>
+          <ErrorState title={lang?.sessions_load_error || 'Не удалось загрузить список сессий.'} />
         ) : sessions.length === 0 ? (
           <div className="rounded-3xl border border-zinc-600/30 bg-zinc-900 p-6 text-center text-sm text-zinc-500">
             {lang?.sessions_empty || 'Активных сессий пока нет.'}

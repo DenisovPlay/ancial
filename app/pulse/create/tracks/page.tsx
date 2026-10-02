@@ -11,6 +11,7 @@ import { getPulseBackgroundColorByMood, } from '../../pulse-components';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
 import { publicUrl } from '../../../lib/api-url';
+import BrandLoader from '../../../components/brand-loader';
 
 interface PulseTrackRow {
   id: number | string;
@@ -240,9 +241,7 @@ export default function PulseCreateTracksPage() {
 
       {/* 3. Tracks List */}
       {loading ? (
-        <div className="p-6 text-center text-zinc-500 flex justify-center items-center">
-          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
-        </div>
+        <BrandLoader page />
       ) : filteredTracks.length > 0 ? (
         <div className="flex flex-col gap-3 w-full">
           {filteredTracks.map((track) => {

@@ -21,6 +21,7 @@ import {
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
 import { publicUrl, apiUrl } from '../../lib/api-url';
+import BrandLoader from '../../components/brand-loader';
 
 interface GroupMember {
   id: number;
@@ -971,7 +972,7 @@ export default function GroupInfoModal({
             </div>
             <div className="flex flex-col max-h-96 overflow-y-auto -mb-10 pb-8 -mt-8 pt-8 -mx-3">
               {loadingFriends ? (
-                <span className="text-xs text-zinc-400 p-3 text-center">{lang?.loading_friends || 'Загрузка друзей...'}</span>
+                <div className="flex justify-center p-3"><BrandLoader size="sm" /></div>
               ) : filteredFriends.length === 0 ? (
                 <span className="text-xs text-zinc-400 p-3 text-center">{lang?.friends_not_found || 'Друзья не найдены'}</span>
               ) : (

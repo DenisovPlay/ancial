@@ -11,6 +11,7 @@ import { cache } from '../../../lib/cache';
 import { createPasskey, isPasskeySupported } from '../../../lib/webauthn';
 import Modal from '../../../components/modal';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
 
 function PasskeysSkeleton() {
   return (
@@ -143,9 +144,7 @@ export default function PasskeysContent() {
 
   if (isLoading && !user) {
     return (
-      <div className="flex justify-center items-center w-full h-[60vh]">
-        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
-      </div>
+      <BrandLoader page />
     );
   }
   if (!isAuthenticated || !user) return null;
