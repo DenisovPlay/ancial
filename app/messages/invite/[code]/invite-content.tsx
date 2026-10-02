@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppParams } from '../../../components/app-route-shell';
 import { useAuth } from '../../../context/AuthContext';
@@ -9,7 +8,8 @@ import { useNotification } from '../../../context/NotificationContext';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { FALLBACK_AVATAR, normalizeAssetUrl } from '../../lib/messages-shared';
 import AppImage from '../../../components/app-image';
-import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
+import ErrorState from '../../../components/error-state';
 
 interface InviteData {
   id: number;
@@ -111,23 +111,16 @@ export default function InviteContent() {
     <div className="min-h-screen w-full flex items-center justify-center p-3 text-white">
       <div className="w-full max-w-md p-3 bg-zinc-900 rounded-3xl border border-zinc-600/30 shadow-2xl flex flex-col items-center gap-5 text-center">
         {loading ? (
-          <div className="py-12 flex flex-col items-center gap-3 text-zinc-400">
-            <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm">{lang?.invite_loading || 'Загрузка приглашения...'}</span>
+          <div className="py-12">
+            <BrandLoader size="md" />
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
-              <Icon name="IC-error-circle" className="w-8 h-8 fill-current" />
-            </div>
-            <span className="text-lg font-bold text-white">{error}</span>
-            <Link
-              href="/messages"
-              className="p-3 px-6 rounded-3xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/30 text-sm font-medium duration-300 active:scale-95 cursor-pointer text-white inline-block"
-            >
-              {lang?.invite_go_to_messages || lang?.go_to_messages || 'Перейти к сообщениям'}
-            </Link>
-          </div>
+          <ErrorState
+            variant="inline"
+            title={error}
+            actionHref="/messages"
+            actionLabel={lang?.invite_go_to_messages || lang?.go_to_messages || 'Перейти к сообщениям'}
+          />
         ) : inviteData ? (
           <>
             <div className="flex flex-row w-full gap-3 items-center">

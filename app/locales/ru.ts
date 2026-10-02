@@ -278,6 +278,7 @@ export const ru: Record<string, string> = {
     "noactiveaccounts": "У вас нет активных счетов",
     "walletloaderror": "Ошибка загрузки кошелька",
     "retry": "Повторить",
+    "load_failed": "Не удалось загрузить",
     "startnow": "Начните сейчас!",
     "openfreeaccount": "Откройте бесплатный счёт, переводите и получайте средства по всему миру.",
     "opennewaccount": "Открыть новый счёт",

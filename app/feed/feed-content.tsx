@@ -31,6 +31,7 @@ import { applyVoteResult } from '../lib/post-vote';
 import { cn, } from './editor-shared';
 import FeedPostSkeleton from './feed-post-skeleton';
 import Icon from '../components/svg-icon';
+import ErrorState from '../components/error-state';
 
 type Id = string | number;
 
@@ -1083,9 +1084,7 @@ export default function FeedContent() {
               <FeedPostSkeleton />
             </>
           ) : errorMessage ? (
-            <span className="border border-zinc-600/30 w-full text-center text-zinc-400 py-6 bg-zinc-900 rounded-3xl">
-              {errorMessage}
-            </span>
+            <ErrorState title={errorMessage} onRetry={() => void loadPostsRef.current?.(0, false)} />
           ) : posts.length > 0 ? (
             <PostsRenderer
               currentUserId={user?.id ?? null}

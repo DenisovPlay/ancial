@@ -16,6 +16,8 @@ import { groupNotificationsByDay, type DayBucket } from '../lib/notifications/ki
 import type { NotificationFilter, RichNotification } from '../lib/notifications/types';
 import { useNotificationFeed } from '../lib/notifications/use-notification-feed';
 import NotificationRow from './notification-row';
+import BrandLoader from '../components/brand-loader';
+import ErrorState from '../components/error-state';
 
 const FILTERS: Array<{ id: NotificationFilter; key: string; fallback: string }> = [
   { id: 'all', key: 'notif_filter_all', fallback: 'Все' },
@@ -98,9 +100,7 @@ export default function NotificationsPage() {
 
   if (authLoading || (!isAuthenticated && !authLoading)) {
     return (
-      <div className="flex flex-col justify-center items-center py-10 w-full">
-        <span className="text-zinc-400">{lang?.['loading...'] || 'Загрузка...'}</span>
-      </div>
+      <BrandLoader page />
     );
   }
 
@@ -180,21 +180,25 @@ export default function NotificationsPage() {
             </section>
           ))
         ) : (
-          <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center duration-300">
-            <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="Nothing found" />
-            <span className="text-base text-zinc-100 w-full text-center font-black">
-              {feed.error ? (lang?.somethingwrong || 'Что-то пошло не так') : (lang?.notification_empty || 'Ничего нет')}
-            </span>
-            <span className="text-sm text-zinc-300 w-full text-center font-medium">
-              {lang?.notification_empty_desc || 'Здесь будут Ваши уведомления'}
-            </span>
-          </div>
+          feed.error ? (
+            <ErrorState onRetry={feed.retry} />
+          ) : (
+            <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center duration-300">
+              <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="Nothing found" />
+              <span className="text-base text-zinc-100 w-full text-center font-black">
+                {lang?.notification_empty || 'Ничего нет'}
+              </span>
+              <span className="text-sm text-zinc-300 w-full text-center font-medium">
+                {lang?.notification_empty_desc || 'Здесь будут Ваши уведомления'}
+              </span>
+            </div>
+          )
         )}
 
         <div ref={sentinelRef} className="h-1 w-full" />
         {feed.loadingMore ? (
           <div className="flex justify-center py-3">
-            <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-purple-500" />
+            <BrandLoader size="sm" />
           </div>
         ) : null}
       </div>

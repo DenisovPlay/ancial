@@ -19,6 +19,7 @@ import {
   type PulseTrack,
 } from './pulse-components';
 import Icon from '../components/svg-icon';
+import BrandLoader from '../components/brand-loader';
 
 type PulseUploadTrackModalProps = {
   isOpen: boolean;
@@ -433,7 +434,7 @@ export default function PulseUploadTrackModal({
 
       {isAudioUploading ? (
         <div className="flex flex-col items-center gap-2 py-4 text-sm text-zinc-400">
-          <Icon name="IC-loader" className="inline h-10 w-10 animate-spin fill-purple-400" />
+          <BrandLoader size="md" />
           <span>{statusText || (lang?.uploadingtrack || 'Загружаю трек...')}</span>
         </div>
       ) : null}

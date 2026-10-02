@@ -10,6 +10,7 @@ import { PULSE_GENRES, PULSE_TRACK_LANGUAGES } from '../../pulse-constants';
 import { PulseArtistLinkPicker } from '../pulse-artist-link-picker';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
+import BrandLoader from '../../../components/brand-loader';
 
 interface PulseArtist {
   id?: number | string;
@@ -198,9 +199,7 @@ function EditAlbumContent() {
       </h1>
 
       {loading ? (
-        <div className="flex w-full items-center justify-center p-6">
-          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
-        </div>
+        <BrandLoader page />
       ) : (
         <form onSubmit={saveAlbum} className="flex flex-col gap-3 w-full">
           <div className="flex flex-col lg:flex-row items-start gap-3">
@@ -402,9 +401,7 @@ export default function PulseCreateEditAlbumPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex w-full items-center justify-center p-6">
-          <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-        </div>
+        <BrandLoader page />
       }
     >
       <EditAlbumContent />

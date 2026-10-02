@@ -4,6 +4,7 @@ import { createPageMetadata } from './seo';
 import HomeContent from './home-content';
 import { connection } from 'next/server';
 import { IS_NATIVE_APP } from './lib/platform';
+import BrandLoader from './components/brand-loader';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'Zypo - Социальная сеть для общения и развлечений',
@@ -20,7 +21,7 @@ export default async function Home() {
   // собрать статический экспорт приложения). В приложении сервера нет — страница статическая.
   if (!IS_NATIVE_APP) await connection();
   return (
-    <Suspense fallback={<div className="h-screen w-full" />}>
+    <Suspense fallback={<BrandLoader screen />}>
       <HomeContent />
     </Suspense>
   );

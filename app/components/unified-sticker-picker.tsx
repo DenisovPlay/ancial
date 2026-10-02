@@ -4,6 +4,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useStickers, type StickerItem, type StickerScope } from '../hooks/use-stickers';
 import AppImage from './app-image';
 import Icon from './svg-icon';
+import ErrorState from './error-state';
 
 export interface UnifiedStickerPickerProps {
   scope?: StickerScope;
@@ -119,15 +120,8 @@ export default function UnifiedStickerPicker({
         )}
 
         {!loading && error && (
-          <div className="flex flex-col h-full items-center justify-center gap-2 text-zinc-500 text-xs">
-            <span>Не удалось загрузить</span>
-            <button
-              type="button"
-              onClick={reload}
-              className="border border-zinc-600/30 rounded-3xl px-3 py-1 hover:text-zinc-200 duration-300 cursor-pointer active:scale-95"
-            >
-              Повторить
-            </button>
+          <div className="flex h-full items-center justify-center">
+            <ErrorState variant="inline" onRetry={reload} />
           </div>
         )}
 

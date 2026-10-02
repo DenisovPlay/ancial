@@ -10,6 +10,7 @@ import { cache } from '../../lib/cache.ts';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
 import { openBackendDocument } from '../../lib/open-backend-document';
+import BrandLoader from '../../components/brand-loader';
 
 function FormContentInner() {
   const router = useRouter();
@@ -784,9 +785,7 @@ function FormContentInner() {
 export default function FormContent() {
   return (
     <Suspense fallback={
-      <div className="w-screen h-screen flex items-center justify-center bg-black">
-        <div className="w-8 h-8 rounded-full animate-spin border-4 border-solid border-purple-500 border-t-transparent" />
-      </div>
+      <div className="bg-black"><BrandLoader screen /></div>
     }>
       <FormContentInner />
     </Suspense>

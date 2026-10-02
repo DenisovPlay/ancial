@@ -288,6 +288,7 @@ export const en: Record<string, string> = {
   "noactiveaccounts": "You have no active accounts",
   "walletloaderror": "Wallet loading error",
   "retry": "Retry",
+  "load_failed": "Failed to load",
   "startnow": "Start now!",
   "openfreeaccount": "Open a free account, transfer and receive funds worldwide.",
   "opennewaccount": "Open a new account",

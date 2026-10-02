@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { SettingsItem } from '../../components/settings-item';
 import Icon from '../../components/svg-icon';
+import BrandLoader from '../../components/brand-loader';
 
 export default function SecuritySettingsContent() {
   const router = useRouter();
@@ -19,9 +20,7 @@ export default function SecuritySettingsContent() {
 
   if (isLoading && !user) {
     return (
-      <div className="flex justify-center items-center w-full h-[60vh]">
-        <Icon name="IC-loader" className="w-10 h-10 animate-spin fill-purple-500" />
-      </div>
+      <BrandLoader page />
     );
   }
 

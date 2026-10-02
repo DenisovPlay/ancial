@@ -13,6 +13,7 @@ import { useAppearanceMotion } from '../../lib/use-appearance';
 import { motion, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
+import BrandLoader from '../../components/brand-loader';
 
 interface CameraDevice {
   deviceId: string;
@@ -874,7 +875,7 @@ export default function CallClient() {
         {errorMsg ? (
           <span className="text-white">{errorMsg}</span>
         ) : (
-          <Icon name="IC-loader" className="w-12 h-12 inline animate-spin fill-purple-500" />
+          <BrandLoader size="md" />
         )}
       </div>
     );

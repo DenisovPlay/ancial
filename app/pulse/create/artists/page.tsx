@@ -11,6 +11,7 @@ import { cn } from '../../pulse-components';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
 import { publicUrl } from '../../../lib/api-url';
+import BrandLoader from '../../../components/brand-loader';
 
 interface PulseArtistRow {
   id: number | string;
@@ -155,9 +156,7 @@ export default function PulseCreateArtistsPage() {
 
       {/* 3. Artists List */}
       {loading ? (
-        <div className="p-6 text-center text-zinc-500 flex justify-center items-center">
-          <Icon name="IC-loader" className="inline h-8 w-8 animate-spin fill-zinc-500" />
-        </div>
+        <BrandLoader page />
       ) : filteredArtists.length > 0 ? (
         <div className="flex flex-col gap-3 w-full">
           {filteredArtists.map((artist) => {

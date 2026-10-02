@@ -51,6 +51,7 @@ import {
   type PulsePlaylistMeta,
 } from '../playlist-model';
 import Icon from '../../../components/svg-icon';
+import ErrorState from '../../../components/error-state';
 
 type PlaylistPageResponse = {
   is_liked?: boolean;
@@ -655,10 +656,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
             {isLoading ? <TracksPanelSkeleton rows={6} /> : null}
 
             {!isLoading && error ? (
-              <div className="flex min-h-72 flex-col items-center justify-center gap-3 text-center text-zinc-300">
-                <Icon name="IC-warning" className="inline fill-current h-12 w-12" />
-                <span>{error}</span>
-              </div>
+              <ErrorState title={error} onRetry={() => setTracksReloadToken((token) => token + 1)} />
             ) : null}
 
             {!isLoading && isMissing ? (

@@ -8,6 +8,7 @@ import Modal from './modal';
 import { useAuth } from '../context/AuthContext';
 import CommentCard, { ReplyBar } from './comment-card';
 import Icon from './svg-icon';
+import BrandLoader from './brand-loader';
 
 export interface FeedComment {
   content: string;
@@ -126,7 +127,7 @@ export function CommentsModal({
         <div className="flex flex-col gap-3">
           {isLoading ? (
             <div className="w-full flex items-center justify-center py-6">
-              <Icon name="IC-loader" className="w-16 h-16 inline animate-spin fill-purple-500" />
+              <BrandLoader size="lg" />
             </div>
           ) : comments.length > 0 ? (
             comments.map((comment) => (

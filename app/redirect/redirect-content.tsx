@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { toInternalPath } from '../lib/internal-link';
 import AppImage from '../components/app-image';
 import LinkGuardBody from '../components/link-guard-body';
+import BrandLoader from '../components/brand-loader';
 
 function RedirectContentInner() {
   const router = useRouter();
@@ -22,7 +23,7 @@ function RedirectContentInner() {
   if (internalPath) {
     return (
       <div className="flex min-h-[calc(100vh-80px)] w-full items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+        <BrandLoader size="md" />
       </div>
     );
   }
@@ -71,7 +72,7 @@ export default function RedirectContent() {
             #NAVP, [data-app-nav="mobile"], [data-app-nav="desktop"] { display: none !important; }
             #main-content { padding: 0 !important; }
           `}</style>
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+          <BrandLoader size="md" />
         </div>
       }
     >

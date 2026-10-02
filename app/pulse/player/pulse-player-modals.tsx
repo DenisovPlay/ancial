@@ -8,6 +8,7 @@ import { PulseModal } from '../pulse-modal';
 import { cn } from '../pulse-components';
 import type { PulsePlaylistOption } from './use-add-to-playlist';
 import Icon from '../../components/svg-icon';
+import BrandLoader from '../../components/brand-loader';
 
 const PulsePlaylistEditorModal = dynamic(() => import('../pulse-playlist-editor-modal'), { ssr: false });
 const PulseEqualizerModal = dynamic(() => import('./pulse-equalizer-modal').then((m) => m.PulseEqualizerModal), { ssr: false });
@@ -69,8 +70,8 @@ export function PulsePlayerModals({
       >
         <div className="flex flex-col gap-1">
           {playlistOptionsLoading ? (
-            <div className="py-6 text-center text-sm text-zinc-400">
-              {lang?.loading || 'Загрузка...'}
+            <div className="flex justify-center py-6">
+              <BrandLoader size="sm" />
             </div>
           ) : null}
 

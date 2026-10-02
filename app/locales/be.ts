@@ -278,6 +278,7 @@ export const be: Record<string, string> = {
     "noactiveaccounts": "У вас няма актыўных рахункаў",
     "walletloaderror": "Памылка загрузкі кашалька",
     "retry": "Паўтарыць",
+    "load_failed": "Не ўдалося загрузіць",
     "startnow": "Пачніце зараз!",
     "openfreeaccount": "Адкрыйце бясплатны рахунак, пераводзьце і атрымлівайце сродкі па ўсім свеце.",
     "opennewaccount": "Адкрыць новы рахунак",

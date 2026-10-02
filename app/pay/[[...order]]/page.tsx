@@ -4,6 +4,7 @@ import PayContent from '../pay-content';
 import { createPageMetadata } from '../../seo';
 import { IS_NATIVE_APP } from '../../lib/platform';
 import { appShellStaticParams } from '../../lib/app-shell-params';
+import BrandLoader from '../../components/brand-loader';
 
 // Приложение: базовая страница /pay/ обслуживает любой заказ, номер берётся из адреса.
 export const generateStaticParams = appShellStaticParams({ order: 'optionalCatchAll' });
@@ -18,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function PayPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<BrandLoader page />}>
       {/* Приложение: оплата открывается на сайте в системном браузере (AppRuntime) — здесь ничего. */}
       {IS_NATIVE_APP ? null : <PayContent />}
     </Suspense>

@@ -27,6 +27,7 @@ import { ProductsAccountsModal } from './components/products-accounts-modal';
 import { WithdrawModal } from './components/withdraw-modal';
 import AppImage from '../components/app-image';
 import Icon from '../components/svg-icon';
+import ErrorState from '../components/error-state';
 
 
 const animationStyles = `
@@ -747,12 +748,7 @@ export default function WalletContent() {
   const isNoAccountsError = error?.includes('У вас нет активных счетов') || error?.includes(lang?.noactiveaccounts || 'У вас нет активных счетов');
   if (error && !isNoAccountsError) {
     return (
-      <div className="w-screen h-screen flex flex-col items-center justify-center bg-black text-white p-4">
-        <p className="text-xl text-red-500 mb-4">{error}</p>
-        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-purple-600 rounded-3xl active:scale-95 duration-300">
-          {lang?.retry || 'Повторить'}
-        </button>
-      </div>
+      <ErrorState variant="page" title={error} onRetry={() => window.location.reload()} />
     );
   }
 

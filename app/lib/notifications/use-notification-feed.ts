@@ -50,6 +50,7 @@ function readCachedFeed(): FeedState | null {
 export function useNotificationFeed(filter: NotificationFilter, enabled: boolean) {
   const [state, setState] = useState<FeedState | null>(() => readCachedFeed());
   const [loadingMore, setLoadingMore] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const busyRef = useRef(false);
   const markedRef = useRef(false);
   const stateRef = useRef<FeedState | null>(state);
@@ -92,7 +93,7 @@ export function useNotificationFeed(filter: NotificationFilter, enabled: boolean
     return () => {
       cancelled = true;
     };
-  }, [enabled, filter, markAllRead]);
+  }, [attempt, enabled, filter, markAllRead]);
 
   // Живое обновление: новые/склеенные уведомления, прочтение и удаление с других устройств.
   useEffect(() => {
@@ -177,6 +178,12 @@ export function useNotificationFeed(filter: NotificationFilter, enabled: boolean
     cache.remove(CACHE_KEY, { category: 'notifications', subcategory: 'list' });
   }, []);
 
+  /** «Повторить» после ошибки первой загрузки. */
+  const retry = useCallback(() => {
+    setState(null);
+    setAttempt((current) => current + 1);
+  }, []);
+
   const ready = Boolean(state) && state?.filter === filter;
   return {
     clearAll,
@@ -188,5 +195,6 @@ export function useNotificationFeed(filter: NotificationFilter, enabled: boolean
     loadMore,
     loadingMore,
     remove,
+    retry,
   };
 }

@@ -5,6 +5,7 @@ import { createPageMetadata } from '../../../seo';
 import PulseSearchArtistsContent from './artists-content';
 import { connection } from 'next/server';
 import { IS_NATIVE_APP } from '../../../lib/platform';
+import BrandLoader from '../../../components/brand-loader';
 
 export const metadata: Metadata = createPageMetadata({
   canonical: '/pulse/search/artists',
@@ -20,7 +21,7 @@ export default async function PulseSearchArtistsPage() {
   // собрать статический экспорт приложения). В приложении сервера нет — страница статическая.
   if (!IS_NATIVE_APP) await connection();
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<BrandLoader page />}>
       <PulseSearchArtistsContent />
     </Suspense>
   );
