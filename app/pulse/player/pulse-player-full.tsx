@@ -13,6 +13,7 @@ import {
 import { isSyncedLyrics } from '../../lib/lrc';
 import { cn } from './player-utils';
 import { PulsePlayerFullHeader } from './pulse-player-full-header';
+import { PulseCoverFlow } from './pulse-cover-flow';
 import { PulsePlayerFullArtwork } from './pulse-player-full-artwork';
 import { PulsePlayerFullControls, type RepeatMode } from './pulse-player-full-controls';
 import { PulseQueueModal } from './pulse-queue-modal';
@@ -44,6 +45,18 @@ function subscribeDesktopLayout(onChange: () => void) {
 }
 
 const readDesktopLayout = () => window.matchMedia(DESKTOP_LAYOUT_QUERY).matches;
+
+// Телефон в альбомной ориентации: квадратная обложка с элементами управления по высоте не помещается.
+// Тач-указатель отделяет телефон от узкого окна браузера на ПК — там CoverFlow не нужен.
+const LANDSCAPE_PHONE_QUERY = '(orientation: landscape) and (max-height: 520px) and (max-width: 1023px) and (pointer: coarse)';
+
+function subscribeLandscapePhone(onChange: () => void) {
+  const query = window.matchMedia(LANDSCAPE_PHONE_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
+const readLandscapePhone = () => window.matchMedia(LANDSCAPE_PHONE_QUERY).matches;
 
 const LYRICS_MODE_EXIT_MS = 260;
 
@@ -282,9 +295,11 @@ export function PulsePlayerFull({
   const [isLyricsExpanded, setIsLyricsExpanded] = useState(false);
   // Рендерим только видимую раскладку текста: спрятанная CSS-ом всё равно считала бы кадры.
   const isDesktopLayout = useSyncExternalStore(subscribeDesktopLayout, readDesktopLayout, () => false);
+  const isLandscapePhone = useSyncExternalStore(subscribeLandscapePhone, readLandscapePhone, () => false);
   const hasLyrics = lyricsEnabled && lyricsLines.length > 0;
   const showDesktopLyrics = hasLyrics && isDesktopLayout;
-  const showMobileLyrics = hasLyrics && !isDesktopLayout;
+  // В альбомной ориентации телефона обложка — CoverFlow, текст поверх неё не рисуется.
+  const showMobileLyrics = hasLyrics && !isDesktopLayout && !isLandscapePhone;
   const [expandFromIndex, setExpandFromIndex] = useState(-1);
   // Пока текст уходит анимацией, нужны прежние строки: провайдер очищает их сразу.
   const [stickyLines, setStickyLines] = useState(lyricsLines);
@@ -332,9 +347,27 @@ export function PulsePlayerFull({
           onOpenAlbum={onOpenAlbum}
         />
 
-        <div className="flex h-full w-full flex-row items-center justify-center gap-3 px-3 py-20 lg:gap-0 lg:py-24">
-          <div className="flex w-full max-w-sm shrink-0 flex-col items-center lg:w-[420px] lg:max-w-none lg:items-start xl:w-[480px]">
-            <div className="flex w-full flex-col items-center duration-300 lg:items-start">
+        <div className={cn('flex h-full w-full flex-row items-center justify-center gap-3 px-3 lg:gap-0 lg:py-24', isLandscapePhone ? 'pb-3 pt-16' : 'py-20')}>
+          <div
+            className={cn(
+              'shrink-0 items-center lg:w-[420px] lg:max-w-none lg:items-start xl:w-[480px]',
+              isLandscapePhone
+                ? 'grid h-full w-full max-w-none grid-cols-2 gap-x-6'
+                : 'flex w-full max-w-sm flex-col',
+            )}
+          >
+            <div className={cn('flex w-full flex-col items-center duration-300 lg:items-start', isLandscapePhone && 'h-full min-h-0')}>
+              {isLandscapePhone ? (
+                <PulseCoverFlow
+                  currentIndex={currentIndex}
+                  fallbackArtwork={playerArtwork}
+                  playlist={playlist}
+                  onNext={onNext}
+                  onPrev={onPrev}
+                  onSelect={(index) => onPlayQueueTrack?.(index)}
+                />
+              ) : (
+                <>
               {/* Cover art with horizontal swipe */}
               <div className="flex w-full items-center justify-center">
                 <div
@@ -452,8 +485,12 @@ export function PulsePlayerFull({
                   ) : null}
                 </div>
               </div>
+                </>
+              )}
             </div>
 
+            {/* Альбомный телефон: правая колонка — один блок по центру высоты; в остальных режимах обёртка прозрачна для раскладки. */}
+            <div className={isLandscapePhone ? 'flex min-h-0 w-full flex-col justify-center' : 'contents'}>
             {/* Где идёт звук и с кем он общий. Без комнаты и без пульта не рисуется. */}
             <PlaybackStatusBar className="mt-3" />
 
@@ -493,8 +530,10 @@ export function PulsePlayerFull({
                 ) : null}
 
                 <Dropdown
-                  position="top"
-                  align="end"
+                  // Альбомный телефон: по высоте сверху места нет — меню открывается влево, по центру кнопки, и листается.
+                  position={isLandscapePhone ? 'left' : 'top'}
+                  align={isLandscapePhone ? 'center' : 'end'}
+                  menuClassName={isLandscapePhone ? 'max-h-[calc(100dvh-1.5rem)] overflow-y-auto' : undefined}
                   triggerSize="sm"
                   triggerNode={<Icon name="IC-more" className="h-6 w-6 fill-white duration-300" />}
                   triggerClassName="flex !h-10 !w-10 items-center justify-center rounded-full !bg-transparent !p-0 hover:!bg-white/10 cursor-pointer duration-300 active:scale-95"
@@ -556,17 +595,20 @@ export function PulsePlayerFull({
               />
             </div>
 
-            <PulsePlayerFullControls
-              isPlaying={isPlaying}
-              repeatMode={repeatMode}
-              onNext={onNext}
-              onPrev={onPrev}
-              onTogglePlay={onTogglePlay}
-              onToggleRepeat={onToggleRepeat}
-              onOpenQueue={() => setIsQueueOpen(true)}
-              hasQueue={playlist.length > 0}
-              lang={lang}
-            />
+            <div className="w-full">
+              <PulsePlayerFullControls
+                isPlaying={isPlaying}
+                repeatMode={repeatMode}
+                onNext={onNext}
+                onPrev={onPrev}
+                onTogglePlay={onTogglePlay}
+                onToggleRepeat={onToggleRepeat}
+                onOpenQueue={() => setIsQueueOpen(true)}
+                hasQueue={playlist.length > 0}
+                lang={lang}
+              />
+            </div>
+            </div>
           </div>
 
           {/* Смена раскладки при ресайзе — мгновенная: анимируются только вкл/выкл и загрузка текста. */}

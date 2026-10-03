@@ -55,3 +55,6 @@ next-env.d.ts
 # graphify output (generated cache/graph artifacts, not source)
 /graphify-out/
 /proxy.ts.app-build
+
+# промо-видео (рендер роликов, не часть приложения)
+/promo-video/

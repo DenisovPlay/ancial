@@ -705,12 +705,9 @@ export function PulsePlayerProvider({
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
 
     try {
-      navigator.mediaSession.setActionHandler('play', async () => {
-        try {
-          await audioRef.current?.play();
-        } catch {
-          // ignore blocked playback
-        }
+      // Через мост window.play (togglePlay): он знает про пульт и подгружает показанный трек.
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (audioRef.current?.paused !== false) window.play?.();
       });
     } catch { }
 
@@ -1603,6 +1600,24 @@ export function PulsePlayerProvider({
     audio.pause();
   };
 
+  /**
+   * Возобновить ровно тот трек, что показан в плеере. Пока устройство было пультом, индекс уезжал
+   * за играющим устройством, а в <audio> оставался src прежнего трека — голый audio.play() включил бы
+   * «не тот» трек под названием нынешнего. Не совпало — загружаем показанный.
+   */
+  const resumeCurrentTrack = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const track = playlistRef.current[indexRef.current] ?? null;
+    if (track && toNumber(track.sid) !== currentSongIdRef.current) {
+      void playLoadedTrack(track);
+      return;
+    }
+    void audio.play().catch(() => {
+      // автозапуск заблокирован — человек нажмёт плей на самом устройстве
+    });
+  };
+
   const togglePlay = () => {
     // Пульт: звук на другом устройстве, здесь только команда.
     if (isRemotePlayback()) {
@@ -1616,9 +1631,7 @@ export function PulsePlayerProvider({
     if (audio.paused) {
       // Слушатель вернулся к прослушиванию — снимаем свою паузу и дальше идём за хостом.
       followerPausedRef.current = false;
-      void audio.play().catch(() => {
-        // ignore blocked autoplay
-      });
+      resumeCurrentTrack();
     } else {
       audio.pause();
     }
@@ -2579,9 +2592,7 @@ export function PulsePlayerProvider({
     switch (command.action) {
       case 'play':
         followerPausedRef.current = false;
-        void audio?.play().catch(() => {
-          // автозапуск заблокирован — человек нажмёт плей на самом устройстве
-        });
+        resumeCurrentTrack();
         return;
       case 'pause':
         audio?.pause();
