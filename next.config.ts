@@ -94,6 +94,15 @@ const webConfig: NextConfig = {
           source: '/api/:path*',
           destination: `${API_BASE}/api/:path*`,
         },
+        // AMC
+        {
+          source: '/amc',
+          destination: `${API_BASE.replace(/\/$/, '')}/amc/index.php`,
+        },
+        {
+          source: '/amc/:path*',
+          destination: `${API_BASE.replace(/\/$/, '')}/amc/:path*`,
+        },
         { // Proxy for image.php
           source: '/image.php',
           destination: `${API_BASE}/image.php`,

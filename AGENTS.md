@@ -156,6 +156,13 @@ HTML отдаётся с `Cache-Control: no-store` (правило `headers()` �
 - **Push:** заголовок — актёр, `icon` — аватар, `image` — превью, `tag` — группа; web (`firebase-messaging-sw.js`) и Android-каналы по категориям (`zypo_social|people|chat|wallet|security`, создаются в `native-push.ts`).
 - Ответы на комментарии: `ucomments.parent_id`, `reply_to` в `Comments.php`, UI — страница поста; deeplink `/feed/post/ID?comment=CID` прокручивает и подсвечивает.
 
+## 6.4. AMC (админ-панель)
+
+Руководство — `docs/amc.md`. Живёт на бэкенде (`php-v2-api/backend.ru.zypo/amc`, PHP + Alpine), на сайте открывается как `zypo.cc/amc` (rewrite в `next.config.ts`; сессия остаётся на zypo.cc).
+- **Новый раздел = описание ресурса** в `modules/amc/resources.php`/`resources_extra.php` (таблица, колонки, права, действия, `cascade`, `guard`), а не новая страница. Движок: `modules/amc/engine.php`, API `api/V2/admin/Resource.php`, страница `amc/resource.php`. После правки реестра — `php php-v2-api/tests/amc.test.php`.
+- **Правила:** каждое изменение — через движок/действие с записью в `amc_audit_log` и причиной; удаление — через корзину (`amc_trash`); пользователей не удаляем, а блокируем; деньги — только действиями над транзакциями; **тексты личных сообщений в AMC не показываем** (колонки `message`/`attachments` скрыты в реестре); персональные данные (`pii`) модератору маскируются.
+- Значения формы уходят как `v[колонка]` (колонка может называться `action`/`id`); идентификаторы SQL — только из реестра, значения — prepared-запросами.
+
 ## 7. Качество кода (ОБЯЗАТЕЛЬНО к соблюдению)
 
 ### Верификация перед завершением любой задачи
