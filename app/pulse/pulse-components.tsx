@@ -19,6 +19,9 @@ import {
   resolvePulsePlaylistTitle,
 } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
+import { PULSE_ARTIST_DISLIKE_MENU, isTrackDisliked, isTrackMarkedItself, matchingDislikedArtists } from './dislikes/dislike-utils';
+import { useDislikeActions } from './dislikes/use-dislike-actions';
+import { guardPlayDisliked, usePulseDislikes } from './dislikes/use-pulse-dislikes';
 import AppImage from '../components/app-image';
 import Modal from '../components/modal';
 import { AncialAPI } from '../lib/api-v2';
@@ -307,12 +310,15 @@ export function PulsePlaylistTile({
   onOpen,
   onPlay,
   variant = 'compact',
+  covers,
 }: {
   card: PulsePlaylistCardData;
   isPlaying: boolean;
   onOpen: () => void;
   onPlay: () => void;
   variant?: 'big' | 'compact';
+  /** Подборки дня: вместо одной обложки — коллаж 2×2 из обложек первых треков. */
+  covers?: string[];
 }) {
   const { lang } = useAuth();
   const coverUrl = getImageUrl(card.img, DEFAULT_TRACK_IMAGE);
@@ -332,12 +338,26 @@ export function PulsePlaylistTile({
       )}
     >
       <button type="button" onClick={onOpen} className="h-full w-full cursor-pointer">
-        <PulseCoverImage
-          alt={title}
-          className="duration-300 group-hover:scale-105"
-          sizes={variant === 'big' ? PULSE_COVER_IMAGE_SIZES.playlistTileBig : PULSE_COVER_IMAGE_SIZES.playlistTile}
-          src={coverUrl}
-        />
+        {covers && covers.length > 0 ? (
+          <div className="grid h-full w-full grid-cols-2 grid-rows-2 duration-300 group-hover:scale-105">
+            {[0, 1, 2, 3].map((index) => (
+              <div key={index} className="relative overflow-hidden">
+                <PulseCoverImage
+                  alt={index === 0 ? title : ''}
+                  sizes={PULSE_COVER_IMAGE_SIZES.playlistPill}
+                  src={covers[index] ?? covers[0]}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <PulseCoverImage
+            alt={title}
+            className="duration-300 group-hover:scale-105"
+            sizes={variant === 'big' ? PULSE_COVER_IMAGE_SIZES.playlistTileBig : PULSE_COVER_IMAGE_SIZES.playlistTile}
+            src={coverUrl}
+          />
+        )}
       </button>
 
       <div className="absolute inset-x-0 bottom-0 flex w-full items-end gap-1 bg-gradient-to-t from-black via-black/90 to-transparent p-1 opacity-0 duration-300 group-hover:opacity-100 lg:gap-3 lg:p-3">
@@ -589,7 +609,7 @@ export function PulseTrackRow({
   userCountry,
 }: PulseTrackRowProps) {
   const { lang } = useAuth();
-  const { currentTrackObj, isPlaying, openBlockedTrackModal } = usePulsePlayer();
+  const { currentTrackObj, isPlaying, openBlockedTrackModal, startRadio } = usePulsePlayer();
 
   const rawSid = String(track.sid ?? '').trim();
   const numSid = toNumber(rawSid);
@@ -609,6 +629,12 @@ export function PulseTrackRow({
   );
 
   const isAvailable = isTrackAvailable(track, userCountry);
+  // «Не интересно»: строка видна, но приглушена; автоматическая очередь такой трек пропускает.
+  const dislikes = usePulseDislikes();
+  const isDisliked = isTrackDisliked(track, dislikes);
+  const { markTrack, startArtistDislike, unmarkArtist, unmarkTrack } = useDislikeActions();
+  const markedItself = isTrackMarkedItself(track, dislikes);
+  const dislikedArtists = matchingDislikedArtists(track, dislikes.artists);
   const artistIds = getArtistIds(track);
   const [isArtistsOpen, setIsArtistsOpen] = useState(false);
   const coverUrl = getTrackArtwork(track);
@@ -665,6 +691,15 @@ export function PulseTrackRow({
     } finally {
       setIsSavingOffline(false);
     }
+  };
+
+  const handlePlay = () => {
+    if (!isAvailable) {
+      openBlockedTrackModal();
+      return;
+    }
+    // Отмеченный трек: сначала вопрос «Всё равно включить?» (если не запомнено «играть сразу»).
+    if (!guardPlayDisliked(track, () => onPlayTrack(track, trackIndex))) onPlayTrack(track, trackIndex);
   };
 
   const manageActions = [
@@ -733,13 +768,7 @@ export function PulseTrackRow({
     <div className={cn('pointer-events-auto rounded-2xl flex items-center gap-3 duration-300 group cursor-pointer hover:bg-zinc-800 hover:pr-3', isCurrentSong && 'bg-lime-500/10 pr-3')}>
       <button
         type="button"
-        onClick={() => {
-          if (isAvailable) {
-            onPlayTrack(track, trackIndex);
-          } else {
-            openBlockedTrackModal();
-          }
-        }}
+        onClick={handlePlay}
         // isolate: z-20 значков (корона, офлайн, 18+) действует только внутри обложки и не лезет поверх липкого хедера.
         className="relative isolate h-16 w-16 shrink-0 cursor-pointer active:scale-95 duration-300"
       >
@@ -758,7 +787,7 @@ export function PulseTrackRow({
 
         <PulseCoverImage
           alt={`${title} cover`}
-          className={cn('rounded-2xl', !isAvailable && 'opacity-40')}
+          className={cn('rounded-2xl', !isAvailable && 'opacity-40', isAvailable && isDisliked && 'opacity-50')}
           sizes={PULSE_COVER_IMAGE_SIZES.trackRow}
           src={coverUrl}
         />
@@ -769,6 +798,15 @@ export function PulseTrackRow({
             <Icon name="IC-lock" className="h-5 w-5 fill-zinc-300" />
           </div>
         )}
+
+        {isDisliked ? (
+          <div
+            data-tip={lang?.pulse_disliked_badge || 'Вы отметили этот трек как неинтересный'}
+            className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-blur:8px] [--glass-sat:2] absolute -bottom-1.5 -left-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 shadow"
+          >
+            <Icon name="IC-dislike" className="h-4 w-4 fill-zinc-200" />
+          </div>
+        ) : null}
 
         {isTrackExplicit(track) ? (
           <div className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-blur:8px] [--glass-sat:2] group absolute -bottom-1.5 -right-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-zinc-600/30 p-1 text-xs text-white duration-300 group-hover:duration-300 group-hover:w-7">
@@ -782,14 +820,8 @@ export function PulseTrackRow({
 
       <button
         type="button"
-        onClick={() => {
-          if (isAvailable) {
-            onPlayTrack(track, trackIndex);
-          } else {
-            openBlockedTrackModal();
-          }
-        }}
-        className={cn('min-w-0 flex-grow text-left', isAvailable ? 'cursor-pointer' : 'cursor-pointer opacity-60')}
+        onClick={handlePlay}
+        className={cn('min-w-0 flex-grow text-left', isAvailable ? 'cursor-pointer' : 'cursor-pointer opacity-60', isAvailable && isDisliked && 'opacity-60')}
       >
         <span className="block truncate text-sm font-medium text-white md:text-base lg:text-lg">
           {isAvailable ? title : (artist ? `${title} - ${artist}` : title)}
@@ -838,9 +870,31 @@ export function PulseTrackRow({
             {lang?.play_next || 'Следующим'}
           </DropdownItem>
         ) : null}
+        {isAvailable ? (
+          <DropdownItem icon="IC-radio" onClick={() => void startRadio(track)}>
+            {lang?.pulse_start_radio || 'Радио по треку'}
+          </DropdownItem>
+        ) : null}
         {isAuthenticated ? (
           <DropdownItem icon="IC-plus" onClick={() => onAddToPlaylist(track.sid ?? 0)}>
             {lang?.add_to_playlist || 'В плейлист'}
+          </DropdownItem>
+        ) : null}
+        {isAuthenticated && (markedItself || dislikedArtists.length === 0) ? (
+          <DropdownItem icon="IC-dislike" onClick={() => void (markedItself ? unmarkTrack(track) : markTrack(track))}>
+            {markedItself ? (lang?.pulse_undislike || 'Вернуть в рекомендации') : (lang?.pulse_dislike || 'Не интересно')}
+          </DropdownItem>
+        ) : null}
+        {isAuthenticated
+          ? dislikedArtists.map((artist) => (
+            <DropdownItem key={artist.key} icon="IC-user" onClick={() => void unmarkArtist(artist)}>
+              {`${lang?.pulse_undislike_artist || 'Вернуть исполнителя'}: ${artist.label || artist.key}`}
+            </DropdownItem>
+          ))
+          : null}
+        {PULSE_ARTIST_DISLIKE_MENU && isAuthenticated && dislikedArtists.length === 0 && normalizeText(track.artist) ? (
+          <DropdownItem icon="IC-user" onClick={() => startArtistDislike(track)}>
+            {lang?.pulse_dislike_artist || 'Не рекомендовать исполнителя'}
           </DropdownItem>
         ) : null}
         {isAvailable && track?.src ? (

@@ -13,6 +13,8 @@ import { useRequireAuth } from '../../../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { buildPulseTrackReportReasons } from '../../../lib/report-reasons';
 import { useListWindow } from '../../../lib/use-list-window';
+import { isTrackDisliked } from '../../dislikes/dislike-utils';
+import { usePulseDislikes } from '../../dislikes/use-pulse-dislikes';
 import { useUserCountry } from '../../../lib/user-geo';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
@@ -36,6 +38,7 @@ import { usePulseTrackShare } from '../../../hooks/use-pulse-track-share';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
 import {
   canUploadToPulseFavoritesPlaylist,
+  isPulsePersonalPlaylist,
   canViewPulsePlaylist,
   getPulseBuiltinPlaylistCover,
   getPulseBuiltinPlaylistMeta,
@@ -154,7 +157,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   }, [playlist?.type, playlistId]);
 
   useEffect(() => {
-    if (!authLoading && playlistId === '-5' && !isAuthenticated) {
+    if (!authLoading && isPulsePersonalPlaylist(playlistId) && !isAuthenticated) {
       router.replace(`/login?backurl=/pulse/playlist/${encodeURIComponent(playlistId)}`);
     }
   }, [authLoading, isAuthenticated, playlistId, router]);
@@ -162,7 +165,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   useEffect(() => {
     let cancelled = false;
 
-    if (isBuiltinPlaylist && playlistId === '-5' && !isAuthenticated) {
+    if (isBuiltinPlaylist && isPulsePersonalPlaylist(playlistId) && !isAuthenticated) {
       return () => {
         cancelled = true;
       };
@@ -462,6 +465,15 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     setTrackToDelete(track);
   }, []);
 
+  // Генерируемые списки (Топ, Твой, ГенЛисты…) не показывают отмеченное «не интересно» — и сразу после отметки,
+  // не дожидаясь перезагрузки; в обычных плейлистах такие треки остаются с пометкой.
+  const dislikes = usePulseDislikes();
+  const hideDisliked = playlistType === 4 || isBuiltinPlaylist;
+  const listTracks = useMemo(
+    () => (hideDisliked ? tracks.filter((track) => !isTrackDisliked(track, dislikes)) : tracks),
+    [dislikes, hideDisliked, tracks],
+  );
+
   // Длинный плейлист (Избранное на сотни треков) рендерим окном: дальние строки не держат разметку и обложки.
   const {
     end: tracksWindowEnd,
@@ -469,10 +481,10 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     spacerAfter: tracksSpacerAfter,
     spacerBefore: tracksSpacerBefore,
     start: tracksWindowStart,
-  } = useListWindow(tracks.length, playlistId);
+  } = useListWindow(listTracks.length, playlistId);
   const visibleTracks = useMemo(
-    () => tracks.slice(tracksWindowStart, tracksWindowEnd),
-    [tracks, tracksWindowEnd, tracksWindowStart],
+    () => listTracks.slice(tracksWindowStart, tracksWindowEnd),
+    [listTracks, tracksWindowEnd, tracksWindowStart],
   );
 
   const isMetaLoading = isBuiltinPlaylist ? false : metaLoading;
@@ -667,7 +679,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
               </div>
             ) : null}
 
-            {!isLoading && !error && !isMissing && tracks.length > 0 ? (
+            {!isLoading && !error && !isMissing && listTracks.length > 0 ? (
               <div ref={setTrackListElement} className="flex flex-col gap-3">
                 {tracksSpacerBefore > 0 ? <div aria-hidden style={{ height: tracksSpacerBefore }} /> : null}
                 {visibleTracks.map((track, visibleIndex) => {
@@ -698,7 +710,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
               </div>
             ) : null}
 
-            {!isLoading && !error && !isMissing && tracks.length === 0 ? (
+            {!isLoading && !error && !isMissing && listTracks.length === 0 ? (
               <div className="flex min-h-72 flex-col items-center justify-center gap-1 text-center">
                 <PulseLogo className="w-48" />
                 <span className="text-xl text-zinc-300">{lang?.emptytopic || 'Пусто'}</span>

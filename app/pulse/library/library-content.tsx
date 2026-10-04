@@ -118,13 +118,20 @@ export default function PulseLibraryContent() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 pb-64 duration-300">
       <div className="sticky top-0 z-[101] flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
-        <div className="w-full max-w-screen-2xl px-3 lg:px-0">
+        <div className="flex w-full max-w-screen-2xl items-center px-3 lg:px-0">
           <Link
             href="/pulse/my"
             className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
           >
             <Icon name="IC-chevron-left" className="inline fill-current h-8 w-8" />
             <PulseLogo className="w-32 sm:w-48" />
+          </Link>
+          <Link
+            href="/pulse/library/dislikes"
+            className="ml-auto flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-zinc-600/30 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 duration-300 hover:bg-zinc-800 active:scale-95"
+          >
+            <Icon name="IC-dislike" className="inline h-5 w-5 fill-current" />
+            {lang?.pulse_dislikes_library || 'Не интересно'}
           </Link>
         </div>
       </div>

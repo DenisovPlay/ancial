@@ -758,4 +758,18 @@
     <symbol id="IC-photo-material" viewBox="0 0 24 24">
         <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36L6.5 17h11l-3.54-4.71z"/>
     </symbol>
+    <symbol id="IC-radio" viewBox="0 0 48 48">
+        <path d="M24 19.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/>
+        <path d="M15.51 15.51A12 12 0 0 0 15.51 32.49L17.64 30.36A9 9 0 0 1 17.64 17.64z"/>
+        <path d="M32.49 15.51A12 12 0 0 1 32.49 32.49L30.36 30.36A9 9 0 0 0 30.36 17.64z"/>
+        <path d="M11.27 11.27A18 18 0 0 0 11.27 36.73L13.39 34.61A15 15 0 0 1 13.39 13.39z"/>
+        <path d="M36.73 11.27A18 18 0 0 1 36.73 36.73L34.61 34.61A15 15 0 0 0 34.61 13.39z"/>
+    </symbol>
+    <symbol id="IC-wave" viewBox="0 0 48 48">
+        <rect x="7" y="19" width="4" height="10" rx="2"/>
+        <rect x="15" y="11" width="4" height="26" rx="2"/>
+        <rect x="23" y="6" width="4" height="36" rx="2"/>
+        <rect x="31" y="13" width="4" height="22" rx="2"/>
+        <rect x="39" y="17" width="4" height="14" rx="2"/>
+    </symbol>
 </svg>

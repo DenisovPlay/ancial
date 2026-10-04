@@ -34,6 +34,8 @@ import {
   TrackCollectionPanel,
   type PulseShelf,
 } from './pulse-components';
+import PulseDailyRow from './daily/pulse-daily-row';
+import PulseWaveCard from './wave/pulse-wave-card';
 import { usePulseTrackShare } from '../hooks/use-pulse-track-share';
 import {
   canManagePulseTrack,
@@ -43,6 +45,8 @@ import {
 } from './playlist/playlist-model';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from './pulse-image';
 import { usePulseFavoriteIds } from './player/use-pulse-favorite-ids';
+import { isTrackDisliked } from './dislikes/dislike-utils';
+import { usePulseDislikes } from './dislikes/use-pulse-dislikes';
 import { getDownloadedAudioCount } from './player/offline-audio';
 import { getPulseNavigationTarget } from './pulse-navigation';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from './pulse-upload-track-modal';
@@ -771,7 +775,9 @@ export default function PulseContent() {
   // Always show "Continue?)" section if there are offline downloads, even for guests
   const shouldShowRecentListened = isLoading || isAuthenticated || downloadedCount > 0;
 
-  const renderTrackRow = useCallback((collectionId: HomeTrackCollectionId, track: PulseTrack, index: number) => (
+  // Топ / Новое / Твой — генерируемые списки: отмеченное «не интересно» в них не показываем (сразу после отметки тоже).
+  const dislikes = usePulseDislikes();
+  const renderTrackRow = useCallback((collectionId: HomeTrackCollectionId, track: PulseTrack, index: number) => isTrackDisliked(track, dislikes) ? null : (
     <PulseTrackRow
       currentSongId={currentSongId}
       favoriteIds={favoriteIds}
@@ -793,7 +799,7 @@ export default function PulseContent() {
       user={user}
       userCountry={userCountry}
     />
-  ), [copyTrackLink, currentSongId, favoriteIds, isAuthenticated, likeTrack, openAddTrackToPlaylist, openArtistPage, openDeleteTrack, openEditTrack, playGenlist, queueTrackNext, reportTrack, user, userCountry]);
+  ), [dislikes, copyTrackLink, currentSongId, favoriteIds, isAuthenticated, likeTrack, openAddTrackToPlaylist, openArtistPage, openDeleteTrack, openEditTrack, playGenlist, queueTrackNext, reportTrack, user, userCountry]);
 
   const topTitle = useMemo(() => (
     <>
@@ -881,6 +887,8 @@ export default function PulseContent() {
         </>
       ) : null}
 
+      <PulseWaveCard />
+
       {isAuthenticated && friendsListening.length > 0 ? (
         <>
           <PulseSectionTitle>{lang?.pulse_friends_listening || 'Друзья слушают'}</PulseSectionTitle>
@@ -896,6 +904,8 @@ export default function PulseContent() {
           </PulseScrollSection>
         </>
       ) : null}
+
+      <PulseDailyRow />
 
       <PulseSectionTitle>
         {lang?.playlistsby || 'Плейлисты от'} <PulseLogo className="ml-1 inline w-30 align-middle" />

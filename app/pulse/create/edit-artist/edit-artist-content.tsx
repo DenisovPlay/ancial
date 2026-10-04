@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { uploadImage } from '../../../lib/upload';
 import { useAuth } from '../../../context/AuthContext';
@@ -9,6 +9,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AppImage from '../../../components/app-image';
 import Icon from '../../../components/svg-icon';
 import BrandLoader from '../../../components/brand-loader';
+import RoundCheck from '../../../components/round-check';
+
+interface AutoLinkedTrack {
+  id: number;
+  title: string;
+  artist: string;
+  external?: boolean;
+}
 
 export default function EditArtistContent() {
   const { lang, isAuthenticated } = useAuth();
@@ -25,6 +33,13 @@ export default function EditArtistContent() {
   const [socLinks, setSocLinks] = useState('');
   const [desk, setDesk] = useState('');
   const [img, setImg] = useState('');
+  // Автопривязка треков (переключатели работают только у проверенной карточки)
+  const [aliases, setAliases] = useState('');
+  const [autoExternal, setAutoExternal] = useState(false);
+  const [autoUsers, setAutoUsers] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [autoLinks, setAutoLinks] = useState<AutoLinkedTrack[]>([]);
+  const [linkBusy, setLinkBusy] = useState(false);
   const blobUrlRef = useRef<string | null>(null);
 
   const cleanupBlobUrl = () => {
@@ -48,6 +63,10 @@ export default function EditArtistContent() {
         img?: string;
         desk?: string;
         soc_links?: string;
+        aliases?: string | null;
+        auto_link_external?: number | string;
+        auto_link_users?: number | string;
+        verify?: number | string;
       }
 
       if (id > 0) {
@@ -60,6 +79,12 @@ export default function EditArtistContent() {
                 setSocLinks(artist.soc_links || '');
                 setDesk(artist.desk || '');
                 setImg(artist.img || '');
+                setAliases(artist.aliases || '');
+                // У непроверенной карточки переключатели не действуют (сервер их сбрасывает) — не показываем их включёнными.
+                const verified = String(artist.verify) === '1';
+                setAutoExternal(verified && String(artist.auto_link_external) === '1');
+                setAutoUsers(verified && String(artist.auto_link_users) === '1');
+                setIsVerified(verified);
               }
             }
           })
@@ -101,14 +126,19 @@ export default function EditArtistContent() {
       soc_links: socLinks.trim(),
       desk: desk.trim(),
       img,
+      aliases: aliases.trim(),
+      auto_link_external: autoExternal ? '1' : '0',
+      auto_link_users: autoUsers ? '1' : '0',
     };
 
-    AncialAPI.pulseManagement('artist', action, data)
-      .then(() => {
+    AncialAPI.pulseManagement<{ autolink?: { added?: number } }>('artist', action, data)
+      .then((result) => {
+        const added = Number(result?.autolink?.added ?? 0);
         showNote({
-          content: id > 0
+          content: (id > 0
             ? (lang?.creators_artist_updated || 'Профиль артиста обновлён!')
-            : (lang?.creators_artist_created || 'Профиль артиста создан!'),
+            : (lang?.creators_artist_created || 'Профиль артиста создан!'))
+            + (added > 0 ? ` ${lang?.pulse_autolink_added || 'Привязано новых треков:'} ${added}` : ''),
           type: 'success',
           time: 3,
         });
@@ -123,6 +153,31 @@ export default function EditArtistContent() {
         setSaving(false);
       });
   };
+
+  // Автопривязанные треки: загрузка и действия (отвязать / пересчитать) — только владелец существующей карточки.
+  const runLinkAction = useCallback(async (action: 'links' | 'unlink' | 'unlink_all' | 'relink', songId?: number) => {
+    if (id <= 0) return;
+    setLinkBusy(true);
+    try {
+      const result = await AncialAPI.pulseManagement<{ links?: AutoLinkedTrack[]; autolink?: { added?: number } | null }>('artist', action, { id: String(id), ...(songId ? { song_id: String(songId) } : {}) });
+      setAutoLinks(Array.isArray(result?.links) ? result.links : []);
+      const added = Number(result?.autolink?.added ?? 0);
+      if (action === 'relink') {
+        showNote({ content: `${lang?.pulse_autolink_added || 'Привязано новых треков:'} ${added}`, type: 'success', time: 4 });
+      }
+    } catch (err) {
+      showNote({ content: getApiMessage(err instanceof Error ? err.message : null, lang, lang?.errorhappend || 'Произошла ошибка'), type: 'error', time: 5 });
+    } finally {
+      setLinkBusy(false);
+    }
+  }, [id, lang, showNote]);
+
+  useEffect(() => {
+    if (isAuthenticated && id > 0 && !loading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- запрос списка автопривязанных: состояние выставляется после ответа
+      void runLinkAction('links');
+    }
+  }, [id, isAuthenticated, loading, runLinkAction]);
 
   if (!isAuthenticated) return null;
 
@@ -205,6 +260,63 @@ export default function EditArtistContent() {
               </div>
             </div>
           </div>
+
+          <section className="flex flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
+            <h2 className="text-lg font-semibold text-zinc-100">{lang?.pulse_autolink_title || 'Автопривязка треков'}</h2>
+
+            <div className="flex w-full flex-col -mt-3">
+              <span className="z-20 pl-4 text-zinc-400">{lang?.pulse_autolink_aliases || 'Другие названия'}</span>
+              <div className="-mt-3 z-10 flex h-12 w-full rounded-full border border-zinc-600/30 bg-zinc-800/90 p-1">
+                <input
+                  type="text"
+                  autoComplete="off"
+                  value={aliases}
+                  onChange={(e) => setAliases(e.target.value)}
+                  placeholder={lang?.pulse_autolink_aliases_hint || 'Через запятую, например: BigBabyTape, ББТ'}
+                  className="w-full bg-transparent pl-2 text-zinc-100 placeholder-zinc-600 focus:border-0 focus:outline-0 focus:ring-0"
+                />
+              </div>
+            </div>
+
+            <RoundCheck checked={autoExternal} disabled={!isVerified} label={lang?.pulse_autolink_external || 'Треки Яндекса и других сервисов'} onChange={setAutoExternal} />
+            <RoundCheck checked={autoUsers} disabled={!isVerified} label={lang?.pulse_autolink_users || 'Треки других пользователей'} onChange={setAutoUsers} />
+            {!isVerified ? <span className="text-xs text-zinc-500">{lang?.pulse_autolink_verify_required || 'Станет доступно после проверки карточки'}</span> : null}
+
+            {id > 0 ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="font-medium text-zinc-300">{lang?.pulse_autolink_list || 'Привязаны автоматически'} · {autoLinks.length}</span>
+                  <div className="flex gap-3">
+                    <button type="button" disabled={linkBusy} onClick={() => void runLinkAction('relink')} className="cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs text-white duration-300 hover:bg-zinc-700 active:scale-95 disabled:opacity-50">
+                      {lang?.pulse_autolink_relink || 'Пересчитать'}
+                    </button>
+                    {autoLinks.length > 0 ? (
+                      <button type="button" disabled={linkBusy} onClick={() => void runLinkAction('unlink_all')} className="cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs text-white duration-300 hover:bg-zinc-700 active:scale-95 disabled:opacity-50">
+                        {lang?.pulse_autolink_unlink_all || 'Отвязать все'}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+                {autoLinks.length === 0 ? (
+                  <span className="text-sm text-zinc-500">{lang?.pulse_autolink_empty || 'Пока нет автоматически привязанных треков'}</span>
+                ) : (
+                  <div className="flex max-h-72 flex-col gap-3 overflow-y-auto">
+                    {autoLinks.map((track) => (
+                      <div key={track.id} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-800/60 p-3">
+                        <div className="flex min-w-0 flex-grow flex-col">
+                          <span className="truncate text-sm font-medium text-white">{track.title}</span>
+                          <span className="truncate text-xs text-zinc-400">{track.artist}</span>
+                        </div>
+                        <button type="button" disabled={linkBusy} onClick={() => void runLinkAction('unlink', track.id)} className="shrink-0 cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs text-white duration-300 hover:bg-zinc-700 active:scale-95 disabled:opacity-50">
+                          {lang?.pulse_autolink_unlink || 'Отвязать'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </section>
 
           <button
             type="submit"

@@ -34,6 +34,10 @@ import { useVisualAudioProgress, VISUAL_PROGRESS_STEP_MS } from '../pulse/player
 import type { RepeatMode } from '../pulse/player/pulse-player-full-controls';
 import type { PulsePlayerFullProps } from '../pulse/player/pulse-player-full';
 import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
+import PulseDislikeHost from '../pulse/dislikes/pulse-dislike-host';
+import { findPlayableIndex, type DislikeTrackLike } from '../pulse/dislikes/dislike-utils';
+import { ensurePulseDislikesStarted, isPulseTrackDisliked } from '../pulse/dislikes/use-pulse-dislikes';
+import { pulseEventSourceOf, queuePulseEvent, setPulseEventsEnabled } from '../pulse/player/pulse-events';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
 import { useMiniPlayerSlot } from '../pulse/player/mini-player-slot';
 import {
@@ -152,6 +156,10 @@ type PulsePlayerContextValue = {
   playNextTrack: (trackId: number | string) => Promise<void>;
   playPlaylist: (playlistId: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number, expectedSongId?: number | string | null) => Promise<void>;
   playTrack: (trackId: number | string) => Promise<void>;
+  /** Радио по треку: играет сам трек, дальше бесконечная лента похожих. */
+  startRadio: (track: PulseTrack | null | undefined) => Promise<void>;
+  /** Вейв по настройкам аккаунта; label — подпись в плеере. false — под настройки не нашлось треков. */
+  startWave: (label?: string) => Promise<boolean>;
   setMode: (mode: PulsePlayerMode) => void;
   togglePlay: () => void;
   repeatMode: RepeatMode;
@@ -287,6 +295,9 @@ export function PulsePlayerProvider({
   // Во время звонка плеер не виден и молчит, но остаётся смонтированным (см. isPlayerSuspendedPath).
   const isSuspended = isPlayerSuspendedPath(usePathname());
   const { isAuthenticated, lang } = useAuth();
+  useEffect(() => {
+    setPulseEventsEnabled(isAuthenticated);
+  }, [isAuthenticated]);
   const { showNote } = useNotification();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -328,8 +339,8 @@ export function PulsePlayerProvider({
   const likedSongIdsRef = useRef<number[]>([]);
   /** Лайкнут ли играющий трек (по рефам — безопасно из обработчиков, привязанных при монтировании). */
   const isCurrentTrackLiked = () => {
-    const collection = currentCollectionIdRef.current;
-    return collection === '-5' || collection === 'playlist_-5' || likedSongIdsRef.current.includes(currentSongIdRef.current);
+    // -5 — ГенЛист «Твой» (рекомендации), не избранное: лайк определяется только списком избранных.
+    return likedSongIdsRef.current.includes(currentSongIdRef.current);
   };
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
@@ -400,6 +411,16 @@ export function PulsePlayerProvider({
   const [miniShellWidth, setMiniShellWidth] = useState(370);
   // Радио: трек-источник, набор уже воспроизведённых ID, флаг загрузки
   const radioSeedTrackIdRef = useRef<number>(0);
+  /** Исходный sid семени радио (бывает виртуальным ext_…): сервер сам запишет такой трек в базу. */
+  const radioSeedRawRef = useRef('');
+  /** Бесконечная очередь: радио по треку или Вейв (общий код подгрузки, разные источники). */
+  const infiniteKindRef = useRef<'radio' | 'wave'>('radio');
+  const [infiniteKind, setInfiniteKind] = useState<'radio' | 'wave'>('radio');
+  const infiniteSessionRef = useRef(0);
+  /** playCollection для вызова из самого себя (откат на одиночный трек): прямой рекурсии линтер не пропускает. */
+  const playCollectionRef = useRef<((kind: PulseCollectionKind, id: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number) => Promise<void>) | null>(null);
+  /** Артисты последних пропусков в Вейве: сервер на полчаса убирает их из выдачи. */
+  const waveSkipArtistsRef = useRef<Array<{ key: string; at: number }>>([]);
   const radioPlayedIdsRef = useRef<Set<number>>(new Set());
   const radioLoadingRef = useRef(false);
   const isRadioModeRef = useRef(false);
@@ -527,8 +548,8 @@ export function PulsePlayerProvider({
     setIsPlaylist(nextIsPlaylist);
     setPlaylistId(nextPlaylistId);
 
-    // Сбрасываем режим радио при ручном запуске нового плейлиста/трека
-    if (!nextPlaylistId.startsWith('radio_')) {
+    // Сбрасываем режим радио/Вейва при ручном запуске нового плейлиста/трека
+    if (!nextPlaylistId.startsWith('radio_') && nextPlaylistId !== 'wave') {
       isRadioModeRef.current = false;
       setIsRadioMode(false);
       setRadioSeedName('');
@@ -1058,9 +1079,8 @@ export function PulsePlayerProvider({
     likedSongIdsRef.current = likedSongIds;
   }, [likedSongIds]);
 
-  const isPlayingFromFavorites = playlistId === '-5' || playlistId === 'playlist_-5';
   const activeLike = currentTrack
-    ? (isPlayingFromFavorites || likedSongIds.includes(toNumber(currentTrack.sid)))
+    ? likedSongIds.includes(toNumber(currentTrack.sid))
     : false;
 
   const playLoadedTrack = async (track: PulseTrack | null, retryCount = 0): Promise<void> => {
@@ -1251,16 +1271,6 @@ export function PulsePlayerProvider({
         } catch (e) {
           console.error('Failed to cache collection tracks', e);
         }
-
-        // Если это плейлист Избранное (-5) — сразу обновляем и кэшируем ID лайкнутых треков в плеере
-        if (kind === 'playlist' && resolvedId === '-5') {
-          const favIds = tracks.map((t) => toNumber(t.sid)).filter(Boolean);
-          if (favIds.length > 0) {
-            const current = likedSongIdsRef.current || [];
-            const merged = Array.from(new Set([...current, ...favIds]));
-            setLikedSongsState(merged);
-          }
-        }
       }
 
       return tracks;
@@ -1389,7 +1399,21 @@ export function PulsePlayerProvider({
     // Страница передаёт индекс в СВОЁМ списке (например popular_tracks артиста), а коллекция с сервера
     // бывает отсортирована иначе — поэтому сначала ID трека, по которому кликнули, и только потом индекс.
     const matchedIndex = kind === 'track' ? 0 : findTrackIndex(preparedTracks, expectedTrackId, startIndex);
-    const nextIndex = matchedIndex >= 0 ? matchedIndex : clamp(startIndex, 0, Math.max(preparedTracks.length - 1, 0));
+    // Кликнули по треку, которого нет в собранной коллекции (сервер не отдаёт «не интересно» в генерируемых списках,
+    // а страница ещё показывает его): играем именно его, а не соседний по индексу.
+    if (kind !== 'track' && expectedTrackId > 0 && matchedIndex < 0) {
+      await playCollectionRef.current?.('track', expectedTrackId, true, 0, 0);
+      return;
+    }
+    const requestedIndex = matchedIndex >= 0 ? matchedIndex : clamp(startIndex, 0, Math.max(preparedTracks.length - 1, 0));
+    // «Не интересно»: если запуск не по клику на конкретный трек («Слушать» целиком), начинаем с первого не отмеченного.
+    // Явный клик по строке сюда приходит уже после вопроса «Всё равно включить?» — его не трогаем.
+    ensurePulseDislikesStarted();
+    const clickedExplicitly = expectedTrackId > 0 && toNumber(preparedTracks[requestedIndex]?.sid) === expectedTrackId;
+    const firstPlayable = kind !== 'track' && !clickedExplicitly
+      ? findPlayableIndex<DislikeTrackLike>(preparedTracks, requestedIndex, 1, (track) => isPulseTrackDisliked(track))
+      : -1;
+    const nextIndex = firstPlayable >= 0 ? firstPlayable : requestedIndex;
     const nextTrack = preparedTracks[nextIndex] ?? null;
 
     if (kind === 'track' && !isTrackPlayable(nextTrack, userCountry)) {
@@ -1465,56 +1489,133 @@ export function PulsePlayerProvider({
     if (followingHostIdRef.current > 0) return;
     if (!currentIsPlaylistRef.current || !playlistRef.current.length) return;
 
-    const nextIndex = indexRef.current > 0 ? indexRef.current - 1 : 0;
+    const previousPlayable = findPlayableIndex(playlistRef.current, indexRef.current - 1, -1, (track) => isPulseTrackDisliked(track));
+    const nextIndex = previousPlayable >= 0 ? previousPlayable : (indexRef.current > 0 ? indexRef.current : 0);
     setPlaylistIndex(nextIndex);
     await playLoadedTrack(playlistRef.current[nextIndex] ?? null);
   };
 
   /**
-   * Загружает следующую порцию похожих треков для режима радио
-   * и добавляет их в конец текущего плейлиста.
+   * Следующая порция бесконечной очереди: радио (по треку-семени) или Вейв (по настройкам аккаунта).
+   * Уже игравшие уходят на сервер как exclude; когда подходящее кончилось, радио начинает круг заново.
    */
+  const fetchInfiniteBatch = async (): Promise<PulseTrack[]> => {
+    const played = Array.from(radioPlayedIdsRef.current);
+    if (infiniteKindRef.current === 'wave') {
+      const cutoff = Date.now() - 30 * 60 * 1000;
+      waveSkipArtistsRef.current = waveSkipArtistsRef.current.filter((item) => item.at > cutoff).slice(-5);
+      const batch = await AncialAPI.pulseGetWave<PulseTrack[]>(played.slice(-200), waveSkipArtistsRef.current.map((item) => item.key));
+      return Array.isArray(batch) ? batch : [];
+    }
+
+    const seedId = radioSeedRawRef.current || radioSeedTrackIdRef.current;
+    if (!seedId) return [];
+    const wave = await AncialAPI.pulseGetRadioWave<PulseTrack[]>(seedId, played);
+    if (Array.isArray(wave) && wave.length > 0) return wave;
+    // Если похожих больше нет — сбрасываем список исключений и пробуем снова
+    radioPlayedIdsRef.current.clear();
+    if (radioSeedTrackIdRef.current > 0) radioPlayedIdsRef.current.add(radioSeedTrackIdRef.current);
+    const retry = await AncialAPI.pulseGetRadioWave<PulseTrack[]>(seedId, radioSeedTrackIdRef.current > 0 ? [radioSeedTrackIdRef.current] : []);
+    return Array.isArray(retry) ? retry : [];
+  };
+
+  /** Подгружает порцию и сразу включает следующий трек (дошли до конца очереди). */
   const fillRadioWave = async () => {
     if (radioLoadingRef.current) return;
     radioLoadingRef.current = true;
-
-    const seedId = radioSeedTrackIdRef.current;
-    if (!seedId) {
-      radioLoadingRef.current = false;
-      return;
-    }
-
     try {
-      // Передаём уже воспроизведённые треки, чтобы сервер их исключил
-      const excludeIds = Array.from(radioPlayedIdsRef.current);
-      const wave = await AncialAPI.pulseGetRadioWave<PulseTrack[]>(seedId, excludeIds);
-
-      if (!Array.isArray(wave) || wave.length === 0) {
-        // Если похожих больше нет — сбрасываем список исключений и пробуем снова
-        radioPlayedIdsRef.current.clear();
-        radioPlayedIdsRef.current.add(seedId);
-        const waveRetry = await AncialAPI.pulseGetRadioWave<PulseTrack[]>(seedId, [seedId]);
-        if (!Array.isArray(waveRetry) || waveRetry.length === 0) {
-          radioLoadingRef.current = false;
-          return;
-        }
-        const updated = [...playlistRef.current, ...waveRetry];
-        setPlaylistState(updated);
-        const nextIndex = indexRef.current + 1;
-        setPlaylistIndex(nextIndex);
-        await playLoadedTrack(updated[nextIndex] ?? null);
-      } else {
-        const updated = [...playlistRef.current, ...wave];
-        setPlaylistState(updated);
-        const nextIndex = indexRef.current + 1;
-        setPlaylistIndex(nextIndex);
-        await playLoadedTrack(updated[nextIndex] ?? null);
-      }
+      const batch = await fetchInfiniteBatch();
+      if (batch.length === 0) return;
+      const updated = [...playlistRef.current, ...batch];
+      setPlaylistState(updated);
+      const nextIndex = indexRef.current + 1;
+      setPlaylistIndex(nextIndex);
+      await playLoadedTrack(updated[nextIndex] ?? null);
     } catch (e) {
       console.error('[Radio] Failed to fetch wave', e);
     } finally {
       radioLoadingRef.current = false;
     }
+  };
+
+  /** Подгружает порцию в конец очереди заранее, не переключая трек (старт и «осталось 3 трека»). */
+  const prefetchInfiniteQueue = async () => {
+    if (radioLoadingRef.current || !isRadioModeRef.current) return;
+    radioLoadingRef.current = true;
+    const session = infiniteSessionRef.current;
+    try {
+      const batch = await fetchInfiniteBatch();
+      if (batch.length === 0 || session !== infiniteSessionRef.current || !isRadioModeRef.current) return;
+      const known = new Set(playlistRef.current.map((track) => String(track.sid)));
+      setPlaylistState([...playlistRef.current, ...batch.filter((track) => !known.has(String(track.sid)))]);
+    } catch (e) {
+      console.error('[Radio] Failed to prefetch wave', e);
+    } finally {
+      radioLoadingRef.current = false;
+    }
+  };
+
+  /** Радио по треку: сразу играет сам трек, дальше бесконечная лента похожих. */
+  const startRadio = async (track: PulseTrack | null | undefined) => {
+    const rawSid = String(track?.sid ?? '').trim();
+    if (!track || !rawSid) return;
+    leaveRoomOnOwnPlayback();
+    collectionRequestIdRef.current += 1;
+    infiniteSessionRef.current += 1;
+    infiniteKindRef.current = 'radio';
+    setInfiniteKind('radio');
+    isRadioModeRef.current = true;
+    setIsRadioMode(true);
+    const seedName = getTrackDisplayTitle(track, langRef.current);
+    setRadioSeedName(seedName);
+    radioSeedNameRef.current = seedName;
+    const numericSid = toNumber(rawSid);
+    radioSeedTrackIdRef.current = numericSid;
+    radioSeedRawRef.current = rawSid;
+    radioPlayedIdsRef.current = new Set(numericSid > 0 ? [numericSid] : []);
+    // Лента собирается на лету: повторить её по идентификатору коллекции нельзя.
+    queueDirtyRef.current = true;
+    setPlaylistState([track]);
+    setPlaylistIndex(0);
+    setPlaylistMode(true, `radio_${rawSid}`);
+    await playLoadedTrack(track);
+    showPlayer();
+    void prefetchInfiniteQueue();
+  };
+
+  /** Вейв: настройки берутся с аккаунта; label — краткая подпись настроек для плеера. Возвращает false, если треков нет. */
+  const startWave = async (label = ''): Promise<boolean> => {
+    leaveRoomOnOwnPlayback();
+    const previousKind = infiniteKindRef.current;
+    infiniteKindRef.current = 'wave';
+    radioPlayedIdsRef.current = new Set();
+    waveSkipArtistsRef.current = [];
+    let batch: PulseTrack[] = [];
+    try {
+      batch = await fetchInfiniteBatch();
+    } catch (e) {
+      console.error('[Wave] Failed to load', e);
+    }
+    if (batch.length === 0) {
+      infiniteKindRef.current = previousKind;
+      return false;
+    }
+    collectionRequestIdRef.current += 1;
+    infiniteSessionRef.current += 1;
+    setInfiniteKind('wave');
+    isRadioModeRef.current = true;
+    setIsRadioMode(true);
+    setRadioSeedName(label);
+    radioSeedNameRef.current = label;
+    radioSeedTrackIdRef.current = 0;
+    radioSeedRawRef.current = '';
+    queueDirtyRef.current = true;
+    setPlaylistState(batch);
+    setPlaylistIndex(0);
+    setPlaylistMode(true, 'wave');
+    await playLoadedTrack(batch[0]);
+    showPlayer();
+    return true;
   };
 
   const nextTrack = async () => {
@@ -1530,6 +1631,18 @@ export function PulsePlayerProvider({
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Сигнал вкуса: ушли с трека раньше конца — «пропустил», дослушали — «доиграл». Первые секунды — случайное нажатие.
+    const leftSongId = currentSongIdRef.current;
+    if (leftSongId > 0 && audio.currentTime >= 3 && Number.isFinite(audio.duration) && audio.duration > 0) {
+      const leftRatio = (audio.currentTime / audio.duration) * 100;
+      queuePulseEvent({ ratio: leftRatio, songId: leftSongId, src: pulseEventSourceOf(currentCollectionIdRef.current) });
+      // Вейв: артиста, которого пропустили, на полчаса убираем из выдачи.
+      if (leftRatio < 30 && isRadioModeRef.current && infiniteKindRef.current === 'wave') {
+        const skippedArtist = String(playlistRef.current[indexRef.current]?.artist ?? '').split(',')[0].trim();
+        if (skippedArtist) waveSkipArtistsRef.current.push({ key: skippedArtist, at: Date.now() });
+      }
+    }
+
     // Имя трека — из рефов, а не из замыкания: в конце песни сюда приходит обработчик ended,
     // привязанный при монтировании, и в его замыкании трека ещё нет («Загрузка...»).
     const liveTitle = getTrackDisplayTitle(playlistRef.current[indexRef.current] ?? null, langRef.current);
@@ -1543,6 +1656,9 @@ export function PulsePlayerProvider({
         setRadioSeedName(liveTitle);
         radioSeedNameRef.current = liveTitle;
         radioSeedTrackIdRef.current = sid;
+        radioSeedRawRef.current = String(sid);
+        infiniteKindRef.current = 'radio';
+        setInfiniteKind('radio');
         radioPlayedIdsRef.current = new Set([sid]);
         // Переводим плеер в playlist-режим, чтобы очередь работала
         setPlaylistMode(true, `radio_${sid}`);
@@ -1556,8 +1672,10 @@ export function PulsePlayerProvider({
       return;
     }
 
-    if (indexRef.current < playlistRef.current.length - 1) {
-      const nextIndex = indexRef.current + 1;
+    // Отмеченные «не интересно» в автоматической очереди пропускаем; если дальше только они — это конец списка.
+    const nextPlayableIndex = findPlayableIndex(playlistRef.current, indexRef.current + 1, 1, (track) => isPulseTrackDisliked(track));
+    if (nextPlayableIndex >= 0) {
+      const nextIndex = nextPlayableIndex;
       // Запоминаем воспроизведённый трек для радио
       if (isRadioModeRef.current) {
         const playedSid = toNumber(playlistRef.current[indexRef.current]?.sid);
@@ -1565,6 +1683,8 @@ export function PulsePlayerProvider({
       }
       setPlaylistIndex(nextIndex);
       await playLoadedTrack(playlistRef.current[nextIndex] ?? null);
+      // Радио/Вейв: осталось три трека — подгружаем следующую порцию заранее, без паузы на загрузку.
+      if (isRadioModeRef.current && nextIndex >= playlistRef.current.length - 3) void prefetchInfiniteQueue();
       return;
     }
 
@@ -1589,6 +1709,9 @@ export function PulsePlayerProvider({
       radioSeedNameRef.current = seedName;
 
       radioSeedTrackIdRef.current = lastSid;
+      radioSeedRawRef.current = String(lastSid);
+      infiniteKindRef.current = 'radio';
+      setInfiniteKind('radio');
       radioPlayedIdsRef.current = new Set(
         playlistRef.current.map(t => toNumber(t.sid)).filter(Boolean) as number[]
       );
@@ -1701,6 +1824,9 @@ export function PulsePlayerProvider({
   // latest-ref: колбэки ниже всегда вызывают актуальную версию playLoadedTrack,
   // оставаясь стабильными между рендерами (поведение идентично прямому вызову).
   const playLoadedTrackRef = useRef(playLoadedTrack);
+  useEffect(() => {
+    playCollectionRef.current = playCollection;
+  });
   useEffect(() => {
     playLoadedTrackRef.current = playLoadedTrack;
   });
@@ -2300,6 +2426,8 @@ export function PulsePlayerProvider({
     playNextTrack: queueTrackNext,
     playPlaylist,
     playTrack,
+    startRadio,
+    startWave,
     setMode,
     togglePlay,
     toggleRepeatMode,
@@ -2987,9 +3115,11 @@ export function PulsePlayerProvider({
             lyricsEnabled={lyricsEnabled}
             onToggleLyrics={() => setLyricsEnabled(!lyricsEnabled)}
 
-            albumLabel={isRadioMode && radioSeedName
-              ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
-              : normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
+            albumLabel={isRadioMode && infiniteKind === 'wave'
+              ? (radioSeedName ? `${lang?.pulse_wave || 'Вейв'} · ${radioSeedName}` : (lang?.pulse_wave || 'Вейв'))
+              : isRadioMode && radioSeedName
+                ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
+                : normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
             canOpenAlbum={Boolean(normalizeText(String(currentTrack?.albumid ?? '')))}
 
             canUseEqualizer={canUseEqualizer}
@@ -3083,6 +3213,7 @@ export function PulsePlayerProvider({
             onSeekSubmit={() => finishSeek(true)}
 
             onAddToPlaylist={() => openAddToPlaylist(currentSongId)}
+            onStartRadio={() => void startRadio(currentTrack)}
             onDownload={() => {
               const track = currentTrack;
               if (!track?.src) return;
@@ -3168,6 +3299,7 @@ export function PulsePlayerProvider({
         setIsPlaylistEditorOpen={setIsPlaylistEditorOpen}
         toggleSongInPlaylist={toggleSongInPlaylist}
       />
+      <PulseDislikeHost />
     </PulsePlayerContext.Provider>
   );
 }

@@ -20,6 +20,9 @@ import { PulseQueueModal } from './pulse-queue-modal';
 import { PlaybackStatusBar } from './playback-status-bar';
 import { PulseDevicesButton } from './pulse-devices-button';
 import { Dropdown, DropdownItem } from '../../components/navigation';
+import { PULSE_ARTIST_DISLIKE_MENU, isTrackMarkedItself, matchingDislikedArtists } from '../dislikes/dislike-utils';
+import { useDislikeActions } from '../dislikes/use-dislike-actions';
+import { usePulseDislikes } from '../dislikes/use-pulse-dislikes';
 import type { PulseTrack } from '../../context/PulsePlayerContext';
 import Icon from '../../components/svg-icon';
 import ReportModal from '../../components/report-modal';
@@ -155,6 +158,8 @@ export type PulsePlayerFullProps = {
 
   // Callbacks – controls
   onAddToPlaylist: () => void;
+  /** Радио по играющему треку. */
+  onStartRadio: () => void;
   onDownload: () => void;
   onLike: () => void;
   onNext: () => void;
@@ -238,6 +243,7 @@ export function PulsePlayerFull({
   onSeekSubmit,
 
   onAddToPlaylist,
+  onStartRadio,
   currentTrack,
   onOpenArtist,
   onDownload,
@@ -273,6 +279,10 @@ export function PulsePlayerFull({
   const [isArtistsOpen, setIsArtistsOpen] = useState(false);
   const trackCard = currentTrack as PulseTrackCard | null;
   const artistIds = trackCard ? getArtistIds(trackCard) : [];
+  const dislikes = usePulseDislikes();
+  const isCurrentMarked = isTrackMarkedItself(trackCard, dislikes);
+  const currentDislikedArtists = matchingDislikedArtists(trackCard, dislikes.artists);
+  const { markTrack, startArtistDislike, unmarkArtist, unmarkTrack } = useDislikeActions();
   const showPulseNote = usePulseNote();
   const { shareTrack, shareModal } = usePulseTrackShare(showPulseNote);
   const { closeReportModal, handleTrackReport, isReportModalOpen, reportTrack } = usePulseTrackReport<PulseTrackCard>(showPulseNote);
@@ -552,6 +562,38 @@ export function PulsePlayerFull({
                   {isAuthenticated ? (
                     <DropdownItem onClick={onAddToPlaylist} icon="IC-plus">
                       {lang?.add_to_playlist || 'В плейлист'}
+                    </DropdownItem>
+                  ) : null}
+                  {trackCard ? (
+                    <DropdownItem icon="IC-radio" onClick={onStartRadio}>
+                      {lang?.pulse_start_radio || 'Радио по треку'}
+                    </DropdownItem>
+                  ) : null}
+                  {isAuthenticated && trackCard && (isCurrentMarked || currentDislikedArtists.length === 0) ? (
+                    <DropdownItem
+                      icon="IC-dislike"
+                      onClick={() => {
+                        if (isCurrentMarked) {
+                          void unmarkTrack(trackCard);
+                        } else {
+                          // Отметили играющий трек — сразу переходим к следующему.
+                          void markTrack(trackCard).then((marked) => { if (marked) onNext(); });
+                        }
+                      }}
+                    >
+                      {isCurrentMarked ? (lang?.pulse_undislike || 'Вернуть в рекомендации') : (lang?.pulse_dislike || 'Не интересно')}
+                    </DropdownItem>
+                  ) : null}
+                  {isAuthenticated && trackCard
+                    ? currentDislikedArtists.map((artist) => (
+                      <DropdownItem key={artist.key} icon="IC-user" onClick={() => void unmarkArtist(artist)}>
+                        {`${lang?.pulse_undislike_artist || 'Вернуть исполнителя'}: ${artist.label || artist.key}`}
+                      </DropdownItem>
+                    ))
+                    : null}
+                  {PULSE_ARTIST_DISLIKE_MENU && isAuthenticated && trackCard?.artist && currentDislikedArtists.length === 0 ? (
+                    <DropdownItem icon="IC-user" onClick={() => startArtistDislike(trackCard)}>
+                      {lang?.pulse_dislike_artist || 'Не рекомендовать исполнителя'}
                     </DropdownItem>
                   ) : null}
                   <DropdownItem icon="IC-download" onClick={onDownload}>

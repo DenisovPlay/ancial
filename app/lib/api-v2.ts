@@ -1155,6 +1155,28 @@ export class AncialAPI {
     return (response && typeof response === 'object' && type in response) ? response[type] as T : response as T;
   }
 
+  /** Дневные подборки главной («Для тебя сегодня»); tz — часовой пояс браузера, сутки считаются по нему. */
+  static async pulseGetDailyCards<T = unknown>(): Promise<T> {
+    const tz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
+    const response = await this.request<{ daily?: T }>(`/pulse/GetHomePage.php?type=daily&tz=${encodeURIComponent(tz || '')}`);
+    return response?.daily as T;
+  }
+
+  /** Следующая порция Вейва; настройки сервер читает с аккаунта. exclude — уже игравшие, excludeArtists — недавно пропущенные. */
+  static async pulseGetWave<T = unknown>(excludeIds: (number | string)[] = [], excludeArtists: string[] = []): Promise<T> {
+    const query = new URLSearchParams({ gid: 'Wave' });
+    if (excludeIds.length > 0) query.set('exclude', excludeIds.join(','));
+    if (excludeArtists.length > 0) query.set('exclude_artists', excludeArtists.join('|'));
+    const response = await this.request<{ tracks?: unknown } | unknown>(`/pulse/GetPlaylist.php?${query.toString()}`);
+    return (response && typeof response === 'object' && 'tracks' in response) ? (response as { tracks: unknown }).tracks as T : response as T;
+  }
+
+  /** Сколько треков в каталоге по жанрам/настроениям/языкам — для окна настроек Вейва. */
+  static async pulseGetWaveOptions<T = unknown>(): Promise<T> {
+    const response = await this.request<{ options?: T }>('/pulse/WaveOptions.php');
+    return response?.options as T;
+  }
+
   /** Одна полка главной целиком (страница «Все»). */
   static async pulseGetShelf<T = unknown>(key: string): Promise<T> {
     const response = await this.request<{ shelf?: T }>(`/pulse/GetHomePage.php?type=shelf&key=${encodeURIComponent(key)}`);
@@ -1258,6 +1280,42 @@ export class AncialAPI {
     return this.request<T>('/pulse/TrackAction.php', {
       method: 'POST',
       body: new URLSearchParams({ action: finalAction, id: String(id) }),
+    });
+  }
+
+  /** Действие над треком с дополнительными полями (dislike: favorite, remember; dislike_artist: artist, artist_id). */
+  static async pulseTrackActionWith<T = unknown>(action: string, id: string | number, extra: Record<string, string>): Promise<T> {
+    return this.request<T>('/pulse/TrackAction.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action, id: String(id), ...extra }),
+    });
+  }
+
+  /** «Не интересно»: id отмеченных треков и исполнители; full — ещё сами треки (страница медиатеки). */
+  static async pulseGetDislikes<T = unknown>(full = false): Promise<T> {
+    const response = await this.request<{ dislikes?: T }>(`/pulse/Library.php?type=dislikes${full ? '&full=1' : ''}`);
+    return response?.dislikes as T;
+  }
+
+  /** Настройки Pulse на аккаунте (запомненные ответы, часовой пояс). */
+  static async pulseGetPrefs<T = unknown>(): Promise<T> {
+    const response = await this.request<{ prefs?: T }>('/pulse/Prefs.php');
+    return response?.prefs as T;
+  }
+
+  static async pulseSavePrefs<T = unknown>(patch: Record<string, unknown>): Promise<T> {
+    const response = await this.request<{ prefs?: T }>('/pulse/Prefs.php', {
+      method: 'POST',
+      body: new URLSearchParams({ prefs: JSON.stringify(patch) }),
+    });
+    return response?.prefs as T;
+  }
+
+  /** События прослушивания пачкой (доиграл / пропуск) — сигнал вкуса. */
+  static async pulseSendEvents<T = unknown>(events: Array<Record<string, unknown>>): Promise<T> {
+    return this.request<T>('/pulse/Events.php', {
+      method: 'POST',
+      body: new URLSearchParams({ events: JSON.stringify(events) }),
     });
   }
 

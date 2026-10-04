@@ -59,7 +59,25 @@ const GENERATED_PLAYLISTS: Record<string, string> = {
   '-1': 'Top',
   '-2': 'New',
   '-5': 'Your',
+  // Дневные подборки («Для тебя сегодня»): состав собирает сервер на сутки пользователя.
+  '-11': 'Daily_1',
+  '-12': 'Daily_2',
+  '-13': 'Daily_3',
 };
+
+/** Встроенные списки, доступные только вошедшему (персональные). */
+export function isPulsePersonalPlaylist(value: string | number | null | undefined) {
+  const id = normalizePulsePlaylistId(value);
+  return id === '-5' || id === '-11' || id === '-12' || id === '-13';
+}
+
+/** Номер дневной подборки 1–3 по встроенному id (-11…-13) или genlist Daily_N; иначе 0. */
+export function getPulseDailySlot(value: string | number | null | undefined, genlist?: string | null) {
+  const fromGenlist = /^Daily_([123])$/.exec(String(genlist ?? '').trim());
+  if (fromGenlist) return Number(fromGenlist[1]);
+  const id = normalizePulsePlaylistId(value);
+  return id === '-11' ? 1 : id === '-12' ? 2 : id === '-13' ? 3 : 0;
+}
 
 const BUILTIN_PLAYLIST_META: Record<string, PulsePlaylistMeta> = {
   '-1': {
@@ -95,6 +113,10 @@ const BUILTIN_PLAYLIST_META: Record<string, PulsePlaylistMeta> = {
     name: 'Избранное',
     type: '4',
   },
+  // Обложки у подборок дня нет — страница берёт обложку первого трека.
+  '-11': { artist: '', creator: 'Pulse', desk: 'Любимое и знакомое', genlist: 'Daily_1', id: '-11', img: '', likes: '0', name: 'Микс дня', type: '4' },
+  '-12': { artist: '', creator: 'Pulse', desk: 'Новое рядом с вашим вкусом', genlist: 'Daily_2', id: '-12', img: '', likes: '0', name: 'Открытия', type: '4' },
+  '-13': { artist: '', creator: 'Pulse', desk: 'Под настроение этого времени суток', genlist: 'Daily_3', id: '-13', img: '', likes: '0', name: 'Настроение дня', type: '4' },
 };
 
 export function normalizePulsePlaylistId(value: string | number | null | undefined) {
@@ -115,6 +137,8 @@ export function getPulseBuiltinPlaylistTitle(value: string | number | null | und
   if (id === '-1') return lang?.playlist_top || 'Топ';
   if (id === '-2') return lang?.playlist_new || 'Новинки';
   if (id === '-5') return lang?.your || 'Твой';
+  const slot = getPulseDailySlot(id);
+  if (slot) return lang?.[`pulse_daily_mix_${slot}`] || BUILTIN_PLAYLIST_META[id].name;
   return '';
 }
 
@@ -123,6 +147,8 @@ export function getPulseBuiltinPlaylistDescription(value: string | number | null
   if (id === '-1') return lang?.playlist_top_desc || 'Самые популярные треки Zypo Pulse.';
   if (id === '-2') return lang?.playlist_new_desc || 'Новые треки Zypo Pulse.';
   if (id === '-5') return lang?.playlist_new_desc || 'Персональный плейлист Zypo Pulse.';
+  const slot = getPulseDailySlot(id);
+  if (slot) return lang?.[`pulse_daily_mix_${slot}_desc`] || BUILTIN_PLAYLIST_META[id].desk || '';
   return '';
 }
 
@@ -140,6 +166,10 @@ export function getPulseBuiltinPlaylistMeta(value: string | number | null | unde
   } else if (id === '-5') {
     meta.name = lang?.your || 'Твой';
     meta.desk = lang?.playlist_new_desc || 'Персональный плейлист Zypo Pulse.';
+  } else if (getPulseDailySlot(id)) {
+    const slot = getPulseDailySlot(id);
+    meta.name = lang?.[`pulse_daily_mix_${slot}`] || meta.name;
+    meta.desk = lang?.[`pulse_daily_mix_${slot}_desc`] || meta.desk;
   }
   return meta;
 }
@@ -167,6 +197,8 @@ export function resolvePulsePlaylistTitle(
   const id = normalizePulsePlaylistId(card.id);
   // Твой (рекомендации)
   if (genlist === 'Your' || id === '-5') return lang?.your || 'Твой';
+  const dailySlot = getPulseDailySlot(id, genlist);
+  if (dailySlot) return lang?.[`pulse_daily_mix_${dailySlot}`] || String(card.name ?? '');
   // Топ
   if (genlist === 'Top' || id === '-1') return lang?.playlist_top || 'Топ';
   // Новинки
@@ -189,6 +221,8 @@ export function resolvePulsePlaylistDescription(
   const genlist = String(card.genlist ?? '').trim();
   const id = normalizePulsePlaylistId(card.id);
   if (genlist === 'Your' || id === '-5') return lang?.playlist_new_desc || 'Персональный плейлист Zypo Pulse.';
+  const dailySlot = getPulseDailySlot(id, genlist);
+  if (dailySlot) return lang?.[`pulse_daily_mix_${dailySlot}_desc`] || String(card.desk ?? '');
   if (genlist === 'Top' || id === '-1') return lang?.playlist_top_desc || 'Самые популярные треки Zypo Pulse.';
   if (genlist === 'New' || id === '-2') return lang?.playlist_new_desc || 'Новые треки Zypo Pulse.';
   if (Number(card.type) === 3) return lang?.playlist_favorites_desc || 'Ваши избранные треки в Zypo Pulse.';
@@ -223,15 +257,15 @@ export function canViewPulsePlaylist(
   return !isPrivatePlaylist || isAuthenticated;
 }
 
+/**
+ * «Добавить трек» показываем только на странице личного «Избранного» (type 3, у каждого пользователя свой id).
+ * Встроенный ГенЛист «Твой» (-5, genlist Your) — подборка, не коллекция пользователя: там обычная кнопка лайка.
+ */
 export function canUploadToPulseFavoritesPlaylist(
-  value: string | number,
+  _value: string | number,
   playlist: Pick<PulsePlaylistMeta, 'genlist' | 'type'> | null | undefined,
 ) {
-  const playlistId = normalizePulsePlaylistId(value);
-  const type = Number.parseInt(String(playlist?.type ?? 0), 10);
-  const genlist = String(playlist?.genlist ?? GENERATED_PLAYLISTS[playlistId] ?? '').trim();
-
-  return playlistId === '-5' || type === 3 || genlist === 'Your';
+  return Number.parseInt(String(playlist?.type ?? 0), 10) === 3;
 }
 
 

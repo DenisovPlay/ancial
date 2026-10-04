@@ -21,7 +21,7 @@ export type CacheSubcategory<C extends CacheCategory> =
   C extends 'home'
     ? 'currency' | 'weather' | 'geo'
     : C extends 'pulse'
-    ? 'artists' | 'from_pulse' | 'listened' | 'now_listen' | 'we_like' | 'tracks' | 'favorites' | 'playlists' | 'artist_playlists' | 'offline_audio' | 'lyrics'
+    ? 'artists' | 'from_pulse' | 'listened' | 'now_listen' | 'we_like' | 'tracks' | 'favorites' | 'playlists' | 'artist_playlists' | 'offline_audio' | 'lyrics' | 'dislikes' | 'wave' | 'daily'
     : C extends 'wallet'
     ? 'overview' | 'merchants' | 'merchant_details' | 'accounts' | 'transactions' | 'history'
     : C extends 'chats'

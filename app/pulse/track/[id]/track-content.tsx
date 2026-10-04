@@ -15,6 +15,9 @@ import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
 import { cache } from '../../../lib/cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../../pulse-image';
 import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
+import { isTrackMarkedItself, matchingDislikedArtists } from '../../dislikes/dislike-utils';
+import { useDislikeActions } from '../../dislikes/use-dislike-actions';
+import { usePulseDislikes } from '../../dislikes/use-pulse-dislikes';
 import {
   DEFAULT_TRACK_IMAGE,
   PulseEmptyState,
@@ -60,12 +63,15 @@ type PulseTrackPageResponse = {
 export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: string }) {
   const router = useRouter();
   const { isAuthenticated, lang, user } = useAuth();
+  const dislikes = usePulseDislikes();
+  const { markTrack, unmarkArtist, unmarkTrack } = useDislikeActions();
   const {
     currentSongId,
     isPlaying,
     openAddToPlaylist,
     openBlockedTrackModal,
     playTrack,
+    startRadio,
     togglePlay,
   } = usePulsePlayer();
   const trackId = normalizeText(rawTrackId) || '0';
@@ -116,6 +122,26 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
       label: artistIds.length > 1 ? (lang?.pulse_artists || 'Исполнители') : (lang?.artist || 'Исполнитель'),
       onClick: () => (artistIds.length > 1 ? setIsArtistsOpen(true) : openArtist(artistIds[0])),
     });
+  }
+  if (trackCard && isAuthenticated) {
+    const markedItself = isTrackMarkedItself(trackCard, dislikes);
+    const dislikedArtists = matchingDislikedArtists(trackCard, dislikes.artists);
+    if (markedItself || dislikedArtists.length === 0) {
+      footerActions.push({
+        icon: 'IC-dislike',
+        key: 'dislike',
+        label: markedItself ? (lang?.pulse_undislike || 'Вернуть в рекомендации') : (lang?.pulse_dislike || 'Не интересно'),
+        onClick: () => void (markedItself ? unmarkTrack(trackCard) : markTrack(trackCard)),
+      });
+    }
+    for (const artist of dislikedArtists) {
+      footerActions.push({
+        icon: 'IC-user',
+        key: `undislike-artist-${artist.key}`,
+        label: `${lang?.pulse_undislike_artist || 'Вернуть исполнителя'}: ${artist.label || artist.key}`,
+        onClick: () => void unmarkArtist(artist),
+      });
+    }
   }
   if (trackCard) {
     footerActions.push(
@@ -307,7 +333,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                 </span>
               </div>
 
-              <div className="grid w-fit grid-cols-3 gap-6">
+              <div className="grid w-fit grid-cols-4 gap-3 sm:gap-6">
                 <div className="flex flex-col items-center justify-center">
                   <Dropdown
                     align="start"
@@ -358,6 +384,23 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                     <Icon name={active ? 'IC-pause' : 'IC-play'} className="inline h-10 w-10 fill-white" />
                   </button>
                   <span className="text-sm text-content-500">{lang?.listen || 'Слушать'}</span>
+                </div>
+
+                <div className="flex flex-col items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!available) {
+                        openBlockedTrackModal();
+                        return;
+                      }
+                      if (trackCard) void startRadio(trackCard);
+                    }}
+                    className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300 hover:bg-zinc-700 active:scale-95"
+                  >
+                    <Icon name="IC-radio" className="inline h-10 w-10 fill-current" />
+                  </button>
+                  <span className="text-sm text-content-500">{lang?.pulse_radio_short || 'Радио'}</span>
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
