@@ -30,7 +30,7 @@ function EditTrackContent() {
   const [img, setImg] = useState('');
   const [genre, setGenre] = useState<string>('');
   const [mood, setMood] = useState<string>('');
-  const [trackLang, setTrackLang] = useState('ru');
+  const [trackLang, setTrackLang] = useState('');
   const [explicit, setExplicit] = useState('0');
   const [status, setStatus] = useState('1');
   const [src, setSrc] = useState('');
@@ -89,7 +89,7 @@ function EditTrackContent() {
               setImg(track.img || '');
               setGenre(track.genre || '');
               setMood(track.mood || '');
-              setTrackLang(track.lang || 'ru');
+              setTrackLang(track.lang || '');
               setExplicit(track.explicit ? String(track.explicit) : '0');
               setStatus(track.status !== undefined ? String(track.status) : '1');
               // Заглушка загрузки раньше писала в artists_ids ID пользователя — это не профиль артиста,

@@ -342,7 +342,7 @@ function EditAlbumContent() {
                   />
 
                   <select
-                    value={t.lang || 'ru'}
+                    value={t.lang || ''}
                     onChange={(e) => updateTrack(idx, 'lang', e.target.value)}
                     className="h-10 px-3 rounded-full bg-zinc-800/80 border border-zinc-600/30 text-white text-xs focus:outline-none cursor-pointer"
                   >

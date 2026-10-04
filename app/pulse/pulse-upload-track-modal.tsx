@@ -137,7 +137,7 @@ export default function PulseUploadTrackModal({
   const [isCoverUploading, setIsCoverUploading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [trackLang, setTrackLang] = useState('--');
+  const [trackLang, setTrackLang] = useState('');
   const [name, setName] = useState('');
   const [statusText, setStatusText] = useState('');
   const [trackId, setTrackId] = useState('');
@@ -173,7 +173,7 @@ export default function PulseUploadTrackModal({
     setIsCoverUploading(false);
     setIsSaved(false);
     setIsSaving(false);
-    setTrackLang('--');
+    setTrackLang('');
     setName('');
     setStatusText('');
     setTrackId('');
@@ -489,9 +489,9 @@ export default function PulseUploadTrackModal({
               value={trackLang}
             >
               <option value="" disabled>{lang?.tracklang || 'Выберите язык'}</option>
-              <option value="--">{lang?.tracklangNo || 'Нет слов'}</option>
-              <option value="RU">{lang?.tracklangRu || 'Русский'}</option>
-              <option value="EN">{lang?.tracklangEn || 'Английский'}</option>
+              <option value="instrumental">{lang?.tracklangNo || 'Нет слов'}</option>
+              <option value="ru">{lang?.tracklangRu || 'Русский'}</option>
+              <option value="en">{lang?.tracklangEn || 'Английский'}</option>
               <option value="" disabled>{lang?.tracklangD || 'Несколько языков - выберите преобладающий. Нет языка - выберите английский.'}</option>
             </PulseModalSelectField>
             <PulseModalSelectField

@@ -314,7 +314,7 @@ export function getPulseTrackEditInitialState(track: PulseTrackEditMeta): PulseT
     artist: String(track.artist ?? '').trim(),
     explicit: explicit ? '1' : '0',
     image: String(cover?.src ?? '').trim(),
-    lang: String(track.lang ?? '').trim() || '--',
+    lang: String(track.lang ?? '').trim(),
     name: String(track.title ?? '').trim(),
     trackId: String(track.sid ?? '').trim(),
     genre: String(track.genre ?? '').trim(),
@@ -341,7 +341,7 @@ export function getPulseTrackUploadPayload(input: PulseTrackUploadPayloadInput, 
   payload.set('name', String(input.name ?? '').trim() || (langObj?.untitled || 'Неизвестный трек'));
   payload.set('artist', String(input.artist ?? '').trim() || (langObj?.unknown_artist || 'Неизвестный исполнитель'));
   payload.set('img', String(input.image ?? '').trim());
-  payload.set('lang', lang || '--');
+  payload.set('lang', lang);
   payload.set('explicit', explicit === '' ? '0' : explicit);
   payload.set('id', String(input.trackId ?? '').trim());
   payload.set('src', String(input.trackId ?? '').trim());
