@@ -489,21 +489,44 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
 
   const isMetaLoading = isBuiltinPlaylist ? false : metaLoading;
   const isMissing = !isMetaLoading && !playlist && !isBuiltinPlaylist;
-  const isLoading = isMetaLoading || tracksLoading || authLoading;
+  // Плейлиста нет (сервер вернул playlist: null) — треки не запрашиваются, tracksLoading не сбросится: показываем «не найден», а не вечную загрузку.
+  const isLoading = isMetaLoading || authLoading || (tracksLoading && !isMissing);
+
+  const backHeader = (
+    <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
+      <div className="w-full max-w-screen-2xl px-3 lg:px-0">
+        <Link
+          href="/pulse"
+          className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
+        >
+          <Icon name="IC-chevron-left" className="inline fill-current h-8 w-8" />
+          <PulseLogo className="w-32 sm:w-48" />
+        </Link>
+      </div>
+    </div>
+  );
+
+  // Плейлиста нет (удалён, чужой приватный): только «назад» и пояснение — без обложки, кнопок и счётчиков.
+  if (isMissing) {
+    return (
+      <div className="pulse-playlist-page flex flex-col items-center justify-center gap-3 pb-0 duration-300 lg:pb-64">
+        {backHeader}
+        <div className="w-full max-w-screen-2xl px-3 lg:px-0">
+          <ErrorState
+            title={lang?.pulse_playlist_not_found || 'Плейлист не найден'}
+            description={lang?.pulse_playlist_not_found_desc || 'Возможно, он удалён или доступен только владельцу'}
+            actionHref="/pulse"
+            actionLabel={lang?.pulse_to_home || 'На главную Pulse'}
+          />
+        </div>
+        <PulseLegalFooter className="pb-80 lg:pb-0" />
+      </div>
+    );
+  }
 
   return (
     <div className="pulse-playlist-page flex flex-col items-center justify-center gap-3 pb-0 duration-300 lg:pb-64">
-      <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
-        <div className="w-full max-w-screen-2xl px-3 lg:px-0">
-          <Link
-            href="/pulse"
-            className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
-          >
-            <Icon name="IC-chevron-left" className="inline fill-current h-8 w-8" />
-            <PulseLogo className="w-32 sm:w-48" />
-          </Link>
-        </div>
-      </div>
+      {backHeader}
 
       <div className="flex w-full flex-col items-center justify-center gap-3">
         <div className="sticky top-14 flex w-full max-w-screen-2xl flex-col items-center justify-center gap-6 sm:top-16 lg:static lg:top-0 lg:flex-row lg:justify-start">
@@ -671,15 +694,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
               <ErrorState title={error} onRetry={() => setTracksReloadToken((token) => token + 1)} />
             ) : null}
 
-            {!isLoading && isMissing ? (
-              <div className="flex min-h-72 flex-col items-center justify-center gap-1 text-center">
-                <PulseLogo className="w-48" />
-                <span className="text-xl text-zinc-300">{lang?.emptytopic || (lang?.unknown_playlist || FALLBACK_PLAYLIST_NAME)}</span>
-                <span className="text-lg text-zinc-500">{lang?.nopostsdesc || 'Плейлист пуст или недоступен'}</span>
-              </div>
-            ) : null}
-
-            {!isLoading && !error && !isMissing && listTracks.length > 0 ? (
+            {!isLoading && !error && listTracks.length > 0 ? (
               <div ref={setTrackListElement} className="flex flex-col gap-3">
                 {tracksSpacerBefore > 0 ? <div aria-hidden style={{ height: tracksSpacerBefore }} /> : null}
                 {visibleTracks.map((track, visibleIndex) => {
@@ -710,7 +725,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
               </div>
             ) : null}
 
-            {!isLoading && !error && !isMissing && listTracks.length === 0 ? (
+            {!isLoading && !error && listTracks.length === 0 ? (
               <div className="flex min-h-72 flex-col items-center justify-center gap-1 text-center">
                 <PulseLogo className="w-48" />
                 <span className="text-xl text-zinc-300">{lang?.emptytopic || 'Пусто'}</span>

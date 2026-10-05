@@ -69,8 +69,8 @@ function useImageLoader({
   let currentSrc = fallback && fallbackSrc ? fallbackSrc : primary;
   if (!currentSrc) status = 'error';
   if (status === 'error') currentSrc = TRANSPARENT_PIXEL;
-  // data:-SVG — без скелетона и проявления: вектор отрисовывается сразу. SVG-файл едет по сети, как любая картинка.
-  const withSkeleton = skeleton && !(isSvgSrc(currentSrc) && currentSrc.trim().toLowerCase().startsWith('data:'));
+  // SVG (логотипы, иконки) — без скелетона и проявления: вектор отрисовывается сразу.
+  const withSkeleton = skeleton && !isSvgSrc(currentSrc);
 
   // Из памяти картинка готова синхронно (и SSR-картинка, загрузившаяся до гидрации):
   // показываем её до первой отрисовки, без скелетона и анимации.

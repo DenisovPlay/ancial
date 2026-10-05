@@ -60,6 +60,19 @@ type PulseTrackPageResponse = {
 };
 
 
+/** Пункты «Вернуть исполнителя: …» в меню трека (по одному на каждого отмеченного исполнителя). */
+function ArtistUndislikeItems({ artists, label, onUnmark }: { artists: ReturnType<typeof matchingDislikedArtists>; label: string; onUnmark: (artist: ReturnType<typeof matchingDislikedArtists>[number]) => unknown }) {
+  return (
+    <>
+      {artists.map((artist) => (
+        <DropdownItem key={artist.key} icon="IC-user" onClick={() => void onUnmark(artist)}>
+          {`${label}: ${artist.label || artist.key}`}
+        </DropdownItem>
+      ))}
+    </>
+  );
+}
+
 export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: string }) {
   const router = useRouter();
   const { isAuthenticated, lang, user } = useAuth();
@@ -123,26 +136,10 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
       onClick: () => (artistIds.length > 1 ? setIsArtistsOpen(true) : openArtist(artistIds[0])),
     });
   }
-  if (trackCard && isAuthenticated) {
-    const markedItself = isTrackMarkedItself(trackCard, dislikes);
-    const dislikedArtists = matchingDislikedArtists(trackCard, dislikes.artists);
-    if (markedItself || dislikedArtists.length === 0) {
-      footerActions.push({
-        icon: 'IC-dislike',
-        key: 'dislike',
-        label: markedItself ? (lang?.pulse_undislike || 'Вернуть в рекомендации') : (lang?.pulse_dislike || 'Не интересно'),
-        onClick: () => void (markedItself ? unmarkTrack(trackCard) : markTrack(trackCard)),
-      });
-    }
-    for (const artist of dislikedArtists) {
-      footerActions.push({
-        icon: 'IC-user',
-        key: `undislike-artist-${artist.key}`,
-        label: `${lang?.pulse_undislike_artist || 'Вернуть исполнителя'}: ${artist.label || artist.key}`,
-        onClick: () => void unmarkArtist(artist),
-      });
-    }
-  }
+  const markedItself = trackCard ? isTrackMarkedItself(trackCard, dislikes) : false;
+  const dislikedArtists = trackCard ? matchingDislikedArtists(trackCard, dislikes.artists) : [];
+  // «Не интересно» в меню скрыто, пока отмечен исполнитель: сначала его возвращают (пункт «Вернуть исполнителя»).
+  const canToggleDislike = Boolean(trackCard && isAuthenticated && (markedItself || dislikedArtists.length === 0));
   if (trackCard) {
     footerActions.push(
       { icon: 'IC-share', key: 'share', label: lang?.share || 'Поделиться', onClick: () => void copyTrackLink(trackNumericId, trackCard) },
@@ -333,7 +330,7 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                 </span>
               </div>
 
-              <div className="grid w-fit grid-cols-4 gap-3 sm:gap-6">
+              <div className="grid w-fit grid-cols-3 gap-3 sm:gap-6">
                 <div className="flex flex-col items-center justify-center">
                   <Dropdown
                     align="start"
@@ -354,6 +351,17 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                         {lang?.download || 'Скачать'}
                       </DropdownItem>
                     ) : null}
+                    {available ? (
+                      <DropdownItem icon="IC-radio" onClick={() => { if (trackCard) void startRadio(trackCard); }}>
+                        {lang?.pulse_start_radio || 'Радио по треку'}
+                      </DropdownItem>
+                    ) : null}
+                    {canToggleDislike && trackCard ? (
+                      <DropdownItem icon="IC-dislike" onClick={() => void (markedItself ? unmarkTrack(trackCard) : markTrack(trackCard))}>
+                        {markedItself ? (lang?.pulse_undislike || 'Вернуть в рекомендации') : (lang?.pulse_dislike || 'Не интересно')}
+                      </DropdownItem>
+                    ) : null}
+                    {isAuthenticated ? <ArtistUndislikeItems artists={dislikedArtists} label={lang?.pulse_undislike_artist || 'Вернуть исполнителя'} onUnmark={unmarkArtist} /> : null}
                     <PulseTrackFooterActions actions={footerActions} />
                   </Dropdown>
                   <span className="text-sm text-content-500">{lang?.save || 'Сохранить'}</span>
@@ -386,22 +394,6 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                   <span className="text-sm text-content-500">{lang?.listen || 'Слушать'}</span>
                 </div>
 
-                <div className="flex flex-col items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!available) {
-                        openBlockedTrackModal();
-                        return;
-                      }
-                      if (trackCard) void startRadio(trackCard);
-                    }}
-                    className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full border border-zinc-600/30 bg-zinc-900/20 shadow duration-300 hover:bg-zinc-700 active:scale-95"
-                  >
-                    <Icon name="IC-radio" className="inline h-10 w-10 fill-current" />
-                  </button>
-                  <span className="text-sm text-content-500">{lang?.pulse_radio_short || 'Радио'}</span>
-                </div>
 
                 <div className="flex flex-col items-center justify-center">
                   <button
