@@ -27,6 +27,7 @@ import Modal from '../components/modal';
 import { AncialAPI } from '../lib/api-v2';
 import { readPulseJsonCache } from './pulse-cache';
 import Icon from '../components/svg-icon';
+import { useResolvedExternalIds } from './player/external-track-ids';
 import { apiUrl } from '../lib/api-url';
 
 export type PulseTrackArtwork = {
@@ -612,7 +613,9 @@ export function PulseTrackRow({
   const { currentTrackObj, isPlaying, openBlockedTrackModal, startRadio } = usePulsePlayer();
 
   const rawSid = String(track.sid ?? '').trim();
-  const numSid = toNumber(rawSid);
+  // Виртуальный трек Яндекса после первого взаимодействия получает id в базе — дальше строка ведёт себя как обычная.
+  const resolvedExternal = useResolvedExternalIds();
+  const numSid = toNumber(rawSid) || resolvedExternal[rawSid] || 0;
   const trackId = numSid;
 
   const isCurrentSong = Boolean(

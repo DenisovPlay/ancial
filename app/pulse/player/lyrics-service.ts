@@ -3,7 +3,7 @@
 import { AncialAPI, AncialAPIError } from '../../lib/api-v2';
 import { cache } from '../../lib/cache';
 import { parseLyricsText, type LyricsLine } from '../../lib/lrc';
-import { toNumber } from './player-utils';
+import { getResolvedExternalIds, songIdWith } from './external-track-ids';
 
 type LyricsTrack = {
   sid?: number | string | null;
@@ -31,7 +31,7 @@ export async function loadPulseLyrics(
   track: LyricsTrack | null,
   signal?: AbortSignal,
 ): Promise<PulseLyricsData> {
-  const songId = toNumber(track?.sid);
+  const songId = songIdWith(getResolvedExternalIds(), track?.sid);
   if (songId <= 0) return EMPTY_LYRICS;
 
   const cacheKey = lyricsCacheKey(songId);

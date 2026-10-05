@@ -11,6 +11,7 @@ import { usePulseNote } from '../hooks/use-pulse-note';
 import { usePulseTrackReport } from '../hooks/use-pulse-track-report';
 import { useRequireAuth } from '../hooks/use-require-auth';
 import { AncialAPI, getApiMessage } from '../lib/api-v2';
+import { registerResolvedExternalId } from './player/external-track-ids';
 import { cache } from '../lib/cache.ts';
 import { buildPulseTrackReportReasons } from '../lib/report-reasons';
 import {
@@ -483,7 +484,11 @@ export default function PulseContent() {
     if (rawId.startsWith('ext_')) {
       try {
         const res = await AncialAPI.pulseGetTrack<{ track?: { id?: number | string } }>(rawId);
-        if (res?.track?.id) return toNumber(res.track.id);
+        if (res?.track?.id) {
+          const resolvedId = toNumber(res.track.id);
+          registerResolvedExternalId(rawId, resolvedId);
+          return resolvedId;
+        }
       } catch {
         return 0;
       }

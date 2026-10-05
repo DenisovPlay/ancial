@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { cache } from '../../lib/cache';
 import { cacheAudioInBackground } from './offline-audio';
 import { getPlayerTrackArtwork, normalizeTrackSource, toNumber } from './player-utils';
+import { getResolvedExternalIds, songIdWith } from './external-track-ids';
 
 export type OfflineSaveStatus = 'idle' | 'saving' | 'saved' | 'already' | 'error';
 export type OfflineSaveResult = 'failed' | 'saved' | 'skipped';
@@ -52,7 +53,7 @@ export function useOfflineAudioSave(currentTrack: OfflineAudioTrack | null) {
   }, [clearStatusResetTimer]);
 
   useEffect(() => {
-    const trackId = toNumber(currentTrack?.sid);
+    const trackId = songIdWith(getResolvedExternalIds(), currentTrack?.sid);
     let cancelled = false;
     clearStatusResetTimer();
     if (!trackId) {
@@ -81,7 +82,7 @@ export function useOfflineAudioSave(currentTrack: OfflineAudioTrack | null) {
   }, [clearStatusResetTimer]);
 
   const cacheCurrentTrackInBackground = useCallback((track: OfflineAudioTrack | null) => {
-    const trackId = toNumber(track?.sid);
+    const trackId = songIdWith(getResolvedExternalIds(), track?.sid);
     const source = normalizeTrackSource(track?.src);
     if (!trackId || !source) return;
 
@@ -103,7 +104,7 @@ export function useOfflineAudioSave(currentTrack: OfflineAudioTrack | null) {
   const saveCurrentTrack = useCallback(async (track: OfflineAudioTrack | null) => {
     if (isManualSaveInFlightRef.current || offlineSaveStatus === 'saving' || offlineSaveStatus === 'already') return 'skipped' as const;
 
-    const trackId = toNumber(track?.sid);
+    const trackId = songIdWith(getResolvedExternalIds(), track?.sid);
     const source = normalizeTrackSource(track?.src);
     if (!trackId || !source) return 'skipped' as const;
 
@@ -135,7 +136,7 @@ export function useOfflineAudioSave(currentTrack: OfflineAudioTrack | null) {
   }, [clearStatusResetTimer, offlineSaveStatus]);
 
   const deleteOfflineTrack = useCallback(async (track: OfflineAudioTrack | null): Promise<'deleted' | 'failed' | 'skipped'> => {
-    const trackId = toNumber(track?.sid);
+    const trackId = songIdWith(getResolvedExternalIds(), track?.sid);
     if (!trackId) return 'skipped';
 
     try {

@@ -37,6 +37,7 @@ import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import PulseDislikeHost from '../pulse/dislikes/pulse-dislike-host';
 import { findPlayableIndex, type DislikeTrackLike } from '../pulse/dislikes/dislike-utils';
 import { ensurePulseDislikesStarted, isPulseTrackDisliked } from '../pulse/dislikes/use-pulse-dislikes';
+import { getResolvedExternalIds, registerResolvedExternalId, songIdWith, useResolvedExternalIds } from '../pulse/player/external-track-ids';
 import { pulseEventSourceOf, pulseExternalKeyOf, queuePulseEvent, setPulseEventsEnabled } from '../pulse/player/pulse-events';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
 import { useMiniPlayerSlot } from '../pulse/player/mini-player-slot';
@@ -451,7 +452,24 @@ export function PulsePlayerProvider({
   const currentTrack = playlist[index] ?? null;
   const prevTrackObj = playlist[index - 1] ?? null;
   const nextTrackObj = playlist[index + 1] ?? null;
-  const currentSongId = toNumber(currentTrack?.sid);
+  // Виртуальные треки Яндекса (sid ext_…): id в базе появляется после первого взаимодействия (запуск, лайк…) —
+  // запоминаем соответствие, и дальше трек для плеера обычный (лайк, история, текст, «В плейлист», пульт).
+  const resolvedExternalIds = useResolvedExternalIds();
+  const resolvingExtRef = useRef<Set<string>>(new Set());
+  const currentSongId = songIdWith(resolvedExternalIds, currentTrack?.sid);
+  const currentTrackKey = currentSongId > 0 ? String(currentSongId) : pulseExternalKeyOf(currentTrack?.sid);
+  const registerResolvedExternal = (key: string, songId: number) => {
+    registerResolvedExternalId(key, songId);
+    if (pulseExternalKeyOf(playlistRef.current[indexRef.current]?.sid) === key) currentSongIdRef.current = songId;
+  };
+  const resolveExternalTrack = (key: string) => {
+    if (getResolvedExternalIds()[key] || resolvingExtRef.current.has(key)) return;
+    resolvingExtRef.current.add(key);
+    AncialAPI.pulseGetTrack<{ track?: { id?: number | string } }>(key)
+      .then((response) => registerResolvedExternal(key, toNumber(response?.track?.id)))
+      .catch(() => { /* мост недоступен — трек играет и без id, повторим при лайке/событиях */ })
+      .finally(() => resolvingExtRef.current.delete(key));
+  };
   const { cacheCurrentTrackInBackground, deleteOfflineTrack, offlineSaveStatus, saveCurrentTrack } = useOfflineAudioSave(currentTrack);
   // Страна пользователя: мгновенно из кэша, затем обновляем из GetCountry.php
   const userCountry = useUserCountry();
@@ -1087,9 +1105,6 @@ export function PulsePlayerProvider({
     notify,
   });
 
-  // Виртуальные треки Яндекса (sid ext_…) получают id в базе только после лайка/взаимодействия: запоминаем соответствие.
-  const [resolvedExternalIds, setResolvedExternalIds] = useState<Record<string, number>>({});
-
   const likeCurrentSong = async () => {
     const track = playlistRef.current[indexRef.current] ?? null;
     const knownId = currentSongIdRef.current;
@@ -1097,9 +1112,7 @@ export function PulsePlayerProvider({
     if (!knownId && !externalKey) return;
     const likedNow = await toggleSongLike(knownId || externalKey, {
       onResolved: (songId) => {
-        if (!externalKey) return;
-        setResolvedExternalIds((prev) => (prev[externalKey] === songId ? prev : { ...prev, [externalKey]: songId }));
-        if (pulseExternalKeyOf(playlistRef.current[indexRef.current]?.sid) === externalKey) currentSongIdRef.current = songId;
+        if (externalKey) registerResolvedExternal(externalKey, songId);
       },
     });
     // Лайк уже после засчитанного прослушивания — в режиме «лайкнутые» сохраняем сразу.
@@ -1113,7 +1126,7 @@ export function PulsePlayerProvider({
   }, [likedSongIds]);
 
   const activeLike = currentTrack
-    ? likedSongIds.includes(toNumber(currentTrack.sid) || resolvedExternalIds[pulseExternalKeyOf(currentTrack.sid)] || 0)
+    ? likedSongIds.includes(songIdWith(resolvedExternalIds, currentTrack.sid))
     : false;
 
   const playLoadedTrack = async (track: PulseTrack | null, retryCount = 0): Promise<void> => {
@@ -1208,14 +1221,12 @@ export function PulsePlayerProvider({
     const audio = audioRef.current;
     if (!audio || !track) return;
 
-    const trackId = toNumber(track.sid);
+    const trackId = songIdWith(getResolvedExternalIds(), track.sid);
     const isNewTrack = currentSongIdRef.current !== trackId;
     currentSongIdRef.current = trackId;
-    // Виртуальный трек Яндекса (из Вейва/радио/поиска): запуск — взаимодействие, сервер заводит его в базу.
+    // Виртуальный трек Яндекса (из Вейва/радио/поиска): запуск — взаимодействие, сервер заводит его в базу и отдаёт id.
     const externalKey = trackId > 0 ? '' : pulseExternalKeyOf(track.sid);
-    if (retryCount === 0 && externalKey) {
-      queuePulseEvent({ songId: 0, externalId: externalKey, ratio: 0, src: pulseEventSourceOf(currentCollectionIdRef.current), start: true });
-    }
+    if (retryCount === 0 && externalKey) resolveExternalTrack(externalKey);
     if (retryCount === 0) {
       playbackSessionRef.current += 1;
       listenReportedSessionRef.current = null;
@@ -1772,7 +1783,7 @@ export function PulsePlayerProvider({
     const audio = audioRef.current;
     if (!audio) return;
     const track = playlistRef.current[indexRef.current] ?? null;
-    if (track && toNumber(track.sid) !== currentSongIdRef.current) {
+    if (track && songIdWith(getResolvedExternalIds(), track.sid) !== currentSongIdRef.current) {
       void playLoadedTrack(track);
       return;
     }
@@ -1998,7 +2009,7 @@ export function PulsePlayerProvider({
       return;
     }
 
-    currentSongIdRef.current = toNumber(currentTrack.sid);
+    currentSongIdRef.current = songIdWith(getResolvedExternalIds(), currentTrack.sid);
   }, [currentTrack]);
 
   useEffect(() => {
@@ -2159,7 +2170,7 @@ export function PulsePlayerProvider({
         window.setTimeout(() => {
           const current = playlistRef.current[indexRef.current] ?? null;
           const el = audioRef.current;
-          if (el && current && toNumber(current.sid) === toNumber(track.sid)) {
+          if (el && current && String(current.sid) === String(track.sid)) {
             try {
               el.load();
               void el.play().catch(() => {});
@@ -2222,7 +2233,7 @@ export function PulsePlayerProvider({
   }, [currentTrack, playerArtist, playerTitle]);
 
   useEffect(() => {
-    if (!currentSongId || !currentTrack) {
+    if (!currentTrackKey || !currentTrack) {
       // Сброс лирики для пустого трека — терминальное состояние, сеттлер здесь источник правды.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLyricsLines([]);
@@ -2283,7 +2294,7 @@ export function PulsePlayerProvider({
     void (async () => {
       for (let attempt = 0; attempt <= LYRICS_RETRY_LIMIT; attempt += 1) {
         try {
-          const lyricsData = await loadPulseLyrics(capturedTrack, controller.signal);
+          const lyricsData = await loadPulseLyrics({ ...capturedTrack, sid: currentSongId }, controller.signal);
           if (cancelled) return;
 
           // Текста нет — так и есть. Сервис не ответил — пробуем ещё раз, а не ждём перезагрузки.
@@ -2324,7 +2335,7 @@ export function PulsePlayerProvider({
     // Depend on currentSongId (primitive ID) rather than currentTrack (object reference)
     // so that background re-renders don't cancel in-flight lyric loading.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSongId, isFullPlayerActive, lyricsEnabled]);
+  }, [currentTrackKey, isFullPlayerActive, lyricsEnabled]);
 
   useEffect(() => {
     syncWindowState();
@@ -3111,7 +3122,7 @@ export function PulsePlayerProvider({
             nextArtwork={nextArtwork}
             prevTrackObj={prevTrackObj}
             nextTrackObj={nextTrackObj}
-            trackKey={String(currentSongId)}
+            trackKey={currentTrackKey}
 
             repeatMode={repeatMode}
             playlist={playlist}
@@ -3244,7 +3255,8 @@ export function PulsePlayerProvider({
             }}
             onSeekSubmit={() => finishSeek(true)}
 
-            onAddToPlaylist={() => openAddToPlaylist(currentSongId)}
+            // Виртуальный трек Яндекса (sid ext_…): id в базе нет — отдаём ключ, окно само заведёт трек через GetTrack.php.
+            onAddToPlaylist={() => openAddToPlaylist(currentSongId || resolvedExternalIds[pulseExternalKeyOf(currentTrack?.sid)] || pulseExternalKeyOf(currentTrack?.sid))}
             onStartRadio={() => void startRadio(currentTrack)}
             onDownload={() => {
               const track = currentTrack;
