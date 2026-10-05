@@ -13,6 +13,8 @@ type Navigate = (href: string) => void;
 type ToggleSongLikeOptions = {
   playlistId?: number | string | null;
   triggerPlaylistRedirect?: boolean;
+  /** Id трека в базе, который вернул сервер (у виртуального трека Яндекса он появляется только после лайка). */
+  onResolved?: (songId: number) => void;
 };
 
 /**
@@ -80,6 +82,7 @@ export function usePulseFavorites({
       if (response.id) {
         resolvedSongId = toNumber(response.id) || resolvedSongId;
       }
+      if (resolvedSongId) options?.onResolved?.(resolvedSongId);
 
       const currentIds = getFavoriteIds();
       const shouldRedirect = Boolean(options?.triggerPlaylistRedirect && options.playlistId);

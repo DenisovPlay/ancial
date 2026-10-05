@@ -35,3 +35,9 @@ test('высота волны: в пределах −1…1, при нулево
     assert.ok(Math.abs(waveOffset(x, 3, 2, 1)) <= 1);
   }
 });
+
+test('палитра: по настроению близка к цвету подложки страницы, без настроения — нейтральная', () => {
+  assert.deepEqual(waveTarget({ playing: true, mood: 'sad' }).from, [59, 130, 246], 'blue-500 как у страницы');
+  assert.deepEqual(waveTarget({ playing: true, mood: 'happy' }).from, [245, 158, 11], 'amber-500');
+  assert.deepEqual(waveTarget({ playing: true }).from, [113, 113, 122]);
+});

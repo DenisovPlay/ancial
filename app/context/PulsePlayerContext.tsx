@@ -95,6 +95,21 @@ function playedKeyOf(sid: unknown): number | string {
   return id > 0 ? id : pulseExternalKeyOf(sid) || 0;
 }
 
+/** Сдвиг содержимого мини-плеера при свайпе — через CSS-переменные оболочки (без setState на каждый touchmove). */
+const MINI_SWIPE_MS = 260;
+function setMiniSwipe(shell: HTMLElement, x: number, ms: number) {
+  shell.style.setProperty('--mini-swipe-ms', `${ms}ms`);
+  shell.style.setProperty('--mini-swipe-x', `${x}px`);
+  // Соседние треки видны, пока жест идёт и пока содержимое возвращается; полностью на месте — прячем.
+  if (x !== 0) shell.style.setProperty('--mini-peek', 'visible');
+  else if (ms === 0) shell.style.setProperty('--mini-peek', 'hidden');
+  else {
+    window.setTimeout(() => {
+      if (shell.style.getPropertyValue('--mini-swipe-x') === '0px') shell.style.setProperty('--mini-peek', 'hidden');
+    }, ms + 40);
+  }
+}
+
 function findTrackIndex(tracks: PulseTrack[], expectedTrackId: number, fallbackIndex: number) {
   if (expectedTrackId) {
     if (toNumber(tracks[fallbackIndex]?.sid) === expectedTrackId) return fallbackIndex;
@@ -414,7 +429,6 @@ export function PulsePlayerProvider({
   const touchStartMiniRef = useRef<{ x: number, y: number } | null>(null);
   // Ширина пилюли мини-плеера: замеряется на touchstart для расчёта доката карусели.
   // State, а не ref: значение читается при рендере (проп в PulsePlayerMini).
-  const [miniShellWidth, setMiniShellWidth] = useState(370);
   // Радио: трек-источник, набор уже воспроизведённых ID, флаг загрузки
   const radioSeedTrackIdRef = useRef<number>(0);
   /** Исходный sid семени радио (бывает виртуальным ext_…): сервер сам запишет такой трек в базу. */
@@ -1073,9 +1087,21 @@ export function PulsePlayerProvider({
     notify,
   });
 
+  // Виртуальные треки Яндекса (sid ext_…) получают id в базе только после лайка/взаимодействия: запоминаем соответствие.
+  const [resolvedExternalIds, setResolvedExternalIds] = useState<Record<string, number>>({});
+
   const likeCurrentSong = async () => {
-    if (!currentSongIdRef.current) return;
-    const likedNow = await toggleSongLike(currentSongIdRef.current);
+    const track = playlistRef.current[indexRef.current] ?? null;
+    const knownId = currentSongIdRef.current;
+    const externalKey = knownId > 0 ? '' : pulseExternalKeyOf(track?.sid);
+    if (!knownId && !externalKey) return;
+    const likedNow = await toggleSongLike(knownId || externalKey, {
+      onResolved: (songId) => {
+        if (!externalKey) return;
+        setResolvedExternalIds((prev) => (prev[externalKey] === songId ? prev : { ...prev, [externalKey]: songId }));
+        if (pulseExternalKeyOf(playlistRef.current[indexRef.current]?.sid) === externalKey) currentSongIdRef.current = songId;
+      },
+    });
     // Лайк уже после засчитанного прослушивания — в режиме «лайкнутые» сохраняем сразу.
     if (likedNow && listenCounted && cache.audio.getAutoSaveMode() === 'liked') {
       cacheCurrentTrackInBackground(playlistRef.current[indexRef.current] ?? null);
@@ -1087,7 +1113,7 @@ export function PulsePlayerProvider({
   }, [likedSongIds]);
 
   const activeLike = currentTrack
-    ? likedSongIds.includes(toNumber(currentTrack.sid))
+    ? likedSongIds.includes(toNumber(currentTrack.sid) || resolvedExternalIds[pulseExternalKeyOf(currentTrack.sid)] || 0)
     : false;
 
   const playLoadedTrack = async (track: PulseTrack | null, retryCount = 0): Promise<void> => {
@@ -2964,9 +2990,11 @@ export function PulsePlayerProvider({
         desktopSeekInputRef={live ? desktopSeekInputRef : ghostMiniSeekInputRef}
         docked={docked}
         duration={effectiveDuration}
+        isLiked={activeLike}
         isPlaying={effectiveIsPlaying}
-        isSwiping={isSwiping}
         isVisible={live && !isFullMode && isPlayerAnimatingIn}
+        onLike={() => { void likeCurrentSong(); }} /* eslint-disable-line react-hooks/refs -- обработчик клика, вызывается по событию, а не в рендере */
+        showLike={isAuthenticated}
         lang={lang}
         onChangeVolume={changeVolume}
         onToggleMute={toggleMute}
@@ -2984,26 +3012,22 @@ export function PulsePlayerProvider({
         onTouchStart={(event) => {
           if (window.innerWidth >= 1024) return;
           touchStartMiniRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
-          const shell = document.getElementById('NAVPmini');
-          const width = shell?.clientWidth ?? 0;
-          if (width > 0) setMiniShellWidth(width);
-          setIsSwiping(false);
+          window.clearTimeout(Number(event.currentTarget.dataset.swipeTimer));
+          event.currentTarget.style.setProperty('--mini-w', `${Math.max(event.currentTarget.clientWidth, 320)}px`);
+          setMiniSwipe(event.currentTarget, 0, 0);
         }}
         onTouchMove={(event) => {
-          // Живое перелистывание: сдвигаем содержимое пилюли за пальцем (только горизонталь).
+          // Живое перелистывание: содержимое пилюли едет за пальцем (только горизонталь), без перерисовки React.
           // Вертикальный жест остаётся «свайпом вверх для full» и не двигает контент.
           const start = touchStartMiniRef.current;
           if (!start || window.innerWidth >= 1024) return;
           const deltaX = event.touches[0].clientX - start.x;
           const deltaY = event.touches[0].clientY - start.y;
           if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
-            if ((deltaX > 0 && !prevTrackObj) || (deltaX < 0 && !nextTrackObj && !isRadioModeRef.current)) {
-              setSwipeX(deltaX * 0.3);
-            } else {
-              setSwipeX(deltaX);
-            }
+            const blocked = (deltaX > 0 && !prevTrackObj) || (deltaX < 0 && !nextTrackObj && !isRadioModeRef.current);
+            setMiniSwipe(event.currentTarget, blocked ? deltaX * 0.3 : deltaX, 0);
           } else {
-            setSwipeX(0);
+            setMiniSwipe(event.currentTarget, 0, 0);
           }
         }}
         onTouchEnd={(event) => {
@@ -3011,50 +3035,39 @@ export function PulsePlayerProvider({
           if (!start) return;
           touchStartMiniRef.current = null;
           if (window.innerWidth >= 1024) return;
+          const shell = event.currentTarget;
 
           const deltaY = event.changedTouches[0].clientY - start.y;
           const deltaX = event.changedTouches[0].clientX - start.x;
 
           // Свайп вверх — открыть полный плеер. В шапке чата жест не работает: плеер уже наверху.
           if (!miniPlayerSlot && deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
-            setSwipeX(0);
+            setMiniSwipe(shell, 0, 0);
             setMode('full');
             return;
           }
 
-          // Горизонтальный свайп — перелистывание трека.
-          // Докат на полную ширину пилюли: входящий трек заходит через скругление с одного края
-          // и садится в 0px, а уходящий уходит за противоположный край капсулы (clipped overflow-hidden).
+          // Горизонтальный свайп — перелистывание трека: докат на ширину пилюли (входящий трек заходит с края,
+          // уходящий уходит за противоположный), затем смена трека; на место содержимое возвращает сам мини-плеер,
+          // когда отрисовался новый трек (useLayoutEffect), а если трек не сменился — страховочный возврат.
           const threshold = 60;
-          const slideDistance = Math.max(miniShellWidth || 0, 360);
+          const slideDistance = Math.max(shell.clientWidth, 320);
+          const commit = (direction: 1 | -1, change: () => Promise<void>) => {
+            setMiniSwipe(shell, direction * slideDistance, MINI_SWIPE_MS);
+            setTimeout(() => {
+              void change();
+              // Страховочный возврат; новый свайп (touchstart) его отменяет, чтобы не дёрнуть содержимое посреди жеста.
+              shell.dataset.swipeTimer = String(window.setTimeout(() => setMiniSwipe(shell, 0, 220), 600));
+            }, MINI_SWIPE_MS);
+          };
 
           if (deltaX < -threshold && (nextTrackObj || isRadioModeRef.current)) {
-            flushSync(() => setIsSwiping(true));
-            requestAnimationFrame(() => {
-              setSwipeX(-slideDistance);
-              setTimeout(() => {
-                void nextTrack();
-                setIsSwiping(false);
-                setSwipeX(0);
-              }, 250);
-            });
+            commit(-1, nextTrack);
           } else if (deltaX > threshold && prevTrackObj) {
-            flushSync(() => setIsSwiping(true));
-            requestAnimationFrame(() => {
-              setSwipeX(slideDistance);
-              setTimeout(() => {
-                void prevTrack();
-                setIsSwiping(false);
-                setSwipeX(0);
-              }, 250);
-            });
+            commit(1, prevTrack);
           } else {
-            // Отмена свайпа: возврат на место с transition
-            flushSync(() => setIsSwiping(true));
-            requestAnimationFrame(() => {
-              setSwipeX(0);
-              setTimeout(() => setIsSwiping(false), 250);
-            });
+            // Отмена свайпа: плавный возврат на место
+            setMiniSwipe(shell, 0, 220);
           }
         }}
         onTogglePlay={togglePlay}
@@ -3068,8 +3081,6 @@ export function PulsePlayerProvider({
         nextArtwork={nextArtwork}
         prevArtwork={prevArtwork}
         seekValue={seekValue}
-        shellWidth={miniShellWidth}
-        swipeX={swipeX}
         volume={volume}
         volumeSliderRef={live ? volumeSliderRef : ghostMiniVolumeSliderRef}
       />
@@ -3134,7 +3145,7 @@ export function PulsePlayerProvider({
               : isRadioMode && radioSeedName
                 ? `${lang?.pulse_radio_by || 'Радио по'} «${radioSeedName}»`
                 : normalizeText(currentTrack?.album) || (lang?.pulse_playing_now || 'Сейчас играет')}
-            canOpenAlbum={Boolean(normalizeText(String(currentTrack?.albumid ?? '')))}
+            canOpenAlbum={isRadioMode || Boolean(normalizeText(String(currentTrack?.albumid ?? '')))}
 
             canUseEqualizer={canUseEqualizer}
             isMobileDevice={isMobileDevice}
@@ -3149,6 +3160,13 @@ export function PulsePlayerProvider({
               setMode('mini');
             }}
             onOpenAlbum={() => {
+              // Вейв — на главную Pulse, радио — на страницу трека-семени (а не на альбом случайного трека очереди).
+              if (isRadioMode) {
+                const seedId = radioSeedTrackIdRef.current;
+                router.push(infiniteKind === 'wave' || seedId <= 0 ? '/pulse' : `/pulse/track/${seedId}`);
+                setMode('mini');
+                return;
+              }
               const albumId = normalizeText(String(currentTrack?.albumid ?? ''));
               if (!albumId) return;
               router.push(`/pulse/playlist/${albumId}`);

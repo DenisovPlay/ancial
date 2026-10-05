@@ -25,25 +25,31 @@ export interface WaveState extends WaveTarget {
 export const WAVE_TAU = 0.6;
 const KICK_TAU = 0.45;
 
-const PALETTE_DEFAULT: [Rgb, Rgb] = [[99, 102, 241], [168, 85, 247]];
-const PALETTE_WARM: [Rgb, Rgb] = [[236, 72, 153], [249, 115, 22]];
-const PALETTE_COLD: [Rgb, Rgb] = [[56, 189, 248], [99, 102, 241]];
-const PALETTE_DEEP: [Rgb, Rgb] = [[79, 70, 229], [109, 40, 217]];
-const PALETTE_SEXY: [Rgb, Rgb] = [[190, 24, 93], [126, 34, 206]];
+/**
+ * Палитры — соседние оттенки Tailwind от цвета подложки страницы для этого настроения
+ * (getPulseBackgroundColorByMood в pulse-components.tsx: amber-500, blue-500, … — менять только вместе).
+ */
+const pair = (a: Rgb, b: Rgb): [Rgb, Rgb] => [a, b];
+const PALETTE_DEFAULT = pair([113, 113, 122], [161, 161, 170]); // zinc-500 → zinc-400: страница без настроения не подкрашена
+const PALETTE: Record<string, [Rgb, Rgb]> = {
+  happy: pair([245, 158, 11], [251, 146, 60]), // amber-500 → orange-400
+  sad: pair([59, 130, 246], [129, 140, 248]), // blue-500 → indigo-400
+  funny: pair([249, 115, 22], [251, 191, 36]), // orange-500 → amber-400
+  energetic: pair([239, 68, 68], [249, 115, 22]), // red-500 → orange-500
+  calm: pair([20, 184, 166], [52, 211, 153]), // teal-500 → emerald-400
+  romantic: pair([244, 63, 94], [244, 114, 182]), // rose-500 → pink-400
+  dark: pair([113, 113, 122], [161, 161, 170]), // zinc-500 → zinc-400
+  aggressive: pair([220, 38, 38], [239, 68, 68]), // red-600 → red-500
+  dreamy: pair([99, 102, 241], [167, 139, 250]), // indigo-500 → violet-400
+  chill: pair([6, 182, 212], [56, 189, 248]), // cyan-500 → sky-400
+  sexy: pair([217, 70, 239], [236, 72, 153]), // fuchsia-500 → pink-500
+  scary: pair([87, 83, 78], [120, 113, 108]), // stone-600 → stone-500
+};
 
 /** Настроение → [энергия -1…1, палитра]. */
-const MOODS: Record<string, [number, [Rgb, Rgb]]> = {
-  energetic: [0.9, PALETTE_WARM],
-  aggressive: [1, PALETTE_WARM],
-  funny: [0.5, PALETTE_WARM],
-  happy: [0.45, PALETTE_WARM],
-  sexy: [0.1, PALETTE_SEXY],
-  romantic: [-0.1, PALETTE_SEXY],
-  chill: [-0.4, PALETTE_COLD],
-  dreamy: [-0.5, PALETTE_COLD],
-  calm: [-0.7, PALETTE_COLD],
-  sad: [-0.5, PALETTE_DEEP],
-  dark: [-0.1, PALETTE_DEEP],
+const MOOD_ENERGY: Record<string, number> = {
+  energetic: 0.9, aggressive: 1, funny: 0.5, happy: 0.45, sexy: 0.1, romantic: -0.1,
+  chill: -0.4, dreamy: -0.5, calm: -0.7, sad: -0.5, dark: -0.1, scary: 0,
 };
 
 const FAST_GENRES = ['phonk', 'metal', 'hardbass', 'dubstep', 'drum & bass', 'techno', 'punk', 'trap', 'trance', 'house'];
@@ -62,11 +68,11 @@ function genreEnergy(genre: string): number | null {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export function waveTarget(input: { playing: boolean; mood?: string; genre?: string }): WaveTarget {
-  const mood = MOODS[(input.mood ?? '').trim().toLowerCase()];
+  const moodKey = (input.mood ?? '').trim().toLowerCase();
   const byGenre = genreEnergy(input.genre ?? '');
-  const energies = [mood?.[0], byGenre].filter((value): value is number => typeof value === 'number');
+  const energies = [MOOD_ENERGY[moodKey], byGenre].filter((value): value is number => typeof value === 'number');
   const energy = energies.length ? energies.reduce((sum, value) => sum + value, 0) / energies.length : 0;
-  const [from, to] = mood?.[1] ?? PALETTE_DEFAULT;
+  const [from, to] = PALETTE[moodKey] ?? PALETTE_DEFAULT;
   if (!input.playing) return { amp: 0.22, speed: 0.25, from, to };
   return { amp: clamp(0.55 + 0.3 * energy, 0.3, 0.9), speed: clamp(0.9 + 0.6 * energy, 0.4, 1.6), from, to };
 }

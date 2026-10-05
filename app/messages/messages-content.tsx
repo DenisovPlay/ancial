@@ -2434,7 +2434,7 @@ export default function MessagesContent() {
                           ))}
                         </div>
                       ) : dialogsError && dialogs.length === 0 ? (
-                        <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+                        <div className="flex h-full flex-col items-center justify-center px-3 py-6 text-center">
                           <AppImage skeleton={false}
                             width={160}
                             height={160}

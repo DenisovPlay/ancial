@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type RefObject, type TouchEventHandler } from 'react';
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type RefObject, type TouchEventHandler } from 'react';
 
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
@@ -19,8 +19,8 @@ type PulsePlayerMiniProps = {
   /** В слоте страницы (шапка чата): обычный поток вместо плавающей пилюли снизу, на ПК — компактнее. */
   docked: boolean;
   duration: number;
+  isLiked: boolean;
   isPlaying: boolean;
-  isSwiping: boolean;
   isVisible: boolean;
   lang: Record<string, string> | null;
   nextArtist: string;
@@ -32,6 +32,7 @@ type PulsePlayerMiniProps = {
   onDesktopSeekChange: (value: number) => void;
   onDesktopSeekStart: () => void;
   onDesktopSeekSubmit: () => void;
+  onLike: () => void;
   onNextTrack: () => void;
   onOpenFull: () => void;
   onPrevTrack: () => void;
@@ -46,8 +47,8 @@ type PulsePlayerMiniProps = {
   prevArtwork: string;
   prevTitle: string;
   seekValue: number;
-  shellWidth: number;
-  swipeX: number;
+  /** Кнопка лайка сразу за названием (ПК и телефон, только вошедшим) */
+  showLike: boolean;
   volume: number;
   volumeSliderRef: RefObject<HTMLInputElement | null>;
 };
@@ -55,6 +56,13 @@ type PulsePlayerMiniProps = {
 // disabled — для слушателя в совместном прослушивании: листать и перематывать может только хост.
 const MINI_ICON_BUTTON = 'hidden shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 disabled:hover:border-transparent disabled:hover:bg-transparent lg:flex';
 const MINI_EASE = 'ease-[cubic-bezier(0.32,0.72,0,1)]';
+// Листание свайпом: сдвиг и длительность — CSS-переменные оболочки (--mini-swipe-x, --mini-swipe-ms, --mini-w).
+const SWIPE_TRANSITION = 'transform var(--mini-swipe-ms, 0ms) cubic-bezier(0.22, 1, 0.36, 1)';
+const SLIDE_STYLE: CSSProperties = { transform: 'translate3d(var(--mini-swipe-x, 0px), 0, 0)', transition: SWIPE_TRANSITION, willChange: 'transform' };
+// Соседние треки лежат в DOM заранее (обложки подгружены), но видны только пока идёт жест (--mini-peek): на широкой пилюле сдвига на ширину оболочки мало, чтобы убрать их из поля зрения.
+const PEEK_VISIBILITY = 'var(--mini-peek, hidden)' as CSSProperties['visibility'];
+const PREV_PEEK_STYLE: CSSProperties = { visibility: PEEK_VISIBILITY, transform: 'translate3d(calc(var(--mini-swipe-x, 0px) - var(--mini-w, 360px)), 0, 0)', transition: SWIPE_TRANSITION, willChange: 'transform' };
+const NEXT_PEEK_STYLE: CSSProperties = { visibility: PEEK_VISIBILITY, transform: 'translate3d(calc(var(--mini-swipe-x, 0px) + var(--mini-w, 360px)), 0, 0)', transition: SWIPE_TRANSITION, willChange: 'transform' };
 
 /** Prop-driven mini player presentation. Playback and gesture ownership stay in the provider. */
 export function PulsePlayerMini({
@@ -64,8 +72,8 @@ export function PulsePlayerMini({
   desktopSeekInputRef,
   docked,
   duration,
+  isLiked,
   isPlaying,
-  isSwiping,
   isVisible,
   lang,
   nextArtist,
@@ -77,6 +85,7 @@ export function PulsePlayerMini({
   onDesktopSeekChange,
   onDesktopSeekStart,
   onDesktopSeekSubmit,
+  onLike,
   onNextTrack,
   onOpenFull,
   onPrevTrack,
@@ -91,12 +100,10 @@ export function PulsePlayerMini({
   prevArtwork,
   prevTitle,
   seekValue,
-  shellWidth,
-  swipeX,
+  showLike,
   volume,
   volumeSliderRef,
 }: PulsePlayerMiniProps) {
-  const hasSwipe = swipeX !== 0;
   // Тап по пилюле (кроме play) открывает full. Касание, сдвинувшее палец, — это жест (свайп вверх
   // или листание трека), и его click игнорируется: иначе после свайпа трека открылся бы full.
   const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
@@ -122,36 +129,19 @@ export function PulsePlayerMini({
   // Звук может идти на другом устройстве: тогда кнопки здесь — пульт, и об этом надо сказать.
   const devices = useRemoteDevices();
   const activeDevice = devices.isRemote ? devices.devices.find((device) => device.active) ?? null : null;
-  const w = Math.max(shellWidth || 0, 360);
-  const transition = isSwiping ? 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
-
-  const slideStyle = hasSwipe
-    ? {
-      transform: `translate3d(${swipeX}px, 0, 0)`,
-      transition,
-      willChange: 'transform' as const,
-    }
-    : undefined;
-
-  const prevPeekStyle = hasSwipe
-    ? {
-      transform: `translate3d(calc(-${w}px + ${swipeX}px), 0, 0)`,
-      transition,
-      willChange: 'transform' as const,
-    }
-    : undefined;
-
-  const nextPeekStyle = hasSwipe
-    ? {
-      transform: `translate3d(calc(${w}px + ${swipeX}px), 0, 0)`,
-      transition,
-      willChange: 'transform' as const,
-    }
-    : undefined;
+  // Содержимое пилюли едет за пальцем без перерисовки React: контекст пишет --mini-swipe-x/-ms прямо на оболочку.
+  // Когда трек сменился, возвращаем на место до отрисовки (в том же кадре, без «мигания» старого трека).
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    shellRef.current?.style.setProperty('--mini-swipe-ms', '0ms');
+    shellRef.current?.style.setProperty('--mini-swipe-x', '0px');
+    shellRef.current?.style.setProperty('--mini-peek', 'hidden');
+  }, [playerTitle, playerArtwork]);
 
   const shell = (
     <div
       id="NAVPmini"
+      ref={shellRef}
       className={cn(
         'glass-input [--glass-sat:2] pulse-player-mini-shell relative flex w-full cursor-pointer touch-none items-center lg:cursor-auto gap-1 overflow-hidden rounded-full border border-zinc-600/30 lg:gap-3 lg:p-1 shadow',
         // Прозрачность — на самой стеклянной пилюле: у предка она отключила бы backdrop-blur.
@@ -183,11 +173,11 @@ export function PulsePlayerMini({
       {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
       <div className="relative flex min-w-0 flex-1 items-center lg:flex-none lg:shrink-0">
         {/* Предыдущий трек (подкладывается только во время свайпа) */}
-        {hasSwipe && prevArtwork ? (
+        {prevArtwork ? (
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 flex items-center gap-1 lg:hidden"
-            style={prevPeekStyle}
+            style={PREV_PEEK_STYLE}
           >
             <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow">
               <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={prevArtwork} />
@@ -202,7 +192,7 @@ export function PulsePlayerMini({
         {/* Текущий трек */}
         <div
           className="relative z-10 flex min-w-0 flex-1 items-center gap-1 lg:flex-none lg:shrink-0 lg:gap-3"
-          style={slideStyle}
+          style={SLIDE_STYLE}
         >
           <button
             type="button"
@@ -223,7 +213,7 @@ export function PulsePlayerMini({
             </div>
           </button>
 
-          <div className="flex min-w-0 flex-1 flex-col lg:w-56 lg:flex-none">
+          <div className="flex min-w-0 flex-initial flex-col lg:max-w-56 lg:flex-none">
             <span className={cn('w-full truncate text-sm font-medium text-white', !docked && 'lg:text-base')}>{playerTitle}</span>
             <span className={cn('flex w-full items-center gap-1.5 text-xs text-zinc-400', !docked && 'lg:text-sm')}>
               {activeDevice ? (
@@ -235,14 +225,30 @@ export function PulsePlayerMini({
               <span className="truncate">{activeDevice ? activeDevice.name || playerArtist : playerArtist}</span>
             </span>
           </div>
+
+          {showLike ? (
+            <button
+              type="button"
+              data-mini-controls
+              aria-label={isLiked ? (lang?.pulse_unlike || 'Убрать из избранного') : (lang?.pulse_like || 'В избранное')}
+              onClick={(event) => {
+                event.stopPropagation();
+                onLike();
+              }}
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95"
+            >
+              <Icon name={isLiked ? 'IC-heart-filled' : 'IC-heart'} className={cn('h-6 w-6 duration-300', isLiked ? 'fill-pink-400' : 'fill-white')} />
+            </button>
+          ) : null}
+
         </div>
 
         {/* Следующий трек (подкладывается только во время свайпа) */}
-        {hasSwipe && nextArtwork ? (
+        {nextArtwork ? (
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 flex items-center gap-1 lg:hidden"
-            style={nextPeekStyle}
+            style={NEXT_PEEK_STYLE}
           >
             <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800 shadow">
               <PulseCoverImage alt="" className="rounded-full" sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer} src={nextArtwork} />

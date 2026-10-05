@@ -13,7 +13,7 @@ import {
 
 import { cn } from '../lib/cn';
 import { canOptimizeImage } from '../lib/image-hosts';
-import { isSvgSrc, TRANSPARENT_PIXEL, unwatchImageSkeleton, wasSlowNetworkLoad, watchImageSkeleton } from '../lib/image-loading';
+import { abortImageLoadIfDetached, isSvgSrc, TRANSPARENT_PIXEL, unwatchImageSkeleton, wasSlowNetworkLoad, watchImageSkeleton } from '../lib/image-loading';
 import { useNativeImageSrc } from '../lib/use-native-image-src';
 
 type LoadStatus = 'loading' | 'loaded' | 'revealed' | 'error';
@@ -69,8 +69,8 @@ function useImageLoader({
   let currentSrc = fallback && fallbackSrc ? fallbackSrc : primary;
   if (!currentSrc) status = 'error';
   if (status === 'error') currentSrc = TRANSPARENT_PIXEL;
-  // SVG — без скелетона и проявления: вектор отрисовывается сразу.
-  const withSkeleton = skeleton && !isSvgSrc(currentSrc);
+  // data:-SVG — без скелетона и проявления: вектор отрисовывается сразу. SVG-файл едет по сети, как любая картинка.
+  const withSkeleton = skeleton && !(isSvgSrc(currentSrc) && currentSrc.trim().toLowerCase().startsWith('data:'));
 
   // Из памяти картинка готова синхронно (и SSR-картинка, загрузившаяся до гидрации):
   // показываем её до первой отрисовки, без скелетона и анимации.
@@ -127,6 +127,7 @@ function useImageLoader({
   return {
     key: `${direct ? 'direct:' : ''}${currentSrc}`,
     direct,
+    status,
     skeletonRef,
     props: {
       ref,
@@ -204,14 +205,23 @@ export default function AppImage({
     return () => {
       stopSkeleton?.();
       assignRef(ref, null);
+      // Страницу закрыли, а картинка ещё едет — запрос сбрасываем (иначе занимает соединения новой странице).
+      if (img) abortImageLoadIfDetached(img);
     };
   }, [loaderRef, ref, skeletonRef]);
+
+  // Ошибка подменяет src прозрачным пикселем 1×1, и браузер берёт его пропорции: логотип/баннер превращался в
+  // серый квадрат. Возвращаем пропорции из width/height (у fill размер задаёт родитель).
+  const errorStyle = loader.status === 'error' && !rest.fill && rest.width && rest.height
+    ? { ...loader.props.style, aspectRatio: `${rest.width} / ${rest.height}` }
+    : loader.props.style;
 
   return (
     <NextImage
       key={loader.key}
       {...rest}
       {...loader.props}
+      style={errorStyle}
       ref={mergedRef}
       alt={alt}
       unoptimized={unoptimized ?? (loader.direct || !canOptimizeImage(loader.props.src))}

@@ -47,12 +47,23 @@ export function wasSlowNetworkLoad(url: string): boolean {
  * data-img-offscreen → animation-play-state: paused (globals.css). На экране — перелив как был.
  */
 const OFFSCREEN_ATTR = 'data-img-offscreen';
+/** Одновременно переливаются не больше стольких скелетонов на экране, остальные стоят (на экране их много только при медленной сети). */
+const MAX_ANIMATED_SKELETONS = 24;
+const visibleSkeletons = new Set<Element>();
 let skeletonObserver: IntersectionObserver | null = null;
 
 function getSkeletonObserver(): IntersectionObserver | null {
   if (skeletonObserver || typeof IntersectionObserver === 'undefined') return skeletonObserver;
   skeletonObserver = new IntersectionObserver((entries) => {
-    for (const entry of entries) entry.target.toggleAttribute(OFFSCREEN_ATTR, !entry.isIntersecting);
+    for (const entry of entries) {
+      if (entry.isIntersecting) visibleSkeletons.add(entry.target);
+      else {
+        visibleSkeletons.delete(entry.target);
+        entry.target.toggleAttribute(OFFSCREEN_ATTR, true);
+      }
+    }
+    let animated = 0;
+    for (const img of visibleSkeletons) img.toggleAttribute(OFFSCREEN_ATTR, ++animated > MAX_ANIMATED_SKELETONS);
   });
   return skeletonObserver;
 }
@@ -65,7 +76,30 @@ export function watchImageSkeleton(img: Element): void {
 /** Перестать следить: картинка загрузилась или ушла из DOM (иначе наблюдатель держит узел в памяти). */
 export function unwatchImageSkeleton(img: Element): void {
   skeletonObserver?.unobserve(img);
+  visibleSkeletons.delete(img);
   img.removeAttribute(OFFSCREEN_ATTR);
+}
+
+/**
+ * Сбросить запрос недогруженной картинки: без этого браузер дотягивает её, даже если страница уже закрыта
+ * (ушли из чата в друзья, а запросы картинок сообщений ещё занимают соединения). srcset снимаем первым —
+ * иначе он перебивает подмену src.
+ */
+export function abortImageLoad(img: HTMLImageElement): void {
+  if (img.complete) return;
+  img.removeAttribute('srcset');
+  img.removeAttribute('sizes');
+  img.src = TRANSPARENT_PIXEL;
+}
+
+/**
+ * Для React-картинки при размонтировании: проверяем позже, что узел действительно ушёл из документа
+ * (в StrictMode/смене ref cleanup вызывается и у живой картинки — её трогать нельзя).
+ */
+export function abortImageLoadIfDetached(img: HTMLImageElement): void {
+  setTimeout(() => {
+    if (!img.isConnected) abortImageLoad(img);
+  }, 0);
 }
 
 function settleHtmlImage(img: HTMLImageElement, ok: boolean): void {
@@ -116,7 +150,11 @@ export function ensureHtmlImageLoading(): void {
   if (typeof MutationObserver !== 'undefined' && typeof IntersectionObserver !== 'undefined') {
     new MutationObserver((records) => {
       for (const record of records) {
-        record.removedNodes.forEach((node) => eachHtmlSkeleton(node, unwatchImageSkeleton));
+        record.removedNodes.forEach((node) => eachHtmlSkeleton(node, (img) => {
+          unwatchImageSkeleton(img);
+          // Ушла из документа (а не переехала в другое место) и ещё грузится — сбрасываем запрос.
+          if (!img.isConnected && img instanceof HTMLImageElement) abortImageLoad(img);
+        }));
         record.addedNodes.forEach((node) => eachHtmlSkeleton(node, watchImageSkeleton));
       }
     }).observe(document.body, { childList: true, subtree: true });

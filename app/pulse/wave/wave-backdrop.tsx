@@ -3,17 +3,19 @@
 import { useEffect, useRef } from 'react';
 
 import { cn } from '../../lib/cn';
+import { getPulseBackgroundColorByMood } from '../pulse-components';
 import { effectiveAmp, initialWaveState, rgbCss, stepWave, waveOffset, waveTarget, type WaveState, type WaveTarget } from './wave-motion';
 
 /**
- * Живой фон Вейва: три слоя волн на canvas. Движение задают только метаданные (играет ли, настроение/жанр трека,
- * смена трека) — к <audio> не подключаемся (Web Audio ломал воспроизведение в iOS PWA). Кадры идут, пока блок виден,
+ * Живой фон Вейва: три слоя волн на canvas. Движение и цвет задают только метаданные (играет ли, настроение/жанр
+ * трека, смена трека) — к <audio> не подключаемся (Web Audio ломал воспроизведение в iOS PWA). Подложка подкрашена
+ * тем же цветом, что и страница Pulse под это настроение, волны — соседние оттенки. Кадры идут, пока блок виден,
  * вкладка открыта и нет «меньше движения»; иначе рисуется один статичный кадр.
  */
 const LAYERS = [
-  { base: 0.5, depth: 0.2, alpha: 0.34, amp: 1 },
-  { base: 0.62, depth: 0.16, alpha: 0.28, amp: 0.8 },
-  { base: 0.74, depth: 0.12, alpha: 0.2, amp: 0.6 },
+  { base: 0.5, depth: 0.2, alpha: 0.4, amp: 1 },
+  { base: 0.62, depth: 0.16, alpha: 0.32, amp: 0.8 },
+  { base: 0.74, depth: 0.12, alpha: 0.24, amp: 0.6 },
 ] as const;
 const SEGMENTS = 48;
 
@@ -117,8 +119,9 @@ export default function WaveBackdrop({ playing, live, mood, genre, trackKey, cla
   }, [live]);
 
   return (
-    <div aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}>
-      <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-[#150d26] to-zinc-950" />
+    <div aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden bg-zinc-950', className)}>
+      {/* Тот же цвет, что у подложки страницы под это настроение (плавная смена, как у страницы). */}
+      <div className={cn('absolute inset-0 transition-colors duration-1000', getPulseBackgroundColorByMood(mood))} />
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
     </div>
   );

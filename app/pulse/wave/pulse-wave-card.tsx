@@ -77,21 +77,21 @@ export default function PulseWaveCard() {
           <WaveBackdrop
             live={isVisible}
             playing={isWavePlaying}
-            mood={isActive ? currentTrackObj?.mood ?? undefined : undefined}
-            genre={isActive ? currentTrackObj?.genre ?? undefined : undefined}
-            trackKey={isActive ? String(currentTrackObj?.sid ?? '') : ''}
+            mood={currentTrackObj?.mood ?? undefined}
+            genre={currentTrackObj?.genre ?? undefined}
+            trackKey={String(currentTrackObj?.sid ?? '')}
           />
 
           <button
             type="button"
-            aria-label={lang?.pulse_wave_play || 'Включить'}
+            aria-label={isWavePlaying ? (lang?.pulse_wave_pause || 'Пауза') : (lang?.pulse_wave_play || 'Включить')}
             onClick={() => (isActive ? togglePlay() : void start(wave))}
-            className="relative z-10 flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-black shadow-lg duration-300 hover:scale-105 active:scale-95 sm:h-20 sm:w-20"
+            className="relative z-10 flex shrink-0 cursor-pointer items-center justify-center duration-300 hover:scale-110 active:scale-95"
           >
             {isStarting ? (
-              <Icon name="IC-loader" className="h-8 w-8 animate-spin fill-black" />
+              <Icon name="IC-loader" className="h-12 w-12 animate-spin fill-white sm:h-16 sm:w-16" />
             ) : (
-              <Icon name={isWavePlaying ? 'IC-pause-solid' : 'IC-play-solid'} className="h-8 w-8 fill-black sm:h-10 sm:w-10" />
+              <Icon name={isWavePlaying ? 'IC-pause' : 'IC-play'} className="h-12 w-12 fill-white sm:h-16 sm:w-16" />
             )}
           </button>
 

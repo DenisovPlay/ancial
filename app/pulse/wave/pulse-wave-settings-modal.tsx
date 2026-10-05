@@ -6,6 +6,7 @@ import Icon from '../../components/svg-icon';
 import Modal from '../../components/modal';
 import { cn } from '../../lib/cn';
 import { useAuth } from '../../context/AuthContext';
+import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { AncialAPI } from '../../lib/api-v2';
 import { PULSE_GENRES, PULSE_MOODS } from '../pulse-constants';
 import WaveBackdrop from './wave-backdrop';
@@ -107,6 +108,7 @@ export default function PulseWaveSettingsModal({
   value: PulseWavePrefs;
 }) {
   const { lang } = useAuth();
+  const { currentTrackObj } = usePulsePlayer();
   const [draft, setDraft] = useState<PulseWavePrefs>(value);
   const [options, setOptions] = useState<WaveOptions | null>(null);
 
@@ -140,7 +142,7 @@ export default function PulseWaveSettingsModal({
         {/* Шапка и низ закреплены; к содержимому они переходят через затемнение (как в окне комментариев), без резкого края. */}
         <div className="sticky top-0 z-20 isolate flex items-center justify-between p-3">
           <div className="absolute inset-0 overflow-hidden">
-            <WaveBackdrop live playing />
+            <WaveBackdrop live playing mood={currentTrackObj?.mood ?? undefined} genre={currentTrackObj?.genre ?? undefined} />
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-900 to-transparent" />
           </div>
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-6 bg-gradient-to-b from-zinc-900 to-transparent" />
