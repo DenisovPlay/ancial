@@ -37,7 +37,7 @@ import { PulsePlayerModals } from '../pulse/player/pulse-player-modals';
 import PulseDislikeHost from '../pulse/dislikes/pulse-dislike-host';
 import { findPlayableIndex, type DislikeTrackLike } from '../pulse/dislikes/dislike-utils';
 import { ensurePulseDislikesStarted, isPulseTrackDisliked } from '../pulse/dislikes/use-pulse-dislikes';
-import { pulseEventSourceOf, queuePulseEvent, setPulseEventsEnabled } from '../pulse/player/pulse-events';
+import { pulseEventSourceOf, pulseExternalKeyOf, queuePulseEvent, setPulseEventsEnabled } from '../pulse/player/pulse-events';
 import { PulsePlayerMini } from '../pulse/player/pulse-player-mini';
 import { useMiniPlayerSlot } from '../pulse/player/mini-player-slot';
 import {
@@ -89,6 +89,12 @@ import {
  * Индекс трека в очереди: по ID, если он известен (порядок очереди и списка на странице может различаться),
  * иначе по индексу. -1 — нужного трека в списке нет.
  */
+/** Ключ «уже игравшего» для exclude: id из базы либо ext_<сервис>_<id> (0 — нет ключа). */
+function playedKeyOf(sid: unknown): number | string {
+  const id = toNumber(sid as number | string | null | undefined);
+  return id > 0 ? id : pulseExternalKeyOf(sid) || 0;
+}
+
 function findTrackIndex(tracks: PulseTrack[], expectedTrackId: number, fallbackIndex: number) {
   if (expectedTrackId) {
     if (toNumber(tracks[fallbackIndex]?.sid) === expectedTrackId) return fallbackIndex;
@@ -421,7 +427,8 @@ export function PulsePlayerProvider({
   const playCollectionRef = useRef<((kind: PulseCollectionKind, id: number | string, forceReload?: boolean, shuffle?: number, startIndex?: number) => Promise<void>) | null>(null);
   /** Артисты последних пропусков в Вейве: сервер на полчаса убирает их из выдачи. */
   const waveSkipArtistsRef = useRef<Array<{ key: string; at: number }>>([]);
-  const radioPlayedIdsRef = useRef<Set<number>>(new Set());
+  /** Уже игравшие в радио/Вейве: id из базы или ключ виртуального трека (ext_yandex_123). */
+  const radioPlayedIdsRef = useRef<Set<number | string>>(new Set());
   const radioLoadingRef = useRef(false);
   const isRadioModeRef = useRef(false);
   const radioSeedNameRef = useRef('');
@@ -1178,6 +1185,11 @@ export function PulsePlayerProvider({
     const trackId = toNumber(track.sid);
     const isNewTrack = currentSongIdRef.current !== trackId;
     currentSongIdRef.current = trackId;
+    // Виртуальный трек Яндекса (из Вейва/радио/поиска): запуск — взаимодействие, сервер заводит его в базу.
+    const externalKey = trackId > 0 ? '' : pulseExternalKeyOf(track.sid);
+    if (retryCount === 0 && externalKey) {
+      queuePulseEvent({ songId: 0, externalId: externalKey, ratio: 0, src: pulseEventSourceOf(currentCollectionIdRef.current), start: true });
+    }
     if (retryCount === 0) {
       playbackSessionRef.current += 1;
       listenReportedSessionRef.current = null;
@@ -1633,9 +1645,10 @@ export function PulsePlayerProvider({
 
     // Сигнал вкуса: ушли с трека раньше конца — «пропустил», дослушали — «доиграл». Первые секунды — случайное нажатие.
     const leftSongId = currentSongIdRef.current;
-    if (leftSongId > 0 && audio.currentTime >= 3 && Number.isFinite(audio.duration) && audio.duration > 0) {
+    const leftExternalKey = leftSongId > 0 ? '' : pulseExternalKeyOf(playlistRef.current[indexRef.current]?.sid);
+    if ((leftSongId > 0 || leftExternalKey) && audio.currentTime >= 3 && Number.isFinite(audio.duration) && audio.duration > 0) {
       const leftRatio = (audio.currentTime / audio.duration) * 100;
-      queuePulseEvent({ ratio: leftRatio, songId: leftSongId, src: pulseEventSourceOf(currentCollectionIdRef.current) });
+      queuePulseEvent({ ratio: leftRatio, songId: leftSongId, externalId: leftExternalKey, src: pulseEventSourceOf(currentCollectionIdRef.current) });
       // Вейв: артиста, которого пропустили, на полчаса убираем из выдачи.
       if (leftRatio < 30 && isRadioModeRef.current && infiniteKindRef.current === 'wave') {
         const skippedArtist = String(playlistRef.current[indexRef.current]?.artist ?? '').split(',')[0].trim();
@@ -1678,7 +1691,7 @@ export function PulsePlayerProvider({
       const nextIndex = nextPlayableIndex;
       // Запоминаем воспроизведённый трек для радио
       if (isRadioModeRef.current) {
-        const playedSid = toNumber(playlistRef.current[indexRef.current]?.sid);
+        const playedSid = playedKeyOf(playlistRef.current[indexRef.current]?.sid);
         if (playedSid) radioPlayedIdsRef.current.add(playedSid);
       }
       setPlaylistIndex(nextIndex);
@@ -1690,7 +1703,8 @@ export function PulsePlayerProvider({
 
     // Конец плейлиста
     const lastSid = toNumber(playlistRef.current[indexRef.current]?.sid);
-    if (lastSid) radioPlayedIdsRef.current.add(lastSid);
+    const lastPlayedKey = playedKeyOf(playlistRef.current[indexRef.current]?.sid);
+    if (lastPlayedKey) radioPlayedIdsRef.current.add(lastPlayedKey);
 
     if (isRadioModeRef.current) {
       // В режиме радио — подгружаем следующую волну
@@ -1713,7 +1727,7 @@ export function PulsePlayerProvider({
       infiniteKindRef.current = 'radio';
       setInfiniteKind('radio');
       radioPlayedIdsRef.current = new Set(
-        playlistRef.current.map(t => toNumber(t.sid)).filter(Boolean) as number[]
+        playlistRef.current.map(t => playedKeyOf(t.sid)).filter(Boolean) as Array<number | string>
       );
       await fillRadioWave();
       return;

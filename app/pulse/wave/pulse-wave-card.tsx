@@ -18,7 +18,7 @@ export default function PulseWaveCard() {
   const { isAuthenticated, lang } = useAuth();
   const { showNote } = useNotification();
   const { wave } = usePulseWavePrefs();
-  const { currentCollectionId, isPlaying, startWave, togglePlay } = usePulsePlayer();
+  const { currentCollectionId, currentTrackObj, isPlaying, startWave, togglePlay } = usePulsePlayer();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -72,11 +72,15 @@ export default function PulseWaveCard() {
       <div className="w-full max-w-screen-2xl px-3 lg:px-0">
         <div
           ref={cardRef}
-          data-live={isVisible}
-          data-playing={isWavePlaying}
-          className="wave-backdrop relative isolate flex min-h-36 items-center gap-3 overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-950 p-3 sm:min-h-48"
+          className="relative isolate flex min-h-36 items-center gap-3 overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-950 p-3 sm:min-h-48"
         >
-          <WaveBackdrop />
+          <WaveBackdrop
+            live={isVisible}
+            playing={isWavePlaying}
+            mood={isActive ? currentTrackObj?.mood ?? undefined : undefined}
+            genre={isActive ? currentTrackObj?.genre ?? undefined : undefined}
+            trackKey={isActive ? String(currentTrackObj?.sid ?? '') : ''}
+          />
 
           <button
             type="button"

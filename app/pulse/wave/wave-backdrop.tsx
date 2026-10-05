@@ -1,45 +1,125 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+
 import { cn } from '../../lib/cn';
+import { effectiveAmp, initialWaveState, rgbCss, stepWave, waveOffset, waveTarget, type WaveState, type WaveTarget } from './wave-motion';
 
 /**
- * Живой фон Вейва: три слоя мягких волн, плывущих с разной скоростью и чуть покачивающихся.
- * Только transform (css-анимации в globals.css, `.wave-backdrop`); на паузе, пока блок не виден или включён
- * режим «меньше движения». Бесшовность: слой в два раза шире блока и сдвигается ровно на период.
+ * Живой фон Вейва: три слоя волн на canvas. Движение задают только метаданные (играет ли, настроение/жанр трека,
+ * смена трека) — к <audio> не подключаемся (Web Audio ломал воспроизведение в iOS PWA). Кадры идут, пока блок виден,
+ * вкладка открыта и нет «меньше движения»; иначе рисуется один статичный кадр.
  */
 const LAYERS = [
-  // period — длина волны в единицах viewBox (1200 = два периода по 600 на всю ширину слоя)
-  { period: 600, height: 'h-3/5', from: '#a855f7', to: '#ec4899', opacity: 0.34, className: 'wave-layer-a' },
-  { period: 300, height: 'h-1/2', from: '#6366f1', to: '#a855f7', opacity: 0.28, className: 'wave-layer-b' },
-  { period: 200, height: 'h-2/5', from: '#ec4899', to: '#f97316', opacity: 0.2, className: 'wave-layer-c' },
+  { base: 0.5, depth: 0.2, alpha: 0.34, amp: 1 },
+  { base: 0.62, depth: 0.16, alpha: 0.28, amp: 0.8 },
+  { base: 0.74, depth: 0.12, alpha: 0.2, amp: 0.6 },
 ] as const;
+const SEGMENTS = 48;
 
-/** Синусоида из квадратичных кривых: M0,60 Q p/4,0 p/2,60 T p,60 T … до 1200, затем заливка вниз. */
-function wavePath(period: number) {
-  const steps = 1200 / (period / 2);
-  const tail = Array.from({ length: steps - 1 }, (_, i) => `T${(period / 2) * (i + 2)},60`).join(' ');
-  return `M0,60 Q${period / 4},0 ${period / 2},60 ${tail} L1200,120 L0,120 Z`;
+interface Props {
+  playing: boolean;
+  /** Блок на экране */
+  live: boolean;
+  mood?: string;
+  genre?: string;
+  /** Меняется со сменой трека — запускает «перекат» */
+  trackKey?: string | number;
+  className?: string;
 }
 
-export default function WaveBackdrop({ className }: { className?: string }) {
+function draw(ctx: CanvasRenderingContext2D, width: number, height: number, state: WaveState) {
+  ctx.clearRect(0, 0, width, height);
+  const amp = effectiveAmp(state);
+  LAYERS.forEach((layer, index) => {
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
+    gradient.addColorStop(0, rgbCss(state.from, layer.alpha));
+    gradient.addColorStop(1, rgbCss(state.to, layer.alpha));
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    for (let i = 0; i <= SEGMENTS; i++) {
+      const x = i / SEGMENTS;
+      ctx.lineTo(x * width, height * (layer.base + layer.depth * waveOffset(x, state.phase, index, amp * layer.amp) - 0.08));
+    }
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+
+export default function WaveBackdrop({ playing, live, mood, genre, trackKey, className }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const targetRef = useRef<WaveTarget>(waveTarget({ playing, mood, genre }));
+  const stateRef = useRef<WaveState | null>(null);
+  const lastTrackRef = useRef(trackKey);
+
+  // Цель и «перекат» — в эффекте (не в рендере): рефы в теле компонента не пишем.
+  useEffect(() => {
+    targetRef.current = waveTarget({ playing, mood, genre });
+  }, [playing, mood, genre]);
+  useEffect(() => {
+    if (lastTrackRef.current === trackKey) return;
+    lastTrackRef.current = trackKey;
+    if (stateRef.current && playing) stateRef.current.kick = 1;
+  }, [trackKey, playing]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const state = stateRef.current ?? (stateRef.current = initialWaveState(targetRef.current));
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let width = 0;
+    let height = 0;
+    let frame = 0;
+    let last = 0;
+    let running = false;
+
+    const resize = () => {
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      width = canvas.clientWidth;
+      height = canvas.clientHeight;
+      canvas.width = Math.round(width * ratio);
+      canvas.height = Math.round(height * ratio);
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      draw(ctx, width, height, stateRef.current ?? state);
+    };
+    const tick = (now: number) => {
+      const dt = last ? (now - last) / 1000 : 0;
+      last = now;
+      stateRef.current = stepWave(stateRef.current ?? state, targetRef.current, dt);
+      draw(ctx, width, height, stateRef.current);
+      frame = requestAnimationFrame(tick);
+    };
+    const start = () => {
+      if (running || reduced || !live || document.visibilityState !== 'visible') return;
+      running = true;
+      last = 0;
+      frame = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(frame);
+    };
+    const onVisibility = () => (document.visibilityState === 'visible' ? start() : stop());
+
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
+    document.addEventListener('visibilitychange', onVisibility);
+    start();
+    return () => {
+      stop();
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [live]);
+
   return (
     <div aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}>
       <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-[#150d26] to-zinc-950" />
-      {LAYERS.map((layer, index) => (
-        <div key={index} className={cn('wave-bob absolute inset-x-0 bottom-0', layer.height)} style={{ animationDelay: `${index * -3}s` }}>
-          <svg
-            className={cn('wave-layer h-full w-[200%] max-w-none', layer.className)}
-            viewBox="0 0 1200 120"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <linearGradient id={`wave-grad-${index}`} x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stopColor={layer.from} />
-                <stop offset="1" stopColor={layer.to} />
-              </linearGradient>
-            </defs>
-            <path d={wavePath(layer.period)} fill={`url(#wave-grad-${index})`} fillOpacity={layer.opacity} />
-          </svg>
-        </div>
-      ))}
+      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
     </div>
   );
 }

@@ -9,8 +9,11 @@ import { AncialAPI } from '../../lib/api-v2';
 export type PulseEventSource = 'wave' | 'radio' | 'daily' | 'your' | 'playlist' | 'search' | 'artist' | 'other';
 
 interface QueuedEvent {
+  /** Id трека в базе; у виртуального трека Яндекса (ext_yandex_123) — 0, тогда сервер берёт external_id и заводит его в базу. */
   song_id: number;
-  kind: 2 | 3;
+  external_id?: string;
+  /** 1 — «старт» (только завести виртуальный трек в базу), 2 — доиграл, 3 — пропустил. */
+  kind: 1 | 2 | 3;
   ratio: number;
   src: PulseEventSource;
   at: number;
@@ -51,6 +54,7 @@ async function flush() {
   try {
     await AncialAPI.pulseSendEvents(batch.map((event) => ({
       song_id: event.song_id,
+      external_id: event.external_id,
       kind: event.kind,
       ratio: event.ratio,
       src: event.src,
@@ -80,10 +84,23 @@ export function setPulseEventsEnabled(next: boolean) {
   else queue = [];
 }
 
-export function queuePulseEvent(event: { songId: number; ratio: number; src: PulseEventSource }) {
-  if (!enabled || !(event.songId > 0)) return;
+/** Ключ виртуального трека (`ext_<сервис>_<id>`) из sid, иначе пусто. */
+export function pulseExternalKeyOf(sid: unknown): string {
+  return typeof sid === 'string' && /^ext_[a-z]+_[A-Za-z0-9:_-]{1,40}$/.test(sid) ? sid : '';
+}
+
+export function queuePulseEvent(event: { songId: number; externalId?: string; ratio: number; src: PulseEventSource; start?: boolean }) {
+  const externalId = event.songId > 0 ? '' : (event.externalId ?? '');
+  if (!enabled || (!(event.songId > 0) && !externalId)) return;
   const ratio = Math.max(0, Math.min(100, Math.round(event.ratio)));
-  queue.push({ song_id: event.songId, kind: pulseEventKindFor(ratio), ratio, src: event.src, at: Date.now() });
+  queue.push({
+    song_id: event.songId,
+    external_id: externalId || undefined,
+    kind: event.start ? 1 : pulseEventKindFor(ratio),
+    ratio,
+    src: event.src,
+    at: Date.now(),
+  });
   if (queue.length > MAX_QUEUE) queue = queue.slice(-MAX_QUEUE);
   if (queue.length >= FLUSH_BATCH) void flush();
 }

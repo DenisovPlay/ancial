@@ -1377,28 +1377,3 @@ select:-webkit-autofill {
 @media (prefers-reduced-motion: reduce) {
   .lp-marquee, .lp-float, .lp-spin { animation: none; }
 }
-
-/* Вейв: живой фон из волн. Только transform; на паузе, пока блок не виден (data-live), без движения при prefers-reduced-motion. */
-@keyframes wave-flow {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-50%, 0, 0); }
-}
-@keyframes wave-bob {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(0, 9%, 0); }
-}
-.wave-backdrop .wave-layer { animation: wave-flow 26s linear infinite; }
-.wave-backdrop .wave-layer-b { animation-duration: 18s; animation-direction: reverse; }
-.wave-backdrop .wave-layer-c { animation-duration: 12s; }
-.wave-backdrop .wave-bob { animation: wave-bob 7s ease-in-out infinite; }
-.wave-backdrop[data-playing='true'] .wave-layer { animation-duration: 14s; }
-.wave-backdrop[data-playing='true'] .wave-layer-b { animation-duration: 10s; }
-.wave-backdrop[data-playing='true'] .wave-layer-c { animation-duration: 7s; }
-.wave-backdrop[data-playing='true'] .wave-bob { animation-duration: 4.5s; }
-/* play-state — последним: сокращённая запись animation сбрасывает его в running */
-.wave-backdrop:not([data-live='true']) .wave-layer,
-.wave-backdrop:not([data-live='true']) .wave-bob { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) {
-  .wave-backdrop .wave-layer,
-  .wave-backdrop .wave-bob { animation: none; }
-}

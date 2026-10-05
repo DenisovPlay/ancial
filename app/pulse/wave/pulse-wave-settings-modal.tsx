@@ -138,9 +138,9 @@ export default function PulseWaveSettingsModal({
     <Modal isOpen={isOpen} onClose={onClose} title={lang?.pulse_wave || 'Вейв'} showHeader={false} width="md" swipeable={false}>
       <div className="flex flex-col">
         {/* Шапка и низ закреплены; к содержимому они переходят через затемнение (как в окне комментариев), без резкого края. */}
-        <div data-live="true" className="wave-backdrop sticky top-0 z-20 isolate flex items-center justify-between p-3">
+        <div className="sticky top-0 z-20 isolate flex items-center justify-between p-3">
           <div className="absolute inset-0 overflow-hidden">
-            <WaveBackdrop />
+            <WaveBackdrop live playing />
             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-900 to-transparent" />
           </div>
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-6 bg-gradient-to-b from-zinc-900 to-transparent" />

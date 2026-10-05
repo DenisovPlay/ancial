@@ -18,6 +18,7 @@ export type PulseTrack = {
   status?: number | string | null;
   title?: string | null;
   mood?: string | null;
+  genre?: string | null;
 };
 
 export type PulseCollectionKind = 'artist' | 'downloads' | 'genlist' | 'playlist' | 'track';
