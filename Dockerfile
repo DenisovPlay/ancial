@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Multistage Dockerfile for Next.js App (amd64 deployment)
 # Uses Next.js output: 'standalone' for minimal production image
 
@@ -8,7 +9,8 @@ WORKDIR /app
 COPY package.json ./
 COPY package-lock.json* ./
 
-RUN npm ci
+# Кэш npm между сборками (BuildKit): при смене package-lock скачивается только разница, а не весь node_modules.
+RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline --no-audit --no-fund
 
 FROM node:22-alpine AS builder
 WORKDIR /app
@@ -18,7 +20,8 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN npm run build
+# Кэш компиляции Next между сборками: повторная сборка не перекомпилирует всё заново.
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
