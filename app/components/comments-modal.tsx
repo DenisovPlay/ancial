@@ -8,7 +8,6 @@ import Modal from './modal';
 import { useAuth } from '../context/AuthContext';
 import CommentCard, { ReplyBar } from './comment-card';
 import Icon from './svg-icon';
-import BrandLoader from './brand-loader';
 
 export interface FeedComment {
   content: string;
@@ -126,9 +125,9 @@ export function CommentsModal({
 
         <div className="flex flex-col gap-3">
           {isLoading ? (
-            <div className="w-full flex items-center justify-center py-6">
-              <BrandLoader size="lg" />
-            </div>
+            <>
+              {[0, 1, 2].map((index) => <CommentSkeleton key={index} />)}
+            </>
           ) : comments.length > 0 ? (
             comments.map((comment) => (
               <CommentCard
@@ -153,6 +152,22 @@ export function CommentsModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** Скелетон карточки комментария (аватар, имя, время, две строки текста). */
+function CommentSkeleton() {
+  return (
+    <div aria-hidden className="flex animate-pulse flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 shrink-0 rounded-full bg-zinc-800" />
+        <div className="flex flex-col gap-1.5">
+          <div className="h-4 w-32 rounded-full bg-zinc-800" />
+          <div className="h-3 w-16 rounded-full bg-zinc-800" />
+        </div>
+      </div>
+      <div className="h-4 w-3/4 rounded-full bg-zinc-800" />
+    </div>
   );
 }
 

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import Modal from '../../components/modal';
 import DeletePostModal from '../../components/delete-post-modal';
 import ReportModal from '../../components/report-modal';
 import { buildPostReportReasons } from '../../lib/report-reasons';
@@ -184,8 +183,9 @@ export default function UserProfileContent({ login }: { login: string }) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<PostData | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
-  const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
+  // Выбор файла сразу из системного окна, без промежуточных модалок (как отправка фото в чатах).
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
   const [isSubscribersModalOpen, setIsSubscribersModalOpen] = useState(false);
   const [isGroupsModalOpen, setIsGroupsModalOpen] = useState(false);
@@ -851,12 +851,6 @@ export default function UserProfileContent({ login }: { login: string }) {
         time: 5,
       });
 
-      if (field === 'img') {
-        setIsPhotoModalOpen(false);
-      } else {
-        setIsCoverModalOpen(false);
-      }
-
       await checkAuth();
       await loadProfile();
     } catch (nextError) {
@@ -922,8 +916,9 @@ export default function UserProfileContent({ login }: { login: string }) {
             <div className="relative group flex">
               {isAuthenticated && flag(userData.is_owner) ? (
                 <ProfileMediaButton
-                  className="absolute top-3 right-3 h-8 w-8 opacity-0 group-hover:opacity-100 duration-300 z-[20]"
-                  onClick={() => setIsCoverModalOpen(true)}
+                  loading={isUploadingCover}
+                  className="absolute top-3 right-3 h-8 w-8 lg:opacity-0 group-hover:opacity-100 duration-300 z-[20]"
+                  onClick={() => coverInputRef.current?.click()}
                 />
               ) : null}
 
@@ -946,8 +941,9 @@ export default function UserProfileContent({ login }: { login: string }) {
                 <div className="group relative shrink-0">
                   {flag(userData.is_owner) ? (
                     <ProfileMediaButton
-                      className="absolute -top-3 -right-3 w-8 h-8 opacity-0 group-hover:opacity-100 duration-300 z-[20]"
-                      onClick={() => setIsPhotoModalOpen(true)}
+                      loading={isUploadingPhoto}
+                      className="absolute -top-3 -right-3 w-8 h-8 lg:opacity-0 group-hover:opacity-100 duration-300 z-[20]"
+                      onClick={() => photoInputRef.current?.click()}
                     />
                   ) : null}
 
@@ -1186,41 +1182,28 @@ export default function UserProfileContent({ login }: { login: string }) {
         type="groups"
       />
 
-      <Modal
-        isOpen={isPhotoModalOpen}
-        onClose={() => setIsPhotoModalOpen(false)}
-        title={strings.updateprofilepicture}
-        width="sm"
-      >
-        <input
-          type="file"
-          accept="image/*"
-          disabled={isUploadingPhoto}
-          onChange={(event) => {
-            void updateProfileMedia('img', event.target.files?.[0] || null);
-            event.currentTarget.value = '';
-          }}
-          className="mt-1 block w-full text-sm text-zinc-200 file:mr-4 file:rounded-full file:border-0 file:bg-purple-500 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-purple-600"
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isCoverModalOpen}
-        onClose={() => setIsCoverModalOpen(false)}
-        title={strings.updateprofilecover}
-        width="sm"
-      >
-        <input
-          type="file"
-          accept="image/*"
-          disabled={isUploadingCover}
-          onChange={(event) => {
-            void updateProfileMedia('cover', event.target.files?.[0] || null);
-            event.currentTarget.value = '';
-          }}
-          className="mt-1 block w-full text-sm text-zinc-200 file:mr-4 file:rounded-full file:border-0 file:bg-purple-500 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-purple-600"
-        />
-      </Modal>
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        disabled={isUploadingPhoto}
+        onChange={(event) => {
+          void updateProfileMedia('img', event.target.files?.[0] || null);
+          event.currentTarget.value = '';
+        }}
+      />
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        disabled={isUploadingCover}
+        onChange={(event) => {
+          void updateProfileMedia('cover', event.target.files?.[0] || null);
+          event.currentTarget.value = '';
+        }}
+      />
 
       <CommentsModal
         isOpen={isCommentsModalOpen}

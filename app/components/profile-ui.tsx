@@ -297,21 +297,30 @@ export function ProfileAvatar({
 
 export function ProfileMediaButton({
   className,
+  loading = false,
   onClick,
 }: {
   className?: string;
+  /** Идёт загрузка: крутилка вместо карандаша, кнопка видна всегда и не нажимается. */
+  loading?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={loading}
       className={cn(
         'glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.8] [--glass-blur:16px] active:scale-95 border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-700)] hover:[--glass-alpha:1] flex items-center justify-center text-zinc-100 rounded-2xl hover:text-zinc-300 cursor-pointer duration-300',
         className,
+        loading && 'pointer-events-none !opacity-100',
       )}
     >
-      <Icon name="IC-edit" className="w-6 h-6 fill-white inline" />
+      {loading ? (
+        <Icon name="IC-loader" className="w-6 h-6 fill-white inline animate-spin" />
+      ) : (
+        <Icon name="IC-edit" className="w-6 h-6 fill-white inline" />
+      )}
     </button>
   );
 }
