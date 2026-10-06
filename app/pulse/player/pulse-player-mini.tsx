@@ -47,7 +47,7 @@ type PulsePlayerMiniProps = {
   prevArtwork: string;
   prevTitle: string;
   seekValue: number;
-  /** Кнопка лайка сразу за названием (ПК и телефон, только вошедшим) */
+  /** Кнопка лайка (только вошедшим): на ПК за названием, на телефоне рядом с play/pause */
   showLike: boolean;
   volume: number;
   volumeSliderRef: RefObject<HTMLInputElement | null>;
@@ -235,7 +235,7 @@ export function PulsePlayerMini({
                 event.stopPropagation();
                 onLike();
               }}
-              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95"
+              className="hidden h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95 lg:flex"
             >
               <Icon name={isLiked ? 'IC-heart-filled' : 'IC-heart'} className={cn('h-6 w-6 duration-300', isLiked ? 'fill-pink-400' : 'fill-white')} />
             </button>
@@ -316,6 +316,22 @@ export function PulsePlayerMini({
             onChange={(event) => onChangeVolume(event.target.value)}
           />
         </div>
+
+        {/* Телефон: лайк рядом с play/pause (на ПК он стоит за названием) */}
+      {showLike ? (
+        <button
+          type="button"
+          data-mini-controls
+          aria-label={isLiked ? (lang?.pulse_unlike || 'Убрать из избранного') : (lang?.pulse_like || 'В избранное')}
+          onClick={(event) => {
+            event.stopPropagation();
+            onLike();
+          }}
+          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full duration-300 active:scale-95 lg:hidden"
+        >
+          <Icon name={isLiked ? 'IC-heart-filled' : 'IC-heart'} className={cn('h-6 w-6 duration-300', isLiked ? 'fill-pink-400' : 'fill-white')} />
+        </button>
+      ) : null}
 
         {/* prev/next — только десктоп; на телефонах треки листаются свайпом */}
         <button type="button" onClick={onPrevTrack} disabled={isFollower} className={cn(MINI_ICON_BUTTON, docked ? 'h-8 w-8' : 'h-10 w-10')}>

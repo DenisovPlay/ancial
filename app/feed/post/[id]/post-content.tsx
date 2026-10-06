@@ -23,6 +23,7 @@ import { applyBookmarkResult } from '../../../lib/post-bookmark';
 import { applyVoteResult } from '../../../lib/post-vote';
 import FeedPostSkeleton from '../../feed-post-skeleton';
 import Icon from '../../../components/svg-icon';
+import CommentStickerButton, { insertAtCursor } from '../../../components/comment-sticker-button';
 import BrandLoader from '../../../components/brand-loader';
 import ErrorState from '../../../components/error-state';
 
@@ -545,6 +546,7 @@ export default function SinglePostContent({ postId }: { postId: string }) {
                         }}
                         className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600"
                       />
+                      <CommentStickerButton onSelect={(shortcode) => insertAtCursor(commentInputRef.current, commentInput, shortcode, setCommentInput)} />
                       <button
                         type="submit"
                         disabled={!commentInput.trim()}

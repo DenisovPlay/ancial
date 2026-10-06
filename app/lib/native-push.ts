@@ -1,5 +1,7 @@
 import type { PluginListenerHandle } from '@capacitor/core';
 
+import { getAppPlatform } from './platform';
+
 /**
  * Нативные push-уведомления приложения (FCM через @capacitor/push-notifications).
  *
@@ -11,6 +13,10 @@ import type { PluginListenerHandle } from '@capacitor/core';
  */
 
 export const NATIVE_PUSH_CHANNEL_ID = 'zypo_default';
+
+/** iOS-сборка без сертификата APNs (sideload): пуши недоступны, приложение их просто не регистрирует. */
+export const NATIVE_PUSH_UNSUPPORTED = 'NATIVE_PUSH_UNSUPPORTED';
+const isPushSupported = () => getAppPlatform() !== 'ios';
 
 /** Каналы по категориям уведомлений (id совпадают с notify_channel_for() в modules/notify.php): их можно глушить по отдельности в системных настройках. */
 export const NATIVE_PUSH_CATEGORY_CHANNELS = [
@@ -46,6 +52,7 @@ function storeNativePushToken(token: string) {
 
 /** Разрешение уже выдано (без запроса). */
 export async function hasNativePushPermission(): Promise<boolean> {
+  if (!isPushSupported()) return false;
   const { PushNotifications } = await import('@capacitor/push-notifications');
   const status = await PushNotifications.checkPermissions();
   return status.receive === 'granted';
@@ -56,6 +63,7 @@ export async function hasNativePushPermission(): Promise<boolean> {
  * Возвращает FCM-токен. Отказ в разрешении — ошибка NATIVE_PUSH_PERMISSION_DENIED.
  */
 export async function registerNativePush(channelName: string, categoryNames: Record<string, string> = {}): Promise<string> {
+  if (!isPushSupported()) throw new Error(NATIVE_PUSH_UNSUPPORTED);
   const { PushNotifications } = await import('@capacitor/push-notifications');
 
   let status = await PushNotifications.checkPermissions();
@@ -111,6 +119,7 @@ export async function registerNativePush(channelName: string, categoryNames: Rec
 /** Отписка устройства от FCM (после того как pushsid на сервере сброшен). */
 export async function unregisterNativePush(): Promise<void> {
   storeNativePushToken('');
+  if (!isPushSupported()) return;
   const { PushNotifications } = await import('@capacitor/push-notifications');
   await PushNotifications.unregister().catch((error: unknown) => console.error('Failed to unregister push', error));
 }

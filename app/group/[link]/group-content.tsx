@@ -610,6 +610,26 @@ export default function GroupProfileContent({ link }: { link: string }) {
     void loadPostsRef.current(groupIdRef.current, currentLastIdRef.current, true);
   }, [isLoadingMore, posts.length, postsLoading, groupData?.id]);
 
+  const handlePin = async (post: PostData, nextValue: boolean) => {
+    try {
+      await AncialAPI.pinPost(post.id, nextValue);
+      showNote({
+        content: nextValue ? (lang?.post_pinned_note || 'Пост закреплён') : (lang?.post_unpinned_note || 'Пост откреплён'),
+        type: 'success',
+        time: 3,
+      });
+      // Закреплённые идут первыми — перечитываем первую порцию ленты.
+      void loadPostsRef.current(groupIdRef.current ?? 0, 0, false, { preserveExisting: true });
+    } catch (nextError) {
+      console.error('Pin failed', nextError);
+      showNote({
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
+        type: 'error',
+        time: 5,
+      });
+    }
+  };
+
   const handleBookmark = async (post: PostData, nextValue: boolean) => {
     try {
       const response = (await AncialAPI.postAction('bookmark', { pid: post.id })) as { message: string, action: string };
@@ -1047,6 +1067,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
                     currentUserId={user?.id ?? null}
                     lang={postCardLang}
                     onBookmark={handleBookmark}
+                    onPin={(post, nextValue) => void handlePin(post, nextValue)}
                     onComment={openCommentsModal}
                     onDelete={(post) => {
                       setDeleteTarget(post);

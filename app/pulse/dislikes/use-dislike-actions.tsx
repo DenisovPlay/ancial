@@ -44,7 +44,7 @@ export function useDislikeActions() {
     }
     showNote({
       content: (
-        <span className="flex items-center gap-3">
+        <span className="flex w-full items-center justify-between gap-3">
           <span>{lang?.pulse_track_disliked_note || 'Трек отмечен как неинтересный'}</span>
           <button
             type="button"

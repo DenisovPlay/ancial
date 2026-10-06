@@ -8,6 +8,7 @@ import Modal from './modal';
 import { useAuth } from '../context/AuthContext';
 import CommentCard, { ReplyBar } from './comment-card';
 import Icon from './svg-icon';
+import CommentStickerButton, { insertAtCursor } from './comment-sticker-button';
 
 export interface FeedComment {
   content: string;
@@ -74,6 +75,9 @@ export function CommentsModal({
   const { lang } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Стикер — код вида :name: в тексте (как в постах), вставляется на место курсора.
+  const insertSticker = (shortcode: string) => insertAtCursor(inputRef.current, commentInput, shortcode, onCommentInputChange);
+
   const handleReply = onReply && isAuthenticated
     ? (comment: FeedComment) => {
         onReply(comment);
@@ -109,6 +113,7 @@ export function CommentsModal({
                 }}
                 className="bg-transparent w-full focus:ring-0 focus:outline-0 focus:border-0 pl-2 placeholder-zinc-600"
               />
+              <CommentStickerButton onSelect={insertSticker} />
               <button
                 type="submit"
                 disabled={!commentInput.trim()}

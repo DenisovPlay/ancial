@@ -740,6 +740,14 @@ export class AncialAPI {
     });
   }
 
+  /** Закрепить/открепить пост на странице автора (до 3; в сообществах — право manage_posts). */
+  static async pinPost<T = unknown>(postId: string | number, pin: boolean): Promise<T> {
+    return this.request<T>('/posts/PinPost.php', {
+      method: 'POST',
+      body: new URLSearchParams({ pid: String(postId), pin: pin ? '1' : '0' }),
+    });
+  }
+
   static async votePost<T = unknown>(postId: string | number, vote: 'up' | 'down'): Promise<T> {
     return this.request<T>(`/posts/Vote.php?pid=${postId}&vt=${vote}`);
   }
@@ -1143,7 +1151,7 @@ export class AncialAPI {
     return this.request<T>('/user/Notifications.php', { method: 'POST', body });
   }
 
-  static async socialAction<T = unknown>(type: 'friends' | 'groups', query?: string): Promise<T> {
+  static async socialAction<T = unknown>(type: 'friends' | 'groups' | 'suggestions', query?: string): Promise<T> {
     const url = `/user/Social.php?type=${type}${query ? `&q=${encodeURIComponent(query)}` : ''}`;
     return this.request<T>(url);
   }
@@ -1175,6 +1183,11 @@ export class AncialAPI {
   static async pulseGetWaveOptions<T = unknown>(): Promise<T> {
     const response = await this.request<{ options?: T }>('/pulse/WaveOptions.php');
     return response?.options as T;
+  }
+
+  /** Публичные плейлисты пользователя (страница `/pulse/user/<логин>`). */
+  static async pulseGetUserPlaylists<T = unknown>(login: string): Promise<T> {
+    return this.request<T>(`/pulse/UserPlaylists.php?login=${encodeURIComponent(login)}`);
   }
 
   /** Одна полка главной целиком (страница «Все»). */

@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize } from '@capacitor/keyboard';
 
 /**
  * Приложение Zypo (Capacitor). Веб-часть — статический экспорт Next (`npm run build:app` → out/),
@@ -14,6 +15,10 @@ const config: CapacitorConfig = {
     // Схема https://localhost — её Origin разрешён в CORS бэкенда.
     // Отладка WebView (chrome://inspect) — только в debug-сборке.
     webContentsDebuggingEnabled: process.env.CAP_ANDROID_RELEASE !== '1',
+  },
+  ios: {
+    // Безопасную зону держит нативный контейнер (ios/App/App/AppDelegate.swift, MainViewController).
+    backgroundColor: '#000000',
   },
   plugins: {
     CapacitorHttp: {
@@ -35,7 +40,7 @@ const config: CapacitorConfig = {
     },
     Keyboard: {
       // Размер WebView меняется под клавиатуру — поле ввода чата не уходит под неё.
-      resize: 'native',
+      resize: KeyboardResize.Native,
     },
   },
 };

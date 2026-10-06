@@ -93,6 +93,34 @@ export function GroupMiniCard({
   );
 }
 
+/** Плейлист пользователя в боковом блоке профиля: обложка и название. */
+export function PlaylistMiniCard({
+  image,
+  label,
+  onClick,
+}: {
+  image: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-16 cursor-pointer flex-col items-center justify-center gap-0.5 overflow-hidden duration-300 group active:scale-95"
+    >
+      <AppImage
+        alt="Playlist"
+        width={64}
+        height={64}
+        src={image}
+        className="h-16 w-16 rounded-3xl border border-zinc-600/30 bg-cover bg-center object-cover shadow duration-300 group-hover:border-purple-500"
+      />
+      <span className="w-16 truncate text-center text-sm text-zinc-300">{label}</span>
+    </button>
+  );
+}
+
 export function PeopleSection({
   borderClassName,
   children,

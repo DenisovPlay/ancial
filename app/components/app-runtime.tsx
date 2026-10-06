@@ -11,6 +11,7 @@ import { dispatchNativeOAuthReturn } from '../lib/native-oauth';
 import AppVersionGate from './app-version-gate';
 import { SITE_DOMAIN, SITE_URL } from '../config';
 import { openExternalUrl } from '../lib/native-browser';
+import { getAppPlatform } from '../lib/platform';
 import { installNativeMediaSession } from '../pulse/player/native-media-session';
 
 type PulseWindow = Window & { PlayerMode?: (mode: 'full' | 'mini') => void };
@@ -65,6 +66,17 @@ export default function AppRuntime() {
   useEffect(() => {
     pathnameRef.current = pathname;
   }, [pathname]);
+
+  // iOS: WebView сам поднимается над клавиатурой через нативный контейнер (MainViewController) — resize плагина отключаем,
+  // иначе высота уменьшилась бы дважды.
+  useEffect(() => {
+    if (getAppPlatform() !== 'ios') return;
+    // WebKit не знает viewport-fit=contain: на iOS страница тянется до низа экрана и сама держит отступ под индикатором «домой».
+    document.querySelector('meta[name="viewport"]')?.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover');
+    void import('@capacitor/keyboard')
+      .then(({ Keyboard, KeyboardResize }) => Keyboard.setResizeMode({ mode: KeyboardResize.None }))
+      .catch((error: unknown) => console.error('Failed to set keyboard resize mode', error));
+  }, []);
 
   // Медиасессия Pulse → нативный foreground-сервис (фоновая музыка, шторка, экран блокировки).
   useEffect(() => {

@@ -1,6 +1,6 @@
 {
   "name": "ancial",
-  "version": "3.9.10b",
+  "version": "3.9.11",
   "private": true,
   "engines": {
     "node": ">=22"
@@ -10,6 +10,7 @@
     "build": "next build",
     "build:app": "node scripts/build-app.mjs",
     "cap:sync": "cap sync",
+    "ios:device": "npm run build:app && cap sync ios && node scripts/ios-device.mjs",
     "android:debug": "npm run build:app && cap sync android && cd android && ./gradlew assembleDebug",
     "android:release": "npm run build:app && CAP_ANDROID_RELEASE=1 cap sync android && cd android && ./gradlew assembleRelease bundleRelease",
     "start": "next start",
@@ -23,6 +24,7 @@
     "@capacitor/app": "^8.1.1",
     "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@capacitor/keyboard": "^8.0.5",
     "@capacitor/push-notifications": "^8.1.2",
     "@capacitor/splash-screen": "^8.0.2",

@@ -323,6 +323,9 @@ function DropdownMenuPanel({
   );
 }
 
+/** Сколько места нужно меню вверх/вниз, чтобы не разворачиваться. */
+const DROPDOWN_ROOM_PX = 340;
+
 type DropdownProps = {
   activePaths?: string[];
   align?: 'start' | 'end' | 'center';
@@ -351,7 +354,7 @@ type DropdownProps = {
 export const Dropdown = ({
   icon,
   imgSrc,
-  position = 'right',
+  position: requestedPosition = 'right',
   align = 'start',
   direction = 'col',
   activePaths = [],
@@ -374,6 +377,11 @@ export const Dropdown = ({
 }: DropdownProps) => {
   const pathname = usePathname();
   const [internalOpen, setInternalOpen] = useState(false);
+  // Меню вверх/вниз разворачивается в сторону, где больше места (последний пост страницы — меню не уходит за экран).
+  const [flipped, setFlipped] = useState(false);
+  const position = flipped && (requestedPosition === 'top' || requestedPosition === 'bottom')
+    ? (requestedPosition === 'top' ? 'bottom' : 'top')
+    : requestedPosition;
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isControlled = typeof open === 'boolean';
   const isOpen = isControlled ? open : internalOpen;
@@ -460,6 +468,13 @@ export const Dropdown = ({
   const handleTriggerClick = () => {
     if (triggerDisabled) {
       return;
+    }
+    if (!isOpen && dropdownRef.current && (requestedPosition === 'top' || requestedPosition === 'bottom')) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const below = window.innerHeight - rect.bottom;
+      const above = rect.top;
+      // Типичное меню — до ~340px: не помещается в нужную сторону, а в противоположной места больше — разворачиваем.
+      setFlipped(requestedPosition === 'bottom' ? below < DROPDOWN_ROOM_PX && above > below : above < DROPDOWN_ROOM_PX && below > above);
     }
     setOpen(!isOpen);
   };

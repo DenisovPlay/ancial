@@ -38,6 +38,7 @@ export const APP_DYNAMIC_ROUTES: readonly AppRouteDefinition[] = [
   { pattern: '/pulse/playlist/[id]' },
   { pattern: '/pulse/shelf/[key]' },
   { pattern: '/pulse/track/[id]' },
+  { pattern: '/pulse/user/[login]' },
   { pattern: '/wallet/account/[id]' },
 ];
 

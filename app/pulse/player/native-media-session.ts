@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 
 import { SITE_URL } from '../../config';
 import { isBackendPath, toBackendUrl } from '../../lib/api-url';
-import { IS_NATIVE_APP, NATIVE_MEDIA_SESSION_READY_EVENT } from '../../lib/platform';
+import { getAppPlatform, IS_NATIVE_APP, NATIVE_MEDIA_SESSION_READY_EVENT } from '../../lib/platform';
 
 type NativeMediaSessionPlugin = typeof import('@capgo/capacitor-media-session')['MediaSession'];
 type NativeAction = Parameters<NativeMediaSessionPlugin['setActionHandler']>[0]['action'];
@@ -49,6 +49,9 @@ export function installNativeMediaSession() {
   // Только на устройстве: веб-реализация плагина сама пишет в navigator.mediaSession —
   // подмена в браузере замкнулась бы сама на себя.
   if (!Capacitor.isNativePlatform()) return;
+  // iOS: WKWebView сам умеет Media Session (обложка, название, перемотка и следующий трек на экране блокировки) —
+  // подмена плагином ломала нативную медиасессию (показывалось название страницы и «±10 секунд»).
+  if (getAppPlatform() === 'ios') return;
   installed = true;
 
   // В Android WebView нет Media Session API: ни navigator.mediaSession (его подставляет мост ниже),

@@ -16,6 +16,7 @@ import {
   GroupMiniCard,
   PeopleSection,
   ProfileAvatar,
+  PlaylistMiniCard,
   ProfileMediaButton,
   ProfileSkeleton,
   RelationGridModal,
@@ -64,6 +65,8 @@ interface UserPageData {
   friend_button?: UserFriendButton | null;
   friends?: UserPreview[] | null;
   groups?: GroupPreview[] | null;
+  playlists?: Array<{ id: Id; img?: string | null; name?: string | null }> | null;
+  playlists_total?: number | null;
   id: Id;
   img?: string | null;
   is_owner?: boolean | number | string | null;
@@ -339,6 +342,8 @@ export default function UserProfileContent({ login }: { login: string }) {
   const hasFriends = Boolean(mappedFriends?.length);
   const hasSubscribers = Boolean(mappedSubscribers?.length);
   const hasGroups = Boolean(mappedGroups?.length);
+  const userPlaylists = userData?.playlists ?? [];
+  const hasPlaylists = userPlaylists.length > 0;
 
   const navigateToUser = useCallback(
     (username: string | null | undefined) => {
@@ -579,6 +584,26 @@ export default function UserProfileContent({ login }: { login: string }) {
     if (!profileIdRef.current) return;
     void loadPostsRef.current(profileIdRef.current, currentLastIdRef.current, true);
   }, [isLoadingMore, posts.length, postsLoading, userData?.id]);
+
+  const handlePin = async (post: PostData, nextValue: boolean) => {
+    try {
+      await AncialAPI.pinPost(post.id, nextValue);
+      showNote({
+        content: nextValue ? (lang?.post_pinned_note || 'Пост закреплён') : (lang?.post_unpinned_note || 'Пост откреплён'),
+        type: 'success',
+        time: 3,
+      });
+      // Закреплённые идут первыми — перечитываем первую порцию ленты.
+      void loadPostsRef.current(profileIdRef.current ?? 0, 0, false, { preserveExisting: true });
+    } catch (nextError) {
+      console.error('Pin failed', nextError);
+      showNote({
+        content: getApiMessage(nextError instanceof Error ? nextError.message : null, lang, strings.somethingwrong),
+        type: 'error',
+        time: 5,
+      });
+    }
+  };
 
   const handleBookmark = async (post: PostData, nextValue: boolean) => {
     try {
@@ -908,7 +933,7 @@ export default function UserProfileContent({ login }: { login: string }) {
           <div
             className={cn(
               'border border-zinc-600/30 md:border-b bg-zinc-900 md:rounded-3xl flex flex-col w-full md:shadow duration-300 rounded-t-3xl',
-              hasFriends || hasSubscribers || hasGroups
+              hasFriends || hasSubscribers || hasGroups || hasPlaylists
                 ? 'border-b-0'
                 : 'rounded-b-3xl',
             )}
@@ -1038,6 +1063,7 @@ export default function UserProfileContent({ login }: { login: string }) {
                       translate: strings.translate,
                     }}
                     onBookmark={handleBookmark}
+                    onPin={(post, nextValue) => void handlePin(post, nextValue)}
                     onComment={openCommentsModal}
                     onDelete={(post) => {
                       setDeleteTarget(post);
@@ -1069,7 +1095,7 @@ export default function UserProfileContent({ login }: { login: string }) {
               {hasFriends ? (
                 <PeopleSection
                   borderClassName={cn(
-                    hasSubscribers || hasGroups ? 'border-x' : 'border-x border-b rounded-b-3xl',
+                    hasSubscribers || hasGroups || hasPlaylists ? 'border-x' : 'border-x border-b rounded-b-3xl',
                   )}
                   onOpen={() => setIsFriendsModalOpen(true)}
                   title={strings.friends}
@@ -1090,7 +1116,7 @@ export default function UserProfileContent({ login }: { login: string }) {
               {hasSubscribers ? (
                 <PeopleSection
                   borderClassName={cn(
-                    hasGroups ? 'border-x' : 'border-x border-b rounded-b-3xl',
+                    hasGroups || hasPlaylists ? 'border-x' : 'border-x border-b rounded-b-3xl',
                   )}
                   onOpen={() => setIsSubscribersModalOpen(true)}
                   title={strings.subscribers}
@@ -1110,7 +1136,7 @@ export default function UserProfileContent({ login }: { login: string }) {
 
               {hasGroups ? (
                 <PeopleSection
-                  borderClassName="border-x border-b rounded-b-3xl"
+                  borderClassName={hasPlaylists ? 'border-x' : 'border-x border-b rounded-b-3xl'}
                   onOpen={() => setIsGroupsModalOpen(true)}
                   title={strings.groups}
                 >
@@ -1120,6 +1146,23 @@ export default function UserProfileContent({ login }: { login: string }) {
                       image={group.img || '/img/placeholders/group.png'}
                       label={group.name || ''}
                       onClick={() => navigateToGroup(group.slnk)}
+                    />
+                  ))}
+                </PeopleSection>
+              ) : null}
+
+              {hasPlaylists ? (
+                <PeopleSection
+                  borderClassName="border-x border-b rounded-b-3xl"
+                  onOpen={() => router.push(`/pulse/user/${encodeURIComponent(userData?.login || login)}`)}
+                  title={lang?.pulse_user_playlists || 'Плейлисты'}
+                >
+                  {userPlaylists.slice(0, 6).map((playlist) => (
+                    <PlaylistMiniCard
+                      key={String(playlist.id)}
+                      image={playlist.img || '/img/pulse/track.png'}
+                      label={playlist.name || ''}
+                      onClick={() => router.push(`/pulse/playlist/${playlist.id}`)}
                     />
                   ))}
                 </PeopleSection>

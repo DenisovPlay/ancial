@@ -58,6 +58,9 @@ export interface PostData {
   author: PostAuthor;
   bookmarked_amount?: number | string | null;
   can_edit?: boolean | number | string | null;
+  /** Можно ли закрепить/открепить (своя страница или право в сообществе) и закреплён ли пост. */
+  can_pin?: boolean | number | string | null;
+  is_pinned?: boolean | number | string | null;
   comments_count?: number | string | null;
   content?: string | null;
   id: Id;
@@ -100,6 +103,7 @@ export interface PostCardProps {
   onDonate?: (post: PostData) => void;
   onEdit?: (post: PostData) => void;
   onNavigate?: (href: string, post: PostData) => void;
+  onPin?: (post: PostData, nextValue: boolean) => void;
   onReport?: (post: PostData) => void;
   onVote?: (post: PostData, direction: VoteDirection) => void;
   post: PostData;
@@ -299,6 +303,7 @@ export function PostCard({
   onDonate,
   onEdit,
   onNavigate,
+  onPin,
   onReport,
   onVote,
   post,
@@ -317,6 +322,7 @@ export function PostCard({
       onDonate={onDonate}
       onEdit={onEdit}
       onNavigate={onNavigate}
+      onPin={onPin}
       onReport={onReport}
       onVote={onVote}
       post={post}
@@ -336,6 +342,7 @@ function PostCardInner({
   onDonate,
   onEdit,
   onNavigate,
+  onPin,
   onReport,
   onVote,
   post,
@@ -349,6 +356,8 @@ function PostCardInner({
   const { showNote } = useNotification();
   const copyToClipboard = useCopyToClipboard();
   const canEdit = flag(post.can_edit);
+  const isPinned = flag(post.is_pinned);
+  const canPin = Boolean(onPin) && flag(post.can_pin);
   const initialBookmarked = flag(post.is_bookmarked);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [bookmarkedAmount, setBookmarkedAmount] = useState(toNumber(post.bookmarked_amount));
@@ -639,6 +648,10 @@ function PostCardInner({
     callLegacy('bookmark', post.id);
   };
 
+  const handlePin = () => {
+    onPin?.(post, !isPinned);
+  };
+
   const handleDonate = () => {
     onDonate?.(post);
   };
@@ -783,7 +796,14 @@ function PostCardInner({
             >
               <AccountName user={post.author} nameClassName="font-medium" />
             </Link>
-            <span className="text-zinc-400 text-xs lg:text-sm">
+            <span className="flex items-center gap-1.5 text-zinc-400 text-xs lg:text-sm">
+              {isPinned ? (
+                <span className="flex items-center gap-1 text-purple-300" data-tip={authLang?.post_pinned || 'Закреплено'}>
+                  <Icon name="IC-pin" className="h-3.5 w-3.5 fill-current" />
+                  {authLang?.post_pinned || 'Закреплено'}
+                  <span aria-hidden className="text-zinc-600">·</span>
+                </span>
+              ) : null}
               {formatRelativeTime(post.date || post.time_elapsed, authLang, post.time_elapsed || '')}
             </span>
           </div>
@@ -857,6 +877,11 @@ function PostCardInner({
                 </button>
               </div>
             )}
+            {canPin ? (
+              <DropdownItem onClick={handlePin} icon="IC-pin">
+                {isPinned ? (authLang?.post_unpin || 'Открепить') : (authLang?.post_pin || 'Закрепить')}
+              </DropdownItem>
+            ) : null}
             <DropdownItem
               onClick={handleBookmark}
               icon={isBookmarked ? 'IC-bookmark-filled' : 'IC-bookmark'}
@@ -1146,6 +1171,7 @@ export default function PostsRenderer({
   onDonate,
   onEdit,
   onNavigate,
+  onPin,
   onReport,
   onVote,
   posts,
@@ -1175,6 +1201,7 @@ export default function PostsRenderer({
             onDonate={handleDonatePost}
             onEdit={onEdit}
             onNavigate={onNavigate}
+            onPin={onPin}
             onReport={onReport}
             onVote={onVote}
             shareBaseUrl={shareBaseUrl}
