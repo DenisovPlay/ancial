@@ -163,28 +163,23 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
         const items = urls.trim().split('||').map((u: string) => u.trim()).filter(Boolean);
         if (!items.length) return '';
         const count = items.length;
-        const countBadgeClass = isPreview ? "carousel-count-badge is-preview" : "carousel-count-badge";
-
-        const countBadge = count > 1
-            ? `<div class="${countBadgeClass}"><svg class="w-3.5 h-3.5 fill-current inline-block align-middle"><use href="#IC-photo-material"></use></svg> ${count}</div>`
-            : '';
-        // Слайд — фиксированный кадр 16:9 с object-cover: широкие картинки без полос, высота известна до загрузки (без прыжков).
+        // Слайд — по естественным пропорциям картинки (без обрезки), стили — .carousel-slide в globals.css.
         const slides = items.map((url: string, i: number) =>
-            `<div class="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] cursor-pointer duration-300 select-none"><img src="${postImageSrc(url, 1080, isPreview)}" alt="Слайд ${i + 1}" class="block aspect-video h-auto w-full rounded-3xl object-cover bg-zinc-950/80 shadow border border-zinc-600/30 pointer-events-auto" loading="lazy" draggable="false" /></div>`
+            `<div class="carousel-slide snap-start cursor-pointer duration-300 select-none"><img src="${postImageSrc(url, 1080, isPreview)}" alt="Слайд ${i + 1}" class="object-contain rounded-3xl bg-zinc-950/80 shadow border border-zinc-600/30 pointer-events-auto" loading="lazy" draggable="false" /></div>`
         ).join('');
 
         const leftArrow = count > 1
-            ? `<button type="button" data-carousel-scroll="-1" aria-label="Назад" class="group-data-[start]/carousel:hidden glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute left-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-left-bold"></use></svg></button>`
+            ? `<button type="button" data-carousel-scroll="-1" aria-label="Назад" class="carousel-arrow carousel-arrow-prev glass-panel"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-left-bold"></use></svg></button>`
             : '';
         const rightArrow = count > 1
-            ? `<button type="button" data-carousel-scroll="1" aria-label="Вперёд" class="group-data-[end]/carousel:hidden glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-right-bold"></use></svg></button>`
+            ? `<button type="button" data-carousel-scroll="1" aria-label="Вперёд" class="carousel-arrow carousel-arrow-next glass-panel"><svg class="w-6 h-6 fill-white"><use href="#IC-chevron-right-bold"></use></svg></button>`
             : '';
 
         const overlay = isPreview
             ? `<div class="notion-block-toolbar" contenteditable="false"><button type="button" data-action="edit" data-type="media" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-white transition-colors cursor-pointer" title="Редактировать карусель"><svg class="w-4 h-4 fill-current"><use href="#IC-edit"></use></svg></button><button type="button" data-action="delete" class="p-1.5 hover:bg-zinc-800 rounded-3xl text-zinc-300 hover:text-red-400 transition-colors cursor-pointer" title="Удалить"><svg class="w-4 h-4 fill-current"><use href="#IC-trash"></use></svg></button></div>`
             : '';
         const dataAttr = isPreview ? ` data-bbcode="${encodeURIComponent(match)}" contenteditable="false"` : '';
-        return `<div class="relative group my-2 group/carousel" data-start${dataAttr}>${overlay}${leftArrow}${rightArrow}${countBadge}<div class="flex items-start gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-pl-3 touch-pan-x touch-pan-y overscroll-x-contain -mx-3 px-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">${slides}</div></div>`;
+        return `<div class="relative group my-2 group/carousel" data-start${dataAttr}>${overlay}${leftArrow}${rightArrow}<div class="carousel-track -mx-3">${slides}</div></div>`;
     });
 
     // Коллаж (CSS Grid)

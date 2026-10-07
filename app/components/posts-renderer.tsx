@@ -159,27 +159,44 @@ function getShareUrl(post: PostData, shareBaseUrl: string) {
 
 function ImageTile({
   blur,
-  className,
   image,
   onClick,
+  single = false,
 }: {
   blur?: boolean;
-  className: string;
   image: PostImage;
   onClick: () => void;
+  /** Одиночная картинка — на всю ширину поста в своих пропорциях (высота до 24/32rem); в карусели — единая высота слайда. */
+  single?: boolean;
 }) {
+  // Пропорции известны только после загрузки: до неё держим 4:3, потом кадр подгоняется точно (без полос и обрезки).
+  const [ratio, setRatio] = useState<number | null>(null);
+  const aspect = ratio ?? 4 / 3;
   return (
     <button
       type="button"
       onClick={onClick}
+      style={single ? { aspectRatio: aspect, width: `min(100%, calc(var(--single-h) * ${aspect}))` } : undefined}
       className={cn(
-        className,
-        'cursor-pointer shadow bg-zinc-800 shrink-0 overflow-hidden',
+        'block max-w-full cursor-pointer overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-800 shadow focus:outline-none focus:ring-0 active:scale-95 duration-300',
+        single && '[--single-h:24rem] md:[--single-h:32rem]',
         blur && 'blur-lg',
       )}
       aria-label="Open image"
     >
-      <AppImage width={768} height={384} sizes="(max-width: 768px) 100vw, 768px" src={image.url} alt="" draggable={false} className="block h-full w-full object-contain" />
+      <AppImage
+        width={1200}
+        height={900}
+        sizes="(max-width: 768px) 100vw, 1200px"
+        src={image.url}
+        alt=""
+        draggable={false}
+        onLoad={single ? (event) => {
+          const { naturalWidth, naturalHeight } = event.currentTarget;
+          if (naturalWidth && naturalHeight) setRatio(naturalWidth / naturalHeight);
+        } : undefined}
+        className={cn('block object-contain', single ? 'h-full w-full' : 'carousel-slide-img w-auto max-w-full')}
+      />
     </button>
   );
 }
@@ -928,67 +945,42 @@ function PostCardInner({
           <>
             {images.length === 1 && (
               <div>
-                <ImageTile
-                  image={images[0]}
-                  blur={flag(images[0].blur)}
-                  onClick={() => handleOpenImage(0)}
-                  className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0 cursor-pointer active:scale-95 duration-300"
-                />
+                <ImageTile single image={images[0]} blur={flag(images[0].blur)} onClick={() => handleOpenImage(0)} />
               </div>
             )}
 
             {images.length >= 2 && (
               <div className="-mx-3">
                 <div className="relative group/carousel" data-start="">
-                  {/* Left Arrow */}
                   <button
                     type="button"
+                    aria-label="Назад"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const container = e.currentTarget.parentElement?.querySelector<HTMLElement>('.overflow-x-auto');
-                      if (container) {
-                        scrollCarousel(container, -1);
-                      }
+                      const container = e.currentTarget.parentElement?.querySelector<HTMLElement>('.carousel-track');
+                      if (container) scrollCarousel(container, -1);
                     }}
-                    className="group-data-[start]/carousel:hidden glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute left-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                    className="carousel-arrow carousel-arrow-prev glass-panel"
                   >
-                    <Icon name="IC-chevron-left" className="w-6 h-6 fill-white" />
+                    <Icon name="IC-chevron-left-bold" className="w-6 h-6 fill-white" />
                   </button>
-
-                  {/* Right Arrow */}
                   <button
                     type="button"
+                    aria-label="Вперёд"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const container = e.currentTarget.parentElement?.querySelector<HTMLElement>('.overflow-x-auto');
-                      if (container) {
-                        scrollCarousel(container, 1);
-                      }
+                      const container = e.currentTarget.parentElement?.querySelector<HTMLElement>('.carousel-track');
+                      if (container) scrollCarousel(container, 1);
                     }}
-                    className="group-data-[end]/carousel:hidden glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-zinc-600/30 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] text-white shadow opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 active:scale-95 cursor-pointer"
+                    className="carousel-arrow carousel-arrow-next glass-panel"
                   >
-                    <Icon name="IC-chevron-right" className="w-6 h-6 fill-white" />
+                    <Icon name="IC-chevron-right-bold" className="w-6 h-6 fill-white" />
                   </button>
 
-                  <div className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.8] absolute top-1.5 right-1.5 z-20 rounded-full border border-zinc-600/30 px-3 py-1 text-xs font-semibold text-white shadow">
-                    <span className="flex items-center gap-1.5">
-                      <Icon name="IC-photos" className="w-4 h-4 fill-white" />
-                      <span>{images.length}</span>
-                    </span>
-                  </div>
-
-                  <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth scroll-pl-3 scroll-pr-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden before:block before:w-3 before:shrink-0 before:content-[''] after:block after:w-3 after:shrink-0 after:content-['']">
+                  <div className="carousel-track">
                     {images.map((image, index) => (
-                      <div
-                        key={`${post.id}-image-${index}`}
-                        className="snap-start shrink-0 w-[84%] sm:w-[78%] lg:w-[68%] cursor-pointer active:scale-95 duration-300"
-                      >
-                        <ImageTile
-                          image={image}
-                          blur={flag(image.blur)}
-                          onClick={() => handleOpenImage(index)}
-                          className="h-64 md:h-96 w-full rounded-3xl user-select-none focus:outline-none focus:ring-0"
-                        />
+                      <div key={`${post.id}-image-${index}`} className="carousel-slide snap-start">
+                        <ImageTile image={image} blur={flag(image.blur)} onClick={() => handleOpenImage(index)} />
                       </div>
                     ))}
                   </div>

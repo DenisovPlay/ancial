@@ -39,11 +39,64 @@ export function ensureCarouselScrollDelegation(): void {
     if (installed || typeof window === 'undefined') return;
     installed = true;
 
-    // scroll не всплывает — слушаем в фазе перехвата; лента — единственный .overflow-x-auto внутри группы.
+    // scroll не всплывает — слушаем в фазе перехвата; лента — .carousel-track внутри группы.
     document.addEventListener('scroll', (event) => {
         const el = event.target;
-        if (el instanceof HTMLElement && el.classList.contains('overflow-x-auto') && el.closest('.group\\/carousel')) syncCarouselEdges(el);
+        if (el instanceof HTMLElement && el.classList.contains('carousel-track') && el.closest('.group\\/carousel')) syncCarouselEdges(el);
     }, { capture: true, passive: true });
+
+    // Ширина ленты меняется, когда догружаются картинки, — пересчитываем края; и при наведении
+    // (стрелки видны только тогда), чтобы они сразу показывали верное состояние.
+    const syncFromTarget = (event: Event) => {
+        const el = event.target;
+        if (!(el instanceof HTMLElement)) return;
+        const group = el.closest<HTMLElement>('.group\\/carousel');
+        const scroller = group?.querySelector<HTMLElement>('.carousel-track');
+        if (scroller) syncCarouselEdges(scroller);
+    };
+    document.addEventListener('load', syncFromTarget, { capture: true, passive: true });
+    document.addEventListener('pointerover', syncFromTarget, { passive: true });
+
+    // Перетаскивание мышью (на сенсорных — родной скролл). После перетаскивания клик по слайду гасим,
+    // чтобы не открывался просмотрщик.
+    let drag: { track: HTMLElement; startX: number; startLeft: number; moved: boolean } | null = null;
+    let suppressClick = false;
+    document.addEventListener('mousedown', (event) => {
+        if (event.button !== 0) return;
+        const track = (event.target as HTMLElement | null)?.closest?.<HTMLElement>('.carousel-track');
+        if (!track || track.scrollWidth <= track.clientWidth) return;
+        drag = { track, startX: event.clientX, startLeft: track.scrollLeft, moved: false };
+    });
+    document.addEventListener('mousemove', (event) => {
+        if (!drag) return;
+        const dx = event.clientX - drag.startX;
+        if (!drag.moved && Math.abs(dx) > 6) {
+            drag.moved = true;
+            drag.track.classList.add('dragging');
+        }
+        if (drag.moved) {
+            event.preventDefault();
+            drag.track.scrollLeft = drag.startLeft - dx;
+        }
+    });
+    const endDrag = () => {
+        if (!drag) return;
+        drag.track.classList.remove('dragging');
+        if (drag.moved) {
+            suppressClick = true;
+            setTimeout(() => { suppressClick = false; }, 0);
+        }
+        drag = null;
+    };
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('dragstart', (event) => {
+        if ((event.target as HTMLElement | null)?.closest?.('.carousel-track')) event.preventDefault();
+    });
+    document.addEventListener('click', (event) => {
+        if (!suppressClick) return;
+        event.preventDefault();
+        event.stopPropagation();
+    }, true);
 
     document.addEventListener('click', (event) => {
         const target = event.target as HTMLElement | null;
@@ -56,7 +109,7 @@ export function ensureCarouselScrollDelegation(): void {
         const direction = Number(button.dataset.carouselScroll);
         if (!direction) return;
 
-        const container = button.parentElement?.querySelector('.overflow-x-auto') as HTMLElement | null;
+        const container = button.parentElement?.querySelector('.carousel-track') as HTMLElement | null;
         if (!container) return;
 
         scrollCarousel(container, direction);
