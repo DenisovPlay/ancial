@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -9,6 +9,7 @@ import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { useDragScroll } from '../../hooks/useDragScroll';
 import { usePulseNote } from '../../hooks/use-pulse-note';
 import { AncialAPI } from '../../lib/api-v2';
+import { formatDayLabel } from '../../lib/format-day-label';
 import { readPulseJsonCache, removePulseCache, writePulseJsonCache } from '../pulse-cache';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { resolvePulsePlaylistTitle } from '../playlist/playlist-model';
@@ -117,11 +118,16 @@ function PulseHistoryRow({
         </span>
         <span className="block truncate text-xs text-zinc-300 lg:text-sm">{artist}</span>
       </div>
-      <span className="shrink-0 text-sm text-zinc-300 duration-300 group-hover:pr-3">
-        {decodeHtmlEntities(item.date)}
-      </span>
     </button>
   );
+}
+
+/** Подпись дня для разделителя истории: «Сегодня», «Вчера» или «5 октября 2026» (как в чатах); не дата — как есть. */
+function historyDayLabel(rawDate: string | null | undefined, lang: Record<string, string> | null | undefined) {
+  const text = decodeHtmlEntities(rawDate);
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+  if (!match) return text;
+  return formatDayLabel(new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])), lang ?? null);
 }
 
 export default function PulseMyContent() {
@@ -345,10 +351,15 @@ export default function PulseMyContent() {
             {history?.length ? (
               <div className={cn('flex flex-col gap-3', historyLoading && 'opacity-70')}>
                 {history.map((item, index) => (
+                  <Fragment key={`history-${item.HTYPE}-${item.id}-${index}`}>
+                    {index === 0 || history[index - 1].date !== item.date ? (
+                      <span className="mt-3 w-fit self-center rounded-full border border-zinc-600/30 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 first:mt-0">
+                        {historyDayLabel(item.date, lang)}
+                      </span>
+                    ) : null}
                   <PulseHistoryRow
                     item={item}
                     lang={lang}
-                    key={`history-${item.HTYPE}-${item.id}-${index}`}
                     onOpenPlaylist={() => router.push(`/pulse/playlist/${encodeURIComponent(normalizeText(String(item.id ?? '0')) || '0')}`)}
                     onPlayTrack={() => {
                       const trackId = toNumber(item.id);
@@ -359,6 +370,7 @@ export default function PulseMyContent() {
                       void playTrack(trackId);
                     }}
                   />
+                  </Fragment>
                 ))}
               </div>
             ) : null}

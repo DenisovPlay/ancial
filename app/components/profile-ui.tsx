@@ -362,7 +362,7 @@ export function EmptyIllustration({
 }) {
   return (
     <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center bg-zinc-900 text-zinc-100 rounded-3xl p-6 border border-zinc-600/30">
-      <AppImage
+      <AppImage skeleton={false}
         src="/img/load-placeholders/nothingfound.webp"
         alt="Nothing found"
         width={224}

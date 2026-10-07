@@ -185,7 +185,7 @@ export function CommentsEmptyState({
 }) {
   return (
     <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center">
-      <AppImage
+      <AppImage skeleton={false}
         src="/img/load-placeholders/nothingfound.webp"
         alt="No comments"
         width={224}

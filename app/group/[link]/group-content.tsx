@@ -926,7 +926,7 @@ export default function GroupProfileContent({ link }: { link: string }) {
         <GroupSkeleton />
       ) : blocked ? (
         <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
-          <AppImage
+          <AppImage skeleton={false}
             src="/img/load-placeholders/nothingfound.webp"
             alt="Blocked group"
             width={224}

@@ -7,6 +7,8 @@ import { getStickerByCode, isSingleSticker, parseStickersToHtml } from '../../li
 import type { CommunityDisplayRole } from './community-role';
 
 export type DialogImageSlide = ImageViewerSlide & { key: string };
+import { formatDayLabel } from '../../lib/format-day-label';
+
 export type LangMap = Record<string, string> | null;
 
 export type GroupMember = {
@@ -1225,41 +1227,6 @@ function getDayKey(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-function startOfLocalDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function formatDayLabel(date: Date, lang: LangMap) {
-  const months = [
-    lang?.january || 'января',
-    lang?.february || 'февраля',
-    lang?.march || 'марта',
-    lang?.april || 'апреля',
-    lang?.may || 'мая',
-    lang?.june || 'июня',
-    lang?.july || 'июля',
-    lang?.august || 'августа',
-    lang?.september || 'сентября',
-    lang?.october || 'октября',
-    lang?.november || 'ноября',
-    lang?.december || 'декабря',
-  ];
-
-  const today = startOfLocalDay(new Date());
-  const current = startOfLocalDay(date);
-  const diffDays = Math.round((today.getTime() - current.getTime()) / 86_400_000);
-
-  if (diffDays === 0) {
-    return lang?.today || 'Сегодня';
-  }
-
-  if (diffDays === 1) {
-    return lang?.yesterday || 'Вчера';
-  }
-
-  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 export function buildTimelineItems(messages: DialogMessage[], lang: LangMap) {

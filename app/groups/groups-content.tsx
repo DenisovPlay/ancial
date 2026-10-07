@@ -178,7 +178,7 @@ function GroupsContent() {
           <ErrorState variant="inline" title={errorMsg} onRetry={() => void loadGroups(query)} />
         ) : groups.length === 0 ? (
           <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center pb-3">
-            <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="Not found" />
+            <AppImage skeleton={false} width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="Not found" />
             <span className="text-base text-zinc-100 w-full text-center font-black">{lang?.nogroups || 'Нет сообществ'}</span>
             <span className="text-sm text-zinc-300 w-full text-center font-medium">
               {isSearch ? (lang?.nosgroupsdesc || 'Ничего не найдено') : (lang?.nogroupsdesc || 'Вы еще никуда не подписались')}

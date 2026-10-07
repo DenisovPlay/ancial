@@ -311,8 +311,8 @@ export default function SocialsContent() {
       <div className="grid lg:grid-cols-2 gap-3 w-full max-w-3xl px-3 lg:px-0">
         {/* Telegram Card */}
         <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center min-h-[220px]">
-          <div className="bg-blue-600 rounded-2xl p-3 h-12 w-12 text-white flex items-center justify-center relative">
-            <AppImage width={40} height={40} className="w-10 object-contain" src="/img/socials/tg.png" alt="Telegram logo" />
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
+            <AppImage width={32} height={32} className="h-8 w-8 shrink-0 rounded-2xl object-contain" src="/img/socials/tg.png" alt="Telegram logo" />
           </div>
           <div className="flex flex-col w-full h-full items-center justify-center gap-2 mt-3 flex-grow">
             {/* Connected State */}
@@ -346,8 +346,8 @@ export default function SocialsContent() {
 
         {/* Yandex Card */}
         <div className="border border-zinc-600/30 bg-zinc-800/90 w-full p-3 shadow rounded-3xl flex flex-col items-center min-h-[220px]">
-          <div className="rounded-2xl h-12 w-12 flex items-center justify-center overflow-hidden">
-            <AppImage width={48} height={48} src="/img/socials/yandexlogo.png" className="w-12 h-12 shadow rounded-2xl object-cover" alt="Yandex logo" />
+          <div className="rounded-2xl h-12 w-12 shrink-0 flex items-center justify-center overflow-hidden">
+            <AppImage width={48} height={48} src="/img/socials/yandexlogo.png" className="w-12 h-12 shrink-0 shadow rounded-2xl object-cover" alt="Yandex logo" />
           </div>
           <div className="flex flex-col w-full items-center justify-center gap-2 mt-3 flex-grow">
             {/* Connected State */}

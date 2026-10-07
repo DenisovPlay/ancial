@@ -2463,7 +2463,7 @@ export default function MessagesContent() {
                         </div>
                       ) : dialogs.length === 0 ? (
                         <div className="flex h-full flex-col items-center justify-center gap-0.5 pb-3 text-center">
-                          <AppImage width={224} height={224} src={NOTHING_FOUND_IMAGE} alt="" className="h-56 w-56 object-contain" />
+                          <AppImage skeleton={false} width={224} height={224} src={NOTHING_FOUND_IMAGE} alt="" className="h-56 w-56 object-contain" />
                           <span className="w-full text-base font-black text-zinc-100">
                             {lang?.emptycomments || 'Пока ничего нет'}
                           </span>

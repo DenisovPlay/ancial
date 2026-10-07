@@ -22,7 +22,7 @@ function flag(value: boolean | number | string | null | undefined) {
 }
 
 /** Карточка-напоминание: иконка, заголовок, пояснение; клик ведёт туда, где действие выполняется. */
-function ReminderCard({ href, icon, iconBgClass, text, title }: { href: string; icon: React.ReactNode; iconBgClass: string; text: string; title: string }) {
+function ReminderCard({ href, icon, iconBgClass, reserveText = false, text, title }: { href: string; icon: React.ReactNode; iconBgClass: string; reserveText?: boolean; text: string; title: string }) {
   return (
     <Link
       href={href}
@@ -31,8 +31,8 @@ function ReminderCard({ href, icon, iconBgClass, text, title }: { href: string; 
       <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconBgClass}`}>{icon}</span>
       <div className="flex flex-col flex-grow min-w-0">
         <span className="truncate text-base font-semibold text-white">{title}</span>
-        {/* Всегда ровно две строки места: высота карточек одинакова при любом языке и тексте */}
-        <span className="line-clamp-2 min-h-10 text-sm leading-5 text-zinc-400">{text}</span>
+        {/* В карусели резервируем две строки: высота карточек одинакова при любом языке и тексте; одиночной карточке место не нужно */}
+        <span className={cn('line-clamp-2 text-sm leading-5 text-zinc-400', reserveText && 'min-h-10')}>{text}</span>
       </div>
       <Icon name="IC-chevron-right" className="w-6 h-6 fill-zinc-500 group-hover:fill-zinc-600 duration-300 shrink-0" />
     </Link>
@@ -51,12 +51,14 @@ export default function SettingsPage() {
   // В iOS-сборке без сертификата пуши недоступны — не просим включить то, что включить нельзя.
   const needsPush = isAuthenticated && Boolean(user) && (!user?.pushsid || user.pushsid === '0') && getAppPlatform() !== 'ios';
 
+  const reminderCount = Number(needsEmail) + Number(needsPush) + Number(showAppBanner);
   const reminders: Array<{ key: string; node: React.ReactNode }> = [];
   if (needsEmail) {
     reminders.push({
       key: 'email',
       node: (
         <ReminderCard
+          reserveText={reminderCount > 1}
           href="/settings/security/contacts"
           icon={<Icon name="IC-email" className="w-6 h-6 fill-pink-400" />}
           iconBgClass="bg-pink-500/10"
@@ -71,6 +73,7 @@ export default function SettingsPage() {
       key: 'push',
       node: (
         <ReminderCard
+          reserveText={reminderCount > 1}
           href="/settings/notifications"
           icon={<Icon name="IC-notification" className="w-6 h-6 fill-amber-400" />}
           iconBgClass="bg-amber-500/10"
@@ -85,6 +88,7 @@ export default function SettingsPage() {
       key: 'app',
       node: (
         <ReminderCard
+          reserveText={reminderCount > 1}
           href="/app/mobile"
           icon={<AppImage src="/img/zypo/logo-rounded.webp" alt="Zypo" width={48} height={48} className="h-12 w-12 rounded-full shadow" />}
           iconBgClass=""

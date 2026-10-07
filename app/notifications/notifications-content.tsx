@@ -184,7 +184,7 @@ export default function NotificationsPage() {
             <ErrorState onRetry={feed.retry} />
           ) : (
             <div className="text-center w-full flex flex-col gap-0.5 justify-center items-center duration-300">
-              <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="Nothing found" />
+              <AppImage skeleton={false} width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="Nothing found" />
               <span className="text-base text-zinc-100 w-full text-center font-black">
                 {lang?.notification_empty || 'Ничего нет'}
               </span>

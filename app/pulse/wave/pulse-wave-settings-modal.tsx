@@ -12,6 +12,7 @@ import { PULSE_GENRES, PULSE_MOODS } from '../pulse-constants';
 import WaveBackdrop from './wave-backdrop';
 import { waveFont } from './wave-font';
 import WaveGlyph from './wave-glyph';
+import { PulseRangeTrack } from '../player/pulse-range-track';
 import {
   DEFAULT_WAVE,
   WAVE_CHARACTERS,
@@ -225,22 +226,33 @@ export default function PulseWaveSettingsModal({
 
           <section className="flex flex-col gap-3">
             <Label>{lang?.pulse_wave_character || 'Характер'}</Label>
-            <div className="grid grid-cols-3 gap-3">
-              {WAVE_CHARACTERS.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={draft.character === id}
-                  onClick={() => setDraft((d) => ({ ...d, character: id }))}
-                  className={cn(
-                    'flex cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium duration-300 active:scale-95',
-                    draft.character === id ? 'border-transparent bg-white text-black' : 'border-zinc-600/30 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700',
-                  )}
-                >
-                  <WaveGlyph name={id} className="h-5 w-5 shrink-0" />
-                  <span className="truncate">{lang?.[`pulse_wave_character_${id}`] || id}</span>
-                </button>
-              ))}
+            {/* Три положения: «Моё — Баланс — Открытия». Ползунок и подписи переключают одно и то же значение. */}
+            <div className="flex flex-col gap-3 px-3">
+              <PulseRangeTrack
+                min={0}
+                max={WAVE_CHARACTERS.length - 1}
+                step={1}
+                value={WAVE_CHARACTERS.indexOf(draft.character)}
+                progressPercent={(WAVE_CHARACTERS.indexOf(draft.character) / (WAVE_CHARACTERS.length - 1)) * 100}
+                aria-label={lang?.pulse_wave_character || 'Характер'}
+                onChange={(event) => setDraft((d) => ({ ...d, character: WAVE_CHARACTERS[Number(event.target.value)] ?? d.character }))}
+              />
+              <div className="flex justify-between">
+                {WAVE_CHARACTERS.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={draft.character === id}
+                    onClick={() => setDraft((d) => ({ ...d, character: id }))}
+                    className={cn(
+                      'w-24 cursor-pointer text-sm font-medium duration-300 active:scale-95 first:text-left last:text-right [&:nth-child(2)]:text-center',
+                      draft.character === id ? 'text-white' : 'text-zinc-500 hover:text-zinc-300',
+                    )}
+                  >
+                    {lang?.[`pulse_wave_character_${id}`] || id}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
         </div>

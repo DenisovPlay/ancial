@@ -40,7 +40,7 @@ type FriendsTab = 'all' | 'requests' | 'suggestions';
 const TABS: Array<{ id: FriendsTab; key: string; fallback: string }> = [
   { id: 'all', key: 'friends_tab_all', fallback: 'Все' },
   { id: 'requests', key: 'friends_tab_requests', fallback: 'Заявки' },
-  { id: 'suggestions', key: 'friends_tab_suggestions', fallback: 'Возможно, знакомы' },
+  { id: 'suggestions', key: 'friends_tab_suggestions', fallback: 'Возможные' },
 ];
 
 import AccountName from '../components/account-name';
@@ -153,8 +153,8 @@ function ListSkeleton() {
 
 function EmptyBlock({ description, title }: { description?: string; title?: string }) {
   return (
-    <div className="w-full flex flex-col gap-0.5 justify-center items-center py-10 duration-300">
-      <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="w-48 lg:w-56" alt="Nothing found" />
+    <div className="w-full flex flex-col gap-0.5 justify-center items-center px-3 py-10 text-center duration-300">
+      <AppImage skeleton={false} width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="w-48 lg:w-56" alt="Nothing found" />
       <span className="text-base text-zinc-100 w-full text-center font-black">{title}</span>
       {description ? <span className="text-sm text-zinc-300 w-full text-center font-medium">{description}</span> : null}
     </div>
@@ -382,6 +382,13 @@ function FriendsContent() {
         </form>
       </div>
 
+      {/* Друзья в сети — над вкладками и на любой вкладке (в поиске не нужны) */}
+      {!searchQuery && !isLoading && onlineFriends.length > 0 ? (
+        <div className="w-full max-w-3xl pb-3">
+          <OnlineNow friends={onlineFriends} presences={presences} />
+        </div>
+      ) : null}
+
       {!searchQuery ? (
         <div ref={tabsRef} role="tablist" aria-label={lang?.friends} className="drag-scroll viewport flex w-full max-w-3xl flex-nowrap overflow-x-auto px-3 pb-3 lg:px-0">
           <div className="flex flex-shrink-0 flex-row flex-nowrap gap-3">
@@ -393,8 +400,8 @@ function FriendsContent() {
                 aria-selected={tab === item.id}
                 onClick={() => goTab(item.id)}
                 className={cn(
-                  'flex w-max flex-none cursor-pointer items-center gap-1.5 rounded-full border border-zinc-600/30 px-4 py-2 text-lg font-bold shadow duration-300 active:scale-95',
-                  tab === item.id ? 'bg-zinc-200 text-zinc-800' : 'bg-zinc-900 text-zinc-200 hover:bg-zinc-200 hover:text-zinc-800',
+                  'glass-panel [--glass-alpha:0] [--glass-sat:2] text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center gap-1.5 border border-zinc-600/30 active:scale-95 duration-300 rounded-full',
+                  tab === item.id ? 'bg-zinc-700/80 text-white shadow' : 'bg-zinc-900/20 text-zinc-300 hover:bg-zinc-700 hover:text-white',
                 )}
               >
                 {lang?.[item.key] || item.fallback}
@@ -408,10 +415,6 @@ function FriendsContent() {
       ) : null}
 
       <div className="flex w-full max-w-3xl flex-col gap-3">
-        {!searchQuery && tab === 'all' && !isLoading && onlineFriends.length > 0 ? (
-          <OnlineNow friends={onlineFriends} presences={presences} />
-        ) : null}
-
         <div className="flex flex-col overflow-hidden border border-transparent md:border-zinc-600/30 md:bg-zinc-900 md:rounded-3xl md:shadow w-full duration-300">
           {searchQuery ? (
             isLoading ? <ListSkeleton /> : friends.length === 0 ? (

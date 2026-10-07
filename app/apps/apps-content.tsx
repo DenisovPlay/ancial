@@ -319,7 +319,7 @@ function AppsContentInner() {
 
       {!loading && !error && apps.length === 0 && (
         <div className="text-center w-full max-w-screen-2xl flex flex-col gap-0.5 justify-center items-center py-20 px-3">
-          <AppImage width={224} height={224} alt="" className="h-56 w-auto" src="/img/load-placeholders/nothingfound.webp" />
+          <AppImage skeleton={false} width={224} height={224} alt="" className="h-56 w-auto" src="/img/load-placeholders/nothingfound.webp" />
           <span className="text-base text-zinc-100 w-full text-center font-black">
             {lang?.emptycomments ?? 'Ничего не найдено'}
           </span>

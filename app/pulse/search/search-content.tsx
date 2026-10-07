@@ -372,7 +372,7 @@ export default function PulseSearchContent() {
 
         {empty ? (
           <div className="flex w-full flex-col items-center justify-center gap-0.5 text-center">
-            <AppImage width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="" />
+            <AppImage skeleton={false} width={224} height={224} src="/img/load-placeholders/nothingfound.webp" className="h-56 w-auto" alt="" />
             <span className="w-full text-center text-base font-black text-content-600">{lang?.noposts || 'Ничего не найдено'}</span>
             <span className="w-full text-center text-sm font-medium text-content-400">{lang?.nopostsdesc || 'Попробуйте другой запрос'}</span>
           </div>
