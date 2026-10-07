@@ -36,11 +36,11 @@
     "framer-motion": "^12.40.0",
     "gradualblur": "^2.3.6",
     "jsqr": "^1.4.0",
-    "next": "16.2.1",
+    "next": "^16.4.0",
     "qrcode-generator": "^2.0.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sharp": "^0.33.5"
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",
@@ -51,7 +51,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.1",
+    "eslint-config-next": "^16.4.0",
     "jsdom": "^30.0.1",
     "react-doctor": "^0.9.1",
     "tailwindcss": "^4",
