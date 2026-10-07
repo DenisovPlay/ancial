@@ -3,7 +3,7 @@ import {
   getCommunityRoleBadgeStyle,
   getCommunityRoleLabel,
   type CommunityDisplayRole,
-} from './community-role.ts';
+} from '../../../app/messages/lib/community-role.ts';
 
 const localized = {
   community_owner: 'Владелец',

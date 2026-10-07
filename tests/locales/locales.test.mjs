@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { availableLocales, defaultLocaleDict, isSupportedLang, loadLocaleDict } from './index.ts';
+import { availableLocales, defaultLocaleDict, isSupportedLang, loadLocaleDict } from '../../app/locales/index.ts';
 
 test('словарь по умолчанию — русский, доступен сразу', () => {
   assert.equal(defaultLocaleDict.langname, 'ru');

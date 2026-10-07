@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { countNewPosts, formatNewPostsCount } from './new-posts.ts';
+import { countNewPosts, formatNewPostsCount } from '../../app/feed/new-posts.ts';
 
 test('считаются только посты новее верхнего показанного', () => {
   assert.equal(countNewPosts([105, 104, 103, 102], 103), 2);

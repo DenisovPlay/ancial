@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { cleanNotificationPreview } from './clean-preview.ts';
+import { cleanNotificationPreview } from '../../../app/lib/notifications/clean-preview.ts';
 
 test('превью уведомления без картинок и BBCode', () => {
   assert.equal(cleanNotificationPreview('[carousel]/image.php?file=posts%2Fa.webp||/image.php?file=posts%2Fb.webp[/carousel]Про вкусы не спорят.'), 'Про вкусы не спорят.');

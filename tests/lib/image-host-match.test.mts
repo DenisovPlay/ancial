@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { matchImageHost, isPrivateMediaSrc } = await import('./image-host-match.ts');
+const { matchImageHost, isPrivateMediaSrc } = await import('../../app/lib/image-host-match.ts');
 
 const HOSTS = [
   { hostname: '*.ibb.co', insecure: true },

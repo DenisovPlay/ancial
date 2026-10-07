@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseServerDate, formatRelativeTime } from './time.ts';
+import { parseServerDate, formatRelativeTime } from '../../app/lib/time.ts';
 
 test('parseServerDate parses Moscow SQL datetimes correctly', () => {
   const date = parseServerDate('2026-08-27 18:00:00');

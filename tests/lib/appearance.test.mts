@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { applyAppearance, DEFAULT_APPEARANCE } = await import('./appearance.ts');
+const { applyAppearance, DEFAULT_APPEARANCE } = await import('../../app/lib/appearance.ts');
 
 const DESKTOP = { userAgent: 'Mozilla/5.0 (Macintosh)', deviceMemory: 8, hardwareConcurrency: 8 };
 const ANDROID = { userAgent: 'Mozilla/5.0 (Linux; Android 14)', deviceMemory: 8, hardwareConcurrency: 8 };
@@ -71,8 +71,8 @@ test('функция самодостаточна: работает из toStrin
 
 test('подключение: скрипт в <head>, синхронизация и никаких старых костылей стекла', async () => {
   const { readFileSync } = await import('node:fs');
-  const layout = readFileSync(new URL('../layout.tsx', import.meta.url), 'utf8');
-  const css = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
+  const layout = readFileSync(new URL('../../app/layout.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../../app/globals.css', import.meta.url), 'utf8');
   assert.match(layout, /APPEARANCE_BOOT_SCRIPT/);
   assert.match(layout, /<AppearanceSync \/>/);
   assert.doesNotMatch(css, /android-glass|!important[^;]*backdrop/);

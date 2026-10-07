@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildNativeOAuthUrl, dispatchNativeOAuthReturn } from './native-oauth.ts';
+import { buildNativeOAuthUrl, dispatchNativeOAuthReturn } from '../../app/lib/native-oauth.ts';
 
 test('Яндекс: возврат на Yandex.php?mode=app с state и challenge, без секрета', () => {
   const url = new URL(buildNativeOAuthUrl('yandex', 'st4te', 'ab'.repeat(32)));

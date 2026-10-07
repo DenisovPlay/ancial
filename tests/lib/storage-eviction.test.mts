@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { setItemWithEviction } from './storage-eviction.ts';
+import { setItemWithEviction } from '../../app/lib/storage-eviction.ts';
 
 /** Хранилище с лимитом по суммарной длине значений и счётчиком чтений. */
 function createStorage(limit: number) {

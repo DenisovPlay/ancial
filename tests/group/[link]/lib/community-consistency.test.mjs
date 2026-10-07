@@ -4,7 +4,7 @@ import {
   canManageCommunityMember,
   canManageCommunityRole,
   visibleManagementTabs,
-} from './community-types.ts';
+} from '../../../../app/group/[link]/lib/community-types.ts';
 
 assert.deepEqual(visibleManagementTabs({ manage_roles: true }), ['roles', 'members']);
 assert.deepEqual(visibleManagementTabs({ manage_members: true }), ['members']);

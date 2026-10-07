@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isBackendPath, toBackendUrl } from './api-url.ts';
+import { isBackendPath, toBackendUrl } from '../../app/lib/api-url.ts';
 
 test('backend paths go straight to the backend in the app', () => {
   assert.equal(toBackendUrl('/api/V2/auth/CheckStatus.php'), 'https://backend.ru.zypo.cc/api/V2/auth/CheckStatus.php');

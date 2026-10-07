@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { parseLyricsText, isSyncedLyrics, formatLrcTime, parseLrcDraft, buildLrc, draftToText, UNSYNCED_TIME } = await import('./lrc.ts');
+const { parseLyricsText, isSyncedLyrics, formatLrcTime, parseLrcDraft, buildLrc, draftToText, UNSYNCED_TIME } = await import('../../app/lib/lrc.ts');
 
 test('синхронизированный текст сортируется и начинается с ♪', () => {
   const lines = parseLyricsText('[00:05.00]Второй\n[00:02.50]Первый\n[00:07.00]');

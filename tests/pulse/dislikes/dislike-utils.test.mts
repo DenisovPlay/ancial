@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { artistChoices, artistKeysOf, findPlayableIndex, isTrackDisliked, isTrackMarkedItself, matchingDislikedArtists, normalizeArtistKey, parseArtistIds } from './dislike-utils.ts';
+import { artistChoices, artistKeysOf, findPlayableIndex, isTrackDisliked, isTrackMarkedItself, matchingDislikedArtists, normalizeArtistKey, parseArtistIds } from '../../../app/pulse/dislikes/dislike-utils.ts';
 
 const none = { trackIds: new Set<number>(), artistKeys: new Set<string>(), artistIds: new Set<number>() };
 

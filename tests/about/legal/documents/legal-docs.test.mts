@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { LEGAL_CATALOG, LEGAL_CONSENT_VERSION } from './catalog.ts';
-import { LEGAL_DOCS } from './index.ts';
-import type { LegalBlock } from './types.ts';
+import { LEGAL_CATALOG, LEGAL_CONSENT_VERSION } from '../../../../app/about/legal/documents/catalog.ts';
+import { LEGAL_DOCS } from '../../../../app/about/legal/documents/index.ts';
+import type { LegalBlock } from '../../../../app/about/legal/documents/types.ts';
 
 function blockTexts(block: LegalBlock): string[] {
   if (typeof block === 'string') return [block];

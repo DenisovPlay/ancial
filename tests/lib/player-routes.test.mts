@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { isPlayerDisabledPath, isPlayerSuspendedPath } from './player-routes.ts';
+import { isPlayerDisabledPath, isPlayerSuspendedPath } from '../../app/lib/player-routes.ts';
 
 test('плеер отключён в кино и вложенных страницах', () => {
   assert.equal(isPlayerDisabledPath('/cinema'), true);

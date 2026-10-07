@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { findTokenBounds, matchAutoLink } from './auto-link.ts';
+import { findTokenBounds, matchAutoLink } from '../../app/lib/auto-link.ts';
 
 test('ссылки распознаются сразу, как только слово стало адресом', () => {
   assert.deepEqual(matchAutoLink('vk.com/ancial'), { href: 'https://vk.com/ancial', length: 13 });

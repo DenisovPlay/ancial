@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveReclaim } from './device-reclaim.ts';
+import { resolveReclaim } from '../../../app/pulse/player/device-reclaim.ts';
 
 const OWN = 'phone-1';
 

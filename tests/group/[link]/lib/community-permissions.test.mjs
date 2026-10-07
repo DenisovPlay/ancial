@@ -8,7 +8,7 @@ import {
   COMMUNITY_INVALIDATION_DELAY_MS,
   retainCommunityChannelSelection,
   visibleManagementTabs,
-} from './community-types.ts';
+} from '../../../../app/group/[link]/lib/community-types.ts';
 
 assert.equal(canCommunity({ manage_channels: true }, 'manage_channels'), true);
 assert.equal(canCommunity({}, 'manage_channels'), false);

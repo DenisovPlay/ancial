@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { serializePostWidgets } from './post-widgets.ts';
+import { serializePostWidgets } from '../../app/feed/post-widgets.ts';
 
 test('serializes external music widgets with bridge metadata', () => {
   const payload = JSON.parse(serializePostWidgets([

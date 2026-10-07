@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { shouldRunPulseFullPlayerWork } from './player/pulse-player-visibility.ts';
+import { shouldRunPulseFullPlayerWork } from '../../app/pulse/player/pulse-player-visibility.ts';
 
 test('full-player work is disabled while the player is mini', () => {
   assert.equal(shouldRunPulseFullPlayerWork('mini', true, true), false);

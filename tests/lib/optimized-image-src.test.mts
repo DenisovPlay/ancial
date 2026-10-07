@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildOptimizedImageSrc, decodeHtmlAttribute, getOriginalImageSrc } from './optimized-image-src.ts';
+import { buildOptimizedImageSrc, decodeHtmlAttribute, getOriginalImageSrc } from '../../app/lib/optimized-image-src.ts';
 
 test('optimized src round-trips to the original url', () => {
   const original = 'https://i.imgur.com/abc.jpg?x=1&y=2';

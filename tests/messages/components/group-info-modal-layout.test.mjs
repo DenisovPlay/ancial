@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(
-  new URL('./group-info-modal.tsx', import.meta.url),
+  new URL('../../../app/messages/components/group-info-modal.tsx', import.meta.url),
   'utf8',
 );
 

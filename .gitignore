@@ -61,3 +61,6 @@ next-env.d.ts
 
 # Собранные APK/IPA для релизов (scripts/release-build.mjs)
 /release/
+
+# Тесты контракта с бэкендом
+/tests/backend/

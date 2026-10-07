@@ -165,6 +165,7 @@ ancial/
 ├── public/               # Статика, Service Worker, иконки
 ├── android/  ios/        # Нативные проекты Capacitor
 ├── scripts/              # Сборка приложения, релизы, ratchet линтера
+├── tests/                # Тесты (node --test), структура повторяет app/
 ├── DeployUbuntu/         # Скрипт авто-деплоя на сервер
 ├── Dockerfile  docker-compose.yml
 └── AGENTS.md             # Правила кода и дизайн-код проекта

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   communityStructureCacheKey,
   validateCachedCommunityStructure,
-} from './community-types.ts';
+} from '../../../../app/group/[link]/lib/community-types.ts';
 
 assert.notEqual(
   communityStructureCacheKey(12, 7),

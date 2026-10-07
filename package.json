@@ -18,7 +18,7 @@
     "android:release": "npm run build:app && CAP_ANDROID_RELEASE=1 cap sync android && cd android && ./gradlew assembleRelease bundleRelease",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test \"app/**/*.test.mjs\" \"app/**/*.test.ts\" \"app/**/*.test.mts\"",
+    "test": "node --experimental-strip-types --test \"tests/**/*.test.mjs\" \"tests/**/*.test.ts\" \"tests/**/*.test.mts\"",
     "lint:ratchet": "node scripts/lint-ratchet.mjs",
     "doctor": "npx react-doctor@latest"
   },

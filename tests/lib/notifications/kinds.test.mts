@@ -10,8 +10,8 @@ import {
   notificationSegments,
   secondsLeft,
   translateLegacyContent,
-} from './kinds.ts';
-import type { RichNotification } from './types.ts';
+} from '../../../app/lib/notifications/kinds.ts';
+import type { RichNotification } from '../../../app/lib/notifications/types.ts';
 
 const base: RichNotification = {
   actions: [], actor_count: 1, actors: [{ id: 5, img: '', name: 'Иван', type: 'user', username: 'ivan', verify: 0 }],

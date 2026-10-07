@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 
-import { APP_DYNAMIC_ROUTES, getShellPath, matchAppRoute, resolveAppAlias } from './app-routes.ts';
-import { APP_ROUTE_BOOT_SOURCE } from './app-route-boot.ts';
+import { APP_DYNAMIC_ROUTES, getShellPath, matchAppRoute, resolveAppAlias } from '../../app/lib/app-routes.ts';
+import { APP_ROUTE_BOOT_SOURCE } from '../../app/lib/app-route-boot.ts';
 
 test('dynamic routes map to their shell pages', () => {
   assert.deepEqual(matchAppRoute('/pulse/track/489/'), { isShell: false, params: { id: '489' }, pattern: '/pulse/track/[id]', shellPath: '/pulse/track/_/' });

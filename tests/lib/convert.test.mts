@@ -16,7 +16,7 @@ const { window } = new JSDOM('');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- см. выше
 (globalThis as any).document = window.document;
 
-const { coerceToFinite, parseToInt, normalizeText, decodeHtmlEntities } = await import('./convert.ts');
+const { coerceToFinite, parseToInt, normalizeText, decodeHtmlEntities } = await import('../../app/lib/convert.ts');
 
 test('coerceToFinite: строка → число', () => {
     assert.equal(coerceToFinite('123'), 123);

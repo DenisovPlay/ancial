@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const messagesSource = readFileSync(new URL('./messages-content.tsx', import.meta.url), 'utf8');
+const messagesSource = readFileSync(new URL('../../app/messages/messages-content.tsx', import.meta.url), 'utf8');
 const groupButtonStart = messagesSource.indexOf('id="group-voice-button"');
 const groupButtonEnd = messagesSource.indexOf('</button>', groupButtonStart);
 

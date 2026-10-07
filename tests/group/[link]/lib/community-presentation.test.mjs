@@ -5,7 +5,7 @@ import {
   communityChannelTypeLabel,
   communityAuditActionLabel,
   formatCommunityAuditDate,
-} from './community-presentation.ts';
+} from '../../../../app/group/[link]/lib/community-presentation.ts';
 
 assert.equal(communityChannelIconId('text'), 'IC-chats');
 

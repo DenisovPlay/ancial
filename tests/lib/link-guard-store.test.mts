@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { closeLinkGuard, getLinkGuardSnapshot, openLinkGuard, parseRedirectHref, subscribeLinkGuard } from './link-guard-store.ts';
+import { closeLinkGuard, getLinkGuardSnapshot, openLinkGuard, parseRedirectHref, subscribeLinkGuard } from '../../app/lib/link-guard-store.ts';
 
 test('ссылка проверки достаётся из href /redirect', () => {
   assert.equal(parseRedirectHref('/redirect?link=https%3A%2F%2Fexample.com%2Fa%3Fb%3D1'), 'https://example.com/a?b=1');

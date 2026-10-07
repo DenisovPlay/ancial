@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const pageSource = readFileSync(new URL('./[hash]/page.tsx', import.meta.url), 'utf8');
-const clientSource = readFileSync(new URL('./[hash]/group-call-client.tsx', import.meta.url), 'utf8');
-const tileSource = readFileSync(new URL('./components/group-call-tile.tsx', import.meta.url), 'utf8');
-const ruLocale = readFileSync(new URL('../../locales/ru.ts', import.meta.url), 'utf8');
-const enLocale = readFileSync(new URL('../../locales/en.ts', import.meta.url), 'utf8');
+const pageSource = readFileSync(new URL('../../../app/call/group/[hash]/page.tsx', import.meta.url), 'utf8');
+const clientSource = readFileSync(new URL('../../../app/call/group/[hash]/group-call-client.tsx', import.meta.url), 'utf8');
+const tileSource = readFileSync(new URL('../../../app/call/group/components/group-call-tile.tsx', import.meta.url), 'utf8');
+const ruLocale = readFileSync(new URL('../../../app/locales/ru.ts', import.meta.url), 'utf8');
+const enLocale = readFileSync(new URL('../../../app/locales/en.ts', import.meta.url), 'utf8');
 
 assert.doesNotMatch(pageSource, /\bh-screen\b/);
 assert.match(pageSource, /min-h-dvh/);
@@ -41,7 +41,7 @@ assert.match(clientSource, /availableCameras\.map/);
 assert.match(clientSource, /name=\{call\.screenEnabled \? 'IC-call-screen-stop' : 'IC-call-screen-share'\}/);
 assert.match(clientSource, /name=\{call\.deafened \? 'IC-call-speaker-off' : 'IC-call-speaker'\}/);
 
-const hookSource = readFileSync(new URL('./[hash]/use-group-call.ts', import.meta.url), 'utf8');
+const hookSource = readFileSync(new URL('../../../app/call/group/[hash]/use-group-call.ts', import.meta.url), 'utf8');
 assert.match(hookSource, /signalQueuesRef/);
 assert.match(hookSource, /recoveryTimersRef/);
 assert.match(hookSource, /videoWatchdogsRef/);

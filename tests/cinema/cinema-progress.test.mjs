@@ -9,7 +9,7 @@ import {
   parseFlixPlaybackPayload,
   resolveResumeTime,
   selectCinemaProgressState,
-} from './cinema-progress.ts';
+} from '../../app/cinema/cinema-progress.ts';
 
 test('player changes preserve the current episode position', () => {
   const existing = {

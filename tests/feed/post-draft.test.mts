@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { draftImagesFromState, draftImagesToState, isPostDraftEmpty, parsePostDraft } from './post-draft.ts';
+import { draftImagesFromState, draftImagesToState, isPostDraftEmpty, parsePostDraft } from '../../app/feed/post-draft.ts';
 
 test('пустой черновик: только автор и тема — не считаются', () => {
   assert.equal(isPostDraftEmpty({ content: ' ', images: [], title: '', widgets: [] }), true);
@@ -44,7 +44,7 @@ test('в черновик попадают только загруженные �
   ]);
 });
 
-import { parsePostDraftPayload, serializePostDraftPayload } from './post-draft.ts';
+import { parsePostDraftPayload, serializePostDraftPayload } from '../../app/feed/post-draft.ts';
 
 test('payload для синхронизации: пустой черновик — пустая строка, иначе круговой обмен без потерь', () => {
   const empty = { content: '', images: [], title: '', topic: 'IT', widgets: [] };

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const directCallSource = readFileSync(new URL('./[hash]/call-client.tsx', import.meta.url), 'utf8');
-const groupCallSource = readFileSync(new URL('./group/[hash]/group-call-client.tsx', import.meta.url), 'utf8');
+const directCallSource = readFileSync(new URL('../../app/call/[hash]/call-client.tsx', import.meta.url), 'utf8');
+const groupCallSource = readFileSync(new URL('../../app/call/group/[hash]/group-call-client.tsx', import.meta.url), 'utf8');
 
 // Кнопка демонстрации экрана должна быть скрыта на телефонах (видна только md+)
 assert.match(

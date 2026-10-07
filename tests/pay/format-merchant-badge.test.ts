@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatMerchantBadge } from './format-merchant-badge.ts';
-import { ru } from '../locales/ru.ts';
-import { en } from '../locales/en.ts';
-import { be } from '../locales/be.ts';
+import { formatMerchantBadge } from '../../app/pay/format-merchant-badge.ts';
+import { ru } from '../../app/locales/ru.ts';
+import { en } from '../../app/locales/en.ts';
+import { be } from '../../app/locales/be.ts';
 
 test('formatMerchantBadge handles key/count format for English', () => {
   assert.equal(formatMerchantBadge({ badge_key: 'years', badge_count: 1 }, en), '1 year');

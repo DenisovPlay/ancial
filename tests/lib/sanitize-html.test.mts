@@ -16,7 +16,7 @@ const { window } = new JSDOM('');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- см. выше
 (globalThis as any).document = window.document;
 
-const { sanitizeUserHtml } = await import('./sanitize-html.ts');
+const { sanitizeUserHtml } = await import('../../app/lib/sanitize-html.ts');
 
 test('вырезает script и обработчики событий', () => {
     const dirty = '<p>ok</p><script>alert(1)<\/script><img src="/x.png" onerror="alert(2)">';

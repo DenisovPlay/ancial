@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { resolveCommunityChatAccess, resolveSlowModeRemaining } from './community-chat-access.ts';
+import { resolveCommunityChatAccess, resolveSlowModeRemaining } from '../../../app/messages/lib/community-chat-access.ts';
 
 const regularCommunityMember = resolveCommunityChatAccess({
   communityId: 42,

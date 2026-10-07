@@ -11,7 +11,7 @@ import {
   normalizeParticipant,
   resolveFocusedParticipantId,
   updateParticipantMedia,
-} from './group-call-state.ts';
+} from '../../../../app/call/group/lib/group-call-state.ts';
 
 assert.equal(getGroupCallGridClass(1), 'grid-cols-1');
 assert.equal(getGroupCallGridClass(2), 'grid-cols-1 sm:grid-cols-2');

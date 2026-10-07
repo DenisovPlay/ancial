@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { clearFeedSnapshots, getFeedSnapshot, saveFeedSnapshot } from './feed-snapshot.ts';
+import { clearFeedSnapshots, getFeedSnapshot, saveFeedSnapshot } from '../../app/feed/feed-snapshot.ts';
 
 const snap = (cacheKey: string, n = 1) => ({ cacheKey, currentLastId: n, hasMorePages: true, posts: [{ id: n }] });
 

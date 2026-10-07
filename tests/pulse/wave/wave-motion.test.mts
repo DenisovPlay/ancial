@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { effectiveAmp, initialWaveState, stepWave, waveOffset, waveTarget } from './wave-motion.ts';
+import { effectiveAmp, initialWaveState, stepWave, waveOffset, waveTarget } from '../../../app/pulse/wave/wave-motion.ts';
 
 test('цель: пауза спокойнее игры, энергичное быстрее и выше спокойного', () => {
   const idle = waveTarget({ playing: false, mood: 'energetic' });

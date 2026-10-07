@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const modalSource = readFileSync(new URL('./group-info-modal.tsx', import.meta.url), 'utf8');
-const messagesSource = readFileSync(new URL('../messages-content.tsx', import.meta.url), 'utf8');
+const modalSource = readFileSync(new URL('../../../app/messages/components/group-info-modal.tsx', import.meta.url), 'utf8');
+const messagesSource = readFileSync(new URL('../../../app/messages/messages-content.tsx', import.meta.url), 'utf8');
 
 assert.match(modalSource, /background\?: string/, 'group modal must receive the current shared background');
 assert.match(modalSource, /canManageChannel && \(/, 'background controls must be permission-gated');

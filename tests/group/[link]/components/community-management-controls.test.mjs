@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const channelSource = readFileSync(new URL('./community-channel-editor.tsx', import.meta.url), 'utf8');
-const roleSource = readFileSync(new URL('./community-role-editor.tsx', import.meta.url), 'utf8');
-const ruLocale = readFileSync(new URL('../../../locales/ru.ts', import.meta.url), 'utf8');
-const enLocale = readFileSync(new URL('../../../locales/en.ts', import.meta.url), 'utf8');
+const channelSource = readFileSync(new URL('../../../../app/group/[link]/components/community-channel-editor.tsx', import.meta.url), 'utf8');
+const roleSource = readFileSync(new URL('../../../../app/group/[link]/components/community-role-editor.tsx', import.meta.url), 'utf8');
+const ruLocale = readFileSync(new URL('../../../../app/locales/ru.ts', import.meta.url), 'utf8');
+const enLocale = readFileSync(new URL('../../../../app/locales/en.ts', import.meta.url), 'utf8');
 
 assert.match(channelSource, /grid grid-cols-3 gap-2 sm:gap-3/);
 assert.match(channelSource, /<Icon name="IC-edit"/);

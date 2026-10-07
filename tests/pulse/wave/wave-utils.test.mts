@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { DEFAULT_WAVE, applyWavePreset, isDefaultWave, normalizeWave, summarizeWave, toggleInList, toggleWaveLang, withMoods } from './wave-utils.ts';
+import { DEFAULT_WAVE, applyWavePreset, isDefaultWave, normalizeWave, summarizeWave, toggleInList, toggleWaveLang, withMoods } from '../../../app/pulse/wave/wave-utils.ts';
 
 const label = (group: string, id: string) => `${group}:${id}`;
 

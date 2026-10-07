@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const messagesSource = readFileSync(new URL('../messages-content.tsx', import.meta.url), 'utf8');
-const sharedSource = readFileSync(new URL('../lib/messages-shared.tsx', import.meta.url), 'utf8');
+const messagesSource = readFileSync(new URL('../../../app/messages/messages-content.tsx', import.meta.url), 'utf8');
+const sharedSource = readFileSync(new URL('../../../app/messages/lib/messages-shared.tsx', import.meta.url), 'utf8');
 
 assert.match(sharedSource, /community_link\?: string \| null/, 'dialog metadata must type the community handle');
 assert.match(messagesSource, /selectedDialog\?\.community_link/, 'linked group chats must conditionally render a community action');

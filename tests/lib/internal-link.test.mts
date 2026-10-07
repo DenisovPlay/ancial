@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { toInternalPath } from './internal-link.ts';
+import { toInternalPath } from '../../app/lib/internal-link.ts';
 
 test('ссылки на свой домен превращаются в путь', () => {
   assert.equal(toInternalPath('https://zypo.cc'), '/');

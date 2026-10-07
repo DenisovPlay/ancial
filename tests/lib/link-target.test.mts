@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { isPlainEmail, resolveLinkTarget } from './link-target.ts';
+import { isPlainEmail, resolveLinkTarget } from '../../app/lib/link-target.ts';
 
 test('почта — только адрес без пути', () => {
   assert.equal(isPlainEmail('user@mail.com'), true);

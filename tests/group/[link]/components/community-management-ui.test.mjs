@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { shouldShowUncategorizedHeading } from '../lib/community-presentation.ts';
+import { shouldShowUncategorizedHeading } from '../../../../app/group/[link]/lib/community-presentation.ts';
 
-const moderationSource = readFileSync(new URL('./community-moderation.tsx', import.meta.url), 'utf8');
-const managementSource = readFileSync(new URL('./community-manage-modal.tsx', import.meta.url), 'utf8');
-const groupPageSource = readFileSync(new URL('../group-content.tsx', import.meta.url), 'utf8');
-const channelShellSource = readFileSync(new URL('./community-channel-shell.tsx', import.meta.url), 'utf8');
+const moderationSource = readFileSync(new URL('../../../../app/group/[link]/components/community-moderation.tsx', import.meta.url), 'utf8');
+const managementSource = readFileSync(new URL('../../../../app/group/[link]/components/community-manage-modal.tsx', import.meta.url), 'utf8');
+const groupPageSource = readFileSync(new URL('../../../../app/group/[link]/group-content.tsx', import.meta.url), 'utf8');
+const channelShellSource = readFileSync(new URL('../../../../app/group/[link]/components/community-channel-shell.tsx', import.meta.url), 'utf8');
 
 assert.match(moderationSource, /import \{ Dropdown, DropdownItem \}/, 'member actions must use the shared dropdown');
 assert.match(moderationSource, /triggerIcon="IC-more"/, 'member actions need one compact more trigger');

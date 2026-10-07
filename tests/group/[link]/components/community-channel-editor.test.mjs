@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const source = readFileSync(new URL('./community-channel-editor.tsx', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../../../../app/group/[link]/components/community-channel-editor.tsx', import.meta.url), 'utf8');
 
 assert.doesNotMatch(source, /setChannelType|community_channel_announcement|community_channel_voice/, 'channel type selector must be removed');
 assert.match(source, /useState\(true\)/, 'group calls must default to enabled');

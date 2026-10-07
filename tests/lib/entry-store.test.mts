@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createEntryStore, type StorageLike } from './entry-store.ts';
+import { createEntryStore, type StorageLike } from '../../app/lib/entry-store.ts';
 
 function memoryStorage(): StorageLike & { data: Map<string, string> } {
   const data = new Map<string, string>();

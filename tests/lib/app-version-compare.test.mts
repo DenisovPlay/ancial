@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { compareAppVersions } from './app-version-compare.ts';
+import { compareAppVersions } from '../../app/lib/app-version-compare.ts';
 
 test('app versions compare by number parts, then letter suffix', () => {
   assert.ok(compareAppVersions('3.8.2', '3.8.2b') < 0);

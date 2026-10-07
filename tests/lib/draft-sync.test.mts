@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { nextDraftTs, resolveDraft } from './draft-sync.ts';
+import { nextDraftTs, resolveDraft } from '../../app/lib/draft-sync.ts';
 
 const rec = (payload: string, ts: number) => ({ payload, ts });
 
