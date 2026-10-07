@@ -137,8 +137,8 @@ export default function NotificationsPage() {
                 aria-selected={filter === item.id}
                 onClick={() => setFilter(item.id)}
                 className={cn(
-                  'w-max flex-none rounded-full px-4 py-2 text-lg font-bold shadow border border-zinc-600/30 duration-300 cursor-pointer active:scale-95',
-                  filter === item.id ? 'bg-zinc-200 text-zinc-800' : 'bg-zinc-900 text-zinc-200 hover:bg-zinc-200 hover:text-zinc-800',
+                  'glass-panel [--glass-alpha:0] [--glass-sat:2] text-lg px-3 py-2 cursor-pointer shrink-0 flex items-center justify-center border border-zinc-600/30 active:scale-95 duration-300 rounded-full',
+                  filter === item.id ? 'bg-zinc-700/80 text-white shadow' : 'bg-zinc-900/20 text-zinc-300 hover:bg-zinc-700 hover:text-white',
                 )}
               >
                 {lang?.[item.key] || item.fallback}
