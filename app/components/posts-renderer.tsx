@@ -385,6 +385,8 @@ function PostCardInner({
   const closingImageTimerRef = useRef<number | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [customImages, setCustomImages] = useState<ImageViewerSlide[]>([]);
+  // Миниатюры вложений, уже загруженные в ленте: просмотрщик показывает их, пока грузится оригинал.
+  const [attachmentPreviews, setAttachmentPreviews] = useState<string[]>([]);
   const [isTranslated, setIsTranslated] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
@@ -457,7 +459,10 @@ function PostCardInner({
   useEffect(() => {
     if (images.length >= 2) ensureCarouselScrollDelegation();
   }, [images.length]);
-  const activeImages = customImages.length > 0 ? customImages : images;
+  const activeImages = useMemo<ImageViewerSlide[]>(
+    () => (customImages.length > 0 ? customImages : images.map((image, index) => ({ ...image, previewUrl: attachmentPreviews[index] }))),
+    [attachmentPreviews, customImages, images],
+  );
   const hasBlurredImages = images.some((image) => flag(image.blur));
   const showAd = renderIndex !== undefined && renderIndex >= 0 && (renderIndex + 1) % 5 === 0;
   const authorHref =
@@ -710,6 +715,8 @@ function PostCardInner({
       closingImageTimerRef.current = null;
     }
     setClosingImageIndex(null);
+    const thumbs = document.querySelectorAll<HTMLImageElement>(`#postdiv${post.id} button[aria-label="Open image"] img`);
+    setAttachmentPreviews(Array.from(thumbs, (thumb) => thumb.currentSrc || thumb.src));
     setSelectedImageIndex(index);
   };
 
@@ -783,7 +790,7 @@ function PostCardInner({
         const clickedIndex = allImgs.indexOf(imgEl);
         if (clickedIndex !== -1) {
           // В ленте картинки идут через оптимизатор — в просмотрщик отдаём оригиналы.
-          const inlineSlides = allImgs.map(img => ({ url: getOriginalImageSrc(img.src) }));
+          const inlineSlides = allImgs.map(img => ({ url: getOriginalImageSrc(img.src), previewUrl: img.currentSrc || img.src }));
           setCustomImages(inlineSlides);
           setSelectedImageIndex(clickedIndex);
         }

@@ -10,6 +10,7 @@ import {
 
 import Modal from './modal';
 import AppImage from './app-image';
+import { cn } from '../lib/cn';
 import Icon from './svg-icon';
 
 const VIEWER_PENDING_STYLE = { width: 'min(20rem, 80vw)', height: 'min(20rem, 60vh)' };
@@ -20,6 +21,8 @@ export interface ImageViewerSlide {
   alt?: string | null;
   blur?: boolean | number | string | null;
   url: string;
+  /** Уже загруженная миниатюра (из ленты): показывается мгновенно, пока грузится оригинал. */
+  previewUrl?: string | null;
 }
 
 export interface ImageViewerModalProps {
@@ -66,6 +69,7 @@ export default function ImageViewerModal({
     'idle' | 'swipe-x' | 'swipe-y' | 'pan' | 'pinch'
   >('idle');
   const [internalIndex, setInternalIndex] = useState(activeImageIndex ?? 0);
+  const [loadedUrls, setLoadedUrls] = useState<ReadonlySet<string>>(() => new Set());
 
   useEffect(() => {
     if (activeImageIndex !== null) {
@@ -577,6 +581,15 @@ export default function ImageViewerModal({
                 key={img.url + idx}
                 className="w-full h-full shrink-0 flex flex-col items-center justify-center relative"
               >
+                {img.previewUrl && !loadedUrls.has(img.url) ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- миниатюра уже в кэше браузера, оптимизатор не нужен
+                  <img
+                    src={img.previewUrl}
+                    alt=""
+                    draggable={false}
+                    className="absolute inset-0 m-auto max-w-full max-h-[80vh] w-auto h-auto object-contain shadow-2xl pointer-events-none"
+                  />
+                ) : null}
                 <AppImage
                   width={1024}
                   height={1024}
@@ -584,11 +597,13 @@ export default function ImageViewerModal({
                   ref={idx === activeIdx ? imageRef : null}
                   src={img.url}
                   alt={img.alt ?? `Image ${idx + 1}`}
-                  className="max-w-full max-h-[80vh] w-auto h-auto object-contain shadow-2xl"
+                  className={cn('max-w-full max-h-[80vh] w-auto h-auto object-contain shadow-2xl', img.previewUrl && !loadedUrls.has(img.url) && 'opacity-0')}
                   style={idx === activeIdx ? imageStyle : {}}
-                  // Размер заранее неизвестен — пока грузится, держим место под скелетон.
-                  pendingStyle={VIEWER_PENDING_STYLE}
+                  // Размер заранее неизвестен — пока грузится, держим место под скелетон (если нет миниатюры).
+                  skeleton={!img.previewUrl}
+                  pendingStyle={img.previewUrl ? undefined : VIEWER_PENDING_STYLE}
                   loading="eager"
+                  onLoad={img.previewUrl ? () => setLoadedUrls((prev) => (prev.has(img.url) ? prev : new Set(prev).add(img.url))) : undefined}
                   onDragStart={(event) => event.preventDefault()}
                 />
               </div>
