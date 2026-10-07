@@ -54,7 +54,7 @@ export function UserMiniCard({
           height={64}
           src={avatarSrc}
           className={cn(
-            'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
+            'w-16 h-16 rounded-full shadow transition-colors duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
             isOnline && 'border-lime-500',
             !isOnline && 'border-transparent',
           )}
@@ -86,7 +86,7 @@ export function GroupMiniCard({
         width={64}
         height={64}
         src={image}
-        className="w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center"
+        className="w-16 h-16 rounded-full shadow transition-colors duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center"
       />
       <span className="text-zinc-300 w-16 text-center text-sm truncate">{label}</span>
     </button>
@@ -114,7 +114,7 @@ export function PlaylistMiniCard({
         width={64}
         height={64}
         src={image}
-        className="h-16 w-16 rounded-3xl border border-zinc-600/30 bg-cover bg-center object-cover shadow duration-300 group-hover:border-purple-500"
+        className="h-16 w-16 rounded-3xl border border-zinc-600/30 bg-cover bg-center object-cover shadow transition-colors duration-300 group-hover:border-purple-500"
       />
       <span className="w-16 truncate text-center text-sm text-zinc-300">{label}</span>
     </button>
@@ -239,7 +239,7 @@ export function RelationGridModal({
                       width={64}
                       height={64}
                       src={image}
-                      className="w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center"
+                      className="w-16 h-16 rounded-full shadow transition-colors duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center"
                     />
                   </div>
                   <p className="text-center truncate overflow-hidden w-20">
@@ -265,7 +265,7 @@ export function RelationGridModal({
                     height={64}
                     src={image}
                     className={cn(
-                      'w-16 h-16 rounded-full shadow duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
+                      'w-16 h-16 rounded-full shadow transition-colors duration-300 border-2 group-hover:border-purple-500 bg-cover bg-center',
                       user.online === true ||
                         user.online === 1 ||
                         user.online === '1' ||

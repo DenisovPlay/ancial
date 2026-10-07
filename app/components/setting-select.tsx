@@ -19,7 +19,7 @@ export default function SettingSelect<T extends string | number>({
 }) {
   return (
     <label className="flex gap-3 text-zinc-300 items-center justify-between">
-      <span className="flex flex-grow flex-col">
+      <span className="flex min-w-0 flex-grow flex-col">
         <span>{label}</span>
         {hint ? <span className="text-xs text-zinc-500">{hint}</span> : null}
       </span>

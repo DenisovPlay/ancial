@@ -125,7 +125,7 @@ HTML отдаётся с `Cache-Control: no-store` (правило `headers()` �
 
 ## 6.1. Приложение (Capacitor, Android)
 
-Подробно — `docs/capacitor-app.md`; iOS (sideload) — `docs/capacitor-ios.md`. Сайт и приложение собираются из одного кода; всё про приложение — за `IS_NATIVE_APP` (`app/lib/platform.ts`), на сайте эти ветки вырезаются.
+Сборка и релизы Android/iOS (APK/IPA на GitHub, версия из package.json, `npm run release:*`) — `docs/capacitor-build.md`; iOS (sideload) — `docs/capacitor-ios.md`. Сайт и приложение собираются из одного кода; всё про приложение — за `IS_NATIVE_APP` (`app/lib/platform.ts`), на сайте эти ветки вырезаются.
 - **Сборки:** `npm run build` — сайт (как раньше), `npm run build:app` — статический экспорт в `out/` для APK. Проверять обе.
 - **Запросы к бэкенду:** только через `AncialAPI`/`authFetch` или `backendFetch` (`app/lib/auth-fetch.ts`); голый `fetch('/api/…')` в приложении уйдёт на `https://localhost`. Адреса бэкенда для `<img>`/`url()` — через `apiUrl()`, публичные ссылки «поделиться» — через `publicUrl()` (`app/lib/api-url.ts`).
 - **Новый динамический маршрут:** строка в `APP_DYNAMIC_ROUTES` (`app/lib/app-routes.ts`) + `generateStaticParams = appShellStaticParams(…)` + `AppRouteShell` (серверный `page.tsx` с пропом id) или `useAppParams()` под `AppRouteGate` (клиентские страницы).

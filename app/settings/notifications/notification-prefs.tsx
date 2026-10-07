@@ -16,6 +16,9 @@ const CATEGORIES = [
   { id: 'wallet', key: 'notif_cat_wallet', fallback: 'Кошелёк' },
 ] as const;
 
+/** Одинаковая ширина: нативный select иначе растягивается под самый длинный вариант («Только лента уведомлений»). */
+const SELECT_WIDTH = 'w-44 shrink-0 truncate';
+
 type Mode = 'all' | 'push' | 'inapp' | 'none';
 
 const toMode = (pref: Pref): Mode => (pref.inapp && pref.push ? 'all' : pref.push ? 'push' : pref.inapp ? 'inapp' : 'none');
@@ -55,7 +58,7 @@ export default function NotificationPrefs({ lang }: { lang: Lang }) {
   if (!prefs) return null;
 
   return (
-    <div className="flex w-full max-w-3xl flex-col gap-3 px-3 lg:px-0">
+    <div className="flex w-full max-w-3xl flex-col gap-3">
       <span className="text-xl">{lang?.notif_prefs_title || 'Какие уведомления получать'}</span>
       {CATEGORIES.map((category) => (
         <SettingSelect<Mode>
@@ -63,6 +66,7 @@ export default function NotificationPrefs({ lang }: { lang: Lang }) {
           label={lang?.[category.key] || category.fallback}
           value={toMode(prefs[category.id] ?? { inapp: true, push: true })}
           onChange={(mode) => update(category.id, fromMode(mode))}
+          selectClassName={SELECT_WIDTH}
           options={[
             { value: 'all', label: lang?.notif_mode_all || 'Везде' },
             { value: 'push', label: lang?.notif_mode_push || 'Только Push' },
@@ -75,6 +79,7 @@ export default function NotificationPrefs({ lang }: { lang: Lang }) {
         label={lang?.notif_cat_security || 'Безопасность'}
         value="all"
         onChange={() => {}}
+        selectClassName={SELECT_WIDTH}
         disabled
         options={[
           { value: 'all', label: lang?.notif_mode_all || 'Везде' },

@@ -58,3 +58,6 @@ next-env.d.ts
 
 # промо-видео (рендер роликов, не часть приложения)
 /promo-video/
+
+# Собранные APK/IPA для релизов (scripts/release-build.mjs)
+/release/

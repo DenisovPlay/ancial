@@ -16,7 +16,7 @@ const team = process.env.IOS_TEAM
   || /teamID = (\w+);/.exec(read('defaults', ['read', 'com.apple.dt.Xcode', 'IDEProvisioningTeamByIdentifier']))?.[1];
 if (!team) throw new Error('Не найдена команда разработчика: войдите в Apple ID в Xcode или задайте IOS_TEAM');
 
-const devices = read('xcrun', ['devicectl', 'list', 'devices']).split('\n').filter((line) => /connected/.test(line) && /physical/.test(line));
+const devices = read('xcrun', ['devicectl', 'list', 'devices']).split('\n').filter((line) => /(connected|available)/.test(line) && /physical/.test(line));
 const device = process.env.IOS_DEVICE || /([0-9A-F]{8}-[0-9A-F]{16})/.exec(devices[0] ?? '')?.[1];
 if (!device) throw new Error('iPhone не подключён (проверьте кабель, «Доверять» и режим разработчика)');
 

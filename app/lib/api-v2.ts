@@ -740,6 +740,11 @@ export class AncialAPI {
     });
   }
 
+  /** Версии и ссылки скачивания приложения (релизы GitHub): android — APK, ios — IPA. */
+  static async getAppReleases<T = unknown>(): Promise<T> {
+    return this.request<T>('/info/AppConfig.php');
+  }
+
   /** Закрепить/открепить пост на странице автора (до 3; в сообществах — право manage_posts). */
   static async pinPost<T = unknown>(postId: string | number, pin: boolean): Promise<T> {
     return this.request<T>('/posts/PinPost.php', {
