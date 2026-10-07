@@ -299,7 +299,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                   </h1>
                   {artistDescription ? (
                     <span
-                      className="text-base text-zinc-200 md:text-lg lg:text-xl"
+                      className="text-base text-zinc-200 md:text-lg lg:text-xl select-text"
                       dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(artistDescription.replace(/\n/g, '<br>'), { preloadImages: true }) }}
                     />
                   ) : null}

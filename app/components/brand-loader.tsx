@@ -14,6 +14,6 @@ export default function BrandLoader({ className, page = false, screen = false, s
   const { lang } = useAuth();
   const loader = <span role="status" aria-label={lang?.['loading...'] || 'Загрузка...'} className={cn('brand-loader', SIZES[size], className)} />;
   if (screen) return <div className="flex min-h-dvh w-full items-center justify-center">{loader}</div>;
-  if (page) return <div className="flex min-h-dvh w-full items-center justify-center">{loader}</div>;
+  if (page) return <div className="flex min-h-[calc(100dvh-5rem)] lg:min-h-dvh w-full items-center justify-center">{loader}</div>;
   return loader;
 }

@@ -282,7 +282,7 @@ export default function NotificationsSettingsContent() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen">
+      <div className="flex flex-col justify-center items-center min-h-[calc(100dvh-5rem)] lg:min-h-dvh">
         <p className="text-zinc-300">{lang?.auth_required || 'Требуется авторизация...'}</p>
       </div>
     );

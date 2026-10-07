@@ -225,7 +225,7 @@ function Hero({ lang, onPick }: { lang: Lang; onPick: (platform: Platform) => vo
           </span>
           <span className="flex flex-col text-left">
             <span className="text-xs font-semibold text-zinc-400">{lang?.mobile_landing_chip_play_title || 'Сейчас играет'}</span>
-            <span className="text-base font-bold text-white">{lang?.mobile_landing_chip_play_track || 'Ночной рейс'}</span>
+            <span className="text-base font-bold text-white">{lang?.mobile_landing_chip_play_track || 'Контракт'}</span>
           </span>
         </UiChip>
       </div>
@@ -462,60 +462,60 @@ export default function MobileAppContent() {
       </div>
 
       <div className="flex flex-col lg:pl-[6.375rem] lg:pr-6">
-      <Statement lang={lang} />
+        <Statement lang={lang} />
 
-      {/* Липкие карточки возможностей */}
-      <div className="flex flex-col gap-3 pb-12">
-        <FeatureCard
-          id="feed"
-          index={0}
-          tone="dark"
-          title={lang?.mobile_app_point_feed || 'Лента'}
-          text={lang?.mobile_app_section_feed_desc || 'Хронологический поток от друзей и сообществ. Без навязанных рекомендаций и рекламы.'}
-          tags={[lang?.mobile_landing_tag_chrono || 'Хронология', lang?.mobile_landing_tag_topics || 'Темы', lang?.mobile_landing_tag_bookmarks || 'Закладки']}
-          shot={SHOTS.feed}
-          shotClassName="-bottom-[4%] -right-[14%] h-[52%] sm:-right-[6%] sm:h-[56%] lg:-bottom-[12%] lg:right-[2%] lg:h-[100%]"
-          stickers={<Floating className="right-[4%] top-[8%] w-[10%] min-w-12" rotate={10}><HeartSticker className="h-auto w-full" /></Floating>}
-        />
-        <FeatureCard
-          id="chats"
-          index={1}
-          tone="purple"
-          title={lang?.mobile_app_point_chats || 'Чаты и звонки'}
-          text={lang?.mobile_app_section_chats_desc || 'Сообщения приходят мгновенно, а голосовые вызовы звучат чисто даже на слабом соединении.'}
-          tags={[lang?.mobile_landing_tag_calls || 'Звонки', lang?.mobile_landing_tag_groups || 'Группы', lang?.mobile_landing_tag_stickers || 'Стикеры']}
-          shot={SHOTS.messages}
-          shotClassName="-bottom-[6%] right-[2%] h-[54%] sm:right-[6%] sm:h-[58%] lg:-bottom-[10%] lg:right-[8%] lg:h-[104%]"
-          stickers={<Floating className="right-[36%] top-[10%] hidden w-[9%] lg:block" rotate={-8}><BubbleSticker className="h-auto w-full" /></Floating>}
-        />
-        <FeatureCard
-          id="pulse"
-          index={2}
-          tone="lilac"
-          title="Pulse"
-          text={lang?.mobile_app_section_music_desc || 'Играет при заблокированном экране и сохраняет треки в телефон для прослушивания офлайн.'}
-          tags={[lang?.mobile_landing_tag_lyrics || 'Тексты песен', lang?.mobile_landing_tag_eq || 'Эквалайзер', lang?.mobile_landing_tag_offline || 'Офлайн']}
-          shot={SHOTS.pulse}
-          shotClassName="-bottom-[8%] right-[8%] h-[54%] sm:right-[20%] sm:h-[58%] lg:-bottom-[14%] lg:right-[30%] lg:h-[104%]"
-          extraShot={{ shot: SHOTS.lyrics, className: 'hidden -bottom-[22%] -right-[8%] h-[84%] lg:block' }}
-          stickers={<Floating className="right-[4%] top-[6%] w-[9%] min-w-12" rotate={14}><DiscSticker className="lp-spin h-auto w-full" /></Floating>}
-        />
-      </div>
-
-      {/* Под капотом */}
-      <section id="more" className="flex w-full flex-col gap-3">
-        <Reveal>
-          <h2 className={cn(HEAD, 'mb-3 px-3 text-[clamp(3.4rem,10vw,9rem)] text-white lg:px-0')}>{lang?.mobile_landing_more_title || 'Под капотом'}</h2>
-        </Reveal>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Reveal><Tile icon="IC-music" title={lang?.mobile_landing_tile_music || 'Музыка в фоне'} text={lang?.mobile_landing_tile_music_text || 'Играет при погасшем экране, управление — из шторки и с экрана блокировки.'} sticker={<DiscSticker className="lp-spin h-auto w-full" />} /></Reveal>
-          <Reveal delay={0.08}><Tile icon="IC-notification" title={lang?.mobile_landing_tile_push || 'Мгновенные уведомления'} text={lang?.mobile_landing_tile_push_text || 'Сообщения и звонки приходят сразу, даже когда приложение закрыто.'} sticker={<BoltSticker className="h-auto w-full" />} /></Reveal>
-          <Reveal><Tile icon="IC-lock" title={lang?.mobile_landing_tile_passkeys || 'Вход по Passkeys'} text={lang?.mobile_landing_tile_passkeys_text || 'Отпечаток или Face ID вместо пароля — быстро и надёжно.'} sticker={<CoinSticker className="h-auto w-full" />} /></Reveal>
-          <Reveal delay={0.08}><Tile icon="IC-download" title={lang?.mobile_landing_tile_offline || 'Офлайн-треки'} text={lang?.mobile_landing_tile_offline_text || 'Сохраняйте любимое в телефон и слушайте без интернета.'} sticker={<HeartSticker className="h-auto w-full" />} /></Reveal>
+        {/* Липкие карточки возможностей */}
+        <div className="flex flex-col gap-3 pb-12">
+          <FeatureCard
+            id="feed"
+            index={0}
+            tone="dark"
+            title={lang?.mobile_app_point_feed || 'Лента'}
+            text={lang?.mobile_app_section_feed_desc || 'Хронологический поток от друзей и сообществ. Без навязанных рекомендаций и рекламы.'}
+            tags={[lang?.mobile_landing_tag_chrono || 'Хронология', lang?.mobile_landing_tag_topics || 'Темы', lang?.mobile_landing_tag_bookmarks || 'Закладки']}
+            shot={SHOTS.feed}
+            shotClassName="-bottom-[4%] -right-[14%] h-[52%] sm:-right-[6%] sm:h-[56%] lg:-bottom-[12%] lg:right-[2%] lg:h-[100%]"
+            stickers={<Floating className="right-[4%] top-[8%] w-[10%] min-w-12" rotate={10}><HeartSticker className="h-auto w-full" /></Floating>}
+          />
+          <FeatureCard
+            id="chats"
+            index={1}
+            tone="purple"
+            title={lang?.mobile_app_point_chats || 'Чаты и звонки'}
+            text={lang?.mobile_app_section_chats_desc || 'Сообщения приходят мгновенно, а голосовые вызовы звучат чисто даже на слабом соединении.'}
+            tags={[lang?.mobile_landing_tag_calls || 'Звонки', lang?.mobile_landing_tag_groups || 'Группы', lang?.mobile_landing_tag_stickers || 'Стикеры']}
+            shot={SHOTS.messages}
+            shotClassName="-bottom-[6%] right-[2%] h-[54%] sm:right-[6%] sm:h-[58%] lg:-bottom-[10%] lg:right-[8%] lg:h-[104%]"
+            stickers={<Floating className="right-[36%] top-[10%] hidden w-[9%] lg:block" rotate={-8}><BubbleSticker className="h-auto w-full" /></Floating>}
+          />
+          <FeatureCard
+            id="pulse"
+            index={2}
+            tone="lilac"
+            title="Pulse"
+            text={lang?.mobile_app_section_music_desc || 'Играет при заблокированном экране и сохраняет треки в телефон для прослушивания офлайн.'}
+            tags={[lang?.mobile_landing_tag_lyrics || 'Тексты песен', lang?.mobile_landing_tag_eq || 'Эквалайзер', lang?.mobile_landing_tag_offline || 'Офлайн']}
+            shot={SHOTS.pulse}
+            shotClassName="-bottom-[8%] right-[8%] h-[54%] sm:right-[20%] sm:h-[58%] lg:-bottom-[14%] lg:right-[30%] lg:h-[104%]"
+            extraShot={{ shot: SHOTS.lyrics, className: 'hidden -bottom-[22%] -right-[8%] h-[84%] lg:block' }}
+            stickers={<Floating className="right-[4%] top-[6%] w-[9%] min-w-12" rotate={14}><DiscSticker className="lp-spin h-auto w-full" /></Floating>}
+          />
         </div>
-      </section>
 
-      <FinalCta lang={lang} onPick={setPlatform} />
+        {/* Под капотом */}
+        <section id="more" className="flex w-full flex-col gap-3">
+          <Reveal>
+            <h2 className={cn(HEAD, 'mb-3 px-3 text-[clamp(3.4rem,10vw,9rem)] text-white lg:px-0')}>{lang?.mobile_landing_more_title || 'Под капотом'}</h2>
+          </Reveal>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Reveal><Tile icon="IC-music" title={lang?.mobile_landing_tile_music || 'Музыка в фоне'} text={lang?.mobile_landing_tile_music_text || 'Играет при погасшем экране, управление — из шторки и с экрана блокировки.'} sticker={<DiscSticker className="lp-spin h-auto w-full" />} /></Reveal>
+            <Reveal delay={0.08}><Tile icon="IC-notification" title={lang?.mobile_landing_tile_push || 'Мгновенные уведомления'} text={lang?.mobile_landing_tile_push_text || 'Сообщения и звонки приходят сразу, даже когда приложение закрыто.'} sticker={<BoltSticker className="h-auto w-full" />} /></Reveal>
+            <Reveal><Tile icon="IC-lock" title={lang?.mobile_landing_tile_passkeys || 'Вход по Passkeys'} text={lang?.mobile_landing_tile_passkeys_text || 'Отпечаток или Face ID вместо пароля — быстро и надёжно.'} sticker={<CoinSticker className="h-auto w-full" />} /></Reveal>
+            <Reveal delay={0.08}><Tile icon="IC-download" title={lang?.mobile_landing_tile_offline || 'Офлайн-треки'} text={lang?.mobile_landing_tile_offline_text || 'Сохраняйте любимое в телефон и слушайте без интернета.'} sticker={<HeartSticker className="h-auto w-full" />} /></Reveal>
+          </div>
+        </section>
+
+        <FinalCta lang={lang} onPick={setPlatform} />
       </div>
 
       <InstallModal lang={lang} platform={platform} onClose={() => setPlatform(null)} />

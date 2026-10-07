@@ -546,7 +546,7 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center w-full h-screen">
+      <div className="flex justify-center items-center w-full min-h-[calc(100dvh-5rem)] lg:min-h-dvh">
         <BrandLoader size="lg" />
       </div>
     );
@@ -554,7 +554,7 @@ export default function EditPostContent({ postId, returnToPost = false }: EditPo
 
   if (!isAuthenticated) {
     return (
-      <div className="flex justify-center items-center w-full h-screen">
+      <div className="flex justify-center items-center w-full min-h-[calc(100dvh-5rem)] lg:min-h-dvh">
         <BrandLoader size="lg" />
       </div>
     );

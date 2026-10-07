@@ -158,7 +158,7 @@ export default function CommentCard<T extends CommentCardData>({
 
       <div
         ref={contentRef}
-        className="mt-1.5 -mb-1.5 text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words"
+        className="mt-1.5 -mb-1.5 text-base lg:text-lg text-zinc-200 font-medium whitespace-pre-wrap break-words select-text"
         dangerouslySetInnerHTML={commentHtmlProps}
       />
     </div>

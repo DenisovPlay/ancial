@@ -919,11 +919,17 @@ export default function UserProfileContent({ login }: { login: string }) {
   const currentAvatar = userData?.img || '/img/placeholders/user.png';
 
   return (
-    <div className="flex justify-center items-center md:pb-3">
+    <div className={cn('flex justify-center items-center', !error && 'md:pb-3')}>
       {loading ? (
         <ProfileSkeleton />
       ) : error ? (
-        <ErrorState variant="page" title={htmlToPlainText(error)} actionHref="/" actionLabel={strings.home} />
+        <ErrorState
+          variant="page"
+          title={htmlToPlainText(error.split(/<br\s*\/?>/i)[0])}
+          description={htmlToPlainText(error.split(/<br\s*\/?>/i).slice(1).join(' ')) || undefined}
+          actionHref="/"
+          actionLabel={strings.home}
+        />
       ) : userData ? (
         <div className="flex flex-col gap-3 items-center flex-grow w-full max-w-screen-2xl">
           <span className="text-3xl font-extralight w-full pt-3 pl-3 md:pl-0 truncate z-[30]">

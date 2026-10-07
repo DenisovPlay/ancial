@@ -108,7 +108,7 @@ export default function InviteContent() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-3 text-white">
+    <div className="min-h-[calc(100dvh-5rem)] lg:min-h-dvh w-full flex items-center justify-center p-3 text-white">
       <div className="w-full max-w-md p-3 bg-zinc-900 rounded-3xl border border-zinc-600/30 shadow-2xl flex flex-col items-center gap-5 text-center">
         {loading ? (
           <div className="py-12">

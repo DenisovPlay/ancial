@@ -719,6 +719,73 @@ html[data-motion-lyrics='lines'] .pulse-lyric-line.is-active .pulse-lyric-word {
   img {
     transition-property: transform, translate, scale, rotate, opacity, filter, box-shadow;
   }
+
+  /* Выделение текста по умолчанию выключено (интерфейс — не документ). Включено только для
+     содержимого: поля ввода, посты, комментарии, сообщения, описания, текст песни на ПК, раздел /about.
+     Нужное место — класс `select-text` (Tailwind-утилита сильнее слоя base). */
+  body,
+  img {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  :where([id^='msg-body-'], [id^='textblock'], .post-content-container) {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .pulse-lyric-line,
+    .pulse-lyric-line * {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+  }
+
+  /* Интерфейсный «хром» не выделяется: кнопки, табы, меню, подписи, заголовки страниц и виджеты
+     главной. Содержимое (посты, сообщения, комментарии, поля ввода) остаётся выделяемым.
+     Слой base — любой Tailwind-класс (`select-text`) переопределяет правило на месте. */
+  :where(
+    button,
+    summary,
+    label,
+    nav,
+    select,
+    [role='button'],
+    [role='tab'],
+    [role='tablist'],
+    [role='menu'],
+    [role='menuitem'],
+    [role='status'],
+    [role='progressbar'],
+    [data-app-nav],
+    .glass-nav,
+    .glass-menu,
+    .glass-tooltip,
+    .text-3xl.font-extralight,
+    .home-route
+  ),
+  :where(
+    button,
+    summary,
+    label,
+    nav,
+    [role='tab'],
+    [role='tablist'],
+    [role='menu'],
+    [data-app-nav],
+    .glass-nav,
+    .glass-menu,
+    .text-3xl.font-extralight,
+    .home-route
+  ) * {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Поля ввода внутри «хрома» (поиск на главной, подписи-обёртки) выделяются как обычно */
+  :where(input, textarea, [contenteditable='true'], [contenteditable='']) {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 /* Пока грузится — уводим уже пришедшие пиксели (прогрессивный JPEG) за край: видна только подложка. */

@@ -2621,7 +2621,7 @@ export default function MessagesContent() {
               {!routeHash ? (
                 <div
                   id="welcome-pane"
-                  className="hidden h-full w-full flex-col items-center justify-center gap-3 p-3 text-center lg:flex lg:flex-row"
+                  className="hidden h-full w-full flex-col items-center justify-center gap-3 p-3 text-center select-none lg:flex lg:flex-row"
                 >
                   <AppImage skeleton={false}
                     width={256}

@@ -921,11 +921,11 @@ export default function GroupProfileContent({ link }: { link: string }) {
   const currentAvatar = groupData?.img || '/img/placeholders/group.png';
 
   return (
-    <div className="flex justify-center items-center md:py-3">
+    <div className={cn('flex justify-center items-center', !blocked && !error && 'md:py-3')}>
       {loading ? (
         <GroupSkeleton />
       ) : blocked ? (
-        <div className="flex flex-col gap-3 min-h-screen items-center justify-center -m-3 p-3">
+        <div className="flex flex-col gap-3 min-h-[calc(100dvh-5rem)] lg:min-h-dvh items-center justify-center p-3">
           <AppImage skeleton={false}
             src="/img/load-placeholders/nothingfound.webp"
             alt="Blocked group"

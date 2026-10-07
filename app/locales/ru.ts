@@ -1233,7 +1233,7 @@ export const ru: Record<string, string> = {
     "mobile_landing_chip_chat_title": "Новое сообщение",
     "mobile_landing_chip_chat_text": "Го в звонок?",
     "mobile_landing_chip_play_title": "Сейчас играет",
-    "mobile_landing_chip_play_track": "Ночной рейс",
+    "mobile_landing_chip_play_track": "Контракт",
     "mobile_landing_tag_chrono": "Хронология",
     "mobile_landing_tag_topics": "Темы",
     "mobile_landing_tag_bookmarks": "Закладки",

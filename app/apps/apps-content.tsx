@@ -374,7 +374,7 @@ const appCategoryIcon = (key: string) => `IC-app-category-${APP_CATEGORY_ICONS.h
 export default function AppsContent() {
   return (
     <Suspense fallback={
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex min-h-[calc(100dvh-5rem)] lg:min-h-dvh items-center justify-center">
         <BrandLoader size="md" />
       </div>
     }>

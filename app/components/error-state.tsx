@@ -43,7 +43,8 @@ export default function ErrorState({
       role="alert"
       className={cn(
         'flex w-full flex-col items-center justify-center gap-3 text-center text-zinc-100',
-        variant === 'page' && 'min-h-dvh p-3',
+        // 5rem — нижняя навигация (pb-20 у main-content до lg), иначе страница выше экрана и появляется прокрутка
+        variant === 'page' && 'min-h-[calc(100dvh-5rem)] lg:min-h-dvh p-3',
         variant === 'block' && 'rounded-3xl border border-zinc-600/30 bg-zinc-900 p-6',
         compact && 'p-3',
       )}

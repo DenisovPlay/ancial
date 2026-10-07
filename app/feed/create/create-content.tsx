@@ -85,7 +85,7 @@ export default function CreatePostContent() {
   const isClient = useIsClient();
   if (!isClient) {
     return (
-      <div className="flex justify-center items-center w-full h-screen">
+      <div className="flex justify-center items-center w-full min-h-[calc(100dvh-5rem)] lg:min-h-dvh">
         <BrandLoader size="lg" />
       </div>
     );
@@ -517,7 +517,7 @@ function CreatePostForm() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center w-full h-screen">
+      <div className="flex justify-center items-center w-full min-h-[calc(100dvh-5rem)] lg:min-h-dvh">
         <BrandLoader size="lg" />
       </div>
     );
@@ -525,7 +525,7 @@ function CreatePostForm() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex justify-center items-center w-full h-screen">
+      <div className="flex justify-center items-center w-full min-h-[calc(100dvh-5rem)] lg:min-h-dvh">
         <BrandLoader size="lg" />
       </div>
     );
