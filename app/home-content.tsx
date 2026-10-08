@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import Script from 'next/script';
-import { motion } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
-import { useNotification } from './context/NotificationContext';
 import { sanitizeUserHtml } from './lib/sanitize-html';
-import { createGoogleCseSearchController, type GoogleCseElement } from './lib/google-cse';
+import { classifySearchInput, searchHref } from './lib/search-query';
 import {
   readCachedCurrency,
   readCachedWeather,
@@ -25,9 +23,11 @@ import {
   writeCachedWeather,
 } from './lib/home-info-cache';
 import { safeFetchJson } from './lib/safe-fetch-json';
+import SearchBox from './components/search-box';
 import WeatherMarkerOnboarding from './components/weather-marker-onboarding';
 import AppImage from './components/app-image';
 import Icon from './components/svg-icon';
+import SearchContent from './search/search-content';
 
 interface HomeApiResponse<T> {
   success: boolean;
@@ -38,141 +38,16 @@ interface LocationData {
   city: string | null;
 }
 
-type GoogleSuggestionsPayload = [string, string[]];
-
-type HomeWindow = Window &
-  typeof globalThis &
-  Record<string, unknown> & {
-    google?: {
-      search?: {
-        cse?: {
-          element?: {
-            getElement: (name: string) => { execute: (query: string) => void } | null;
-            render: (options: Record<string, unknown>) => void;
-          };
-        };
-      };
-    };
-  };
-
 export default function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryParam = searchParams.get('q') || '';
 
-  const { lang, langCode } = useAuth();
-  const { showNote } = useNotification();
-
-
-  const [searchVal, setSearchVal] = useState(queryParam);
-  const [imageModal, setImageModal] = useState<{ src: string; title: string; url: string; pageUrl: string } | null>(null);
-  // Google CSE (скрипт + ~280 строк стилей выдачи) нужен только для поиска: грузим при первом ?q=
-  // и дальше держим — повторный поиск не перезагружает скрипт и не теряет отрендеренный элемент.
-  const [cseRequested, setCseRequested] = useState(Boolean(queryParam));
-  if (queryParam && !cseRequested) setCseRequested(true);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const { langCode } = useAuth();
 
   const [currencies, setCurrencies] = useState<HomeCurrencyCacheData | null>(null);
   const [weather, setWeather] = useState<HomeWeatherCacheData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState<boolean>(false);
-
-  const activeScriptIdRef = useRef<string | null>(null);
-  const activeCallbackRef = useRef<string | null>(null);
-  const cseControllerRef = useRef<ReturnType<typeof createGoogleCseSearchController> | null>(null);
-  const isNavigatingRef = useRef(false);
-  const gnameRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    // Уникальное имя CSE-элемента генерим один раз на клиенте
-    // (Math.random недопустим в рендере — impure function).
-    if (gnameRef.current === null) {
-      gnameRef.current = `gcs-${Math.round(Math.random() * 1000000)}`;
-    }
-    if (!cseControllerRef.current && typeof window !== 'undefined') {
-      cseControllerRef.current = createGoogleCseSearchController({
-        getElement: () => {
-          const google = (window as HomeWindow).google;
-          if (!google?.search?.cse?.element) return null;
-
-          const gname = gnameRef.current ?? 'gcs-0';
-          let cse = google.search.cse.element.getElement(gname);
-
-          if (!cse) {
-            try {
-              const container = document.getElementById('gcs-container');
-              if (container && container.innerHTML === '') {
-                google.search.cse.element.render({
-                  div: 'gcs-container',
-                  tag: 'searchresults-only',
-                  gname: gname
-                });
-                cse = google.search.cse.element.getElement(gname);
-              }
-            } catch (e) {
-              console.error('Failed to render GCS', e);
-            }
-          }
-
-          return cse as GoogleCseElement | null;
-        },
-      });
-    }
-  }, []);
-
-  // Sync state if URL query param changes
-  useEffect(() => {
-    // URL → стейт: источник правды здесь, альтернативы без каскада нет.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSearchVal(queryParam);
-    if (!queryParam) {
-      setShowSuggestions(false);
-    }
-  }, [queryParam]);
-
-  // Trigger Google Custom Search programmatic execution when queryParam changes
-  useEffect(() => {
-    cseControllerRef.current?.syncQuery(queryParam);
-  }, [queryParam]);
-
-  useEffect(() => {
-    return () => {
-      cseControllerRef.current?.dispose();
-    };
-  }, []);
-
-  // Intercept GCS image thumbnail clicks → show custom modal instead of GCS native preview
-  useEffect(() => {
-    if (!queryParam) return;
-
-    const handleImageClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const card = target.closest('.gsc-imageResult.gsc-result') as HTMLElement | null;
-      if (!card) return;
-
-      // Prevent GCS from doing its own preview logic
-      e.stopPropagation();
-      e.preventDefault();
-
-      const img = card.querySelector('img.gs-image') as HTMLImageElement | null;
-      const link = card.querySelector('a.gs-image') as HTMLAnchorElement | null;
-      const dataLink = card.querySelector('[data-ctorig]') as HTMLElement | null;
-
-      const src = img?.src || '';
-      const pageUrl = link?.href || dataLink?.getAttribute('data-ctorig') || '';
-      // Try to get title from parent anchor title or aria-label
-      const title = link?.title || link?.getAttribute('aria-label') || img?.alt || '';
-
-      if (!src) return;
-
-      setImageModal({ src, title, url: pageUrl, pageUrl });
-    };
-
-    // Attach listener on document with capture so we fire before GCS
-    document.addEventListener('click', handleImageClick, true);
-    return () => document.removeEventListener('click', handleImageClick, true);
-  }, [queryParam]);
 
   // ─── Currency: кэш → показ → фоновое обновление ──────────────────────────
   useEffect(() => {
@@ -299,207 +174,18 @@ export default function HomeContent() {
   }, []);
 
 
-  // Autocomplete debounced suggestion fetch
-  useEffect(() => {
-    const trimmed = searchVal.trim();
-    if (trimmed === '') {
-      // Пустой запрос — терминальное состояние: подсказки сброшены.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSuggestions([]);
-      return;
-    }
-
-    if (isNavigatingRef.current) {
-      isNavigatingRef.current = false;
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      const lowerQuery = trimmed.toLowerCase();
-      const disallowed = ['русня', 'хохлы', 'укропы', 'топчу ру', 'чурки', 'хачи', 'москал'];
-      const homeWindow = window as HomeWindow;
-      if (disallowed.some((term) => lowerQuery.includes(term))) {
-        setSuggestions([]);
-        showNote({
-          content: lang?.be_kind_to_people || 'Будьте добрее к другим людям!',
-          type: 'error',
-          time: 5,
-        });
-        return;
-      }
-
-      const callbackName = `searchHelp_${Math.round(Math.random() * 1000000)}`;
-
-      // Clean up previous call script and callback to avoid leaks
-      if (activeScriptIdRef.current) {
-        const prevScript = document.getElementById(activeScriptIdRef.current);
-        prevScript?.remove();
-        const prevCallback = activeCallbackRef.current;
-        if (prevCallback) {
-          delete homeWindow[prevCallback];
-        }
-      }
-
-      activeScriptIdRef.current = callbackName;
-      activeCallbackRef.current = callbackName;
-
-      homeWindow[callbackName] = (data: unknown) => {
-        if (Array.isArray(data) && Array.isArray(data[1])) {
-          const [, payload] = data as GoogleSuggestionsPayload;
-          const googleSuggestions = payload.filter((item) => typeof item === 'string');
-          const combined = [
-            trimmed,
-            ...googleSuggestions.filter((item) => item.toLowerCase() !== trimmed.toLowerCase()).slice(0, 3)
-          ];
-          setSuggestions(combined);
-          setFocusedIndex(0);
-        }
-      };
-
-      const script = document.createElement('script');
-      script.id = callbackName;
-      script.src = `https://suggestqueries.google.com/complete/search?client=chrome&hl=ru&q=${encodeURIComponent(
-        trimmed
-      )}&callback=${callbackName}`;
-      document.head.appendChild(script);
-    }, 150);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [lang?.be_kind_to_people, searchVal, showNote]);
-
-  // Clean up JSONP callbacks on unmount
-  useEffect(() => {
-    return () => {
-      if (activeScriptIdRef.current) {
-        const prevScript = document.getElementById(activeScriptIdRef.current);
-        prevScript?.remove();
-      }
-      const prevCallback = activeCallbackRef.current;
-      if (prevCallback) {
-        delete (window as HomeWindow)[prevCallback];
-      }
-    };
-  }, []);
-
-  const handleSearch = (val: string) => {
-    const query = val.trim();
-    if (!query) return;
-
-    setShowSuggestions(false);
-
-    // Blur active input to prevent outline focus and keyboard staying open
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    // Remove browser selection to prevent "выделяется страница какого-то хуя"
-    window.getSelection()?.removeAllRanges();
-
-    // Is link check
-    const urlPattern = /^(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.(com|ru|net|org|io|kz|рф)[^\s]*)$/i;
-    if (urlPattern.test(query)) {
-      let targetUrl = query;
-      if (!/^https?:\/\//i.test(targetUrl)) {
-        targetUrl = 'https://' + targetUrl;
-      }
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    router.push('/?q=' + encodeURIComponent(query));
-  };
-
-  const handleSearchSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    handleSearch(searchVal);
-  };
-
-  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (suggestions.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const nextIdx = focusedIndex < suggestions.length - 1 ? focusedIndex + 1 : 0;
-      setFocusedIndex(nextIdx);
-      isNavigatingRef.current = true;
-      setSearchVal(suggestions[nextIdx]);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const nextIdx = focusedIndex > 0 ? focusedIndex - 1 : suggestions.length - 1;
-      setFocusedIndex(nextIdx);
-      isNavigatingRef.current = true;
-      setSearchVal(suggestions[nextIdx]);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (focusedIndex >= 0 && focusedIndex < suggestions.length) {
-        selectSuggestion(suggestions[focusedIndex]);
-      } else {
-        handleSearch(searchVal);
-      }
-    } else if (e.key === 'Escape') {
-      setShowSuggestions(false);
+  const handleSearch = (input: string) => {
+    const parsed = classifySearchInput(input);
+    if (parsed.kind === 'url') {
+      window.open(parsed.url, '_blank', 'noopener,noreferrer');
+    } else if (parsed.kind === 'query') {
+      router.push(searchHref(parsed.query));
     }
   };
-
-  const selectSuggestion = (val: string) => {
-    setSearchVal(val);
-    handleSearch(val);
-  };
-
-  const searchBarContent = (
-    <>
-      <form onSubmit={handleSearchSubmit} className="glass-input [--glass-sat:2] flex justify-center items-center border border-zinc-600/30 rounded-full w-full p-1 h-12 relative z-[11]">
-        <input
-          value={searchVal}
-          onChange={(e) => {
-            isNavigatingRef.current = false;
-            setSearchVal(e.target.value);
-            setShowSuggestions(true);
-          }}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          onKeyDown={handleSearchKeyDown}
-          className="bg-transparent w-full focus:ring-0 pl-3 placeholder-zinc-600 text-white outline-hidden border-none h-full"
-          placeholder={lang?.search || 'Поиск...'}
-          autoComplete="off"
-        />
-        <button
-          type="submit"
-          aria-label="Search"
-          className="cursor-pointer shrink-0 w-10 h-10 flex items-center justify-center active:scale-95 duration-300 rounded-full hover:bg-zinc-700"
-        >
-          <Icon name="IC-search" className="inline w-8 h-8 fill-white" />
-        </button>
-      </form>
-
-      {suggestions.length > 0 && showSuggestions && (
-        <div className="absolute top-0 rounded-3xl flex flex-col gap-1 w-full pt-14 z-[10]">
-          {suggestions.map((suggestion, idx) => {
-            const isFocused = idx === focusedIndex;
-            return (
-              <span
-                key={idx}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  selectSuggestion(suggestion);
-                }}
-                className={`glass-menu [--glass-blur:16px] border border-zinc-600/30 overflow-hidden shadow rounded-3xl w-full p-2 cursor-pointer active:scale-95 duration-300 ${isFocused ? '[--glass-tint:var(--color-zinc-800)] [--glass-alpha:1]' : '[--glass-alpha:0.8]'
-                  } hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:0.9] text-white`}
-              >
-                {suggestion}
-              </span>
-            );
-          })}
-        </div>
-      )}
-    </>
-  );
 
   return (
     <div className="home-route relative isolate h-screen min-h-screen max-h-screen h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-full flex flex-col items-center overflow-hidden overscroll-none duration-300">
-
-      {/* 1. Landing page view (hidden when queryParam is set) */}
+      {/* 1. Главная (скрыта, пока задан запрос) */}
       <div className={`w-full h-full flex flex-col items-center justify-center p-3 md:p-0 gap-3 absolute inset-0 duration-300 transition-opacity ${queryParam ? 'opacity-0 pointer-events-none z-0' : 'opacity-100 z-10'}`}>
         {/* Backgrounds */}
         <video
@@ -527,12 +213,12 @@ export default function HomeContent() {
           initial={false}
           animate={{ opacity: queryParam ? 0 : 1, y: queryParam ? -20 : 0 }}
           transition={{ duration: 0.3 }}
-          className="-mt-32 /hidden w-full max-w-screen-md flex items-center gap-3 relative z-10 select-none"
+          className="-mt-32 w-full max-w-screen-md flex items-center gap-3 relative z-10 select-none"
         >
           {/* Высота фиксирована: логотип уезжает в шапку выдачи (layoutId), а карточка не схлопывается. */}
           <div className="flex h-8 flex-col items-center justify-center text-center w-full lg:h-10">
             {!queryParam && (
-              <motion.div layoutId="home-logo" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="inline-flex">
+              <motion.div layoutId="home-logo" transition={{ type: 'spring', stiffness: 600, damping: 50 }} className="inline-flex">
                 <AppImage width={132} height={40} loading="eager" src="/img/zypo/letter.svg" className='h-8 lg:h-10 w-auto inline pointer-events-none select-none' draggable={false} alt="Zypo" />
               </motion.div>
             )}
@@ -540,13 +226,11 @@ export default function HomeContent() {
         </motion.div>
 
         {/* Search Input Container */}
-        {
-          !queryParam && (
-            <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
-              {searchBarContent}
-            </motion.div>
-          )
-        }
+        {!queryParam && (
+          <motion.div layoutId="search-bar" transition={{ type: 'spring', stiffness: 600, damping: 50 }} className="relative flex w-full max-w-screen-md flex-col z-[99999]">
+            <SearchBox onSearch={handleSearch} />
+          </motion.div>
+        )}
 
         {/* Information Widgets below Search */}
         <motion.div
@@ -596,411 +280,12 @@ export default function HomeContent() {
             </>
           )}
         </motion.div>
-      </div >
+      </div>
 
-      {/* 2. Search Results View (persists in DOM, only hidden when q is empty) */}
-      < div className={`w-full h-screen overflow-y-auto flex flex-col items-center lg:items-start p-3 pt-0 gap-3 absolute inset-0 duration-300 transition-opacity ${queryParam ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`
-      }>
-        {cseRequested ? (
-          <>
-            <Script
-              id="google-cse"
-              async
-              src="https://cse.google.com/cse.js?cx=eb137b61a6e228fd9"
-              strategy="afterInteractive"
-              onReady={() => {
-                cseControllerRef.current?.notifyScriptReady();
-              }}
-            />
-            <style dangerouslySetInnerHTML={{
-              __html: `
-          /* === Base containers === */
-          .gcse-searchresults-only{ min-height:max-content; }
-          #___gcse_0, .gsc-control-cse, .gsc-control-wrapper-cse,
-          .gsc-results-wrapper-nooverlay, .gsc-results-wrapper-visible,
-          .gsc-positioningWrapper, .gsc-wrapper,
-          .gsc-resultsbox-visible, .gsc-resultsRoot{
-              background:transparent !important;
-              border:none !important;
-              box-shadow:none !important;
-          }
-          .gsc-control-cse{ padding:0 !important; }
-          .gsc-control-wrapper-cse{ padding:0 !important; }
-          .gsc-wrapper{ width:100% !important; max-width:700px !important; }
-
-          /* === Hidden elements === */
-          .gsc-above-wrapper-area,
-          .gsc-adBlock, .gsc-adBlockNoHeight,
-          .gcse-branding, .gcsc-branding, .gcsc-branding-clickable,
-          .gcsc-find-more-on-google, .gcsc-find-more-on-google-root, .gcsc-more-maybe-branding-root,
-          .gsc-clear-button, .gsc-search-box{
-              display:none !important;
-              opacity:0 !important;
-              pointer-events:none !important;
-          }
-          .gs-spacer{ display:none !important; }
-          .gs-richsnippet-box, .gs-per-result-labels{ display:none !important; }
-          .gsc-webResult-divider{ display:none !important; }
-
-          /* === Tabs === */
-          .gsc-tabsArea{
-              display:flex !important;
-              align-items:center !important;
-              flex-wrap:wrap !important;
-              gap:0.75rem !important;
-              background:transparent !important;
-              border:none !important;
-              margin-top:0 !important;
-          }
-          .gsc-tabHeader{
-              background:rgb(24 24 27 / clamp(0, calc(1 - 0.42 * var(--glass-panel-clarity-k)), 1)) !important;
-              border:1px solid rgba(82,82,91,0.3) !important;
-              border-radius:1.5rem !important;
-              padding:0.55rem 1.1rem !important;
-              margin:0 !important;
-              color:rgb(212,212,216) !important;
-              font-size:0.875rem !important;
-              line-height:1.5 !important;
-              cursor:pointer !important;
-              backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important;
-              transition:all 0.3s !important;
-              box-shadow:none !important;
-          }
-          .gsc-tabhActive{
-              background:rgba(39,39,42,0.92) !important;
-              color:white !important;
-              border-color:rgba(113,113,122,0.45) !important;
-          }
-          .gsc-tabhInactive:hover{
-              background:rgba(39,39,42,0.8) !important;
-              color:white !important;
-          }
-
-          /* === Web results expansion area === */
-          .gsc-webResult > .gsc-expansionArea,
-          .gsc-results.gsc-webResult .gsc-expansionArea{
-              background:transparent !important;
-              border:none !important;
-              display:flex !important;
-              flex-direction:column !important;
-              gap:0.75rem !important;
-              padding-top:0.5rem !important;
-          }
-
-          /* === Web result card === */
-          .gsc-webResult.gsc-result{
-              background:rgb(24 24 27 / clamp(0, calc(1 - 0.42 * var(--glass-panel-clarity-k)), 1)) !important;
-              border:1px solid rgba(82,82,91,0.3) !important;
-              border-radius:1.5rem !important;
-              backdrop-filter:blur(calc(12px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(12px * var(--glass-panel-blur-k))) !important;
-              padding:0.875rem 1.125rem !important;
-              transition:all 0.3s !important;
-              overflow:hidden !important;
-              margin-bottom:0 !important;
-          }
-          .gsc-webResult.gsc-result:hover{
-              background:rgba(39,39,42,0.82) !important;
-              border-color:rgba(82,82,91,0.5) !important;
-              transform:translateY(-1px) !important;
-          }
-          .gsc-table-result,
-          .gsc-table-cell-snippet-close,
-          .gsc-table-cell-thumbnail,
-          .gsc-thumbnail-inside{
-              background:transparent !important;
-              border:none !important;
-              padding:0 !important;
-          }
-
-          /* === Web result text === */
-          .gs-title, .gs-title b, .gs-title a, .gs-title a b{
-              color:rgb(244,244,245) !important;
-              font-size:1rem !important;
-              font-weight:600 !important;
-              text-decoration:none !important;
-              line-height:1.4 !important;
-          }
-          .gs-title a:hover, .gs-title a:hover b{
-              color:rgb(228,228,231) !important;
-              text-decoration:underline !important;
-          }
-          .gs-snippet, .gs-snippet b{
-              color:rgb(161,161,170) !important;
-              font-size:0.875rem !important;
-              line-height:1.6 !important;
-              margin-top:0.25rem !important;
-          }
-          .gs-snippet b{ color:rgb(212,212,216) !important; }
-          .gs-visibleUrl, .gs-visibleUrl-short,
-          .gs-visibleUrl-long, .gs-visibleUrl-breadcrumb,
-          .gs-visibleUrl span{
-              color:rgb(113,113,122) !important;
-              font-size:0.75rem !important;
-          }
-          .gs-bidi-start-align{ border:none !important; }
-
-          /* === Image results container === */
-          .gsc-imageResult > .gsc-expansionArea{
-              display:grid !important;
-              grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)) !important;
-              gap:0.75rem !important;
-              padding:0.5rem 0 !important;
-              flex-direction:unset !important;
-              background:transparent !important;
-              border:none !important;
-          }
-
-          /* === Image result card (not selected) === */
-          .gsc-imageResult.gsc-result{
-              background:rgb(24 24 27 / clamp(0, calc(1 - 0.42 * var(--glass-panel-clarity-k)), 1)) !important;
-              border:1px solid rgba(82,82,91,0.3) !important;
-              border-radius:1.5rem !important;
-              backdrop-filter:blur(calc(12px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(12px * var(--glass-panel-blur-k))) !important;
-              padding:0 !important;
-              margin:0 !important;
-              overflow:hidden !important;
-              transition:all 0.3s !important;
-              aspect-ratio:1/1 !important;
-              min-height:0 !important;
-          }
-          .gsc-imageResult.gsc-result:not(.gs-selectedImageResult):hover{
-              background:rgba(39,39,42,0.82) !important;
-              border-color:rgba(113,113,122,0.45) !important;
-              transform:scale(1.02) !important;
-          }
-          .gsc-imageResult.gsc-result:not(.gs-selectedImageResult):active{
-              transform:scale(0.97) !important;
-          }
-
-          /* === Image inner elements — fill card completely === */
-          .gs-imageResult{
-              overflow:hidden !important;
-              padding:0 !important;
-              margin:0 !important;
-              width:100% !important;
-              height:100% !important;
-              display:flex !important;
-              flex-direction:column !important;
-          }
-          .gs-image-thumbnail-box{
-              width:100% !important;
-              height:100% !important;
-              overflow:hidden !important;
-              display:block !important;
-          }
-          .gs-image-box{
-              width:100% !important;
-              height:100% !important;
-              display:block !important;
-          }
-          a.gs-image{
-              width:100% !important;
-              height:100% !important;
-              display:block !important;
-          }
-          img.gs-image{
-              width:100% !important;
-              height:100% !important;
-              max-width:100% !important;
-              max-height:100% !important;
-              object-fit:cover !important;
-              display:block !important;
-              border-radius:0 !important;
-              border:none !important;
-          }
-
-          /* === Selected image card — stays as thumbnail (preview via custom React modal) === */
-          .gsc-imageResult.gsc-result.gs-selectedImageResult{
-              aspect-ratio:1/1 !important;
-              height:auto !important;
-              overflow:hidden !important;
-              border-radius:1.5rem !important;
-              padding:0 !important;
-              background:rgba(24,24,27,0.68) !important;
-              border-color:rgba(113,113,122,0.5) !important;
-              box-shadow:0 0 0 1px rgba(113,113,122,0.28), 0 12px 30px rgba(0,0,0,0.28) !important;
-              order:unset !important;
-              grid-column:unset !important;
-          }
-          .gs-selectedImageResult .gs-imageResult{
-              overflow:hidden !important;
-              padding:0 !important;
-              display:flex !important;
-              flex-direction:column !important;
-              height:100% !important;
-              width:100% !important;
-          }
-          .gs-selectedImageResult .gs-image-thumbnail-box{ display:block !important; }
-          /* Hide ALL native GCS preview elements — custom modal is used instead */
-          .gs-imagePreviewArea,
-          .gs-image-popup-box,
-          .gs-mobilePreview,
-          .gs-previewVisit,
-          .gs-previewTitle,
-          .gs-previewDescription,
-          .gs-previewSnippet{ display:none !important; opacity:0 !important; pointer-events:none !important; }
-
-
-
-          /* === No results === */
-          .gs-no-results-result > .gs-snippet{
-              background:rgba(234,179,8,0.12) !important;
-              color:rgb(254,249,195) !important;
-              border:1px solid rgba(234,179,8,0.3) !important;
-              border-radius:1.5rem !important;
-              padding:1rem 1.25rem !important;
-              backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important;
-          }
-
-          /* === Misc text styles === */
-          .gs-spelling{ color:rgb(192,132,252) !important; }
-          .gs-spelling > a{ color:rgb(228,228,231) !important; }
-          .gs-fileFormatType{ color:rgb(113,113,122) !important; }
-          .gs-captcha-msg{ color:rgb(228,228,231) !important; }
-
-          /* === Pagination === */
-          .gsc-cursor-box{
-              border:none !important;
-              display:flex !important;
-              justify-content:center !important;
-              gap:0.375rem !important;
-              padding:0.75rem 0 !important;
-              margin-top:0.25rem !important;
-          }
-          .gsc-cursor-page{
-              padding:0.4rem 0.85rem !important;
-              background:rgb(24 24 27 / clamp(0, calc(1 - 0.42 * var(--glass-panel-clarity-k)), 1)) !important;
-              border:1px solid rgba(82,82,91,0.3) !important;
-              color:rgb(161,161,170) !important;
-              border-radius:1.5rem !important;
-              font-size:0.875rem !important;
-              cursor:pointer !important;
-              transition:all 0.3s !important;
-          }
-          .gsc-cursor-page:hover{ background:rgba(39,39,42,0.82) !important; color:white !important; }
-          .gsc-cursor-current-page{
-              background:rgba(39,39,42,0.92) !important;
-              border-color:rgba(113,113,122,0.45) !important;
-              color:white !important;
-          }
-          .gsc-results .gsc-cursor-box .gsc-cursor-numbered-page,
-          .gsc-cursor-numbered-page{ color:white !important; }
-          .gsc-cursor-next-page{ color:rgb(212,212,216) !important; font-size:0.875rem !important; }
-          .gsc-cursor-chevron{ fill:rgb(212,212,216) !important; }
-          .gsc-cursor-container-next{
-              display:flex !important;
-              align-items:center !important;
-              justify-content:flex-end !important;
-          }
-          .gsc-inline-block{
-              border-radius:999px !important;
-              backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important; -webkit-backdrop-filter:blur(calc(8px * var(--glass-panel-blur-k))) !important;
-              background:transparent !important;
-          }
-        ` }} />
-          </>
-        ) : null}
-
-        {/* Search Header Bar */}
-        <div className="w-full flex flex-col items-center lg:flex-row gap-3 sticky top-0 pt-3 bg-gradient-to-b from-black via-black/90 to-transparent z-[9999]">
-          {/* Логотип переезжает сюда из центра главной так же, как инпут (общий layoutId). */}
-          {queryParam && (
-            <motion.div layoutId="home-logo" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="shrink-0">
-              <Link
-                href="/"
-                className="cursor-pointer hover:opacity-90 active:scale-95 duration-300 block"
-              >
-                <AppImage alt="Ancial Logo" className="h-12" width={120} height={120} src="/img/zypo/letter.svg" />
-              </Link>
-            </motion.div>
-          )}
-
-          {queryParam && (
-            <motion.div layoutId="search-bar" transition={{ type: "spring", stiffness: 600, damping: 50 }} className="flex flex-col gap-1 relative w-full max-w-screen-md z-[99999]">
-              {searchBarContent}
-            </motion.div>
-          )}
-        </div>
-
-        {/* Results output */}
-        <div className="w-full h-full shrink-0 flex flex-col">
-          <div id="gcs-container" className="gcse-searchresults-only w-full"></div>
-          <div className="lg:hidden"><br /><br /><br /></div>
-        </div>
-
-        {/* Custom Image Preview Modal */}
-        {
-          imageModal && (
-            <div
-              className="glass-overlay [--glass-tint:var(--color-black)] [--glass-alpha:0.75] [--glass-blur:40px] fixed inset-0 z-[99999] flex items-center justify-center p-4"
-              onClick={() => setImageModal(null)}
-            >
-              <div
-                className="glass-panel [--glass-tint:var(--color-zinc-950)] [--glass-alpha:0.9] [--glass-blur:24px] relative flex max-h-[90vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-3xl border border-zinc-600/30 p-5 shadow-2xl md:flex-row"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Close button */}
-                <button
-                  onClick={() => setImageModal(null)}
-                  className="absolute top-3 right-3 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-zinc-600/30 bg-zinc-800/90 text-zinc-200 duration-300 active:scale-95 hover:bg-zinc-700"
-                  aria-label="Закрыть"
-                >
-                  <Icon name="IC-modal-close" className="h-4 w-4" />
-                </button>
-
-                {/* Image */}
-                <div className="flex-shrink-0 flex items-start justify-center w-full md:w-auto">
-                  <AppImage
-                    width={1024}
-                    height={1024}
-                    unoptimized
-                    src={imageModal.src}
-                    alt={imageModal.title || 'Image preview'}
-                    className="rounded-3xl object-contain"
-                    style={{ maxWidth: '100%', maxHeight: '70vh', width: 'auto', height: 'auto', minWidth: '180px' }}
-                  />
-                </div>
-
-                {/* Info */}
-                <div className="flex flex-col gap-3 flex-1 min-w-0 pt-1 pr-8">
-                  {imageModal.title && (
-                    <p className="text-zinc-100 font-semibold text-base leading-snug line-clamp-3">
-                      {imageModal.title}
-                    </p>
-                  )}
-                  {imageModal.pageUrl && (
-                    <p className="text-zinc-500 text-xs truncate">
-                      {(() => { try { return new URL(imageModal.pageUrl).hostname; } catch { return imageModal.pageUrl; } })()}
-                    </p>
-                  )}
-                  <div className="flex flex-col gap-2 mt-2">
-                    {imageModal.pageUrl && (
-                      <a
-                        href={imageModal.pageUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-800 px-5 py-2 text-sm font-medium text-white duration-300 active:scale-95 hover:bg-zinc-700"
-                      >
-                        <Icon name="IC-modal-external" className="w-4 h-4 shrink-0" />
-                        {lang?.open_page || 'Открыть страницу'}
-                      </a>
-                    )}
-                    <a
-                      href={imageModal.src}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-zinc-600/30 bg-zinc-900/80 px-5 py-2 text-sm font-medium text-zinc-300 duration-300 active:scale-95 hover:bg-zinc-800"
-                    >
-                      <Icon name="IC-modal-download" className="w-4 h-4 shrink-0" />
-                      {lang?.open_image || 'Открыть изображение'}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
-        }
-      </div >
-    </div >
+      {/* 2. Выдача (рисуется поверх, пока задан запрос; шапка с логотипом и строкой — общая с главной по layoutId) */}
+      <div className={`w-full h-full overflow-y-auto absolute inset-0 duration-300 transition-opacity ${queryParam ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+        {queryParam ? <SearchContent /> : null}
+      </div>
+    </div>
   );
 }

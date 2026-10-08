@@ -8,6 +8,7 @@ import type { CommunityDisplayRole } from './community-role';
 
 export type DialogImageSlide = ImageViewerSlide & { key: string };
 import { formatDayLabel } from '../../lib/format-day-label';
+import { callPreviewText, parseCallToken } from '../../lib/call-message';
 
 export type LangMap = Record<string, string> | null;
 
@@ -690,6 +691,9 @@ export function formatDialogPreview(messageValue: string | null | undefined, lan
       bodyText = rawText.slice(prefix.length);
     }
   }
+
+  const callRecord = parseCallToken(bodyText);
+  if (callRecord) return `${prefix}${callPreviewText(callRecord, isYou, lang)}`;
 
   const sevenTvStickerTokenData = getSevenTvStickerTokenData(bodyText);
   if (sevenTvStickerTokenData?.name || isSingleSticker(bodyText)) {

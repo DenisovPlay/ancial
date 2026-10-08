@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback } from 'react';
 import Modal from '../../components/modal';
 import type { PulseTrack } from '../../context/PulsePlayerContext';
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
@@ -32,16 +32,16 @@ export function PulseQueueModal({
   onRemoveTrack,
   onMoveTrack,
 }: PulseQueueModalProps) {
-  const currentRowRef = useRef<HTMLDivElement | null>(null);
-
-  // Открыли очередь — показываем то, что играет сейчас, а не начало списка.
-  useEffect(() => {
-    if (!isOpen) return;
-    const frame = window.requestAnimationFrame(() => {
-      currentRowRef.current?.scrollIntoView({ block: 'center' });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [currentIndex, isOpen]);
+  // Строка играющего трека монтируется уже после открытия окна (Modal рисует содержимое на следующем кадре),
+  // поэтому прокрутку делаем в ref-колбэке строки, а не в эффекте по isOpen. Крутим только список окна
+  // (scrollIntoView дёргал бы ещё и страницу под ним).
+  const centerCurrentRow = useCallback((row: HTMLDivElement | null) => {
+    const scroller = row?.closest<HTMLElement>('.overflow-y-auto');
+    if (!row || !scroller) return;
+    const rowRect = row.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    scroller.scrollTop += rowRect.top - scrollerRect.top - (scroller.clientHeight - rowRect.height) / 2;
+  }, []);
 
   return (
     <Modal
@@ -70,7 +70,7 @@ export function PulseQueueModal({
             return (
               <div
                 key={`${track.sid || i}-${i}`}
-                ref={isCurrent ? currentRowRef : undefined}
+                ref={isCurrent ? centerCurrentRow : undefined}
                 className={cn(
                   'group flex items-center justify-between gap-3 hover:pr-1.5 rounded-3xl overflow-hidden transition-all duration-200',
                   isCurrent

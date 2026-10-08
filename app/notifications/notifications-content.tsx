@@ -79,7 +79,17 @@ export default function NotificationsPage() {
     async (notification: RichNotification, actionId: string) => {
       const actorId = notification.actors[0]?.id;
       try {
-        if (actionId === 'accept' && actorId) {
+        if (notification.kind === 'incoming_call' || notification.kind === 'group_call') {
+          if (actionId === 'accept' && notification.url) {
+            router.push(notification.url);
+          } else if (actionId === 'decline') {
+            // Звонок 1:1 закрываем на сервере (звонящий увидит «отклонён»); групповой просто скрываем.
+            if (notification.params.call_id && notification.params.dialog_id) {
+              await AncialAPI.declineCall(Number(notification.params.dialog_id), notification.params.call_id);
+            }
+            feed.remove(notification.id);
+          }
+        } else if (actionId === 'accept' && actorId) {
           await AncialAPI.friendAction('add', actorId);
           feed.remove(notification.id);
         } else if (actionId === 'decline' && actorId) {

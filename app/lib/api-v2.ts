@@ -2,6 +2,7 @@
 
 import { authFetch } from './auth-fetch';
 import type { NotificationsPage } from './notifications/types';
+import type { SearchRequestType, SearchResponse } from './search-types';
 import { apiUrl } from './api-url';
 import { IS_NATIVE_APP } from './platform';
 export { getApiMessage } from './format-api-message';
@@ -913,6 +914,15 @@ export class AncialAPI {
     });
   }
 
+  /** Отклонить входящий звонок (кнопка в уведомлении): сервер закроет его как «отклонён» и сообщит звонящему. */
+  static async declineCall(dialogId: number, callId: string): Promise<void> {
+    await this.request<unknown>('/calls/Decline.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dialog_id: dialogId, call_id: callId }),
+    });
+  }
+
   /** Создать/получить активную ссылку-инвайт в групповой звонок (авторизованный). */
   static async createVoiceInvite(dialogId: number): Promise<{ code: string }> {
     return this.request<{ code: string }>('/calls/CreateVoiceInvite.php', {
@@ -1247,6 +1257,13 @@ export class AncialAPI {
     return (response && typeof response === 'object' && 'tracks' in response) ? (response as { tracks: unknown }).tracks as T : response as T;
   }
 
+
+  /** Единый поиск: веб и картинки (SearXNG), люди, сообщества, приложения. Музыку ищет pulseSearch. */
+  static async search(params: { lang?: string; page?: number; q: string; type: SearchRequestType }): Promise<SearchResponse> {
+    const query = new URLSearchParams({ q: params.q, type: params.type, page: String(params.page ?? 1) });
+    if (params.lang) query.set('lang', params.lang);
+    return this.request<SearchResponse>(`/search/Search.php?${query.toString()}`);
+  }
 
   static async pulseSearch<T = unknown>(query: string, type?: 'artists' | 'playlists' | 'tracks'): Promise<T> {
     const params = new URLSearchParams({ q: query });

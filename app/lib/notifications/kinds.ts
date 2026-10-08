@@ -30,6 +30,8 @@ const KINDS: Record<string, KindMeta> = {
   dialog_created: { filter: 'people', icon: 'IC-chats', tone: 'purple' },
   group_added: { filter: 'people', icon: 'IC-groups', tone: 'purple' },
   incoming_call: { filter: 'people', icon: 'IC-call', tone: 'lime' },
+  missed_call: { filter: 'people', icon: 'IC-call-incoming', tone: 'red' },
+  group_call: { filter: 'people', icon: 'IC-groups', tone: 'lime' },
   chat_message: { filter: 'people', icon: 'IC-chats', tone: 'purple' },
   wallet_received: { filter: null, icon: 'IC-wallet', tone: 'amber' },
   login_code: { filter: 'security', icon: 'IC-lock', tone: 'red' },
@@ -84,6 +86,9 @@ const FALLBACK_TEMPLATES: Record<string, string> = {
   chat_message_many: '{name} · новых сообщений: {total}',
   incoming_call: '{name} звонит вам',
   incoming_call_many: '{name} звонил(а) вам: {total}',
+  missed_call: 'Пропущенный звонок от {name}',
+  missed_call_many: 'Пропущенные звонки от {name}: {total}',
+  group_call: '{name} начал(а) групповой звонок в «{chat}»',
   wallet_received: '{name} отправил(а) вам {amount}',
   login_code: 'Код для входа',
   login_new_device: 'Выполнен вход в аккаунт{where}. Если это не вы — смените пароль.',
@@ -94,7 +99,7 @@ const FALLBACK_TEMPLATES: Record<string, string> = {
 };
 
 /** Для этих kind «ещё N» — число событий, для остальных — число уникальных людей. */
-const COUNTS_EVENTS = new Set(['comment_post', 'comment_reply', 'incoming_call', 'chat_message']);
+const COUNTS_EVENTS = new Set(['comment_post', 'comment_reply', 'incoming_call', 'missed_call', 'chat_message']);
 
 export type Lang = Record<string, string> | null | undefined;
 

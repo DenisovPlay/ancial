@@ -36,10 +36,14 @@ interface Note {
   html?: boolean;
   type: NoteType;
   time?: number; // в секундах
+  /** false — без крестика (входящий звонок: только «принять» / «отклонить»). */
+  closable?: boolean;
 }
 
 interface NotificationContextType {
-  showNote: (note: Omit<Note, 'id'>) => void;
+  /** Возвращает id всплывашки — по нему её можно убрать раньше срока (dismissNote). */
+  showNote: (note: Omit<Note, 'id'>) => number;
+  dismissNote: (id: number) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -212,15 +216,17 @@ const NotificationToast = ({ note, layout, onClose, onExpand, onHeight }: Notifi
               {note.content}
             </span>
           )}
-          <button
-            type="button"
-            data-toast-close
-            aria-label="Close"
-            onClick={() => onClose(note.id)}
-            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-60 duration-300 hover:opacity-100 active:scale-95 pointer-coarse:hidden"
-          >
-            <Icon name="IC-times" className="h-5 w-5 fill-current" />
-          </button>
+          {note.closable !== false ? (
+            <button
+              type="button"
+              data-toast-close
+              aria-label="Close"
+              onClick={() => onClose(note.id)}
+              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-60 duration-300 hover:opacity-100 active:scale-95 pointer-coarse:hidden"
+            >
+              <Icon name="IC-times" className="h-5 w-5 fill-current" />
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -247,9 +253,10 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     setMounted(true);
   }, []);
 
-  const showNote = useCallback(({ content, html = false, type = 'info', time = 5 }: Omit<Note, 'id'>) => {
+  const showNote = useCallback(({ content, html = false, type = 'info', time = 5, closable = true }: Omit<Note, 'id'>) => {
     const id = Date.now() + Math.random();
-    setNotes((prev) => [...prev, { id, content, html, type, time }].slice(-MAX_NOTES));
+    setNotes((prev) => [...prev, { id, content, html, type, time, closable }].slice(-MAX_NOTES));
+    return id;
   }, []);
 
   const removeNote = useCallback((id: number) => {
@@ -334,7 +341,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     return () => document.removeEventListener('pointerdown', onDown);
   }, [expanded]);
 
-  const contextValue = useMemo(() => ({ showNote }), [showNote]);
+  const contextValue = useMemo(() => ({ showNote, dismissNote: closeNote }), [closeNote, showNote]);
 
   return (
     <NotificationContext.Provider value={contextValue}>

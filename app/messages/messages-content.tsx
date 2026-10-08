@@ -34,6 +34,8 @@ import { formatRelativeTime } from '../lib/time';
 import { getPresenceText, isPresenceOnline, usePresence, usePresences } from '../lib/presence';
 import CreateGroupModal from './components/create-group-modal';
 import GroupInfoModal from './components/group-info-modal';
+import { CALL_MESSAGE_TYPE, parseCallToken } from '../lib/call-message';
+import CallRecordBubble from './components/call-record-bubble';
 import MessageBubble from './components/message-bubble';
 import StickerPickerDropdownContent from './components/sticker-picker-dropdown-content';
 import { useStickers } from '../hooks/use-stickers';
@@ -2872,6 +2874,7 @@ export default function MessagesContent() {
                                 const isPrevFromSameSender = prevItem && prevItem.kind !== 'separator' && Number(prevItem.message.sender_id) === senderId;
                                 const hideName = isGroupDialog && isPrevFromSameSender;
 
+                                const callRecord = String(item.message.type ?? '') === String(CALL_MESSAGE_TYPE) ? parseCallToken(item.message.message) : null;
                                 const rowId = timelineRowIds[index];
                                 const placeholderHeight = chatWindow.getPlaceholderHeight(index, rowId);
                                 // Обёртка без отступов: mb-2 пузыря схлопывается сквозь неё, раскладка прежняя.
@@ -2892,6 +2895,14 @@ export default function MessagesContent() {
                                     data-chat-row={rowId}
                                     style={chatRowSizeStyle(chatWindow.getKnownHeight(rowId))}
                                   >
+                                  {callRecord ? (
+                                    <CallRecordBubble
+                                      currentUserId={currentUserId}
+                                      lang={lang}
+                                      message={item.message}
+                                      record={callRecord}
+                                    />
+                                  ) : (
                                   <MessageBubble
                                     authUserImage={authUserImage}
                                     currentUserId={currentUserId}
@@ -2914,6 +2925,7 @@ export default function MessagesContent() {
                                     onOpenImage={setActiveDialogImageKey}
                                     onReplyClick={handleBubbleReplyClick}
                                   />
+                                  )}
                                   </div>
                                 );
                               })()

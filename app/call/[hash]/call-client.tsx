@@ -50,10 +50,11 @@ interface TurnConfigResponse {
 
 /** Полезная нагрузка WebRTC-сигналинга поверх WS (call:signal). */
 type CallSignal = {
-  kind?: 'offer' | 'answer' | 'candidate' | 'ice' | 'media' | string;
+  kind?: 'offer' | 'answer' | 'candidate' | 'ice' | 'media' | 'hangup' | string;
   sdp?: string;
   candidate?: RTCIceCandidateInit;
   call_id?: string | number;
+  reason?: string;
   mic_enabled?: boolean;
   cam_enabled?: boolean;
   screen_enabled?: boolean;
@@ -257,6 +258,9 @@ export default function CallClient() {
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const callIdRef = useRef<string | number>('');
+  /** Звонок реально начат (разрешения даны): только тогда при уходе со страницы шлём hangup. */
+  const callStartedRef = useRef(false);
+  const hangupSentRef = useRef(false);
   const isPoliteRef = useRef(false);
   const cUserIdRef = useRef(0);
   const fUserIdRef = useRef(0);
@@ -365,6 +369,7 @@ export default function CallClient() {
       const iceServers = turnResp?.data?.iceServers || [];
       setupWebRTC(iceServers, activeStream);
       setupGlobalWS();
+      callStartedRef.current = true;
     } catch (e) {
       console.error(e);
       setCallStatus(lang?.call_connection_lost || 'Соединение потеряно');
@@ -540,7 +545,27 @@ export default function CallClient() {
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const signalQueueRef = useRef<Promise<void>>(Promise.resolve());
 
+  // Положить трубку: сервер закроет звонок и запишет его в чат (пропущенный / отклонён / длительность).
+  const sendHangup = () => {
+    if (!callStartedRef.current || hangupSentRef.current) return;
+    hangupSentRef.current = true;
+    const dialogId = dialogInfoRef.current?.id;
+    if (dialogId == null || !window.GlobalWS) return;
+    window.GlobalWS.send({ type: 'call:signal', dialog_id: dialogId, call_id: callIdRef.current, kind: 'hangup' });
+  };
+
   const handleWsSignal = (msg: CallSignal) => {
+    // Собеседник положил трубку / отклонил / никто не ответил: показываем причину и закрываем звонок.
+    if (msg.kind === 'hangup') {
+      hangupSentRef.current = true;
+      setCallStatus(
+        msg.reason === 'declined' ? (lang?.call_msg_declined || 'Звонок отклонён')
+          : msg.reason === 'timeout' ? (lang?.call_msg_no_answer || 'Нет ответа')
+            : (lang?.call_ended || 'Звонок завершён'),
+      );
+      window.setTimeout(() => router.back(), 1500);
+      return;
+    }
     signalQueueRef.current = signalQueueRef.current.then(async () => {
       const pc = pcRef.current;
       if (!pc) return;
@@ -850,7 +875,11 @@ export default function CallClient() {
   };
 
   useEffect(() => {
+    const onPageHide = () => sendHangup();
+    window.addEventListener('pagehide', onPageHide);
     return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      sendHangup();
       if (disconnectedTimerRef.current) { clearTimeout(disconnectedTimerRef.current); disconnectedTimerRef.current = null; }
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(t => t.stop());

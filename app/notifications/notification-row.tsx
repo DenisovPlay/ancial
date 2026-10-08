@@ -126,6 +126,7 @@ function NotificationRowComponent({ highlighted, lang, langCode, notification, o
   const thumbnail = !isChat ? notification.object?.image : null;
   const time = notification.ts ? formatRelativeTime(new Date(notification.ts), lang, '') : '';
   const actionIds = new Set(notification.actions.map((action) => action.id));
+  const isCall = notification.kind === 'incoming_call' || notification.kind === 'group_call';
 
   return (
     <li
@@ -153,12 +154,14 @@ function NotificationRowComponent({ highlighted, lang, langCode, notification, o
           {actionIds.size > 0 ? (
             <div className="pointer-events-auto flex flex-wrap gap-3 pt-1">
               {actionIds.has('accept') ? (
-                <button type="button" onClick={() => onAction(notification, 'accept')} className="cursor-pointer rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white duration-300 hover:bg-purple-500 active:scale-95">
+                <button type="button" onClick={() => onAction(notification, 'accept')} className={cn('flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white duration-300 active:scale-95', isCall ? 'bg-lime-600 hover:bg-lime-500' : 'bg-purple-600 hover:bg-purple-500')}>
+                  {isCall ? <Icon name="IC-call" className="h-4 w-4 fill-white" /> : null}
                   {lang?.notif_accept || 'Принять'}
                 </button>
               ) : null}
               {actionIds.has('decline') ? (
-                <button type="button" onClick={() => onAction(notification, 'decline')} className="cursor-pointer rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-200 duration-300 hover:bg-zinc-700 active:scale-95">
+                <button type="button" onClick={() => onAction(notification, 'decline')} className={cn('flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold duration-300 active:scale-95', isCall ? 'bg-red-600 text-white hover:bg-red-500' : 'border border-zinc-600/30 bg-zinc-800 text-zinc-200 hover:bg-zinc-700')}>
+                  {isCall ? <Icon name="IC-call-end" className="h-4 w-4 fill-white" /> : null}
                   {lang?.notif_decline || 'Отклонить'}
                 </button>
               ) : null}
