@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import AccountName from '../components/account-name';
 import AppImage from '../components/app-image';
@@ -98,7 +98,7 @@ export function GroupRow({ group }: { group: SearchGroup }) {
 /** Сайт в выдаче: адрес, заголовок-ссылка, описание. */
 export function WebResult({ result }: { result: SearchWebResult }) {
   return (
-    <a href={result.url} target="_blank" rel="noopener noreferrer" className="group rounded-3xl p-0 transition-[padding,margin,background-color] duration-300 hover:-my-3 hover:bg-zinc-900 hover:p-3 flex w-full cursor-pointer flex-col gap-1.5">
+    <a href={result.url} target="_blank" rel="noopener noreferrer" className="group flex w-full min-w-0 cursor-pointer flex-col gap-1.5 rounded-3xl p-0 transition-[padding,margin,background-color] duration-300 [overflow-wrap:anywhere] hover:-my-3 hover:bg-zinc-900 hover:p-3">
       <span className="flex min-w-0 items-center gap-3 text-sm text-zinc-400">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800">
           <Icon name="IC-globe" className="h-4 w-4 fill-zinc-300" />
@@ -113,9 +113,26 @@ export function WebResult({ result }: { result: SearchWebResult }) {
 
 /** Карточка энциклопедии над выдачей (инфобокс SearXNG). */
 export function InfoboxCard({ box, stacked = false }: { box: SearchInfobox; stacked?: boolean }) {
+  // Широкая картинка (логотип 1553×270) в квадрате с object-cover превращается в обрезок, а прозрачный логотип
+  // с чёрным текстом на тёмной карточке не виден: широкие кадры показываем целиком на светлой подложке.
+  const [wide, setWide] = useState(false);
   return (
-    <div className={cn('flex w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3', !stacked && 'sm:flex-row')}>
-      {box.img ? <AppImage width={stacked ? 336 : 128} height={stacked ? 224 : 128} src={box.img} alt="" className={cn('block shrink-0 rounded-3xl object-cover', stacked ? 'h-56 w-full' : 'h-32 w-32')} /> : null}
+    <div className={cn('flex w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3', !stacked && !wide && 'sm:flex-row')}>
+      {box.img ? (
+        <span className={cn('block shrink-0 overflow-hidden rounded-3xl', wide ? 'w-full bg-white p-3' : stacked ? 'w-full' : 'h-32 w-32')}>
+          <AppImage
+            width={stacked ? 336 : 256}
+            height={stacked ? 224 : 256}
+            src={box.img}
+            alt=""
+            onLoad={(event) => {
+              const { naturalHeight, naturalWidth } = event.currentTarget;
+              if (naturalWidth > 0 && naturalHeight > 0) setWide(naturalWidth / naturalHeight > 1.6);
+            }}
+            className={cn('block w-full', wide ? 'h-24 object-contain' : cn('object-cover', stacked ? 'h-56' : 'h-32'))}
+          />
+        </span>
+      ) : null}
       <div className="flex min-w-0 flex-col gap-3">
         <h2 className="text-xl font-semibold text-zinc-100">{box.title}</h2>
         <p className={cn('text-sm text-zinc-300 lg:text-base', stacked ? 'line-clamp-[12]' : 'line-clamp-5')}>{box.content}</p>
@@ -136,13 +153,13 @@ export function InfoboxCard({ box, stacked = false }: { box: SearchInfobox; stac
 /** Сетка картинок: колонки по высоте, пропорции кадра сохраняются; клик открывает просмотрщик. */
 export function ImageGrid({ images, onOpen }: { images: SearchImageResult[]; onOpen: (index: number) => void }) {
   return (
-    <div className="w-full columns-2 gap-3 sm:columns-3 lg:columns-4">
+    <div className={cn('w-full', IMAGE_COLUMNS)}>
       {images.map((image, index) => (
         <button
           key={image.img}
           type="button"
           onClick={() => onOpen(index)}
-          className="group relative mb-3 block w-full cursor-pointer overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-900 duration-300 active:scale-95"
+          className="group relative mb-3 block w-full break-inside-avoid cursor-pointer overflow-hidden rounded-3xl border border-zinc-600/30 bg-zinc-900 duration-300 active:scale-95"
         >
           <AppImage
             width={image.width > 0 ? Math.min(image.width, 480) : 480}
@@ -161,17 +178,69 @@ export function ImageGrid({ images, onOpen }: { images: SearchImageResult[]; onO
   );
 }
 
-/** Скелетон строки выдачи, пока идёт первая загрузка. */
-export function ResultSkeleton({ rows = 5, round = false }: { rows?: number; round?: boolean }) {
+const IMAGE_SKELETON_HEIGHTS = ['h-40', 'h-56', 'h-32', 'h-48', 'h-36', 'h-52', 'h-44', 'h-60', 'h-36', 'h-48', 'h-40', 'h-56', 'h-32', 'h-52', 'h-44', 'h-36'];
+
+/** Колонки картинок: на ПК занимают всю ширину, поэтому колонок больше. */
+export const IMAGE_COLUMNS = 'columns-2 gap-3 sm:columns-3 lg:columns-5 2xl:columns-6';
+
+/** Скелетон под вкладку «Интернет»: адрес, заголовок и три строки описания, как у WebResult. */
+export function WebSkeleton({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex w-full flex-col gap-6 pt-3">
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="flex w-full flex-col gap-1.5">
+          <div className="flex items-center gap-3">
+            <div className="h-6 w-6 animate-pulse rounded-full bg-zinc-800" />
+            <div className="h-3 w-1/4 animate-pulse rounded-full bg-zinc-800" />
+          </div>
+          <div className={cn('h-6 animate-pulse rounded-full bg-zinc-800', index % 2 ? 'w-2/3' : 'w-4/5')} />
+          <div className="h-3.5 w-full animate-pulse rounded-full bg-zinc-800" />
+          <div className="h-3.5 w-full animate-pulse rounded-full bg-zinc-800" />
+          <div className="h-3.5 w-1/2 animate-pulse rounded-full bg-zinc-800" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Скелетон под вкладку «Картинки»: колонки разной высоты, как у готовой сетки. */
+export function ImageGridSkeleton() {
+  return (
+    <div className={cn('w-full', IMAGE_COLUMNS)}>
+      {IMAGE_SKELETON_HEIGHTS.map((height, index) => (
+        <div key={index} className={cn('mb-3 w-full break-inside-avoid animate-pulse rounded-3xl bg-zinc-800', height)} />
+      ))}
+    </div>
+  );
+}
+
+/** Скелетон под вкладки «Люди» и «Сообщества»: круглый аватар и две строки. */
+export function PeopleSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div className="flex w-full flex-col gap-6 pt-3">
       {Array.from({ length: rows }).map((_, index) => (
         <div key={index} className="flex w-full items-center gap-3">
-          {round ? <div className="h-14 w-14 shrink-0 animate-pulse rounded-full bg-zinc-800" /> : null}
+          <div className="h-14 w-14 shrink-0 animate-pulse rounded-full bg-zinc-800" />
           <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <div className={cn('h-5 animate-pulse rounded-full bg-zinc-800', index % 2 ? 'w-1/3' : 'w-1/2')} />
+            <div className="h-3.5 w-1/4 animate-pulse rounded-full bg-zinc-800" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Скелетон под вкладку «Музыка»: карточка со строками треков (обложка, название, исполнитель). */
+export function TracksSkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div className="flex w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="flex w-full items-center gap-3">
+          <div className="h-12 w-12 shrink-0 animate-pulse rounded-3xl bg-zinc-800" />
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <div className={cn('h-4 animate-pulse rounded-full bg-zinc-800', index % 2 ? 'w-1/3' : 'w-1/2')} />
             <div className="h-3 w-1/4 animate-pulse rounded-full bg-zinc-800" />
-            <div className={cn('h-5 animate-pulse rounded-full bg-zinc-800', index % 2 ? 'w-2/3' : 'w-4/5')} />
-            {!round ? <div className="h-3 w-full animate-pulse rounded-full bg-zinc-800" /> : null}
           </div>
         </div>
       ))}

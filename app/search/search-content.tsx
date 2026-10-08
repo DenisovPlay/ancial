@@ -28,7 +28,10 @@ import {
   InfoboxCard,
   PersonRow,
   PersonTile,
-  ResultSkeleton,
+  ImageGridSkeleton,
+  PeopleSkeleton,
+  TracksSkeleton,
+  WebSkeleton,
   SearchRail,
   SearchSection,
   WebResult,
@@ -204,9 +207,9 @@ export default function SearchContent() {
       </div>
     );
   } else if (tab === 'music') {
-    body = !musicReady ? <ResultSkeleton round /> : musicReady.tracks.length + musicReady.artists.length + musicReady.playlists.length === 0 ? nothing : <SearchMusic compact={false} data={musicReady} lang={lang} />;
+    body = !musicReady ? <TracksSkeleton /> : musicReady.tracks.length + musicReady.artists.length + musicReady.playlists.length === 0 ? nothing : <SearchMusic compact={false} data={musicReady} lang={lang} />;
   } else if (!current) {
-    body = <ResultSkeleton rows={tab === 'web' ? 6 : 4} round={tab === 'users' || tab === 'groups'} />;
+    body = tab === 'web' ? <WebSkeleton /> : tab === 'images' ? <ImageGridSkeleton /> : <PeopleSkeleton />;
   } else if (current.failed) {
     body = <ErrorState variant="block" onRetry={() => setRetry((value) => value + 1)} />;
   } else if (tab === 'web') {
@@ -217,7 +220,7 @@ export default function SearchContent() {
         {/* Под выдачей на ПК карточка живёт справа (aside ниже); на телефоне — над сайтами. */}
         {current.infobox ? <div className="lg:hidden"><InfoboxCard box={current.infobox} /></div> : null}
         {current.web.length > 0 ? (
-          <div className="flex w-full flex-col gap-6 first:pt-3">
+          <div className="flex w-full flex-col gap-6 pt-3">
             {current.web.map((result) => <WebResult key={result.url} result={result} />)}
           </div>
         ) : null}
@@ -235,9 +238,9 @@ export default function SearchContent() {
       <div className="w-full p-6 text-center text-sm text-zinc-400">{lang?.search_web_unavailable || 'Поиск в интернете сейчас недоступен'}</div>
     ) : nothing;
   } else if (tab === 'users') {
-    body = current.users.length > 0 ? <div className="flex w-full flex-col gap-6 first:pt-3">{current.users.map((user) => <PersonRow key={user.id} user={user} />)}</div> : nothing;
+    body = current.users.length > 0 ? <div className="flex w-full flex-col gap-6 pt-3">{current.users.map((user) => <PersonRow key={user.id} user={user} />)}</div> : nothing;
   } else {
-    body = current.groups.length > 0 ? <div className="flex w-full flex-col gap-6 first:pt-3">{current.groups.map((group) => <GroupRow key={group.id} group={group} />)}</div> : nothing;
+    body = current.groups.length > 0 ? <div className="flex w-full flex-col gap-6 pt-3">{current.groups.map((group) => <GroupRow key={group.id} group={group} />)}</div> : nothing;
   }
 
   return (
@@ -248,7 +251,7 @@ export default function SearchContent() {
           {/* Логотип и строка «переезжают» сюда с главной (общие layoutId с home-content.tsx). */}
           <motion.div layoutId="home-logo" transition={{ type: 'spring', stiffness: 600, damping: 50 }} className="shrink-0">
             <Link href="/" className="block cursor-pointer duration-300 hover:opacity-90 active:scale-95" aria-label="Zypo">
-              <AppImage width={120} height={48} loading="eager" src="/img/zypo/letter.svg" alt="Zypo" className="h-12 w-auto" />
+              <AppImage width={158} height={48} loading="eager" src="/img/zypo/letter.svg" alt="Zypo" className="h-12 w-auto" />
             </Link>
           </motion.div>
           <motion.div layoutId="search-bar" transition={{ type: 'spring', stiffness: 600, damping: 50 }} className="relative z-[99999] flex w-full max-w-screen-md flex-col">
@@ -277,8 +280,8 @@ export default function SearchContent() {
       </div>
 
       {/* Выдача — колонкой до 700px у левого края, как раньше; сетка картинок шире. */}
-      <div className={cn('flex w-full flex-col gap-6 lg:flex-row lg:items-start', tab === 'images' ? 'max-w-5xl' : sideBox ? 'max-w-[1100px]' : 'max-w-[700px]')}>
-        <div className={cn('flex w-full min-w-0 flex-col gap-6', tab !== 'images' && 'max-w-[700px]')}>
+      <div className={cn('flex w-full flex-col gap-6 lg:flex-row lg:items-start', tab === 'images' ? 'max-w-none' : sideBox ? 'max-w-[1100px]' : 'max-w-[700px]')}>
+        <div className={cn('flex w-full min-w-0 flex-col gap-3', tab !== 'images' && 'max-w-[700px]')}>
           {body}
           <div ref={sentinelRef} className="h-px w-full" />
           {loadingMore ? (

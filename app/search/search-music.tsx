@@ -43,33 +43,42 @@ export default function SearchMusic({ compact, data, lang, onMore }: { compact: 
     else void playPlaylist(String(card.id ?? ''));
   };
 
+  // Тот же компонент строки, что в поиске Pulse: лайк, «в плейлист», ссылка, жалоба, следующий в очереди.
+  const trackCard = (
+    <div className="flex w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
+      {tracks.map((track, index) => (
+        <PulseTrackRow
+          currentSongId={currentSongId}
+          favoriteIds={actions.favoriteIds}
+          isAuthenticated={isAuthenticated}
+          key={`search-track-${track.sid ?? index}`}
+          onAddToPlaylist={actions.openAddTrackToPlaylist}
+          onCopyTrackLink={actions.copyTrackLink}
+          onLikeTrack={actions.likeTrack}
+          onOpenArtist={(artistId) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`)}
+          onPlayTrack={(nextTrack) => void playTrack(nextTrack.sid ?? 0)}
+          onQueueTrackNext={(trackId) => actions.playNextTrack(trackId)}
+          onReportTrack={actions.reportTrack}
+          track={track}
+          trackIndex={index}
+          user={user}
+          userCountry={userCountry}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex w-full flex-col gap-3">
       {tracks.length > 0 ? (
-        <SearchSection title={lang?.search_tab_music || 'Музыка'} lang={lang} onMore={compact ? onMore : undefined}>
-          {/* Тот же компонент строки, что в поиске Pulse: лайк, «в плейлист», ссылка, жалоба, следующий в очереди. */}
-          <div className="flex w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
-            {tracks.map((track, index) => (
-              <PulseTrackRow
-                currentSongId={currentSongId}
-                favoriteIds={actions.favoriteIds}
-                isAuthenticated={isAuthenticated}
-                key={`search-track-${track.sid ?? index}`}
-                onAddToPlaylist={actions.openAddTrackToPlaylist}
-                onCopyTrackLink={actions.copyTrackLink}
-                onLikeTrack={actions.likeTrack}
-                onOpenArtist={(artistId) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`)}
-                onPlayTrack={(nextTrack) => void playTrack(nextTrack.sid ?? 0)}
-                onQueueTrackNext={(trackId) => actions.playNextTrack(trackId)}
-                onReportTrack={actions.reportTrack}
-                track={track}
-                trackIndex={index}
-                user={user}
-                userCountry={userCountry}
-              />
-            ))}
-          </div>
-        </SearchSection>
+        compact ? (
+          <SearchSection title={lang?.search_tab_music || 'Музыка'} lang={lang} onMore={onMore}>
+            {trackCard}
+          </SearchSection>
+        ) : (
+          // На вкладке «Музыка» заголовок не нужен: он уже в табе.
+          trackCard
+        )
       ) : null}
       {artists.length > 0 ? (
         <SearchSection title={lang?.search_artists || 'Исполнители'} lang={lang}>
