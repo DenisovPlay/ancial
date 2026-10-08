@@ -72,7 +72,7 @@ export function AppTile({ app }: { app: SearchApp }) {
 /** Строка человека во вкладке «Люди». */
 export function PersonRow({ user }: { user: SearchUser }) {
   return (
-    <Link href={userHref(user)} className="relative isolate before:absolute before:-inset-3 before:-z-10 before:rounded-3xl before:bg-zinc-900 before:opacity-0 before:duration-300 hover:before:opacity-100 flex w-full cursor-pointer items-center gap-3 duration-300 active:scale-[0.99]">
+    <Link href={userHref(user)} className="rounded-3xl p-0 transition-[padding,margin,background-color] duration-300 hover:-my-3 hover:bg-zinc-900 hover:p-3 flex w-full cursor-pointer items-center gap-3 duration-300 active:scale-[0.99]">
       <AppImage width={56} height={56} src={user.img || '/img/placeholders/user.png'} fallbackSrc="/img/placeholders/user.png" alt="" className="block h-14 w-14 shrink-0 rounded-full border border-zinc-600/30 object-cover" />
       <span className="flex min-w-0 flex-col">
         <AccountName user={user} className="text-zinc-100 lg:text-lg font-medium" nameClassName="truncate text-zinc-100 lg:text-lg font-medium" />
@@ -85,7 +85,7 @@ export function PersonRow({ user }: { user: SearchUser }) {
 /** Строка сообщества во вкладке «Сообщества». */
 export function GroupRow({ group }: { group: SearchGroup }) {
   return (
-    <Link href={groupHref(group)} className="relative isolate before:absolute before:-inset-3 before:-z-10 before:rounded-3xl before:bg-zinc-900 before:opacity-0 before:duration-300 hover:before:opacity-100 flex w-full cursor-pointer items-center gap-3 duration-300 active:scale-[0.99]">
+    <Link href={groupHref(group)} className="rounded-3xl p-0 transition-[padding,margin,background-color] duration-300 hover:-my-3 hover:bg-zinc-900 hover:p-3 flex w-full cursor-pointer items-center gap-3 duration-300 active:scale-[0.99]">
       <AppImage width={56} height={56} src={group.img || '/img/placeholders/group.png'} fallbackSrc="/img/placeholders/group.png" alt="" className="block h-14 w-14 shrink-0 rounded-full border border-zinc-600/30 object-cover" />
       <span className="flex min-w-0 flex-col">
         <AccountName user={{ name: group.name, verify: group.verify, type: 'group' }} className="text-zinc-100 lg:text-lg font-medium" nameClassName="truncate text-zinc-100 lg:text-lg font-medium" />
@@ -98,7 +98,7 @@ export function GroupRow({ group }: { group: SearchGroup }) {
 /** Сайт в выдаче: адрес, заголовок-ссылка, описание. */
 export function WebResult({ result }: { result: SearchWebResult }) {
   return (
-    <a href={result.url} target="_blank" rel="noopener noreferrer" className="group relative isolate before:absolute before:-inset-3 before:-z-10 before:rounded-3xl before:bg-zinc-900 before:opacity-0 before:duration-300 hover:before:opacity-100 flex w-full cursor-pointer flex-col gap-1.5">
+    <a href={result.url} target="_blank" rel="noopener noreferrer" className="group rounded-3xl p-0 transition-[padding,margin,background-color] duration-300 hover:-my-3 hover:bg-zinc-900 hover:p-3 flex w-full cursor-pointer flex-col gap-1.5">
       <span className="flex min-w-0 items-center gap-3 text-sm text-zinc-400">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800">
           <Icon name="IC-globe" className="h-4 w-4 fill-zinc-300" />

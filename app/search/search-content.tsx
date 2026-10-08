@@ -217,7 +217,7 @@ export default function SearchContent() {
         {/* Под выдачей на ПК карточка живёт справа (aside ниже); на телефоне — над сайтами. */}
         {current.infobox ? <div className="lg:hidden"><InfoboxCard box={current.infobox} /></div> : null}
         {current.web.length > 0 ? (
-          <div className="flex w-full flex-col gap-6">
+          <div className="flex w-full flex-col gap-6 first:pt-3">
             {current.web.map((result) => <WebResult key={result.url} result={result} />)}
           </div>
         ) : null}
@@ -235,9 +235,9 @@ export default function SearchContent() {
       <div className="w-full p-6 text-center text-sm text-zinc-400">{lang?.search_web_unavailable || 'Поиск в интернете сейчас недоступен'}</div>
     ) : nothing;
   } else if (tab === 'users') {
-    body = current.users.length > 0 ? <div className="flex w-full flex-col gap-6">{current.users.map((user) => <PersonRow key={user.id} user={user} />)}</div> : nothing;
+    body = current.users.length > 0 ? <div className="flex w-full flex-col gap-6 first:pt-3">{current.users.map((user) => <PersonRow key={user.id} user={user} />)}</div> : nothing;
   } else {
-    body = current.groups.length > 0 ? <div className="flex w-full flex-col gap-6">{current.groups.map((group) => <GroupRow key={group.id} group={group} />)}</div> : nothing;
+    body = current.groups.length > 0 ? <div className="flex w-full flex-col gap-6 first:pt-3">{current.groups.map((group) => <GroupRow key={group.id} group={group} />)}</div> : nothing;
   }
 
   return (
@@ -287,8 +287,9 @@ export default function SearchContent() {
             </div>
           ) : null}
         </div>
+        {/* Прилипает под шапкой (130px: логотип, строка, табы). Больше нельзя — sticky сдвигает карточку вниз даже без прокрутки. */}
         {sideBox ? (
-          <aside className="hidden w-[360px] shrink-0 lg:sticky lg:top-40 lg:block">
+          <aside className="hidden w-[360px] shrink-0 lg:sticky lg:top-[8.125rem] lg:block">
             <InfoboxCard box={sideBox} stacked />
           </aside>
         ) : null}
