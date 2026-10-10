@@ -32,6 +32,8 @@ export function useDialogDraft(dialogId: number, text: string, setText: (value: 
   const readyRef = useRef(false);
   // Правка, которая ещё ждёт отправки: при уходе из диалога сохраняем её сразу, а не теряем.
   const pendingRef = useRef<{ ref: string; text: string } | null>(null);
+  // Текст прошлого диалога, который остался в поле в момент переключения: чужим черновиком он не становится.
+  const staleTextRef = useRef('');
 
   useEffect(() => {
     textRef.current = text;
@@ -42,6 +44,10 @@ export function useDialogDraft(dialogId: number, text: string, setText: (value: 
     let cancelled = false;
     readyRef.current = false;
     syncedRef.current = '';
+    pendingRef.current = null;
+    staleTextRef.current = textRef.current;
+    textRef.current = '';
+    setText('');
 
     const apply = (next: string) => {
       // Пользователь уже печатает своё — не перезаписываем.
@@ -77,7 +83,15 @@ export function useDialogDraft(dialogId: number, text: string, setText: (value: 
 
   useEffect(() => {
     if (!ref) return;
-    if (text === syncedRef.current) return;
+    if (staleTextRef.current) {
+      if (text === staleTextRef.current) return;
+      staleTextRef.current = '';
+    }
+    if (text === syncedRef.current) {
+      // Правка отменена (например, сообщение отправлено до сохранения) — в черновик она не попадает.
+      pendingRef.current = null;
+      return;
+    }
     pendingRef.current = { ref, text };
     const timer = window.setTimeout(() => {
       pendingRef.current = null;
