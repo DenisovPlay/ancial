@@ -635,6 +635,7 @@ export default function MessagesContent() {
     globalWS.removeDialogListener('message:deleted', handleWsMessageDeleted);
     globalWS.removeDialogListener('message:edited', handleWsMessageEdited);
     globalWS.removeDialogListener('message:reaction', handleWsMessageReaction);
+    globalWS.removeDialogListener('message:read', handleWsMessageRead);
     globalWS.removeDialogListener('user:typing', handleWsTyping);
     globalWS.removeDialogListener('typing', handleWsTyping);
     globalWS.removeDialogListener('call:signal', handleWsCallSignal);
@@ -1399,6 +1400,26 @@ export default function MessagesContent() {
     scheduleWsRefresh();
   };
 
+  /** Собеседник прочитал сообщения: дописываем его в read_by, не перезагружая чат. */
+  const handleWsMessageRead = (payload?: unknown) => {
+    const wsPayload = payload as WsPayload | undefined;
+    const dataObj = (wsPayload?.data ?? wsPayload) as { reader_id?: number | string; message_ids?: Array<number | string> } | undefined;
+    const readerId = toNumber(dataObj?.reader_id);
+    const ids = new Set((dataObj?.message_ids ?? []).map((id) => String(id)));
+    if (!readerId || readerId === currentUserId || !ids.size) return;
+    setMessages((currentMessages) => {
+      const nextMessages = currentMessages.map((msg) => {
+        if (!ids.has(String(getMessageId(msg)))) return msg;
+        const readBy = Array.isArray(msg.read_by) ? msg.read_by : [];
+        if (readBy.some((id) => Number(id) === readerId)) return msg;
+        return { ...msg, status: 1, read_by: [...readBy, readerId] };
+      });
+      persistMessages({ keepSide: 'newest', nextMessages });
+      return nextMessages;
+    });
+    void loadDialogs({ force: true });
+  };
+
   const handleWsMessageReaction = (payload?: unknown) => {
     const wsPayload = payload as WsPayload | undefined;
     const dataObj = (wsPayload?.data ?? wsPayload) as WsPayloadData;
@@ -1542,6 +1563,7 @@ export default function MessagesContent() {
     globalWS.addDialogListener('message:deleted', handleWsMessageDeleted);
     globalWS.addDialogListener('message:edited', handleWsMessageEdited);
     globalWS.addDialogListener('message:reaction', handleWsMessageReaction);
+    globalWS.addDialogListener('message:read', handleWsMessageRead);
     globalWS.addDialogListener('user:typing', handleWsTyping);
     globalWS.addDialogListener('typing', handleWsTyping);
     globalWS.addDialogListener('call:signal', handleWsCallSignal);
@@ -3055,7 +3077,8 @@ export default function MessagesContent() {
                             }}
                             onPaste={handleChatPaste}
                             onKeyDown={(event) => {
-                              if (event.key === 'Enter' && !event.shiftKey) {
+                              // На телефоне Enter — перенос строки, отправка кнопкой; на ПК Enter отправляет, Shift+Enter — перенос.
+                              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && !window.matchMedia('(pointer: coarse)').matches) {
                                 event.preventDefault();
                                 if (composerText.trim() && selectedDialog && canUseComposer) {
                                   void handleMessageSend(event);

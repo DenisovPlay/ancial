@@ -31,7 +31,7 @@ function CallRecordBubbleComponent({
   const time = formatMessageTime(message);
 
   return (
-    <div id={`msg-${message.id}`} className={cn('flex w-full px-3 py-1', isGroup ? 'justify-center' : isMine ? 'justify-end' : 'justify-start')}>
+    <div id={`msg-${message.id}`} className={cn('flex w-full py-1', isGroup ? 'justify-center' : isMine ? 'justify-end' : 'justify-start')}>
       <div className={cn('flex max-w-full items-center gap-3 rounded-3xl p-3 shadow', isMine && !isGroup ? 'bg-purple-700' : 'bg-zinc-900 border border-zinc-600/30')}>
         <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', TONE_ICON[tone])}>
           <Icon name={icon} className="h-5 w-5 fill-current" />

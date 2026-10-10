@@ -193,6 +193,7 @@ function MessageBubble({
   const replyIconRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ id: number; x: number; y: number; axis: 'x' | 'y' | null; dx: number } | null>(null);
   const swipedRef = useRef(false);
+  const cvResetRef = useRef(0);
   const { showNote } = useNotification();
   const copyToClipboard = useCopyToClipboard();
 
@@ -436,6 +437,14 @@ function MessageBubble({
   const paintSwipe = (offset: number, animate: boolean) => {
     const row = swipeRowRef.current;
     const icon = replyIconRef.current;
+    // cv-auto обрезает отрисовку по рамке сообщения (на 12px от края экрана) — на время свайпа отключаем.
+    // Возвращаем только после анимации возврата, иначе пузырь обрезается на полпути.
+    const container = containerRef.current;
+    window.clearTimeout(cvResetRef.current);
+    if (container) {
+      if (offset || animate === false) container.style.contentVisibility = 'visible';
+      else cvResetRef.current = window.setTimeout(() => { container.style.contentVisibility = ''; }, 320);
+    }
     const progress = Math.min(1, Math.max(0, -offset / 50));
     const transition = animate ? 'transform 300ms cubic-bezier(0.2, 0, 0, 1), opacity 300ms ease-out' : 'none';
     if (row) {
@@ -537,7 +546,7 @@ function MessageBubble({
         <div
           ref={replyIconRef}
           style={{ opacity: 0, transform: 'translateX(20px) scale(0.5)' }}
-          className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:8px] [--glass-sat:2] absolute right-2 top-1/2 z-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-600/30 text-zinc-200 pointer-events-none"
+          className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:8px] [--glass-sat:2] absolute right-0 top-1/2 z-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-600/30 text-zinc-200 pointer-events-none"
         >
           <Icon name="IC-reply" className="h-4 w-4 fill-current" />
         </div>

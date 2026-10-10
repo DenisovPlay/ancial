@@ -67,6 +67,13 @@ export default function AppRuntime() {
     pathnameRef.current = pathname;
   }, [pathname]);
 
+  // Нативный сплеш снимаем, когда страница гидрирована: логотип не «прыгает» между сплешем и загрузчиком сайта.
+  useEffect(() => {
+    void import('@capacitor/splash-screen')
+      .then(({ SplashScreen }) => SplashScreen.hide({ fadeOutDuration: 200 }))
+      .catch((error: unknown) => console.error('Failed to hide splash screen', error));
+  }, []);
+
   // iOS: WebView сам поднимается над клавиатурой через нативный контейнер (MainViewController) — resize плагина отключаем,
   // иначе высота уменьшилась бы дважды.
   useEffect(() => {

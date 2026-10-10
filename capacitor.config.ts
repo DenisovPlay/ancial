@@ -33,8 +33,8 @@ const config: CapacitorConfig = {
       style: 'DARK',
     },
     SplashScreen: {
-      launchAutoHide: true,
-      launchShowDuration: 600,
+      // Сплеш держится до гидрации и снимается из AppRuntime — без промежуточного BrandLoader, который не совпадал с ним.
+      launchAutoHide: false,
       backgroundColor: '#000000',
       showSpinner: false,
     },

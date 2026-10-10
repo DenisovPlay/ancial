@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import AppImage from './app-image';
 import React, { useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useLivePathname as usePathname } from '../lib/use-live-pathname';
 import { useAuth } from '../context/AuthContext';
 import { AncialAPI } from '../lib/api-v2';
 import { normalizeAvatarUrl } from '../lib/avatar';
