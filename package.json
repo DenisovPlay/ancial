@@ -1,6 +1,6 @@
 {
   "name": "ancial",
-  "version": "3.9.14b",
+  "version": "3.9.14c",
   "private": true,
   "engines": {
     "node": ">=22"

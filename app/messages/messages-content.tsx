@@ -3030,7 +3030,7 @@ export default function MessagesContent() {
                       id="blocked-pane"
                       className="absolute bottom-0 inset-x-0 z-20 flex items-center justify-center gap-1.5 p-3 pt-0"
                     >
-                      <div className="glass-panel [--glass-tint:var(--color-amber-500)] [--glass-alpha:0.25] [--glass-blur:16px] [--glass-sat:2] text-amber-500 p-3 rounded-3xl shadow border border-zinc-600/30 text-center">Собеседник заблокирован</div>
+                      <div className="bg-amber-500/25 text-amber-500 p-3 rounded-3xl shadow border border-zinc-600/30 text-center">Собеседник заблокирован</div>
                     </div>
                   ) : (
                     <div ref={composerPaneRef} className="absolute bottom-0 inset-x-0 z-20 flex flex-col items-center justify-center pb-3 pt-0">

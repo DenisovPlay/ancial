@@ -683,7 +683,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                     <>
                       <div className="flex w-full items-center justify-center mt-3">
                         <a
-                          className="glass-panel [--glass-tint:var(--color-blue-400)] [--glass-alpha:0.25] [--glass-sat:2] flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-zinc-600/30 p-3 text-lg font-bold text-white transition-[background-color,transform] duration-300 hover:[--glass-tint:var(--color-blue-500)] hover:[--glass-alpha:0.5] active:scale-95"
+                          className="bg-blue-400/25 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border border-zinc-600/30 p-3 text-lg font-bold text-white transition-[background-color,transform] duration-300 hover:bg-blue-500/50 active:scale-95"
                           href={mapLinks.yandexWeatherUrl}
                           rel="noreferrer"
                           target="_blank"

@@ -323,7 +323,7 @@ export default function AccountContent({ accountId }: AccountContentProps) {
               <button onClick={() => setIsReceiveModalOpen(true)} className="glass-panel [--glass-tint:var(--color-zinc-800)] [--glass-alpha:0.7] [--glass-blur:16px] hidden shrink-0 items-center gap-3 text-zinc-300 hover:[--glass-tint:var(--color-zinc-800)] hover:[--glass-alpha:1] hover:text-white shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95">
                 <Icon name="IC-send" className="fill-white w-5 h-5 inline rotate-180" /> {strings.receive}
               </button>
-              <button onClick={() => setIsCloseConfirmModalOpen(true)} className="glass-panel [--glass-tint:var(--color-red-500)] [--glass-alpha:0.25] [--glass-blur:16px] shrink-0 flex items-center gap-3 text-red-500 hover:[--glass-tint:var(--color-red-700)] hover:[--glass-alpha:0.4] shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 border border-zinc-600/30">
+              <button onClick={() => setIsCloseConfirmModalOpen(true)} className="bg-red-500/25 shrink-0 flex items-center gap-3 text-red-500 hover:bg-red-700/40 shadow rounded-3xl cursor-pointer py-1.5 px-3 duration-300 active:scale-95 border border-zinc-600/30">
                 <Icon name="IC-times" className="fill-red-500 w-5 h-5" />
                 {strings.closeaccount}
               </button>

@@ -73,18 +73,19 @@ export default function LinkGuardBody({ rawLink, onCancel, onProceed, proceedInN
 
   let riskTitle = lang?.redirect_safe_title || 'Риск низкий';
   let riskLead = lang?.redirect_safe_lead || 'Алгоритмы не нашли угроз, но сохраняйте бдительность.';
-  let badgeColor = '[--glass-tint:var(--color-emerald-500)] [--glass-alpha:0.1] border-emerald-500/30 text-emerald-400';
+  // Цветная плашка — обычный полупрозрачный фон, не стекло: при выключенном стекле она не должна становиться сплошной.
+  let badgeColor = 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400';
   let iconName = 'IC-check';
 
   if (level === 'danger') {
     riskTitle = lang?.redirect_danger_title || 'Высокий риск';
     riskLead = lang?.redirect_danger_lead || 'Сайт выглядит опасным. Переход заблокирован.';
-    badgeColor = '[--glass-tint:var(--color-red-500)] [--glass-alpha:0.1] border-red-500/30 text-red-400';
+    badgeColor = 'border-red-500/30 bg-red-500/10 text-red-400';
     iconName = 'IC-warning';
   } else if (level === 'warning') {
     riskTitle = lang?.redirect_warning_title || 'Подозрительный риск';
     riskLead = lang?.redirect_warning_lead || 'Есть риск-маркеры. Переход возможен, но крайне не рекомендуется.';
-    badgeColor = '[--glass-tint:var(--color-amber-500)] [--glass-alpha:0.1] border-amber-500/30 text-amber-400';
+    badgeColor = 'border-amber-500/30 bg-amber-500/10 text-amber-400';
     iconName = 'IC-warning';
   }
 
@@ -101,9 +102,8 @@ export default function LinkGuardBody({ rawLink, onCancel, onProceed, proceedInN
 
       {/* Loading State */}
       {loading && (
-        <div className="glass-panel [--glass-alpha:0.9] [--glass-blur:24px] flex flex-col items-center justify-center gap-3 rounded-3xl border border-zinc-800 p-3 shadow-2xl">
+        <div className="flex items-center justify-center py-6">
           <BrandLoader size="sm" />
-          <span className="text-sm text-zinc-400">{lang?.loading || 'Проверка безопасности...'}</span>
         </div>
       )}
 
@@ -117,7 +117,7 @@ export default function LinkGuardBody({ rawLink, onCancel, onProceed, proceedInN
 
       {/* Analysis Result Card */}
       {!loading && analysis && (
-        <div className={`flex flex-col gap-3 rounded-3xl border ${badgeColor} p-3 shadow-2xl glass-panel [--glass-blur:24px]`}>
+        <div className={`flex flex-col gap-3 rounded-3xl border ${badgeColor} p-3 shadow-2xl`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Icon name={iconName} className="h-6 w-6 fill-current" />

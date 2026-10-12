@@ -918,7 +918,7 @@ export default function WalletContent() {
                         </div>
                         <div className="flex flex-col justify-center min-w-0">
                           <span className="text-sm lg:text-base text-zinc-100 truncate">[#{order.id}] {lang?.topup_of_account || 'Пополнение счёта №'}{order.label}</span>
-                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancelTopup(order.order_hash); }} className="glass-panel [--glass-tint:var(--color-red-500)] [--glass-alpha:0.25] [--glass-blur:16px] shrink-0 text-sm mt-1.5 w-fit flex items-center gap-1.5 text-red-500 hover:[--glass-tint:var(--color-red-700)] hover:[--glass-alpha:0.4] shadow rounded-3xl cursor-pointer py-0.5 px-1 duration-300 active:scale-95 border border-zinc-600/30">
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCancelTopup(order.order_hash); }} className="bg-red-500/25 shrink-0 text-sm mt-1.5 w-fit flex items-center gap-1.5 text-red-500 hover:bg-red-700/40 shadow rounded-3xl cursor-pointer py-0.5 px-1 duration-300 active:scale-95 border border-zinc-600/30">
                             <span>{strings.cancel}</span>
                           </button>
                         </div>

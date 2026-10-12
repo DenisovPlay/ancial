@@ -148,10 +148,10 @@ export default function PayContent() {
 
   const getFeeBadgeClass = (color: string) => {
     switch (color) {
-      case 'emerald': return 'border border-zinc-600/30 [--glass-tint:var(--color-emerald-500)] [--glass-alpha:0.25] text-emerald-500 shadow-emerald-500';
-      case 'amber': return 'border border-zinc-600/30 [--glass-tint:var(--color-amber-500)] [--glass-alpha:0.25] text-amber-500 shadow-amber-500';
-      case 'red': return 'border border-zinc-600/30 [--glass-tint:var(--color-red-500)] [--glass-alpha:0.25] text-red-500 shadow-red-500';
-      default: return 'border border-zinc-600/30 [--glass-tint:var(--color-zinc-500)] [--glass-alpha:0.25] text-zinc-300 shadow-zinc-500';
+      case 'emerald': return 'border border-zinc-600/30 bg-emerald-500/25 text-emerald-500 shadow-emerald-500';
+      case 'amber': return 'border border-zinc-600/30 bg-amber-500/25 text-amber-500 shadow-amber-500';
+      case 'red': return 'border border-zinc-600/30 bg-red-500/25 text-red-500 shadow-red-500';
+      default: return 'border border-zinc-600/30 bg-zinc-500/25 text-zinc-300 shadow-zinc-500';
     }
   };
 
@@ -354,7 +354,7 @@ export default function PayContent() {
                     className="border border-zinc-600/30 relative group shrink-0 p-1.5 flex items-center gap-1.5 justify-center bg-zinc-800/70 rounded-3xl shadow-lg hover:scale-105 active:scale-95 duration-300 cursor-pointer"
                   >
                     {merchant.fee_paid === 'user' && gateway.fee_text && (
-                      <span className={`glass-panel [--glass-blur:16px] shadow-2xl px-1.5 py-0.5 rounded-full text-xs absolute -top-1.5 -right-1.5 duration-300 ${getFeeBadgeClass(gateway.fee_color)}`}>
+                      <span className={`shadow-2xl px-1.5 py-0.5 rounded-full text-xs absolute -top-1.5 -right-1.5 duration-300 ${getFeeBadgeClass(gateway.fee_color)}`}>
                         {gateway.fee_text}
                       </span>
                     )}
