@@ -1135,7 +1135,10 @@ export function PulsePlayerProvider({
     // чтобы гейт в handlePlay не принял его за случайное возобновление на пульте.
     if (track) claimActiveDevice();
     const audio = audioRef.current;
-    if (!audio || !track) return;
+    if (!audio || !track) {
+      if (track) console.error('[Pulse] <audio> не смонтирован — трек не запущен');
+      return;
+    }
 
     if (!isTrackPlayable(track, userCountry)) {
       notify({
@@ -1407,7 +1410,10 @@ export function PulsePlayerProvider({
       kind !== 'track' &&
       currentIsPlaylistRef.current &&
       currentCollectionIdRef.current === playId &&
-      playlistRef.current.length > 0
+      playlistRef.current.length > 0 &&
+      // Очередь есть, а в <audio> ничего не загружено (сброс, восстановление) — переключать паузу нечему, грузим заново
+      currentSongIdRef.current > 0 &&
+      Boolean(audioRef.current?.src)
     ) {
       if (!shouldForceReload) {
         if (audioRef.current?.paused) {
