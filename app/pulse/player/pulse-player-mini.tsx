@@ -171,7 +171,7 @@ export function PulsePlayerMini({
       }}
     >
       {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
-      <div className="relative flex min-w-0 flex-1 items-center lg:flex-none lg:shrink-0">
+      <div className="relative flex min-w-0 flex-1 items-center lg:basis-0">
         {/* Предыдущий трек (подкладывается только во время свайпа) */}
         {prevArtwork ? (
           <div
@@ -262,7 +262,7 @@ export function PulsePlayerMini({
       </div>
 
       {/* Перемотка — только десктоп: таймкоды по бокам дорожки, моноширинно, чтобы не прыгали. */}
-      <div className="hidden min-w-0 flex-grow items-center justify-center gap-3 lg:flex">
+      <div className="hidden min-w-0 flex-[2] basis-0 items-center justify-center gap-3 lg:flex">
         <div ref={desktopCurrentTimeLabelRef} className="w-10 shrink-0 text-right text-xs tabular-nums text-zinc-400">
           {formatPlaybackTime(desktopSeekTime)}
         </div>
@@ -284,7 +284,7 @@ export function PulsePlayerMini({
         <div className="w-10 shrink-0 text-xs tabular-nums text-zinc-400">{formatPlaybackTime(duration)}</div>
       </div>
 
-      <div data-mini-controls className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:gap-3 lg:pr-1">
+      <div data-mini-controls className="relative z-20 flex shrink-0 items-center justify-end gap-1.5 lg:flex-1 lg:basis-0 lg:gap-3 lg:pr-1">
         <div className="hidden w-28 items-center gap-3 lg:flex">
           <button
             type="button"
