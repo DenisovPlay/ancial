@@ -634,6 +634,7 @@ export function PulsePlayerProvider({
   const pendingRemotePlayRef = useRef<{ kind: PulseCollectionKind; id: number | string; forceReload: boolean; shuffle: number; startIndex: number; expectedSongId: number | string | null | undefined; at: number } | null>(null);
   /** Очередь разошлась с коллекцией (перемешивание, правки, радио, «Сохранённые») — шлём её целиком. */
   const queueDirtyRef = useRef(false);
+  const queueShuffledRef = useRef(false);
   /** Позиция, на которую надо встать сразу после загрузки трека (перенос с другого устройства). */
   const pendingSeekMsRef = useRef(0);
 
@@ -1421,7 +1422,8 @@ export function PulsePlayerProvider({
         return;
       }
 
-      if (Number(shuffle) === 0) {
+      // Очередь перемешана — клик по треку должен вернуть обычный порядок, поэтому берём коллекцию заново.
+      if (Number(shuffle) === 0 && !queueShuffledRef.current) {
         // Порядок очереди может не совпадать со списком на странице — ищем трек по ID, индекс лишь подсказка.
         const cachedIndex = findTrackIndex(playlistRef.current, expectedTrackId, startIndex);
         if (cachedIndex >= 0) {
@@ -1475,6 +1477,7 @@ export function PulsePlayerProvider({
     currentCollectionRawIdRef.current = resolvedId;
     // «Сохранённые» лежат в IndexedDB каждого устройства, перемешанный порядок не повторить.
     queueDirtyRef.current = kind === 'downloads' || Number(shuffle) === 1;
+    queueShuffledRef.current = kind !== 'track' && Number(shuffle) === 1;
 
     setPlaylistState(preparedTracks);
     setPlaylistIndex(nextIndex);
