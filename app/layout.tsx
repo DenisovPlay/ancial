@@ -100,7 +100,7 @@ export default function RootLayout({
         </Script>
         {/* Замеры с устройства для страницы статуса (status.zypo.cc): без cookie. В приложении не грузим — внешний код рядом с нативным мостом ни к чему. */}
         {IS_NATIVE_APP ? null : <Script src="https://status.zypo.cc/rum.js" data-site="12f6f1cf2d1a" strategy="afterInteractive" />}
-        {IS_NATIVE_APP ? null : <Script src="https://scope.zeniflow.ru/rum.js" data-site="12f6f1cf2d1a" strategy="afterInteractive" />}
+        {IS_NATIVE_APP ? null : <Script src="https://scope.zeniflow.ru/rum.js" data-site="zypo" strategy="afterInteractive" />}
         <noscript>
           <div>
             <img src="https://mc.yandex.ru/watch/95401676" style={{ position: "absolute", left: "-9999px" }} alt="" />
