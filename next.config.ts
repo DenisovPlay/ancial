@@ -103,6 +103,11 @@ const webConfig: NextConfig = {
           source: '/amc/:path*',
           destination: `${API_BASE.replace(/\/$/, '')}/amc/:path*`,
         },
+        // OAuth SSO authorize endpoint
+        {
+          source: '/oauth/authorize',
+          destination: `${API_BASE.replace(/\/$/, '')}/api/V2/oauth/Authorize.php`,
+        },
         { // Proxy for image.php
           source: '/image.php',
           destination: `${API_BASE}/image.php`,

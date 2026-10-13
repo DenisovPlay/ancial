@@ -70,6 +70,17 @@ export interface AuthSession {
   last_seen_at: string;
 }
 
+export interface AuthService {
+  id: number;
+  client_id: string;
+  client_name: string;
+  site_url: string;
+  icon_url: string;
+  scope: string;
+  authorized_at: string;
+  last_used_at: string;
+}
+
 export interface AncialV2Response<T> {
   success: boolean;
   data: T;
@@ -494,6 +505,26 @@ export class AncialAPI {
     return this.request<{ revoked: number; sessions: AuthSession[] }>('/auth/Sessions.php', {
       method: 'POST',
       body: new URLSearchParams({ action: 'revoke_others' }),
+    });
+  }
+
+  // --- CONNECTED SERVICES (Zypo SSO) ---
+
+  static authServices(): Promise<{ services: AuthService[] }> {
+    return this.request<{ services: AuthService[] }>('/auth/Services.php?action=list');
+  }
+
+  static revokeAuthService(clientId: string): Promise<{ services: AuthService[] }> {
+    return this.request<{ services: AuthService[] }>('/auth/Services.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'revoke', client_id: clientId }),
+    });
+  }
+
+  static revokeAllAuthServices(): Promise<{ revoked: number; services: AuthService[] }> {
+    return this.request<{ revoked: number; services: AuthService[] }>('/auth/Services.php', {
+      method: 'POST',
+      body: new URLSearchParams({ action: 'revoke_all' }),
     });
   }
 

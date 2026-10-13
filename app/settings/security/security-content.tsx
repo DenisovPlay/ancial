@@ -98,6 +98,15 @@ export default function SecuritySettingsContent() {
               <Icon name="IC-laptop" className="w-6 h-6 fill-sky-500" />
             }
           />
+
+          <SettingsItem
+            href="/settings/security/services"
+            title={lang?.connected_services || 'Подключённые сервисы'}
+            iconBgClass="bg-indigo-500/10"
+            icon={
+              <Icon name="IC-globe" className="w-6 h-6 fill-indigo-400" />
+            }
+          />
         </div>
       </div>
 
