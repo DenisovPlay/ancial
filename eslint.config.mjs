@@ -26,6 +26,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "php-v2-api/**",
+    "promo-video/**",
     "public/jsQR.js",
     // Нативные проекты Capacitor (внутри — копия out/ и сгенерированные файлы).
     "android/**",

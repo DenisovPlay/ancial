@@ -62,6 +62,8 @@ const SLIDE_STYLE: CSSProperties = { transform: 'translate3d(var(--mini-swipe-x,
 // Соседние треки лежат в DOM заранее (обложки подгружены), но видны только пока идёт жест (--mini-peek): на широкой пилюле сдвига на ширину оболочки мало, чтобы убрать их из поля зрения.
 const PEEK_VISIBILITY = 'var(--mini-peek, hidden)' as CSSProperties['visibility'];
 const PREV_PEEK_STYLE: CSSProperties = { visibility: PEEK_VISIBILITY, transform: 'translate3d(calc(var(--mini-swipe-x, 0px) - var(--mini-w, 360px)), 0, 0)', transition: SWIPE_TRANSITION, willChange: 'transform' };
+// Правый край области трека гаснет на время жеста (--mini-fade), чтобы приезжающий трек не накладывался на кнопки управления; на ПК не нужен.
+const TRACK_FADE_STYLE: CSSProperties = { maskImage: 'linear-gradient(to right, #000 calc(100% - var(--mini-fade, 0px)), transparent)', WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - var(--mini-fade, 0px)), transparent)' };
 const NEXT_PEEK_STYLE: CSSProperties = { visibility: PEEK_VISIBILITY, transform: 'translate3d(calc(var(--mini-swipe-x, 0px) + var(--mini-w, 360px)), 0, 0)', transition: SWIPE_TRANSITION, willChange: 'transform' };
 
 /** Prop-driven mini player presentation. Playback and gesture ownership stay in the provider. */
@@ -171,7 +173,7 @@ export function PulsePlayerMini({
       }}
     >
       {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
-      <div className="relative flex min-w-0 flex-1 items-center lg:basis-0">
+      <div data-mini-track className="relative flex min-w-0 flex-1 items-center lg:basis-0" style={TRACK_FADE_STYLE}>
         {/* Предыдущий трек (подкладывается только во время свайпа) */}
         {prevArtwork ? (
           <div

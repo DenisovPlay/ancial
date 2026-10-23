@@ -850,7 +850,7 @@ export default function PulseContent() {
 
             {!isLoading && isAuthenticated && listened === 'empty' && downloadedCount === 0 ? (
               <div className="col-span-2 flex w-full flex-col items-center justify-center gap-3 sm:col-span-3 lg:col-span-4 xl:col-span-5">
-                <AppImage width={128} height={128} src={THINKING_IMAGE} alt="Nothing listened yet" className="w-32 opacity-90" />
+                <AppImage skeleton={false} width={128} height={128} src={THINKING_IMAGE} alt="Nothing listened yet" className="w-32 opacity-90" />
                 <div className="text-center text-zinc-200">{lang?.startlistening || 'Начните уже что-нибудь слушать...'}</div>
               </div>
             ) : null}
@@ -1046,7 +1046,7 @@ export default function PulseContent() {
                 <div className="absolute -right-24 top-0 flex items-center justify-center rounded-2xl rounded-bl-lg bg-purple-500 p-1 text-xs text-white 2xl:-right-32 2xl:text-base">
                   {lang?.whatareyoulistening || 'Что ты вообще слушаешь?'}
                 </div>
-                <AppImage width={128} height={128} src={THINKING_IMAGE} alt="Guest pulse placeholder" className="w-32" />
+                <AppImage skeleton={false} width={128} height={128} src={THINKING_IMAGE} alt="Guest pulse placeholder" className="w-32" />
               </div>
               <span>{guestYourPulseMessage}</span>
             </div>

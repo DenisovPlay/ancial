@@ -102,11 +102,16 @@ function setMiniSwipe(shell: HTMLElement, x: number, ms: number) {
   shell.style.setProperty('--mini-swipe-ms', `${ms}ms`);
   shell.style.setProperty('--mini-swipe-x', `${x}px`);
   // Соседние треки видны, пока жест идёт и пока содержимое возвращается; полностью на месте — прячем.
-  if (x !== 0) shell.style.setProperty('--mini-peek', 'visible');
-  else if (ms === 0) shell.style.setProperty('--mini-peek', 'hidden');
+  // --mini-fade: размытый край у кнопок справа, пока едет соседний трек (иначе его текст ложится на кнопки).
+  const setPeek = (visible: boolean) => {
+    shell.style.setProperty('--mini-peek', visible ? 'visible' : 'hidden');
+    shell.style.setProperty('--mini-fade', visible ? '14px' : '0px');
+  };
+  if (x !== 0) setPeek(true);
+  else if (ms === 0) setPeek(false);
   else {
     window.setTimeout(() => {
-      if (shell.style.getPropertyValue('--mini-swipe-x') === '0px') shell.style.setProperty('--mini-peek', 'hidden');
+      if (shell.style.getPropertyValue('--mini-swipe-x') === '0px') setPeek(false);
     }, ms + 40);
   }
 }
@@ -3033,7 +3038,9 @@ export function PulsePlayerProvider({
           if (window.innerWidth >= 1024) return;
           touchStartMiniRef.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
           window.clearTimeout(Number(event.currentTarget.dataset.swipeTimer));
-          event.currentTarget.style.setProperty('--mini-w', `${Math.max(event.currentTarget.clientWidth, 320)}px`);
+          // Соседний трек стоит вплотную к области трека (а не к краю всей пилюли): появляется сразу, без пустого промежутка.
+          const trackWidth = event.currentTarget.querySelector<HTMLElement>('[data-mini-track]')?.clientWidth ?? 0;
+          event.currentTarget.style.setProperty('--mini-w', `${Math.max(trackWidth || event.currentTarget.clientWidth, 120)}px`);
           setMiniSwipe(event.currentTarget, 0, 0);
         }}
         onTouchMove={(event) => {
@@ -3071,7 +3078,7 @@ export function PulsePlayerProvider({
           // уходящий уходит за противоположный), затем смена трека; на место содержимое возвращает сам мини-плеер,
           // когда отрисовался новый трек (useLayoutEffect), а если трек не сменился — страховочный возврат.
           const threshold = 60;
-          const slideDistance = Math.max(shell.clientWidth, 320);
+          const slideDistance = parseFloat(shell.style.getPropertyValue('--mini-w')) || Math.max(shell.clientWidth, 320); // тот же шаг, на котором стоят соседи
           const commit = (direction: 1 | -1, change: () => Promise<void>) => {
             setMiniSwipe(shell, direction * slideDistance, MINI_SWIPE_MS);
             setTimeout(() => {

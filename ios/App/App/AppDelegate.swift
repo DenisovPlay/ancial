@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -57,7 +58,19 @@ class MainViewController: CAPBridgeViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         let top = max(view.window?.safeAreaInsets.top ?? 0, view.safeAreaInsets.top)
-        if topConstraint.constant != top { topConstraint.constant = top }
+        if topConstraint.constant != top {
+            topConstraint.constant = top
+            publishTopInset(top)
+        }
+    }
+
+    /// WebView начинается под статус-баром, а нативный сплеш центрируется по всему экрану: страница сдвигает свой
+    /// загрузчик на половину этого отступа (--native-top-inset, см. .brand-loader-screen), и логотип не «съезжает» вниз.
+    private func publishTopInset(_ top: CGFloat) {
+        guard let web = webView else { return }
+        let js = "document.documentElement.style.setProperty('--native-top-inset','\(top)px')"
+        web.configuration.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        web.evaluateJavaScript(js, completionHandler: nil)
     }
 
     override func viewDidLoad() {

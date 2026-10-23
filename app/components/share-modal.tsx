@@ -373,21 +373,21 @@ export default function ShareModal({
                 onClick={() => handleShareTo('vk')}
                 className="w-16 h-16 shrink-0 rounded-3xl bg-blue-500 hover:bg-blue-500/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow border border-zinc-600/30"
               >
-                <AppImage src="/img/socials/vk.png" alt="VK" width={48} height={48} className="w-12 h-12" />
+                <AppImage skeleton={false} src="/img/socials/vk.png" alt="VK" width={48} height={48} className="w-12 h-12" />
               </button>
               <button
                 type="button"
                 onClick={() => handleShareTo('tg')}
                 className="w-16 h-16 shrink-0 rounded-3xl bg-sky-400 hover:bg-sky-400/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow border border-zinc-600/30"
               >
-                <AppImage src="/img/socials/tg.png" alt="Telegram" width={48} height={48} className="w-12 h-12" />
+                <AppImage skeleton={false} src="/img/socials/tg.png" alt="Telegram" width={48} height={48} className="w-12 h-12" />
               </button>
               <button
                 type="button"
                 onClick={() => handleShareTo('x')}
                 className="w-16 h-16 shrink-0 rounded-3xl bg-slate-800 hover:bg-slate-800/80 cursor-pointer active:scale-95 duration-300 flex items-center justify-center shadow border border-zinc-600/30"
               >
-                <AppImage src="/img/socials/x.png" alt="X" width={48} height={48} className="w-12 h-12" />
+                <AppImage skeleton={false} src="/img/socials/x.png" alt="X" width={48} height={48} className="w-12 h-12" />
               </button>
             </div>
           </div>
