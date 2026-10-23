@@ -68,6 +68,8 @@ export default function RootLayout({
       <head>
         {/* Приложение: адреса динамических страниц обслуживают заготовки «_» — до запуска Next (см. app-route-boot.ts). */}
         {IS_NATIVE_APP ? <script dangerouslySetInnerHTML={{ __html: APP_ROUTE_BOOT_SCRIPT }} /> : null}
+        {/* iOS-приложение: WebView начинается под статус-баром, а нативный сплеш центрирован по экрану — высоту выреза (экран минус окно) отдаём CSS для загрузчика (.brand-loader-screen/-page). */}
+        {IS_NATIVE_APP ? <script dangerouslySetInnerHTML={{ __html: "try{if(/iPhone|iPad/.test(navigator.userAgent)){var d=document.documentElement;d.setAttribute('data-ios-app','');d.style.setProperty('--native-top-inset',Math.max(0,screen.height-innerHeight)+'px')}}catch(e){}" }} /> : null}
         {/* Своё, без внешних данных: применяет сохранённые на устройстве настройки внешнего вида до первой отрисовки. */}
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
       </head>

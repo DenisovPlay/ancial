@@ -675,9 +675,16 @@ html[data-motion-lyrics='lines'] .pulse-lyric-line.is-active .pulse-lyric-word {
   animation: brand-loader-show 1ms linear 150ms forwards;
 }
 
-/* iOS-приложение: WebView начинается под статус-баром, нативный сплеш — по центру экрана; поднимаем логотип на полотступа. */
-.brand-loader-screen {
+/* iOS-приложение: WebView начинается под статус-баром, нативный сплеш — по центру экрана; подгоняем центр загрузчика под него.
+   screen — на всю высоту окна (поднимаем на полотступа); page — высота окна минус 5rem нижнего отступа (опускаем на 2.5rem и поднимаем на полотступа). */
+html[data-ios-app] .brand-loader-screen {
   transform: translateY(calc(var(--native-top-inset, 0px) / -2));
+}
+
+@media (max-width: 1023px) {
+  html[data-ios-app] .brand-loader-page {
+    transform: translateY(calc(2.5rem - var(--native-top-inset, 0px) / 2));
+  }
 }
 
 .brand-loader::before {

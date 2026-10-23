@@ -68,7 +68,7 @@ class MainViewController: CAPBridgeViewController {
     /// загрузчик на половину этого отступа (--native-top-inset, см. .brand-loader-screen), и логотип не «съезжает» вниз.
     private func publishTopInset(_ top: CGFloat) {
         guard let web = webView else { return }
-        let js = "document.documentElement.style.setProperty('--native-top-inset','\(top)px')"
+        let js = "document.documentElement.setAttribute('data-ios-app','');document.documentElement.style.setProperty('--native-top-inset','\(top)px')"
         web.configuration.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         web.evaluateJavaScript(js, completionHandler: nil)
     }
