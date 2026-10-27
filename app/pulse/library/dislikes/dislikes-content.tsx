@@ -9,15 +9,15 @@ import ErrorState from '../../../components/error-state';
 import Icon from '../../../components/svg-icon';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { AncialAPI } from '../../../lib/api-v2';
+import { useUserCountry } from '../../../lib/user-geo';
 import { useDislikeActions } from '../../dislikes/use-dislike-actions';
 import { reloadPulseDislikes, rememberPulseChoice, usePulseDislikes } from '../../dislikes/use-pulse-dislikes';
-import { PulseCoverImage, PULSE_COVER_IMAGE_SIZES } from '../../pulse-image';
+import { usePulseTrackActions } from '../../use-pulse-track-actions';
 import {
   PulseEmptyState,
-  PulseLogo,
-  decodeHtmlEntities,
-  getTrackArtwork,
+  PulseTrackRow,
   type PulseTrack,
 } from '../../pulse-components';
 
@@ -30,10 +30,13 @@ const ACTION_BUTTON = 'shrink-0 cursor-pointer rounded-full border border-zinc-6
 /** Медиатека → «Не интересно»: отмеченные треки и исполнители с кнопкой «Вернуть» и сброс запомненных ответов. */
 export default function PulseDislikesContent() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading, lang } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, lang, user } = useAuth();
+  const { currentSongId, playTrack } = usePulsePlayer();
+  const userCountry = useUserCountry();
+  const actions = usePulseTrackActions();
   const { showNote } = useNotification();
   const state = usePulseDislikes();
-  const { unmarkArtist, unmarkTrack } = useDislikeActions();
+  const { unmarkArtist } = useDislikeActions();
   const [tracks, setTracks] = useState<PulseTrack[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
@@ -75,17 +78,15 @@ export default function PulseDislikesContent() {
         <div className="w-full max-w-screen-2xl px-3 lg:px-0">
           <Link
             href="/pulse/library"
-            className="flex w-fit cursor-pointer items-center gap-3 duration-300 hover:opacity-80 active:scale-95"
+            className="flex w-fit cursor-pointer items-center gap-1.5 text-3xl font-extralight duration-300 hover:text-zinc-300 active:scale-95"
           >
-            <Icon name="IC-chevron-left" className="inline h-8 w-8 fill-current" />
-            <PulseLogo className="w-32 sm:w-48" />
+            <Icon name="IC-chevron-left" className="inline h-8 w-8 fill-white" />
+            {lang?.pulse_dislikes_library || 'Не интересно'}
           </Link>
         </div>
       </div>
 
       <div className="flex w-full max-w-screen-2xl flex-col gap-3 px-3 lg:px-0">
-        <h1 className="text-2xl font-bold text-white">{lang?.pulse_dislikes_library || 'Не интересно'}</h1>
-
         {failed && tracks === null ? <ErrorState onRetry={() => setReloadToken((token) => token + 1)} variant="block" /> : null}
         {!failed && tracks === null ? <div className="flex justify-center p-6"><BrandLoader /></div> : null}
 
@@ -106,25 +107,28 @@ export default function PulseDislikesContent() {
         {tracks !== null && visibleTracks.length > 0 ? (
           <section className="flex flex-col gap-3">
             <h2 className="text-lg font-semibold text-zinc-300">{lang?.pulse_dislikes_tracks || 'Треки'}</h2>
-            {visibleTracks.map((track) => (
-              <div key={String(track.sid)} className="flex items-center gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
-                <div className="relative h-14 w-14 shrink-0">
-                  <PulseCoverImage
-                    alt=""
-                    className="rounded-2xl opacity-70"
-                    sizes={PULSE_COVER_IMAGE_SIZES.trackRow}
-                    src={getTrackArtwork(track)}
-                  />
-                </div>
-                <div className="min-w-0 flex-grow">
-                  <span className="block truncate font-medium text-white">{decodeHtmlEntities(track.title) || (lang?.untitled || 'Без названия')}</span>
-                  <span className="block truncate text-sm text-zinc-400">{decodeHtmlEntities(track.artist)}</span>
-                </div>
-                <button type="button" className={ACTION_BUTTON} onClick={() => void unmarkTrack(track)}>
-                  {lang?.pulse_undislike || 'Вернуть в рекомендации'}
-                </button>
-              </div>
-            ))}
+            {/* Единым блоком, как плейлист и история: та же строка трека с меню (там же «Вернуть в рекомендации»). */}
+            <div className="flex w-full flex-col gap-3 rounded-3xl border border-zinc-600/30 bg-zinc-900 p-3">
+              {visibleTracks.map((track, index) => (
+                <PulseTrackRow
+                  currentSongId={currentSongId}
+                  favoriteIds={actions.favoriteIds}
+                  isAuthenticated={isAuthenticated}
+                  key={String(track.sid)}
+                  onAddToPlaylist={actions.openAddTrackToPlaylist}
+                  onCopyTrackLink={actions.copyTrackLink}
+                  onLikeTrack={actions.likeTrack}
+                  onOpenArtist={(artistId) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`)}
+                  onPlayTrack={(nextTrack) => void playTrack(nextTrack.sid ?? 0)}
+                  onQueueTrackNext={(trackId) => actions.playNextTrack(trackId)}
+                  onReportTrack={actions.reportTrack}
+                  track={track}
+                  trackIndex={index}
+                  user={user}
+                  userCountry={userCountry}
+                />
+              ))}
+            </div>
           </section>
         ) : null}
 
@@ -138,6 +142,7 @@ export default function PulseDislikesContent() {
           </button>
         ) : null}
       </div>
+      {actions.modals}
     </div>
   );
 }

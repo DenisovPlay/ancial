@@ -600,6 +600,8 @@ export const ru: Record<string, string> = {
     "search_tab_groups": "Сообщества",
     "search_tab_music": "Музыка",
     "search_widget_apps": "Приложения",
+    "search_weather_open": "Открыть",
+    "search_weather_hint": "Прогноз на сегодня и ближайшие дни",
     "search_no_results": "Ничего не найдено",
     "search_no_results_hint": "Попробуйте изменить запрос или проверить написание",
     "search_web_unavailable": "Поиск в интернете сейчас недоступен",
@@ -2376,5 +2378,7 @@ export const ru: Record<string, string> = {
     "glass_by_element_hint": "Множитель поверх общих настроек: 100% — как задано выше, 0% — без размытия у этого элемента.",
     "motion_expand": "Плавное раскрытие",
     "motion_expand_hint": "Длинные посты и разделы настроек",
+    "motion_scrollhide": "Прятать панели при прокрутке",
+    "motion_scrollhide_hint": "Телефон: панель навигации уезжает вниз при прокрутке вниз и возвращается при прокрутке вверх",
     "pulse_artists": "Исполнители",
 };

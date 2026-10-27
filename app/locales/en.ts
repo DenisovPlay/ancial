@@ -571,6 +571,8 @@ export const en: Record<string, string> = {
   "search_tab_groups": "Communities",
   "search_tab_music": "Music",
   "search_widget_apps": "Apps",
+  "search_weather_open": "Open",
+  "search_weather_hint": "Forecast for today and the next days",
   "search_no_results": "Nothing found",
   "search_no_results_hint": "Try changing the query or check the spelling",
   "search_web_unavailable": "Web search is unavailable right now",
@@ -2376,5 +2378,7 @@ export const en: Record<string, string> = {
   "glass_by_element_hint": "Multiplier on top of the general settings: 100% — as set above, 0% — no blur for this element.",
   "motion_expand": "Smooth expand",
   "motion_expand_hint": "Long posts and settings sections",
+  "motion_scrollhide": "Hide bars while scrolling",
+  "motion_scrollhide_hint": "Phone: the navigation bar slides down when you scroll down and returns when you scroll up",
   "pulse_artists": "Artists",
 };

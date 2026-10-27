@@ -11,6 +11,7 @@ import { openLinkGuard, parseRedirectHref } from '../lib/link-guard-store';
 import LinkGuardHost from './link-guard-host';
 import NotificationToaster from './notification-toaster';
 import { installScrollRestore } from '../lib/scroll-restore';
+import { useScrollHideBars } from '../lib/use-scroll-hide-bars';
 
 export default function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -69,6 +70,8 @@ export default function MainContent({ children }: { children: React.ReactNode })
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
   }, [router]);
+
+  useScrollHideBars();
 
   // Прелоадер картинок внутри HTML-строк (посты, комментарии, стикеры) — один раз на приложение.
   useEffect(() => {

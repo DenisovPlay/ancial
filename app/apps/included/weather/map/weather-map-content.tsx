@@ -364,11 +364,10 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
       if (tileY >= 0 && tileY < nVal) {
         const sub = subdomains[Math.abs(tileX + tileY) % 3];
         const isRu = langCode !== 'en';
-        const mapTileUrl = isDay
-          ? isRu
-            ? `https://${sub}.tile.openstreetmap.org/${baseTileZoom}/${tileX}/${tileY}.png`
-            : `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${baseTileZoom}/${tileX}/${tileY}.png`
-          : `https://${sub}.basemaps.cartocdn.com/dark_all/${baseTileZoom}/${tileX}/${tileY}.png`;
+        // Ночью та же светлая карта, затемнённая фильтром ниже: готовая тёмная (dark_all) отдаёт «API REQUIRED».
+        const mapTileUrl = isRu
+          ? `https://${sub}.tile.openstreetmap.org/${baseTileZoom}/${tileX}/${tileY}.png`
+          : `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${baseTileZoom}/${tileX}/${tileY}.png`;
 
         const precipTileUrl = `https://tile.openweathermap.org/map/precipitation_new/${baseTileZoom}/${tileX}/${tileY}.png?appid=1c503419b342442e86e7eccfc16a85c7`;
 
@@ -446,7 +445,7 @@ export default function WeatherMapContent({ hideHeaderBackButton = false }: Weat
                   src={t.mapTileUrl}
                   alt=""
                   loading="eager"
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${isDay ? 'brightness-100 contrast-105' : 'brightness-95 contrast-110'}`}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${isDay ? 'brightness-100 contrast-105' : 'invert hue-rotate-180 brightness-90 contrast-90 saturate-50'}`}
                   draggable={false}
                 />
                 {/* Precipitation Tile Overlay */}

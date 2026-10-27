@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import AppImage from '../../../components/app-image';
+import { cn } from '../../../lib/cn';
 import Link from 'next/link';
 import { useAuth } from '../../../context/AuthContext';
 import { cache } from '../../../lib/cache';
@@ -746,7 +747,7 @@ export default function WeatherContent({ initialCity = '' }: WeatherContentProps
                           </span>
                           <AppImage
                             alt="Map"
-                            className="object-cover opacity-90"
+                            className={cn('object-cover opacity-90', mode === 'night' && 'invert hue-rotate-180 brightness-90 contrast-90 saturate-50')}
                             fill
                             sizes="(min-width: 768px) 768px, 100vw"
                             src={mapLinks.mapUrl}

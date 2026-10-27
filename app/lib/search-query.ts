@@ -28,3 +28,10 @@ export function classifySearchInput(input: string): SearchInput {
   if (URL_PATTERN.test(value)) return { kind: 'url', url: /^https?:\/\//i.test(value) ? value : `https://${value}` };
   return { kind: 'query', query: value.slice(0, SEARCH_MAX_LENGTH) };
 }
+
+const WEATHER_QUERY = /^(?:погода|прогноз(?: погоды)?|weather|forecast)(?: (?:сейчас|сегодня|завтра|today|now|tomorrow))?$/;
+
+/** Запрос про погоду без города («погода», «прогноз погоды сегодня»): над выдачей показываем виджет с погодой пользователя. */
+export function isWeatherQuery(query: string): boolean {
+  return WEATHER_QUERY.test(query.trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' '));
+}

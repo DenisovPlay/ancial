@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { classifySearchInput, parseSearchTab, searchHref } from '../../app/lib/search-query.ts';
+import { classifySearchInput, isWeatherQuery, parseSearchTab, searchHref } from '../../app/lib/search-query.ts';
 
 test('вкладка: неизвестное значение — «Интернет»', () => {
   assert.equal(parseSearchTab('images'), 'images');
@@ -22,4 +22,9 @@ test('строка поиска: пустая, запрос или адрес с
   assert.deepEqual(classifySearchInput('http://a.b/c'), { kind: 'url', url: 'http://a.b/c' });
   assert.deepEqual(classifySearchInput('example.com/pulse'), { kind: 'url', url: 'https://example.com/pulse' });
   assert.equal(classifySearchInput('как дела.com ты').kind, 'query');
+});
+
+test('запрос про погоду: только без города', () => {
+  for (const q of ['погода', ' Погода ', 'прогноз погоды', 'weather', 'погода сегодня', 'Weather  now']) assert.equal(isWeatherQuery(q), true, q);
+  for (const q of ['погода в москве', 'weather in paris', 'погодаблог', 'погода ' + 'x'.repeat(30), '']) assert.equal(isWeatherQuery(q), false, q);
 });

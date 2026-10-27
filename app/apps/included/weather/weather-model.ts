@@ -130,9 +130,8 @@ export function buildWeatherMapLinks(
 ): WeatherMapLinks {
   const zoom = 9;
   const { xTile, yTile } = latLonToTile(lat, lon, zoom);
-  const mapUrl = isDay
-    ? `https://tile.openstreetmap.org/${zoom}/${xTile}/${yTile}.png`
-    : `https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/${zoom}/${xTile}/${yTile}.png`;
+  // Ночью та же светлая карта; затемняет её страница фильтром (готовая тёмная dark_all отдаёт «API REQUIRED»).
+  const mapUrl = `https://tile.openstreetmap.org/${zoom}/${xTile}/${yTile}.png`;
   const precipUrl = `https://tile.openweathermap.org/map/precipitation_new/${zoom}/${xTile}/${yTile}.png?appid=1c503419b342442e86e7eccfc16a85c7`;
   const yandexWeatherUrl =
     locale === 'ru'

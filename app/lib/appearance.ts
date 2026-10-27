@@ -16,6 +16,7 @@ export type MotionToggle = 'auto' | 'on' | 'off';
 export type TooltipMotion = 'auto' | 'smooth' | 'instant';
 export type LyricsMotion = 'words' | 'lines';
 export type LyricsSetting = 'auto' | LyricsMotion;
+export type ScrollHideSetting = 'on' | 'off';
 
 export type GlassRoleSetting = {
   on: boolean;
@@ -39,6 +40,8 @@ export type AppearanceSettings = {
     lyrics: LyricsSetting;
     /** Плавное раскрытие длинных постов и разделов настроек. */
     expand: MotionToggle;
+    /** Телефон: панели навигации уезжают вниз при прокрутке вниз и возвращаются при прокрутке вверх. */
+    scrollHide: ScrollHideSetting;
   };
 };
 
@@ -48,7 +51,7 @@ export type ResolvedAppearance = {
   /** Общие множители, которые сейчас действуют (для ползунков в настройках). */
   global: { blur: number; clarity: number; saturate: number };
   factors: Record<GlassRole, { blur: number; sat: number; clarity: number }>;
-  motion: { nav: boolean; menu: boolean; tooltips: 'smooth' | 'instant'; lyrics: LyricsMotion; expand: boolean };
+  motion: { nav: boolean; menu: boolean; tooltips: 'smooth' | 'instant'; lyrics: LyricsMotion; expand: boolean; scrollHide: boolean };
   device: { android: boolean; weak: boolean; reducedMotion: boolean };
 };
 
@@ -71,7 +74,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
       overlay: { on: true, level: 1 },
     },
   },
-  motion: { nav: 'auto', menu: 'auto', tooltips: 'auto', lyrics: 'auto', expand: 'auto' },
+  motion: { nav: 'auto', menu: 'auto', tooltips: 'auto', lyrics: 'auto', expand: 'auto', scrollHide: 'off' },
 };
 
 type DeviceHints = {
@@ -180,6 +183,8 @@ export function applyAppearance(input?: unknown, apply = true, hints?: DeviceHin
       tooltips: tooltips === 'auto' ? (reducedMotion ? 'instant' : 'smooth') : tooltips,
       lyrics: lyricsMode === 'auto' ? (weakAndroid || reducedMotion ? 'lines' : 'words') : lyricsMode,
       expand: expandMode === 'auto' ? !reducedMotion && !weakAndroid : expandMode === 'on',
+      // Опция по желанию (по умолчанию выключена); при «уменьшить движение» панели не уезжают.
+      scrollHide: motionRaw.scrollHide === 'on' && !reducedMotion,
     },
     device: { android: android, weak: weak, reducedMotion: Boolean(reducedMotion) },
   };
@@ -198,6 +203,7 @@ export function applyAppearance(input?: unknown, apply = true, hints?: DeviceHin
     root.setAttribute('data-motion-tooltips', resolved.motion.tooltips);
     root.setAttribute('data-motion-lyrics', resolved.motion.lyrics);
     root.setAttribute('data-motion-expand', resolved.motion.expand ? 'on' : 'off');
+    root.setAttribute('data-motion-scrollhide', resolved.motion.scrollHide ? 'on' : 'off');
   }
 
   return resolved;

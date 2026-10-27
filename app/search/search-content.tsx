@@ -17,9 +17,10 @@ import { AncialAPI } from '../lib/api-v2';
 import { cn } from '../lib/cn';
 import { openExternalUrl } from '../lib/native-browser';
 import { IS_NATIVE_APP } from '../lib/platform';
-import { classifySearchInput, parseSearchTab, searchHref, SEARCH_TABS, type SearchTab } from '../lib/search-query';
+import { classifySearchInput, isWeatherQuery, parseSearchTab, searchHref, SEARCH_TABS, type SearchTab } from '../lib/search-query';
 import type { SearchApp, SearchGroup, SearchImageResult, SearchInfobox, SearchUser, SearchWebResult } from '../lib/search-types';
 import SearchMusic, { type MusicBundle } from './search-music';
+import SearchWeather from './search-weather';
 import {
   AppTile,
   GroupRow,
@@ -282,6 +283,8 @@ export default function SearchContent() {
       {/* Выдача — колонкой до 700px у левого края, как раньше; сетка картинок шире. */}
       <div className={cn('flex w-full flex-col gap-6 lg:flex-row lg:items-start', tab === 'images' ? 'max-w-none' : sideBox ? 'max-w-[1100px]' : 'max-w-[700px]')}>
         <div className={cn('flex w-full min-w-0 flex-col gap-3', tab !== 'images' && 'max-w-[700px]')}>
+          {/* Погода — из кэша на устройстве, не ждёт ответа поиска. */}
+          {tab === 'web' && isWeatherQuery(query) ? <SearchWeather lang={lang} /> : null}
           {body}
           <div ref={sentinelRef} className="h-px w-full" />
           {loadingMore ? (

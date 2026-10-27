@@ -23,6 +23,7 @@ import {
   type GlassRole,
   type LyricsSetting,
   type MotionToggle,
+  type ScrollHideSetting,
   type TooltipMotion,
 } from '../../lib/appearance';
 import Icon from '../../components/svg-icon';
@@ -446,6 +447,17 @@ export default function UiSettingsContent() {
             options={toggleOptions}
             value={settings.motion.expand}
             onChange={(value) => update((draft) => { draft.motion.expand = value; })}
+          />
+          <SettingSelect<ScrollHideSetting>
+            selectClassName="w-40 shrink-0"
+            label={lang?.motion_scrollhide || 'Прятать панели при прокрутке'}
+            hint={lang?.motion_scrollhide_hint || 'Телефон: панель навигации уезжает вниз при прокрутке вниз и возвращается при прокрутке вверх'}
+            options={[
+              { value: 'off', label: lang?.motion_off || 'Выключено' },
+              { value: 'on', label: lang?.motion_on || 'Включено' },
+            ]}
+            value={settings.motion.scrollHide}
+            onChange={(value) => update((draft) => { draft.motion.scrollHide = value; })}
           />
           <SettingSelect<LyricsSetting>
             selectClassName="w-40 shrink-0"

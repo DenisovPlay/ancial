@@ -600,6 +600,8 @@ export const be: Record<string, string> = {
     "search_tab_groups": "Суполкі",
     "search_tab_music": "Музыка",
     "search_widget_apps": "Праграмы",
+    "search_weather_open": "Адкрыць",
+    "search_weather_hint": "Прагноз на сёння і бліжэйшыя дні",
     "search_no_results": "Нічога не знойдзена",
     "search_no_results_hint": "Паспрабуйце змяніць запыт або праверце напісанне",
     "search_web_unavailable": "Пошук у інтэрнэце зараз недаступны",
@@ -2376,5 +2378,7 @@ export const be: Record<string, string> = {
     "glass_by_element_hint": "Множнік па-над агульнымі наладамі: 100% — як зададзена вышэй, 0% — без размыцця ў гэтага элемента.",
     "motion_expand": "Плаўнае раскрыццё",
     "motion_expand_hint": "Доўгія пасты і раздзелы налад",
+    "motion_scrollhide": "Хаваць панэлі пры пракрутцы",
+    "motion_scrollhide_hint": "Тэлефон: панэль навігацыі з'язджае ўніз пры пракрутцы ўніз і вяртаецца пры пракрутцы ўверх",
     "pulse_artists": "Выканаўцы",
 };

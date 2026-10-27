@@ -886,6 +886,7 @@ function PostCardInner({
                 <button
                   type="button"
                   aria-label={strings.edit}
+                  data-tip={strings.edit}
                   onClick={handleEdit}
                   className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
                 >
@@ -894,6 +895,7 @@ function PostCardInner({
                 <button
                   type="button"
                   aria-label={strings.delete}
+                  data-tip={strings.delete}
                   onClick={handleDelete}
                   className="flex h-10 w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent bg-zinc-700/0 text-white duration-150 hover:border-zinc-600/30 hover:bg-zinc-700/95 hover:shadow active:scale-95"
                 >

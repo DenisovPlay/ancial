@@ -11,7 +11,13 @@ test('по умолчанию на ПК — полное стекло как в 
   const r = applyAppearance(DEFAULT_APPEARANCE, false, DESKTOP);
   assert.equal(r.preset, 'full');
   assert.deepEqual(r.factors.nav, { blur: 1, sat: 1, clarity: 1 });
-  assert.deepEqual(r.motion, { nav: true, menu: true, tooltips: 'smooth', lyrics: 'words', expand: true });
+  assert.deepEqual(r.motion, { nav: true, menu: true, tooltips: 'smooth', lyrics: 'words', expand: true, scrollHide: false });
+});
+
+test('«Прятать панели при прокрутке» — только по желанию и не при «уменьшить движение»', () => {
+  const on = { ...DEFAULT_APPEARANCE, motion: { ...DEFAULT_APPEARANCE.motion, scrollHide: 'on' as const } };
+  assert.equal(applyAppearance(on, false, DESKTOP).motion.scrollHide, true);
+  assert.equal(applyAppearance(on, false, { ...DESKTOP, reducedMotion: true }).motion.scrollHide, false);
 });
 
 test('«Авто» на Android — облегчённое стекло без отзывчивых эффектов; на слабом — ещё легче', () => {

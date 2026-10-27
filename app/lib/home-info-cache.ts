@@ -8,6 +8,9 @@ export interface HomeCurrencyCacheData {
 export interface HomeWeatherCacheData {
   temp: number | null;
   wfont: string | null;
+  /** Есть у записей, сохранённых целиком ответом API (старые записи — только temp и wfont). */
+  city?: string | null;
+  weather?: string | null;
 }
 
 export function getMsUntilMidnight(): number {

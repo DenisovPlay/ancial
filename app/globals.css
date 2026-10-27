@@ -185,6 +185,23 @@ body.pulse-player-full [data-app-nav="mobile"] {
   display: none !important;
 }
 
+/* «Прятать панели при прокрутке» (телефон, настройка в Интерфейсе): data-bars-hidden ставит use-scroll-hide-bars.
+   Панель навигации улетает вниз и возвращается на место; мини-плеер, стоящий над ней, опускается к краю экрана. */
+@media (max-width: 1023px) {
+  html[data-motion-scrollhide='on'] [data-app-nav='mobile'] {
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  html[data-motion-scrollhide='on'][data-bars-hidden] [data-app-nav='mobile'] {
+    transform: translateY(calc(100% + 1rem));
+  }
+
+  /* 4rem — высота подъёма над панелью (bottom-16), ещё 0.25rem — разница pb-2.5 и px-1.5: снизу отступ такой же, как по бокам. */
+  html[data-motion-scrollhide='on'][data-bars-hidden] .pulse-player-mini-host {
+    transform: translateY(4.25rem);
+  }
+}
+
 html.pulse-player-full,
 body.pulse-player-full {
   overflow: hidden !important;
@@ -1500,4 +1517,122 @@ select:-webkit-autofill {
 .lp-spin { animation: lp-spin 14s linear infinite; }
 @media (prefers-reduced-motion: reduce) {
   .lp-marquee, .lp-float, .lp-spin { animation: none; }
+}
+
+/* Виджет погоды в поиске (app/search/search-weather.tsx): мягкие бесконечные анимации иконки. */
+.wx-spin,
+.wx-pulse,
+.wx-drift,
+.wx-drop,
+.wx-flake,
+.wx-fog,
+.wx-twinkle {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.wx-spin {
+  animation: wx-spin 28s linear infinite;
+}
+
+.wx-pulse {
+  animation: wx-pulse 4s ease-in-out infinite;
+}
+
+.wx-drift {
+  animation: wx-drift 6s ease-in-out infinite alternate;
+}
+
+.wx-drop {
+  animation: wx-drop 1.2s ease-in infinite;
+}
+
+.wx-flake {
+  animation: wx-flake 3s ease-in-out infinite;
+}
+
+.wx-fog {
+  animation: wx-fog 5s ease-in-out infinite alternate;
+}
+
+.wx-twinkle {
+  animation: wx-twinkle 3s ease-in-out infinite;
+}
+
+.wx-d2 {
+  animation-delay: 0.4s;
+}
+
+.wx-d3 {
+  animation-delay: 0.8s;
+}
+
+@keyframes wx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wx-pulse {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes wx-drift {
+  to {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes wx-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes wx-flake {
+  0% {
+    opacity: 0;
+    transform: translate(0, -4px);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(3px, 10px);
+  }
+}
+
+@keyframes wx-fog {
+  to {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes wx-twinkle {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-spin,
+  .wx-pulse,
+  .wx-drift,
+  .wx-drop,
+  .wx-flake,
+  .wx-fog,
+  .wx-twinkle {
+    animation: none;
+  }
 }

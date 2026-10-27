@@ -13,10 +13,12 @@ export type AppearanceMotion = {
   lyrics: LyricsMotion;
   /** Плавное раскрытие длинных постов и разделов. */
   expand: boolean;
+  /** Телефон: панели навигации прячутся при прокрутке вниз. */
+  scrollHide: boolean;
 };
 
 // SSR не знает настроек устройства: рендерим как «по умолчанию на ПК», клиент уточнит после гидратации.
-const SERVER_SNAPSHOT = 'on|on|smooth|words|on';
+const SERVER_SNAPSHOT = 'on|on|smooth|words|on|off';
 
 function subscribe(onChange: () => void) {
   window.addEventListener(APPEARANCE_CHANGE_EVENT, onChange);
@@ -32,6 +34,7 @@ function getSnapshot() {
     root.getAttribute('data-motion-tooltips') ?? 'smooth',
     root.getAttribute('data-motion-lyrics') ?? 'words',
     root.getAttribute('data-motion-expand') ?? 'on',
+    root.getAttribute('data-motion-scrollhide') ?? 'off',
   ].join('|');
 }
 
@@ -39,13 +42,14 @@ function getSnapshot() {
 export function useAppearanceMotion(): AppearanceMotion {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => SERVER_SNAPSHOT);
   return useMemo(() => {
-    const [nav, menu, tooltips, lyrics, expand] = snapshot.split('|');
+    const [nav, menu, tooltips, lyrics, expand, scrollHide] = snapshot.split('|');
     return {
       nav: nav === 'on',
       menu: menu === 'on',
       tooltips: tooltips === 'instant' ? 'instant' : 'smooth',
       lyrics: lyrics === 'lines' ? 'lines' : 'words',
       expand: expand !== 'off',
+      scrollHide: scrollHide === 'on',
     };
   }, [snapshot]);
 }
