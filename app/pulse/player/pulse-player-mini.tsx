@@ -5,6 +5,8 @@ import { useEffect, useLayoutEffect, useRef, type CSSProperties, type RefObject,
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
 import { PulseRangeTrack } from './pulse-range-track';
+import { useAppearanceMotion } from '../../lib/use-appearance';
+import { useCoverColor } from './cover-color';
 import { useIsListenFollower } from './listen-along';
 import { useRemoteDevices } from './remote-devices';
 import Icon from '../../components/svg-icon';
@@ -30,6 +32,7 @@ type PulsePlayerMiniProps = {
   onToggleMute: () => void;
   onDesktopSeekCancel: () => void;
   onDesktopSeekChange: (value: number) => void;
+  onDesktopSeekCommit: (value: number) => void;
   onDesktopSeekStart: () => void;
   onDesktopSeekSubmit: () => void;
   onLike: () => void;
@@ -56,6 +59,12 @@ type PulsePlayerMiniProps = {
 // disabled — для слушателя в совместном прослушивании: листать и перематывать может только хост.
 const MINI_ICON_BUTTON = 'hidden shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-white/10 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100 disabled:hover:border-transparent disabled:hover:bg-transparent lg:flex';
 const MINI_EASE = 'ease-[cubic-bezier(0.32,0.72,0,1)]';
+// Слой цвета обложки: текущий, соседние и доли перетекания (--mini-tint-p/-n ставит setMiniSwipe в контексте плеера).
+const TINT_STYLE: CSSProperties = {
+  backgroundColor: 'color-mix(in srgb, var(--tint-prev) calc(var(--mini-tint-p, 0) * 100%), color-mix(in srgb, var(--tint-next) calc(var(--mini-tint-n, 0) * 100%), var(--tint-cur)))',
+  transition: 'background-color var(--mini-tint-ms, 500ms) ease-out, opacity 500ms ease-out',
+};
+
 // Листание свайпом: сдвиг и длительность — CSS-переменные оболочки (--mini-swipe-x, --mini-swipe-ms, --mini-w).
 const SWIPE_TRANSITION = 'transform var(--mini-swipe-ms, 0ms) cubic-bezier(0.22, 1, 0.36, 1)';
 const SLIDE_STYLE: CSSProperties = { transform: 'translate3d(var(--mini-swipe-x, 0px), 0, 0)', transition: SWIPE_TRANSITION, willChange: 'transform' };
@@ -85,6 +94,7 @@ export function PulsePlayerMini({
   onToggleMute,
   onDesktopSeekCancel,
   onDesktopSeekChange,
+  onDesktopSeekCommit,
   onDesktopSeekStart,
   onDesktopSeekSubmit,
   onLike,
@@ -114,6 +124,10 @@ export function PulsePlayerMini({
 
   const isFollower = useIsListenFollower();
   const isMuted = volume <= 0;
+  const { coverTint } = useAppearanceMotion();
+  const curColor = useCoverColor(playerArtwork, coverTint);
+  const prevColor = useCoverColor(prevArtwork, coverTint);
+  const nextColor = useCoverColor(nextArtwork, coverTint);
 
   useEffect(() => {
     const slider = volumeSliderRef?.current;
@@ -138,6 +152,10 @@ export function PulsePlayerMini({
     shellRef.current?.style.setProperty('--mini-swipe-ms', '0ms');
     shellRef.current?.style.setProperty('--mini-swipe-x', '0px');
     shellRef.current?.style.setProperty('--mini-peek', 'hidden');
+    // Доли перетекания цвета тоже обнуляем (иначе после быстрых свайпов слой застревает на цвете «следующего»).
+    shellRef.current?.style.setProperty('--mini-tint-n', '0');
+    shellRef.current?.style.setProperty('--mini-tint-p', '0');
+    shellRef.current?.style.setProperty('--mini-tint-ms', '500ms');
   }, [playerTitle, playerArtwork]);
 
   const shell = (
@@ -172,6 +190,13 @@ export function PulsePlayerMini({
         onOpenFull();
       }}
     >
+      {/* Слой цвета всегда в DOM: цвет «проявляется» и «гаснет» плавно (из/в прозрачный), а не появляется и исчезает рывком. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-50 starting:opacity-0"
+        style={{ ...TINT_STYLE, '--tint-cur': curColor ?? 'transparent', '--tint-prev': prevColor ?? curColor ?? 'transparent', '--tint-next': nextColor ?? curColor ?? 'transparent' } as CSSProperties}
+      />
+
       {/* Track Info Area: обложка + название/артист с каруселью на мобильных */}
       <div data-mini-track className="relative flex min-w-0 flex-1 items-center lg:basis-0" style={TRACK_FADE_STYLE}>
         {/* Предыдущий трек (подкладывается только во время свайпа) */}
@@ -282,6 +307,7 @@ export function PulsePlayerMini({
           onPointerCancel={onDesktopSeekCancel}
           onLostPointerCapture={onDesktopSeekCancel}
           onChange={(event) => onDesktopSeekChange(Number(event.target.value))}
+          onCommit={onDesktopSeekCommit}
         />
         <div className="w-10 shrink-0 text-xs tabular-nums text-zinc-400">{formatPlaybackTime(duration)}</div>
       </div>

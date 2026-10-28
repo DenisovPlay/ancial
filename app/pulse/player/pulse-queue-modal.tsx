@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Modal from '../../components/modal';
-import type { PulseTrack } from '../../context/PulsePlayerContext';
-import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
-import { getPlayerTrackArtwork, cn } from './player-utils';
+import { useAuth } from '../../context/AuthContext';
+import { usePulsePlayer, type PulseTrack } from '../../context/PulsePlayerContext';
+import { useUserCountry } from '../../lib/user-geo';
+import { PulseTrackRow } from '../pulse-components';
+import { usePulseTrackActions } from '../use-pulse-track-actions';
 import Icon from '../../components/svg-icon';
 
 type PulseQueueModalProps = {
@@ -20,13 +23,94 @@ type PulseQueueModalProps = {
   onMoveTrack: (fromIndex: number, toIndex: number) => void;
 };
 
+/** Список очереди: тот же компонент строки, что в плейлистах; свайп вправо — следующим, влево — убрать. Монтируется только при открытом окне (хуки действий не грузят лишнего в фоне). */
+function QueueList({
+  centerCurrentRow,
+  currentIndex,
+  lang,
+  onMoveTrack,
+  onPlayTrack,
+  onRemoveTrack,
+  playlist,
+}: Pick<PulseQueueModalProps, 'currentIndex' | 'lang' | 'onMoveTrack' | 'onPlayTrack' | 'onRemoveTrack' | 'playlist'> & { centerCurrentRow: (row: HTMLDivElement | null) => void }) {
+  const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
+  const { currentSongId } = usePulsePlayer();
+  const userCountry = useUserCountry();
+  const actions = usePulseTrackActions();
+
+  return (
+    <div className="flex flex-col gap-3">
+      {playlist.map((track, i) => {
+        const isCurrent = i === currentIndex;
+        // «Вверх очереди» = сразу после играющего; для уже сыгранных вставка идёт с учётом сдвига.
+        const nextSlot = i > currentIndex ? currentIndex + 1 : currentIndex;
+        const canMoveUp = !isCurrent && i !== currentIndex + 1;
+        return (
+          <div key={`${track.sid || i}-${i}`} ref={isCurrent ? centerCurrentRow : undefined}>
+            <PulseTrackRow
+              currentSongId={currentSongId}
+              trailing={(
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    aria-label={lang?.pulse_queue_move_up || 'Переместить выше'}
+                    data-tip={lang?.pulse_queue_move_up || 'Переместить выше'}
+                    disabled={i === 0}
+                    onClick={() => onMoveTrack(i, i - 1)}
+                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/60 active:scale-95 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-transparent disabled:hover:bg-transparent"
+                  >
+                    <Icon name="IC-chevron-down" className="h-5 w-5 rotate-180 fill-white" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={lang?.pulse_queue_move_down || 'Переместить ниже'}
+                    data-tip={lang?.pulse_queue_move_down || 'Переместить ниже'}
+                    disabled={i === playlist.length - 1}
+                    onClick={() => onMoveTrack(i, i + 1)}
+                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-zinc-700/60 active:scale-95 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-transparent disabled:hover:bg-transparent"
+                  >
+                    <Icon name="IC-chevron-down" className="h-5 w-5 fill-white" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={lang?.pulse_queue_remove || 'Удалить из очереди'}
+                    data-tip={lang?.pulse_queue_remove || 'Удалить из очереди'}
+                    onClick={() => onRemoveTrack(i)}
+                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-transparent duration-300 hover:border-zinc-600/30 hover:bg-rose-500/20 active:scale-95"
+                  >
+                    <Icon name="IC-trash" className="h-5 w-5 fill-white" />
+                  </button>
+                </div>
+              )}
+              highlighted={isCurrent}
+              isAuthenticated={isAuthenticated}
+              onAddToPlaylist={actions.openAddTrackToPlaylist}
+              onCopyTrackLink={actions.copyTrackLink}
+              onOpenArtist={(artistId) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`)}
+              onPlayTrack={() => onPlayTrack(i)}
+              onQueueTrackNext={(trackId) => actions.playNextTrack(trackId)}
+              onReportTrack={actions.reportTrack}
+              swipeLeft={{ icon: 'IC-trash', onTrigger: () => onRemoveTrack(i), tone: 'rose' }}
+              swipeRight={{ icon: 'IC-chart-hor', onTrigger: () => { if (canMoveUp) onMoveTrack(i, nextSlot); }, tone: 'purple' }}
+              track={track}
+              trackIndex={i}
+              user={user}
+              userCountry={userCountry}
+            />
+          </div>
+        );
+      })}
+      {actions.modals}
+    </div>
+  );
+}
+
 export function PulseQueueModal({
   isOpen,
   onClose,
   playlist,
   currentIndex,
-  isRadioMode,
-  radioSeedName,
   lang,
   onPlayTrack,
   onRemoveTrack,
@@ -38,9 +122,19 @@ export function PulseQueueModal({
   const centerCurrentRow = useCallback((row: HTMLDivElement | null) => {
     const scroller = row?.closest<HTMLElement>('.overflow-y-auto');
     if (!row || !scroller) return;
-    const rowRect = row.getBoundingClientRect();
-    const scrollerRect = scroller.getBoundingClientRect();
-    scroller.scrollTop += rowRect.top - scrollerRect.top - (scroller.clientHeight - rowRect.height) / 2;
+    const center = () => {
+      if (!row.isConnected) return;
+      const rowRect = row.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+      // Играющий трек — вверху списка, сразу под шапкой окна (её высота = верхний отступ области прокрутки).
+      scroller.scrollTop += rowRect.top - scrollerRect.top - (parseFloat(getComputedStyle(scroller).paddingTop) || 0);
+    };
+    // Строки списка — те же, что в плейлистах (content-visibility: auto): высота дальних уточняется по мере отрисовки,
+    // поэтому выравниваем сразу и ещё несколько раз, пока размеры не устоялись (окно при этом ещё выезжает).
+    center();
+    requestAnimationFrame(center);
+    window.setTimeout(center, 120);
+    window.setTimeout(center, 360);
   }, []);
 
   return (
@@ -51,117 +145,22 @@ export function PulseQueueModal({
       width="md"
     >
       <div className="flex flex-col gap-3 pb-2">
-        {/* Empty state */}
         {playlist.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-zinc-400">
-            <Icon name="IC-list-ul" className="h-12 w-12 fill-zinc-600 mb-2" />
+            <Icon name="IC-list-ul" className="mb-2 h-12 w-12 fill-zinc-600" />
             <p className="text-sm font-medium">{lang?.pulse_queue_empty || 'Очередь воспроизведения пуста'}</p>
           </div>
-        ) : null}
-
-        {/* Track List */}
-        <div className="flex flex-col gap-2">
-          {playlist.map((track, i) => {
-            const isCurrent = i === currentIndex;
-            const title = track.title || lang?.pulse_unknown_track || 'Неизвестный трек';
-            const artist = track.artist || lang?.pulse_unknown_artist || 'Неизвестный исполнитель';
-            const artwork = getPlayerTrackArtwork(track);
-
-            return (
-              <div
-                key={`${track.sid || i}-${i}`}
-                ref={isCurrent ? centerCurrentRow : undefined}
-                className={cn(
-                  'group flex items-center justify-between gap-3 hover:pr-1.5 rounded-3xl overflow-hidden transition-all duration-200',
-                  isCurrent
-                    ? 'bg-purple-500/20 ring ring-purple-500/30'
-                    : 'bg-zinc-800/40 hover:bg-zinc-800/80',
-                )}
-              >
-                {/* Track info & play trigger */}
-                <div
-                  onClick={() => onPlayTrack(i)}
-                  className="flex flex-1 items-center gap-3 min-w-0 cursor-pointer"
-                >
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-3xl bg-zinc-900">
-                    <PulseCoverImage
-                      alt={title}
-                      className="h-full w-full object-cover"
-                      sizes={PULSE_COVER_IMAGE_SIZES.miniPlayer}
-                      src={artwork}
-                    />
-                  </div>
-
-                  <div className="flex min-w-0 flex-col">
-                    <span
-                      className={cn(
-                        'truncate text-sm font-semibold',
-                        isCurrent ? 'text-purple-300 font-bold' : 'text-white',
-                      )}
-                    >
-                      {title}
-                    </span>
-                    <span className="truncate text-xs text-zinc-400">{artist}</span>
-                  </div>
-                </div>
-
-                {/* Queue reorder / removal actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  {/* Move Up */}
-                  <button
-                    type="button"
-                    disabled={i === 0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMoveTrack(i, i - 1);
-                    }}
-                    title={lang?.pulse_queue_move_up || 'Переместить выше'}
-                    className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded-3xl transition-all duration-200 active:scale-95',
-                      i === 0
-                        ? 'opacity-20 cursor-not-allowed'
-                        : 'text-zinc-300 hover:bg-zinc-700/60 hover:text-white cursor-pointer',
-                    )}
-                  >
-                    <Icon name="IC-chevron-down" className="h-5 w-5 fill-current rotate-180" />
-                  </button>
-
-                  {/* Move Down */}
-                  <button
-                    type="button"
-                    disabled={i === playlist.length - 1}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMoveTrack(i, i + 1);
-                    }}
-                    title={lang?.pulse_queue_move_down || 'Переместить ниже'}
-                    className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded-3xl transition-all duration-200 active:scale-95',
-                      i === playlist.length - 1
-                        ? 'opacity-20 cursor-not-allowed'
-                        : 'text-zinc-300 hover:bg-zinc-700/60 hover:text-white cursor-pointer',
-                    )}
-                  >
-                    <Icon name="IC-chevron-down" className="h-5 w-5 fill-current" />
-                  </button>
-
-                  {/* Remove from queue */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveTrack(i);
-                    }}
-                    title={lang?.pulse_queue_remove || 'Удалить из очереди'}
-                    className="flex h-8 w-8 items-center justify-center rounded-3xl text-zinc-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all duration-200 cursor-pointer active:scale-95"
-                  >
-                    <Icon name="IC-trash" className="h-5 w-5 fill-current" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        ) : (
+          <QueueList
+            centerCurrentRow={centerCurrentRow}
+            currentIndex={currentIndex}
+            lang={lang}
+            onMoveTrack={onMoveTrack}
+            onPlayTrack={onPlayTrack}
+            onRemoveTrack={onRemoveTrack}
+            playlist={playlist}
+          />
+        )}
       </div>
     </Modal>
   );

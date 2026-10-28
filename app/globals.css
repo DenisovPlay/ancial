@@ -1636,3 +1636,69 @@ select:-webkit-autofill {
     animation: none;
   }
 }
+
+/* Свайп по строке трека (app/pulse/use-track-swipe.ts): подложка открывается за строкой, иконка растёт по --p и «щёлкает» за порогом. */
+.track-swipe-side {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  clip-path: inset(0 100% 0 0);
+  will-change: clip-path, opacity;
+}
+
+.track-swipe-icon {
+  opacity: var(--p, 0);
+  transform: scale(calc(0.55 + 0.45 * var(--p, 0)));
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.track-swipe-side[data-armed] .track-swipe-icon {
+  transform: scale(1.3);
+}
+
+/* Сердечко подложки показывает, каким станет трек после отпускания: за порогом контур заливается мягким розовым (и наоборот, если трек уже в избранном). */
+.track-swipe-heart svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.2s ease-out, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.track-swipe-heart .heart-fill {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.track-swipe-side[data-armed] .track-swipe-heart:not([data-liked]) .heart-fill,
+.track-swipe-side:not([data-armed]) .track-swipe-heart[data-liked] .heart-fill {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.track-swipe-side[data-armed] .track-swipe-heart:not([data-liked]) .heart-line,
+.track-swipe-side:not([data-armed]) .track-swipe-heart[data-liked] .heart-line {
+  opacity: 0;
+}
+
+/* Трек загружается (атрибут ставит PulsePlayerContext по событиям audio): дорожка перемотки мягко пульсирует. */
+@keyframes pulse-seek-loading {
+  50% {
+    background-color: rgb(255 255 255 / 0.5);
+  }
+}
+
+html[data-pulse-loading] .pulse-seek-bar {
+  animation: pulse-seek-loading 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-pulse-loading] .pulse-seek-bar {
+    animation: none;
+    background-color: rgb(255 255 255 / 0.35);
+  }
+
+  .pulse-seek-bar {
+    transition: background-color 0.4s ease-out, height 0.3s;
+  }
+}

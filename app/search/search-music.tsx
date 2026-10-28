@@ -49,12 +49,10 @@ export default function SearchMusic({ compact, data, lang, onMore }: { compact: 
       {tracks.map((track, index) => (
         <PulseTrackRow
           currentSongId={currentSongId}
-          favoriteIds={actions.favoriteIds}
           isAuthenticated={isAuthenticated}
           key={`search-track-${track.sid ?? index}`}
           onAddToPlaylist={actions.openAddTrackToPlaylist}
           onCopyTrackLink={actions.copyTrackLink}
-          onLikeTrack={actions.likeTrack}
           onOpenArtist={(artistId) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`)}
           onPlayTrack={(nextTrack) => void playTrack(nextTrack.sid ?? 0)}
           onQueueTrackNext={(trackId) => actions.playNextTrack(trackId)}

@@ -108,7 +108,7 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
   const [playlist, setPlaylist] = useState<PulsePlaylistMeta | null>(cachedPlaylist);
   const [playlistLiked, setPlaylistLiked] = useState(Boolean(cachedPlaylistResponse?.is_liked));
   const [tracks, setTracks] = useState<PulseTrack[]>(cachedTracks);
-  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
+  const { replaceFavoriteIds } = usePulseFavoriteIds();
   const [metaLoading, setMetaLoading] = useState(!cachedPlaylist && !isBuiltinPlaylist);
   const [tracksLoading, setTracksLoading] = useState(!cachedTracks.length);
   const [error, setError] = useState('');
@@ -352,39 +352,6 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
     setIsUploadTrackModalOpen(false);
     setTrackToEdit(null);
   }, []);
-
-  const likeTrack = useCallback(async (track: PulseTrack) => {
-    if (!requireAuth(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное')) return;
-
-    const trackId = toNumber(track.sid);
-    if (!trackId) return;
-
-    try {
-      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', trackId);
-      const result = response.message || '';
-
-      if (result === 'ADDED' || result === 'CREATED_ADDED') {
-        updateFavoriteIds((ids) => (ids.includes(trackId) ? ids : [...ids, trackId]));
-        showPulseNote(
-          result === 'CREATED_ADDED'
-            ? lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!'
-            : lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!',
-          'success',
-        );
-        return;
-      }
-
-      if (result === 'REMOVED') {
-        updateFavoriteIds((ids) => ids.filter((id) => id !== trackId));
-        showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
-        return;
-      }
-
-      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
-    } catch (err) {
-      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
-    }
-  }, [lang, requireAuth, showPulseNote, updateFavoriteIds]);
 
   const togglePlaylistLike = useCallback(async () => {
     if (!requireAuth(lang?.logintoaddplaylist || 'Войдите, чтобы добавить плейлист в избранное')) return;
@@ -702,14 +669,12 @@ export default function PulsePlaylistContent({ playlistId: rawPlaylistId }: { pl
                   return (
                     <PulseTrackRow
                       currentSongId={currentSongId}
-                      favoriteIds={favoriteIds}
                       isAuthenticated={isAuthenticated}
                       key={`${playlistId}-${track.sid ?? index}`}
                       onAddToPlaylist={openAddTrackToPlaylist}
                       onCopyTrackLink={copyTrackLink}
                       onDeleteTrack={openDeleteTrack}
                       onEditTrack={openEditTrack}
-                      onLikeTrack={likeTrack}
                       onOpenArtist={openArtistPage}
                       onPlayTrack={playTrackAtIndex}
                       onQueueTrackNext={queueTrackNext}

@@ -10,7 +10,7 @@ import { useDragScroll } from '../hooks/useDragScroll';
 import { usePulseNote } from '../hooks/use-pulse-note';
 import { usePulseTrackReport } from '../hooks/use-pulse-track-report';
 import { useRequireAuth } from '../hooks/use-require-auth';
-import { AncialAPI, getApiMessage } from '../lib/api-v2';
+import { AncialAPI } from '../lib/api-v2';
 import { registerResolvedExternalId } from './player/external-track-ids';
 import { cache } from '../lib/cache.ts';
 import { buildPulseTrackReportReasons } from '../lib/report-reasons';
@@ -418,7 +418,7 @@ export default function PulseContent() {
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
-  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
+  const { replaceFavoriteIds } = usePulseFavoriteIds();
   const [listened, setListened] = useState<RecentlyListenedState>(() => readListenedCache());
   const [downloadedCount, setDownloadedCount] = useState(0);
   const [fromPulse, setFromPulse] = useState<PulseHomePlaylistCard[] | null>(() => readJsonCache<PulseHomePlaylistCard[]>(HOME_CACHE_KEYS.fromPulse));
@@ -497,53 +497,6 @@ export default function PulseContent() {
   }, []);
 
   const { copyTrackLink, shareModal } = usePulseTrackShare(showPulseNote, getResolvedId);
-
-  const pulseTrackAddedText = lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!';
-  const pulseTrackRemovedText = lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!';
-  const pulseFavoriteCreatedText = lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!';
-  const pulseUnknownSongText = lang?.pulse_unknown_song || 'Неизвестная песня...';
-  const pulseErrorText = lang?.pulse_error_happened || 'Произошла ошибка =(';
-
-  const likeTrack = useCallback(async (track: PulseTrack) => {
-    if (!requireAuth(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное')) return;
-
-    const rawSid = String(track.sid ?? '').trim();
-    const trackId = await getResolvedId(rawSid);
-    if (!trackId) return;
-
-    try {
-      const response = await AncialAPI.pulseTrackAction<{ id?: number | string; message?: string }>('add_favorite', rawSid);
-      const result = response.message || '';
-      const finalId = response.id ? toNumber(response.id) : trackId;
-
-      if (result === 'ADDED' || result === 'CREATED_ADDED') {
-        updateFavoriteIds((currentIds) => (
-          currentIds.includes(finalId) ? currentIds : [...currentIds, finalId]
-        ));
-        showPulseNote(
-          result === 'CREATED_ADDED' ? pulseFavoriteCreatedText : pulseTrackAddedText,
-          'success',
-          4,
-        );
-        return;
-      }
-
-      if (result === 'REMOVED') {
-        updateFavoriteIds((currentIds) => currentIds.filter((id) => id !== finalId));
-        showPulseNote(pulseTrackRemovedText, 'success', 4);
-        return;
-      }
-
-      if (result === 'UND_SONG') {
-        showPulseNote(pulseUnknownSongText, 'error');
-        return;
-      }
-
-      showPulseNote(pulseErrorText, 'error', 4);
-    } catch (err) {
-      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, pulseErrorText), 'error', 4);
-    }
-  }, [getResolvedId, lang, pulseErrorText, pulseFavoriteCreatedText, pulseTrackAddedText, pulseTrackRemovedText, pulseUnknownSongText, requireAuth, showPulseNote, updateFavoriteIds]);
 
   const queueTrackNext = useCallback(async (trackId: number | string) => {
     await playNextTrack(trackId);
@@ -785,14 +738,12 @@ export default function PulseContent() {
   const renderTrackRow = useCallback((collectionId: HomeTrackCollectionId, track: PulseTrack, index: number) => isTrackDisliked(track, dislikes) ? null : (
     <PulseTrackRow
       currentSongId={currentSongId}
-      favoriteIds={favoriteIds}
       isAuthenticated={isAuthenticated}
       key={`${collectionId}-${track.sid ?? index}`}
       onAddToPlaylist={openAddTrackToPlaylist}
       onCopyTrackLink={copyTrackLink}
       onDeleteTrack={openDeleteTrack}
       onEditTrack={openEditTrack}
-      onLikeTrack={likeTrack}
       onOpenArtist={openArtistPage}
       onPlayTrack={() => {
         void playGenlist(collectionId, true, 0, index, track.sid);
@@ -804,7 +755,7 @@ export default function PulseContent() {
       user={user}
       userCountry={userCountry}
     />
-  ), [dislikes, copyTrackLink, currentSongId, favoriteIds, isAuthenticated, likeTrack, openAddTrackToPlaylist, openArtistPage, openDeleteTrack, openEditTrack, playGenlist, queueTrackNext, reportTrack, user, userCountry]);
+  ), [dislikes, copyTrackLink, currentSongId, isAuthenticated, openAddTrackToPlaylist, openArtistPage, openDeleteTrack, openEditTrack, playGenlist, queueTrackNext, reportTrack, user, userCountry]);
 
   const topTitle = useMemo(() => (
     <>

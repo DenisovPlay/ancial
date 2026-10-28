@@ -28,6 +28,8 @@ import { AncialAPI } from '../lib/api-v2';
 import { readPulseJsonCache } from './pulse-cache';
 import Icon from '../components/svg-icon';
 import { useResolvedExternalIds } from './player/external-track-ids';
+import { useTrackFavorite } from './use-track-favorite';
+import { useTrackSwipe } from './use-track-swipe';
 import { apiUrl } from '../lib/api-url';
 
 export type PulseTrackArtwork = {
@@ -89,15 +91,28 @@ export type PulseArtistCardData = {
   verify?: number | string | null;
 };
 
+/** Своё действие свайпа строки (очередь: влево — убрать, вправо — следующим). Без него — «следующим» вправо и избранное влево. */
+export type PulseTrackSwipe = { icon: string; onTrigger: () => void; tone: 'purple' | 'rose' | 'sky' };
+
+const SWIPE_TONE_CLASSES = {
+  purple: 'bg-purple-500/25 data-[armed]:bg-purple-500/50',
+  rose: 'bg-rose-500/25 data-[armed]:bg-rose-500/50',
+  sky: 'bg-sky-500/25 data-[armed]:bg-sky-500/50',
+} as const;
+
 export type PulseTrackRowProps = {
   currentSongId: number;
-  favoriteIds: Array<number | string>;
+  /** Свои кнопки вместо сердечка (очередь: выше, ниже, убрать). */
+  trailing?: React.ReactNode;
+  /** Выделить строку (трек очереди), даже если он на паузе. */
+  highlighted?: boolean;
+  swipeLeft?: PulseTrackSwipe;
+  swipeRight?: PulseTrackSwipe;
   isAuthenticated: boolean;
   onAddToPlaylist: (trackId: number | string) => void;
   onCopyTrackLink: (trackId: number | string, track?: PulseTrack) => Promise<void>;
   onDeleteTrack?: (track: PulseTrack) => void;
   onEditTrack?: (track: PulseTrack) => void;
-  onLikeTrack: (track: PulseTrack) => Promise<void>;
   onOpenArtist: (artistId: string) => void;
   onPlayTrack: (track: PulseTrack, index: number) => void;
   onQueueTrackNext: (trackId: number | string) => Promise<void>;
@@ -593,13 +608,15 @@ export function getPulseBackgroundColorByMood(mood: string | null | undefined): 
 
 export function PulseTrackRow({
   currentSongId,
-  favoriteIds,
+  trailing,
+  highlighted = false,
+  swipeLeft,
+  swipeRight,
   isAuthenticated,
   onAddToPlaylist,
   onCopyTrackLink,
   onDeleteTrack,
   onEditTrack,
-  onLikeTrack,
   onOpenArtist,
   onPlayTrack,
   onQueueTrackNext,
@@ -626,12 +643,15 @@ export function PulseTrackRow({
     )
   );
   const isOwnTrack = canManagePulseTrack(track, user);
-  const isLiked = Boolean(
-    (numSid > 0 && favoriteIds.includes(numSid)) ||
-    (Boolean(rawSid) && favoriteIds.includes(toNumber(rawSid)))
-  );
+  const { isFavorite, toggleFavorite } = useTrackFavorite();
+  const isLiked = isFavorite(track);
 
   const isAvailable = isTrackAvailable(track, userCountry);
+  const swipe = useTrackSwipe({
+    enabled: isAvailable,
+    onFavorite: () => (swipeLeft ? swipeLeft.onTrigger() : void toggleFavorite(track)),
+    onQueue: () => (swipeRight ? swipeRight.onTrigger() : void onQueueTrackNext(track.sid ?? 0)),
+  });
   // «Не интересно»: строка видна, но приглушена; автоматическая очередь такой трек пропускает.
   const dislikes = usePulseDislikes();
   const isDisliked = isTrackDisliked(track, dislikes);
@@ -767,8 +787,32 @@ export function PulseTrackRow({
     // --cv-size — высота содержимого (строка h-16) без полей: поля добавляются к ней, как и у отрисованной строки,
     // иначе неотрисованные строки выходили на 12px выше и страница «худела» по мере прокрутки.
     // data-list-row — строка для окна рендера длинных списков (use-list-window.ts).
-    <div data-list-row="" className="cv-auto [--cv-size:64px] pointer-events-none -m-1.5 p-1.5">
-    <div className={cn('pointer-events-auto rounded-2xl flex items-center gap-3 duration-300 group cursor-pointer hover:bg-zinc-800 hover:pr-3', isCurrentSong && 'bg-lime-500/10 pr-3')}>
+    <div data-list-row="" className="cv-auto relative [--cv-size:64px] pointer-events-none -m-1.5 p-1.5">
+    {/* Свайп на телефоне: подложки под строкой (вправо — «следующим», влево — в избранное), открываются за пальцем. */}
+    <div aria-hidden className="pointer-events-none absolute inset-1.5 overflow-hidden rounded-2xl lg:hidden">
+      <div data-swipe-side="queue" className={cn('track-swipe-side duration-200', SWIPE_TONE_CLASSES[swipeRight?.tone ?? 'purple'])}>
+        <span className="track-swipe-icon absolute inset-y-0 left-0 flex w-20 items-center justify-center"><Icon name={swipeRight?.icon ?? 'IC-chart-hor'} className="h-7 w-7 fill-white" /></span>
+      </div>
+      <div data-swipe-side="favorite" className={cn('track-swipe-side duration-200', swipeLeft ? SWIPE_TONE_CLASSES[swipeLeft.tone] : 'bg-pink-500/25 data-[armed]:bg-pink-500/50')}>
+        <span className="track-swipe-icon absolute inset-y-0 right-0 flex w-20 items-center justify-center">
+          {swipeLeft ? (
+            <Icon name={swipeLeft.icon} className="h-7 w-7 fill-white" />
+          ) : (
+            <span className="track-swipe-heart relative h-7 w-7" data-liked={isLiked ? '' : undefined}><Icon name="IC-heart" className="heart-line fill-white" /><Icon name="IC-heart-filled" className="heart-fill fill-pink-200" /></span>
+          )}
+        </span>
+      </div>
+    </div>
+    <div
+      {...swipe.handlers}
+      // Сразу после жеста нажатия по обложке и названию не должны запускать трек.
+      onClickCapture={(event) => {
+        if (!swipe.wasSwipe()) return;
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      className={cn('pointer-events-auto relative touch-pan-y rounded-2xl flex items-center gap-3 duration-300 group cursor-pointer hover:bg-zinc-800 hover:pr-3', isCurrentSong && 'bg-lime-500/10 pr-3', highlighted && !isCurrentSong && 'bg-purple-500/15 pr-3')}
+    >
       <button
         type="button"
         onClick={handlePlay}
@@ -837,11 +881,17 @@ export function PulseTrackRow({
         </span>
       </button>
 
-      {isAuthenticated ? (
-        <button type="button" onClick={() => void onLikeTrack(track)} className={cn('cursor-pointer active:scale-95', !isAvailable && 'opacity-60')}>
-          <Icon name={isLiked ? 'IC-heart-filled' : 'IC-heart'} className={cn('inline', cn('h-6 w-6 duration-300 hover:fill-zinc-300 lg:h-8 lg:w-8', isLiked ? 'fill-white' : 'fill-zinc-100'))} />
+      {/* ПК: сердечко рядом с меню; на телефоне избранное — свайпом влево и пунктом «В плейлист». */}
+      {trailing ?? (isAuthenticated ? (
+        <button
+          type="button"
+          aria-label={isLiked ? (lang?.pulse_unlike || 'Убрать из избранного') : (lang?.pulse_like || 'В избранное')}
+          onClick={() => void toggleFavorite(track)}
+          className={cn('hidden cursor-pointer active:scale-95 lg:block', !isAvailable && 'opacity-60')}
+        >
+          <Icon name={isLiked ? 'IC-heart-filled' : 'IC-heart'} className={cn('inline h-8 w-8 duration-300 hover:fill-zinc-300', isLiked ? 'fill-white' : 'fill-zinc-100')} />
         </button>
-      ) : null}
+      ) : null)}
 
       <Dropdown
         position="bottom"
@@ -1034,12 +1084,12 @@ export function TrackCollectionPanel({
             onClick={onPlayCollection}
             className={cn(
               // relative z-20: боковые затемнения карусели выше (-bottom-6, z-10) заходят на заголовок панели.
-              'relative z-20 shrink-0 cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500 p-3 shadow duration-300 hover:bg-purple-600 active:scale-95',
+              'relative z-20 shrink-0 cursor-pointer rounded-full border border-zinc-600/30 bg-purple-500 p-2 shadow duration-300 hover:bg-purple-600 active:scale-95',
               panelIsActive && 'bg-purple-600',
             )}
             aria-label={panelIsActive ? `Pause ${collectionId}` : `Play ${collectionId}`}
           >
-            <Icon name={panelIsActive ? 'IC-pause' : 'IC-play'} className="inline fill-current h-6 w-6" />
+            <Icon name={panelIsActive ? 'IC-pause' : 'IC-play'} className="inline fill-current h-8 w-8" />
           </button>
         ) : null}
       </div>

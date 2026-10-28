@@ -101,6 +101,11 @@ const MINI_SWIPE_MS = 260;
 function setMiniSwipe(shell: HTMLElement, x: number, ms: number) {
   shell.style.setProperty('--mini-swipe-ms', `${ms}ms`);
   shell.style.setProperty('--mini-swipe-x', `${x}px`);
+  // Подкраска под обложку перетекает к соседнему треку по мере сдвига: доли и время сглаживания читает слой цвета мини-плеера.
+  const width = parseFloat(shell.style.getPropertyValue('--mini-w')) || 320;
+  shell.style.setProperty('--mini-tint-n', String(x < 0 ? Math.min(1, -x / width) : 0));
+  shell.style.setProperty('--mini-tint-p', String(x > 0 ? Math.min(1, x / width) : 0));
+  shell.style.setProperty('--mini-tint-ms', ms === 0 && x !== 0 ? '0ms' : '500ms');
   // Соседние треки видны, пока жест идёт и пока содержимое возвращается; полностью на месте — прячем.
   // --mini-fade: размытый край у кнопок справа, пока едет соседний трек (иначе его текст ложится на кнопки).
   const setPeek = (visible: boolean) => {
@@ -418,7 +423,12 @@ export function PulsePlayerProvider({
     getServerLyricsEnabled,
   );
   const [seekValue, setSeekValue] = useState(0);
+  // Последнее отправленное значение перемотки: итоговый change после pointerup не должен слать то же значение второй раз.
+  const lastSeekCommitRef = useRef(-1);
+  const updateSeekValue = (value: number) => setSeekValue(value);
   const [activeSeekSlider, setActiveSeekSlider] = useState<'desktop' | 'mobile' | null>(null);
+  // Зеркало isPlaying для обработчиков аудио, подписанных один раз: сверяем кнопку с реальным состоянием <audio>.
+  const isPlayingMirrorRef = useRef(false);
   const [listenCounted, setListenCounted] = useState(false);
   const [statusAudio, setStatusAudio] = useState('');
   const [swipeX, setSwipeX] = useState(0);
@@ -520,6 +530,9 @@ export function PulsePlayerProvider({
   const effectiveDuration = isRemoteDevice ? (remoteState?.durationMs ?? 0) / 1000 : duration;
   const effectiveCurrentTime = isRemoteDevice ? remoteTime : currentTime;
   const displayedCurrentTime = activeSeekSlider ? seekValue : effectiveCurrentTime;
+  useEffect(() => {
+    isPlayingMirrorRef.current = isPlaying;
+  });
 
   const notify = useCallback(({
     content,
@@ -691,43 +704,46 @@ export function PulsePlayerProvider({
     sendListenState({ playing, positionMs, trackId: currentSongIdRef.current });
   }, []);
 
-  const finishSeek = (commit: boolean) => {
+  // Конец жеста: снимаем «перематываю». Сама перемотка делается только по итоговому change ползунка (commitSeekValue):
+  // pointerup/cancel/lostpointercapture приходят до него и в разном порядке, и перемотка по ним то срабатывала,
+  // то откатывала дорожку назад (на iPhone и в эмуляции Chrome — «раз из N»).
+  const finishSeek = () => {
     if (!seekingSliderRef.current) return;
-
-    // Перемотка ведомому запрещена: позицию задаёт хост. Проверяем до пульта,
-    // иначе с пульта можно было бы перемотать чужое совместное прослушивание.
-    if (followingHostIdRef.current > 0) {
-      seekingSliderRef.current = null;
-      setActiveSeekSlider(null);
-      return;
-    }
-
-    // Пульт перематывает чужой звук — командой, своё аудио не трогаем.
-    if (isRemotePlayback()) {
-      if (commit) sendDeviceCommand('seek', Math.round(seekValue * 1000));
-      seekingSliderRef.current = null;
-      setActiveSeekSlider(null);
-      return;
-    }
-
-    const audio = audioRef.current;
-    if (commit && audio) {
-      audio.currentTime = seekValue;
-    }
-
     seekingSliderRef.current = null;
     setActiveSeekSlider(null);
-
-    if (commit) {
-      setCurrentTime(seekValue);
-      forceUpdateMediaPositionState();
-      emitPlaybackState();
-    } else if (audio && Number.isFinite(audio.currentTime)) {
+    // Пульт и ведомый слушатель позиции своего аудио не меняют — им нечего досинхронизировать.
+    if (followingHostIdRef.current > 0 || isRemotePlayback()) return;
+    const audio = audioRef.current;
+    if (audio && Number.isFinite(audio.currentTime)) {
       setCurrentTime(audio.currentTime);
-      setSeekValue(audio.currentTime);
+      updateSeekValue(audio.currentTime);
     }
-
     syncVisualProgress();
+  };
+
+  // На iPhone тап по дорожке даёт value уже ПОСЛЕ pointerup — событие change приходит последним. Ловим его отдельно
+  // (дорожка зовёт onCommit из нативного change) и перематываем на итоговое значение, даже если жест уже «закрыт».
+  const commitSeekValue = (value: number) => {
+    if (followingHostIdRef.current > 0 || !Number.isFinite(value)) return;
+    if (Math.abs(lastSeekCommitRef.current - value) < 0.05) return;
+    updateSeekValue(value);
+    lastSeekCommitRef.current = value;
+    if (isRemotePlayback()) {
+      sendDeviceCommand('seek', Math.round(value * 1000));
+      return;
+    }
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = value;
+    setCurrentTime(value);
+    forceUpdateMediaPositionState();
+    emitPlaybackState();
+    syncVisualProgress();
+  };
+
+  // Конец жеста откладываем: итоговое значение (change) приходит уже после pointerup и lostpointercapture.
+  const finishSeekSoon = () => {
+    window.setTimeout(() => finishSeek(), 160);
   };
 
   const clearMediaSession = () => {
@@ -2059,12 +2075,54 @@ export function PulsePlayerProvider({
     const audio = audioRef.current;
     if (!audio) return undefined;
 
+    // Трек грузится/буферизуется — дорожка перемотки пульсирует (CSS по атрибуту на <html>, без перерисовок React).
+    // Выключаем не сразу, а в конце текущего витка пульса: на границе витка дорожка в исходном цвете — исчезает без скачка.
+    let cancelLoadingEnd: (() => void) | null = null;
+    const setLoading = (loading: boolean) => {
+      const root = document.documentElement;
+      cancelLoadingEnd?.();
+      cancelLoadingEnd = null;
+      if (loading) {
+        root.setAttribute('data-pulse-loading', '');
+        return;
+      }
+      if (!root.hasAttribute('data-pulse-loading')) return;
+      const finish = () => {
+        cancelLoadingEnd?.();
+        cancelLoadingEnd = null;
+        root.removeAttribute('data-pulse-loading');
+      };
+      const onIteration = (event: AnimationEvent) => {
+        if (event.animationName === 'pulse-seek-loading') finish();
+      };
+      // Дорожки на экране нет (анимация не идёт) — событие не придёт, гасим по таймеру.
+      const timer = window.setTimeout(finish, 1300);
+      document.addEventListener('animationiteration', onIteration, true);
+      cancelLoadingEnd = () => {
+        window.clearTimeout(timer);
+        document.removeEventListener('animationiteration', onIteration, true);
+      };
+    };
     const handleLoadStart = () => {
       setStatusAudio('Loading');
+      setLoading(true);
+    };
+    const handleWaiting = () => setLoading(true);
+    const handleSettled = () => setLoading(false);
+    // Звук идёт, а кнопка застряла на «Play» (событие pause догнало play после быстрых нажатий/перемотки): сверяем с <audio>.
+    const reconcilePlaying = () => {
+      const el = audioRef.current;
+      if (!el || el.paused || el.ended || isPlayingMirrorRef.current || isRemotePlayback()) return;
+      handlePlay();
+    };
+    const handlePlaying = () => {
+      setLoading(false);
+      reconcilePlaying();
     };
 
     const handleCanPlay = () => {
       setStatusAudio('Ready');
+      setLoading(false);
       // Трек догрузился — сбрасываем счётчик сетевых ретраев.
       loadErrorRetryRef.current = 0;
     };
@@ -2155,6 +2213,7 @@ export function PulsePlayerProvider({
     };
 
     const handleTimeUpdate = () => {
+      reconcilePlaying();
       // Во время воспроизведения на экране прогресс ведёт таймер (4 раза в секунду) — timeupdate его
       // только дублировал бы. В фоне таймеры браузер душит, а события аудио нет: там (и на паузе,
       // при перемотке) предзагрузку следующего трека и позицию для медиасессии ведёт timeupdate.
@@ -2206,6 +2265,8 @@ export function PulsePlayerProvider({
     };
 
     audio.addEventListener('loadstart', handleLoadStart);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
@@ -2213,9 +2274,15 @@ export function PulsePlayerProvider({
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('error', handleError);
+    audio.addEventListener('error', handleSettled);
 
     return () => {
+      cancelLoadingEnd?.();
+      document.documentElement.removeAttribute('data-pulse-loading');
       audio.removeEventListener('loadstart', handleLoadStart);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('playing', handlePlaying);
+      audio.removeEventListener('error', handleSettled);
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
@@ -3023,14 +3090,16 @@ export function PulsePlayerProvider({
         lang={lang}
         onChangeVolume={changeVolume}
         onToggleMute={toggleMute}
-        onDesktopSeekCancel={() => finishSeek(false)}
-        onDesktopSeekChange={setSeekValue}
+        onDesktopSeekCancel={() => finishSeekSoon()}
+        onDesktopSeekChange={(value) => updateSeekValue(value)}
+        onDesktopSeekCommit={(value) => commitSeekValue(value)}
         onDesktopSeekStart={() => {
           seekingSliderRef.current = 'desktop';
           setActiveSeekSlider('desktop');
-          setSeekValue(effectiveCurrentTime);
+          lastSeekCommitRef.current = -1;
+          updateSeekValue(effectiveCurrentTime);
         }}
-        onDesktopSeekSubmit={() => finishSeek(true)}
+        onDesktopSeekSubmit={() => finishSeekSoon()}
         onNextTrack={() => { void nextTrack(); }} /* eslint-disable-line react-hooks/refs -- обработчик клика: nextTrack/prevTrack/setMode вызываются по событию, а не в рендере; ложное срабатывание react-compiler (finishSeek с тем же телом и этот же вызов ниже по дереву не флагаются) */
         onOpenFull={() => setMode('full')} /* eslint-disable-line react-hooks/refs -- обработчик клика: nextTrack/prevTrack/setMode вызываются по событию, а не в рендере; ложное срабатывание react-compiler (finishSeek с тем же телом и этот же вызов ниже по дереву не флагаются) */
         onPrevTrack={() => { void prevTrack(); }} /* eslint-disable-line react-hooks/refs -- обработчик клика: nextTrack/prevTrack/setMode вызываются по событию, а не в рендере; ложное срабатывание react-compiler (finishSeek с тем же телом и этот же вызов ниже по дереву не флагаются) */
@@ -3051,7 +3120,7 @@ export function PulsePlayerProvider({
           const deltaX = event.touches[0].clientX - start.x;
           const deltaY = event.touches[0].clientY - start.y;
           if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
-            const blocked = (deltaX > 0 && !prevTrackObj) || (deltaX < 0 && !nextTrackObj && !isRadioModeRef.current);
+            const blocked = (deltaX > 0 && !prevTrackObj) || (deltaX < 0 && !nextTrackObj && !isRadioModeRef.current && !currentTrack);
             setMiniSwipe(event.currentTarget, blocked ? deltaX * 0.3 : deltaX, 0);
           } else {
             setMiniSwipe(event.currentTarget, 0, 0);
@@ -3088,7 +3157,8 @@ export function PulsePlayerProvider({
             }, MINI_SWIPE_MS);
           };
 
-          if (deltaX < -threshold && (nextTrackObj || isRadioModeRef.current)) {
+          // В конце списка nextTrack сам включает радио по последнему треку — поэтому листать вперёд можно всегда, пока есть трек.
+          if (deltaX < -threshold && (nextTrackObj || isRadioModeRef.current || currentTrack)) {
             commit(-1, nextTrack);
           } else if (deltaX > threshold && prevTrackObj) {
             commit(1, prevTrack);
@@ -3101,11 +3171,11 @@ export function PulsePlayerProvider({
         playerArtist={playerArtist}
         playerArtwork={playerArtwork}
         playerTitle={playerTitle}
-        nextTitle={getTrackDisplayTitle(nextTrackObj, lang)}
-        nextArtist={getTrackArtist(nextTrackObj, lang)}
+        nextTitle={nextTrackObj || isRadioMode ? getTrackDisplayTitle(nextTrackObj, lang) : (lang?.pulse_start_radio || 'Радио по треку')}
+        nextArtist={nextTrackObj || isRadioMode ? getTrackArtist(nextTrackObj, lang) : playerTitle}
         prevTitle={getTrackDisplayTitle(prevTrackObj, lang)}
         prevArtist={getTrackArtist(prevTrackObj, lang)}
-        nextArtwork={nextArtwork}
+        nextArtwork={nextTrackObj || isRadioMode ? nextArtwork : playerArtwork}
         prevArtwork={prevArtwork}
         seekValue={seekValue}
         volume={volume}
@@ -3262,14 +3332,16 @@ export function PulsePlayerProvider({
               }
             }}
 
-            onSeekCancel={() => finishSeek(false)}
-            onSeekChange={setSeekValue}
+            onSeekCancel={() => finishSeekSoon()}
+            onSeekChange={(value) => updateSeekValue(value)}
+            onSeekCommit={(value) => commitSeekValue(value)}
             onSeekStart={() => {
               seekingSliderRef.current = 'mobile';
               setActiveSeekSlider('mobile');
-              setSeekValue(effectiveCurrentTime);
+              lastSeekCommitRef.current = -1;
+              updateSeekValue(effectiveCurrentTime);
             }}
-            onSeekSubmit={() => finishSeek(true)}
+            onSeekSubmit={() => finishSeekSoon()}
 
             // Виртуальный трек Яндекса (sid ext_…): id в базе нет — отдаём ключ, окно само заведёт трек через GetTrack.php.
             onAddToPlaylist={() => openAddToPlaylist(currentSongId || resolvedExternalIds[pulseExternalKeyOf(currentTrack?.sid)] || pulseExternalKeyOf(currentTrack?.sid))}

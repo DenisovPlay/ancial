@@ -2355,7 +2355,7 @@ export const be: Record<string, string> = {
     "motion_auto": "Аўта",
     "motion_on": "Уключана",
     "motion_off": "Выключана",
-    "motion_auto_hint": "Аўта — выключана на Android",
+    "motion_auto_hint": "Аўта",
     "motion_now_on": "зараз уключана",
     "motion_now_off": "зараз выключана",
     "motion_nav": "Спагадлівае меню",
@@ -2379,6 +2379,8 @@ export const be: Record<string, string> = {
     "motion_expand": "Плаўнае раскрыццё",
     "motion_expand_hint": "Доўгія пасты і раздзелы налад",
     "motion_scrollhide": "Хаваць панэлі пры пракрутцы",
-    "motion_scrollhide_hint": "Тэлефон: панэль навігацыі з'язджае ўніз пры пракрутцы ўніз і вяртаецца пры пракрутцы ўверх",
+    "motion_scrollhide_hint": "Толькі на тэлефоне",
+    "motion_covertint": "Колер вокладкі ў плэеры",
+    "motion_covertint_hint": "Міні-плэер падфарбоўваецца пад трэк",
     "pulse_artists": "Выканаўцы",
 };

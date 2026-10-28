@@ -2355,7 +2355,7 @@ export const en: Record<string, string> = {
   "motion_auto": "Auto",
   "motion_on": "On",
   "motion_off": "Off",
-  "motion_auto_hint": "Auto — off on Android",
+  "motion_auto_hint": "Auto",
   "motion_now_on": "currently on",
   "motion_now_off": "currently off",
   "motion_nav": "Responsive menu",
@@ -2379,6 +2379,8 @@ export const en: Record<string, string> = {
   "motion_expand": "Smooth expand",
   "motion_expand_hint": "Long posts and settings sections",
   "motion_scrollhide": "Hide bars while scrolling",
-  "motion_scrollhide_hint": "Phone: the navigation bar slides down when you scroll down and returns when you scroll up",
+  "motion_scrollhide_hint": "Phone only",
+  "motion_covertint": "Cover color in player",
+  "motion_covertint_hint": "The mini player tints to the track",
   "pulse_artists": "Artists",
 };

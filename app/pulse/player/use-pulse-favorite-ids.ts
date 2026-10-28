@@ -22,6 +22,39 @@ function readFavoriteIds() {
   return [];
 }
 
+/** Записать список избранного: кэш, глобальная переменная и событие для всех подписчиков. Возвращает нормализованный список. */
+export function writePulseFavoriteIds(ids: number[]): number[] {
+  const nextIds = normalizeSongIds(ids);
+  try {
+    cache.set(FAVORITES_CACHE_KEY, nextIds, { category: 'pulse', subcategory: 'favorites' });
+  } catch {
+    // Cache failure must not prevent UI updates.
+  }
+  if (typeof window !== 'undefined') {
+    (window as PulseFavoriteWindow)._pulseLikedSongs = nextIds;
+    window.dispatchEvent(new CustomEvent('pulse-likes-updated', { detail: nextIds }));
+  }
+  return nextIds;
+}
+
+let fallbackSnapshot: number[] | null = null;
+const EMPTY_FAVORITES: number[] = [];
+
+/** Снимок для useSyncExternalStore: один и тот же массив, пока список не заменили (строки треков не перерисовываются зря). */
+export function getPulseFavoriteSnapshot(): number[] {
+  const current = (window as PulseFavoriteWindow)._pulseLikedSongs;
+  if (Array.isArray(current)) return current;
+  fallbackSnapshot ??= readFavoriteIds();
+  return fallbackSnapshot;
+}
+
+export const getPulseFavoriteServerSnapshot = () => EMPTY_FAVORITES;
+
+export function subscribePulseFavorites(onChange: () => void) {
+  window.addEventListener('pulse-likes-updated', onChange);
+  return () => window.removeEventListener('pulse-likes-updated', onChange);
+}
+
 export function usePulseFavoriteIds() {
   const [favoriteIds, setFavoriteIds] = useState<number[]>(readFavoriteIds);
   const favoriteIdsRef = useRef(favoriteIds);
@@ -32,19 +65,10 @@ export function usePulseFavoriteIds() {
   }, [favoriteIds]);
 
   const replaceFavoriteIds = useCallback((ids: number[]) => {
-    const nextIds = normalizeSongIds(ids);
+    const nextIds = writePulseFavoriteIds(ids);
     revisionRef.current += 1;
     favoriteIdsRef.current = nextIds;
     setFavoriteIds(nextIds);
-    try {
-      cache.set(FAVORITES_CACHE_KEY, nextIds, { category: 'pulse', subcategory: 'favorites' });
-    } catch {
-      // Cache failure must not prevent UI updates.
-    }
-    if (typeof window !== 'undefined') {
-      (window as PulseFavoriteWindow)._pulseLikedSongs = nextIds;
-      window.dispatchEvent(new CustomEvent('pulse-likes-updated', { detail: nextIds }));
-    }
   }, []);
 
   const getFavoriteIds = useCallback(() => favoriteIdsRef.current, []);

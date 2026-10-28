@@ -2355,7 +2355,7 @@ export const ru: Record<string, string> = {
     "motion_auto": "Авто",
     "motion_on": "Включено",
     "motion_off": "Выключено",
-    "motion_auto_hint": "Авто — выключено на Android",
+    "motion_auto_hint": "Авто",
     "motion_now_on": "сейчас включено",
     "motion_now_off": "сейчас выключено",
     "motion_nav": "Отзывчивое меню",
@@ -2379,6 +2379,8 @@ export const ru: Record<string, string> = {
     "motion_expand": "Плавное раскрытие",
     "motion_expand_hint": "Длинные посты и разделы настроек",
     "motion_scrollhide": "Прятать панели при прокрутке",
-    "motion_scrollhide_hint": "Телефон: панель навигации уезжает вниз при прокрутке вниз и возвращается при прокрутке вверх",
+    "motion_scrollhide_hint": "Только на телефоне",
+    "motion_covertint": "Цвет обложки в плеере",
+    "motion_covertint_hint": "Мини-плеер подкрашивается под трек",
     "pulse_artists": "Исполнители",
 };

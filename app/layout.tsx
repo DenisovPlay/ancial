@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import Script from "next/script";
 import "./globals.css"; // force HMR css update
 import AppearanceSync from './components/appearance-sync';
+import BootScript from './components/boot-script';
 import AppRuntimeSlot from './components/app-runtime-slot';
 import IconSprite from './components/icon-sprite';
 import TooltipLayer from './components/tooltip-layer';
@@ -67,11 +68,11 @@ export default function RootLayout({
     >
       <head>
         {/* Приложение: адреса динамических страниц обслуживают заготовки «_» — до запуска Next (см. app-route-boot.ts). */}
-        {IS_NATIVE_APP ? <script dangerouslySetInnerHTML={{ __html: APP_ROUTE_BOOT_SCRIPT }} /> : null}
+        {IS_NATIVE_APP ? <BootScript code={APP_ROUTE_BOOT_SCRIPT} /> : null}
         {/* iOS-приложение: WebView начинается под статус-баром, а нативный сплеш центрирован по экрану — высоту выреза (экран минус окно) отдаём CSS для загрузчика (.brand-loader-screen/-page). */}
-        {IS_NATIVE_APP ? <script dangerouslySetInnerHTML={{ __html: "try{if(/iPhone|iPad/.test(navigator.userAgent)){var d=document.documentElement;d.setAttribute('data-ios-app','');d.style.setProperty('--native-top-inset',Math.max(0,screen.height-innerHeight)+'px')}}catch(e){}" }} /> : null}
+        {IS_NATIVE_APP ? <BootScript code="try{if(/iPhone|iPad/.test(navigator.userAgent)){var d=document.documentElement;d.setAttribute('data-ios-app','');d.style.setProperty('--native-top-inset',Math.max(0,screen.height-innerHeight)+'px')}}catch(e){}" /> : null}
         {/* Своё, без внешних данных: применяет сохранённые на устройстве настройки внешнего вида до первой отрисовки. */}
-        <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
+        <BootScript code={APPEARANCE_BOOT_SCRIPT} />
       </head>
       <body className="min-h-full flex flex-col bg-black text-white">
         <AppearanceSync />
@@ -102,7 +103,6 @@ export default function RootLayout({
         </Script>
         {/* Замеры с устройства для страницы статуса (status.zypo.cc): без cookie. В приложении не грузим — внешний код рядом с нативным мостом ни к чему. */}
         {IS_NATIVE_APP ? null : <Script src="https://status.zypo.cc/rum.js" data-site="12f6f1cf2d1a" strategy="afterInteractive" />}
-        {IS_NATIVE_APP ? null : <Script src="https://scope.zeniflow.ru/rum.js" data-site="zypo" strategy="afterInteractive" />}
         <noscript>
           <div>
             <img src="https://mc.yandex.ru/watch/95401676" style={{ position: "absolute", left: "-9999px" }} alt="" />

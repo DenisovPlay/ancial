@@ -92,17 +92,12 @@ export default function Modal({
         lockBodyScroll();
       }
 
-      let visibleFrame = 0;
       const renderFrame = requestAnimationFrame(() => {
         setRender(true);
-        visibleFrame = requestAnimationFrame(() => {
-          setVisible(true);
-        });
       });
 
       return () => {
         cancelAnimationFrame(renderFrame);
-        cancelAnimationFrame(visibleFrame);
       };
     }
 
@@ -127,6 +122,19 @@ export default function Modal({
       clearTimeout(timer);
     };
   }, [isOpen]);
+
+  // «Показать» — только когда окно уже в DOM в закрытом виде. Раньше это решали два requestAnimationFrame подряд, а
+  // React коммитит setState из rAF отдельной задачей: на занятом потоке монтирование и «открыто» склеивались в один
+  // кадр, и окно появлялось резко (закрывалось — всегда плавно). Принудительный расчёт стилей фиксирует закрытый вид
+  // как точку старта перехода при любой загрузке потока.
+  useEffect(() => {
+    if (!isOpen || !render) return undefined;
+    const frame = requestAnimationFrame(() => {
+      void panelRef.current?.getBoundingClientRect();
+      setVisible(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, render]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;

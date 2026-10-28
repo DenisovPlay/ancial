@@ -17,6 +17,7 @@ export type TooltipMotion = 'auto' | 'smooth' | 'instant';
 export type LyricsMotion = 'words' | 'lines';
 export type LyricsSetting = 'auto' | LyricsMotion;
 export type ScrollHideSetting = 'on' | 'off';
+export type CoverTintSetting = 'on' | 'off';
 
 export type GlassRoleSetting = {
   on: boolean;
@@ -42,6 +43,8 @@ export type AppearanceSettings = {
     expand: MotionToggle;
     /** Телефон: панели навигации уезжают вниз при прокрутке вниз и возвращаются при прокрутке вверх. */
     scrollHide: ScrollHideSetting;
+    /** Мини-плеер Pulse подкрашивается цветом обложки (и перетекает при листании). */
+    coverTint: CoverTintSetting;
   };
 };
 
@@ -51,7 +54,7 @@ export type ResolvedAppearance = {
   /** Общие множители, которые сейчас действуют (для ползунков в настройках). */
   global: { blur: number; clarity: number; saturate: number };
   factors: Record<GlassRole, { blur: number; sat: number; clarity: number }>;
-  motion: { nav: boolean; menu: boolean; tooltips: 'smooth' | 'instant'; lyrics: LyricsMotion; expand: boolean; scrollHide: boolean };
+  motion: { nav: boolean; menu: boolean; tooltips: 'smooth' | 'instant'; lyrics: LyricsMotion; expand: boolean; scrollHide: boolean; coverTint: boolean };
   device: { android: boolean; weak: boolean; reducedMotion: boolean };
 };
 
@@ -74,7 +77,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
       overlay: { on: true, level: 1 },
     },
   },
-  motion: { nav: 'auto', menu: 'auto', tooltips: 'auto', lyrics: 'auto', expand: 'auto', scrollHide: 'off' },
+  motion: { nav: 'auto', menu: 'auto', tooltips: 'auto', lyrics: 'auto', expand: 'auto', scrollHide: 'off', coverTint: 'on' },
 };
 
 type DeviceHints = {
@@ -185,6 +188,8 @@ export function applyAppearance(input?: unknown, apply = true, hints?: DeviceHin
       expand: expandMode === 'auto' ? !reducedMotion && !weakAndroid : expandMode === 'on',
       // Опция по желанию (по умолчанию выключена); при «уменьшить движение» панели не уезжают.
       scrollHide: motionRaw.scrollHide === 'on' && !reducedMotion,
+      // Включена по умолчанию; отключается только явно.
+      coverTint: motionRaw.coverTint !== 'off',
     },
     device: { android: android, weak: weak, reducedMotion: Boolean(reducedMotion) },
   };
@@ -204,6 +209,7 @@ export function applyAppearance(input?: unknown, apply = true, hints?: DeviceHin
     root.setAttribute('data-motion-lyrics', resolved.motion.lyrics);
     root.setAttribute('data-motion-expand', resolved.motion.expand ? 'on' : 'off');
     root.setAttribute('data-motion-scrollhide', resolved.motion.scrollHide ? 'on' : 'off');
+    root.setAttribute('data-motion-covertint', resolved.motion.coverTint ? 'on' : 'off');
   }
 
   return resolved;

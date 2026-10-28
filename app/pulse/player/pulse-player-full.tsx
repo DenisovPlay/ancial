@@ -149,6 +149,7 @@ export type PulsePlayerFullProps = {
   // Callbacks – seek
   onSeekCancel: () => void;
   onSeekChange: (value: number) => void;
+  onSeekCommit: (value: number) => void;
   onSeekStart: () => void;
   onSeekSubmit: () => void;
 
@@ -239,6 +240,7 @@ export function PulsePlayerFull({
 
   onSeekCancel,
   onSeekChange,
+  onSeekCommit,
   onSeekStart,
   onSeekSubmit,
 
@@ -631,6 +633,7 @@ export function PulsePlayerFull({
                 mobileSeekInputRef={mobileSeekInputRef}
                 onSeekCancel={onSeekCancel}
                 onSeekChange={onSeekChange}
+                onSeekCommit={onSeekCommit}
                 onSeekStart={onSeekStart}
                 onSeekSubmit={onSeekSubmit}
                 lang={lang}

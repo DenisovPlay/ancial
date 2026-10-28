@@ -9,7 +9,7 @@ import { usePulsePlayer } from '../../../context/PulsePlayerContext';
 import { usePulseNote } from '../../../hooks/use-pulse-note';
 import { usePulseTrackReport } from '../../../hooks/use-pulse-track-report';
 import { useRequireAuth } from '../../../hooks/use-require-auth';
-import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
+import { AncialAPI } from '../../../lib/api-v2';
 import { registerResolvedExternalId } from '../../player/external-track-ids';
 import { buildPulseTrackReportReasons } from '../../../lib/report-reasons';
 import { useUserCountry } from '../../../lib/user-geo';
@@ -56,7 +56,7 @@ export default function PulseSearchTracksContent() {
     const cached = readPulseJsonCache<PulseTracksSearchResponse>(getPulseTracksSearchCacheKey(query));
     return Array.isArray(cached?.tracks) ? cached.tracks : [];
   });
-  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
+  const { replaceFavoriteIds } = usePulseFavoriteIds();
   const [loading, setLoading] = useState(!tracks.length);
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
@@ -136,52 +136,6 @@ export default function PulseSearchTracksContent() {
 
   const { copyTrackLink, shareModal } = usePulseTrackShare(showPulseNote, getResolvedId);
 
-  const likeTrack = useCallback(
-    async (track: PulseTrack) => {
-      if (!requireAuth(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное')) return;
-
-      const rawSid = String(track.sid ?? '').trim();
-      const trackId = await getResolvedId(rawSid);
-      if (!trackId) return;
-
-      try {
-        const response = await AncialAPI.pulseTrackAction<{ id?: number | string; message?: string }>('add_favorite', rawSid);
-        const result = response.message || '';
-        const finalId = response.id ? toNumber(response.id) : trackId;
-
-        if (result === 'ADDED' || result === 'CREATED_ADDED') {
-          updateFavoriteIds((ids) => {
-            const next = [...ids];
-            const addId = toNumber(finalId) || toNumber(rawSid);
-            if (addId && !next.includes(addId)) next.push(addId);
-            return next;
-          });
-          setTracks((prev) => prev.map((t) => String(t.sid ?? '').trim() === rawSid ? { ...t, sid: finalId } : t));
-          showPulseNote(
-            result === 'CREATED_ADDED'
-              ? lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!'
-              : lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!',
-            'success',
-          );
-          return;
-        }
-
-        if (result === 'REMOVED') {
-          updateFavoriteIds((ids) => ids.filter((id) => toNumber(id) !== finalId && String(id ?? '').trim() !== rawSid));
-          setTracks((prev) => prev.map((t) => String(t.sid ?? '').trim() === rawSid ? { ...t, sid: finalId } : t));
-          showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
-          return;
-        }
-
-
-        showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
-      } catch (err) {
-        showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
-      }
-    },
-    [getResolvedId, lang, requireAuth, showPulseNote, updateFavoriteIds],
-  );
-
   const openAddTrackToPlaylist = useCallback(
     (trackId: number | string) => {
       if (!requireAuth(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты')) return;
@@ -250,14 +204,12 @@ export default function PulseSearchTracksContent() {
             {tracks.map((track, index) => (
               <PulseTrackRow
                 currentSongId={currentSongId}
-                favoriteIds={favoriteIds}
                 isAuthenticated={isAuthenticated}
                 key={`search-all-track-${track.sid ?? index}`}
                 onAddToPlaylist={openAddTrackToPlaylist}
                 onCopyTrackLink={copyTrackLink}
                 onDeleteTrack={(t) => setTrackToDelete(t)}
                 onEditTrack={(t) => setTrackToEdit(t)}
-                onLikeTrack={likeTrack}
                 onOpenArtist={(artistId) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`)}
                 onPlayTrack={(nextTrack) => {
                   void playTrack(nextTrack.sid ?? 0);

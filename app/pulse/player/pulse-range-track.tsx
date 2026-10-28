@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type CSSProperties, type InputHTMLAttributes, type RefObject } from 'react';
+import { useEffect, useRef, type CSSProperties, type InputHTMLAttributes, type RefObject } from 'react';
 
 import { cn } from './player-utils';
 
@@ -26,9 +26,30 @@ type PulseRangeTrackProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'classNa
   inputRef?: RefObject<HTMLInputElement | null>;
   /** Задан — заполнение ведёт React (громкость). Не задан — переменную пишет rAF-цикл перемотки. */
   progressPercent?: number;
+  /** Итог взаимодействия (нативный change): на iPhone тап по дорожке доходит только сюда, уже после pointerup. */
+  onCommit?: (value: number) => void;
 };
 
-export function PulseRangeTrack({ className, inputRef, onChange, progressPercent, ...inputProps }: PulseRangeTrackProps) {
+export function PulseRangeTrack({ className, inputRef, onChange, onCommit, progressPercent, ...inputProps }: PulseRangeTrackProps) {
+  const commitRef = useRef(onCommit);
+  // Значение из последнего input-события: к нативному change React уже мог вернуть в поле «старое» (управляемое) значение —
+  // на iPhone это давало перемотку на прежнее место «раз из N».
+  const lastInputRef = useRef<number | null>(null);
+  useEffect(() => {
+    commitRef.current = onCommit;
+  });
+  useEffect(() => {
+    const input = inputRef?.current;
+    if (!input) return undefined;
+    const handleChange = () => {
+      const value = lastInputRef.current ?? Number(input.value);
+      lastInputRef.current = null;
+      commitRef.current?.(value);
+    };
+    input.addEventListener('change', handleChange);
+    return () => input.removeEventListener('change', handleChange);
+  }, [inputRef]);
+
   // Выключенная дорожка (слушатель в совместном прослушивании): гасим и не ловим нажатия.
   const isDisabled = Boolean(inputProps.disabled);
   const { max: inputMax, min: inputMin, value: inputValue } = inputProps;
@@ -44,7 +65,7 @@ export function PulseRangeTrack({ className, inputRef, onChange, progressPercent
       className={cn('group/track relative flex h-4 w-full items-center', isDisabled && 'pointer-events-none opacity-40', className)}
       style={progressPercent === undefined ? undefined : ({ '--pulse-progress': `${progressPercent}%` } as CSSProperties)}
     >
-      <div className="pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/20 transition-[height] duration-300 lg:group-hover/track:h-1.5">
+      <div className={cn('pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/20 transition-[height] duration-300 lg:group-hover/track:h-1.5', progressPercent === undefined && 'pulse-seek-bar')}>
         {/*
           Сглаживание только между тиками воспроизведения (--pulse-progress-ease), перемотка — мгновенно.
           Двигаем transform, а не width/left: сдвиг идёт на композиторе, без раскладки и перерисовки
@@ -71,6 +92,7 @@ export function PulseRangeTrack({ className, inputRef, onChange, progressPercent
         ref={inputRef}
         type="range"
         onChange={(event) => {
+          lastInputRef.current = Number(event.currentTarget.value);
           setRangeProgressVar(event.currentTarget);
           onChange?.(event);
         }}

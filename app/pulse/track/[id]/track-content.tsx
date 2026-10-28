@@ -428,11 +428,9 @@ export default function PulseTrackContent({ trackId: rawTrackId }: { trackId: st
                 onRenderTrack={(t, index) => (
                   <PulseTrackRow
                     currentSongId={currentSongId}
-                    favoriteIds={favoriteIds}
                     isAuthenticated={isAuthenticated}
                     onAddToPlaylist={(id) => openAddToPlaylist(toNumber(id))}
                     onCopyTrackLink={copyTrackLink}
-                    onLikeTrack={async () => { }}
                     onOpenArtist={(id) => router.push(`/pulse/artist/${id}`)}
                     onPlayTrack={(clickedTrack) => {
                       if (clickedTrack.sid) void playTrack(toNumber(clickedTrack.sid));

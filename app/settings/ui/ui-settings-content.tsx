@@ -23,6 +23,7 @@ import {
   type GlassRole,
   type LyricsSetting,
   type MotionToggle,
+  type CoverTintSetting,
   type ScrollHideSetting,
   type TooltipMotion,
 } from '../../lib/appearance';
@@ -233,7 +234,7 @@ export default function UiSettingsContent() {
     { value: 'on', label: lang?.motion_on || 'Включено' },
     { value: 'off', label: lang?.motion_off || 'Выключено' },
   ];
-  const autoHint = (enabled: boolean | undefined) => `${lang?.motion_auto_hint || 'Авто — выключено на Android'}${enabled === undefined ? '' : ` · ${enabled ? (lang?.motion_now_on || 'сейчас включено') : (lang?.motion_now_off || 'сейчас выключено')}`}`;
+  const autoHint = (enabled: boolean | undefined) => `${lang?.motion_auto_hint || 'Авто'}${enabled === undefined ? '' : ` · ${enabled ? (lang?.motion_now_on || 'сейчас включено') : (lang?.motion_now_off || 'сейчас выключено')}`}`;
 
   const heavyGlass = Boolean(resolved?.device.android && resolved.global.blur > 1);
 
@@ -448,10 +449,21 @@ export default function UiSettingsContent() {
             value={settings.motion.expand}
             onChange={(value) => update((draft) => { draft.motion.expand = value; })}
           />
+          <SettingSelect<CoverTintSetting>
+            selectClassName="w-40 shrink-0"
+            label={lang?.motion_covertint || 'Цвет обложки в плеере'}
+            hint={lang?.motion_covertint_hint || 'Мини-плеер подкрашивается под трек'}
+            options={[
+              { value: 'on', label: lang?.motion_on || 'Включено' },
+              { value: 'off', label: lang?.motion_off || 'Выключено' },
+            ]}
+            value={settings.motion.coverTint}
+            onChange={(value) => update((draft) => { draft.motion.coverTint = value; })}
+          />
           <SettingSelect<ScrollHideSetting>
             selectClassName="w-40 shrink-0"
             label={lang?.motion_scrollhide || 'Прятать панели при прокрутке'}
-            hint={lang?.motion_scrollhide_hint || 'Телефон: панель навигации уезжает вниз при прокрутке вниз и возвращается при прокрутке вверх'}
+            hint={lang?.motion_scrollhide_hint || 'Только на телефоне'}
             options={[
               { value: 'off', label: lang?.motion_off || 'Выключено' },
               { value: 'on', label: lang?.motion_on || 'Включено' },

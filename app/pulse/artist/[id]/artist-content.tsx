@@ -11,7 +11,7 @@ import { useDragScroll } from '../../../hooks/useDragScroll';
 import { usePulseNote } from '../../../hooks/use-pulse-note';
 import { usePulseTrackReport } from '../../../hooks/use-pulse-track-report';
 import { useRequireAuth } from '../../../hooks/use-require-auth';
-import { AncialAPI, getApiMessage } from '../../../lib/api-v2';
+import { AncialAPI } from '../../../lib/api-v2';
 import { buildPulseTrackReportReasons } from '../../../lib/report-reasons';
 import { useUserCountry } from '../../../lib/user-geo';
 import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload-track-modal';
@@ -99,7 +99,7 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
   const cachedTracks = readPulseJsonCache<PulseTrack[]>(artistTracksCacheKey) ?? [];
   const [artist, setArtist] = useState<PulseArtist | null>(() => readPulseJsonCache<PulseArtistResponse>(`artist_${cacheId}`)?.artist ?? null);
   const playlistsScrollRef = useDragScroll({ speed: 2 });
-  const { favoriteIds, replaceFavoriteIds, updateFavoriteIds } = usePulseFavoriteIds();
+  const { replaceFavoriteIds } = usePulseFavoriteIds();
   const [trackToDelete, setTrackToDelete] = useState<PulseTrack | null>(null);
   const [trackToEdit, setTrackToEdit] = useState<PulseTrack | null>(null);
   const [tracksReloadToken, setTracksReloadToken] = useState(0);
@@ -193,34 +193,6 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
     const id = normalizeText(String(card.id ?? '0')) || '0';
     router.push(`/pulse/playlist/${encodeURIComponent(id)}`);
   }, [router]);
-
-  const likeTrack = useCallback(async (track: PulseTrack) => {
-    if (!requireAuth(lang?.logintoaddfavorites || 'Войдите, чтобы добавлять треки в избранное')) return;
-
-    const trackId = toNumber(track.sid);
-    if (!trackId) return;
-
-    try {
-      const response = await AncialAPI.pulseTrackAction<{ message?: string }>('add_favorite', trackId);
-      const result = response.message || '';
-
-      if (result === 'ADDED' || result === 'CREATED_ADDED') {
-        updateFavoriteIds((ids) => ids.includes(trackId) ? ids : [...ids, trackId]);
-        showPulseNote(result === 'CREATED_ADDED' ? (lang?.pulse_fav_playlist_created || 'Плейлист с избранными треками создан. Трек добавлен в ваш плейлист!') : (lang?.pulse_track_added || 'Трек добавлен в ваш плейлист!'), 'success');
-        return;
-      }
-
-      if (result === 'REMOVED') {
-        updateFavoriteIds((ids) => ids.filter((id) => id !== trackId));
-        showPulseNote(lang?.pulse_track_removed || 'Трек удалён из вашего плейлиста!', 'success');
-        return;
-      }
-
-      showPulseNote(lang?.pulse_error_happened || 'Произошла ошибка =(', 'error');
-    } catch (err) {
-      showPulseNote(getApiMessage(err instanceof Error ? err.message : null, lang, lang?.pulse_error_happened || 'Произошла ошибка =('), 'error');
-    }
-  }, [lang, requireAuth, showPulseNote, updateFavoriteIds]);
 
   const openAddTrackToPlaylist = useCallback((trackId: number | string) => {
     if (!requireAuth(lang?.logintoaddtoplaylists || 'Войдите, чтобы добавлять треки в плейлисты')) return;
@@ -392,14 +364,12 @@ export default function PulseArtistContent({ artistId }: { artistId: string }) {
                 {tracks.map((track, index) => (
                   <PulseTrackRow
                     currentSongId={currentSongId}
-                    favoriteIds={favoriteIds}
                     isAuthenticated={isAuthenticated}
                     key={`artist-track-${track.sid ?? index}`}
                     onAddToPlaylist={openAddTrackToPlaylist}
                     onCopyTrackLink={copyTrackLink}
                     onDeleteTrack={openDeleteTrack}
                     onEditTrack={openEditTrack}
-                    onLikeTrack={likeTrack}
                     onOpenArtist={(nextArtistId) => router.push(`/pulse/artist/${encodeURIComponent(nextArtistId)}`)}
                     onPlayTrack={(nextTrack, nextIndex) => {
                       void playArtistPlaylist(cacheId, true, 0, nextIndex, nextTrack.sid);

@@ -13,6 +13,7 @@ type PulsePlayerFullArtworkProps = {
   mobileSeekInputRef: RefObject<HTMLInputElement | null>;
   onSeekCancel: () => void;
   onSeekChange: (value: number) => void;
+  onSeekCommit: (value: number) => void;
   onSeekStart: () => void;
   onSeekSubmit: () => void;
   lang?: Record<string, string> | null;
@@ -26,6 +27,7 @@ export function PulsePlayerFullArtwork({
   mobileSeekInputRef,
   onSeekCancel,
   onSeekChange,
+  onSeekCommit,
   onSeekStart,
   onSeekSubmit,
   lang,
@@ -48,6 +50,7 @@ export function PulsePlayerFullArtwork({
         onPointerCancel={onSeekCancel}
         onLostPointerCapture={onSeekCancel}
         onChange={(event) => onSeekChange(Number(event.target.value))}
+        onCommit={onSeekCommit}
       />
 
       {/* На ПК тайминги вне потока и появляются при наведении — место под полосой не держат. */}

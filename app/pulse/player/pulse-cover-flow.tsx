@@ -69,6 +69,9 @@ export function PulseCoverFlow({
   const centerRef = useRef(currentIndex);
   const [center, setCenter] = useState(currentIndex);
   const indexRef = useRef(currentIndex);
+  // Куда лента едет сейчас: при быстрых свайпах индекс трека приходит с задержкой, а следующий жест должен считаться от цели, а не от устаревшего индекса.
+  const targetRef = useRef(currentIndex);
+  const pendingRef = useRef(false);
   const rafRef = useRef(0);
   const dragRef = useRef<{ lastT: number; lastX: number; startP: number; startX: number; step: number; velocity: number } | null>(null);
 
@@ -125,6 +128,10 @@ export function PulseCoverFlow({
 
   // Трек сменился не жестом (кнопки, конец трека, очередь) — плавно доезжаем до него.
   useEffect(() => {
+    // Пока едем к дальней цели (быстрые жесты подряд), промежуточные индексы не должны дёргать ленту назад.
+    if (pendingRef.current && currentIndex !== targetRef.current) return;
+    pendingRef.current = false;
+    targetRef.current = currentIndex;
     if (Math.abs(pRef.current - currentIndex) > 0.001 && !dragRef.current) settleTo(currentIndex);
   }, [currentIndex, settleTo]);
 
@@ -158,7 +165,7 @@ export function PulseCoverFlow({
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag) return;
-    const base = indexRef.current;
+    const base = targetRef.current;
     const position = pRef.current;
     // Куда «улетит» лента с учётом скорости; небольшой, но осознанный сдвиг тоже листает на соседний.
     let target = Math.round(position - (drag.velocity * INERTIA_MS) / drag.step);
@@ -169,12 +176,21 @@ export function PulseCoverFlow({
       return;
     }
     settleTo(target);
-    if (target === base + 1) onNext();
-    else if (target === base - 1) onPrev();
+    targetRef.current = target;
+    pendingRef.current = true;
+    // Тип перехода — от реального индекса трека, а не от цели ленты.
+    const actual = indexRef.current;
+    if (target === actual + 1) onNext();
+    else if (target === actual - 1) onPrev();
     else onSelect(target);
     // Трек не сменился (радио ещё грузит, заблокирован) — возвращаемся к реальному.
     window.setTimeout(() => {
-      if (!dragRef.current && Math.abs(pRef.current - indexRef.current) > 0.5) settleTo(indexRef.current);
+      if (dragRef.current || targetRef.current !== target) return;
+      pendingRef.current = false;
+      if (indexRef.current !== target) {
+        targetRef.current = indexRef.current;
+        settleTo(indexRef.current);
+      }
     }, 900);
   };
 

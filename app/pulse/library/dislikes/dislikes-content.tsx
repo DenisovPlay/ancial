@@ -112,12 +112,10 @@ export default function PulseDislikesContent() {
               {visibleTracks.map((track, index) => (
                 <PulseTrackRow
                   currentSongId={currentSongId}
-                  favoriteIds={actions.favoriteIds}
                   isAuthenticated={isAuthenticated}
                   key={String(track.sid)}
                   onAddToPlaylist={actions.openAddTrackToPlaylist}
                   onCopyTrackLink={actions.copyTrackLink}
-                  onLikeTrack={actions.likeTrack}
                   onOpenArtist={(artistId) => router.push(`/pulse/artist/${encodeURIComponent(artistId)}`)}
                   onPlayTrack={(nextTrack) => void playTrack(nextTrack.sid ?? 0)}
                   onQueueTrackNext={(trackId) => actions.playNextTrack(trackId)}
