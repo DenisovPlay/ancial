@@ -238,6 +238,78 @@ function htmlToBBCode(html: string): string {
 
 export { getVisibleLength, VISIBLE_CHAR_LIMIT };
 
+// ─── Списки: страховка от «всё стало жирным» ─────────────────────────────────
+// Встроенная команда insertUnorderedList/insertOrderedList в некоторых браузерах (WebKit/Safari) переносит форматирование
+// начала выделения на весь список: была жирной часть строки — стало жирным всё. Сверяем «подпись» жирности до и после,
+// и при расхождении откатываем команду и собираем список сами (форматирование каждой строки остаётся как было).
+
+const INLINE_LINE_TAGS = new Set(['A', 'B', 'CODE', 'DEL', 'EM', 'I', 'IMG', 'S', 'SPAN', 'STRIKE', 'STRONG', 'SUP', 'U']);
+
+function isBoldElement(el: HTMLElement): boolean {
+  if (el.tagName === 'B' || el.tagName === 'STRONG') return true;
+  const weight = el.style.fontWeight;
+  return weight === 'bold' || weight === 'bolder' || Number(weight) >= 600;
+}
+
+/** Все непробельные символы редактора с пометкой «жирный»: до и после команды подпись должна совпасть. */
+function boldSignature(root: HTMLElement): string {
+  const parts: string[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    let bold = false;
+    for (let el = node.parentElement; el && el !== root; el = el.parentElement) {
+      if (isBoldElement(el)) {
+        bold = true;
+        break;
+      }
+    }
+    for (const ch of (node.textContent ?? '').replace(/[\s\u200B]/g, '')) parts.push(ch + (bold ? '1' : '0'));
+  }
+  return parts.join('');
+}
+
+const isLineNode = (node: Node | null): boolean =>
+  Boolean(node && (node.nodeType === Node.TEXT_NODE || (node.nodeType === Node.ELEMENT_NODE && INLINE_LINE_TAGS.has((node as Element).tagName) && !(node as Element).hasAttribute('data-bbcode'))));
+
+function childAtRoot(root: HTMLElement, node: Node, edge: 'end' | 'start', offset: number): Node | null {
+  let current: Node | null = node === root ? (edge === 'start' ? root.childNodes[offset] ?? root.lastChild : root.childNodes[offset - 1] ?? root.lastChild) : node;
+  while (current && current.parentNode !== root) current = current.parentNode;
+  return current;
+}
+
+const escapeText = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Строки выделения (целиком, между переносами) → HTML списка с нетронутым инлайн-форматированием; null — выделение не из простых строк. */
+function buildListFromSelection(root: HTMLElement, range: Range, tag: 'ol' | 'ul'): { html: string; replace: Range } | null {
+  let first = childAtRoot(root, range.startContainer, 'start', range.startOffset);
+  let last = childAtRoot(root, range.endContainer, 'end', range.endOffset);
+  if (!first || !last) return null;
+  while (first.previousSibling && isLineNode(first.previousSibling)) first = first.previousSibling;
+  while (last.nextSibling && isLineNode(last.nextSibling)) last = last.nextSibling;
+  const items: string[] = [];
+  let current = '';
+  for (let node: Node | null = first; node; node = node.nextSibling) {
+    if (node.nodeName === 'BR') {
+      items.push(current);
+      current = '';
+    } else if (isLineNode(node)) {
+      current += node.nodeType === Node.TEXT_NODE ? escapeText(node.textContent ?? '') : (node as Element).outerHTML;
+    } else {
+      return null;
+    }
+    if (node === last) break;
+  }
+  items.push(current);
+  const lines = items.filter((item) => item.replace(/<[^>]*>|&nbsp;|\s|\u200B/g, '') !== '');
+  if (lines.length === 0) return null;
+  const replace = document.createRange();
+  replace.setStartBefore(first);
+  // Перенос, замыкающий последнюю строку, уходит в список (иначе между списком и следующей строкой остаётся пустая).
+  replace.setEndAfter(last.nextSibling?.nodeName === 'BR' ? last.nextSibling : last);
+  return { html: `<${tag}>${lines.map((item) => `<li>${item}</li>`).join('')}</${tag}>`, replace };
+}
+
+
 // ─── RichTextEditor ───────────────────────────────────────────────────────────
 // ── UI компоненты кнопок тулбара (на уровне модуля: замыканий на стейт нет,
 // пересоздание в рендере запрещено линтером и не даёт выгоды) ─────────────────────────────────────────
@@ -576,11 +648,26 @@ export default function RichTextEditor({ value, onChange, placeholder, className
         document.execCommand('formatBlock', false, activeFormats.h3 ? 'p' : 'h4');
         break;
       case 'ul':
-        document.execCommand('insertUnorderedList');
+      case 'ol': {
+        const command = type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList';
+        const root = editorRef.current;
+        const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+        const signature = root ? boldSignature(root) : '';
+        document.execCommand(command);
+        if (root && range && boldSignature(root) !== signature) {
+          // Команда браузера изменила жирность: откатываем и собираем список сами.
+          document.execCommand('undo');
+          if (boldSignature(root) === signature) {
+            const built = buildListFromSelection(root, range, type);
+            if (built && sel) {
+              sel.removeAllRanges();
+              sel.addRange(built.replace);
+              document.execCommand('insertHTML', false, built.html);
+            }
+          }
+        }
         break;
-      case 'ol':
-        document.execCommand('insertOrderedList');
-        break;
+      }
       case 'quote':
         document.execCommand('formatBlock', false, activeFormats.quote ? 'p' : 'blockquote');
         break;

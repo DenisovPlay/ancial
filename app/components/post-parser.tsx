@@ -3,6 +3,7 @@ import { canOptimizeImage } from '../lib/image-hosts';
 import { buildOptimizedImageSrc, decodeHtmlAttribute } from '../lib/optimized-image-src';
 import { IS_NATIVE_APP } from '../lib/platform';
 import { SITE_URL } from '../config';
+import { isPlausibleBareDomain } from '../lib/domain-tld';
 import { toInternalPath } from '../lib/internal-link';
 import { resolveLinkTarget } from '../lib/link-target';
 
@@ -221,6 +222,10 @@ export function parsePostContentToHtml(content: string | null | undefined, isPre
             const url = rawUrl.trim();
 
             if (!/^https?:\/\//i.test(url) && /\.(php|html?|js|css|zip|rar|exe|png|jpe?g|gif|mp4|avi)$/i.test(url)) {
+                return match;
+            }
+            // «звуке.Мелкие» — предложение без пробела после точки, а не адрес: у домена должна быть настоящая зона.
+            if (!isPlausibleBareDomain(url)) {
                 return match;
             }
 

@@ -2,6 +2,7 @@ import type { ImageViewerSlide } from '../../components/image-viewer-modal';
 import type { CommunityPermissionMap } from '../../group/[link]/lib/community-types';
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import { isPlausibleBareDomain } from '../../lib/domain-tld';
 import { toInternalPath } from '../../lib/internal-link';
 import { getStickerByCode, isSingleSticker, parseStickersToHtml } from '../../lib/stickers-service';
 import type { CommunityDisplayRole } from './community-role';
@@ -752,6 +753,7 @@ export function parseMessageLinks(text: string) {
         if (!/^https?:\/\//i.test(url) && /\.(php|html?|js|css|zip|rar|exe|png|jpe?g|gif|mp4|avi)$/i.test(url)) {
           return match;
         }
+        if (!isPlausibleBareDomain(url)) return match;
       }
 
       if (!url) return match;

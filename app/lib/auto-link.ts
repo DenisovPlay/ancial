@@ -1,3 +1,4 @@
+import { isPlausibleBareDomain } from './domain-tld.ts';
 import { isPlainEmail, resolveLinkTarget } from './link-target.ts';
 
 /** Символы, на которых слово (кандидат в ссылку) начинается и заканчивается. */
@@ -28,6 +29,7 @@ export function matchAutoLink(token: string): { href: string; length: number } |
   if (!core || !LINK_CORE.test(core)) return null;
   if (!/^https?:\/\//i.test(core) && FILE_EXTENSION.test(core)) return null;
   if (isPlainEmail(core)) return { href: `mailto:${core}`, length: core.length };
+  if (!isPlausibleBareDomain(core)) return null;
   const target = resolveLinkTarget(core);
   return target.type === 'web' ? { href: target.url, length: core.length } : null;
 }
