@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { cn } from '../../lib/cn';
-import { getPulseBackgroundColorByMood } from '../pulse-components';
-import { effectiveAmp, initialWaveState, rgbCss, stepWave, waveOffset, waveTarget, type WaveState, type WaveTarget } from './wave-motion';
+import { usePulseLayerTint } from '../player/use-pulse-tint';
+import { PALETTE_DEFAULT, effectiveAmp, paletteFromCss, initialWaveState, rgbCss, stepWave, waveOffset, waveTarget, type WaveState, type WaveTarget } from './wave-motion';
 
 /**
  * Живой фон Вейва: три слоя волн на canvas. Движение и цвет задают только метаданные (играет ли, настроение/жанр
@@ -23,6 +23,8 @@ interface Props {
   playing: boolean;
   /** Блок на экране */
   live: boolean;
+  /** Обложка играющего трека — для подкраски «по обложке» (настройка «Цвет Pulse»). */
+  artwork?: string;
   mood?: string;
   genre?: string;
   /** Меняется со сменой трека — запускает «перекат» */
@@ -50,16 +52,22 @@ function draw(ctx: CanvasRenderingContext2D, width: number, height: number, stat
   });
 }
 
-export default function WaveBackdrop({ playing, live, mood, genre, trackKey, className }: Props) {
+export default function WaveBackdrop({ playing, live, artwork, mood, genre, trackKey, className }: Props) {
+  const tint = usePulseLayerTint(artwork, mood, Boolean(artwork));
+  // Волны под цвет подкраски: по обложке — её оттенки, «не менять» — нейтральные, по настроению — палитра настроения.
+  const palette = useMemo(
+    () => (tint.mode === 'off' ? PALETTE_DEFAULT : tint.mode === 'cover' && tint.color ? paletteFromCss(tint.color) ?? undefined : undefined),
+    [tint.color, tint.mode],
+  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const targetRef = useRef<WaveTarget>(waveTarget({ playing, mood, genre }));
+  const targetRef = useRef<WaveTarget>(waveTarget({ playing, mood, genre, palette }));
   const stateRef = useRef<WaveState | null>(null);
   const lastTrackRef = useRef(trackKey);
 
   // Цель и «перекат» — в эффекте (не в рендере): рефы в теле компонента не пишем.
   useEffect(() => {
-    targetRef.current = waveTarget({ playing, mood, genre });
-  }, [playing, mood, genre]);
+    targetRef.current = waveTarget({ playing, mood, genre, palette });
+  }, [playing, mood, genre, palette]);
   useEffect(() => {
     if (lastTrackRef.current === trackKey) return;
     lastTrackRef.current = trackKey;
@@ -120,8 +128,8 @@ export default function WaveBackdrop({ playing, live, mood, genre, trackKey, cla
 
   return (
     <div aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden bg-zinc-950', className)}>
-      {/* Тот же цвет, что у подложки страницы под это настроение (плавная смена, как у страницы). */}
-      <div className={cn('absolute inset-0 transition-colors duration-1000', getPulseBackgroundColorByMood(mood))} />
+      {/* Тот же цвет, что у подложки страницы Pulse (обложка или настроение), плавная смена. */}
+      <div className={cn('absolute inset-0 transition-colors duration-1000', tint.className)} style={tint.style} />
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
     </div>
   );

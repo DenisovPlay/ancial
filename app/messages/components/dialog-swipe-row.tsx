@@ -8,6 +8,9 @@ import Icon from '../../components/svg-icon';
 import { cn } from '../../lib/cn';
 import { useRowSwipe } from '../../lib/use-row-swipe';
 
+/** Событие «открылось меню строки»: остальные строки закрывают свои. */
+const OPEN_EVENT = 'zypo:dialog-menu-open';
+
 /**
  * Иконка, перечёркнутая диагональю («без звука», «открепить»). Вокруг черты — настоящий зазор (маска), а не обводка:
  * на любом фоне, в том числе на цветных подложках свайпа, выглядит чисто.
@@ -62,11 +65,21 @@ export default function DialogSwipeRow({
   const swipe = useRowSwipe({ enabled: true, onFavorite: onMute, onQueue: onPin });
   const pinLabel = pinned ? labels.unpin : labels.pin;
   const muteLabel = muted ? labels.unmute : labels.mute;
+  const menuId = useId();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   // Позицию держим и при закрытии: пока меню гаснет анимацией, оно остаётся на месте.
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
 
-  // Меню закрывается по любому клику, прокрутке, Esc и смене размера окна.
+  // Открыто может быть только одно меню: открытие в другой строке (и любой правый клик вне этого меню) закрывает прежнее.
+  useEffect(() => {
+    const closeIfOther = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== menuId) setMenu(null);
+    };
+    window.addEventListener(OPEN_EVENT, closeIfOther);
+    return () => window.removeEventListener(OPEN_EVENT, closeIfOther);
+  }, [menuId]);
+
+  // Меню закрывается по любому клику, правому клику в другом месте, прокрутке, Esc и смене размера окна.
   useEffect(() => {
     if (!menu) return undefined;
     const close = () => setMenu(null);
@@ -74,11 +87,13 @@ export default function DialogSwipeRow({
       if (event.key === 'Escape') close();
     };
     window.addEventListener('click', close);
+    window.addEventListener('contextmenu', close, true);
     window.addEventListener('resize', close);
     window.addEventListener('keydown', onKey);
     window.addEventListener('scroll', close, true);
     return () => {
       window.removeEventListener('click', close);
+      window.removeEventListener('contextmenu', close, true);
       window.removeEventListener('resize', close);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll', close, true);
@@ -92,6 +107,8 @@ export default function DialogSwipeRow({
         event.preventDefault();
         // Не даём меню уйти за край окна (ширина ~224, высота ~112).
         const position = { x: Math.min(event.clientX, window.innerWidth - 232), y: Math.min(event.clientY, window.innerHeight - 124) };
+        // Сначала гасим меню в других строках, потом открываем своё.
+        window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: menuId }));
         setLastPosition(position);
         setMenu(position);
       }}

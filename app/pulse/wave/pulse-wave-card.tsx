@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { cn } from '../../lib/cn';
+import { getPlayerTrackArtwork } from '../player/player-utils';
 import PulseWaveSettingsModal from './pulse-wave-settings-modal';
 import { saveWavePrefs, usePulseWavePrefs } from './use-pulse-wave';
 import { summarizeWave, type PulseWavePrefs } from './wave-utils';
@@ -77,6 +78,7 @@ export default function PulseWaveCard() {
           <WaveBackdrop
             live={isVisible}
             playing={isWavePlaying}
+            artwork={currentTrackObj ? getPlayerTrackArtwork(currentTrackObj) : undefined}
             mood={currentTrackObj?.mood ?? undefined}
             genre={currentTrackObj?.genre ?? undefined}
             trackKey={String(currentTrackObj?.sid ?? '')}

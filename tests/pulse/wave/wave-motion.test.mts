@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { effectiveAmp, initialWaveState, stepWave, waveOffset, waveTarget } from '../../../app/pulse/wave/wave-motion.ts';
+import { PALETTE_DEFAULT, effectiveAmp, initialWaveState, paletteFromCss, stepWave, waveOffset, waveTarget } from '../../../app/pulse/wave/wave-motion.ts';
 
 test('цель: пауза спокойнее игры, энергичное быстрее и выше спокойного', () => {
   const idle = waveTarget({ playing: false, mood: 'energetic' });
@@ -40,4 +40,20 @@ test('палитра: по настроению близка к цвету по�
   assert.deepEqual(waveTarget({ playing: true, mood: 'sad' }).from, [59, 130, 246], 'blue-500 как у страницы');
   assert.deepEqual(waveTarget({ playing: true, mood: 'happy' }).from, [245, 158, 11], 'amber-500');
   assert.deepEqual(waveTarget({ playing: true }).from, [113, 113, 122]);
+});
+
+test('палитра волн из цвета обложки: оттенок обложки и светлый сосед', () => {
+  const palette = paletteFromCss('hsl(0 100% 34%)');
+  assert.ok(palette);
+  const [from, to] = palette;
+  assert.ok(from[0] > from[1] && from[0] > from[2], 'красный оттенок обложки остаётся ведущим');
+  assert.ok(to[0] + to[1] + to[2] > from[0] + from[1] + from[2], 'второй цвет светлее первого');
+  assert.equal(paletteFromCss('var(--color-red-500)'), null, 'не hsl — нечего разбирать');
+});
+
+test('палитра из обложки и нейтральная перекрывают палитру настроения', () => {
+  const cover = paletteFromCss('hsl(210 60% 34%)')!;
+  assert.deepEqual(waveTarget({ mood: 'happy', palette: cover, playing: true }).from, cover[0]);
+  assert.deepEqual(waveTarget({ mood: 'happy', palette: PALETTE_DEFAULT, playing: true }).from, PALETTE_DEFAULT[0]);
+  assert.notDeepEqual(waveTarget({ mood: 'happy', playing: true }).from, PALETTE_DEFAULT[0]);
 });

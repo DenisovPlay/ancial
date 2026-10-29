@@ -22,18 +22,32 @@ export function usePulseTint(artwork: string | null | undefined, mood: string | 
   return null;
 }
 
+export interface PulseLayerTint {
+  className: string;
+  /** Цвет обложки (CSS), если подкраска по обложке и цвет достался; иначе null. */
+  color: string | null;
+  mode: 'cover' | 'mood' | 'off';
+  style: CSSProperties | undefined;
+}
+
 /**
- * Фон страниц Pulse под играющий трек. По настроению — прежние классы Tailwind (вид не меняется), по обложке —
- * тот же прозрачный слой цветом обложки (плавно: transition-colors у страницы). Нет трека — розовый Pulse.
+ * Прозрачный цветной слой под блоком Pulse (страница, Вейв). По настроению — прежние классы Tailwind (вид не меняется),
+ * по обложке — тот же слой цветом обложки (плавно: transition-colors у слоя). Нет трека — розовый Pulse.
  */
-export function usePulsePageTint(track: PulseTrack | null | undefined): { className: string; style: CSSProperties | undefined } {
+export function usePulseLayerTint(artwork: string | null | undefined, mood: string | null | undefined, hasTrack: boolean): PulseLayerTint {
   const { pulseColor } = useAppearanceMotion();
-  const { color, failed } = useCoverColorState(track ? getPlayerTrackArtwork(track) : null, pulseColor === 'cover' && Boolean(track));
-  if (pulseColor === 'off') return { className: '', style: undefined };
-  if (pulseColor === 'cover' && track) {
+  const { color, failed } = useCoverColorState(hasTrack ? artwork : null, pulseColor === 'cover' && hasTrack);
+  if (pulseColor === 'off') return { className: '', color: null, mode: 'off', style: undefined };
+  if (pulseColor === 'cover' && hasTrack) {
     // Не достали цвет обложки — настроение (прежний вид), пока цвет считается — без слоя.
-    if (failed && !color) return { className: getPulseBackgroundColorByMood(track.mood), style: undefined };
-    return { className: '', style: color ? { backgroundColor: `color-mix(in srgb, ${color} 35%, transparent)` } : undefined };
+    if (failed && !color) return { className: getPulseBackgroundColorByMood(mood), color: null, mode: 'mood', style: undefined };
+    return { className: '', color, mode: 'cover', style: color ? { backgroundColor: `color-mix(in srgb, ${color} 35%, transparent)` } : undefined };
   }
-  return { className: getPulseBackgroundColorByMood(track?.mood), style: undefined };
+  return { className: getPulseBackgroundColorByMood(mood), color: null, mode: 'mood', style: undefined };
+}
+
+/** Фон страниц Pulse под играющий трек. */
+export function usePulsePageTint(track: PulseTrack | null | undefined): { className: string; style: CSSProperties | undefined } {
+  const { className, style } = usePulseLayerTint(track ? getPlayerTrackArtwork(track) : null, track?.mood, Boolean(track));
+  return { className, style };
 }

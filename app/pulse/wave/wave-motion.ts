@@ -30,7 +30,7 @@ const KICK_TAU = 0.45;
  * (getPulseBackgroundColorByMood в pulse-components.tsx: amber-500, blue-500, … — менять только вместе).
  */
 const pair = (a: Rgb, b: Rgb): [Rgb, Rgb] => [a, b];
-const PALETTE_DEFAULT = pair([113, 113, 122], [161, 161, 170]); // zinc-500 → zinc-400: страница без настроения не подкрашена
+export const PALETTE_DEFAULT = pair([113, 113, 122], [161, 161, 170]); // zinc-500 → zinc-400: страница без настроения не подкрашена
 const PALETTE: Record<string, [Rgb, Rgb]> = {
   happy: pair([245, 158, 11], [251, 146, 60]), // amber-500 → orange-400
   sad: pair([59, 130, 246], [129, 140, 248]), // blue-500 → indigo-400
@@ -67,12 +67,30 @@ function genreEnergy(genre: string): number | null {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-export function waveTarget(input: { playing: boolean; mood?: string; genre?: string }): WaveTarget {
+/**
+ * Палитра волн из цвета обложки (`hsl(h s% l%)`, его отдаёт cover-color): тот же оттенок и сосед сдвигом оттенка,
+ * светлее подложки — чтобы волны читались на подкрашенном фоне. Другой формат цвета — null.
+ */
+export function paletteFromCss(css: string): [Rgb, Rgb] | null {
+  const match = /^hsl\(\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s*\)$/.exec(css.trim());
+  if (!match) return null;
+  const hue = Number(match[1]);
+  const saturation = Number(match[2]) / 100;
+  const toRgb = (h: number, s: number, l: number): Rgb => {
+    const k = (n: number) => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+  };
+  return [toRgb(hue, saturation, 0.5), toRgb((hue + 24) % 360, saturation, 0.62)];
+}
+
+export function waveTarget(input: { genre?: string; mood?: string; palette?: [Rgb, Rgb]; playing: boolean }): WaveTarget {
   const moodKey = (input.mood ?? '').trim().toLowerCase();
   const byGenre = genreEnergy(input.genre ?? '');
   const energies = [MOOD_ENERGY[moodKey], byGenre].filter((value): value is number => typeof value === 'number');
   const energy = energies.length ? energies.reduce((sum, value) => sum + value, 0) / energies.length : 0;
-  const [from, to] = PALETTE[moodKey] ?? PALETTE_DEFAULT;
+  const [from, to] = input.palette ?? PALETTE[moodKey] ?? PALETTE_DEFAULT;
   if (!input.playing) return { amp: 0.22, speed: 0.25, from, to };
   return { amp: clamp(0.55 + 0.3 * energy, 0.3, 0.9), speed: clamp(0.9 + 0.6 * energy, 0.4, 1.6), from, to };
 }
