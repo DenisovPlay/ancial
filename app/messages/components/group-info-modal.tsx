@@ -22,6 +22,9 @@ import AppImage from '../../components/app-image';
 import Icon from '../../components/svg-icon';
 import { publicUrl, apiUrl } from '../../lib/api-url';
 import BrandLoader from '../../components/brand-loader';
+import { useDialogMedia, type DialogMediaKind } from '../lib/use-dialog-media';
+import { ActionTile, DialogMediaPane, InfoSectionList, useMediaSections } from './chat-info-parts';
+import { MutedBell, PinIcon } from './dialog-swipe-row';
 
 interface GroupMember {
   id: number;
@@ -54,9 +57,14 @@ interface GroupInfoModalProps {
   voiceEnabled?: boolean | number | string | null;
   onGroupUpdated: (partial?: { avatar?: string; title?: string; background?: string }) => void;
   onLeave?: () => void;
+  /** Личные настройки беседы: звук и закрепление в списке чатов. */
+  muted?: boolean;
+  onToggleMute?: () => void;
+  onTogglePin?: () => void;
+  pinned?: boolean;
 }
 
-type ModalView = 'main' | 'add_members' | 'edit_title' | 'community_settings';
+type ModalView = 'main' | 'add_members' | 'edit_title' | 'community_settings' | 'members' | DialogMediaKind;
 
 interface ManagedCommunity {
   id: number;
@@ -92,10 +100,16 @@ export default function GroupInfoModal({
   voiceEnabled: initialVoiceEnabled = true,
   onGroupUpdated,
   onLeave,
+  muted = false,
+  onToggleMute,
+  onTogglePin,
+  pinned = false,
 }: GroupInfoModalProps) {
   const { lang, user } = useAuth();
   const { showNote } = useNotification();
   const copyToClipboard = useCopyToClipboard();
+  const media = useDialogMedia(dialogId, isOpen);
+  const mediaSections = useMediaSections();
 
   const [view, setView] = useState<ModalView>('main');
   const [inviteCode, setInviteCode] = useState(initialInviteCode);
@@ -519,15 +533,19 @@ export default function GroupInfoModal({
       isOpen={isOpen}
       onClose={onClose}
       title={
-        view === 'add_members'
-          ? (lang?.add_members || 'Добавление участников')
-          : view === 'edit_title'
-            ? (lang?.edit_chat || 'Изменить чат')
-            : view === 'community_settings'
-              ? (lang?.chat_settings || 'Настройки доступа')
-              : ''
+        view === 'main'
+          ? (lang?.chat_info || 'Информация')
+          : view === 'add_members'
+            ? (lang?.add_members || 'Добавление участников')
+            : view === 'edit_title'
+              ? (lang?.edit_chat || 'Изменить чат')
+              : view === 'community_settings'
+                ? (lang?.chat_settings || 'Настройки доступа')
+                : view === 'members'
+                  ? `${lang?.members || 'Участники'} (${members.length})`
+                  : mediaSections.find((section) => section.key === view)?.label ?? ''
       }
-      bodyClassName="!overflow-hidden p-3 pt-14 pb-3"
+      width="md"
       onBack={view !== 'main' ? () => setView('main') : undefined}
       backLabel={lang?.back || 'Назад'}
     >
@@ -547,166 +565,168 @@ export default function GroupInfoModal({
           onChange={handleBackgroundUpload}
         />
 
-        {/* --- VIEW 1: ГЛАВНЫЙ ЭКРАН СВОЙСТВ --- */}
+        {/* --- VIEW 1: ГЛАВНЫЙ ЭКРАН (тот же вид и размер, что у личного диалога) --- */}
         {view === 'main' && (
           <>
-            {/* Единая шапка группы */}
-            <div className="flex flex-col items-center gap-3 -mt-9 sm:-mt-13 z-[1000] sm:mr-10 sm:pl-10">
+            <div className="flex flex-col items-center gap-1.5 text-center">
               <div
                 className={`relative group shrink-0 ${canManageChannel ? 'cursor-pointer active:scale-95 duration-300' : ''}`}
                 onClick={() => canManageChannel && avatarInputRef.current?.click()}
                 title={canManageChannel ? (lang?.change_group_avatar || 'Сменить аватарку группы') : undefined}
               >
                 <AppImage
-                  width={80}
-                  height={80}
+                  width={112}
+                  height={112}
                   fallbackSrc={FALLBACK_AVATAR}
                   src={normalizeAssetUrl(currentAvatar || avatar, FALLBACK_AVATAR)}
                   alt=""
-                  className="w-20 h-20 rounded-full object-cover shadow-lg border border-zinc-600/30 group-hover:opacity-85 duration-300"
+                  className="h-28 w-28 rounded-full object-cover shadow group-hover:opacity-85 duration-300"
                 />
                 {canManageChannel && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 duration-300">
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 duration-300 group-hover:opacity-100">
                     {uploadingAvatar ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                     ) : (
-                      <Icon name="IC-add-photo" className="w-6 h-6 fill-white" />
+                      <Icon name="IC-add-photo" className="h-6 w-6 fill-white" />
                     )}
                   </div>
                 )}
               </div>
-
-              <div className="flex flex-col items-center gap-1 text-center w-full">
-                <div className="flex items-center justify-center gap-2 max-w-full">
-                  <span className="text-lg font-medium truncate">{title}</span>
-                </div>
-
-                <span className="text-xs text-zinc-400">
-                  {getMembersCountText(members.length)}
-                </span>
-              </div>
+              <span className="max-w-full truncate text-2xl font-bold text-white">{title}</span>
+              <span className="text-sm text-zinc-400">{getMembersCountText(members.length)}</span>
+              {description ? <p className="max-w-md text-sm text-zinc-300">{description}</p> : null}
             </div>
 
-            <div className="grid grid-cols-3 gap-3 w-full">
+            {/* Быстрые действия */}
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-3">
               {canManageInvites ? (
-                <button
-                  type="button"
-                  onClick={copyInviteLink}
-                  className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                  <Icon name="IC-plus" className="w-5 h-5 fill-current shrink-0" />
-                  <span className="text-sm sm:text-md">{lang?.invite || 'Пригласить'}</span>
-                </button>
+                <ActionTile label={lang?.invite || 'Пригласить'} onClick={copyInviteLink}>
+                  <Icon name="IC-plus" className="h-6 w-6 fill-current" />
+                </ActionTile>
               ) : null}
-              {canManageChannel && (
-                <button
-                  type="button"
+              {canManageChannel ? (
+                <ActionTile
+                  label={lang?.edit_action || 'Изменить'}
                   onClick={() => {
                     setEditTitle(title);
                     setView('edit_title');
                   }}
-                  className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                  <Icon name="IC-edit" className="w-5 h-5 fill-current shrink-0" />
-                  <span className="text-sm sm:text-md">{lang?.edit_action || 'Изменить'}</span>
-                </button>
-              )}
-              {(canManageChannel || canManageJoinRequests) && (
-                <button
-                  type="button"
-                  onClick={() => void openCommunitySettings()}
-                  className="disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-zinc-800 hover:bg-zinc-800/70 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                  <Icon name="IC-settings" className="w-5 h-5 fill-current shrink-0" />
-                  <span className="text-sm sm:text-md">{lang?.settings || 'Настройки'}</span>
-                </button>
-              )}
+                >
+                  <Icon name="IC-edit" className="h-6 w-6 fill-current" />
+                </ActionTile>
+              ) : null}
+              {(canManageChannel || canManageJoinRequests) ? (
+                <ActionTile label={lang?.settings || 'Настройки'} onClick={() => void openCommunitySettings()}>
+                  <Icon name="IC-settings" className="h-6 w-6 fill-current" />
+                </ActionTile>
+              ) : null}
+              {onToggleMute ? (
+                <ActionTile active={muted} label={muted ? (lang?.dialog_unmute || 'Включить звук') : (lang?.dialog_mute || 'Без звука')} onClick={onToggleMute}>
+                  {muted ? <Icon name="IC-notification" className="h-6 w-6 fill-current" /> : <MutedBell className="h-6 w-6" />}
+                </ActionTile>
+              ) : null}
+              {onTogglePin ? (
+                <ActionTile active={pinned} label={pinned ? (lang?.dialog_unpin || 'Открепить') : (lang?.dialog_pin || 'Закрепить')} onClick={onTogglePin}>
+                  <PinIcon off={pinned} className="h-6 w-6" />
+                </ActionTile>
+              ) : null}
+            </div>
+
+            {/* Разделы: каждый — на своём экране. Содержимое переписки у чатов сообществ недоступно (там свои права на канал). */}
+            <InfoSectionList
+              onOpen={(key) => setView(key as ModalView)}
+              sections={[
+                { bg: 'bg-purple-500/15', count: members.length, fill: 'fill-purple-400', icon: 'IC-user', key: 'members', label: lang?.members || 'Участники' },
+                ...(initialCommunityId ? [] : mediaSections),
+              ]}
+            />
+
+            <button
+              type="button"
+              onClick={handleLeaveGroup}
+              disabled={loadingAction}
+              className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-full border border-zinc-600/30 bg-red-500/15 px-4 py-2.5 text-red-300 duration-300 hover:bg-red-500/25 active:scale-95 disabled:opacity-50"
+            >
+              <Icon name="IC-exit" className="h-5 w-5 fill-current" />
+              {lang?.leave || 'Покинуть'}
+            </button>
+          </>
+        )}
+
+        {/* --- VIEW: УЧАСТНИКИ --- */}
+        {view === 'members' && (
+          <div className="flex flex-col gap-3">
+            {(canManageMembers || canManageInvites) && (
               <button
                 type="button"
-                onClick={handleLeaveGroup}
-                disabled={loadingAction}
-                className="col-span-full disabled:opacity-50 rounded-3xl p-3 gap-1.5 sm:gap-3 flex items-center justify-center bg-red-800/25 hover:bg-red-800/50 text-red-500 border border-zinc-600/30 active:scale-95 duration-300 cursor-pointer">
-                <Icon name="IC-exit" className="w-5 h-5 fill-current shrink-0" />
-                <span className="text-sm sm:text-md">{lang?.leave || 'Покинуть'}</span>
+                onClick={handleOpenAddMembers}
+                className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-full border border-zinc-600/30 bg-zinc-800 px-4 py-2.5 text-white duration-300 hover:bg-zinc-700 active:scale-95"
+              >
+                <Icon name="IC-plus" className="h-5 w-5 fill-current" />
+                {lang?.add_member_btn || 'Добавить участника'}
               </button>
-            </div>
-
-            {/* Список участников */}
-            <div className="flex flex-col gap-2 -mb-1.5">
-              <div className="z-[30] flex items-center justify-between bg-gradient-to-b from-zinc-900 via-zinc-900/90 to-transparent">
-                <span className="text-sm text-zinc-300">{lang?.members || 'Участники'} ({members.length})</span>
-                {(canManageMembers || canManageInvites) && (
-                  <button
-                    type="button"
-                    onClick={handleOpenAddMembers}
-                    className="text-xs text-purple-400 hover:text-purple-300 font-medium cursor-pointer active:scale-95 duration-300"
-                  >
-                    {lang?.add_member_btn || '+ Добавить'}
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-col max-h-80 overflow-y-auto -mb-8 pb-8 -mt-5 pt-5 -mx-3">
-                {members.map((member) => {
-                  const userObj = {
-                    id: member.id,
-                    username: member.username,
-                    fname: member.fname || member.name || member.username || (lang?.user_fallback || 'Пользователь'),
-                    lname: member.lname || '',
-                    img: member.img,
-                    verify: member.verify,
-                  };
-                  const communityRoleLabel = getCommunityRoleLabel(member.community_role, lang);
-
-                  return (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between px-3 py-1.5 hover:rounded-3xl shrink-0 hover:bg-zinc-800/40 duration-300"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <AppImage
-                          width={48}
-                          height={48}
-                          fallbackSrc={FALLBACK_AVATAR}
-                          src={normalizeAssetUrl(member.img, FALLBACK_AVATAR)}
-                          alt=""
-                          className="w-12 h-12 rounded-full object-cover shrink-0"
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <AccountName user={userObj} nameClassName="text-sm font-medium text-white truncate" />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-end gap-2 shrink-0 min-w-0">
-                        {communityRoleLabel ? (
-                          <span
-                            className="max-w-32 truncate text-xs px-2 py-1 rounded-3xl border"
-                            style={getCommunityRoleBadgeStyle(member.community_role!)}
-                            title={communityRoleLabel}
-                          >
-                            {communityRoleLabel}
-                          </span>
-                        ) : (!initialCommunityId && member.role === 'owner' ? (
-                          <span className="text-xs text-purple-400 bg-purple-500/25 px-2 py-1 rounded-3xl border border-zinc-600/30">
-                            {lang?.role_owner || 'Создатель'}
-                          </span>
-                        ) : null)}
-
-                        {canManageMembers && member.id !== currentUserId && member.role !== 'owner' && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveMember(member.id)}
-                            disabled={loadingAction}
-                            className="p-1.5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-full transition-[color,background-color,transform] duration-300 active:scale-95 cursor-pointer shrink-0"
-                            title={lang?.remove_from_group || 'Исключить из группы'}
-                          >
-                            <Icon name="IC-close-material" className="w-4 h-4 fill-current" />
-                          </button>
-                        )}
+            )}
+            <div className="flex flex-col">
+              {members.map((member) => {
+                const userObj = {
+                  id: member.id,
+                  username: member.username,
+                  fname: member.fname || member.name || member.username || (lang?.user_fallback || 'Пользователь'),
+                  lname: member.lname || '',
+                  img: member.img,
+                  verify: member.verify,
+                };
+                const communityRoleLabel = getCommunityRoleLabel(member.community_role, lang);
+                return (
+                  <div key={member.id} className="flex items-center justify-between gap-3 rounded-3xl p-1.5 duration-300 hover:bg-zinc-800/40">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <AppImage
+                        width={48}
+                        height={48}
+                        fallbackSrc={FALLBACK_AVATAR}
+                        src={normalizeAssetUrl(member.img, FALLBACK_AVATAR)}
+                        alt=""
+                        className="h-12 w-12 shrink-0 rounded-full object-cover"
+                      />
+                      <div className="flex min-w-0 flex-col">
+                        <AccountName user={userObj} nameClassName="truncate text-sm font-medium text-white" />
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="flex min-w-0 shrink-0 items-center justify-end gap-3">
+                      {communityRoleLabel ? (
+                        <span
+                          className="max-w-32 truncate rounded-full border px-3 py-1.5 text-xs"
+                          style={getCommunityRoleBadgeStyle(member.community_role!)}
+                          title={communityRoleLabel}
+                        >
+                          {communityRoleLabel}
+                        </span>
+                      ) : (!initialCommunityId && member.role === 'owner' ? (
+                        <span className="rounded-full border border-zinc-600/30 bg-purple-500/25 px-3 py-1.5 text-xs text-purple-400">
+                          {lang?.role_owner || 'Создатель'}
+                        </span>
+                      ) : null)}
+                      {canManageMembers && member.id !== currentUserId && member.role !== 'owner' && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(member.id)}
+                          disabled={loadingAction}
+                          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-400 transition-[color,background-color,transform] duration-300 hover:bg-red-500/20 hover:text-red-400 active:scale-95"
+                          title={lang?.remove_from_group || 'Исключить из группы'}
+                        >
+                          <Icon name="IC-close-material" className="h-4 w-4 fill-current" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </>
+          </div>
+        )}
+
+        {(view === 'media' || view === 'links' || view === 'tracks') && (
+          <DialogMediaPane isOpen={isOpen} kind={view} media={media} />
         )}
 
         {/* --- VIEW 2: ИЗМЕНЕНИЕ НАЗВАНИЯ --- */}

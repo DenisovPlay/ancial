@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { AncialAPI } from '../../lib/api-v2';
 import { cache } from '../../lib/cache.ts';
+import { mapPreviewTrack } from '../lib/use-track-by-id';
 import type { PulseTrack } from '../../pulse/pulse-components';
 import { usePulsePlayer } from '../../context/PulsePlayerContext';
 import { cn } from '../../pulse/pulse-components';
@@ -43,12 +44,7 @@ export default function TrackPreview({ trackId, onLoadSuccess, className }: Trac
         if (isMounted) {
           const trackData = res?.track;
           if (trackData && (trackData.sid || trackData.id)) {
-            const mapped = {
-              ...trackData,
-              sid: trackData.sid || trackData.id,
-              title: trackData.title || trackData.name,
-              artwork: trackData.artwork || (trackData.img ? [{ src: trackData.img }] : [])
-            };
+            const mapped = mapPreviewTrack(trackData);
             setTrack(mapped);
             cache.set(`preview_track_${trackId}`, mapped, { category: 'chats', subcategory: 'previews', ttl: 24 * 60 * 60 * 1000 });
             if (!cached) {

@@ -29,7 +29,7 @@ import { readPulseJsonCache } from './pulse-cache';
 import Icon from '../components/svg-icon';
 import { useResolvedExternalIds } from './player/external-track-ids';
 import { useTrackFavorite } from './use-track-favorite';
-import { useTrackSwipe } from './use-track-swipe';
+import { useRowSwipe } from '../lib/use-row-swipe';
 import { apiUrl } from '../lib/api-url';
 
 export type PulseTrackArtwork = {
@@ -647,7 +647,7 @@ export function PulseTrackRow({
   const isLiked = isFavorite(track);
 
   const isAvailable = isTrackAvailable(track, userCountry);
-  const swipe = useTrackSwipe({
+  const swipe = useRowSwipe({
     enabled: isAvailable,
     onFavorite: () => (swipeLeft ? swipeLeft.onTrigger() : void toggleFavorite(track)),
     onQueue: () => (swipeRight ? swipeRight.onTrigger() : void onQueueTrackNext(track.sid ?? 0)),

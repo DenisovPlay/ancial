@@ -59,6 +59,9 @@ export type DialogListItem = {
   image_url?: string | null;
   members_count?: number | string | null;
   blocked?: boolean | number | string | null;
+  /** Личные настройки (у каждого участника свои): момент закрепления (unix) и «без звука». */
+  pinned_at?: number | null;
+  muted?: boolean | null;
 };
 
 export type DialogMeta = {
@@ -99,6 +102,8 @@ export type DialogUser = {
   username?: string | null;
   verify?: number | string | null;
   badges?: string | null;
+  /** Строка «о себе» из профиля (экран «Информация о чате»). */
+  desk?: string | null;
 };
 
 export type DialogListResponse = {

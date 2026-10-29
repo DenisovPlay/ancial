@@ -33,6 +33,8 @@ import { globalWS } from '../lib/global-ws';
 import { formatRelativeTime } from '../lib/time';
 import { getPresenceText, isPresenceOnline, usePresence, usePresences } from '../lib/presence';
 import CreateGroupModal from './components/create-group-modal';
+import DialogSwipeRow, { MutedBell } from './components/dialog-swipe-row';
+import DirectChatInfoModal from './components/direct-chat-info-modal';
 import GroupInfoModal from './components/group-info-modal';
 import { CALL_MESSAGE_TYPE, parseCallToken } from '../lib/call-message';
 import CallRecordBubble from './components/call-record-bubble';
@@ -230,17 +232,26 @@ export default function MessagesContent() {
 
   const [dialogSearchQuery, setDialogSearchQuery] = useState('');
 
+  // Закреплённые — наверх (свежее закрепление выше), остальные в прежнем порядке. Порядок считаем здесь, а не только на сервере:
+  // новые сообщения и обновления по сокету двигают диалоги в состоянии, и закреплённые не должны от этого уезжать вниз.
+  const orderedDialogs = useMemo(() => {
+    const pinned = dialogs.filter((dialog) => dialog.pinned_at);
+    if (pinned.length === 0) return dialogs;
+    pinned.sort((a, b) => (b.pinned_at ?? 0) - (a.pinned_at ?? 0));
+    return [...pinned, ...dialogs.filter((dialog) => !dialog.pinned_at)];
+  }, [dialogs]);
+
   const filteredDialogs = useMemo(() => {
-    if (!dialogSearchQuery.trim()) return dialogs;
+    if (!dialogSearchQuery.trim()) return orderedDialogs;
     const q = dialogSearchQuery.toLowerCase().trim();
-    return dialogs.filter((dialog) => {
+    return orderedDialogs.filter((dialog) => {
       const dialogName = (decodeText(dialog.Uname) || '').toLowerCase();
       const username = (dialog.username || '').toLowerCase();
       const title = (dialog.title || '').toLowerCase();
       const msg = (dialog.Mmessage || '').toLowerCase();
       return dialogName.includes(q) || username.includes(q) || title.includes(q) || msg.includes(q);
     });
-  }, [dialogs, dialogSearchQuery]);
+  }, [orderedDialogs, dialogSearchQuery]);
 
   // Собеседник личного диалога — тот из creator/recipient, кто не текущий пользователь.
   const getDialogCounterpartId = (dialog: DialogListItem, myId: number) => {
@@ -1809,6 +1820,32 @@ export default function MessagesContent() {
     }
   };
 
+  /** Закрепить/открепить или включить/выключить звук диалога (личная настройка). Сразу в списке, при ошибке — откат. */
+  const updateDialogPref = async (dialog: DialogListItem, action: 'mute' | 'pin' | 'unmute' | 'unpin') => {
+    const dialogId = toNumber(dialog.id);
+    if (!dialogId) return;
+    const applyPatch = (patch: Pick<DialogListItem, 'muted' | 'pinned_at'>) =>
+      setDialogs((current) => current.map((item) => (toNumber(item.id) === dialogId ? { ...item, ...patch } : item)));
+    const previous = { muted: Boolean(dialog.muted), pinned_at: dialog.pinned_at ?? null };
+    // Новое закрепление сразу встаёт выше прочих закреплённых; точное время придёт в ответе сервера.
+    applyPatch(action === 'pin' ? { pinned_at: Math.max(0, ...dialogs.map((item) => item.pinned_at ?? 0)) + 1 } : action === 'unpin' ? { pinned_at: null } : { muted: action === 'mute' });
+
+    try {
+      const result = await AncialAPI.dialogPrefs<{ muted?: boolean; pinned_at?: number | null }>(action, dialogId);
+      applyPatch({ muted: Boolean(result?.muted), pinned_at: result?.pinned_at ?? null });
+      cache.remove(DIALOGS_CACHE_KEY, { category: 'chats', subcategory: 'dialogs' });
+    } catch (error) {
+      applyPatch(previous);
+      const code = error instanceof Error ? error.message : '';
+      notify({
+        content: code === 'pin_limit'
+          ? (lang?.dialog_pin_limit || 'Можно закрепить не больше 5 чатов')
+          : getApiMessage(code || null, lang, lang?.somethingwrong || 'Произошла ошибка =('),
+        type: 'error',
+      });
+    }
+  };
+
   const handleDialogDelete = async () => {
     const dialogId = currentDialogIdRef.current;
     if (!dialogId) return;
@@ -2531,11 +2568,23 @@ export default function MessagesContent() {
                                       <YandexRtb className="w-full rounded-3xl" />
                                     </div>
                                   )}
+                                  <DialogSwipeRow
+                                    labels={{
+                                      mute: lang?.dialog_mute || 'Без звука',
+                                      pin: lang?.dialog_pin || 'Закрепить',
+                                      unmute: lang?.dialog_unmute || 'Включить звук',
+                                      unpin: lang?.dialog_unpin || 'Открепить',
+                                    }}
+                                    muted={Boolean(dialog.muted)}
+                                    onMute={() => { void updateDialogPref(dialog, dialog.muted ? 'unmute' : 'mute'); }}
+                                    onPin={() => { void updateDialogPref(dialog, dialog.pinned_at ? 'unpin' : 'pin'); }}
+                                    pinned={Boolean(dialog.pinned_at)}
+                                  >
                                   <button
                                     type="button"
                                     onClick={() => handleDialogOpen(dialogHash)}
                                     className={cn(
-                                      'cursor-pointer flex items-center gap-3 p-3 text-left duration-300 hover:bg-zinc-800 active:scale-95 active:rounded-3xl',
+                                      'w-full cursor-pointer flex items-center gap-3 p-3 text-left duration-300 hover:bg-zinc-800 active:scale-95 active:rounded-3xl',
                                       active && 'bg-zinc-800/90',
                                     )}
                                   >
@@ -2588,7 +2637,11 @@ export default function MessagesContent() {
                                     </div>
 
                                     <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-zinc-400 lg:text-sm">
-                                      <span>{formatRelativeTime(dialog.Mtime, lang, normalizeText(dialog.Mtime))}</span>
+                                      <span className="flex items-center gap-1.5">
+                                        {dialog.muted ? <MutedBell className="h-4 w-4" /> : null}
+                                        {dialog.pinned_at ? <Icon name="IC-pin" className="h-4 w-4 fill-zinc-400" /> : null}
+                                        {formatRelativeTime(dialog.Mtime, lang, normalizeText(dialog.Mtime))}
+                                      </span>
                                       {isMyLastMessage ? (
                                         <Icon
                                           name={previewStatusIcon}
@@ -2600,12 +2653,13 @@ export default function MessagesContent() {
                                           )}
                                         />
                                       ) : unreadCount > 0 ? (
-                                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-purple-500 px-1.5 text-[11px] font-bold text-white shadow">
+                                        <span className={cn('flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white shadow', dialog.muted ? 'bg-zinc-600' : 'bg-purple-500')}>
                                           {unreadCount > 99 ? '99+' : unreadCount}
                                         </span>
                                       ) : null}
                                     </div>
                                   </button>
+                                  </DialogSwipeRow>
                                 </React.Fragment>
                               );
                             })
@@ -2696,11 +2750,13 @@ export default function MessagesContent() {
                           onClick={() => {
                             if (isGroupDialog) {
                               setGroupInfoModalOpen(true);
+                            } else if (!blockedDialog) {
+                              setSettingsModalOpen(true);
                             }
                           }}
                           className={cn(
                             'w-full min-w-0 max-w-full lg:w-auto lg:h-10 flex flex-col lg:flex-row lg:gap-3 lg:shadow lg:border lg:border-zinc-600/30 items-center justify-center px-2 text-center lg:glass-panel lg:[--glass-alpha:0.8] lg:[--glass-blur:16px] lg:[--glass-sat:2] lg:rounded-3xl lg:px-3 lg:py-1.5 duration-300',
-                            isGroupDialog && 'cursor-pointer active:scale-95 hover:text-purple-300'
+                            (isGroupDialog || !blockedDialog) && 'cursor-pointer active:scale-95 hover:text-purple-300'
                           )}
                         >
                           <span className="max-w-full truncate text-base font-bold">
@@ -2811,16 +2867,6 @@ export default function MessagesContent() {
                               }}
                             >
                               {isGroupDialog ? (lang?.group_settings || 'Настройки беседы') : (lang?.chat_settings || 'Настройки чата')}
-                            </DropdownItem>
-                          )}
-                          {!isGroupDialog && (
-                            <DropdownItem
-                              icon="IC-trash"
-                              onClick={() => {
-                                setDeleteDialogModalOpen(true);
-                              }}
-                            >
-                              {lang?.dialogdelete || 'Удалить диалог'}
                             </DropdownItem>
                           )}
                         </Dropdown>
@@ -3192,71 +3238,41 @@ export default function MessagesContent() {
         />
       )}
 
-      <Modal
-        isOpen={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
-        title={lang?.chat_settings || 'Настройки чата'}
-      >
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm text-zinc-300">{lang?.change_bg || 'Изменить фон'}</h2>
-          <div className="drag-scroll viewport -my-3 flex gap-3 overflow-auto px-1 py-3">
-            <button
-              type="button"
-              onClick={() => {
-                void handleDialogBackgroundClear();
-              }}
-              className={cn(
-                'flex h-32 w-20 shrink-0 flex-col items-center rounded-2xl bg-zinc-800 p-3 shadow duration-300 active:scale-95',
-                !dialogBackgroundUrl && 'ring-2 ring-purple-500',
-              )}
-            >
-              <div className="mb-1.5 w-full rounded-2xl rounded-bl-none bg-zinc-700 px-1.5 text-sm text-zinc-200">
-                Hello
-              </div>
-              <div className="w-full rounded-2xl rounded-br-none bg-purple-700 px-1.5 text-sm text-white">
-                Hi!
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => backgroundInputRef.current?.click()}
-              className={cn(
-                'flex h-32 w-20 shrink-0 flex-col items-center rounded-2xl bg-gradient-to-br from-purple-700 to-blue-700 bg-cover bg-center p-3 shadow duration-300 active:scale-95',
-                dialogBackgroundUrl && 'ring-2 ring-purple-500',
-              )}
-              style={
-                dialogBackgroundUrl
-                  ? {
-                    backgroundImage: `url(${apiUrl(dialogBackgroundUrl)})`,
-                  }
-                  : undefined
-              }
-            >
-              <div className="mb-1.5 w-full rounded-2xl rounded-bl-none bg-zinc-800/80 px-1.5 text-sm text-zinc-200">
-                Hello
-              </div>
-              <div className="w-full rounded-2xl rounded-br-none bg-purple-700/80 px-1.5 text-sm text-white">
-                Hi!
-              </div>
-              <div className="flex h-full flex-grow items-end">
-                {uploadingDialogBackground ? (
-                  <Icon name="IC-loader" className="h-12 w-12 animate-spin fill-purple-100" />
-                ) : (
-                  <Icon name="IC-image" className="h-12 w-12 fill-purple-100" />
-                )}
-              </div>
-            </button>
-          </div>
-          <input
-            ref={backgroundInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleDialogBackgroundSelect}
-            className="hidden"
-          />
-        </div>
-      </Modal>
+      {!isGroupDialog && selectedDialog ? (
+        <DirectChatInfoModal
+          about={foreignUser?.desk}
+          avatar={dialogAvatarUrl}
+          background={{
+            onClear: () => { void handleDialogBackgroundClear(); },
+            onPick: () => backgroundInputRef.current?.click(),
+            uploading: uploadingDialogBackground,
+            url: dialogBackgroundUrl,
+          }}
+          badges={effectiveForeignUser?.badges}
+          callActive={hasActiveCall}
+          dialogId={toNumber(selectedDialog.id)}
+          isOpen={settingsModalOpen}
+          muted={Boolean(dialogListItem?.muted)}
+          name={dialogTitle}
+          onClose={() => setSettingsModalOpen(false)}
+          onDelete={() => setDeleteDialogModalOpen(true)}
+          onOpenProfile={normalizeText(effectiveForeignUser?.username) ? () => router.push(`/@${normalizeText(effectiveForeignUser?.username)}`) : undefined}
+          onStartCall={handleStartCall}
+          onToggleMute={() => { if (dialogListItem) void updateDialogPref(dialogListItem, dialogListItem.muted ? 'unmute' : 'mute'); }}
+          onTogglePin={() => { if (dialogListItem) void updateDialogPref(dialogListItem, dialogListItem.pinned_at ? 'unpin' : 'pin'); }}
+          pinned={Boolean(dialogListItem?.pinned_at)}
+          statusLabel={dialogStatusLabel}
+          username={effectiveForeignUser?.username}
+          verify={effectiveForeignUser?.verify}
+        />
+      ) : null}
+      <input
+        ref={backgroundInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleDialogBackgroundSelect}
+        className="hidden"
+      />
 
       <Modal
         isOpen={deleteDialogModalOpen}
@@ -3328,6 +3344,10 @@ export default function MessagesContent() {
           isOpen={groupInfoModalOpen}
           onClose={() => setGroupInfoModalOpen(false)}
           dialogId={Number(selectedDialog.id)}
+          muted={Boolean(dialogListItem?.muted)}
+          onToggleMute={() => { if (dialogListItem) void updateDialogPref(dialogListItem, dialogListItem.muted ? 'unmute' : 'mute'); }}
+          onTogglePin={() => { if (dialogListItem) void updateDialogPref(dialogListItem, dialogListItem.pinned_at ? 'unpin' : 'pin'); }}
+          pinned={Boolean(dialogListItem?.pinned_at)}
           title={selectedDialog.title || 'Групповой чат'}
           avatar={selectedDialog.avatar || ''}
           background={dialogBackgroundUrl}

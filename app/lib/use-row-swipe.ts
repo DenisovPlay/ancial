@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, type TouchEvent } from 'react';
 
-import { haptic } from '../lib/haptics';
+import { haptic } from './haptics';
 
 /** Сколько тянуть до срабатывания, сколько максимум (px). За порогом лента идёт с сопротивлением. */
 const THRESHOLD = 84;
@@ -28,12 +28,13 @@ const sidesOf = (row: HTMLElement) => ({
 });
 
 /**
- * Жест на строке трека (телефон, как в Spotify): вправо — «следующим», влево — в избранное.
+ * Жест на строке списка (телефон, как в Spotify и Telegram): вправо — одно действие, влево — другое (строки треков Pulse, список чатов).
+ * Подложки лежат в той же обёртке рядом со строкой и помечены data-swipe-side="queue" (под правым свайпом) и "favorite" (под левым).
  * Строка идёт за пальцем, под ней проявляется цветная подложка с иконкой (по клипу: сколько освободилось — столько видно);
  * за порогом иконка «щёлкает» (data-armed, лёгкая вибрация), по отпусканию действие выполняется, строка пружинит назад.
  * Всё через DOM (currentTarget) без setState на каждый кадр. Вертикальная прокрутка не мешает: направление фиксируется по первым пикселям.
  */
-export function useTrackSwipe({
+export function useRowSwipe({
   enabled,
   onFavorite,
   onQueue,

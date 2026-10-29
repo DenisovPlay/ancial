@@ -145,7 +145,8 @@ export default function CreateGroupModal({
       isOpen={isOpen}
       onClose={onClose}
       title={lang?.create_group_chat || 'Создать групповой чат'}
-      bodyClassName="p-3 pt-14 pb-3"
+      width="md"
+      bodyClassName="p-3 pt-14"
     >
       <div className="flex flex-col gap-3 text-white">
 

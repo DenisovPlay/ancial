@@ -23,8 +23,8 @@ assert.match(
 );
 assert.match(
   source,
-  /className="col-span-full/,
-  'the Leave button must span the complete action grid',
+  /onClick=\{handleLeaveGroup\}[\s\S]{0,160}className="flex w-full[^"]*bg-red-500\/15/,
+  'the Leave button must be a full-width red button under the sections list, like Delete in a direct chat',
 );
 assert.match(
   source,

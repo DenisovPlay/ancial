@@ -894,6 +894,19 @@ export class AncialAPI {
     return this.request<T>('/messages/DialogAction.php', { method: 'POST', body });
   }
 
+  /** Личные настройки диалога: закрепить/открепить в списке чатов, «без звука». */
+  static async dialogPrefs<T = unknown>(action: 'mute' | 'pin' | 'unmute' | 'unpin', dialogId: string | number): Promise<T> {
+    const body = new URLSearchParams({ action, id: String(dialogId) });
+    return this.request<T>('/messages/DialogPrefs.php', { method: 'POST', body });
+  }
+
+  /** Содержимое переписки (экран «Информация о чате»): фото, ссылки, треки; постранично по before_id. */
+  static async dialogMedia<T = unknown>(dialogId: string | number, kind: 'links' | 'media' | 'tracks', beforeId = 0, limit = 30): Promise<T> {
+    const query = new URLSearchParams({ di_id: String(dialogId), kind, limit: String(limit) });
+    if (beforeId > 0) query.set('before_id', String(beforeId));
+    return this.request<T>(`/messages/DialogMedia.php?${query.toString()}`);
+  }
+
   static async createDialog<T = unknown>(userId: string | number): Promise<T> {
     return this.request<T>(`/messages/CreateDialog.php?withu=${encodeURIComponent(String(userId))}`, {
       method: 'POST'

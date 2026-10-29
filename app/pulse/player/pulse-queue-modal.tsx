@@ -144,7 +144,7 @@ export function PulseQueueModal({
       title={lang?.pulse_queue_title || 'Очередь воспроизведения'}
       width="md"
     >
-      <div className="flex flex-col gap-3 pb-2">
+      <div className="flex flex-col gap-3">
         {playlist.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-zinc-400">
             <Icon name="IC-list-ul" className="mb-2 h-12 w-12 fill-zinc-600" />

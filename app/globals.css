@@ -1637,7 +1637,7 @@ select:-webkit-autofill {
   }
 }
 
-/* Свайп по строке трека (app/pulse/use-track-swipe.ts): подложка открывается за строкой, иконка растёт по --p и «щёлкает» за порогом. */
+/* Свайп по строке трека (app/lib/use-row-swipe.ts): подложка открывается за строкой, иконка растёт по --p и «щёлкает» за порогом. */
 .track-swipe-side {
   position: absolute;
   inset: 0;
