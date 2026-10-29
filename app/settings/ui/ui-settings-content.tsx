@@ -23,7 +23,7 @@ import {
   type GlassRole,
   type LyricsSetting,
   type MotionToggle,
-  type CoverTintSetting,
+  type PulseColorSetting,
   type ScrollHideSetting,
   type TooltipMotion,
 } from '../../lib/appearance';
@@ -449,16 +449,17 @@ export default function UiSettingsContent() {
             value={settings.motion.expand}
             onChange={(value) => update((draft) => { draft.motion.expand = value; })}
           />
-          <SettingSelect<CoverTintSetting>
+          <SettingSelect<PulseColorSetting>
             selectClassName="w-40 shrink-0"
-            label={lang?.motion_covertint || 'Цвет обложки в плеере'}
-            hint={lang?.motion_covertint_hint || 'Мини-плеер подкрашивается под трек'}
+            label={lang?.pulse_color || 'Цвет Pulse'}
+            hint={lang?.pulse_color_hint || 'Подкраска плееров и страниц Pulse'}
             options={[
-              { value: 'on', label: lang?.motion_on || 'Включено' },
-              { value: 'off', label: lang?.motion_off || 'Выключено' },
+              { value: 'cover', label: lang?.pulse_color_cover || 'По обложке' },
+              { value: 'mood', label: lang?.pulse_color_mood || 'По настроению' },
+              { value: 'off', label: lang?.pulse_color_off || 'Не менять' },
             ]}
-            value={settings.motion.coverTint}
-            onChange={(value) => update((draft) => { draft.motion.coverTint = value; })}
+            value={settings.motion.pulseColor}
+            onChange={(value) => update((draft) => { draft.motion.pulseColor = value; })}
           />
           <SettingSelect<ScrollHideSetting>
             selectClassName="w-40 shrink-0"

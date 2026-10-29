@@ -1,5 +1,6 @@
 'use client';
 
+import { usePulsePageTint } from '../../player/use-pulse-tint';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -17,7 +18,6 @@ import PulseUploadTrackModal, { PulseDeleteTrackModal } from '../../pulse-upload
 import { readPulseJsonCache, writePulseJsonCache } from '../../pulse-cache';
 import { usePulseFavoriteIds } from '../../player/use-pulse-favorite-ids';
 import {
-  getPulseBackgroundColorByMood,
   PulseEmptyState,
   PulseLogo,
   PulseTrackRow,
@@ -51,6 +51,7 @@ export default function PulseSearchTracksContent() {
     playNextTrack,
     playTrack,
   } = usePulsePlayer();
+  const pageTint = usePulsePageTint(currentTrackObj);
 
   const [tracks, setTracks] = useState<PulseTrack[]>(() => {
     const cached = readPulseJsonCache<PulseTracksSearchResponse>(getPulseTracksSearchCacheKey(query));
@@ -163,7 +164,8 @@ export default function PulseSearchTracksContent() {
 
   return (
     <div
-      className={`relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black ${getPulseBackgroundColorByMood(currentTrackObj?.mood)}`}
+      className={`relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black ${pageTint.className}`}
+      style={pageTint.style}
     >
       {/* Header */}
       <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">

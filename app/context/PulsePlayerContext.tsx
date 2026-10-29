@@ -3176,6 +3176,9 @@ export function PulsePlayerProvider({
         prevTitle={getTrackDisplayTitle(prevTrackObj, lang)}
         prevArtist={getTrackArtist(prevTrackObj, lang)}
         nextArtwork={nextTrackObj || isRadioMode ? nextArtwork : playerArtwork}
+        nextMood={(nextTrackObj ?? currentTrack)?.mood}
+        playerMood={currentTrack?.mood}
+        prevMood={prevTrackObj?.mood}
         prevArtwork={prevArtwork}
         seekValue={seekValue}
         volume={volume}

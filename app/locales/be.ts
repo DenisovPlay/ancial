@@ -2380,7 +2380,10 @@ export const be: Record<string, string> = {
     "motion_expand_hint": "Доўгія пасты і раздзелы налад",
     "motion_scrollhide": "Хаваць панэлі пры пракрутцы",
     "motion_scrollhide_hint": "Толькі на тэлефоне",
-    "motion_covertint": "Колер вокладкі ў плэеры",
-    "motion_covertint_hint": "Міні-плэер падфарбоўваецца пад трэк",
+    "pulse_color": "Колер Pulse",
+    "pulse_color_hint": "Падфарбоўка плэераў і старонак Pulse",
+    "pulse_color_cover": "Па вокладцы",
+    "pulse_color_mood": "Па настроі",
+    "pulse_color_off": "Не змяняць",
     "pulse_artists": "Выканаўцы",
 };

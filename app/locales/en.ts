@@ -2380,7 +2380,10 @@ export const en: Record<string, string> = {
   "motion_expand_hint": "Long posts and settings sections",
   "motion_scrollhide": "Hide bars while scrolling",
   "motion_scrollhide_hint": "Phone only",
-  "motion_covertint": "Cover color in player",
-  "motion_covertint_hint": "The mini player tints to the track",
+  "pulse_color": "Pulse color",
+  "pulse_color_hint": "Tints Pulse players and pages",
+  "pulse_color_cover": "By cover",
+  "pulse_color_mood": "By mood",
+  "pulse_color_off": "Don't change",
   "pulse_artists": "Artists",
 };

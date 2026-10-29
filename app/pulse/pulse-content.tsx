@@ -1,5 +1,6 @@
 'use client';
 
+import { usePulsePageTint } from './player/use-pulse-tint';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -21,7 +22,6 @@ import {
   DEFAULT_TRACK_IMAGE,
   getArtistIds,
   getImageUrl,
-  getPulseBackgroundColorByMood,
   PulseLegalFooter,
   PulseLogo,
   PulsePlaylistTile,
@@ -375,6 +375,7 @@ export default function PulseContent() {
     playPlaylist,
     joinListenAlong,
   } = usePulsePlayer();
+  const pageTint = usePulsePageTint(currentTrackObj);
 
   const friendsListeningScrollRef = useDragScroll({ speed: 2 });
   const [friendsListening, setFriendsListening] = useState<FriendListening[]>([]);
@@ -770,7 +771,7 @@ export default function PulseContent() {
   ), [lang?.your]);
 
   return (
-    <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-40 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:pb-28 lg:before:from-black", getPulseBackgroundColorByMood(currentTrackObj?.mood))}>
+    <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-40 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:pb-28 lg:before:from-black", pageTint.className)} style={pageTint.style}>
       <PulseHeader
         isAuthenticated={isAuthenticated}
         lang={lang}

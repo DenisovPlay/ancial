@@ -11,7 +11,7 @@ test('по умолчанию на ПК — полное стекло как в 
   const r = applyAppearance(DEFAULT_APPEARANCE, false, DESKTOP);
   assert.equal(r.preset, 'full');
   assert.deepEqual(r.factors.nav, { blur: 1, sat: 1, clarity: 1 });
-  assert.deepEqual(r.motion, { nav: true, menu: true, tooltips: 'smooth', lyrics: 'words', expand: true, scrollHide: false, coverTint: true });
+  assert.deepEqual(r.motion, { nav: true, menu: true, tooltips: 'smooth', lyrics: 'words', expand: true, scrollHide: false, pulseColor: 'cover' });
 });
 
 test('«Прятать панели при прокрутке» — только по желанию и не при «уменьшить движение»', () => {

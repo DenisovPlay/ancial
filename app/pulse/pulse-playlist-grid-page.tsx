@@ -1,12 +1,12 @@
 'use client';
 
+import { usePulsePageTint } from './player/use-pulse-tint';
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '../context/AuthContext';
 import { usePulsePlayer } from '../context/PulsePlayerContext';
 import {
-  getPulseBackgroundColorByMood,
   normalizeText,
   PulseEmptyState,
   PulseLogo,
@@ -51,6 +51,7 @@ export function PulsePlaylistGridPage({
   const router = useRouter();
   const { lang } = useAuth();
   const { currentCollectionId, currentTrackObj, isPlaying, playGenlist, playPlaylist } = usePulsePlayer();
+  const pageTint = usePulsePageTint(currentTrackObj);
 
   const playCard = (card: PulsePlaylistCardData) => {
     const playableId = getPlayableId(card);
@@ -65,7 +66,8 @@ export function PulsePlaylistGridPage({
 
   return (
     <div
-      className={`relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black ${getPulseBackgroundColorByMood(currentTrackObj?.mood)}`}
+      className={`relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black ${pageTint.className}`}
+      style={pageTint.style}
     >
       <div className="sticky top-0 z-20 flex w-full items-center justify-center bg-gradient-to-b from-black via-black/90 to-transparent pt-3">
         <div className="flex w-full max-w-screen-2xl items-center gap-3 px-3 lg:px-0">

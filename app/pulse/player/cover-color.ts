@@ -12,9 +12,17 @@ const pending = new Map<string, Promise<string | null>>();
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
+    // Хост завис — не ждём вечно: без цвета остаётся запасной (настроение).
+    const timer = window.setTimeout(() => reject(new Error('cover_load_timeout')), 4000);
     image.crossOrigin = 'anonymous';
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('cover_load_failed'));
+    image.onload = () => {
+      window.clearTimeout(timer);
+      resolve(image);
+    };
+    image.onerror = () => {
+      window.clearTimeout(timer);
+      reject(new Error('cover_load_failed'));
+    };
     image.src = src;
   });
 }
@@ -69,8 +77,11 @@ function dominantColor(image: HTMLImageElement): string | null {
 
 /** Обложка уже на странице — берём её же, без нового запроса (в браузере она в кэше, офлайн — в хранилище). Если ещё грузится, ждём до 1,5 с. */
 function findPageImage(resolved: string): Promise<HTMLImageElement | null> {
-  const encoded = encodeURIComponent(resolved);
-  const image = Array.from(document.images).find((item) => item.currentSrc.includes(encoded) || item.currentSrc === resolved || item.src.includes(encoded));
+  // Адрес мог попасть в оптимизатор и абсолютным, и путём от корня сайта — ищем оба вида.
+  const relative = resolved.startsWith(window.location.origin) ? resolved.slice(window.location.origin.length) : null;
+  const needles = [encodeURIComponent(resolved), ...(relative ? [encodeURIComponent(relative)] : [])];
+  const matches = (value: string) => value === resolved || needles.some((needle) => value.includes(needle));
+  const image = Array.from(document.images).find((item) => matches(item.currentSrc) || matches(item.src));
   if (!image) return Promise.resolve(null);
   if (image.complete) return Promise.resolve(image.naturalWidth > 0 ? image : null);
   return new Promise((resolve) => {
@@ -110,37 +121,40 @@ async function extract(url: string): Promise<string | null> {
 }
 
 /**
- * Доминирующий цвет обложки (кэшируется по адресу). null — функция выключена или цвета ещё не было ни разу.
+ * Доминирующий цвет обложки (кэшируется по адресу). color — null, пока считается или функция выключена; failed — цвет достать
+ * нельзя (обложка с чужого хоста без CORS): вызывающий подставляет запасной цвет (например, настроение).
  * Цвет прошлой обложки держится, пока считается новая или адрес на миг пуст (смена трека): слой плавно перекрашивается, а не мигает.
  */
-export function useCoverColor(url: string | null | undefined, enabled: boolean): string | null {
+export function useCoverColorState(url: string | null | undefined, enabled: boolean): { color: string | null; failed: boolean } {
   const key = enabled ? String(url ?? '').trim() : '';
   const [color, setColor] = useState<string | null>(() => (key ? cache.get(key) ?? null : null));
+  const [failedKey, setFailedKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!key) return undefined;
     let cancelled = false;
     const cached = cache.get(key);
-    if (cached !== undefined) {
-      // Кэш — мгновенно; сеттлер здесь источник правды (ключ сменился).
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (cached) setColor(cached);
-      return undefined;
-    }
-    const job = pending.get(key) ?? extract(key).then((value) => {
-      cache.set(key, value);
-      pending.delete(key);
-      return value;
-    });
-    pending.set(key, job);
+    const job = cached !== undefined
+      ? Promise.resolve(cached)
+      : (pending.get(key) ?? extract(key).then((value) => {
+        cache.set(key, value);
+        pending.delete(key);
+        return value;
+      }));
+    if (cached === undefined) pending.set(key, job);
     void job.then((value) => {
-      // Не удалось достать цвет — остаёмся на прежнем, а не гасим слой рывком.
-      if (!cancelled && value) setColor(value);
+      if (cancelled) return;
+      if (value) setColor(value);
+      else setFailedKey(key);
     });
     return () => {
       cancelled = true;
     };
   }, [key]);
 
-  return enabled ? color : null;
+  return { color: enabled ? color : null, failed: Boolean(key) && failedKey === key };
+}
+
+export function useCoverColor(url: string | null | undefined, enabled: boolean): string | null {
+  return useCoverColorState(url, enabled).color;
 }

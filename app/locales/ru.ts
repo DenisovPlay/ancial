@@ -2380,7 +2380,10 @@ export const ru: Record<string, string> = {
     "motion_expand_hint": "Длинные посты и разделы настроек",
     "motion_scrollhide": "Прятать панели при прокрутке",
     "motion_scrollhide_hint": "Только на телефоне",
-    "motion_covertint": "Цвет обложки в плеере",
-    "motion_covertint_hint": "Мини-плеер подкрашивается под трек",
+    "pulse_color": "Цвет Pulse",
+    "pulse_color_hint": "Подкраска плееров и страниц Pulse",
+    "pulse_color_cover": "По обложке",
+    "pulse_color_mood": "По настроению",
+    "pulse_color_off": "Не менять",
     "pulse_artists": "Исполнители",
 };

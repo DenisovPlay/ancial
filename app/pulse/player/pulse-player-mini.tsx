@@ -5,8 +5,7 @@ import { useEffect, useLayoutEffect, useRef, type CSSProperties, type RefObject,
 import { PULSE_COVER_IMAGE_SIZES, PulseCoverImage } from '../pulse-image';
 import { cn, formatPlaybackTime } from '../player/player-utils';
 import { PulseRangeTrack } from './pulse-range-track';
-import { useAppearanceMotion } from '../../lib/use-appearance';
-import { useCoverColor } from './cover-color';
+import { usePulseTint } from './use-pulse-tint';
 import { useIsListenFollower } from './listen-along';
 import { useRemoteDevices } from './remote-devices';
 import Icon from '../../components/svg-icon';
@@ -27,6 +26,10 @@ type PulsePlayerMiniProps = {
   lang: Record<string, string> | null;
   nextArtist: string;
   nextArtwork: string;
+  /** Настроения треков — для подкраски «по настроению». */
+  nextMood?: string | null;
+  playerMood?: string | null;
+  prevMood?: string | null;
   nextTitle: string;
   onChangeVolume: (volume: number | string) => void;
   onToggleMute: () => void;
@@ -89,6 +92,7 @@ export function PulsePlayerMini({
   lang,
   nextArtist,
   nextArtwork,
+  nextMood,
   nextTitle,
   onChangeVolume,
   onToggleMute,
@@ -107,9 +111,11 @@ export function PulsePlayerMini({
   onTogglePlay,
   playerArtist,
   playerArtwork,
+  playerMood,
   playerTitle,
   prevArtist,
   prevArtwork,
+  prevMood,
   prevTitle,
   seekValue,
   showLike,
@@ -124,10 +130,10 @@ export function PulsePlayerMini({
 
   const isFollower = useIsListenFollower();
   const isMuted = volume <= 0;
-  const { coverTint } = useAppearanceMotion();
-  const curColor = useCoverColor(playerArtwork, coverTint);
-  const prevColor = useCoverColor(prevArtwork, coverTint);
-  const nextColor = useCoverColor(nextArtwork, coverTint);
+  // Цвет подкраски по настройке «Цвет Pulse»: обложка, настроение или ничего.
+  const curColor = usePulseTint(playerArtwork, playerMood);
+  const prevColor = usePulseTint(prevArtwork, prevMood);
+  const nextColor = usePulseTint(nextArtwork, nextMood);
 
   useEffect(() => {
     const slider = volumeSliderRef?.current;

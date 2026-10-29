@@ -12,6 +12,7 @@ import {
   type PulseLyricsLine } from './pulse-lyrics';
 import { isSyncedLyrics } from '../../lib/lrc';
 import { cn } from './player-utils';
+import { usePulseTint } from './use-pulse-tint';
 import { PulsePlayerFullHeader } from './pulse-player-full-header';
 import { PulseCoverFlow } from './pulse-cover-flow';
 import { PulsePlayerFullArtwork } from './pulse-player-full-artwork';
@@ -304,6 +305,8 @@ export function PulsePlayerFull({
       { icon: 'IC-report', key: 'report', label: lang?.report || 'Пожаловаться', onClick: () => void reportTrack(trackCard) },
     );
   }
+  // Подкраска под обложку/настроение играющего трека (настройка «Цвет Pulse»).
+  const tint = usePulseTint(playerArtwork, playlist[currentIndex]?.mood);
   const [isLyricsExpanded, setIsLyricsExpanded] = useState(false);
   // Рендерим только видимую раскладку текста: спрятанная CSS-ом всё равно считала бы кадры.
   const isDesktopLayout = useSyncExternalStore(subscribeDesktopLayout, readDesktopLayout, () => false);
@@ -340,7 +343,7 @@ export function PulsePlayerFull({
     >
       <div
         id="NAVPfull"
-        className="pulse-player-full-shell glass-panel [--glass-alpha:0.8] [--glass-blur:40px] [--glass-sat:1.8] flex h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-none shadow lg:h-full"
+        className="pulse-player-full-shell glass-panel relative [--glass-alpha:0.8] [--glass-blur:40px] [--glass-sat:1.8] flex h-dvh w-full flex-col items-center justify-center overflow-hidden rounded-none shadow lg:h-full"
         style={{ overscrollBehavior: 'none' }}
         onTouchStart={(event) => {
           // «Вниз — свернуть» только по самому плееру: не из листаемого текста и не из модалок
@@ -351,6 +354,12 @@ export function PulsePlayerFull({
         }}
         onTouchEnd={onTouchEndFull}
       >
+        {/* Слой цвета под всем содержимым (-z-10 внутри стекла): плавно перетекает при смене трека. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 transition-colors duration-700"
+          style={{ backgroundColor: tint ? `color-mix(in srgb, ${tint} 40%, transparent)` : 'transparent' }}
+        />
         <PulsePlayerFullHeader
           albumLabel={albumLabel}
           canOpenAlbum={canOpenAlbum}

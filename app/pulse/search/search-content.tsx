@@ -1,5 +1,6 @@
 'use client';
 
+import { usePulsePageTint } from '../player/use-pulse-tint';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -19,7 +20,6 @@ import { PulseHeader } from '../pulse-header';
 import { readPulseJsonCache, writePulseJsonCache } from '../pulse-cache';
 import { usePulseFavoriteIds } from '../player/use-pulse-favorite-ids';
 import {
-  getPulseBackgroundColorByMood,
   PulseArtistTile,
   PulsePlaylistTile,
   PulseScrollSection,
@@ -73,6 +73,7 @@ export default function PulseSearchContent() {
     playPlaylist,
     playTrack,
   } = usePulsePlayer();
+  const pageTint = usePulsePageTint(currentTrackObj);
 
   const [artists, setArtists] = useState<PulseArtistCardData[]>([]);
   const artistsScrollRef = useDragScroll({ speed: 2 });
@@ -238,7 +239,7 @@ export default function PulseSearchContent() {
   );
 
   return (
-    <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black", getPulseBackgroundColorByMood(currentTrackObj?.mood))}>
+    <div className={cn("relative isolate flex flex-col items-center justify-center gap-3 pb-64 transition-colors duration-1000 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-b before:from-transparent before:via-black before:to-black lg:before:from-black", pageTint.className)} style={pageTint.style}>
       <PulseHeader
         isAuthenticated={isAuthenticated}
         lang={lang}
